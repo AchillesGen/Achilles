@@ -41,10 +41,19 @@ class Vec4:
             return self.dot(v)
         return Vec4(self.E*v,self.px*v,self.py*v,self.pz*v)
 
-    def __div__(self,v):
+    def __truediv__(self,v):
         if isinstance(v,Vec4):
             raise Exception('Vec4')
         return (1.0/v)*self
+
+    def __eq__(self,v):
+        if isinstance(v,Vec4):
+            if(self.E == v.E and
+               self.px == v.px and
+               self.py == v.py and
+               self.pz == v.pz):
+                return True
+        return False
 
     def dot(self,v):
         if not isinstance(v,Vec4):
@@ -63,20 +72,20 @@ class Vec4:
     def P(self):
         return np.sqrt(self.P2())
 
-    def PT2(self):
+    def Pt2(self):
         return self.px*self.px+self.py*self.py
 
-    def PT(self):
-        return np.sqrt(self.PT2())
+    def Pt(self):
+        return np.sqrt(self.Pt2())
 
     def Theta(self):
-        return np.acos(self.pz/self.P())
+        return np.arccos(self.pz/self.P())
 
     def Phi(self):
         if self.px == 0 and self.py == 0:
             return 0.0
         else:
-            return np.atan2(self.py,self.px)
+            return np.arctan2(self.py,self.px)
 
     def Cross(self,v):
         if not isinstance(v,Vec4):
@@ -89,25 +98,30 @@ class Vec4:
     def Boost(self,v):
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
-        rsq = self.M()
-        v0 = (self.E*v.E-self.px*v.px-self.py*v.py-self.pz*v.pz)/rsq;
-        c1 = (v.E+v0)/(rsq+self.E)
-        return Vec4(v0,
-                    v.px-c1*self.px,
-                    v.py-c1*self.py,
-                    v.pz-c1*self.pz)
+
+        beta = (v.px/v.E,v.py/v.E,v.pz/v.E)
+        beta2 = sum(x*x for x in beta)
+        gamma = 1.0/np.sqrt(1.0-beta2)
+        betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
+        gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0
+
+        return Vec4(gamma*(self.E+betap),
+            self.px+gamma2*betap*beta[0]+gamma*beta[0]*self.E,
+            self.py+gamma2*betap*beta[1]+gamma*beta[1]*self.E,
+            self.pz+gamma2*betap*beta[2]+gamma*beta[2]*self.E)
 
     def BoostBack(self,v):
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
-        rsq = self.M()
-        v0 = (self.E*v.E+self.px*v.px+self.py*v.py+self.pz*v.pz)/rsq;
-        c1 = (v.E+v0)/(rsq+self.E)
-        return Vec4(v0,
-                    v.px+c1*self.px,
-                    v.py+c1*self.py,
-                    v.pz+c1*self.pz)
 
-if __name__ == '__main__':
-    import doctest
-    import unittest
+        beta = (-v.px/v.E,-v.py/v.E,-v.pz/v.E)
+        beta2 = sum(x*x for x in beta)
+        gamma = 1.0/np.sqrt(1.0-beta2)
+        betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
+        gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0
+
+        return Vec4(gamma*(self.E+betap),
+            self.px+gamma2*betap*beta[0]+gamma*beta[0]*self.E,
+            self.py+gamma2*betap*beta[1]+gamma*beta[1]*self.E,
+            self.pz+gamma2*betap*beta[2]+gamma*beta[2]*self.E)
+
