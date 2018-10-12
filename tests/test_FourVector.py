@@ -1,4 +1,5 @@
-from include.FourVector import *
+from .context import nuChic
+from nuChic.FourVector import Vec4
 import numpy as np
 import pytest
 
