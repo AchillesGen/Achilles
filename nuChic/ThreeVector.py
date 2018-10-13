@@ -35,7 +35,9 @@ class Vec3:
         return Vec3(self.x*v, self.y*v, self.z*v)
 
     def __rmul__(self,v):
-        return v*self
+        if isinstance(v,Vec3):
+            return self.dot(v)
+        return Vec3(self.x*v, self.y*v, self.z*v)
 
     def __truediv__(self,v):
         if isinstance(v,Vec3):
@@ -54,3 +56,25 @@ class Vec3:
         if not isinstance(v,Vec3):
             raise Exception('Vec3')
         return self.x*v.x + self.y*v.y + self.z*v.z
+
+    def P2(self):
+        return self.dot(self)
+
+    def P(self):
+        return np.sqrt(self.P2())
+
+    def Theta(self):
+        return np.arccos(self.z/self.P()) 
+
+    def Phi(self):
+        if self.x == 0 and self.y == 0:
+            return 0.0
+        else:
+            return np.arctan2(self.y,self.x)
+
+    def Cross(self,v):
+        if not isinstance(v,Vec3):
+            raise Exception('Vec3')
+        return Vec3(self.y*v.z - self.z*v.y,
+                    self.z*v.x - self.x*v.z,
+                    self.x*v.y - self.y*v.x)
