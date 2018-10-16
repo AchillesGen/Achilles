@@ -1,5 +1,5 @@
 import numpy as np
-from FourVector import Vec4
+from nuChic.FourVector import Vec4
 
 class Particle:
     def __init__(self,pid=0,mom=Vec4(),status=0,mothers=[],daughters=[]):
