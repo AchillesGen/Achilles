@@ -1,4 +1,4 @@
-#Program Layout
+# Program Layout
 
 ## Beams:
  - The nuetrino energy is given by ![equation](http://latex.codecogs.com/gif.latex?E_%5Cnu%20%3D%20%5Cfrac%7Bm_%5Cpi%5E2-m_%5Cmu%5E2%7D%7B2%28E_%5Cpi-p_%5Cpi%5Ccos%5Ctheta_%5Cnu%29%7D)
@@ -10,7 +10,6 @@
  - Four momentum of the particle
  - etc.
 
-
 ## NucModel: 
  - Should contain some selector based on the input Q value to determine if it should use QE, DIS, etc. 
  - Maybe calculate all and chose based off the ratio of a given process to the total
@@ -18,7 +17,7 @@
 ## Pseudocode
 
 ```python
-b1 = Beam(name='nu',Epi,Ppi,cosTheta)
+b1 = Beam(name='nu',Epi=Epi,Ppi=Ppi,cosTheta=cosTheta)
 
 # The target beam is given by the number of protons and the number of neutrons only
 b2 = Beam(name='nucleus',nProtons=nProtons,nNeutrons=nNeutrons)
@@ -33,8 +32,6 @@ if dectectorSim:
 # Write event to file for analysis
 ToFile(wgt,event)
 
-
-
 def MakeEvent(b1,b2):
     # Integrate over the following:
     # Need to generate the incoming and outgoing momenta for the leptonic sector; and type of interaction (W,\gamma)
@@ -46,10 +43,10 @@ def MakeEvent(b1,b2):
 
     event_hadronic = Cascade(particle_hadronic)  
 
-    event = event_leptonic + event_hadronic
-
     if event_leptonic[1] is lepton:
         event_leptonic = PhotonShower(event_leptonic)
+
+    event = event_leptonic + event_hadronic
 
     # Selection criteria and cuts??
     cut = Cuts(event)
@@ -62,4 +59,4 @@ def MakeEvent(b1,b2):
 
 # Remaining Questions:
 1. How to determine where in detector event occurs?
-2. Should the beam be defined by using these parameters, or should we generate a profile in some other way?
+2. Should the neutrino beam be defined through the pion kinematics that produced it, or should we generate a profile in some other way?
