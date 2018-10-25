@@ -1,5 +1,6 @@
 from .context import nuChic
 from nuChic.FourVector import Vec4
+from nuChic.ThreeVector import Vec3
 import numpy as np
 import pytest
 
@@ -117,7 +118,8 @@ def test_Vec4_Cross():
 def test_Vec4_Boost():
     v1 = Vec4(4,3,2,1)
     v2 = Vec4(25,12,2,-3)
-    v4 = v1.Boost(v2).BoostBack(v2)
+    beta = v2.BoostVector()
+    v4 = v1.Boost(beta).BoostBack(beta)
 
     assert abs(v1.px-v4.px) < 1E-8
     assert abs(v1.py-v4.py) < 1E-8
