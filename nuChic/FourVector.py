@@ -121,7 +121,7 @@ class Vec4:
             raise Exception('Vec3')
 
         beta = -beta
-        beta2 = sum(x*x for x in beta)
+        beta2 = sum(x*x for x in beta.Vec())
         gamma = 1.0/np.sqrt(1.0-beta2)
         betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
         gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0
