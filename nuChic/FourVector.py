@@ -1,4 +1,5 @@
 import numpy as np
+from nuChic.ThreeVector import Vec3
 
 class Vec4:
     def __init__(self, E=0, px=0, py=0, pz=0):
@@ -94,6 +95,9 @@ class Vec4:
                     self.py*v.pz - self.pz*v.py,
                     self.pz*v.px - self.px*v.pz,
                     self.px*v.py - self.py*v.px)
+
+    def BoostVector(self):
+        return Vec3(self.px/self.E,self.py/self.E,self.pz/self.E)
 
     def Boost(self,v):
         if not isinstance(v,Vec4):
