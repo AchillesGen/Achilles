@@ -52,10 +52,12 @@ class PhaseSpace:
         pLab = p1 + p2
        
         # Boost to center of mass frame
-        betaCM = pLab.BoostVector()
-        p1 = p1.Boost(pLab)
-        p2 = p2.Boost(pLab)
+        self._betaCM = pLab.BoostVector()
+        p1 = p1.Boost(self._betaCM)
+        p2 = p2.Boost(self._betaCM)
         Ecm = p1.E + p2.E
+        if Ecm < m3+m3:
+            return 0, None
         pCM = (Ecm-m3-m4)*(Ecm+m3-m4)*(Ecm-m3+m4)*(Ecm+m3+m4)
         pCM = np.sqrt(pCM)/(2*Ecm)        
         E3 = np.sqrt(pCM**2+m3**2)
@@ -70,7 +72,7 @@ class PhaseSpace:
                   -pCM*np.cos(theta))
 
         moms = [p1,p2,p3,p4]
-        wgt = 1.0/(64.0*np.pi**2*Ecm**2)*p1.pz/pCM
+        wgt = 1.0/(16.0*np.pi**2*Ecm**2)*p1.pz/pCM*dphi*dcos_theta
 
         return wgt, moms
 
@@ -99,28 +101,33 @@ if __name__ == '__main__':
     phi = []
     wgts = []
     ps = PhaseSpace(E1,E2,4,mass)
+    nevents = args['nevents']
 
-    def Mat(moms):
+    hbarc2 = 3.8937966E8
+
+    def Mat(moms,mass):
         s = (moms[0]+moms[1]).dot(moms[0]+moms[1])
         t = (moms[0]-moms[2]).dot(moms[0]-moms[2])
         u = (moms[0]-moms[3]).dot(moms[0]-moms[3])
 
-        return (t**2+u**2)/s**2
+        return 2*(2*np.pi*1.0/137.0)**2*(t**2+u**2+4*s*(mass[0]**2+mass[2]**2)-2*(mass[0]**2+mass[2]**2)**2)/s**2
 
     def GenerateEvent(x):
         wgt, event = ps.Generate2Body(x)
+        if wgt == 0:
+            return 0
 
-        wgt *= Mat(event)
+        wgt *= Mat(event,ps._mass)*hbarc2
 
         if fill:
             s.append((event[2]+event[3]).dot(event[2]+event[3]))
             Q2 = (event[0]-event[2]).dot(event[0]-event[2])
             Q2Vals.append(Q2)
 
-            costheta.append(event[2].pz/event[2].P())
-            phi.append(np.arctan2(event[2].px,event[2].pz))
+            costheta.append(np.cos(event[2].Theta()))
+            phi.append(event[2].Phi())
 
-            wgts.append(wgt)
+            wgts.append(wgt/nevents)
 
         return wgt
 
@@ -128,16 +135,16 @@ if __name__ == '__main__':
 
     # Preliminary run
     fill = False
-    integ(GenerateEvent,nitn=10,neval=1e4)
+    integ(GenerateEvent,nitn=20,neval=1e5)
 
     fill = True
-    result = integ(GenerateEvent,nitn=10,neval=args['nevents']/10)
+    result = integ(GenerateEvent,nitn=10,neval=nevents/10)
 
     print(result.summary())
 
     fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
-    ax1.hist(Q2Vals,weights=wgts, bins=20)
-    ax2.hist(costheta,weights=wgts, bins=20)
+    ax1.hist(wgts)
+    ax2.hist(costheta,weights=wgts, bins=100)
     ax3.hist(phi,weights=wgts)
     ax4.hist(s,weights=wgts)
 

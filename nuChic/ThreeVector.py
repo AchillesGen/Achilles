@@ -52,6 +52,9 @@ class Vec3:
                 return True
         return False
 
+    def Vec(self):
+        return [self.x, self.y, self.z]
+
     def dot(self,v):
         if not isinstance(v,Vec3):
             raise Exception('Vec3')

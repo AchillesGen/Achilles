@@ -86,7 +86,10 @@ class Vec4:
         if self.px == 0 and self.py == 0:
             return 0.0
         else:
-            return np.arctan2(self.py,self.px)
+            phi = np.arctan2(self.py,self.px)
+            if phi < 0:
+                phi += 2*np.pi
+            return phi
 
     def Cross(self,v):
         if not isinstance(v,Vec4):
@@ -99,12 +102,11 @@ class Vec4:
     def BoostVector(self):
         return Vec3(self.px/self.E,self.py/self.E,self.pz/self.E)
 
-    def Boost(self,v):
-        if not isinstance(v,Vec4):
-            raise Exception('Vec4')
+    def Boost(self,beta):
+        if not isinstance(beta,Vec3):
+            raise Exception('Vec3')
 
-        beta = (v.px/v.E,v.py/v.E,v.pz/v.E)
-        beta2 = sum(x*x for x in beta)
+        beta2 = sum(x*x for x in beta.Vec())
         gamma = 1.0/np.sqrt(1.0-beta2)
         betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
         gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0
@@ -114,11 +116,11 @@ class Vec4:
             self.py+gamma2*betap*beta[1]+gamma*beta[1]*self.E,
             self.pz+gamma2*betap*beta[2]+gamma*beta[2]*self.E)
 
-    def BoostBack(self,v):
-        if not isinstance(v,Vec4):
-            raise Exception('Vec4')
+    def BoostBack(self,beta):
+        if not isinstance(beta,Vec3):
+            raise Exception('Vec3')
 
-        beta = (-v.px/v.E,-v.py/v.E,-v.pz/v.E)
+        beta = -beta
         beta2 = sum(x*x for x in beta)
         gamma = 1.0/np.sqrt(1.0-beta2)
         betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
