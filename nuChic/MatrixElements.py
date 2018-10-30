@@ -14,6 +14,7 @@ class Process:
         self.neutral = neutral
         self.pdf = None
 
+    # Calculate Elastic Matrix element as given by Pedro
     def Elastic(self, particles):
         # Particle 0: incoming neutrino
         # Particle 1: incoming nucleon
@@ -32,9 +33,11 @@ class Process:
                 32*charge**2*(massN**4 - 2*s*massN**2 + s**2 + 8*t**2 + 4*s*t)*SW2**2
               - 8*charge*(massN**4-2*(s+2*t)*massN**2 + (s+4*t)**2)*SW2 + (-massN**2+s+4*t)**2)
     
+    # Calculate Quasi-Elastic Matrix element
     def QuasiElastic(self, particles):
         pass
     
+    # Calculate DIS Matrix element
     def DIS(self, particles):
         # Particle 0: incoming neutrino
         # Particle 1: incoming parton
@@ -61,6 +64,7 @@ class Process:
         if nf < 4 and abs(particles[1].pid) == 4:
             return 0
     
+    # Calculate Resonance Matrix element
     def RES(self, particles):
         pass
 
@@ -94,8 +98,8 @@ if __name__ == '__main__':
     # Initialize the phase space class
     ps = PhaseSpace(E1,E2,4,[0,1,0,1])
 
-    # hbarc2 = 3.8937966 * 10^8 pb*GeV^2 (Convert units from 1/GeV^2 to pb)
-    hbarc2 = 3.8937966E8
+    # hbarc2 = 3.8937966 * 10^8 pb*GeV^2 * cm^2/pb (Convert units from 1/GeV^2 to cm^2)
+    hbarc2 = 3.8937966E8*1E-36
    
     # Initialize process class for neutral processes
     process = Process(True)
@@ -106,12 +110,14 @@ if __name__ == '__main__':
         if wgt == 0:
             return 0
 
+        # Define the particles
         neutrinoIn = Particle(13,mom=event[0])
         protonIn = Particle(2212,mom=event[1],charge=1,I3=0.5)
         neutrinoOut = Particle(13,mom=event[2])
         protonOut = Particle(2212,mom=event[3],charge=1,I3=0.5)
+
+        # Call the Elastic scattering cross-section calculation
         wgt *= getattr(process,'Elastic')((neutrinoIn,protonIn,neutrinoOut,protonOut))*hbarc2
-        wgt *= 1E-36
     
         # If on the main run, fill the histograms
         if fill:
