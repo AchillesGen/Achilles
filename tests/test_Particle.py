@@ -11,8 +11,8 @@ def test_Particle_init():
     assert part.charge == 1
     assert part.I3 == 1
     assert part.status == 1
-    assert part.mothers == None
-    assert part.daughters == None
+    assert part.mothers == []
+    assert part.daughters == []
 
 def test_Particle_isFinal():
     part = Particle(2212,Vec4(4,3,2,1),status=1)
