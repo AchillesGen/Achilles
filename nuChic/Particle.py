@@ -2,9 +2,11 @@ import numpy as np
 from nuChic.FourVector import Vec4
 
 class Particle:
-    def __init__(self,pid=0,mom=Vec4(),status=0,mothers=[],daughters=[]):
+    def __init__(self,pid=0,mom=Vec4(),charge=0,I3=0,status=0,mothers=[],daughters=[]):
         self.pid = pid
         self.mom = mom
+        self.charge = charge
+        self.I3 = I3
         self.status = status
         self.mothers = mothers
         self.daughters = daughters

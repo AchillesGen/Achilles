@@ -13,5 +13,9 @@ setup(name='nuChic',
                Noemi Rocco, \
                Holger Schulz',
       packages=['nuChic'],
-      )
+      install_reqs=[
+          'numpy',
+          'vegas',
+      ]
+)
       

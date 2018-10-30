@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
     # Preliminary run
     fill = False
-    integ(GenerateEvent,nitn=20,neval=1e5)
+    integ(GenerateEvent,nitn=10,neval=1e3)
 
     # Main run (fill histograms)
     fill = True

@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.stats import gaussian_kde
+from sklearn.neighbors import KernelDensity
+import pickle
 import pandas as pd
 
 def generate(pdf, x_grid, nevents=10000):
@@ -11,8 +13,12 @@ def generate(pdf, x_grid, nevents=10000):
     return random_from_cdf
 
 def kde(x, x_grid, bandwidth=0.2, **kwargs):
-    kde = gaussian_kde(x, bw_method=bandwidth / x.std(ddof=1), **kwargs)
-    return kde.evaluate(x_grid)
+#    kde = gaussian_kde(x, bw_method=bandwidth / x.std(ddof=1), **kwargs)
+#    return kde.evaluate(x_grid)
+    kde = KernelDensity(bandwidth=bandwidth, **kwargs)
+    kde.fit(x[:, np.newaxis])
+    log_pdf = kde.score_samples(x_grid[:, np.newaxis])
+    return np.exp(log_pdf)
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
@@ -22,7 +28,11 @@ if __name__ == '__main__':
     integral = np.sum(data['numu_flux'].values)
     random_from_cdf = generate(data['numu_flux'].values/integral, x_grid,1E7)
 
-    kdepdf = kde(random_from_cdf,x_grid,bandwidth=0.1)
+    try:
+        kdepdf = pickle.load(open('kde.pickle','rb'))
+    except (OSError, IOError) as e:
+        kdepdf = kde(random_from_cdf,x_grid,bandwidth=0.1)
+        pickle.dump(kdepdf, open('kde.pickle','wb'))
     random_from_kde = generate(kdepdf, x_grid, 1E7)
 
     plt.subplot(121)

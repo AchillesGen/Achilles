@@ -1,4 +1,7 @@
+--index-url https://pypi.python.org/simple/
+
+-e nuChic/.
+
 coverage==4.5.1
-numpy==1.14.3
 pytest==3.5.1
 pytest-cov==2.6.0

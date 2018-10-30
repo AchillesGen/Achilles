@@ -56,6 +56,12 @@ class Vec4:
                 return True
         return False
 
+    def __pow__(self,n):
+        if isinstance(n,int):
+            if n%2 == 0:
+                return (self.dot(self))**(n/2)
+        raise Exception('Vec4')
+
     def dot(self,v):
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
