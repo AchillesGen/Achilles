@@ -2,6 +2,19 @@ import numpy as np
 from nuChic.ThreeVector import Vec3
 
 class Vec4:
+    """Relativistic four-vector class. 
+    
+    The names are written with four-momenta in mind, but the functionality
+    works equally well in position space. Functions which compute "transverse"
+    quantities or angles use pz as defining the azimuthal direction.
+    
+    Attributes
+        E: the energy, i.e., the temporal component of the four-vector
+        px: x-component of the spatial 3-vector
+        py: y-component of the spatial 3-vector
+        pz: z-component of the spatial 3-vector
+    """
+    
     def __init__(self, E=0, px=0, py=0, pz=0):
         self.E = E
         self.px = px
@@ -63,32 +76,41 @@ class Vec4:
         raise Exception('Vec4')
 
     def dot(self,v):
+        """ Computes the dot product with the four-vector v """
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
         return self.E*v.E - (self.px*v.px + self.py*v.py + self.pz*v.pz)
 
     def M2(self):
+        """ Invariant mass squared of the four-vector p^2 = m^2 """
         return self.dot(self)
 
     def M(self):
+        """ Invariant mass of the four-vector """
         return np.sqrt(self.M2())
 
     def P2(self):
+        """ The square of the spatial three-vector """
         return self.px*self.px+self.py*self.py+self.pz*self.pz
 
     def P(self):
+        """ The magnitude of the spatial three-vector """
         return np.sqrt(self.P2())
 
     def Pt2(self):
+        """ The square of component of the 3-vector transverse to pz """
         return self.px*self.px+self.py*self.py
 
     def Pt(self):
+        """ The magnitude of component of the 3-vector transverse to pz """
         return np.sqrt(self.Pt2())
 
     def Theta(self):
+        """ The polar angle theta of spherical coordinates """
         return np.arccos(self.pz/self.P())
 
     def Phi(self):
+        """ The azimuthal angle phi of spherical coordinates """
         if self.px == 0 and self.py == 0:
             return 0.0
         else:
@@ -98,6 +120,7 @@ class Vec4:
             return phi
 
     def Cross(self,v):
+        """ The spatial cross product (p x v)_i = eps_{ijk} p_j v_k """
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
         return Vec4(0.0,
@@ -106,9 +129,19 @@ class Vec4:
                     self.px*v.py - self.py*v.px)
 
     def BoostVector(self):
-        return Vec3(self.px/self.E,self.py/self.E,self.pz/self.E)
+        return Vec3(self.px/self.E, self.py/self.E, self.pz/self.E)
 
     def Boost(self,beta):
+        """Boosts the four-fector along the three-vector beta. A discussion of 
+        the relevant formulae appears, e.g., around Eq (11.19) in in Sec 11.3
+        of J.D. Jackson's "Classical Electrodynamics" (3rd Edition). However, 
+        this function employs a different sign convention for beta, allegedly 
+        to agree with the conventions of Root.
+        Args:
+            beta: Vec3, the three vector defining the boost
+        Returns:
+            Ve4, the boosted four-vector
+        """
         if not isinstance(beta,Vec3):
             raise Exception('Vec3')
 
@@ -123,6 +156,13 @@ class Vec4:
             self.pz+gamma2*betap*beta[2]+gamma*beta[2]*self.E)
 
     def BoostBack(self,beta):
+        """Boosts the four-vector by minus beta. See the description of Boost
+        for more details.
+        Args:
+            beta: Vec3, the three-vector defining the boost
+        Returns:
+            Vec4, the boosted four-vector
+        """
         if not isinstance(beta,Vec3):
             raise Exception('Vec3')
 
