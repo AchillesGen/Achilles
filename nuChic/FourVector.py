@@ -163,17 +163,5 @@ class Vec4:
         Returns:
             Vec4, the boosted four-vector
         """
-        if not isinstance(beta,Vec3):
-            raise Exception('Vec3')
-
-        beta = -beta
-        beta2 = sum(x*x for x in beta.Vec())
-        gamma = 1.0/np.sqrt(1.0-beta2)
-        betap = beta[0]*self.px+beta[1]*self.py+beta[2]*self.pz
-        gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0
-
-        return Vec4(gamma*(self.E+betap),
-            self.px+gamma2*betap*beta[0]+gamma*beta[0]*self.E,
-            self.py+gamma2*betap*beta[1]+gamma*beta[1]*self.E,
-            self.pz+gamma2*betap*beta[2]+gamma*beta[2]*self.E)
-
+        beta = - beta
+        return self.Boost(beta)
