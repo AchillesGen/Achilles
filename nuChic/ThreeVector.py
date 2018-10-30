@@ -1,6 +1,13 @@
 import numpy as np
 
 class Vec3:
+    """Spatial three-vector class. 
+        
+    Attributes
+        x: the x-component
+        y: the y-component
+        z: the z-component
+    """
     def __init__(self,x=0,y=0,z=0):
         self.x = x
         self.y = y
@@ -53,29 +60,36 @@ class Vec3:
         return False
 
     def Vec(self):
+        """ The three-vector as a list """
         return [self.x, self.y, self.z]
 
     def dot(self,v):
+        """ The dot product of the vector with v """
         if not isinstance(v,Vec3):
             raise Exception('Vec3')
         return self.x*v.x + self.y*v.y + self.z*v.z
 
     def P2(self):
+        """ The square of the vector """
         return self.dot(self)
 
     def P(self):
+        """ The modulus of the vector """
         return np.sqrt(self.P2())
 
     def Theta(self):
+        """ The polar angle theta of spherical coordinates """
         return np.arccos(self.z/self.P()) 
 
     def Phi(self):
+        """ The azimuthal angle theta of spherical coordinates """
         if self.x == 0 and self.y == 0:
             return 0.0
         else:
             return np.arctan2(self.y,self.x)
 
     def Cross(self,v):
+        """ The cross product of three-vectors (p x v)_i = eps_{ijk} p_j v_k """
         if not isinstance(v,Vec3):
             raise Exception('Vec3')
         return Vec3(self.y*v.z - self.z*v.y,
