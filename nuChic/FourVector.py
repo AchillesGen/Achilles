@@ -1,5 +1,5 @@
 import numpy as np
-from nuChic.ThreeVector import Vec3
+from .nuChic.ThreeVector import Vec3
 
 class Vec4:
     """Relativistic four-vector class. 

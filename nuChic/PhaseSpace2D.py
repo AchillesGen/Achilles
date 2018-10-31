@@ -1,6 +1,6 @@
 import numpy as np
 import vegas
-from nuChic.FourVector import Vec4
+from .nuChic.FourVector import Vec4
 
 class PhaseSpace:
     def __init__(self,beam1,beam2,nParticles=4,mass=None):
