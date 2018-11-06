@@ -1,6 +1,6 @@
 import numpy as np
-from nuChic.Particle import Particle
-from nuChic.PDF import PDF
+from .nuChic.Particle import Particle
+from .nuChic.PDF import PDF
 
 MZ2 = 91.1876**2
 MW2 = 80.379**2
