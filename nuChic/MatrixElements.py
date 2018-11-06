@@ -40,14 +40,15 @@ class Process:
     # Calculate DIS Matrix element
     def DIS(self, particles):
         # Particle 0: incoming neutrino
-        # Particle 1: incoming parton
-        # Particle 2: outgoing neutrino
-        # Particle 3: outgoing parton
+        # Particle 1: incoming hadron
+        # Particle 2: incoming parton
+        # Particle 3: outgoing neutrino
+        # Particle 4: outgoing parton
     
         # Calculate invariants
-        s = (particles[0].mom + particles[1].mom)**2
-        t = (particles[0].mom - particles[1].mom)**2
-        u = (particles[0].mom - particles[1].mom)**2
+        s = (particles[0].mom + particles[2].mom)**2
+        t = (particles[0].mom - particles[3].mom)**2
+        u = (particles[0].mom - particles[4].mom)**2
     
         # Calculate the number of active fermions 
         if -t > massBottom**2:
@@ -58,11 +59,15 @@ class Process:
             nf = 3
     
         # Return 0 if parton is not allowed
-        if nf < 5 and abs(particles[1].pid) == 5:
+        if nf < 5 and abs(particles[2].pid) == 5:
             return 0
     
-        if nf < 4 and abs(particles[1].pid) == 4:
+        if nf < 4 and abs(particles[2].pid) == 4:
             return 0
+
+        q = particles[0].mom - particles[3].mom
+        x = -t/(2*particles[1].mom.dot(q))
+        fx = self.pdf.fxQ2(particles[2].pid, x, -t)
     
     # Calculate Resonance Matrix element
     def RES(self, particles):
