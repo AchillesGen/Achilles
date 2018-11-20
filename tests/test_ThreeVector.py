@@ -9,7 +9,10 @@ def test_Vec3_init():
     v2.x = 1
     v2.y = 2
     v2.z = 3
+    v3 = Vec3(3,2,1)
+
     assert v1 == v2
+    assert v1 != v3
 
 def test_Vec3_getitem():
     v = Vec3(1,2,3)
@@ -63,6 +66,8 @@ def test_Vec3_mul():
     assert v1*v1 == v1.dot(v1)
     assert a*v1 == v1*a
     assert a*v1 == v2
+    assert v1.__rmul__(v2) == v2*v1
+
     with pytest.raises(Exception):
         v1.dot(b)
 

@@ -11,7 +11,10 @@ def test_Vec4_init():
     v2.px = 2
     v2.py = 3
     v2.pz = 4
+    v3 = Vec4(4,3,2,1)
+
     assert v1 == v2
+    assert v1 != v3
 
 def test_Vec4_getitem():
     v = Vec4(1,2,3,4)
@@ -66,6 +69,7 @@ def test_Vec4_mul():
     assert v1*v1 == v1.dot(v1)
     assert a*v1 == v1*a
     assert a*v1 == v2
+    assert v1.__rmul__(v2) == v2*v1
     with pytest.raises(Exception):
         v1.dot(b)
 
@@ -84,6 +88,9 @@ def test_Vec4_Mass():
 
     assert v1.M2() == b
     assert v1.M() == np.sqrt(b)
+    assert v1.M2()**2 == v1**4
+    with pytest.raises(Exception):
+        v1**v1
 
 def test_Vec4_P():
     v1 = Vec4(4,3,2,1)
@@ -98,10 +105,12 @@ def test_Vec4_P():
 def test_Vec4_Angles():
     v = Vec4(4,0,0,4)
     v1 = Vec4(4,1,1,1)
+    v2 = Vec4(4,1,-1,1)
 
     assert v.Theta() == 0
     assert v.Phi() == 0
     assert v1.Phi() == np.pi/4.0
+    assert v2.Phi() == 7.0*np.pi/4.0
 
 def test_Vec4_Cross():
     v1 = Vec4(4,3,2,1)
@@ -125,3 +134,5 @@ def test_Vec4_Boost():
     assert abs(v1.py-v4.py) < 1E-8
     assert abs(v1.pz-v4.pz) < 1E-8
     assert abs(v1.E-v4.E) < 1E-8
+    with pytest.raises(Exception):
+        v1.Boost(v2)
