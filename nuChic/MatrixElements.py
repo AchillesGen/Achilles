@@ -1,6 +1,6 @@
 import numpy as np
-from .nuChic.Particle import Particle
-from .nuChic.PDF import PDF
+from nuChic.Particle import Particle
+from nuChic.PDF import PDF
 
 MZ2 = 91.1876**2
 MW2 = 80.379**2
@@ -13,6 +13,10 @@ class Process:
     def __init__(self, neutral, pdf=None):
         self.neutral = neutral
         self.pdf = None
+
+    # Mott Scattering
+    def Mott(self, particles):
+        pass 
 
     # Calculate Elastic Matrix element as given by Pedro
     def Elastic(self, particles):
