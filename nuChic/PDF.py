@@ -9,6 +9,9 @@ class PDF:
     def fxQ(self,pid,x,Q):
         return self.xfxQ2(pid,x,Q*Q)/x
 
+    def fxQ2(self,pid,x,Q2):
+        return self.xfxQ2(pid,x,Q2)/x
+
     def xfxQ2(self,pid,x,Q2):
         return self.pdf.xfxQ2(pid,x,Q2)
 
