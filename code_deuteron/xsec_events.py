@@ -99,6 +99,10 @@ pke_interp = interpolate.interp1d(p0,pke0[0],kind='cubic')
 
 omega = []
 mom = []
+p_px = []
+p_py = []
+p_pz = []
+p_E = []
 wgts = []
 
 def GenerateEvent(x):
@@ -148,11 +152,38 @@ for i in range(nitn):
         # Compute the response functions in the impulse approximation
         qval = np.sqrt(Q2 + w**2)
         f_o = f_eval(nZ,p_int,w,qval,mqe,pke_interp(p_int),fg,kf,thetalept,ee,iform)
-    
+   
+        if f_o == 0:
+            continue
+
         wgt = f_o*1e9*dw*dp
+   
+        ep = np.sqrt(p_int**2+mqe**2)
+        wt = w - 2.0
+        cost_te = ((wt+ep)**2 - p_int**2 - qval**2 - mqe**2)/(2.0*p_int*qval)
+        pf = np.sqrt(p_int**2 + qval**2 + 2*qval*p_int*cost_te)
+        epf = np.sqrt(mqe**2+pf**2)
+        phi = 2.0*pi*np.random.random()
+
+        xq = qval/hbarc
+        xk = p_int/hbarc
+        xp = pf/hbarc
+
+        q2 = xq**2
+        p2 = xk**2
+        pf2 = xp**2
+        cosa = ((pf2-p2-q2)/2.0/xk/xq)
+        sina2 = 1-cosa**2
+
         omega.append(w)
         mom.append(p_int)
+        p_E.append(epf)
+        p_px.append(xk*np.sqrt(sina2)*np.cos(phi))
+        p_py.append(xk*np.sqrt(sina2)*np.sin(phi))
+        p_pz.append(xk*cosa)
         wgts.append(wgt*weight/nitn)
+
+print(sum(wgts))
 
 import pandas as pd
 
@@ -175,11 +206,17 @@ omega_f = theory['omega'].values
 dsigma = theory['dsigma'].values
 
 fig, (ax1, ax2) = plt.subplots(nrows=2, ncols=1)
-
 ax1.errorbar(data_omega*1000, data_dsigma, yerr=data_error, fmt='.')
 ax1.plot(omega_f,dsigma, color='red', ls='steps')
 ax1.hist(omega,weights=wgts,bins=400)
 ax2.hist(mom,weights=wgts,bins=400)
+
+fig2, ((ax3, ax4), (ax5, ax6)) = plt.subplots(nrows=2, ncols=2)
+ax3.hist(p_E,weights=wgts,bins=400)
+ax4.hist(p_px,weights=wgts,bins=400)
+ax5.hist(p_py,weights=wgts,bins=400)
+ax6.hist(p_pz,weights=wgts,bins=400)
+
 plt.show()
 
 
