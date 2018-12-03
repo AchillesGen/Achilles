@@ -12,7 +12,7 @@ class Nucleus:
         if density_P is None:
             density_P = lambda r: self.nuclear_density/self.Z if r < self.radius else 0
         if density_N is None:
-            density_N = lambda r: self.nuclear_density/self.Z if r < self.radius else 0
+            density_N = lambda r: self.nuclear_density/(self.A-self.Z) if r < self.radius else 0
         self.density_P = density_P
         self.density_N = density_N
         self.potential = np.sqrt((self.A*1000)**2 + self.kf**2) - self.A*1000 + 8
