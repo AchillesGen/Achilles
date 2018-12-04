@@ -1,6 +1,7 @@
 from .context import nuChic
 from nuChic.Particle import Particle
 from nuChic.FourVector import Vec4
+from nuChic.ThreeVector import Vec3
 import numpy as np
 import pytest
 
