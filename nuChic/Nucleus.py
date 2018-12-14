@@ -15,7 +15,7 @@ class Nucleus:
             density_N = lambda r: self.nuclear_density/(self.A-self.Z) if r < self.radius else 0
         self.density_P = density_P
         self.density_N = density_N
-        self.potential = np.sqrt((self.A*1000)**2 + self.kf**2) - self.A*1000 + 8
+        self.potential = np.sqrt((1000)**2 + self.kf**2) - 1000 + 8
 
     def size(self):
         return self.radius
@@ -23,7 +23,7 @@ class Nucleus:
     def escape(self, particle):
         if particle.pos.P() < self.radius:
             return False
-        elif particle.mom.P2()/(2*particle.M()) < self.potential:
+        elif particle.mom.E - particle.mom.M() < self.potential:
             return False
         else:
             theta = particle.mom.Theta()
