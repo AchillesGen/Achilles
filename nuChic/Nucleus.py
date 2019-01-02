@@ -1,5 +1,6 @@
 import numpy as np
 from nuChic.Particle import Particle
+from nuChic.Constants import MeV
 
 class Nucleus:
     def __init__(self,Z,A,binding,kf,density_P=None,density_N=None):
@@ -15,7 +16,7 @@ class Nucleus:
             density_N = lambda r: self.nuclear_density/(self.A-self.Z) if r < self.radius else 0
         self.density_P = density_P
         self.density_N = density_N
-        self.potential = np.sqrt((1000)**2 + self.kf**2) - 1000 + 8
+        self.potential = (np.sqrt((1000)**2 + self.kf**2) - 1000 + 8) * MeV
 
     def size(self):
         return self.radius
@@ -23,7 +24,7 @@ class Nucleus:
     def escape(self, particle):
         if particle.pos.P() < self.radius:
             return False
-        elif particle.mom.E - particle.mom.M() < self.potential:
+        elif np.sqrt(particle.mom.P()**2+particle.mom.M2()) - particle.mom.M() < self.potential:
             return False
         else:
             theta = particle.mom.Theta()

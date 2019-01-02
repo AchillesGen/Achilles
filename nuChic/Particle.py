@@ -38,7 +38,7 @@ class Particle:
 
     def propagate(self,time):
         # Propagation of a particle for a given time step
-        # The velocity is in terms beta, time is in units of GeV^-1
+        # The velocity is in terms of beta, time is in units of GeV^-1
         # To get distance need to multiply by hbar*c
         dist = self.mom.P()/self.mom.E*time*hbarc
 
