@@ -38,3 +38,18 @@ class Nucleus:
 
     def absorb(self, particle):
         pass
+
+    def generate_config(self):
+        protons = np.random.random(Z*3)
+        protons.reshape(Z,3)
+        protons[:,0] = protons[:,0]*self.radius
+        protons[:,1] = np.arccos(2*protons[:,1] - 1)
+        protons[:,2] = protons[:,2]*2*np.pi
+
+        neutrons = np.random.random((A-Z)*3)
+        neutrons.reshape((A-Z),3)
+        neutrons[:,0] = neutrons[:,0]*self.radius
+        neutrons[:,1] = np.arccos(2*neutrons[:,1] - 1)
+        neutrons[:,2] = neutrons[:,2]*2*np.pi
+
+        return protons, neutrons
