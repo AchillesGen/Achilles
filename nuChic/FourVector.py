@@ -111,13 +111,10 @@ class Vec4:
 
     def Phi(self):
         """ The azimuthal angle phi of spherical coordinates """
-        if self.px == 0 and self.py == 0:
-            return 0.0
-        else:
-            phi = np.arctan2(self.py,self.px)
-            if phi < 0:
-                phi += 2*np.pi
-            return phi
+        phi = np.arctan2(self.py,self.px)
+        if phi < 0:
+            phi += 2*np.pi
+        return phi
 
     def Cross(self,v):
         """ The spatial cross product (p x v)_i = eps_{ijk} p_j v_k """
