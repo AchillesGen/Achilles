@@ -40,14 +40,14 @@ class Nucleus:
         pass
 
     def generate_config(self):
-        protons = np.random.random(Z*3)
-        protons.reshape(Z,3)
+        protons = np.random.random(self.Z*3)
+        protons.reshape(self.Z,3)
         protons[:,0] = protons[:,0]*self.radius
         protons[:,1] = np.arccos(2*protons[:,1] - 1)
         protons[:,2] = protons[:,2]*2*np.pi
 
-        neutrons = np.random.random((A-Z)*3)
-        neutrons.reshape((A-Z),3)
+        neutrons = np.random.random((self.A-self.Z)*3)
+        neutrons.reshape((self.A-self.Z),3)
         neutrons[:,0] = neutrons[:,0]*self.radius
         neutrons[:,1] = np.arccos(2*neutrons[:,1] - 1)
         neutrons[:,2] = neutrons[:,2]*2*np.pi
