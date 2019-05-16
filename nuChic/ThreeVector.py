@@ -63,6 +63,10 @@ class Vec3:
         """ The three-vector as a list """
         return [self.x, self.y, self.z]
 
+    def array(self):
+        """ The three-vector as a np.array """
+        return np.array([self.x, self.y, self.z])
+
     def dot(self,v):
         """ The dot product of the vector with v """
         if not isinstance(v,Vec3):

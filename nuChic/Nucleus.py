@@ -40,16 +40,29 @@ class Nucleus:
         pass
 
     def generate_config(self):
+        def to_cartesian(coords):
+            #r, theta, phi = coords
+            r = coords[:,0]
+            theta = coords[:,1]
+            phi= coords[:,2]
+            x = r*np.sin(theta)*np.sin(phi)
+            y = r*np.sin(theta)*np.cos(phi)
+            z = r*np.cos(theta)
+            return np.transpose(np.array([x, y, z]))
+        
         protons = np.random.random(self.Z*3)
-        protons.reshape(self.Z,3)
+        protons = protons.reshape(self.Z,3)
         protons[:,0] = protons[:,0]*self.radius
         protons[:,1] = np.arccos(2*protons[:,1] - 1)
         protons[:,2] = protons[:,2]*2*np.pi
-
+        
         neutrons = np.random.random((self.A-self.Z)*3)
-        neutrons.reshape((self.A-self.Z),3)
+        neutrons = neutrons.reshape((self.A-self.Z),3)
         neutrons[:,0] = neutrons[:,0]*self.radius
         neutrons[:,1] = np.arccos(2*neutrons[:,1] - 1)
         neutrons[:,2] = neutrons[:,2]*2*np.pi
 
+        protons = to_cartesian(protons)
+        neutrons = to_cartesian(neutrons)
+ 
         return protons, neutrons
