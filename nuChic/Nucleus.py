@@ -64,5 +64,25 @@ class Nucleus:
 
         protons = to_cartesian(protons)
         neutrons = to_cartesian(neutrons)
- 
+
         return protons, neutrons
+
+    def generate_momentum(self):
+        def to_cartesian(coords):
+            #r, theta, phi = coords
+            r = coords[0]
+            theta = coords[1]
+            phi= coords[2]
+            x = r*np.sin(theta)*np.sin(phi)
+            y = r*np.sin(theta)*np.cos(phi)
+            z = r*np.cos(theta)
+            return np.transpose(np.array([x, y, z]))
+        
+        momentum = np.random.random(3)
+        momentum[0] = momentum[0]*self.kf
+        momentum[1] = np.arccos(2*momentum[1] - 1)
+        momentum[2] = momentum[2]*2*np.pi
+
+        momentum = to_cartesian(momentum)
+
+        return momentum
