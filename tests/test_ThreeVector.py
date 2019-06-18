@@ -1,4 +1,3 @@
-from .context import nuChic
 from nuChic.ThreeVector import Vec3
 import numpy as np
 import pytest
