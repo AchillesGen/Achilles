@@ -1,6 +1,7 @@
 import numpy as np
 from nuChic.Particle import Particle
 from nuChic.Constants import MeV
+import pandas as pd
 
 class Nucleus:
     def __init__(self,Z,A,binding,kf,density_P=None,density_N=None):
@@ -17,6 +18,15 @@ class Nucleus:
         self.density_P = density_P
         self.density_N = density_N
         self.potential = (np.sqrt((1000)**2 + self.kf**2) - 1000 + 8) * MeV
+
+        # FIXME: reduced file size for quicker debugs (100,000 configs)
+        # If it is Carbon-12, let's use Noemi's configurations.
+        # We read it when defining the nucleus and then we only need to pick a configuration when running the cascade
+        # 1 million configurations, no header 
+        # index   pid    x    y    z
+        if Z==6 and A==12: 
+            self.c12Density_db = pd.read_csv("/Users/pmachado/Dropbox/Projects/NuGen/FNALNeuGen/configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
+
 
     def size(self):
         return self.radius
@@ -39,7 +49,37 @@ class Nucleus:
     def absorb(self, particle):
         pass
 
+#    def generate_config(self):
+#        def to_cartesian(coords):
+#            #r, theta, phi = coords
+#            r = coords[:,0]
+#            theta = coords[:,1]
+#            phi= coords[:,2]
+#            x = r*np.sin(theta)*np.sin(phi)
+#            y = r*np.sin(theta)*np.cos(phi)
+#            z = r*np.cos(theta)
+#            return np.transpose(np.array([x, y, z]))
+#        
+#        protons = np.random.random(self.Z*3)
+#        protons = protons.reshape(self.Z,3)
+#        protons[:,0] = protons[:,0]*self.radius
+#        protons[:,1] = np.arccos(2*protons[:,1] - 1)
+#        protons[:,2] = protons[:,2]*2*np.pi
+#        
+#        neutrons = np.random.random((self.A-self.Z)*3)
+#        neutrons = neutrons.reshape((self.A-self.Z),3)
+#        neutrons[:,0] = neutrons[:,0]*self.radius
+#        neutrons[:,1] = np.arccos(2*neutrons[:,1] - 1)
+#        neutrons[:,2] = neutrons[:,2]*2*np.pi
+#
+#        protons = to_cartesian(protons)
+#        neutrons = to_cartesian(neutrons)
+#
+#        return protons, neutrons
+
     def generate_config(self):
+        """ This reads C-12 configuration files only!!!
+        """
         def to_cartesian(coords):
             #r, theta, phi = coords
             r = coords[:,0]
@@ -50,22 +90,18 @@ class Nucleus:
             z = r*np.cos(theta)
             return np.transpose(np.array([x, y, z]))
         
-        protons = np.random.random(self.Z*3)
-        protons = protons.reshape(self.Z,3)
-        protons[:,0] = protons[:,0]*self.radius
-        protons[:,1] = np.arccos(2*protons[:,1] - 1)
-        protons[:,2] = protons[:,2]*2*np.pi
-        
-        neutrons = np.random.random((self.A-self.Z)*3)
-        neutrons = neutrons.reshape((self.A-self.Z),3)
-        neutrons[:,0] = neutrons[:,0]*self.radius
-        neutrons[:,1] = np.arccos(2*neutrons[:,1] - 1)
-        neutrons[:,2] = neutrons[:,2]*2*np.pi
+        if not(self.A==12 and self.Z==6):
+            raise Exception('Only C-12 is supported for now!')
 
-        protons = to_cartesian(protons)
-        neutrons = to_cartesian(neutrons)
+        config_index = np.random.randint(1, high=100000)
+        i0 = (config_index-1)*12
+        
+        protons = np.asarray(self.c12Density_db.iloc[i0:i0+6][['x','y','z']])
+        neutrons = np.asarray(self.c12Density_db.iloc[i0+6:i0+12][['x','y','z']])
 
         return protons, neutrons
+
+
 
     def generate_momentum(self):
         def to_cartesian(coords):

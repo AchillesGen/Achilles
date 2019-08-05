@@ -1,6 +1,6 @@
 # Numbers taken from PDG 2018, see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-phys-constants.pdf
 GeV = 1.0
-mb = 1.0
+mb = 0.1 # 1 mb = 0.1 fm^2
 fm = 1.0
 m = 1e15 * fm
 MeV = 1.0/1000.0 * GeV
