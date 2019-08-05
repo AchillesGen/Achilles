@@ -21,6 +21,8 @@ def test_Vec3_getitem():
     with pytest.raises(Exception):
         v[3]
 
+    assert isinstance(v.array(),np.ndarray)
+
 def test_Vec3_repr():
     v = Vec3(1,2,3)
     string = repr(v)
