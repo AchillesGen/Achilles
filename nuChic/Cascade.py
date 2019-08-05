@@ -9,9 +9,7 @@ from nuChic.Particle import Particle
 from nuChic.Nucleus import Nucleus
 from nuChic.Constants import hbarc, MeV, GeV, fm, mN
 from copy import deepcopy
-   
-import logging
-logging.basicConfig(level=logging.DEBUG)
+from nuChic.Interaction import sigma_pp, sigma_np
 
 class FSI(object):
     """ Notes to self:
@@ -53,36 +51,45 @@ class FSI(object):
         self.nucleons[self.kicked_idxs[0]].mom = Vec4(Ep, 0, 0, pp)        
         # Keep outgoing particles after cascade
         self.outgoing_particles = []
-        
+        # Cylinder parameters
+        self.cylinder_pt1 = 0
+        self.cylinder_pt2 = 0
         
         
     def __call__(self):
         ''' Performs the full propagation of the kicked nucleons inside the nucleus. Updates the list of outgoing_particles with all status=+1 particles
             '''
+        VERBOSE = False
 #        print('First kick: ',self.kicked_idxs)
 
-        sigma = 10 # 0.1 barn xsec = 10 fm^2
+        # Overestimate cross section
+        sigma = 100*fm**2 # 0.1 barn xsec = 10 fm^2
         positions=[]
         positions_temp=[]
         for step in range(500):
             if self.kicked_idxs==[]:
-                logging.debug('No more particles propagating - DONE!')
+                if VERBOSE:
+                    print('No more particles propagating - DONE!')
                 break
-            logging.debug('*******  STEP ',step,' *******')
+            if VERBOSE:
+                print('*******  STEP ',step,' *******')
             # Update formation zones
             for i in range(len(self.nucleons)):
                 if self.nucleons[i].is_in_formation_zone():
                     self.nucleons[i].formation_zone -= self.dt
             new_kicked_idxs=list(self.kicked_idxs) # copy to avoid changing during iteration
             for kick_idx in self.kicked_idxs:
-                logging.debug('kick_idx = ',kick_idx)
+                if VERBOSE:
+                    print('kick_idx = ',kick_idx)
                 did_hit, new_kick_idx = self.interacted(kick_idx, sigma) 
                 if did_hit :
-                    logging.debug('Hit?')
+                    if VERBOSE:
+                        print('Hit?')
                     really_did_hit, self.nucleons[kick_idx], self.nucleons[new_kick_idx] = self.generate_final_phase_space(self.nucleons[kick_idx], self.nucleons[new_kick_idx])
                     # if it really hit, add index to new kicked index list and delete duplicates
                     if really_did_hit :
-                        logging.debug('Hit!!!!')
+                        if VERBOSE:
+                            print('Hit!!!!')
                         new_kicked_idxs.append(new_kick_idx)
                         new_kicked_idxs = list(set(new_kicked_idxs)) # Remove duplicates
 
@@ -105,10 +112,12 @@ class FSI(object):
                         # Pauli blocking occurred, revert to old configuration
                         
                 else:
-                    logging.debug('No hit')
+                    if VERBOSE:
+                        print('No hit')
 
             self.kicked_idxs=new_kicked_idxs
-            logging.debug('kicked_idxs = ',self.kicked_idxs)
+            if VERBOSE:
+                print('kicked_idxs = ',self.kicked_idxs)
 
             # After-hit checks
             not_propagating = []
@@ -120,14 +129,16 @@ class FSI(object):
                 if (self.nucleons[kick_idx].pos.P() > self.nucleus.radius):
                     not_propagating.append(i)
                     self.nucleons[kick_idx].status=1
-                    logging.debug('nucleon ', kick_idx,' is OOOOOOUT! status: ',
-                                  self.nucleons[kick_idx].status)       
+                    if VERBOSE:
+                        print('nucleon ', kick_idx,' is OOOOOOUT! status: ',
+                              self.nucleons[kick_idx].status)       
                 # (2) has kinetic energy below some barrier energy
                 elif (self.nucleons[kick_idx].E()-mN < 30*MeV):
                     not_propagating.append(i)
                     self.nucleons[kick_idx].status=0
-                    logging.debug('nucleon ', kick_idx,' is reabsorbed! status: ',
-                                  self.nucleons[kick_idx].status)
+                    if VERBOSE:
+                        print('nucleon ', kick_idx,' is reabsorbed! status: ',
+                              self.nucleons[kick_idx].status)
             # Delete indices of non-propagating particles. 
             # Delete in reverse order to avoid shifting elements.
             for i in sorted(not_propagating, reverse=True):
@@ -152,7 +163,7 @@ class FSI(object):
 #        print('All status: ', stat_list)
 #        print('Number of final state nucleons: ',sum(stat_list))
         if -1 in stat_list : 
-            logging.warning("SHIT!!!!") 
+            print ("SHIT!!!!") 
 
         # Record outgoing particles
         self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
@@ -210,9 +221,9 @@ class FSI(object):
         '''
 
         # Builds up cylinder
-        cylinder_pt1 = self.nucleons[idx].pos
+        self.cylinder_pt1 = self.nucleons[idx].pos
         self.nucleons[idx].propagate(self.dt)
-        cylinder_pt2 = self.nucleons[idx].pos
+        self.cylinder_pt2 = self.nucleons[idx].pos
         cylinder_r   = np.sqrt(sigma/np.pi)
 #        key = False
         # Check if any particle (except propagating one) is within cylinder
@@ -225,14 +236,14 @@ class FSI(object):
             if self.nucleons[i].is_final() or self.nucleons[i].is_in_formation_zone():
                 continue
             position = self.nucleons[i].pos.Vec()
-            in_cylinder = self.points_in_cylinder(cylinder_pt1.array(), cylinder_pt2.array(), cylinder_r, position)
+            in_cylinder = self.points_in_cylinder(self.cylinder_pt1.array(), self.cylinder_pt2.array(), cylinder_r, position)
             if in_cylinder : 
                 # Found particle in cylinder
                 break
         return in_cylinder, i
 
     def generate_final_phase_space(self, particle1in, particle2in) :
-        ''' Generate phase space (isotropic), checks for Pauli blocking (if yes, revert to inital state), set formation zones for scattered particles
+        ''' Generates phase space (isotropic), checks if particle is inside cylinder for proper cross section, checks for Pauli blocking (if yes, revert to inital state), set formation zones for scattered particles
 
             Parameters
             ----------
@@ -277,9 +288,26 @@ class FSI(object):
         # Boost back to CoM frame
         total_momentum = particle1.mom+particle2.mom
         boost_vec = total_momentum.BoostVector()
-        cm_momentum = total_momentum.BoostBack(boost_vec)
+#        cm_momentum = total_momentum.BoostBack(boost_vec)
         # Fully elastic scattering, protons and neutrons are being treated equally
         # TODO: Inelastic scattering
+
+        # Calculate if particles are inside cylinder with proper momentum dependent cros section.
+        # First, we need the momentum of particle 1 in the lab frame.
+        boost_vec_lab = particle2.mom.BoostVector()
+        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab)
+        lab_particle1_momentum = lab_particle1_momentum.P()
+        # Calculate cross section (flavor dependent)
+        if particle1.pid==particle2.pid:
+            sigma_p_dependent = sigma_pp(lab_particle1_momentum)
+        else:
+            sigma_p_dependent = sigma_np(lab_particle1_momentum)
+        # Check cylinder (using global cylinder variables defined in interacted)
+        cylinder_r   = np.sqrt(sigma_p_dependent/np.pi)
+        position = particle2.pos.Vec()
+        really_did_hit = self.points_in_cylinder(self.cylinder_pt1.array(), self.cylinder_pt2.array(), cylinder_r, position)
+        if not(really_did_hit) :
+            return really_did_hit, particle1in, particle2in
 
         # The original frame is not the lab frame, since both particles have, in general, non-zero momenta    
         # Particle 4-momentum in CoM frame
@@ -303,7 +331,7 @@ class FSI(object):
         # TODO: what happens in inelastic scatterings?
         q_lab = p2_out.BoostBack(p2_cm.BoostVector()) - p2_cm.BoostBack(p2_cm.BoostVector())
 
-        # Boost to lab frame
+        # Boost to original frame
         p1_out=p1_out.Boost(boost_vec)
         p2_out=p2_out.Boost(boost_vec)
 
