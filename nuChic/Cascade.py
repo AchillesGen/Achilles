@@ -34,14 +34,24 @@ class FSI(object):
             dt: float, time step
         """
         self.nucleus = nucleus
-        self.energy_transfer = energy_transfer
         self.dt = dt
+
         # Generate p,n position distribution
         protons,neutrons = self.nucleus.generate_config()
+
         # Define particles from configuration (their 4-momentum is not physical right now)
         dummy_mom = Vec4(mN, np.nan, np.nan, np.nan)
         self.nucleons = [Particle(pid=2212, mom=dummy_mom, pos=Vec3(*x_j)) for x_j in protons]
         self.nucleons += [Particle(pid=2112, mom=dummy_mom, pos=Vec3(*x_j)) for x_j in neutrons]
+
+        # Keep outgoing particles after cascade
+        #self.outgoing_particles = []
+
+        # Cylinder parameters
+        self.cylinder_pt1 = 0
+        self.cylinder_pt2 = 0
+
+    def kick(self, energy_transfer):
         # Randomize kicked particle
         self.kicked_idxs = []
         self.kicked_idxs.append(np.random.randint(low=0, high=len(self.nucleons)))
@@ -49,8 +59,22 @@ class FSI(object):
         Ep = mN+energy_transfer
         pp = np.sqrt(Ep**2-mN**2)
         self.nucleons[self.kicked_idxs[0]].mom = Vec4(Ep, 0, 0, pp)        
+
+    def reset(self):
+        '''
+        Reset the FSI parameters to begin the next calculation
+        '''
+        # Generate p,n position distribution
+        protons,neutrons = self.nucleus.generate_config()
+
+        # Define particles from configuration (their 4-momentum is not physical right now)
+        dummy_mom = Vec4(mN, np.nan, np.nan, np.nan)
+        self.nucleons = [Particle(pid=2212, mom=dummy_mom, pos=Vec3(*x_j)) for x_j in protons]
+        self.nucleons += [Particle(pid=2112, mom=dummy_mom, pos=Vec3(*x_j)) for x_j in neutrons]
+
         # Keep outgoing particles after cascade
-        self.outgoing_particles = []
+        #self.outgoing_particles = []
+
         # Cylinder parameters
         self.cylinder_pt1 = 0
         self.cylinder_pt2 = 0
@@ -60,7 +84,6 @@ class FSI(object):
         ''' Performs the full propagation of the kicked nucleons inside the nucleus. Updates the list of outgoing_particles with all status=+1 particles
             '''
         VERBOSE = False
-#        print('First kick: ',self.kicked_idxs)
 
         # Overestimate cross section
         sigma = 100*fm**2 # 0.1 barn xsec = 10 fm^2
@@ -145,10 +168,10 @@ class FSI(object):
                 del self.kicked_idxs[i]
 
             # Save positions for 3D plot
-            for jj in range(len(self.nucleons)) :
-                positions_temp.append(self.nucleons[jj].pos.Vec())
-            positions.append(positions_temp)
-            positions_temp=[]
+#            for jj in range(len(self.nucleons)) :
+#                positions_temp.append(self.nucleons[jj].pos.Vec())
+#            positions.append(positions_temp)
+#            positions_temp=[]
             
 #            stat_list = [n.status for n in self.nucleons]
 #            print('All status: ', stat_list)
@@ -166,7 +189,9 @@ class FSI(object):
             print ("SHIT!!!!") 
 
         # Record outgoing particles
-        self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
+        #self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
+
+        return [n for n in self.nucleons if n.is_final()]
         
     @staticmethod
     def points_in_cylinder(pt1, pt2, r, q):
@@ -242,7 +267,7 @@ class FSI(object):
                 break
         return in_cylinder, i
 
-    def generate_final_phase_space(self, particle1in, particle2in) :
+    def generate_final_phase_space(self, particle1, particle2) :
         ''' Generates phase space (isotropic), checks if particle is inside cylinder for proper cross section, checks for Pauli blocking (if yes, revert to inital state), set formation zones for scattered particles
 
             Parameters
@@ -271,9 +296,9 @@ class FSI(object):
         '''
 
         # We do not want to change the input particles in case Pauli blocking occurred
-        particle1 = deepcopy(particle1in)
-        particle2 = deepcopy(particle2in)
-        
+#        particle1 = deepcopy(particle1in)
+#        particle2 = deepcopy(particle2in)
+       
         # Is particle 2 a background particle? If so, we need to generate it's momentum
         if particle2.is_background() :
             # Sort background particle 4-momentum
@@ -281,8 +306,6 @@ class FSI(object):
             energy = np.sqrt(mN**2+p_i.P2())
             p_mu = Vec4(energy, *p_i.Vec())
             particle2.mom=p_mu
-            # Hit background nucleon becomes propagating nucleon
-            particle2.status=-1
 
         # Start generation of final state phase space
         # Boost back to CoM frame
@@ -295,8 +318,8 @@ class FSI(object):
         # Calculate if particles are inside cylinder with proper momentum dependent cros section.
         # First, we need the momentum of particle 1 in the lab frame.
         boost_vec_lab = particle2.mom.BoostVector()
-        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab)
-        lab_particle1_momentum = lab_particle1_momentum.P()
+        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab).P()
+#        lab_particle1_momentum = lab_particle1_momentum.P()
         # Calculate cross section (flavor dependent)
         if particle1.pid==particle2.pid:
             sigma_p_dependent = sigma_pp(lab_particle1_momentum)
@@ -306,8 +329,8 @@ class FSI(object):
         cylinder_r   = np.sqrt(sigma_p_dependent/np.pi)
         position = particle2.pos.Vec()
         really_did_hit = self.points_in_cylinder(self.cylinder_pt1.array(), self.cylinder_pt2.array(), cylinder_r, position)
-        if not(really_did_hit) :
-            return really_did_hit, particle1in, particle2in
+        if not really_did_hit:
+            return really_did_hit, particle1, particle2
 
         # The original frame is not the lab frame, since both particles have, in general, non-zero momenta    
         # Particle 4-momentum in CoM frame
@@ -335,21 +358,25 @@ class FSI(object):
         p1_out=p1_out.Boost(boost_vec)
         p2_out=p2_out.Boost(boost_vec)
 
-        # Assign momenta to particles
-        particle1.mom = p1_out
-        particle2.mom = p2_out
-        
         # Check for Pauli blocking and return initial particles if it occurred
         really_did_hit = not(self.pauli_blocking(p1_out) or self.pauli_blocking(p2_out))
         if really_did_hit :
+            # Assign momenta to particles
+            particle1.mom = p1_out
+            particle2.mom = p2_out
+        
             # Assign formation zone
             t = q_lab.M2()
             particle1.set_formation_zone(q_lab.E, t, 0.139)
             particle2.set_formation_zone(q_lab.E, t, 0.139)
             #print("form zone = ",foo, q_lab.E, t)
-            return really_did_hit, particle1, particle2
-        else :
-            return really_did_hit, particle1in, particle2in
+
+            # Hit background nucleon becomes propagating nucleon
+            particle2.status=-1
+            
+        return really_did_hit, particle1, particle2
+#        else :
+#            return really_did_hit, particle1, particle2in
 #            particle1 = deepcopy(particle1in)
 #            particle2 = deepcopy(particle2in)
 
