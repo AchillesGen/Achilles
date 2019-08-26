@@ -11,13 +11,15 @@ import pandas as pd
 
 argon_nucleus = Nucleus(6,12, 8.6*MeV, 225*MeV)
 start_time = time.time()
-points = 5
+points = 1000
 number_of_outgoing_particles =[]
+foo = FSI(argon_nucleus, 500.*MeV, 1)
 for i in range(points):
-    foo = FSI(argon_nucleus, 500.*MeV, 1)
-    foo()
-    number_of_outgoing_particles.append(len(foo.outgoing_particles))
-    print("Number of outgoing nucleons: ",len(foo.outgoing_particles))
+    foo.kick(500.*MeV)
+    number_of_outgoing_particles.append(len(foo()))
+#    number_of_outgoing_particles.append(len(foo.outgoing_particles))
+#    print("Number of outgoing nucleons: ",len(foo.outgoing_particles))
+    foo.reset()
 print("Done!")
 print("--- %s seconds ---" % (time.time() - start_time))
 print("--- %s seconds/point ---" % ((time.time() - start_time)/points))

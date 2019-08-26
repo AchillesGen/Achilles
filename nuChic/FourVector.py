@@ -77,8 +77,6 @@ class Vec4:
 
     def dot(self,v):
         """ Computes the dot product with the four-vector v """
-        print(type(v))
-        print(isinstance(v,Vec4))
         if not isinstance(v,Vec4):
             raise Exception('Vec4')
         return self.E*v.E - (self.px*v.px + self.py*v.py + self.pz*v.pz)
