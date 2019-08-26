@@ -15,12 +15,7 @@ cascade = FSI(nuc, energy_transfer, dt)
 cascade_b = FSI(nuc, energy_transfer, dt)
 
 def test_Cascade_init():
-    assert len(cascade.kicked_idxs) == 1
-    print(type(cascade.nucleons[cascade.kicked_idxs[0]]))
-    print(isinstance(cascade.nucleons[cascade.kicked_idxs[0]],Vec4))
-    print(cascade.nucleons[cascade.kicked_idxs[0]].M())
-#    assert cascade.nucleons[cascade.kicked_idxs[0]].mom.M()==mN
-    assert len(cascade.outgoing_particles) == 0
+#    assert len(cascade.outgoing_particles) == 0
     number_of_protons = 0
     number_of_neutrons = 0
     for i in range(len(cascade.nucleons)) :
@@ -29,6 +24,24 @@ def test_Cascade_init():
         if cascade.nucleons[i].pid == 2212 :
             number_of_neutrons += 1
     assert number_of_protons == 6 and number_of_neutrons == 6
+
+def test_kick():
+    cascade.kick(energy_transfer)
+    assert len(cascade.kicked_idxs)==1
+    assert abs(cascade.nucleons[cascade.kicked_idxs[0]].mom.E - (mN+energy_transfer))<1E-10
+    assert not(np.isnan(cascade.nucleons[cascade.kicked_idxs[0]].mom.px))
+    assert not(np.isnan(cascade.nucleons[cascade.kicked_idxs[0]].mom.py))
+    assert not(np.isnan(cascade.nucleons[cascade.kicked_idxs[0]].mom.pz))
+
+def test_reset():
+    cascade.kick(energy_transfer)
+    cascade.reset()
+    assert cascade.cylinder_pt1 ==0
+    assert cascade.cylinder_pt2 ==0
+    assert set([abs(cascade.nucleons[i].mom.E-mN)<1E-10 for i in range(len(cascade.nucleons))])
+    assert set([np.isnan(cascade.nucleons[i].mom.px) for i in range(len(cascade.nucleons))])
+    assert set([np.isnan(cascade.nucleons[i].mom.py) for i in range(len(cascade.nucleons))])
+    assert set([np.isnan(cascade.nucleons[i].mom.pz) for i in range(len(cascade.nucleons))])
 
 def test_points_in_cylinder():    
     assert cascade.points_in_cylinder(pt1=[0,0,0], pt2=[0,0,1], r=1, q=[0.2,0.2,0.2])
@@ -39,6 +52,13 @@ def test_to_cartesian():
     results = [[0,0,1], [0,1,0], [1,0,0]]
     for i in range(3):
         assert LA.norm((cascade.to_cartesian(coords[i])-results[i])) < 1E-10
+        
+def test_pauli_blocking():
+    kf = cascade.nucleus.kf
+    fv1 = Vec4(0,0,0,0.99*kf)
+    fv2 = Vec4(0,0,0,1.01*kf)
+    assert cascade.pauli_blocking(fv1)
+    assert not(cascade.pauli_blocking(fv2))
         
 def test_interacted():
     Ep = energy_transfer # massless proton for easy propagation
@@ -60,5 +80,14 @@ def test_interacted():
 #        assert in_cylinder==tests[i]
         print(in_cylinder, tests[i], cascade_b.nucleons[0].pos, cascade_b.nucleons[10].pos)
     
-test_Cascade_init()
-#test_interacted()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

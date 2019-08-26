@@ -52,7 +52,12 @@ class FSI(object):
         self.cylinder_pt2 = 0
 
     def kick(self, energy_transfer):
-        # Randomize kicked particle
+        '''
+        Randomize kicked particle
+        
+        Args:
+            energy_transfer: float, energy transfered to the nucleus
+        '''
         self.kicked_idxs = []
         self.kicked_idxs.append(np.random.randint(low=0, high=len(self.nucleons)))
         self.nucleons[self.kicked_idxs[0]].status = -1 # propagating nucleon
@@ -195,7 +200,9 @@ class FSI(object):
         
     @staticmethod
     def points_in_cylinder(pt1, pt2, r, q):
-        ''' pt1: initial position vector
+        ''' Check if a point is within a cylinder
+        Args:
+            pt1: initial position vector
             pt2: final position vector
             r: radius of cylinder
             q: position vector of particle in question
