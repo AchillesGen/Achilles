@@ -1,7 +1,8 @@
 import numpy as np
 from nuChic.Particle import Particle
-from nuChic.Constants import MeV
+from nuChic.Constants import MeV, mN
 import pandas as pd
+from scipy.spatial.transform import Rotation
 
 class Nucleus:
     def __init__(self,Z,A,binding,kf,density_P=None,density_N=None):
@@ -20,7 +21,7 @@ class Nucleus:
             density_N = lambda r: self.nuclear_density/(self.A-self.Z) if r < self.radius else 0
         self.density_P = density_P
         self.density_N = density_N
-        self.potential = (np.sqrt((1000)**2 + self.kf**2) - 1000 + 8) * MeV
+        self.potential = (np.sqrt(mN**2 + self.kf**2) - mN + 8*MeV)
 
         # FIXME: reduced file size for quicker debugs (100,000 configs)
         # If it is Carbon-12, let's use Noemi's configurations.
@@ -93,7 +94,7 @@ class Nucleus:
             y = r*np.sin(theta)*np.cos(phi)
             z = r*np.cos(theta)
             return np.transpose(np.array([x, y, z]))
-        
+
         if not(self.A==12 and self.Z==6):
             raise Exception('Only C-12 is supported for now!')
 
@@ -103,9 +104,14 @@ class Nucleus:
         protons = np.asarray(self.c12Density_db.iloc[i0:i0+6][['x','y','z']])
         neutrons = np.asarray(self.c12Density_db.iloc[i0+6:i0+12][['x','y','z']])
 
+        # Rotations using Euler angles in the "x-convention"
+        angles = np.random.random(3)*2*np.pi
+        rotation = Rotation.from_euler('zxz',angles)
+
+        protons = rotation.apply(protons)
+        neutrons = rotation.apply(neutrons)
+
         return protons, neutrons
-
-
 
     def generate_momentum(self):
         def to_cartesian(coords):
@@ -126,3 +132,7 @@ class Nucleus:
         momentum = to_cartesian(momentum)
 
         return momentum
+
+if __name__ == '__main__':
+    import timeit
+    print(timeit.timeit('n.generate_config()', setup='from __main__ import Nucleus; from nuChic.Constants import MeV; n = Nucleus(6,12,50*MeV, 225*MeV)', number=100)/100)
