@@ -104,6 +104,7 @@ p_py = []
 p_pz = []
 p_E = []
 wgts = []
+escape = []
 
 def GenerateEvent(x):
     dw = wmax-wmin
@@ -139,7 +140,16 @@ integ(GenerateEvent,nitn=10,neval=1e5)
 #print("The best result coming from VEGAS is {0} pb".format(result))
 #print(sum(wgts))
 
-nitn = 10
+from nuChic.FourVector import Vec4
+import numpy as np
+from nuChic.Nucleus import Nucleus
+from nuChic.Constants import hbarc, MeV, GeV, fm, mN
+from nuChic.Cascade import FSI
+
+argon_nucleus = Nucleus(6,12, 8.6*MeV, 225*MeV)
+fsi = FSI(argon_nucleus, 1)
+
+nitn = 1
 for i in range(nitn):
     for x, weight in integ.random():
         dw = wmax-wmin
@@ -183,6 +193,12 @@ for i in range(nitn):
         p_pz.append(xk*cosa)
         wgts.append(wgt*weight/nitn)
 
+        momentum = Vec4(epf, xk*np.sqrt(sina2)*np.cos(phi), xk*np.sqrt(sina2)*np.sin(phi), xk*cosa)
+        fsi.kick(momentum)
+        escape.append(len(fsi()))
+        fsi.reset()
+
+
 print(sum(wgts))
 
 import pandas as pd
@@ -216,6 +232,9 @@ ax3.hist(p_E,weights=wgts,bins=400)
 ax4.hist(p_px,weights=wgts,bins=400)
 ax5.hist(p_py,weights=wgts,bins=400)
 ax6.hist(p_pz,weights=wgts,bins=400)
+
+fig3, ax7 = plt.subplots(nrows=1, ncols=1)
+ax7.hist(escape,weights=wgts,bins=400)
 
 plt.show()
 

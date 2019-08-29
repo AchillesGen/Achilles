@@ -13,7 +13,8 @@
     use dirac_matrices
     implicit none
     integer*4 :: ig,i
-    real*8 :: xq, w,wt, xk, xp, ee0, theta,sig
+    real*8, intent(in) :: xq, w,wt, xk, xp, ee0, theta
+    real*8, intent(out) :: sig
     real*8 :: ek,epf,xmf
     real*8 :: phi,xk_x,xk_y,xk_z
     real*8 :: p_4(4),pp_4(4),q_4(4), cosa
