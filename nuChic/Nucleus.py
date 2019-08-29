@@ -106,6 +106,7 @@ class Nucleus:
 
         # Rotations using Euler angles in the "x-convention"
         angles = np.random.random(3)*2*np.pi
+        angles[1] /= 2.
         rotation = Rotation.from_euler('zxz',angles)
 
         protons = rotation.apply(protons)
