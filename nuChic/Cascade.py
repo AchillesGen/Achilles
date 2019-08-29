@@ -24,7 +24,7 @@ class FSI(object):
         TODO: Implement binding energy / nuclear potential
         TODO: Implement realistic initial state configurations (position and momentum), cross sections (distinguishing n from p), reabsorption routine
     """
-    def __init__(self, nucleus, energy_transfer, dt):
+    def __init__(self, nucleus, dt):
         """
         Generates nucleus configuration and kicked nucleon.
         
@@ -61,9 +61,10 @@ class FSI(object):
         self.kicked_idxs = []
         self.kicked_idxs.append(np.random.randint(low=0, high=len(self.nucleons)))
         self.nucleons[self.kicked_idxs[0]].status = -1 # propagating nucleon
-        Ep = mN+energy_transfer
-        pp = np.sqrt(Ep**2-mN**2)
-        self.nucleons[self.kicked_idxs[0]].mom = Vec4(Ep, 0, 0, pp)        
+        #Ep = mN+energy_transfer
+        #pp = np.sqrt(Ep**2-mN**2)
+        #self.nucleons[self.kicked_idxs[0]].mom = Vec4(Ep, 0, 0, pp)        
+        self.nucleons[self.kicked_idxs[0]].mom = energy_transfer
 
     def reset(self):
         '''
@@ -94,7 +95,7 @@ class FSI(object):
         sigma = 100*fm**2 # 0.1 barn xsec = 10 fm^2
         positions=[]
         positions_temp=[]
-        for step in range(500):
+        for step in range(10000):
             if self.kicked_idxs==[]:
                 if VERBOSE:
                     print('No more particles propagating - DONE!')
@@ -161,12 +162,12 @@ class FSI(object):
                         print('nucleon ', kick_idx,' is OOOOOOUT! status: ',
                               self.nucleons[kick_idx].status)       
                 # (2) has kinetic energy below some barrier energy
-                elif (self.nucleons[kick_idx].E()-mN < 30*MeV):
-                    not_propagating.append(i)
-                    self.nucleons[kick_idx].status=0
-                    if VERBOSE:
-                        print('nucleon ', kick_idx,' is reabsorbed! status: ',
-                              self.nucleons[kick_idx].status)
+ #               elif (self.nucleons[kick_idx].E()-mN < 30*MeV):
+ #                   not_propagating.append(i)
+ #                   self.nucleons[kick_idx].status=0
+ #                   if VERBOSE:
+ #                       print('nucleon ', kick_idx,' is reabsorbed! status: ',
+ #                             self.nucleons[kick_idx].status)
             # Delete indices of non-propagating particles. 
             # Delete in reverse order to avoid shifting elements.
             for i in sorted(not_propagating, reverse=True):
@@ -191,7 +192,7 @@ class FSI(object):
 #        print('All status: ', stat_list)
 #        print('Number of final state nucleons: ',sum(stat_list))
         if -1 in stat_list : 
-            print ("SHIT!!!!") 
+            print ("SHIT!!!!", step) 
 
         # Record outgoing particles
         #self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
