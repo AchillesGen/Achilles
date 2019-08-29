@@ -7,15 +7,16 @@ from nuChic.Constants import hbarc, MeV, GeV, fm, mN
 from nuChic.Cascade import FSI
 import time
 import pandas as pd
-
+from nuChic.FourVector import Vec4
 
 argon_nucleus = Nucleus(6,12, 8.6*MeV, 225*MeV)
 start_time = time.time()
 points = 1000
 number_of_outgoing_particles =[]
-foo = FSI(argon_nucleus, 500.*MeV, 1)
+foo = FSI(argon_nucleus, 1)
+kick = Vec4(np.sqrt(500.*MeV**2+mN**2), 0, 0, 500.*MeV)
 for i in range(points):
-    foo.kick(500.*MeV)
+    foo.kick(kick)
     number_of_outgoing_particles.append(len(foo()))
 #    number_of_outgoing_particles.append(len(foo.outgoing_particles))
 #    print("Number of outgoing nucleons: ",len(foo.outgoing_particles))
