@@ -112,37 +112,37 @@ def GenerateEvent(x):
 
 integ = vegas.Integrator([[0,1],[0,1],[0,1]])
 
-integ(GenerateEvent, nitn=10, neval=10000)
+result = integ(GenerateEvent, nitn=10, neval=1000)
+
+print(result.summary())
 
 from nuChic.FourVector import Vec4
-import numpy as np
 from nuChic.Nucleus import Nucleus
-from nuChic.Constants import hbarc, MeV, GeV, fm, mN
+from nuChic.Constants import MeV, GeV, fm, mN
 from nuChic.Cascade import FSI
 
 argon_nucleus = Nucleus(6,12, 8.6*MeV, 225*MeV)
 fsi = FSI(argon_nucleus, 1)
 
 
-nitn = 10
+nitn = 2
 count = 0
 for i in range(nitn):
     for x, weight in integ.random():
     
-        if count % 100 == 0:
+        if count % 1000 == 0:
             print(count)
         count += 1
 
-        dw = wmax-wmin
+        dw = wmax - wmin
         dp = p[-1] - p[0]
         de = xe[-1] - xe[0]
-        w = dw*x[0]+wmin
-        p_int = dp*x[1]+p[0]
+        w = dw*x[0] + wmin
+        p_int = dp*x[1] + p[0]
         e_int = de*x[2] + xe[0]
         eef = ee - w
-        Q2 = 2.0*ee*eef*(1.0 - coste)
-    
-        # Compute the response functions in the impulse approximation
+        Q2 = 2.0*ee*eef*(1.0-coste)
+
         qval = np.sqrt(Q2 + w**2)
         f_o = f_eval(nZ,p_int,e_int,w,qval,mqe,pke_interp(p_int,e_int),fg,kf,thetalept,ee,iform)
    
@@ -183,10 +183,11 @@ for i in range(nitn):
         fsi.reset()
 
 print(sum(wgts))
+print(count)
 
 import pandas as pd
 
-data = pd.read_csv('../FNALNeuGen/data/12C.dat',header=None,sep='\s+',names=['Z','A','Ee','Angle','omega','dsigma','error','citation'])
+data = pd.read_csv('../data/12C.dat',header=None,sep='\s+',names=['Z','A','Ee','Angle','omega','dsigma','error','citation'])
 
 energy = 0.730
 angle = 37.1
