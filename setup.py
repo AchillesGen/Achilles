@@ -44,12 +44,10 @@ setup(
     install_requires=[
         'numpy',
         'vegas',
+        'h5py',
+        'scipy',
         ],
     # Provide executable script to run the main code
-    entry_points={
-        'console_scripts': [
-            'nuChic=nuChic:main',
-        ],
-    },
+    entry_points={},
 )
 
