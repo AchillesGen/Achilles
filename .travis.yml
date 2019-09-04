@@ -5,4 +5,5 @@ cache: pip
 install:
     - pip install -r requirements.txt
 script:
+    - python setup.py install
     - py.test --cov-report term-missing --cov nuChic -v

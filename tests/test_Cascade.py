@@ -1,6 +1,6 @@
 from nuChic.Cascade import FSI
 from nuChic.Nucleus import Nucleus
-from nuChic.Constants import MeV, fm, mN
+from nuChic.Constants import MeV, fm, mqe as mN
 from nuChic.FourVector import Vec4 
 from nuChic.ThreeVector import Vec3
 from nuChic.Particle import Particle
@@ -11,8 +11,8 @@ import pytest
 nuc = Nucleus(6,12,10,225)
 energy_transfer=500*MeV
 dt=1*fm
-cascade = FSI(nuc, energy_transfer, dt)
-cascade_b = FSI(nuc, energy_transfer, dt)
+cascade = FSI(nuc, dt)
+cascade_b = FSI(nuc, dt)
 
 def test_Cascade_init():
 #    assert len(cascade.outgoing_particles) == 0
