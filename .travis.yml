@@ -7,6 +7,7 @@ before_install:
     - sudo apt-get install gfortran
 install:
     - pip install -r requirements.txt
-script:
+    - pip install lhapdf
     - python setup.py install
+script:
     - py.test --cov-report term-missing --cov nuChic -v
