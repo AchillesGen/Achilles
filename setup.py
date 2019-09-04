@@ -62,6 +62,9 @@ setup(
         ],
     },
     ext_modules = [ext1],
-    package_data={'':['data/*','pke/*','configurations/*']}
+    package_data={'':['data/*','pke/*','configurations/*']},
+    extras_require={
+        'test': ['pytest','coverage','pytest-cov'],
+    },
 )
 

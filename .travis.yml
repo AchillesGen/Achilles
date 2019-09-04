@@ -1,13 +1,22 @@
 language: python
+dist: bionic
 python:
-    - "3.6"
+    - 2.7
+    - 3.5
+    - 3.6
+    - 3.7
 cache: pip
 sudo: required
 before_install:
     - sudo apt-get install gfortran
-install:
     - pip install -r requirements.txt
+    - pip install -U pip
+    - pip install -U pytest
     - pip install lhapdf
-    - python setup.py install
+    - pip install codecov
+install:
+    - pip install ".[test]" .
 script:
-    - py.test --cov-report term-missing --cov nuChic -v
+    - pytest
+after_success:
+    - codecov
