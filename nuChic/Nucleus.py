@@ -33,8 +33,9 @@ class Nucleus:
         # index   pid    x    y    z
         if Z==6 and A==12: 
             self.c12Density_db = pd.read_csv(
-                os.path.join(DIR,'configurations','pos_part_in_v2.out'),
-                sep='\s+',names=['index','pid','x','y','z'], nrows=1200000
+                os.path.join(DIR,'configurations','pos_part_in_v2.out.gz'),
+                sep='\s+',names=['index','pid','x','y','z'], nrows=1200000,
+                compression='gzip'
             )
 #            self.c12Density_db = pd.read_csv("/Users/pmachado/Dropbox/Projects/NuGen/FNALNeuGen/configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
 
