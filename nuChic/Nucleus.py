@@ -1,8 +1,11 @@
 import numpy as np
 from nuChic.Particle import Particle
-from nuChic.Constants import MeV, mN
+from nuChic.Constants import MeV, mqe as mN
 import pandas as pd
 from scipy.spatial.transform import Rotation
+import os
+
+DIR, FILE = os.path.split(__file__)
 
 class Nucleus:
     def __init__(self,Z,A,binding,kf,density_P=None,density_N=None):
@@ -29,7 +32,10 @@ class Nucleus:
         # 1 million configurations, no header 
         # index   pid    x    y    z
         if Z==6 and A==12: 
-            self.c12Density_db = pd.read_csv("./configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
+            self.c12Density_db = pd.read_csv(
+                os.path.join(DIR,'configurations','pos_part_in_v2.out'),
+                sep='\s+',names=['index','pid','x','y','z'], nrows=1200000
+            )
 #            self.c12Density_db = pd.read_csv("/Users/pmachado/Dropbox/Projects/NuGen/FNALNeuGen/configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
 
 

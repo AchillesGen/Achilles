@@ -1,11 +1,19 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+#from setuptools import setup, find_packages, Extension
+import setuptools
+from numpy.distutils.core import setup, Extension
 from os import path
 # io.open is needed for projects that support Python 2.7
 # It ensures open() defaults to text mode with universal newlines,
 # and accepts an argument to specify the text encoding
 from io import open
+
+ext1 = Extension(name = 'xsec', sources=['nuChic/xsec.pyf',
+                                         'nuChic/currents_opt_v1.f90',
+                                         'nuChic/xsec.f90', 
+                                         'nuChic/mathtool.f90', 
+                                         'nuChic/nform.f90'])
 
 here = path.abspath(path.dirname(__file__))
 
@@ -39,15 +47,21 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         ],
-    packages=find_packages(),
+    packages=setuptools.find_packages(),
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, <4',
     install_requires=[
         'numpy',
         'vegas',
         'h5py',
         'scipy',
+        'pandas',
         ],
     # Provide executable script to run the main code
-    entry_points={},
+    entry_points={'console_scripts': [
+        'nuChic = nuChic.main:nuChic',
+        ],
+    },
+    ext_modules = [ext1],
+    package_data={'':['data/*','pke/*','configurations/*']}
 )
 

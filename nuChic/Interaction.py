@@ -1,4 +1,4 @@
-from nuChic.Constants import mN, MeV, mb, GeV
+from nuChic.Constants import mqe as mN, MeV, mb, GeV
 import numpy as np
 
 # HZETRN parameters for pp, pn, and nn interactions

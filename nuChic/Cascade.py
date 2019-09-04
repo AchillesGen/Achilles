@@ -7,7 +7,7 @@ from nuChic.FourVector import Vec4
 from nuChic.ThreeVector import Vec3
 from nuChic.Particle import Particle
 from nuChic.Nucleus import Nucleus
-from nuChic.Constants import hbarc, MeV, GeV, fm, mN
+from nuChic.Constants import hbarc, MeV, GeV, fm, mqe as mN
 from copy import deepcopy
 from nuChic.Interaction import sigma_pp, sigma_np
 
