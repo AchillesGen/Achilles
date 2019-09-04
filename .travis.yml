@@ -4,7 +4,7 @@ python:
 cache: pip
 sudo: required
 before_install:
-    - sudo apt install gfortran
+    - sudo apt-get install gfortran
 install:
     - pip install -r requirements.txt
 script:
