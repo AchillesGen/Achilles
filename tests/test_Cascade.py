@@ -1,9 +1,9 @@
-from nuChic.Cascade import FSI
-from nuChic.Nucleus import Nucleus
-from nuChic.Constants import MeV, fm, mqe as mN
-from nuChic.FourVector import Vec4 
-from nuChic.ThreeVector import Vec3
-from nuChic.Particle import Particle
+from .nuChic.Cascade import FSI
+from .nuChic.Nucleus import Nucleus
+from .nuChic.Constants import MeV, fm, mqe as mN
+from .nuChic.FourVector import Vec4 
+from .nuChic.ThreeVector import Vec3
+from .nuChic.Particle import Particle
 import numpy as np
 from numpy import linalg as LA
 import pytest
