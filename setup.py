@@ -57,6 +57,7 @@ setup(
         'pandas',
         'sklearn',
         'absl-py',
+        'matplotlib',
         ],
     # Provide executable script to run the main code
     entry_points={'console_scripts': [
