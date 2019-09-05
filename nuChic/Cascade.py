@@ -51,6 +51,26 @@ class FSI(object):
         self.cylinder_pt1 = 0
         self.cylinder_pt2 = 0
 
+    @property
+    def number_nucleons(self):
+        return len(self.nucleons)
+
+    @property
+    def number_protons(self):
+        count = 0
+        for particle in self.nucleons:
+            if particle.pid == 2212:
+                count += 1
+        return count
+
+    @property
+    def number_neutrons(self):
+        count = 0
+        for particle in self.nucleons:
+            if particle.pid == 2112:
+                count += 1
+        return count
+
     def kick(self, energy_transfer):
         '''
         Randomize kicked particle
@@ -407,6 +427,7 @@ class FSI(object):
             Right now, this only checks if magnitude of 3-momentum is below Fermi motion
         '''
         # See if Pauli blocking occurs for the proposed interaction
+        print(four_momentum.P(), self.nucleus.kf)
         if four_momentum.P() < self.nucleus.kf:
             return True
         return False

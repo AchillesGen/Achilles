@@ -34,7 +34,7 @@ class Nucleus:
         if Z==6 and A==12: 
             self.c12Density_db = pd.read_csv(
                 os.path.join(DIR,'configurations','pos_part_in_v2.out.gz'),
-                sep='\s+',names=['index','pid','x','y','z'], nrows=1200000,
+                sep=r'\s+',names=['index','pid','x','y','z'],
                 compression='gzip'
             )
 #            self.c12Density_db = pd.read_csv("/Users/pmachado/Dropbox/Projects/NuGen/FNALNeuGen/configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
@@ -105,11 +105,14 @@ class Nucleus:
         if not(self.A==12 and self.Z==6):
             raise Exception('Only C-12 is supported for now!')
 
-        config_index = np.random.randint(1, high=100000)
-        i0 = (config_index-1)*12
-        
-        protons = np.asarray(self.c12Density_db.iloc[i0:i0+6][['x','y','z']])
-        neutrons = np.asarray(self.c12Density_db.iloc[i0+6:i0+12][['x','y','z']])
+        config_index = np.random.randint(0, high=len(self.c12Density_db.index)/12)
+        i0 = config_index*12
+     
+        db_tmp = self.c12Density_db.iloc[i0:i0+12]
+        proton_mask = db_tmp['pid']==1
+        neutron_mask = db_tmp['pid']==1
+        protons = np.asarray(db_tmp[proton_mask][['x','y','z']])
+        neutrons = np.asarray(db_tmp[neutron_mask][['x','y','z']])
 
         # Rotations using Euler angles in the "x-convention"
         angles = np.random.random(3)*2*np.pi
