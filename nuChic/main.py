@@ -13,7 +13,7 @@ from .FourVector import Vec4
 from .utils import momentum_sort
 
 FLAGS = flags.FLAGS
-flags.DEFINE_flag('cascade',None,'Flag to turn on/off the cascade',short_name='c')
+flags.DEFINE_flag('cascade',None,'Flag to turn on/off the cascade')
 flags.DEFINE_flag('folding',None,'Flag to turn on/off the folding function')
 flags.DEFINE_flag('testing',None,'Flag to test the basics of the program')
 
