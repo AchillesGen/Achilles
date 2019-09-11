@@ -44,11 +44,10 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         ],
     packages=setuptools.find_packages(),
-    python_requires='!=3.0.*, !=3.1.*, !=3.2.*, <4',
+    python_requires='>=3.5, <4',
     install_requires=[
         'numpy',
         'vegas',
