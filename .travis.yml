@@ -1,19 +1,30 @@
 language: python
-dist: bionic
-python:
-    - 3.4
-    - 3.5
-    - 3.6
-    - 3.7
-cache: pip
-sudo: required
+matrix:
+    include:
+        - name: "Python 3.7.1 on Xenial Linux"
+          python: 3.7
+          sudo: required
+          before_install:
+              - sudo apt-get install gfortran
+        - name: "Python 3.7.4 on macOS"
+          os: osx
+          osx_image: xcode11
+          language: shell
+        - name: "Python 3.7.4 on Windows"
+          os: windows
+          language: shell
+          before_install:
+              - choco install python
+              - python -m pip install --upgrade pip
+          env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+
+cache: pip3
 before_install:
-    - sudo apt-get install gfortran
-    - pip install -U pip
-    - pip install -U pytest
-    - pip install codecov
+    - pip3 install -U pip
+    - pip3 install -U pytest
+    - pip3 install codecov
 install:
-    - pip install ".[test]" .
+    - pip3 install ".[test]" .
 script:
     - pytest
     - nuChic --testing
