@@ -3,3 +3,17 @@ __pycache__/*
 *.pyc
 *cache*
 .DS_Store
+*.so
+nuChic.egg-info/
+build/
+*.png
+*.eps
+*.pdf
+*.jpg
+C12_code/
+.coverage*
+code_deuteron/
+data/
+configurations/
+*.mod
+dist/
