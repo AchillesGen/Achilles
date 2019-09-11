@@ -1,6 +1,6 @@
 import numpy as np
 from nuChic.Particle import Particle
-from nuChic.PDF import PDF
+#from nuChic.PDF import PDF
 
 MZ2 = 91.1876**2
 MW2 = 80.379**2
@@ -71,7 +71,7 @@ class Process:
 
         q = particles[0].mom - particles[3].mom
         x = -t/(2*particles[1].mom.dot(q))
-        fx = self.pdf.fxQ2(particles[2].pid, x, -t)
+#        fx = self.pdf.fxQ2(particles[2].pid, x, -t)
     
     # Calculate Resonance Matrix element
     def RES(self, particles):

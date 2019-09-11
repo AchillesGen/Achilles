@@ -1,7 +1,7 @@
 language: python
 dist: bionic
 python:
-    - 2.7
+    - 3.4
     - 3.5
     - 3.6
     - 3.7
@@ -11,7 +11,6 @@ before_install:
     - sudo apt-get install gfortran
     - pip install -U pip
     - pip install -U pytest
-    - pip install lhapdf
     - pip install codecov
 install:
     - pip install ".[test]" .
