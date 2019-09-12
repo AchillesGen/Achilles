@@ -4,11 +4,11 @@
 
 import numpy as np
 
-from nuChic.FourVector import Vec4
+from nuChic.four_vector import Vec4
 from nuChic.ThreeVector import Vec3
 from nuChic.Particle import Particle
 from nuChic.Nucleus import Nucleus
-from nuChic.Constants import fm, mqe as mN
+from nuChic.constants import FM as fm, MQE as mN
 from nuChic.Interaction import sigma_pp, sigma_np
 
 from absl import logging

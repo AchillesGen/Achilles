@@ -10,7 +10,7 @@ import numpy as np
 
 from .inclusive import Quasielastic
 from .Nucleus import Nucleus
-from .Constants import MeV
+from .constants import MEV as MeV
 from .cascade import FSI
 from .utils import momentum_sort
 
@@ -57,7 +57,7 @@ def run():
 
     integ = vegas.Integrator([[0, 1]]*ndims)
 
-    result = integ(inclusive.GenerateWeight, nitn=20, neval=1e4)
+    result = integ(inclusive.generate_weight, nitn=20, neval=1e4)
 
     print(result.summary())
 
@@ -72,7 +72,7 @@ def run():
                 print(count)
             count += 1
 
-            wgt = inclusive.GenerateWeight(point)
+            wgt = inclusive.generate_weight(point)
 
             if FLAGS.folding:
                 wgt_f = wgt[0]
@@ -88,13 +88,13 @@ def run():
 
             # mom.append(p_int)
             # energies.append(e_int)
-            momentum = inclusive.GenerateMomentum()
+            momentum = inclusive.generate_momentum(point)
             if momentum is not None:
-                omega.append(inclusive.w)
-                p_e_pre.append(momentum.E)
-                p_px_pre.append(momentum.px)
-                p_py_pre.append(momentum.py)
-                p_pz_pre.append(momentum.pz)
+                # omega.append(inclusive.w)
+                # p_e_pre.append(momentum.E)
+                # p_px_pre.append(momentum.px)
+                # p_py_pre.append(momentum.py)
+                # p_pz_pre.append(momentum.pz)
                 wgts.append(wgt*weight/nitn)
                 wgts_f.append(wgt_f*weight/nitn)
 

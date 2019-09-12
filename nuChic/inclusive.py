@@ -1,197 +1,233 @@
+""" Implement inclusive cross-section calculations"""
+import os
+
 import xsec
 import numpy as np
 from scipy import interpolate
 from absl import flags
 from absl import logging
-import os
 
-from .FourVector import Vec4
+from .four_vector import Vec4
 from .Nucleus import Nucleus
-from .Constants import MeV, GeV, fm, hbarc, mqe
-from .Cascade import FSI
-from .Folding import Folding
+from .constants import MEV, HBARC, MQE
+from .folding import Folding
 
 FLAGS = flags.FLAGS
-flags.DEFINE_bool('pwia',None,'Flag to turn on/off the plane-wave impluse approximation')
+flags.DEFINE_bool(
+    'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
 
 DIR, FILE = os.path.split(__file__)
 
-class Inclusive:
-    def __init__(self):
-        pass
 
-class Quasielastic(Inclusive):
-    def __init__(self,nucleus,ee,thetalept,fg=0):
-        logging.info('Initializing Quasielastic calculation')
-        
-        self.ee = ee
-        self.thetalept = thetalept
-        self.nZ = nucleus.Z
-        self.kf = nucleus.kf/MeV
-        self.fg = fg
-        self.wmin = 1
-        self.wmax = 650
-        self.iform = 2
-        self.thetalept*=np.pi/180.0
-        self.coste = np.cos(thetalept)
-        xsec.dirac_matrices.dirac_matrices_in(mqe/hbarc)
+class Inclusive:
+    """ Base class to implement inclusive cross-section calculations."""
+    def __init__(self, energy, thetalept, nucleus):
+        self.energy = energy
+        self.thetalept = thetalept*np.pi/180.0
+
+        if not isinstance(nucleus, Nucleus):
+            raise ValueError('Requires Nucleus as input, got {}'.format(
+                type(nucleus)))
+
+        self.nucleus = nucleus
+
+        self.wrange = [1, 650]
 
         self.folding = None
         if FLAGS.folding:
             self.folding = Folding()
 
+    @property
+    def n_z(self):
+        """ Get the number of protons in the nucleus. """
+        return self.nucleus.Z
+
+    @property
+    def k_f(self):
+        """ Get the Fermi momentum. """
+        return self.nucleus.kf
+
+    @property
+    def wmin(self):
+        """ Get the minimum allowed omega. """
+        return self.wrange[0]
+
+    @property
+    def wmax(self):
+        """ Get the maximum allowed omega. """
+        return self.wrange[1]
+
+    @property
+    def coste(self):
+        """ Get the cosine of the outgoing lepton angle. """
+        return np.cos(self.thetalept)
+
+    def generate_weight(self, point):
+        """ Generate weight for a given point. """
+        raise NotImplementedError()
+
+    def generate_momentum(self, point):
+        """ Generate momentum for a given point. """
+        raise NotImplementedError()
+
+
+class Quasielastic(Inclusive):
+    """ Class to calculate quasielastic scattering of an electron
+    on a nucleus."""
+    def __init__(self, nucleus, energy, thetalept, fg=0):
+        logging.info('Initializing Quasielastic calculation')
+
+        super().__init__(nucleus, energy, thetalept)
+
+        self.f_g = fg
+        self.iform = 2
+        xsec.dirac_matrices.dirac_matrices_in(MQE/HBARC)
+
         if fg != 1:
-            with open(os.path.join(DIR,'pke','pke12_tot.data')) as f:
-                n_e, n_p = f.readline().split()
+            with open(os.path.join(DIR, 'pke', 'pke12_tot.data')) as infile:
+                n_e, n_p = infile.readline().split()
                 n_e = int(n_e)
                 n_p = int(n_p)
-                self.p = np.empty(n_p)
-                pke = np.empty((n_e,n_p))
-                dp = np.empty(n_p)
-                self.xe = np.empty(n_e)
+                self.mom = np.empty(n_p)
+                self.pke = np.empty((n_e, n_p))
+                d_p = np.empty(n_p)
+                self.energy = np.empty(n_e)
                 for j in range(n_p):
-                    self.p[j] = float(f.readline())
+                    self.mom[j] = float(infile.readline())
                     for i in range(int(n_e/4)):
-                        tokens = f.readline().split()
+                        tokens = infile.readline().split()
                         for k in range(4):
-                            self.xe[4*i+k] = tokens[2*k]
-                            pke[4*i+k,j] = tokens[2*k+1]
+                            self.energy[4*i+k] = tokens[2*k]
+                            self.pke[4*i+k, j] = tokens[2*k+1]
 
-        hp = self.p[1] - self.p[0]
-        he = self.xe[1] - self.xe[0]
-
-        dp = np.sum(pke,axis=0)*he
-        norm = np.sum(self.p**2*dp,axis=-1)*4*np.pi*hp
-        pke /= norm
+        d_p = np.sum(self.pke, axis=0)*(self.energy[1]-self.energy[0])
+        norm = np.sum(self.mom**2*d_p, axis=-1)*4*np.pi*(
+            self.mom[1]-self.mom[0])
+        self.pke /= norm
         logging.info('n(k) norm initial = {0}'.format(norm))
 
-        self.pke = interpolate.interp2d(self.p, self.xe, pke, kind='linear')
+        self.pke = interpolate.interp2d(self.mom, self.energy,
+                                        self.pke, kind='linear')
 
     @property
     def pmin(self):
-        return self.p[0]
+        """ Minimum allowed momentum in initial state. """
+        return self.mom[0]
 
     @property
     def pmax(self):
-        return self.p[-1]
+        """ Maximum allowed momentum in initial state. """
+        return self.mom[-1]
 
     @property
     def emin(self):
-        return self.xe[0]
+        """ Minimum allowed energy in initial state. """
+        return self.energy[0]
 
     @property
     def emax(self):
-        return self.xe[-1]
+        """ Maximum allowed energy in initial state. """
+        return self.energy[-1]
 
-    def _eval(self,p,e,w,qval,pke):
-        ep = np.sqrt(p**2+mqe**2)
-        if self.fg == 1:
-            wt = w
+    def _eval(self, mom, energy, omega, qval, pke):
+        e_out = np.sqrt(mom**2+MQE**2)
+        if self.f_g == 1:
+            omegat = omega
         else:
-            wt = w-e+mqe-ep
+            omegat = omega-energy+MQE-e_out
 
         u_pq = 0.0
-        #if FLAGS.folding:
-        #    tkin_pf = np.sqrt(qval**2+mqe**2)-mqe
-        #    if tkin_pf < self.folding.kin_min and tkin_pf > self.folding.kin_max:
-        #        u_pq = self.folding.kinematic(tkin_pf)
+        if FLAGS.folding:
+            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
+            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+                u_pq = self.folding.kinematic(tkin_pf)
 
-        cost_te = ((wt+ep+u_pq)**2 - p**2 - qval**2 - mqe**2)/(2*p*qval)
+        cost_te = (((omegat+e_out+u_pq)**2 - mom**2 - qval**2 - MQE**2)
+                   / (2*mom*qval))
         if abs(cost_te) > 1:
-            logging.debug('wt = %e, ep = %e, p = %e, qval = %e, mqe = %e' 
-                % (wt,ep,p,qval,mqe))
+            logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
+                          % (omegat, e_out, mom, qval, MQE))
             return 0
 
-        pf = np.sqrt(p**2 + qval**2 + 2*qval*p*cost_te)
-        epf = np.sqrt(mqe**2 + pf**2)
-        if pf >= self.kf:
+        mom_f = np.sqrt(mom**2 + qval**2 + 2*qval*mom*cost_te)
+        epf = np.sqrt(MQE**2 + mom_f**2)
+        if mom_f >= self.k_f:
             phi = 2.0*np.pi*np.random.rand(1)
-            sig = xsec.cc1(qval/hbarc,w,wt,p/hbarc,pf/hbarc,phi,self.ee,
-                self.thetalept,self.iform) 
-            return p**2*pke[0]*(self.nZ*sig)*epf/(p*qval)*2*np.pi
+            sig = xsec.cc1(qval/HBARC, omega, omegat, mom/HBARC, mom_f/HBARC,
+                           phi, self.energy, self.thetalept, self.iform)
+            return mom**2*pke[0]*(self.n_z*sig)*epf/(mom*qval)*2*np.pi
         return 0
 
-    def GenerateWeight(self,x):
-        dw = self.wmax - self.wmin
-        self.w = dw*x[0] + self.wmin
-#        mass = self.ee**2*(1-self.coste)/(mqe + self.ee*(1-self.coste))
-#        mass2 = mass**2
-#        ymax = np.arctan((0-mass2)/mass2)
-#        ymin = np.arctan((self.ee**2-mass2)/mass2)
-#        self.w = np.sqrt(mass2+mass2*np.tan(ymin+x[0]*(ymax-ymin)))
-#        dw = (ymin - ymax)/(mass2/((self.w**2-mass2)**2+mass2**2))/(2*self.w)
-        de = self.w - self.emin
-        self.e_int = de*x[1] + self.emin
+    def generate_weight(self, point):
+        domega = self.wmax - self.wmin
+        omega = domega*point[0] + self.wmin
+        denergy = self.emax - self.emin
+        e_int = denergy*point[1] + self.emin
 
-        dp = self.pmax - self.pmin
-        self.p_int = dp*x[2] + self.pmin
+        dmom = self.pmax - self.pmin
+        p_int = dmom*point[2] + self.pmin
         if FLAGS.folding:
-#            mass = self.ee**2*(1-self.coste)/(mqe + self.ee*(1-self.coste))
-#            mass2 = mass**2
-#            ymax = np.arctan((0-mass2)/mass2)
-#            ymin = np.arctan((self.ee**2-mass2)/mass2)
-#            self.wp = np.sqrt(mass2+mass2*np.tan(ymin+x[3]*(ymax-ymin)))
-#            dwp = (ymin - ymax)/(mass2/((self.wp**2-mass2)**2+mass2**2))/(2*self.wp)
-            dwp = self.wmax - self.wmin
-            self.wp = dwp*x[3] + self.wmin
+            domegap = self.wmax - self.wmin
+            omegap = domegap*point[3] + self.wmin
 
-        eef = self.ee - self.w
-        Q2 = 2.0*self.ee*eef*(1.0-self.coste)
-
-        self.qval = np.sqrt(Q2 + self.w**2)
+        qval = np.sqrt(2.0*self.energy*(self.energy - omega)
+                       * (1.0-self.coste) + omega**2)
 
 #        dcos = np.sqrt(mqe**2+self.qval**2-(self.e_int+self.w)**2)/self.qval
 #        print(dcos)
 #        cost_te = 2*dcos*x[2]-dcos
-#
-#        print(de,self.w,self.e_int,cost_te,-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2)
-#        self.p_int = -cost_te * self.qval - np.sqrt(-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2) 
-#
-#        print('minus: ', self.p_int)
-#
-#        self.p_int = -cost_te * self.qval + np.sqrt(-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2) 
-#
-#        print('plus: ', self.p_int)
 
-        pke = self.pke(self.p_int, self.e_int)
-        wgt = self._eval(self.p_int,self.e_int,self.w,self.qval,pke)
-
-        wgt *= 1e9*dw*dp*de
+        wgt = self._eval(p_int, e_int, omega, qval, self.pke(p_int, e_int))
+        wgt *= 1e9*domega*dmom*denergy
 
         if FLAGS.folding:
-            eef_f = self.ee - self.wp
-            Q2_f = 2.0*self.ee*eef_f*(1.0-self.coste)
-            qval_f = np.sqrt(Q2_f + self.wp**2)
+            qval_f = np.sqrt(2.0*self.energy*(self.energy-omegap)
+                             * (1.0-self.coste) + omegap**2)
 
-            wgt_f = self._eval(self.p_int,self.e_int,self.wp,qval_f,pke)
-            wgt_f *= 1e9*dwp*dp*de
-            wgt_f = self.folding(self.w,self.wp)*wgt_f*dw + self.folding.TA*wgt
+            wgt_f = self._eval(p_int, e_int, omegap, qval_f,
+                               self.pke(p_int, e_int))
+            wgt_f *= 1e9*domegap*dmom*denergy
+            wgt_f = self.folding(omega, omegap)*wgt_f * \
+                domega + self.folding.transparency*wgt
 
             return wgt_f, wgt
 
         return wgt
 
-    def GenerateMomentum(self):
-        ep = np.sqrt(self.p_int**2+mqe**2)
-        wt = self.w - self.e_int + mqe - ep
-        cost_te = ((wt+ep)**2 - self.p_int**2 - self.qval**2 - mqe**2)/(2.0*self.p_int*self.qval)
+    def generate_momentum(self, point):
+        domega = self.wmax - self.wmin
+        omega = domega*point[0] + self.wmin
+        denergy = self.emax - self.emin
+        e_int = denergy*point[1] + self.emin
+
+        dmom = self.pmax - self.pmin
+        p_int = dmom*point[2] + self.pmin
+
+        qval = np.sqrt(2.0*self.energy*(self.energy - omega)
+                       * (1.0-self.coste) + omega**2)
+
+        e_out = np.sqrt(p_int**2+MQE**2)
+        omegat = omega - e_int + MQE - e_out
+        cost_te = ((omegat+e_out)**2 - p_int**2 - qval **
+                   2 - MQE**2)/(2.0*p_int*qval)
         if abs(cost_te) > 1:
             return None
-        pf = np.sqrt(self.p_int**2 + self.qval**2 + 2*self.qval*self.p_int*cost_te)
-        epf = np.sqrt(mqe**2+pf**2)
+        mom_f = np.sqrt(p_int**2 + qval**2 +
+                        2*qval*p_int*cost_te)
+        epf = np.sqrt(MQE**2+mom_f**2)
         phi = 2.0*np.pi*np.random.random()
-    
-        xq = self.qval/hbarc
-        xk = self.p_int/hbarc
-        xp = pf/hbarc
-    
-        q2 = xq**2
-        p2 = xk**2
-        pf2 = xp**2
-        cosa = ((pf2-p2-q2)/2.0/xk/xq)
+
+        x_q = qval/HBARC
+        x_k = p_int/HBARC
+        x_p = mom_f/HBARC
+
+        q_2 = x_q**2
+        p_2 = x_k**2
+        pf2 = x_p**2
+        cosa = ((pf2-p_2-q_2)/2.0/x_k/x_q)
         sina2 = 1-cosa**2
-        
-        momentum = Vec4(epf*MeV, pf*np.sqrt(sina2)*np.cos(phi)*MeV, 
-            pf*np.sqrt(sina2)*np.sin(phi)*MeV, pf*cosa*MeV)
+
+        momentum = Vec4(epf*MEV, mom_f*np.sqrt(sina2)*np.cos(phi)*MEV,
+                        mom_f*np.sqrt(sina2)*np.sin(phi)*MEV, mom_f*cosa*MEV)
 
         return momentum
