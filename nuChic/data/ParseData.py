@@ -2,6 +2,10 @@ import h5py
 import numpy as np
 from scipy import interpolate, optimize
 
+import os
+
+DIR, FILE = os.path.split(__file__)
+
 class GeantData:
     def __init__(self):
         self._names = np.array(['pp', 'np'])
@@ -9,7 +13,7 @@ class GeantData:
         self._sig_tot = {}
         self._sig = {}
         self._theta = np.linspace(0.5,179.5,180)
-        with h5py.File('GeantData.hdf5', 'r') as f:
+        with h5py.File(os.path.join(DIR,'GeantData.hdf5'), 'r') as f:
             self._pcm['pp'] = f['pp/pcm'][:]
             self._pcm['np'] = f['np/pcm'][:]
             self._sig_tot['pp'] = f['pp/sigtot'][:]

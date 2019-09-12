@@ -110,7 +110,7 @@ class Nucleus:
      
         db_tmp = self.c12Density_db.iloc[i0:i0+12]
         proton_mask = db_tmp['pid']==1
-        neutron_mask = db_tmp['pid']==1
+        neutron_mask = db_tmp['pid']==2
         protons = np.asarray(db_tmp[proton_mask][['x','y','z']])
         neutrons = np.asarray(db_tmp[neutron_mask][['x','y','z']])
 

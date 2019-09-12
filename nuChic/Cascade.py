@@ -11,6 +11,8 @@ from nuChic.Constants import hbarc, MeV, GeV, fm, mqe as mN
 from copy import deepcopy
 from nuChic.Interaction import sigma_pp, sigma_np
 
+from absl import logging
+
 class FSI(object):
     """ Notes to self:
     * Initialize nucleus
@@ -109,36 +111,29 @@ class FSI(object):
     def __call__(self):
         ''' Performs the full propagation of the kicked nucleons inside the nucleus. Updates the list of outgoing_particles with all status=+1 particles
             '''
-        VERBOSE = False
-
         # Overestimate cross section
         sigma = 100*fm**2 # 0.1 barn xsec = 10 fm^2
         positions=[]
         positions_temp=[]
         for step in range(10000):
             if self.kicked_idxs==[]:
-                if VERBOSE:
-                    print('No more particles propagating - DONE!')
+                logging.debug('No more particles propagating - DONE!')
                 break
-            if VERBOSE:
-                print('*******  STEP ',step,' *******')
+                logging.debug('*******  STEP ',step,' *******')
             # Update formation zones
             for i in range(len(self.nucleons)):
                 if self.nucleons[i].is_in_formation_zone():
                     self.nucleons[i].formation_zone -= self.dt
             new_kicked_idxs=list(self.kicked_idxs) # copy to avoid changing during iteration
             for kick_idx in self.kicked_idxs:
-                if VERBOSE:
-                    print('kick_idx = ',kick_idx)
+                logging.debug('kick_idx = ',kick_idx)
                 did_hit, new_kick_idx = self.interacted(kick_idx, sigma) 
                 if did_hit :
-                    if VERBOSE:
-                        print('Hit?')
+                    logging.debug('Hit?')
                     really_did_hit, self.nucleons[kick_idx], self.nucleons[new_kick_idx] = self.generate_final_phase_space(self.nucleons[kick_idx], self.nucleons[new_kick_idx])
                     # if it really hit, add index to new kicked index list and delete duplicates
                     if really_did_hit :
-                        if VERBOSE:
-                            print('Hit!!!!')
+                        logging.debug('Hit!!!!')
                         new_kicked_idxs.append(new_kick_idx)
                         new_kicked_idxs = list(set(new_kicked_idxs)) # Remove duplicates
 
@@ -161,12 +156,10 @@ class FSI(object):
                         # Pauli blocking occurred, revert to old configuration
                         
                 else:
-                    if VERBOSE:
-                        print('No hit')
+                    logging.debug('No hit')
 
             self.kicked_idxs=new_kicked_idxs
-            if VERBOSE:
-                print('kicked_idxs = ',self.kicked_idxs)
+            logging.debug('kicked_idxs = ',self.kicked_idxs)
 
             # After-hit checks
             not_propagating = []
@@ -177,16 +170,20 @@ class FSI(object):
                 # (1) is outside nucleus or
                 if (self.nucleons[kick_idx].pos.P() > self.nucleus.radius):
                     not_propagating.append(i)
-                    self.nucleons[kick_idx].status=1
-                    if VERBOSE:
-                        print('nucleon ', kick_idx,' is OOOOOOUT! status: ',
-                              self.nucleons[kick_idx].status)       
+                    if self.nucleus.escape(self.nucleons[kick_idx]):
+                        self.nucleons[kick_idx].status=1
+                        logging.debug('nucleon ', kick_idx,' is OOOOOOUT! status: ',
+                            self.nucleons[kick_idx].status)       
+                    else:
+                        self.nucleons[kick_idx].status=2
+                        logging.debug('nucleon ', kick_idx,' is captured! status: ',
+                            self.nucleons[kick_idx].status)       
                 # (2) has kinetic energy below some barrier energy
  #               elif (self.nucleons[kick_idx].E()-mN < 30*MeV):
  #                   not_propagating.append(i)
  #                   self.nucleons[kick_idx].status=0
  #                   if VERBOSE:
- #                       print('nucleon ', kick_idx,' is reabsorbed! status: ',
+ #                       logging.debug('nucleon ', kick_idx,' is reabsorbed! status: ',
  #                             self.nucleons[kick_idx].status)
             # Delete indices of non-propagating particles. 
             # Delete in reverse order to avoid shifting elements.
@@ -200,19 +197,19 @@ class FSI(object):
 #            positions_temp=[]
             
 #            stat_list = [n.status for n in self.nucleons]
-#            print('All status: ', stat_list)
+#            logging.debug('All status: ', stat_list)
 
 
         #     if did_hit:
-        #         print('idxs:  ', kicked_idxs, new_kick_idx )
-        #         print('out momenta: ', mom1, mom2)
-        #         print('sanity check', mom1-nucleons[kick_idx].mom, mom2-nucleons[new_kick_idx].mom)
-#        print('Number of steps: ',step)
+        #         logging.debug('idxs:  ', kicked_idxs, new_kick_idx )
+        #         logging.debug('out momenta: ', mom1, mom2)
+        #         logging.debug('sanity check', mom1-nucleons[kick_idx].mom, mom2-nucleons[new_kick_idx].mom)
+#        logging.debug('Number of steps: ',step)
         stat_list = [n.status for n in self.nucleons]
-#        print('All status: ', stat_list)
-#        print('Number of final state nucleons: ',sum(stat_list))
+#        logging.debug('All status: ', stat_list)
+#        logging.debug('Number of final state nucleons: ',sum(stat_list))
         if -1 in stat_list : 
-            print ("SHIT!!!!", step) 
+            logging.fatal("Cascade Failed at step: {}, has at least one propagating nucleon still" % step) 
 
         # Record outgoing particles
         #self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
@@ -397,7 +394,7 @@ class FSI(object):
             t = q_lab.M2()
             particle1.set_formation_zone(q_lab.E, t, 0.139)
             particle2.set_formation_zone(q_lab.E, t, 0.139)
-            #print("form zone = ",foo, q_lab.E, t)
+            #logging.debug("form zone = ",foo, q_lab.E, t)
 
             # Hit background nucleon becomes propagating nucleon
             particle2.status=-1
@@ -427,7 +424,6 @@ class FSI(object):
             Right now, this only checks if magnitude of 3-momentum is below Fermi motion
         '''
         # See if Pauli blocking occurs for the proposed interaction
-        print(four_momentum.P(), self.nucleus.kf)
         if four_momentum.P() < self.nucleus.kf:
             return True
         return False

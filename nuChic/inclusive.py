@@ -91,10 +91,10 @@ class Quasielastic(Inclusive):
             wt = w-e+mqe-ep
 
         u_pq = 0.0
-        if FLAGS.folding:
-            tkin_pf = np.sqrt(qval**2+mqe**2)-mqe
-            if tkin_pf < self.folding.kin_min and tkin_pf > self.folding.kin_max:
-                u_pq = self.folding.kinematic(tkin_pf)
+        #if FLAGS.folding:
+        #    tkin_pf = np.sqrt(qval**2+mqe**2)-mqe
+        #    if tkin_pf < self.folding.kin_min and tkin_pf > self.folding.kin_max:
+        #        u_pq = self.folding.kinematic(tkin_pf)
 
         cost_te = ((wt+ep+u_pq)**2 - p**2 - qval**2 - mqe**2)/(2*p*qval)
         if abs(cost_te) > 1:
@@ -114,11 +114,24 @@ class Quasielastic(Inclusive):
     def GenerateWeight(self,x):
         dw = self.wmax - self.wmin
         self.w = dw*x[0] + self.wmin
+#        mass = self.ee**2*(1-self.coste)/(mqe + self.ee*(1-self.coste))
+#        mass2 = mass**2
+#        ymax = np.arctan((0-mass2)/mass2)
+#        ymin = np.arctan((self.ee**2-mass2)/mass2)
+#        self.w = np.sqrt(mass2+mass2*np.tan(ymin+x[0]*(ymax-ymin)))
+#        dw = (ymin - ymax)/(mass2/((self.w**2-mass2)**2+mass2**2))/(2*self.w)
+        de = self.w - self.emin
+        self.e_int = de*x[1] + self.emin
+
         dp = self.pmax - self.pmin
-        self.p_int = dp*x[1] + self.pmin
-        de = self.emax - self.emin
-        self.e_int = de*x[2] + self.emin
+        self.p_int = dp*x[2] + self.pmin
         if FLAGS.folding:
+#            mass = self.ee**2*(1-self.coste)/(mqe + self.ee*(1-self.coste))
+#            mass2 = mass**2
+#            ymax = np.arctan((0-mass2)/mass2)
+#            ymin = np.arctan((self.ee**2-mass2)/mass2)
+#            self.wp = np.sqrt(mass2+mass2*np.tan(ymin+x[3]*(ymax-ymin)))
+#            dwp = (ymin - ymax)/(mass2/((self.wp**2-mass2)**2+mass2**2))/(2*self.wp)
             dwp = self.wmax - self.wmin
             self.wp = dwp*x[3] + self.wmin
 
@@ -126,6 +139,20 @@ class Quasielastic(Inclusive):
         Q2 = 2.0*self.ee*eef*(1.0-self.coste)
 
         self.qval = np.sqrt(Q2 + self.w**2)
+
+#        dcos = np.sqrt(mqe**2+self.qval**2-(self.e_int+self.w)**2)/self.qval
+#        print(dcos)
+#        cost_te = 2*dcos*x[2]-dcos
+#
+#        print(de,self.w,self.e_int,cost_te,-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2)
+#        self.p_int = -cost_te * self.qval - np.sqrt(-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2) 
+#
+#        print('minus: ', self.p_int)
+#
+#        self.p_int = -cost_te * self.qval + np.sqrt(-mqe**2+(-1+cost_te**2)*self.qval**2 + (mqe-self.e_int+self.w)**2) 
+#
+#        print('plus: ', self.p_int)
+
         pke = self.pke(self.p_int, self.e_int)
         wgt = self._eval(self.p_int,self.e_int,self.w,self.qval,pke)
 
@@ -145,17 +172,17 @@ class Quasielastic(Inclusive):
         return wgt
 
     def GenerateMomentum(self):
-        ep = np.sqrt(self.p**2+mqe**2)
-        wt = self.w - self.e + mqe - ep
-        cost_te = ((wt+ep)**2 - self.p**2 - self.qval**2 - mqe**2)/(2.0*self.p*self.qval)
+        ep = np.sqrt(self.p_int**2+mqe**2)
+        wt = self.w - self.e_int + mqe - ep
+        cost_te = ((wt+ep)**2 - self.p_int**2 - self.qval**2 - mqe**2)/(2.0*self.p_int*self.qval)
         if abs(cost_te) > 1:
             return None
-        pf = np.sqrt(self.p**2 + self.qval**2 + 2*self.qval*self.p*cost_te)
+        pf = np.sqrt(self.p_int**2 + self.qval**2 + 2*self.qval*self.p_int*cost_te)
         epf = np.sqrt(mqe**2+pf**2)
         phi = 2.0*np.pi*np.random.random()
     
         xq = self.qval/hbarc
-        xk = self.p/hbarc
+        xk = self.p_int/hbarc
         xp = pf/hbarc
     
         q2 = xq**2
