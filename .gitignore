@@ -13,7 +13,6 @@ build/
 C12_code/
 .coverage*
 code_deuteron/
-data/
 configurations/
 *.mod
 dist/
