@@ -120,7 +120,7 @@ def run():
     print(zeros)
     print(zeros_f)
     
-    data = pd.read_csv(os.path.join(DIR,'..','data','12C.dat'),header=None,sep='\s+',names=['Z','A','Ee','Angle','omega','dsigma','error','citation'])
+    data = pd.read_csv(os.path.join(DIR,'data','12C.dat'),header=None,sep='\s+',names=['Z','A','Ee','Angle','omega','dsigma','error','citation'])
     
     energy = 0.730
     angle = 37.1
