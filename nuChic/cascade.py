@@ -40,9 +40,9 @@ class FSI:
             energy_transfer: float, energy transfered to the nucleus.
             dt: float, time step
         """
-        if not isinstance(nucleus, Nucleus):
-            raise TypeError('Expected a Nucleus as input, got {}'
-                            % type(nucleus))
+        # if not isinstance(nucleus, Nucleus):
+        #    raise TypeError('Expected a Nucleus as input, got {}'
+        #                    % type(nucleus))
         self.nucleus = nucleus
         self.time_step = dt
 

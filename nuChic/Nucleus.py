@@ -1,6 +1,6 @@
 import numpy as np
 from nuChic.Particle import Particle
-from nuChic.Constants import MeV, mqe as mN
+from nuChic.constants import MEV, MQE as mN
 import pandas as pd
 from scipy.spatial.transform import Rotation
 import os

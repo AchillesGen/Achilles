@@ -1,33 +1,33 @@
-from nuChic.Constants import mqe as mN, MeV, mb, GeV
+from nuChic.constants import MQE as mN, MEV, MB, GEV
 import numpy as np
 
 # HZETRN parameters for pp, pn, and nn interactions
-a = 5.0 * MeV              
-b = 0.199/np.sqrt(MeV)     
-c = 0.451 * MeV**-0.258      
-d = 25.0 * MeV               
-e = 134.0 * MeV              
-f = 1.187 * MeV**-0.35       
-g = 0.1 * MeV                
-h = 0.282 * MeV              
+a = 5.0 * MEV              
+b = 0.199/np.sqrt(MEV)     
+c = 0.451 * MEV**-0.258      
+d = 25.0 * MEV               
+e = 134.0 * MEV              
+f = 1.187 * MEV**-0.35       
+g = 0.1 * MEV                
+h = 0.282 * MEV              
 
 # PDG parameters for pp, pn, and nn interactions
-Zpp  = 33.45 * mb            
-Zpn  = 35.80 * mb              
-Y1pp = 42.53 * mb              
-Y1pn = 40.15 * mb              
-Y2pp = 33.34 * mb              
-Y2pn = 30.00 * mb              
-B    = 0.308 * mb              
-s1   = 1.0   * GeV**2           
-s0   = (5.38 * GeV)**2 
+Zpp  = 33.45 * MB            
+Zpn  = 35.80 * MB              
+Y1pp = 42.53 * MB              
+Y1pn = 40.15 * MB              
+Y2pp = 33.34 * MB              
+Y2pn = 30.00 * MB              
+B    = 0.308 * MB              
+s1   = 1.0   * GEV**2           
+s0   = (5.38 * GEV)**2 
 n1   = 0.458
 n2   = 0.545
 
 # JWN parameters for pp, pn, and nn interactions
-gamma = 52.5 * mb * GeV**(0.16)
-alpha = 0.00369 / MeV
-beta  = 0.00895741 * MeV**(-0.8)
+gamma = 52.5 * MB * GEV**(0.16)
+alpha = 0.00369 / MEV
+beta  = 0.00895741 * MEV**(-0.8)
 
 def sigma_pp(plab):
     Tlab = np.sqrt(plab**2+mN**2)-mN

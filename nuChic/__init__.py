@@ -1,5 +1,5 @@
-from . import Cascade
-from . import FourVector
+from . import cascade
+from . import four_vector
 from . import Interaction
 from . import Nucleus
 from . import MatrixElements

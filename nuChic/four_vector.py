@@ -19,30 +19,10 @@ class Vec4:
     """
 
     def __init__(self, e=0, px=0, py=0, pz=0):
-        self._energy = e
-        self._p_x = px
-        self._p_y = py
-        self._p_z = pz
-
-    @property
-    def energy(self):
-        """ Return the energy of the four vector. """
-        return self._energy
-
-    @property
-    def p_x(self):
-        """ Return the x momentum of the four vector. """
-        return self._p_x
-
-    @property
-    def p_y(self):
-        """ Return the y momentum of the four vector. """
-        return self._p_y
-
-    @property
-    def p_z(self):
-        """ Return the z momentum of the four vector. """
-        return self._p_z
+        self.energy = e
+        self.p_x = px
+        self.p_y = py
+        self.p_z = pz
 
     def __getitem__(self, i):
         if i == 0:
@@ -56,16 +36,16 @@ class Vec4:
         raise Exception('Vec4D')
 
     def __repr__(self):
-        return 'Vec4({0},{1},{2},{3})'.format(self.energy,
-                                              self.p_x,
-                                              self.p_y,
-                                              self.p_z)
+        return 'Vec4({0}, {1}, {2}, {3})'.format(self.energy,
+                                                 self.p_x,
+                                                 self.p_y,
+                                                 self.p_z)
 
     def __str__(self):
-        return '({0},{1},{2},{3})'.format(self.energy,
-                                          self.p_x,
-                                          self.p_y,
-                                          self.p_z)
+        return '({0}, {1}, {2}, {3})'.format(self.energy,
+                                             self.p_x,
+                                             self.p_y,
+                                             self.p_z)
 
     def __add__(self, other):
         if not isinstance(other, Vec4):

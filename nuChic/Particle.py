@@ -1,6 +1,6 @@
 import numpy as np
-from nuChic.Constants import hbarc
-from nuChic.FourVector import Vec4
+from nuChic.constants import HBARC
+from nuChic.four_vector import Vec4
 from nuChic.ThreeVector import Vec3
 
 class Particle:

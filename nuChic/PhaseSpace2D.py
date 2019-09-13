@@ -1,6 +1,6 @@
 import numpy as np
 import vegas
-from nuChic.FourVector import Vec4
+from nuChic.four_vector import Vec4
 
 class PhaseSpace:
     """ Two-dimensional phase space distributions.
