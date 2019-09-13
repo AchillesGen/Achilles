@@ -3,6 +3,7 @@
 """ Implements the Cascade calculation """
 
 import numpy as np
+from absl import logging
 
 from nuChic.four_vector import Vec4
 from nuChic.ThreeVector import Vec3
@@ -10,8 +11,6 @@ from nuChic.Particle import Particle
 from nuChic.Nucleus import Nucleus
 from nuChic.constants import FM as fm, MQE as mN
 from nuChic.Interaction import sigma_pp, sigma_np
-
-from absl import logging
 
 
 class FSI:
@@ -206,7 +205,7 @@ class FSI:
                 #        kick_idx = kicked_idxs[i]
                 # Nucleon becomes final particle if
                 # (1) is outside nucleus or
-                if self.nucleons[kick_idx].pos.P() > self.nucleus.radius:
+                if self.nucleons[kick_idx].pos.mag > self.nucleus.radius:
                     not_propagating.append(i)
                     if self.nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
@@ -412,7 +411,7 @@ class FSI:
         # dependent cros section.
         # First, we need the momentum of particle 1 in the lab frame.
         boost_vec_lab = particle2.mom.BoostVector()
-        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab).P()
+        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab).mom
 #        lab_particle1_momentum = lab_particle1_momentum.P()
         # Calculate cross section (flavor dependent)
         if particle1.pid == particle2.pid:
@@ -440,7 +439,7 @@ class FSI:
 
         # Fix magnitude, (theta, phi) generated isotropically
         momentum = np.random.random(3)
-        momentum[0] = p1_cm.P()
+        momentum[0] = p1_cm.mom
         momentum[1] = np.arccos(2*momentum[1] - 1)
         momentum[2] = momentum[2]*2*np.pi
 
@@ -501,6 +500,6 @@ class FSI:
             below Fermi motion
         '''
         # See if Pauli blocking occurs for the proposed interaction
-        if four_momentum.P() < self.nucleus.kf:
+        if four_momentum.mom < self.nucleus.kf:
             return True
         return False
