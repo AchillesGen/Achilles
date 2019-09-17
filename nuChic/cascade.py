@@ -5,11 +5,13 @@
 import numpy as np
 from absl import logging
 
+from nuChic.utils import to_cartesian
 from nuChic.four_vector import Vec4
 from nuChic.three_vector import Vec3
 from nuChic.particle import Particle
 from nuChic.nucleus import Nucleus
-from nuChic.constants import FM as fm, MQE as mN
+from nuChic.constants import FM as fm, MQE as mN, GEV
+from nuChic.data.parse_data import GeantData
 from nuChic.Interaction import sigma_pp, sigma_np
 
 
@@ -39,9 +41,9 @@ class FSI:
             energy_transfer: float, energy transfered to the nucleus.
             dt: float, time step
         """
-        # if not isinstance(nucleus, Nucleus):
-        #    raise TypeError('Expected a Nucleus as input, got {}'
-        #                    % type(nucleus))
+        if not isinstance(nucleus, Nucleus):
+            raise TypeError('Expected a Nucleus as input, got {}'
+                            % type(nucleus))
         self.nucleus = nucleus
         self.time_step = dt
 
@@ -59,14 +61,13 @@ class FSI:
         self.nucleons += [Particle(pid=2112, mom=dummy_mom,
                                    pos=Vec3(*x_j)) for x_j in neutrons]
 
-        # Keep outgoing particles after cascade
-        # self.outgoing_particles = []
-
         # Cylinder parameters
         self.cylinder_pt1 = 0
         self.cylinder_pt2 = 0
 
         self.kicked_idxs = []
+
+        self.interactions = GeantData()
 
     @property
     def number_nucleons(self):
@@ -171,41 +172,14 @@ class FSI:
                         new_kicked_idxs = list(
                             set(new_kicked_idxs))  # Remove duplicates
 
-#                    # Is it a background particle?
-#                    # If so, we need to generate it's momentum
-#                    if not self.nucleons[new_kick_idx].is_propagating() :
-#                        # Sort background particle 4-momentum
-#                        p_i = Vec3(*self.nucleus.generate_momentum())
-#                        energy = np.sqrt(mN**2+p_i.P2())
-#                        p_mu = Vec4(energy, *p_i.Vec())
-#                        self.nucleons[new_kick_idx].mom=p_mu
-#                        # Hit background nucleon becomes propagating nucleon
-#                        self.nucleons[new_kick_idx].status=-1
-#                        # Add it to list of kicked particles
-#                        new_kicked_idxs.append(new_kick_idx)
-#                    # Generating outgoing phase space
-#                    p1_out, p2_out = self.generate_final_phase_space(
-#                                       self.nucleons[kick_idx],
-#                                       self.nucleons[new_kick_idx])
-                    # Check for Pauli blocking
-#                    if self.pauli_blocking(p1_out) or
-#                       self.pauli_blocking(p2_out):
-                        # Pauli blocking occurred, revert to old configuration
-
-#                else:
-#                    logging.debug('No hit')
-
             self.kicked_idxs = new_kicked_idxs
             logging.debug('kicked_idxs = ', self.kicked_idxs)
 
             # After-hit checks
             not_propagating = []
-        #    for i in range(len(kicked_idxs)):
             for i, kick_idx in enumerate(self.kicked_idxs):
-                #        kick_idx = kicked_idxs[i]
-                # Nucleon becomes final particle if
-                # (1) is outside nucleus or
-                if self.nucleons[kick_idx].pos.mag > self.nucleus.radius:
+                # Nucleon becomes final particle if outside nucleus
+                if self.nucleons[kick_idx].pos.p > self.nucleus.radius:
                     not_propagating.append(i)
                     if self.nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
@@ -221,45 +195,18 @@ class FSI:
                                            kick_idx,
                                            self.nucleons[kick_idx].status)
                                       )
-                # (2) has kinetic energy below some barrier energy
-#               elif (self.nucleons[kick_idx].E()-mN < 30*MeV):
-#                   not_propagating.append(i)
-#                   self.nucleons[kick_idx].status=0
-#                   if VERBOSE:
-#                       logging.debug('nucleon ', kick_idx,'
-#                                     'is reabsorbed! status: ',
-#                             self.nucleons[kick_idx].status)
             # Delete indices of non-propagating particles.
             # Delete in reverse order to avoid shifting elements.
             for i in sorted(not_propagating, reverse=True):
                 del self.kicked_idxs[i]
 
-            # Save positions for 3D plot
-#            for jj in range(len(self.nucleons)) :
-#                positions_temp.append(self.nucleons[jj].pos.Vec())
-#            positions.append(positions_temp)
-#            positions_temp=[]
-
-#            stat_list = [n.status for n in self.nucleons]
-#            logging.debug('All status: ', stat_list)
-
-        #     if did_hit:
-        #         logging.debug('idxs:  ', kicked_idxs, new_kick_idx )
-        #         logging.debug('out momenta: ', mom1, mom2)
-        #         logging.debug('sanity check',
-        #                       mom1-nucleons[kick_idx].mom,
-        #                       mom2-nucleons[new_kick_idx].mom)
-#        logging.debug('Number of steps: ',step)
+        logging.debug('Number of steps: ', step)
         stat_list = [n.status for n in self.nucleons]
-#        logging.debug('All status: ', stat_list)
-#        logging.debug('Number of final state nucleons: ',sum(stat_list))
+        logging.debug('Number of final state nucleons: ', sum(stat_list))
         if -1 in stat_list:
             logging.fatal(
                 "Cascade Failed at step: {}, ",
                 "has at least one propagating nucleon still" % step)
-
-        # Record outgoing particles
-        # self.outgoing_particles = [n for n in self.nucleons if n.is_final()]
 
         return [n for n in self.nucleons if n.is_final()]
 
@@ -280,20 +227,6 @@ class FSI:
         return (np.dot(position - pt1, vec) >= 0
                 and np.dot(position - pt2, vec) <= 0
                 and np.linalg.norm(np.cross(position - pt1, vec)) <= const)
-
-    @staticmethod
-    def to_cartesian(coords):
-        ''' Takes spherical coordinates [r, theta, phi] and transform to
-        cartesian coordinates [x,y,z]
-        '''
-        # radius, theta, phi = coords
-        radius = coords[0]
-        theta = coords[1]
-        phi = coords[2]
-        pos_x = radius*np.sin(theta)*np.sin(phi)
-        pos_y = radius*np.sin(theta)*np.cos(phi)
-        pos_z = radius*np.cos(theta)
-        return np.transpose(np.array([pos_x, pos_y, pos_z]))
 
     def interacted(self, idx, sigma):
         ''' Decides if an interaction occurred for a propagating particle
@@ -384,25 +317,20 @@ class FSI:
             TODO: Implement realistic phase space
         '''
 
-        # We do not want to change the input particles in case
-        # Pauli blocking occurred
-#        particle1 = deepcopy(particle1in)
-#        particle2 = deepcopy(particle2in)
-
         # Is particle 2 a background particle? If so, we need to
         # generate it's momentum
         if particle2.is_background():
             # Sort background particle 4-momentum
             p_i = Vec3(*self.nucleus.generate_momentum())
-            energy = np.sqrt(mN**2+p_i.P2())
-            p_mu = Vec4(energy, *p_i.Vec())
+            energy = np.sqrt(mN**2+p_i.p2)
+            p_mu = Vec4(energy, *p_i.vec)
             particle2.mom = p_mu
 
         # Start generation of final state phase space
         # Boost back to CoM frame
         total_momentum = particle1.mom+particle2.mom
-        boost_vec = total_momentum.BoostVector()
-#        cm_momentum = total_momentum.BoostBack(boost_vec)
+        boost_vec = total_momentum.boost_vector()
+        ecm = total_momentum.mom
         # Fully elastic scattering, protons and neutrons
         # are being treated equally
         # TODO: Inelastic scattering
@@ -410,54 +338,67 @@ class FSI:
         # Calculate if particles are inside cylinder with proper momentum
         # dependent cros section.
         # First, we need the momentum of particle 1 in the lab frame.
-        boost_vec_lab = particle2.mom.BoostVector()
-        lab_particle1_momentum = particle1.mom.BoostBack(boost_vec_lab).mom
-#        lab_particle1_momentum = lab_particle1_momentum.P()
+
         # Calculate cross section (flavor dependent)
         if particle1.pid == particle2.pid:
-            sigma_p_dependent = sigma_pp(lab_particle1_momentum)
+            mode = 'pp'
         else:
-            sigma_p_dependent = sigma_np(lab_particle1_momentum)
+            mode = 'np'
+
+        try:
+            sigma_p_dependent = self.interactions.cross_section(mode,
+                                                                ecm / GEV)
+        except ValueError:  # Fall back on hard-coded if not in table
+            logging.warn('Center of mass energy ({:.3f} MeV) not in table. '
+                         'Falling back on less accurate hard-coded '
+                         'values.'.format(ecm))
+            boost_vec_lab = particle2.mom.boost_vector()
+            lab_particle1_momentum = \
+                particle1.mom.boost_back(boost_vec_lab).mom
+            if mode == 'pp':
+                sigma_p_dependent = sigma_pp(lab_particle1_momentum)
+            else:
+                sigma_p_dependent = sigma_np(lab_particle1_momentum)
+
         # Check cylinder:
         # (using global cylinder variables defined in interacted)
         cylinder_r = np.sqrt(sigma_p_dependent/np.pi)
-        position = particle2.pos.Vec()
+        position = particle2.pos.vec
         really_did_hit = self.points_in_cylinder(
-            self.cylinder_pt1.array(),
-            self.cylinder_pt2.array(),
+            self.cylinder_pt1.array,
+            self.cylinder_pt2.array,
             cylinder_r,
             position
         )
         if not really_did_hit:
             return really_did_hit, particle1, particle2
 
-        # The original frame is not the lab frame, since both particles have,
-        # in general, non-zero momenta
         # Particle 4-momentum in CoM frame
-        p1_cm = particle1.mom.BoostBack(boost_vec)
-        p2_cm = particle2.mom.BoostBack(boost_vec)
+        p1_cm = particle1.mom.boost_back(boost_vec)
+        p2_cm = particle2.mom.boost_back(boost_vec)
 
-        # Fix magnitude, (theta, phi) generated isotropically
+        # Generate one outgoing momentum
         momentum = np.random.random(3)
         momentum[0] = p1_cm.mom
-        momentum[1] = np.arccos(2*momentum[1] - 1)
+        momentum[1] = np.radians(
+            self.interactions(mode, ecm / GEV, momentum[1]))
         momentum[2] = momentum[2]*2*np.pi
 
         # Three momentum in cartesian coordinates:
-        momentum = self.to_cartesian(momentum)
+        momentum = to_cartesian(momentum)
 
         # Outgoing 4-momenta
-        p1_out = Vec4(*[p1_cm.E, *momentum])
-        p2_out = Vec4(*[p1_cm.E, *(-momentum)])
+        p1_out = Vec4(*[p1_cm.energy, *momentum])
+        p2_out = Vec4(*[p1_cm.energy, *(-momentum)])
 
         # Get q0 in lab frame for formation zone
         # TODO: what happens in inelastic scatterings?
-        q_lab = p2_out.BoostBack(p2_cm.BoostVector()) - \
-            p2_cm.BoostBack(p2_cm.BoostVector())
+        q_lab = p2_out.boost_back(p2_cm.boost_vector()) - \
+            p2_cm.boost_back(p2_cm.boost_vector())
 
         # Boost to original frame
-        p1_out = p1_out.Boost(boost_vec)
-        p2_out = p2_out.Boost(boost_vec)
+        p1_out = p1_out.boost(boost_vec)
+        p2_out = p2_out.boost(boost_vec)
 
         # Check for Pauli blocking and return initial particles if it occurred
         really_did_hit = not(self.pauli_blocking(
@@ -468,9 +409,9 @@ class FSI:
             particle2.mom = p2_out
 
             # Assign formation zone
-            t = q_lab.M2()
-            particle1.set_formation_zone(q_lab.E, t, 0.139)
-            particle2.set_formation_zone(q_lab.E, t, 0.139)
+            mass2 = q_lab.mass2
+            particle1.set_formation_zone(q_lab.energy, mass2, 0.139)
+            particle2.set_formation_zone(q_lab.energy, mass2, 0.139)
             # logging.debug("form zone = ",foo, q_lab.E, t)
 
             # Hit background nucleon becomes propagating nucleon

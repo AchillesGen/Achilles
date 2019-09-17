@@ -91,10 +91,10 @@ def run():
             momentum = inclusive.generate_momentum(point)
             if momentum is not None:
                 # omega.append(inclusive.w)
-                # p_e_pre.append(momentum.E)
-                # p_px_pre.append(momentum.px)
-                # p_py_pre.append(momentum.py)
-                # p_pz_pre.append(momentum.pz)
+                p_e_pre.append(momentum.energy)
+                p_px_pre.append(momentum.p_x)
+                p_py_pre.append(momentum.p_y)
+                p_pz_pre.append(momentum.p_z)
                 wgts.append(wgt*weight/nitn)
                 wgts_f.append(wgt_f*weight/nitn)
 
@@ -104,19 +104,19 @@ def run():
                     escape.append(len(escaped_part))
                     fsi.reset()
 
-                    if not escaped_part:
+                    if escaped_part:
                         escaped_part.sort(reverse=True, key=momentum_sort)
                         momentum = escaped_part[0].mom
 
-                p_e.append(momentum.E)
-                p_px.append(momentum.px)
-                p_py.append(momentum.py)
-                p_pz.append(momentum.pz)
+                p_e.append(momentum.energy)
+                p_px.append(momentum.p_x)
+                p_py.append(momentum.p_y)
+                p_pz.append(momentum.p_z)
 
-                p_e_diff.append(momentum.E-p_e_pre[-1])
-                p_px_diff.append(momentum.px-p_px_pre[-1])
-                p_py_diff.append(momentum.py-p_py_pre[-1])
-                p_pz_diff.append(momentum.pz-p_pz_pre[-1])
+                p_e_diff.append(momentum.energy-p_e_pre[-1])
+                p_px_diff.append(momentum.p_x-p_px_pre[-1])
+                p_py_diff.append(momentum.p_y-p_py_pre[-1])
+                p_pz_diff.append(momentum.p_z-p_pz_pre[-1])
 
     print(sum(wgts), sum(wgts_f))
     print(count)

@@ -21,8 +21,8 @@ DIR, FILE = os.path.split(__file__)
 
 class Inclusive:
     """ Base class to implement inclusive cross-section calculations."""
-    def __init__(self, energy, thetalept, nucleus):
-        self.energy = energy
+    def __init__(self, nucleus, energy, thetalept):
+        self.beam_energy = energy
         self.thetalept = thetalept*np.pi/180.0
 
         if not isinstance(nucleus, Nucleus):
@@ -40,7 +40,7 @@ class Inclusive:
     @property
     def n_z(self):
         """ Get the number of protons in the nucleus. """
-        return self.nucleus.Z
+        return self.nucleus.protons
 
     @property
     def k_f(self):
@@ -170,8 +170,9 @@ class Quasielastic(Inclusive):
             domegap = self.wmax - self.wmin
             omegap = domegap*point[3] + self.wmin
 
-        qval = np.sqrt(2.0*self.energy*(self.energy - omega)
-                       * (1.0-self.coste) + omega**2)
+        eef = self.beam_energy - omega
+        q_2 = 2.0 * self.beam_energy * eef * (1.0 - self.coste)
+        qval = np.sqrt(q_2 + omega**2)
 
 #        dcos = np.sqrt(mqe**2+self.qval**2-(self.e_int+self.w)**2)/self.qval
 #        print(dcos)
@@ -203,8 +204,9 @@ class Quasielastic(Inclusive):
         dmom = self.pmax - self.pmin
         p_int = dmom*point[2] + self.pmin
 
-        qval = np.sqrt(2.0*self.energy*(self.energy - omega)
-                       * (1.0-self.coste) + omega**2)
+        eef = self.beam_energy - omega
+        q_2 = 2.0 * self.beam_energy * eef * (1.0 - self.coste)
+        qval = np.sqrt(q_2 + omega**2)
 
         e_out = np.sqrt(p_int**2+MQE**2)
         omegat = omega - e_int + MQE - e_out

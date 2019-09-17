@@ -5,6 +5,7 @@ import os
 import h5py
 import numpy as np
 from scipy import interpolate, optimize
+from absl import logging
 
 DIR, FILE = os.path.split(__file__)
 
@@ -39,6 +40,12 @@ class GeantData:
         interp_np = interpolate.interp2d(
             self._theta, self._pcm['np'], self._sig['np'])
         self._interp = {'pp': interp_pp, 'np': interp_np}
+        cross_section_pp = interpolate.interp1d(
+            self._pcm['pp'], self._sig_tot['pp'])
+        cross_section_np = interpolate.interp1d(
+            self._pcm['np'], self._sig_tot['np'])
+        self._cross_section = {'pp': cross_section_pp,
+                               'np': cross_section_np}
 
     def __call__(self, mode, energy, rand):
         """ Return the angle that has a probability rand at the given energy.
@@ -51,8 +58,22 @@ class GeantData:
             Returns:
                 - angle: Angle in degrees of the outgoing nucleons.
         """
-        return optimize.brentq(lambda x: self._interp[mode](x, energy) - rand,
-                               0.5, 179.5, rtol=1e-8)
+        try:
+            return optimize.brentq(
+                lambda x: self._interp[mode](x, energy) - rand,
+                0.5, 179.5, rtol=1e-8)
+        except ValueError:
+            # Linearly interpolate between 0 and 0.5
+            result = 0.5 / self._interp[mode](0.5, energy) * rand
+            print(result)
+            logging.warn('Random number {:.3e} outside range of '
+                         'f(0.5) = {:.3e} and f(179.5) = {:.3e}. '
+                         'Returning angle of {:.3e}.'.format(
+                             rand,
+                             self._interp[mode](0.5, energy)[0],
+                             self._interp[mode](179.5, energy)[0],
+                             result[0]))
+            return result[0]
 
     def call(self, mode, energy, rand):
         """ Return the angle that has a probability rand at the given energy.
@@ -66,6 +87,10 @@ class GeantData:
                 - angle: Angle in degrees of the outgoing nucleons.
         """
         return self(mode, energy, rand)
+
+    def cross_section(self, mode, energy):
+        """ Return the total cross-section at a given center of mass energy."""
+        return self._cross_section[mode](energy)
 
 
 if __name__ == '__main__':

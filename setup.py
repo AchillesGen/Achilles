@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#from setuptools import setup, find_packages, Extension
+# from setuptools import setup, find_packages, Extension
 import setuptools
 from numpy.distutils.core import setup, Extension
 from os import path
@@ -9,11 +9,11 @@ from os import path
 # and accepts an argument to specify the text encoding
 from io import open
 
-ext1 = Extension(name = 'xsec', sources=['nuChic/xsec.pyf',
-                                         'nuChic/currents_opt_v1.f90',
-                                         'nuChic/xsec.f90', 
-                                         'nuChic/mathtool.f90', 
-                                         'nuChic/nform.f90'])
+ext1 = Extension(name='xsec', sources=['nuChic/xsec.pyf',
+                                       'nuChic/currents_opt_v1.f90',
+                                       'nuChic/xsec.f90',
+                                       'nuChic/mathtool.f90',
+                                       'nuChic/nform.f90'])
 
 here = path.abspath(path.dirname(__file__))
 
@@ -28,7 +28,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/jxi24/FNALNeuGen',
-    author= 'Joshua Isaacson, \
+    author='Joshua Isaacson, \
             William Jay, \
             Alessandro Lovato, \
             Pedro A. Machado, \
@@ -45,7 +45,7 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3',
-        ],
+    ],
     packages=setuptools.find_packages(),
     python_requires='>=3.5, <4',
     install_requires=[
@@ -57,16 +57,15 @@ setup(
         'sklearn',
         'absl-py',
         'matplotlib',
-        ],
+    ],
     # Provide executable script to run the main code
     entry_points={'console_scripts': [
-        'nuChic = nuChic.main:nuChic',
-        ],
+        'nuChic = nuChic.main:nu_chic',
+    ],
     },
-    ext_modules = [ext1],
-    package_data={'':['data/*','pke/*','configurations/*']},
+    ext_modules=[ext1],
+    package_data={'': ['data/*', 'pke/*', 'configurations/*']},
     extras_require={
-        'test': ['pytest','coverage','pytest-cov'],
+        'test': ['pytest', 'coverage', 'pytest-cov'],
     },
 )
-
