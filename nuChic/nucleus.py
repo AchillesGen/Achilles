@@ -1,15 +1,19 @@
+""" Implement a class for information about the nucleus. """
+
 import os
 import numpy as np
-from nuChic.particle import Particle
-from nuChic.constants import MEV, MQE as mN
 import pandas as pd
 from scipy.spatial.transform import Rotation
+
+# from nuChic.particle import Particle
+from nuChic.constants import MEV, MQE as mN
 
 
 DIR, FILE = os.path.split(__file__)
 
 
 def main():
+    """ Main function for testing speed of the code. """
     import timeit
     print(
         timeit.timeit(
@@ -27,26 +31,20 @@ class Nucleus:
     Basic Nucleus class.
     TODO: Flesh out docs
     """
-    def __init__(self, Z, A, binding, kf, density_P=None, density_N=None):
+    def __init__(self, Z, A, binding, kf):
         if Z > A:
-            raise ValueError('Protons <= Total Nucelons')
+            raise ValueError('Requires the number of protons be less than '
+                             'total number of nucleons. Got {} protons and '
+                             '{} nucleons.'.format(Z, A))
 
-        self.Z = Z
-        self.A = A
+        self.protons = Z
+        self.nucleons = A
         self.binding = binding
         self.kf = kf
-        self.nuclear_density = 0.16
-        self.radius = pow(self.A / (4.0 / 3.0 * np.pi *
-                                    self.nuclear_density), 1.0 / 3.0)
-        if density_P is None:
-            density_P = self._density_P
-        if density_N is None:
-            density_N = self._density_N
-        self.density_P = density_P
-        self.density_N = density_N
+        self.radius = pow(self.nucleons / (4.0 / 3.0 * np.pi *
+                                           0.16), 1.0 / 3.0)
         self.potential = (np.sqrt(mN**2 + self.kf**2) - mN + 8*MEV)
 
-        # FIXME: reduced file size for quicker debugs (100,000 configs)
         # If it is Carbon-12, let's use Noemi's configurations.
         # We read it when defining the nucleus and then we only need to pick a
         # configuration when running the cascade
@@ -59,19 +57,10 @@ class Nucleus:
                 names=['index', 'pid', 'x', 'y', 'z'],
                 compression='gzip'
             )
-#            self.c12Density_db = pd.read_csv("/Users/pmachado/Dropbox/Projects/NuGen/FNALNeuGen/configurations/pos_part_in_v2.out",sep='\s+',names=['index','pid','x','y','z'], nrows=1200000)
-
-    def _density_P(self, r):
-        return self.nuclear_density / self.Z if r < self.radius else 0
-
-    def _density_N(self, r):
-        return self.nuclear_density / \
-            (self.A - self.Z) if r < self.radius else 0
-
-    def size(self):
-        # TODO is this function really necessary?
-        # It just seems like an alias for self.radius
-        return self.radius
+        else:
+            raise NotImplementedError('The nucleus with {} protons and {} '
+                                      'neutrons is currently not '
+                                      'implemented.'.format(Z, Z-A))
 
     def escape(self, particle):
         """Check whether or not the particle escaped.
@@ -97,7 +86,7 @@ class Nucleus:
 
     def absorb(self, particle):
         """TODO Implement absorb, add doc"""
-        pass
+
 
 #    def generate_config(self):
 #        def to_cartesian(coords):
@@ -129,21 +118,9 @@ class Nucleus:
 
     def generate_config(self):
         """ This reads C-12 configuration files only!!!"""
-        def to_cartesian(coords):
-            """Convert spherical coordinates to cartesian coordinates.
-            TODO This function is not used. Delete?
-            """
-            # r, theta, phi = coords
-            r = coords[:, 0]
-            theta = coords[:, 1]
-            phi = coords[:, 2]
-            x = r * np.sin(theta) * np.sin(phi)
-            y = r * np.sin(theta) * np.cos(phi)
-            z = r * np.cos(theta)
-            return np.transpose(np.array([x, y, z]))
 
-        if not(self.A == 12 and self.Z == 6):
-            raise Exception('Only C-12 is supported for now!')
+        if not(self.nucleons == 12 and self.protons == 6):
+            raise NotImplementedError('Only C-12 is supported for now!')
 
         config_index = np.random.randint(
             0, high=len(self.c12_density_db.index) / 12)
