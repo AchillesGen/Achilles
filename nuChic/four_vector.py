@@ -1,7 +1,7 @@
 """ Implement the Four Vector class. """
 
 import numpy as np
-from nuChic.ThreeVector import Vec3
+from nuChic.three_vector import Vec3
 
 
 class Vec4:
@@ -174,7 +174,7 @@ class Vec4:
         if not isinstance(beta, Vec3):
             raise Exception('Vec3')
 
-        beta2 = sum(x*x for x in beta.Vec())
+        beta2 = sum(x*x for x in beta.vec)
         gamma = 1.0/np.sqrt(1.0-beta2)
         betap = beta[0]*self.p_x+beta[1]*self.p_y+beta[2]*self.p_z
         gamma2 = (gamma-1.0)/beta2 if beta2 > 0 else 0.0

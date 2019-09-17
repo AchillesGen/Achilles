@@ -8,8 +8,8 @@ from mock import patch
 from nuChic.cascade import FSI
 from nuChic.constants import MEV, MQE as mN
 from nuChic.four_vector import Vec4
-from nuChic.ThreeVector import Vec3
-from nuChic.Particle import Particle
+from nuChic.three_vector import Vec3
+from nuChic.particle import Particle
 
 
 NPROTONS = 6

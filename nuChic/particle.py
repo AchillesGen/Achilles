@@ -1,10 +1,9 @@
 """ Implement the Particle class. """
 
 import numpy as np
-
 from nuChic.constants import HBARC
 from nuChic.four_vector import Vec4
-from nuChic.ThreeVector import Vec3
+from nuChic.three_vector import Vec3
 
 
 class Particle:
@@ -78,7 +77,6 @@ class Particle:
         """ Return the particle distance from origin. """
         return self.pos.p
 
-    @property
     def propagate(self, time):
         """ Propagation of a particle for a given time step
          The velocity is in terms of beta, time is in units of GeV^-1

@@ -1,6 +1,6 @@
-from nuChic.Particle import Particle
+from nuChic.particle import Particle
 from nuChic.four_vector import Vec4
-from nuChic.ThreeVector import Vec3
+from nuChic.three_vector import Vec3
 import numpy as np
 import pytest
 
@@ -29,20 +29,20 @@ def test_Particle_status():
     assert not part.is_background()
     assert part.is_propagating()
 
-def test_particle_Mom():
+def test_particle_mom():
     part = Particle(2212,Vec4(4,3,2,1),1,0,None)
-    assert part.E() == 4
-    assert part.Px() == 3
-    assert part.Py() == 2
-    assert part.Pz() == 1
-    assert part.M() == np.sqrt(2)
+    assert part.energy == 4
+    assert part.p_x == 3
+    assert part.p_y == 2
+    assert part.p_z == 1
+    assert part.mass == np.sqrt(2)
     assert part.vec() == Vec3(3.0/4.0,0.5,0.25)
 
 def test_Particle_prop():
     part = Particle(2212, Vec4(4,3,2,1), Vec3(0,0,0),0)
     part.propagate(0.1)
-    part.back_propagate()
-    assert part.r() == 0
+    part.back_propagate(0.1)
+    assert part.radius == 0
 
 def test_Particle_fzone():
     part = Particle(2212, Vec4(4,3,2,1), Vec3(0,0,0),0)

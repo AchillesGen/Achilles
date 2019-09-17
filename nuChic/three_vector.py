@@ -1,3 +1,4 @@
+"""Spatial three-vector"""
 import numpy as np
 
 
@@ -64,10 +65,12 @@ class Vec3:
                 return True
         return False
 
-    def Vec(self):
+    @property
+    def vec(self):
         """ The three-vector as a list """
         return [self.x, self.y, self.z]
 
+    @property
     def array(self):
         """ The three-vector as a np.array """
         return np.array([self.x, self.y, self.z])
@@ -78,31 +81,32 @@ class Vec3:
             raise Exception('Vec3')
         return self.x*v.x + self.y*v.y + self.z*v.z
 
-    def P2(self):
+    @property
+    def p2(self):
         """ The square of the vector """
         return self.dot(self)
 
-    def P(self):
+    @property
+    def p(self):
         """ The modulus of the vector """
-        return np.sqrt(self.P2())
+        return np.sqrt(self.p2)
 
     @property
     def theta(self):
         """ The polar angle theta of spherical coordinates """
-        return np.arccos(self.z/self.P())
+        return np.arccos(self.z/self.p)
 
     @property
     def phi(self):
         """ The azimuthal angle theta of spherical coordinates """
         if self.x == 0 and self.y == 0:
             return 0.0
-        else:
-            return np.arctan2(self.y, self.x)
+        return np.arctan2(self.y, self.x)
 
-    def Cross(self, v):
+    def cross(self, vec):
         """ The cross product of three-vectors (p x v)_i = eps_{ijk} p_j v_k"""
-        if not isinstance(v, Vec3):
+        if not isinstance(vec, Vec3):
             raise Exception('Vec3')
-        return Vec3(self.y*v.z - self.z*v.y,
-                    self.z*v.x - self.x*v.z,
-                    self.x*v.y - self.y*v.x)
+        return Vec3(self.y*vec.z - self.z*vec.y,
+                    self.z*vec.x - self.x*vec.z,
+                    self.x*vec.y - self.y*vec.x)

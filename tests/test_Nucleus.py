@@ -1,4 +1,4 @@
-from nuChic.Nucleus import Nucleus
+from nuChic.nucleus import Nucleus
 import numpy as np
 import pytest
 
