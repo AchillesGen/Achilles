@@ -6,9 +6,9 @@ import numpy as np
 from absl import logging
 
 from nuChic.four_vector import Vec4
-from nuChic.ThreeVector import Vec3
-from nuChic.Particle import Particle
-from nuChic.Nucleus import Nucleus
+from nuChic.three_vector import Vec3
+from nuChic.particle import Particle
+from nuChic.nucleus import Nucleus
 from nuChic.constants import FM as fm, MQE as mN
 from nuChic.Interaction import sigma_pp, sigma_np
 
@@ -339,10 +339,10 @@ class FSI:
             if self.nucleons[i].is_final() or \
                     self.nucleons[i].is_in_formation_zone():
                 continue
-            position = self.nucleons[i].pos.Vec()
+            position = self.nucleons[i].pos.vec
             in_cylinder = self.points_in_cylinder(
-                self.cylinder_pt1.array(),
-                self.cylinder_pt2.array(),
+                self.cylinder_pt1.array,
+                self.cylinder_pt2.array,
                 cylinder_r,
                 position
             )

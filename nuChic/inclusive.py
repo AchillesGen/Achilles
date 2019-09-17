@@ -8,7 +8,7 @@ from absl import flags
 from absl import logging
 
 from .four_vector import Vec4
-from .Nucleus import Nucleus
+from .nucleus import Nucleus
 from .constants import MEV, HBARC, MQE
 from .folding import Folding
 

@@ -9,7 +9,7 @@ import pandas as pd
 import numpy as np
 
 from .inclusive import Quasielastic
-from .Nucleus import Nucleus
+from .nucleus import Nucleus
 from .constants import MEV as MeV
 from .cascade import FSI
 from .utils import momentum_sort
