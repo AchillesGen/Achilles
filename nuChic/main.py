@@ -144,19 +144,19 @@ def run():
     bin_widths = np.diff(bins)
     print(bins)
 
-    hist, bins = np.histogram(omega, weights=wgts, bins=bins)
-    hist_f, bins = np.histogram(omega, weights=wgts_f, bins=bins)
+    # hist, bins = np.histogram(omega, weights=wgts, bins=bins)
+    # hist_f, bins = np.histogram(omega, weights=wgts_f, bins=bins)
 
-    hist /= bin_widths
-    hist_f /= bin_widths
+    # hist /= bin_widths
+    # hist_f /= bin_widths
 
-    _, ax1 = plt.subplots(nrows=1, ncols=1)
-    ax1.errorbar(data_omega*1000, data_dsigma,
-                 yerr=data_error, fmt='o', color='red')
-    # ax1.plot(omega_f,dsigma, color='red', ls='steps')
-    ax1.plot(bins[:-1], hist, color='blue', ds='steps', label='No FSI')
-    ax1.plot(bins[:-1], hist_f, color='green', ds='steps', label='FSI')
-    ax1.legend()
+    # _, ax1 = plt.subplots(nrows=1, ncols=1)
+    # ax1.errorbar(data_omega*1000, data_dsigma,
+    #              yerr=data_error, fmt='o', color='red')
+    # # ax1.plot(omega_f,dsigma, color='red', ls='steps')
+    # ax1.plot(bins[:-1], hist, color='blue', ds='steps', label='No FSI')
+    # ax1.plot(bins[:-1], hist_f, color='green', ds='steps', label='FSI')
+    # ax1.legend()
     # ax1.hist(omega,weights=wgts,bins=data_omega[:-1]*1000,color='blue')
     # ax1.hist(omega,weights=wgts_f,bins=data_omega[:-1]*1000,color='green')
     # ax2.hist(mom,weights=wgts,bins=400)
