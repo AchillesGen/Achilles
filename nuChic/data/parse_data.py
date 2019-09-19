@@ -65,7 +65,6 @@ class GeantData:
         except ValueError:
             # Linearly interpolate between 0 and 0.5
             result = 0.5 / self._interp[mode](0.5, energy) * rand
-            print(result)
             logging.warn('Random number {:.3e} outside range of '
                          'f(0.5) = {:.3e} and f(179.5) = {:.3e}. '
                          'Returning angle of {:.3e}.'.format(
