@@ -1,7 +1,6 @@
 """ Testing cascade code. """
 
 import numpy as np
-from numpy import linalg as LA
 # import pytest
 from mock import patch
 
@@ -18,7 +17,7 @@ NNEUTRONS = 6
 NEUTRONS = np.random.random((NNEUTRONS, 3))
 
 
-@patch('nuChic.cascade.Nucleus')
+@patch('nuChic.nucleus.Nucleus')
 def test_cascade_init(mock_nucleus):
     """ Test cascade initialization. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -29,7 +28,7 @@ def test_cascade_init(mock_nucleus):
     assert mock_nucleus.generate_config.called_once()
 
 
-@patch('nuChic.cascade.Nucleus')
+@patch('nuChic.nucleus.Nucleus')
 def test_kick(mock_nucleus):
     """ Test cascade kick. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -56,7 +55,7 @@ def _get_momentums(particles, mode):
     return momentum
 
 
-@patch('nuChic.cascade.Nucleus')
+@patch('nuChic.nucleus.Nucleus')
 def test_reset(mock_nucleus):
     """ Test cascade reset. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -82,21 +81,16 @@ def test_reset(mock_nucleus):
 
 
 def test_points_in_cylinder():
+    """ Test cylinder check. """
     assert FSI.points_in_cylinder(pt1=[0, 0, 0], pt2=[0, 0, 1],
                                   radius=1, position=[0.2, 0.2, 0.2])
     assert not(FSI.points_in_cylinder(pt1=[0, 0, 0], pt2=[0, 0, 1],
                                       radius=1, position=[0, 1.1, 0.5]))
 
 
-def test_to_cartesian():
-    coords = [[1, 0, 0], [1, np.pi/2, 0], [1, np.pi/2, np.pi/2]]
-    results = [[0, 0, 1], [0, 1, 0], [1, 0, 0]]
-    for i in range(3):
-        assert LA.norm((FSI.to_cartesian(coords[i])-results[i])) < 1E-10
-
-
-@patch('nuChic.cascade.Nucleus')
+@patch('nuChic.nucleus.Nucleus')
 def test_pauli_blocking(mock_nucleus):
+    """ Test Pauli blocking for the cascade. """
     k_f = 225 * MEV
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
     mock_nucleus.kf = k_f
@@ -108,8 +102,9 @@ def test_pauli_blocking(mock_nucleus):
     assert not cascade.pauli_blocking(fv2)
 
 
-@patch('nuChic.cascade.Nucleus')
+@patch('nuChic.nucleus.Nucleus')
 def test_interacted(mock_nucleus):
+    """ Test cascade interaction model. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
     cascade = FSI(mock_nucleus, 1.0)
 
