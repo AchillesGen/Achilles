@@ -9,7 +9,6 @@ from nuChic.utils import to_cartesian
 from nuChic.four_vector import Vec4
 from nuChic.three_vector import Vec3
 from nuChic.particle import Particle
-from nuChic.nucleus import Nucleus
 from nuChic.constants import FM as fm, MQE as mN, GEV
 from nuChic.data.parse_data import GeantData
 from nuChic.Interaction import sigma_pp, sigma_np
@@ -41,9 +40,6 @@ class FSI:
             energy_transfer: float, energy transfered to the nucleus.
             dt: float, time step
         """
-        if not isinstance(nucleus, Nucleus):
-            raise TypeError('Expected a Nucleus as input, got {}'
-                            % type(nucleus))
         self.nucleus = nucleus
         self.time_step = dt
 
@@ -103,9 +99,6 @@ class FSI:
         self.kicked_idxs.append(np.random.randint(
             low=0, high=len(self.nucleons)))
         self.nucleons[self.kicked_idxs[0]].status = -1  # propagating nucleon
-        # Ep = mN+energy_transfer
-        # pp = np.sqrt(Ep**2-mN**2)
-        # self.nucleons[self.kicked_idxs[0]].mom = Vec4(Ep, 0, 0, pp)
         self.nucleons[self.kicked_idxs[0]].mom = energy_transfer
 
     def reset(self):
@@ -330,7 +323,11 @@ class FSI:
         # Boost back to CoM frame
         total_momentum = particle1.mom+particle2.mom
         boost_vec = total_momentum.boost_vector()
-        ecm = total_momentum.mom
+
+        # Particle 4-momentum in CoM frame
+        ecm = total_momentum.mass
+        pcm = particle1.mom.mom*mN/ecm
+
         # Fully elastic scattering, protons and neutrons
         # are being treated equally
         # TODO: Inelastic scattering
@@ -347,14 +344,13 @@ class FSI:
 
         try:
             sigma_p_dependent = self.interactions.cross_section(mode,
-                                                                ecm / GEV)
+                                                                pcm / GEV)
         except ValueError:  # Fall back on hard-coded if not in table
-            logging.warn('Center of mass energy ({:.3f} MeV) not in table. '
+            logging.warn('Center of mass momentum ({:.3f} MeV) not in table. '
                          'Falling back on less accurate hard-coded '
-                         'values.'.format(ecm))
-            boost_vec_lab = particle2.mom.boost_vector()
+                         'values.'.format(pcm))
             lab_particle1_momentum = \
-                particle1.mom.boost_back(boost_vec_lab).mom
+                particle1.mom.boost_back(particle2.mom.boost_vector()).mom
             if mode == 'pp':
                 sigma_p_dependent = sigma_pp(lab_particle1_momentum)
             else:
@@ -363,25 +359,31 @@ class FSI:
         # Check cylinder:
         # (using global cylinder variables defined in interacted)
         cylinder_r = np.sqrt(sigma_p_dependent/np.pi)
-        position = particle2.pos.vec
         really_did_hit = self.points_in_cylinder(
             self.cylinder_pt1.array,
             self.cylinder_pt2.array,
             cylinder_r,
-            position
+            particle2.pos.vec
         )
         if not really_did_hit:
             return really_did_hit, particle1, particle2
 
-        # Particle 4-momentum in CoM frame
+        return self.finalize_momentum(mode, particle1, particle2, boost_vec)
+
+    def finalize_momentum(self, mode, particle1, particle2, boost_vec):
+        """ Finalize generated momentum. """
+
+        # Boost to center of mass frame
         p1_cm = particle1.mom.boost_back(boost_vec)
         p2_cm = particle2.mom.boost_back(boost_vec)
+        ecm = (p1_cm + p2_cm).energy
+        pcm = particle1.mom.mom*mN/ecm
 
         # Generate one outgoing momentum
         momentum = np.random.random(3)
         momentum[0] = p1_cm.mom
         momentum[1] = np.radians(
-            self.interactions(mode, ecm / GEV, momentum[1]))
+            self.interactions(mode, pcm / GEV, momentum[1]))
         momentum[2] = momentum[2]*2*np.pi
 
         # Three momentum in cartesian coordinates:
@@ -409,6 +411,7 @@ class FSI:
             particle2.mom = p2_out
 
             # Assign formation zone
+            # FIXME: Magic number 0.139. What is it?
             mass2 = q_lab.mass2
             particle1.set_formation_zone(q_lab.energy, mass2, 0.139)
             particle2.set_formation_zone(q_lab.energy, mass2, 0.139)
@@ -418,10 +421,6 @@ class FSI:
             particle2.status = -1
 
         return really_did_hit, particle1, particle2
-#        else :
-#            return really_did_hit, particle1, particle2in
-#            particle1 = deepcopy(particle1in)
-#            particle2 = deepcopy(particle2in)
 
     def pauli_blocking(self, four_momentum):
         ''' Checks if Pauli blocking occurred
