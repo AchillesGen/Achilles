@@ -411,11 +411,10 @@ class FSI:
             particle2.mom = p2_out
 
             # Assign formation zone
-            # FIXME: Magic number 0.139. What is it?
+            # FIXME: Change formation zone in particle.py
             mass2 = q_lab.mass2
             particle1.set_formation_zone(q_lab.energy, mass2, 0.139)
             particle2.set_formation_zone(q_lab.energy, mass2, 0.139)
-            # logging.debug("form zone = ",foo, q_lab.E, t)
 
             # Hit background nucleon becomes propagating nucleon
             particle2.status = -1

@@ -117,8 +117,10 @@ class Particle:
         some time/distance. The in_formation_zone variable should be used as
         a countdown variable to have an interacting particle again after the
         formation zone.
-        Ref.: L. Stodolski, Formation Zone Description in Multiproduction, 1975
+        Ref.: L. Stodolsky, Formation Zone Description in Multiproduction, 1975
+        Ref.: Phys. Rev. C. 86.015505
         '''
+        # TODO: Should be t = \frac{E^0_{lab}}{mN^2 - p_{in}\dot p_{out}}
         self.formation_zone = q0_lab/(-t+mu**2)  # time in GeV^-1
         return self.formation_zone
 

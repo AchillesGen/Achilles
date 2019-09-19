@@ -15,6 +15,14 @@ class GeantData:
 
     The results are interpolated from data from the GEANT program.
 
+    The data can be found at:
+    https://github.com/Geant4/geant4/blob/master/source/processes/hadronic/models/coherent_elastic/include/G4LEnp.hh
+    and
+    https://github.com/Geant4/geant4/blob/master/source/processes/hadronic/models/coherent_elastic/include/G4LEpp.hh
+
+    Interpretation of p_cm can be found at:
+    https://github.com/Geant4/geant4/blob/master/source/processes/hadronic/models/coherent_elastic/src/G4HadronElastic.cc
+
     >>> import numpy as np
     >>> g = GeantData()
     >>> np.allclose(g('np', 0.8, g._interp['np'](90, 0.8)), 90)
