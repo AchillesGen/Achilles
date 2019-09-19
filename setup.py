@@ -1,31 +1,32 @@
 #!/usr/bin/env python
+""" Setup script for the nuChic neutrino event generator. """
 
 # from setuptools import setup, find_packages, Extension
+from os import path
+from io import open
 import setuptools
 from numpy.distutils.core import setup, Extension
-from os import path
 # io.open is needed for projects that support Python 2.7
 # It ensures open() defaults to text mode with universal newlines,
 # and accepts an argument to specify the text encoding
-from io import open
 
-ext1 = Extension(name='xsec', sources=['nuChic/xsec.pyf',
+EXT1 = Extension(name='xsec', sources=['nuChic/xsec.pyf',
                                        'nuChic/currents_opt_v1.f90',
                                        'nuChic/xsec.f90',
                                        'nuChic/mathtool.f90',
                                        'nuChic/nform.f90'])
 
-here = path.abspath(path.dirname(__file__))
+HERE = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
-    long_description = f.read()
+with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
+    LONG_DESCRIPTION = f.read()
 
 setup(
     name='nuChic',
     version='1.0',
     description='Neutrino Event Generator',
-    long_description=long_description,
+    long_description=LONG_DESCRIPTION,
     long_description_content_type='text/markdown',
     url='https://github.com/jxi24/FNALNeuGen',
     author='Joshua Isaacson, \
@@ -59,11 +60,8 @@ setup(
         'matplotlib',
     ],
     # Provide executable script to run the main code
-    entry_points={'console_scripts': [
-        'nuChic = nuChic.main:nu_chic',
-    ],
-    },
-    ext_modules=[ext1],
+    entry_points={'console_scripts': ['nuChic = nuChic.main:nu_chic', ], },
+    ext_modules=[EXT1],
     package_data={'': ['data/*', 'pke/*', 'configurations/*']},
     extras_require={
         'test': ['pytest', 'coverage', 'pytest-cov'],
