@@ -10,6 +10,7 @@ Short term:
  - Implement user defined input file/interface
  - Implement two body currents
  - Event output file format (focus on LHE format)
+    - NOTE (JI): LHE format has been implemented, do we want any others?
  - Compare with electron scattering data
 
 Long term:
