@@ -4,7 +4,6 @@ Short term:
  - Finish reformatting
  - Implement FSI folding functions according to blackboard discussion
  - Refactor cascade code
- - Fix: formation zone
  - Understand Geant4 variable `center of mass momentum'
  - Figure out in VEGAS how to generate a fixed number of events
  - Implement user defined input file/interface
