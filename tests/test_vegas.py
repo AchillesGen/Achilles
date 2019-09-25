@@ -15,23 +15,40 @@ def test_vegas_init():
     Integrator([[0, 1]]*ndims)
 
 
-def test_vegas_events():
+def test_vegas_weighted_events():
     """ Test vegas wgted events. """
     ndims = 3
-    nevents = 10000
+    nevents = 1000
     vegas = Integrator([[0, 1]]*ndims)
-    result = vegas(_func, neval=1e6)
-    print(result.summary())
-    vegas.set(beta=-1)
-    points, weights = vegas.get_events(nevents)
+    vegas_result = vegas(_func)
+
+    points, weights, result = vegas.get_weighted_events(_func, nevents)
 
     assert len(points) == nevents
     assert len(weights) == nevents
 
+    # Ensure answers are consistent at 2 sigma
+    # (This should fail about 5% of the time)
+    assert np.abs(vegas_result.mean - result.mean) \
+        < 2*(vegas_result.sdev + result.sdev)
+
+
+def test_vegas_unweighted_events():
+    """ Test vegas wgted events. """
+    ndims = 3
+    nevents = 10000
+    vegas = Integrator([[0, 1]]*ndims)
+    result = vegas(_func)
+    v_result = result.mean
+    events = vegas.get_unweighted_events(_func, nevents)
+
+    assert len(events) == nevents
+
     result = 0
-    for i, _ in enumerate(points):
-        result += _func(points[i]) * weights[i]
+    result2 = 0
+    for event in events:
+        result += _func(event)
+        result2 += (_func(event))**2
 
-    print(result)
-
-    assert False
+    assert np.abs(v_result - result) < np.sqrt(
+        (result2*nevents - result**2)/nevents)
