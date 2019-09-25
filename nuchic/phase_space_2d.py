@@ -1,9 +1,13 @@
+""" Implement a class for generating 2-d phase space points. """
+
 import numpy as np
 import vegas
-from nuChic.four_vector import Vec4
+from .four_vector import Vec4
+from .constants import HBARC2
 
 
 def main():
+    """ Function for testing basic functionality. """
     import matplotlib.pyplot as plt
     import argparse
 
@@ -41,22 +45,16 @@ def main():
 
     # Parse input arguments
     args = vars(parser.parse_args())
-    energy1 = args['E1']
-    energy2 = args['E2']
-    mass = [args['m1'], args['m2'], args['m3'], args['m4']]
-    nevents = args['nevents']
 
     # Arrays to hold the histograms and the weight of each event
-    s = []
-    costheta = []
-    phi = []
-    wgts = []
+    plots = {'s': [],
+             'costheta': [],
+             'phi': [],
+             'wgts': []}
 
     # Initialize the phase space class
-    ps = PhaseSpace(energy1, energy2, 4, mass)
-
-    # hbarc2 = 3.8937966 * 10^8 pb*GeV^2 (Convert units from 1/GeV^2 to pb)
-    hbarc2 = 3.8937966E8
+    phase_space = PhaseSpace(args['E1'], args['E2'], 4,
+                             [args['m1'], args['m2'], args['m3'], args['m4']])
 
     # Define the matrix element for e+ e- -> mu+ mu- for debugging purposes
     def mat(moms, mass):
@@ -72,25 +70,24 @@ def main():
                 elements
         Returns:
             float: the spin-averaged square of the matrix element, i.e.,
-            .. math:: \frac{1}{4} \sum_{spins} |M|^2
+            .. math:: \\frac{1}{4} \\sum_{spins} |M|^2
         """
-        s = (moms[0] + moms[1]).dot(moms[0] + moms[1])
-        t = (moms[0] - moms[2]).dot(moms[0] - moms[2])
-        u = (moms[0] - moms[3]).dot(moms[0] - moms[3])
+        mandelstam = [(moms[0] + moms[1]).dot(moms[0] + moms[1]),
+                      (moms[0] - moms[2]).dot(moms[0] - moms[2]),
+                      (moms[0] - moms[3]).dot(moms[0] - moms[3])]
 
-        m_e = mass[0]         # elecron mass
-        m_mu = mass[2]        # muon mass
-        m2 = m_e**2 + m_mu**2  # Sum of squares of masses
+        m_2 = mass[0]**2 + mass[2]**2  # Sum of squares of masses
 
         alpha = 1.0 / 137.0     # Fine-structure constnat
-        e2 = 4.0 * np.pi * alpha  # Squared electric charge
-        e4 = e2**2
+        e_2 = 4.0 * np.pi * alpha  # Squared electric charge
+        e_4 = e_2**2
 
         # Compare to Eq (13.68) of Schwartz's "QFT and the Standard Model"
-        return 2.0 * e4 * (t**2 + u**2 + 4 * s**2 * m2 - 2 * m2**2) / s**2
+        return 2.0 * e_4 * (mandelstam[1]**2 + mandelstam[2]**2
+                            + 4 * mandelstam[0]**2 * m_2 - 2 * m_2**2) \
+            / mandelstam[0]**2
 
     # Generate an event given an input from VEGAS
-
     def generate_event(x):
         """
         Generates an event using 2-body phase space
@@ -105,24 +102,25 @@ def main():
             dependes on global variable fill to decide whether or not to fill
                 histograms
             depends on global variables s, costheta, phi, wgts for histograms
-            depends on global variable nevents to normalize the total cross section
+            depends on global variable nevents to normalize the total cross
+                section
         """
 
-        wgt, event = ps.generate_2_body(x)
+        wgt, event = phase_space.generate_2_body(x)
         if wgt == 0:
             return 0
 
-        wgt *= mat(event, ps._mass) * hbarc2
+        wgt *= mat(event, phase_space.mass) * HBARC2
 
         # If on the main run, fill the histograms
         if fill:
-            s.append((event[2] + event[3]).dot(event[2] + event[3]))
-            costheta.append(np.cos(event[2].Theta()))
-            phi.append(event[2].Phi())
+            plots['s'].append((event[2] + event[3]).dot(event[2] + event[3]))
+            plots['costheta'].append(np.cos(event[2].Theta()))
+            plots['phi'].append(event[2].Phi())
 
             # Weights need to be normalized to the number of events to ensure
             # the total cross-section is correct in the plots
-            wgts.append(wgt / nevents)
+            plots['wgts'].append(wgt / args['nevents'])
 
         return wgt
 
@@ -135,7 +133,7 @@ def main():
 
     # Main run (fill histograms)
     fill = True
-    result = integ(generate_event, nitn=10, neval=nevents / 10)
+    result = integ(generate_event, nitn=10, neval=args['nevents'] / 10)
 
     # Print a summary of the VEGAS Integration results
     print("Summary of VEGAS integration results")
@@ -145,23 +143,26 @@ def main():
     # Eq (13.78) in Schwartz's "QFT and the Standard Model" (and the discussion
     # immediately following) show that total cross section is
     # sigma = 4*pi*alpha^2 / (3* energy_cm^2)
-    sigma = 4. * np.pi * (1. / 137.)**2 / 3. / (energy1 + energy2)**2.
-    sigma *= hbarc2  # GeV^-2 to pb
+    sigma = 4. * np.pi * (1. / 137.)**2 / 3. / (args['E1'] + args['E2'])**2.
+    sigma *= HBARC2  # GeV^-2 to pb
     print("The exact 1-loop answer is {0:.5f}... pb".format(sigma))
 
     # Plot the diagnostic histograms
-    _, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
-    ax1.hist(wgts)
-    ax2.hist(costheta, weights=wgts, bins=100)
-    ax3.hist(phi, weights=wgts)
-    ax4.hist(s, weights=wgts)
+    def plot():
+        _, ((ax1, ax2), (ax3, ax4)) = plt.subplots(nrows=2, ncols=2)
+        ax1.hist(plots['wgts'])
+        ax2.hist(plots['costheta'], weights=plots['wgts'], bins=100)
+        ax3.hist(plots['phi'], weights=plots['wgts'])
+        ax4.hist(plots['s'], weights=plots['wgts'])
 
-    ax1.set_title("Weights")
-    ax2.set_title(r"$\cos\\theta$")
-    ax3.set_title(r"$\phi$")
-    ax4.set_title("$s$")
-    plt.tight_layout()
-    plt.show()
+        ax1.set_title("Weights")
+        ax2.set_title(r"$\cos\\theta$")
+        ax3.set_title(r"$\phi$")
+        ax4.set_title("$s$")
+        plt.tight_layout()
+        plt.show()
+
+    plot()
 
 
 class PhaseSpace:
@@ -173,8 +174,8 @@ class PhaseSpace:
     Attributes:
         beam1: first incoming beam of particles
         beam2: second incoming beam of particles
-        nParticles: integer, the total number of incoming plus outgoing particles
-            Default is 4.
+        nParticles: integer, the total number of incoming plus outgoing
+            particles. Default is 4.
         mass: list of floats, the masses of the particles. Defaults to massless
             particles.
     """
@@ -184,11 +185,33 @@ class PhaseSpace:
         self.beam2 = beam2
         self.n_particles = n_particles
         if mass is None:
-            self._mass = [0] * n_particles
+            self.mass = [0] * n_particles
         elif len(mass) != n_particles:
             raise Exception('Incorrect number of masses given')
         else:
             self.mass = mass
+
+    @staticmethod
+    def _angle_map(x):
+        # Generate a random value for cos(theta)
+        # Use change of variables twice
+        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
+        # i.e., d(cos0) = d(2x-1) = 2*dx
+        dcos_theta = 2
+        cos_theta = dcos_theta * x[0] - 1
+        theta = np.arccos(cos_theta)
+
+        # Generate a random value for phi
+        # Use change of variables once: x in [0,1] --> phi in [0,2*pi]
+        # i.e., dphi = 2*pi*dx
+        dphi = 2 * np.pi
+        phi = dphi * x[1]
+
+        return [theta, phi], dcos_theta*dphi
+
+    def __call__(self, x):
+        """ Alias for generate_2_body. """
+        return self.generate_2_body(x)
 
     def generate_2_body(self, x):
         """
@@ -206,19 +229,7 @@ class PhaseSpace:
         if self.n_particles != 4:
             raise Exception('More than 2 particles in the final state')
 
-        # Generate a random value for cos(theta)
-        # Use change of variables twice
-        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
-        # i.e., d(cos0) = d(2x-1) = 2*dx
-        dcos_theta = 2
-        cos_theta = dcos_theta * x[0] - 1
-        theta = np.arccos(cos_theta)
-
-        # Generate a random value for phi
-        # Use change of variables once: x in [0,1] --> phi in [0,2*pi]
-        # i.e., dphi = 2*pi*dx
-        dphi = 2 * np.pi
-        phi = dphi * x[1]
+        angle, angle_wgt = self._angle_map(x)
 
 #        if self._beam1.monochromatic:
 #            energy1 = self._beam1.Energy()
@@ -240,17 +251,16 @@ class PhaseSpace:
         mass4 = self.mass[3]
 
         # Find center of mass
-        p1 = Vec4(energy1, 0, 0, np.sqrt(energy1**2 - mass1**2))
-        p2 = Vec4(energy2, 0, 0, -np.sqrt(energy2**2 - mass2**2))
-        p_lab = p1 + p2
+        p_1 = Vec4(energy1, 0, 0, np.sqrt(energy1**2 - mass1**2))
+        p_2 = Vec4(energy2, 0, 0, -np.sqrt(energy2**2 - mass2**2))
 
         # Boost to center of mass frame
-        self._beta_cm = p_lab.boost_vector()
-        p1 = p1.boost(-self._beta_cm)
-        p2 = p2.boost(-self._beta_cm)
+        _beta_cm = (p_1 + p_2).boost_vector()
+        p_1 = p_1.boost(-_beta_cm)
+        p_2 = p_2.boost(-_beta_cm)
 
         # Calculate the momentum of the outgoing particles
-        energy_cm = p1.energy + p2.energy
+        energy_cm = p_1.energy + p_2.energy
         if energy_cm < mass3 + mass4:
             # Below threshold
             return 0, None
@@ -261,31 +271,32 @@ class PhaseSpace:
         # E_4^2 = p_CM^2 + m_4^2
         # We solve these three equations for p_CM, E3, and E4
 
-        # Solve for p_CM^2: p_CM^2 = (E_CM-m_3-m_4)*(E_CM+m_3-m_4)*(E_CM-m_3+m_4)*(E_CM+m_3+m_4)/(2*E_CM)^2
+        # Solve for p_CM^2:
+        #           (E_CM-m_3-m_4)*(E_CM+m_3-m_4)*(E_CM-m_3+m_4)*(E_CM+m_3+m_4)
+        #  p_CM^2 = -----------------------------------------------------------
+        #                                   (2*E_CM)^2
         # Can verify in one line with Mathematica
         p_cm = (energy_cm - mass3 - mass4) * (energy_cm + mass3 - mass4) * \
             (energy_cm - mass3 + mass4) * (energy_cm + mass3 + mass4)
         p_cm = np.sqrt(p_cm) / (2 * energy_cm)
 
         # Fill the momentum
-        E3 = np.sqrt(p_cm**2 + mass3**2)
-        E4 = np.sqrt(p_cm**2 + mass4**2)
-        p3 = Vec4(E3,
-                  p_cm * np.sin(theta) * np.cos(phi),
-                  p_cm * np.sin(theta) * np.sin(phi),
-                  p_cm * np.cos(theta))
-        p4 = Vec4(E4,
-                  -p_cm * np.sin(theta) * np.cos(phi),
-                  -p_cm * np.sin(theta) * np.sin(phi),
-                  -p_cm * np.cos(theta))
-        moms = [p1, p2, p3, p4]
+        p_3 = Vec4(p_cm**2 + mass3**2,
+                   p_cm * np.sin(angle[0]) * np.cos(angle[1]),
+                   p_cm * np.sin(angle[0]) * np.sin(angle[1]),
+                   p_cm * np.cos(angle[0]))
+        p_4 = Vec4(p_cm**2 + mass4**2,
+                   -p_cm * np.sin(angle[0]) * np.cos(angle[1]),
+                   -p_cm * np.sin(angle[0]) * np.sin(angle[1]),
+                   -p_cm * np.cos(angle[0]))
+        moms = [p_1, p_2, p_3, p_4]
 
         # Calculate the phase space weight
         # Assumes that incoming particles are aligned on the z-axis
         # Compare with Eq (5.32) in Schwartz's "QFT and the Standard Model"
 
         wgt = 1.0 / (64.0 * np.pi**2 * energy_cm**2) * \
-            p1.p_z / p_cm * dphi * dcos_theta
+            p_1.p_z / p_cm * angle_wgt
 
         return wgt, moms
 

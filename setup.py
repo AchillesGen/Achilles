@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" Setup script for the nuChic neutrino event generator. """
+""" Setup script for the nuchic neutrino event generator. """
 
 # from setuptools import setup, find_packages, Extension
 from os import path
@@ -10,11 +10,11 @@ from numpy.distutils.core import setup, Extension
 # It ensures open() defaults to text mode with universal newlines,
 # and accepts an argument to specify the text encoding
 
-EXT1 = Extension(name='xsec', sources=['nuChic/xsec.pyf',
-                                       'nuChic/currents_opt_v1.f90',
-                                       'nuChic/xsec.f90',
-                                       'nuChic/mathtool.f90',
-                                       'nuChic/nform.f90'])
+EXT1 = Extension(name='xsec', sources=['nuchic/xsec.pyf',
+                                       'nuchic/currents_opt_v1.f90',
+                                       'nuchic/xsec.f90',
+                                       'nuchic/mathtool.f90',
+                                       'nuchic/nform.f90'])
 
 HERE = path.abspath(path.dirname(__file__))
 
@@ -23,7 +23,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
 setup(
-    name='nuChic',
+    name='nuchic',
     version='1.0',
     description='Neutrino Event Generator',
     long_description=LONG_DESCRIPTION,
@@ -60,7 +60,7 @@ setup(
         'matplotlib',
     ],
     # Provide executable script to run the main code
-    entry_points={'console_scripts': ['nuChic = nuChic.main:nu_chic', ], },
+    entry_points={'console_scripts': ['nuchic = nuchic.main:nu_chic', ], },
     ext_modules=[EXT1],
     package_data={'': ['data/*', 'pke/*', 'configurations/*']},
     extras_require={

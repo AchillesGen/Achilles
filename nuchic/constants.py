@@ -13,3 +13,5 @@ HBARC = 197.3269788 * MEV * FM
 MP = 938.272046 * MEV
 MN = 939.56563 * MEV
 MQE = 0.5*(MP+MN)
+# hbarc2 = 3.8937966 * 10^8 pb*GeV^2 (Convert units from 1/GeV^2 to pb)
+HBARC2 = 3.8937966E8  # pb * GEV^2

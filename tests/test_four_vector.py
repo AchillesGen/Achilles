@@ -1,9 +1,8 @@
 """ Tests Four Vector."""
-import ast
 import numpy as np
 import pytest
 
-from nuChic.four_vector import Vec4
+from nuchic.four_vector import Vec4
 
 
 def test_vec4_init():

@@ -1,9 +1,9 @@
 """ Implement the Particle class. """
 
 import numpy as np
-from nuChic.constants import HBARC
-from nuChic.four_vector import Vec4
-from nuChic.three_vector import Vec3
+from .constants import HBARC, MQE as mN
+from .four_vector import Vec4
+from .three_vector import Vec3
 
 
 class Particle:
@@ -75,7 +75,7 @@ class Particle:
     @property
     def radius(self):
         """ Return the particle distance from origin. """
-        return self.pos.p
+        return self.pos.mag
 
     def propagate(self, time):
         """ Propagation of a particle for a given time step
@@ -109,7 +109,7 @@ class Particle:
         prop_dist = Vec3(prop_dist_x, prop_dist_y, prop_dist_z)
         self.pos -= prop_dist
 
-    def set_formation_zone(self, q0_lab, t, mu):
+    def set_formation_zone(self, p_in, p_out):
         ''' When particles interact there is a coherence region in which the
         interaction takes place. In our treatment, we take the interaction to
         be a single kick. Therefore, to take into account the `Formation Zone'
@@ -119,9 +119,16 @@ class Particle:
         formation zone.
         Ref.: L. Stodolsky, Formation Zone Description in Multiproduction, 1975
         Ref.: Phys. Rev. C. 86.015505
+
+        Args:
+        ----
+            - p_in: Momentum of the particle before the interaction
+                    in the lab frame
+            - p_out: Momentum of the particle after the interaction
+                     in the lab frame
         '''
-        # TODO: Should be t = \frac{E^0_{lab}}{mN^2 - p_{in}\dot p_{out}}
-        self.formation_zone = q0_lab/(-t+mu**2)  # time in GeV^-1
+        # formation zone is a time in units of MeV^-1
+        self.formation_zone = p_in.energy/np.abs(mN**2-p_in*p_out)
         return self.formation_zone
 
     def is_in_formation_zone(self):

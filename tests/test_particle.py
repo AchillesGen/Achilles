@@ -3,9 +3,10 @@
 import pytest
 import numpy as np
 
-from nuChic.particle import Particle
-from nuChic.four_vector import Vec4
-from nuChic.three_vector import Vec3
+from nuchic.particle import Particle
+from nuchic.four_vector import Vec4
+from nuchic.three_vector import Vec3
+from nuchic.constants import MQE as mN
 
 
 def test_particle_init():
@@ -58,8 +59,15 @@ def test_particle_prop():
 
 def test_particle_fzone():
     """ Test particle formation zone. """
-    part = Particle(2212, Vec4(4, 3, 2, 1), Vec3(0, 0, 0), 0)
+    part = Particle(2212, Vec4(np.sqrt(10**2+mN**2), 0, 0, 10),
+                    Vec3(0, 0, 0), 0)
+    rap = 1
+    p_t = 3
+    m_t = np.sqrt(p_t**2 + mN**2)
+    part_f = Particle(2212, Vec4(m_t*np.cosh(rap), p_t, 0, m_t*np.sinh(rap)),
+                      Vec3(0, 0, 0), 0)
     assert not part.is_in_formation_zone()
-    part.set_formation_zone(1.0, 10, 10)
-    assert part.formation_zone == 1.0/(-10+10**2)
+    part.set_formation_zone(part.mom, part_f.mom)
+    f_zone = part.energy/np.abs(mN**2 - part.mom*part_f.mom)
+    assert part.formation_zone == f_zone
     assert part.is_in_formation_zone()

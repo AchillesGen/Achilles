@@ -26,42 +26,42 @@ class Vec3:
         raise Exception('Vec3D')
 
     def __repr__(self):
-        return 'Vec3({0},{1},{2})'.format(self.x, self.y, self.z)
+        return 'Vec3({0}, {1}, {2})'.format(self.x, self.y, self.z)
 
     def __str__(self):
         return '({0},{1},{2})'.format(self.x, self.y, self.z)
 
-    def __add__(self, v):
-        if not isinstance(v, Vec3):
+    def __add__(self, other):
+        if not isinstance(other, Vec3):
             raise Exception('Vec3D')
-        return Vec3(self.x+v.x, self.y+v.y, self.z+v.z)
+        return Vec3(self.x+other.x, self.y+other.y, self.z+other.z)
 
     def __neg__(self):
         return Vec3(-self.x, -self.y, -self.z)
 
-    def __sub__(self, v):
-        return self + -v
+    def __sub__(self, other):
+        return self + -other
 
-    def __mul__(self, v):
-        if isinstance(v, Vec3):
-            return self.dot(v)
-        return Vec3(self.x*v, self.y*v, self.z*v)
+    def __mul__(self, other):
+        if isinstance(other, Vec3):
+            return self.dot(other)
+        return Vec3(self.x*other, self.y*other, self.z*other)
 
-    def __rmul__(self, v):
-        if isinstance(v, Vec3):
-            return self.dot(v)
-        return Vec3(self.x*v, self.y*v, self.z*v)
+    def __rmul__(self, other):
+        if isinstance(other, Vec3):
+            return self.dot(other)
+        return Vec3(self.x*other, self.y*other, self.z*other)
 
-    def __truediv__(self, v):
-        if isinstance(v, Vec3):
+    def __truediv__(self, other):
+        if isinstance(other, Vec3):
             raise Exception('Vec3')
-        return (1.0/v)*self
+        return (1.0/other)*self
 
-    def __eq__(self, v):
-        if isinstance(v, Vec3):
-            if(self.x == v.x and
-               self.y == v.y and
-               self.z == v.z):
+    def __eq__(self, other):
+        if isinstance(other, Vec3):
+            if(self.x == other.x and
+               self.y == other.y and
+               self.z == other.z):
                 return True
         return False
 
@@ -75,26 +75,26 @@ class Vec3:
         """ The three-vector as a np.array """
         return np.array([self.x, self.y, self.z])
 
-    def dot(self, v):
+    def dot(self, other):
         """ The dot product of the vector with v """
-        if not isinstance(v, Vec3):
+        if not isinstance(other, Vec3):
             raise Exception('Vec3')
-        return self.x*v.x + self.y*v.y + self.z*v.z
+        return self.x*other.x + self.y*other.y + self.z*other.z
 
     @property
-    def p2(self):
-        """ The square of the vector """
+    def mag2(self):
+        """ The square of the vector magnitude """
         return self.dot(self)
 
     @property
-    def p(self):
-        """ The modulus of the vector """
-        return np.sqrt(self.p2)
+    def mag(self):
+        """ The modulus of the vector magnitude """
+        return np.sqrt(self.mag2)
 
     @property
     def theta(self):
         """ The polar angle theta of spherical coordinates """
-        return np.arccos(self.z/self.p)
+        return np.arccos(self.z/self.mag)
 
     @property
     def phi(self):

@@ -6,7 +6,7 @@ import pandas as pd
 from scipy.spatial.transform import Rotation
 
 # from nuChic.particle import Particle
-from nuChic.constants import MEV, MQE as mN
+from .constants import MEV, MQE as mN
 
 
 DIR, FILE = os.path.split(__file__)

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-import nuChic.utils as utils
+import nuchic.utils as utils
 
 
 def test_transforms():

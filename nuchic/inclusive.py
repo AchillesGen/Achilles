@@ -66,7 +66,7 @@ class Inclusive:
         """ Generate weight for a given point. """
         raise NotImplementedError()
 
-    def generate_momentum(self, point):
+    def generate_momentum(self, variables, qval):
         """ Generate momentum for a given point. """
         raise NotImplementedError()
 
@@ -79,6 +79,7 @@ class Quasielastic(Inclusive):
 
         super().__init__(nucleus, energy, thetalept)
 
+        self.width = 1e-2
         self.f_g = fg
         self.iform = 2
         xsec.dirac_matrices.dirac_matrices_in(MQE/HBARC)
@@ -129,107 +130,114 @@ class Quasielastic(Inclusive):
         """ Maximum allowed energy in initial state. """
         return self.energy[-1]
 
-    def _eval(self, mom, energy, omega, qval, pke):
-        e_out = np.sqrt(mom**2+MQE**2)
+    def _eval(self, variables, qval, pke):
+        e_out = np.sqrt(variables['mom']**2+MQE**2)
         if self.f_g == 1:
-            omegat = omega
+            omegat = variables['omega']
         else:
-            omegat = omega-energy+MQE-e_out
+            omegat = variables['omega']-variables['energy']+MQE-e_out
 
-        u_pq = 0.0
-        if FLAGS.folding:
-            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
-            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
-                u_pq = self.folding.kinematic(tkin_pf)
+        # TODO: How to include if cost_te is an integration variable?
+        # u_pq = 0.0
+        # if FLAGS.folding:
+        #     tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
+        #     if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+        #         u_pq = self.folding.kinematic(tkin_pf)
 
-        cost_te = (((omegat+e_out+u_pq)**2 - mom**2 - qval**2 - MQE**2)
-                   / (2*mom*qval))
-        if abs(cost_te) > 1:
-            logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-                          % (omegat, e_out, mom, qval, MQE))
-            return 0
+        # cost_te is now an integration variable
+        # cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
+        #             - MQE**2)
+        #            / (2*variables['mom']*qval))
+        # if abs(cost_te) > 1:
+        #     logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
+        #                   % (omegat, e_out, mom, qval, MQE))
+        #     return 0
 
-        mom_f = np.sqrt(mom**2 + qval**2 + 2*qval*mom*cost_te)
-        epf = np.sqrt(MQE**2 + mom_f**2)
+        mom_f = np.sqrt(variables['mom']**2 + qval**2
+                        + 2*qval*variables['mom']*variables['cost_te'])
         if mom_f >= self.k_f:
+            delta = self._delta((omegat + e_out), variables['mom'], qval,
+                                variables['cost_te'])
             phi = 2.0*np.pi*np.random.rand(1)
-            sig = xsec.cc1(qval/HBARC, omega, omegat, mom/HBARC, mom_f/HBARC,
-                           phi, self.energy, self.thetalept, self.iform)
-            return mom**2*pke[0]*(self.n_z*sig)*epf/(mom*qval)*2*np.pi
+            sig = xsec.cc1(qval/HBARC, variables['omega'], omegat,
+                           variables['mom']/HBARC,
+                           mom_f/HBARC, phi, self.energy, self.thetalept,
+                           self.iform)
+            return (variables['mom']**2*pke[0]*(self.n_z*sig)
+                    * np.sqrt(MQE**2 + mom_f**2)
+                    / (variables['mom']*qval)*2*np.pi)*delta
         return 0
 
-    def generate_weight(self, point):
+    def _delta(self, omegap, mom, qval, cost):
+        arg = omegap**2 - mom**2 - qval**2 - MQE**2 - 2*mom*qval*cost
+        return 1.0/(self.width*np.pi)*np.exp(-(arg / self.width)**2)
+
+    def _map_vars(self, point):
         domega = self.wmax - self.wmin
         omega = domega*point[0] + self.wmin
         denergy = self.emax - self.emin
         e_int = denergy*point[1] + self.emin
-
         dmom = self.pmax - self.pmin
         p_int = dmom*point[2] + self.pmin
+        cost_te = 2*point[3] - 1
+
+        variables = {'mom': p_int,
+                     'energy': e_int,
+                     'omega': omega,
+                     'cost_te': cost_te}
+
+        ps_wgt = domega*denergy*2*dmom
+        qval = np.sqrt((2.0 * self.beam_energy * (self.beam_energy - omega)
+                        * (1.0 - self.coste)) + omega**2)
+
         if FLAGS.folding:
             domegap = self.wmax - self.wmin
-            omegap = domegap*point[3] + self.wmin
+            omegap = domegap*point[4] + self.wmin
+            variables['omegap'] = omegap
+            ps_wgt = domegap*denergy*2*dmom
+            return variables, ps_wgt, qval, domega
 
-        eef = self.beam_energy - omega
-        q_2 = 2.0 * self.beam_energy * eef * (1.0 - self.coste)
-        qval = np.sqrt(q_2 + omega**2)
+        return variables, ps_wgt, qval, None
 
-#        dcos = np.sqrt(mqe**2+self.qval**2-(self.e_int+self.w)**2)/self.qval
-#        print(dcos)
-#        cost_te = 2*dcos*x[2]-dcos
+    def generate_weight(self, point):
+        variables, ps_wgt, qval, domega = self._map_vars(point)
 
-        wgt = self._eval(p_int, e_int, omega, qval, self.pke(p_int, e_int))
-        wgt *= 1e9*domega*dmom*denergy
+        wgt = self._eval(variables, qval, self.pke(variables['mom'],
+                                                   variables['energy']))
+        wgt *= 1e9*ps_wgt
 
         if FLAGS.folding:
-            qval_f = np.sqrt(2.0*self.energy*(self.energy-omegap)
-                             * (1.0-self.coste) + omegap**2)
+            qval_f = np.sqrt(2.0*self.energy*(self.energy-variables['omegap'])
+                             * (1.0-self.coste) + variables['omegap']**2)
 
-            wgt_f = self._eval(p_int, e_int, omegap, qval_f,
-                               self.pke(p_int, e_int))
-            wgt_f *= 1e9*domegap*dmom*denergy
-            wgt_f = self.folding(omega, omegap)*wgt_f * \
-                domega + self.folding.transparency*wgt
+            wgt_f = self._eval(variables, qval_f,
+                               self.pke(variables['mom'], variables['energy']))
+            wgt_f *= 1e9*ps_wgt
+            wgt_f = self.folding(variables['omega'], variables['omegap'])\
+                * wgt_f * domega + self.folding.transparency*wgt
 
             return wgt_f, wgt
 
-        return wgt
+        return wgt, variables, qval
 
-    def generate_momentum(self, point):
-        domega = self.wmax - self.wmin
-        omega = domega*point[0] + self.wmin
-        denergy = self.emax - self.emin
-        e_int = denergy*point[1] + self.emin
-
-        dmom = self.pmax - self.pmin
-        p_int = dmom*point[2] + self.pmin
-
-        eef = self.beam_energy - omega
-        q_2 = 2.0 * self.beam_energy * eef * (1.0 - self.coste)
-        qval = np.sqrt(q_2 + omega**2)
-
-        e_out = np.sqrt(p_int**2+MQE**2)
-        omegat = omega - e_int + MQE - e_out
-        cost_te = ((omegat+e_out)**2 - p_int**2 - qval **
-                   2 - MQE**2)/(2.0*p_int*qval)
-        if abs(cost_te) > 1:
-            return None
-        mom_f = np.sqrt(p_int**2 + qval**2 +
-                        2*qval*p_int*cost_te)
+    def generate_momentum(self, variables, qval):
+        mom_f = np.sqrt(variables['mom']**2 + qval**2 +
+                        2*qval*variables['mom']*variables['cost_te'])
         epf = np.sqrt(MQE**2+mom_f**2)
         phi = 2.0*np.pi*np.random.random()
 
         x_q = qval/HBARC
-        x_k = p_int/HBARC
+        x_k = variables['mom']/HBARC
         x_p = mom_f/HBARC
 
         q_2 = x_q**2
         p_2 = x_k**2
         pf2 = x_p**2
         cosa = ((pf2-p_2-q_2)/2.0/x_k/x_q)
-        sina2 = 1-cosa**2
 
-        momentum = Vec4(epf*MEV, mom_f*np.sqrt(sina2)*np.cos(phi)*MEV,
-                        mom_f*np.sqrt(sina2)*np.sin(phi)*MEV, mom_f*cosa*MEV)
+        momentum = Vec4(epf*MEV,
+                        mom_f*np.sqrt(1-cosa**2)*np.cos(phi)*MEV,
+                        mom_f*np.sqrt(1-cosa**2)*np.sin(phi)*MEV,
+                        mom_f*cosa*MEV)
 
         return momentum

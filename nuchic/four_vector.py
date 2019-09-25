@@ -1,7 +1,7 @@
 """ Implement the Four Vector class. """
 
 import numpy as np
-from nuChic.three_vector import Vec3
+from .three_vector import Vec3
 
 
 class Vec4:

@@ -1,121 +1,134 @@
-from nuChic.three_vector import Vec3
-import numpy as np
+""" Tests for the three vector class. """
+
 import pytest
+import numpy as np
+from nuchic.three_vector import Vec3
 
 
-def test_Vec3_init():
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3()
-    v2.x = 1
-    v2.y = 2
-    v2.z = 3
-    v3 = Vec3(3, 2, 1)
+def test_vec3_init():
+    """ Test Vec3 initialization. """
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3()
+    vec2.x = 1
+    vec2.y = 2
+    vec2.z = 3
+    vec3 = Vec3(3, 2, 1)
 
-    assert v1 == v2
-    assert v1 != v3
+    assert vec1 == vec2
+    assert vec1 != vec3
 
 
-def test_Vec3_getitem():
-    v = Vec3(1, 2, 3)
-    assert v[0] == 1
-    assert v[1] == 2
-    assert v[2] == 3
+def test_vec3_getitem():
+    """ Test Vec3 getitem. """
+    vec = Vec3(1, 2, 3)
+    assert vec[0] == 1
+    assert vec[1] == 2
+    assert vec[2] == 3
     with pytest.raises(Exception):
-        v[3]
+        print(vec[3])
 
-    assert isinstance(v.array, np.ndarray)
-
-
-def test_Vec3_repr():
-    v = Vec3(1, 2, 3)
-    string = repr(v)
-    v2 = eval(string)
-    assert v == v2
+    assert isinstance(vec.array, np.ndarray)
 
 
-def test_Vec3_str():
-    v = Vec3(1, 2, 3)
-    string = str(v)
+def test_vec3_repr():
+    """ Test Vec3 repr. """
+    vec = Vec3(1, 2, 3)
+    string = repr(vec)
+    assert string == 'Vec3(1, 2, 3)'
+
+
+def test_vec3_str():
+    """ Test Vec3 str. """
+    vec = Vec3(1, 2, 3)
+    string = str(vec)
     assert string == '(1,2,3)'
 
 
-def test_Vec3_add():
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3(4, 3, 2)
-    v3 = Vec3(5, 5, 5)
-    b = 3
+def test_vec3_add():
+    """ Test Vec3 addition. """
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3(4, 3, 2)
+    vec3 = Vec3(5, 5, 5)
+    scalar = 3
 
-    assert v3 == v1 + v2
+    assert vec3 == vec1 + vec2
     with pytest.raises(Exception):
-        v1 + b
+        print(vec1 + scalar)
 
 
-def test_Vec3_neg():
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3(-1, -2, -3)
+def test_vec3_neg():
+    """ Test Vec3 negation. """
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3(-1, -2, -3)
 
-    assert v1 == -v2
-
-
-def test_Vec3_sub():
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3(1, 2, 3)
-    v3 = Vec3()
-
-    assert v3 == v1 - v2
+    assert vec1 == -vec2
 
 
-def test_Vec3_mul():
-    a = 3
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3(3, 6, 9)
-    b = 14
+def test_vec3_sub():
+    """ Test Vec3 subtraction. """
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3(1, 2, 3)
+    vec3 = Vec3()
 
-    assert v1 * v1 == b
-    assert v1 * v1 == v1.dot(v1)
-    assert a * v1 == v1 * a
-    assert a * v1 == v2
-    assert v1.__rmul__(v2) == v2 * v1
+    assert vec3 == vec1 - vec2
+
+
+def test_vec3_mul():
+    """ Test Vec3 multiplication. """
+    scalar1 = 3
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3(3, 6, 9)
+    scalar2 = 14
+
+    assert vec1 * vec1 == scalar2
+    assert vec1 * vec1 == vec1.dot(vec1)
+    assert scalar1 * vec1 == vec1 * scalar1
+    assert scalar1 * vec1 == vec2
+    assert vec1.__rmul__(vec2) == vec2 * vec1
 
     with pytest.raises(Exception):
-        v1.dot(b)
+        vec1.dot(scalar2)
 
 
-def test_Vec3_div():
-    a = 3.0
-    v1 = Vec3(1, 2, 3)
-    v2 = Vec3(3, 6, 9)
+def test_vec3_div():
+    """ Test Vec3 division. """
+    scalar = 3.0
+    vec1 = Vec3(1, 2, 3)
+    vec2 = Vec3(3, 6, 9)
 
-    assert v2 / a == v1
+    assert vec2 / scalar == vec1
     with pytest.raises(Exception):
-        v1 / v2
+        print(vec1 / vec2)
 
 
-def test_Vec3_P():
-    v1 = Vec3(4, 3, 2)
+def test_vec3_magnitude():
+    """ Test Vec3 magnitudes. """
+    vec1 = Vec3(4, 3, 2)
     pvec2 = 29
 
-    assert v1.p2 == pvec2
-    assert v1.p == np.sqrt(pvec2)
+    assert vec1.mag2 == pvec2
+    assert vec1.mag == np.sqrt(pvec2)
 
 
-def test_Vec3_Angles():
-    v = Vec3(0, 0, 4)
-    v1 = Vec3(1, 1, 1)
+def test_vec3_angles():
+    """ Test Vec3 angles. """
+    vec = Vec3(0, 0, 4)
+    vec1 = Vec3(1, 1, 1)
 
-    assert v.theta == 0
-    assert v.phi == 0
-    assert v1.phi == np.pi / 4.0
+    assert vec.theta == 0
+    assert vec.phi == 0
+    assert vec1.phi == np.pi / 4.0
 
 
-def test_Vec3_Cross():
-    v1 = Vec3(3, 2, 1)
-    v2 = Vec3(1, 2, 3)
-    v3 = Vec3(4, -8, 4)
-    a = 5
+def test_vec3_cross():
+    """ Test Vec3 cross-product. """
+    vec1 = Vec3(3, 2, 1)
+    vec2 = Vec3(1, 2, 3)
+    vec3 = Vec3(4, -8, 4)
+    scalar = 5
 
-    assert v1.cross(v2) == v3
-    assert v1.cross(v2) == -v2.cross(v1)
+    assert vec1.cross(vec2) == vec3
+    assert vec1.cross(vec2) == -vec2.cross(vec1)
 
     with pytest.raises(Exception):
-        v1.cross(a)
+        vec1.cross(scalar)

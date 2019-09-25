@@ -2,7 +2,7 @@
 
 import numpy as np
 import pytest
-from nuChic.nucleus import Nucleus
+from nuchic.nucleus import Nucleus
 
 
 def test_nucleus_init():

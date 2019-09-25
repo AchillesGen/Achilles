@@ -5,7 +5,7 @@
 from xml.etree import ElementTree
 import numpy as np
 
-import nuChic.lhe as lhe
+import nuchic.lhe as lhe
 
 
 def test_init_lha_tag():

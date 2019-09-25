@@ -5,13 +5,13 @@
 import numpy as np
 from absl import logging
 
-from nuChic.utils import to_cartesian
-from nuChic.four_vector import Vec4
-from nuChic.three_vector import Vec3
-from nuChic.particle import Particle
-from nuChic.constants import FM as fm, MQE as mN, GEV
-from nuChic.data.parse_data import GeantData
-from nuChic.Interaction import sigma_pp, sigma_np
+from .utils import to_cartesian
+from .four_vector import Vec4
+from .three_vector import Vec3
+from .particle import Particle
+from .constants import FM as fm, MQE as mN, GEV
+from .data.parse_data import GeantData
+from .interaction import sigma_pp, sigma_np
 
 
 class FSI:
@@ -315,7 +315,7 @@ class FSI:
         if particle2.is_background():
             # Sort background particle 4-momentum
             p_i = Vec3(*self.nucleus.generate_momentum())
-            energy = np.sqrt(mN**2+p_i.p2)
+            energy = np.sqrt(mN**2+p_i.mag2)
             p_mu = Vec4(energy, *p_i.vec)
             particle2.mom = p_mu
 

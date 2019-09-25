@@ -4,11 +4,11 @@ import numpy as np
 # import pytest
 from mock import patch
 
-from nuChic.cascade import FSI
-from nuChic.constants import MEV, MQE as mN
-from nuChic.four_vector import Vec4
-from nuChic.three_vector import Vec3
-from nuChic.particle import Particle
+from nuchic.cascade import FSI
+from nuchic.constants import MEV, MQE as mN
+from nuchic.four_vector import Vec4
+from nuchic.three_vector import Vec3
+from nuchic.particle import Particle
 
 
 NPROTONS = 6
@@ -17,7 +17,7 @@ NNEUTRONS = 6
 NEUTRONS = np.random.random((NNEUTRONS, 3))
 
 
-@patch('nuChic.nucleus.Nucleus')
+@patch('nuchic.nucleus.Nucleus')
 def test_cascade_init(mock_nucleus):
     """ Test cascade initialization. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -28,7 +28,7 @@ def test_cascade_init(mock_nucleus):
     assert mock_nucleus.generate_config.called_once()
 
 
-@patch('nuChic.nucleus.Nucleus')
+@patch('nuchic.nucleus.Nucleus')
 def test_kick(mock_nucleus):
     """ Test cascade kick. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -55,7 +55,7 @@ def _get_momentums(particles, mode):
     return momentum
 
 
-@patch('nuChic.nucleus.Nucleus')
+@patch('nuchic.nucleus.Nucleus')
 def test_reset(mock_nucleus):
     """ Test cascade reset. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
@@ -88,7 +88,7 @@ def test_points_in_cylinder():
                                       radius=1, position=[0, 1.1, 0.5]))
 
 
-@patch('nuChic.nucleus.Nucleus')
+@patch('nuchic.nucleus.Nucleus')
 def test_pauli_blocking(mock_nucleus):
     """ Test Pauli blocking for the cascade. """
     k_f = 225 * MEV
@@ -102,7 +102,7 @@ def test_pauli_blocking(mock_nucleus):
     assert not cascade.pauli_blocking(fv2)
 
 
-@patch('nuChic.nucleus.Nucleus')
+@patch('nuchic.nucleus.Nucleus')
 def test_interacted(mock_nucleus):
     """ Test cascade interaction model. """
     mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)

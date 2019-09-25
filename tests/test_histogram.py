@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from nuChic.histogram import Histogram
+from nuchic.histogram import Histogram
 
 
 def test_histogram_init():
