@@ -9,8 +9,6 @@ Short term:
  - Figure out in VEGAS how to generate a fixed number of events
  - Implement user defined input file/interface
  - Implement two body currents
- - Event output file format (focus on LHE format)
-    - NOTE (JI): LHE format has been implemented, do we want any others?
  - Compare with electron scattering data
 
 Long term:
@@ -20,3 +18,4 @@ Long term:
  - Implement DIS
  - Implement neutrinos
  - Implement incoming beams
+ - Other Event output file formats than LHE
