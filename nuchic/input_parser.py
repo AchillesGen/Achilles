@@ -43,9 +43,3 @@ class Settings:
             # TODO: Store information on how to calculate
 
         return histograms
-
-
-if __name__ == '__main__':
-    settings = Settings()
-    settings.get_histograms()
-    print(settings.cascade)

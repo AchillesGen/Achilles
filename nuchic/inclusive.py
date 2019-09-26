@@ -137,7 +137,7 @@ class Quasielastic(Inclusive):
         else:
             omegat = variables['omega']-variables['energy']+MQE-e_out
 
-        # TODO: How to include if cost_te is an integration variable?
+        # TODO: How to include u_pq if cost_te is an integration variable?
         # u_pq = 0.0
         # if FLAGS.folding:
         #     tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
@@ -168,6 +168,8 @@ class Quasielastic(Inclusive):
                     / (variables['mom']*qval)*2*np.pi)*delta
         return 0
 
+    # TODO: How to best implement this numerically?
+    # Currently, this is very unstable from run to run
     def _delta(self, omegap, mom, qval, cost):
         arg = omegap**2 - mom**2 - qval**2 - MQE**2 - 2*mom*qval*cost
         return 1.0/(self.width * np.sqrt(np.pi))*np.exp(-(arg/self.width)**2)

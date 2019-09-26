@@ -5,7 +5,6 @@ from ast import literal_eval
 
 from absl import flags, app, logging
 import matplotlib.pyplot as plt
-import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
@@ -141,6 +140,7 @@ class NuChic:
 
     def plot_results(self):
         """ Plot results of the run. """
+        # TODO: Use QuasielasticData class to load and plot the desired data
         # data = pd.read_csv(os.path.join(DIR, 'data', '12C.dat'), header=None,
         #                    sep=r'\s+',
         #                    names=[
