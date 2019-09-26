@@ -58,6 +58,7 @@ setup(
         'sklearn',
         'absl-py',
         'matplotlib',
+        'tqdm',
     ],
     # Provide executable script to run the main code
     entry_points={'console_scripts': ['nuchic = nuchic.main:nu_chic', ], },
