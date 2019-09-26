@@ -1,5 +1,8 @@
-""" Implementation of utility functions for the nuChic code. """
+""" Implementation of utility functions for the nuchic code. """
 
+import time
+import functools
+import logging
 import numpy as np
 
 
@@ -29,3 +32,27 @@ def to_spherical(coords, axis=0):
     phi = np.where(phi > 0, phi, phi + 2*np.pi)
     coords = np.moveaxis(coords, 0, axis)
     return np.moveaxis(np.array([r, theta, phi]), 0, axis)
+
+
+"""
+Some useful utilities / decorators for debuging
+"""
+
+LOGGER = logging.getLogger(__name__)
+
+
+def timing(fcn):
+    """Time the execution of fcn. Use as decorator."""
+    @functools.wraps(fcn)
+    def wrap(*args, **kwargs):
+        """Wrapped version of the function."""
+        t_initial = time.time()
+        result = fcn(*args, **kwargs)
+        t_final = time.time()
+        LOGGER.info(
+            "TIMING: %s took: %.4f sec",
+            fcn.__name__,
+            t_final - t_initial
+        )
+        return result
+    return wrap
