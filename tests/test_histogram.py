@@ -10,7 +10,7 @@ def test_histogram_init():
     """ Test histogram initialization. """
     bins = np.linspace(0., 1., 101)
     hist = Histogram(bins=bins)
-    hist2 = Histogram(min_val=0., max_val=1., bins=101)
+    hist2 = Histogram(plot_range=[0., 1.], bins=101)
 
     assert np.allclose(hist.bins, hist2.bins)
     assert hist.min == hist2.min
@@ -18,17 +18,17 @@ def test_histogram_init():
 
     bins = np.logspace(np.log10(1e-3), np.log10(1.), 101)
     hist = Histogram(bins=bins)
-    hist2 = Histogram(min_val=1e-3, max_val=1., bins=101, scale='log')
+    hist2 = Histogram(plot_range=[1e-3, 1.], bins=101, scale='log')
 
     assert np.allclose(hist.bins, hist2.bins)
     assert hist.min == hist2.min
     assert hist.max == hist2.max
 
     with pytest.raises(TypeError):
-        print(Histogram(min_val=0., max_val=1., bins=bins))
+        print(Histogram(plot_range=[0., 1.], bins=bins))
 
     with pytest.raises(ValueError):
-        print(Histogram(min_val=0., max_val=1., bins=101, scale='fjskla'))
+        print(Histogram(plot_range=[0., 1.], bins=101, scale='fjskla'))
 
 
 def test_histogram_fill():
@@ -56,7 +56,7 @@ def test_histogram_fill():
 
 def test_histogram_str():
     """ Test string output of histogram. """
-    hist = Histogram(0., 1., 2)
+    hist = Histogram([0., 1.], 2)
     line_format = '{:^15}{:^15}{:^15}{:^15}\n'
     string = line_format.format('left', 'right', 'wgt', 'wgt2')
     string += line_format.format(0.0, 1.0, 0.0, 0.0)
@@ -66,8 +66,31 @@ def test_histogram_str():
 
 def test_histogram_integral():
     """ Test the integration of the histogram. """
-    hist = Histogram(0., 1., 3)
+    hist = Histogram([0., 1.], 3)
     hist.fill(0.25, 10)
     hist.fill(0.75, 20)
 
     assert hist.integral() == 0.5*10+0.5*20
+
+
+def test_histogram_copy():
+    """ Test copy constructor of the histogram. """
+    hist = Histogram([0., 1.], 3)
+    hist.fill(0.25, 10)
+    hist.fill(0.75, 20)
+
+    other = Histogram(copy=hist)
+
+    assert str(other) == str(hist)
+
+
+def test_histogram_normalize():
+    """ Test normalization of the histogram. """
+    hist = Histogram([0., 1.], 3)
+    hist.fill(0.25, 10)
+    hist.fill(0.75, 20)
+
+    other = hist.normalize()
+
+    assert other.integral() == 1
+    assert np.allclose(hist.weights / hist.integral(), other.weights)

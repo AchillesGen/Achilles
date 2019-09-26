@@ -35,7 +35,8 @@ class Integrator(vegas.Integrator):
 
         return x, jac
 
-    def _generate(self, nevents):
+    def generate(self, nevents):
+        """ Generate a fixed number of points with a weight. """
         nhcube = self.nstrat ** self.dim
         dv_y = 1. / nhcube
         neval_hcube = np.empty(nhcube, dtype=np.int)
@@ -44,7 +45,8 @@ class Integrator(vegas.Integrator):
         remainder = nevents % nhcube
 
         neval_hcube[:] = evals
-        neval_hcube[:remainder] += 1
+        if remainder != 0:
+            neval_hcube[:remainder] += 1
 
         assert np.sum(neval_hcube) == nevents
 
@@ -67,7 +69,7 @@ class Integrator(vegas.Integrator):
 
         self.set(beta=-1, neval=nevents)
 
-        point, weight, hcube = self._generate(nevents)
+        point, weight, hcube = self.generate(nevents)
 
         nwf = np.array(np.zeros_like(weight), np.float)
         sum_wf = np.array(np.zeros_like(weight), np.float)
