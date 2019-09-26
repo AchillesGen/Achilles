@@ -10,7 +10,7 @@ def test_histogram_init():
     """ Test histogram initialization. """
     bins = np.linspace(0., 1., 101)
     hist = Histogram(bins=bins)
-    hist2 = Histogram(plot_range=[0., 1.], bins=101)
+    hist2 = Histogram(plot_range=[0., 1.], bins=100)
 
     assert np.allclose(hist.bins, hist2.bins)
     assert hist.min == hist2.min
@@ -18,7 +18,7 @@ def test_histogram_init():
 
     bins = np.logspace(np.log10(1e-3), np.log10(1.), 101)
     hist = Histogram(bins=bins)
-    hist2 = Histogram(plot_range=[1e-3, 1.], bins=101, scale='log')
+    hist2 = Histogram(plot_range=[1e-3, 1.], bins=100, scale='log')
 
     assert np.allclose(hist.bins, hist2.bins)
     assert hist.min == hist2.min
@@ -57,16 +57,17 @@ def test_histogram_fill():
 def test_histogram_str():
     """ Test string output of histogram. """
     hist = Histogram([0., 1.], 2)
-    line_format = '{:^15}{:^15}{:^15}{:^15}\n'
-    string = line_format.format('left', 'right', 'wgt', 'wgt2')
-    string += line_format.format(0.0, 1.0, 0.0, 0.0)
+    line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}\n'
+    string = line_format.format('', 'left', 'right', 'wgt', 'wgt2')
+    string += line_format.format('.4e', 0.0, 0.5, 0.0, 0.0)
+    string += line_format.format('.4e', 0.5, 1.0, 0.0, 0.0)
 
     assert str(hist) == string
 
 
 def test_histogram_integral():
     """ Test the integration of the histogram. """
-    hist = Histogram([0., 1.], 3)
+    hist = Histogram([0., 1.], 2)
     hist.fill(0.25, 10)
     hist.fill(0.75, 20)
 

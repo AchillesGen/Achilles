@@ -45,14 +45,14 @@ class Histogram:
                                  'got {} and {}'
                                  .format(self.range[0], self.range[1]))
             if scale == 'linear':
-                self.bins = np.linspace(self.min, self.max, bins)
+                self.bins = np.linspace(self.min, self.max, bins + 1)
             elif scale == 'log':
                 if self.min == 0:
                     raise ValueError('Logarithmic requires min_val > 0, '
                                      'got a value of {}'.format(self.min))
                 self.bins = np.logspace(np.log10(self.min),
                                         np.log10(self.max),
-                                        bins)
+                                        bins + 1)
             else:
                 raise ValueError('Only `linear` and `log` binning exist, '
                                  'got {} binning.'.format(scale))
@@ -98,10 +98,11 @@ class Histogram:
 
     def __str__(self):
         """ Convert histogram to a string. """
-        line_format = '{:^15}{:^15}{:^15}{:^15}\n'
-        string = line_format.format('left', 'right', 'wgt', 'wgt2')
+        line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}\n'
+        string = line_format.format('', 'left', 'right', 'wgt', 'wgt2')
         for i, _ in enumerate(self.bins[1:]):
-            string += line_format.format(self.bins[i],
+            string += line_format.format('.4e',
+                                         self.bins[i],
                                          self.bins[i+1],
                                          self.weights[i],
                                          self.weights2[i])
@@ -148,3 +149,10 @@ class Histogram:
         plt.plot(self.bins, self.weights, ds='steps', **kwargs)
         plt.show()
         self.weights = self.weights[1:]
+
+    def plot(self, axis, **kwargs):
+        """ Return a histogram plot given an axis. """
+        self.weights = np.insert(self.weights, 0, self.weights[0])
+        axis.plot(self.bins, self.weights, ds='steps', **kwargs)
+        self.weights = self.weights[1:]
+        return axis
