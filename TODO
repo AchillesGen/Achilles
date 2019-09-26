@@ -5,8 +5,7 @@ Short term:
  - Implement FSI folding functions according to blackboard discussion
  - Refactor cascade code
  - Understand Geant4 variable `center of mass momentum'
- - Figure out in VEGAS how to generate a fixed number of events
- - Implement user defined input file/interface
+ - Polish user defined input file/interface
  - Implement two body currents
  - Compare with electron scattering data
 
