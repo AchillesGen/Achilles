@@ -1,8 +1,8 @@
 """ Testing cascade code. """
 
+from unittest.mock import patch
 import numpy as np
 # import pytest
-from mock import patch
 
 from nuchic.cascade import FSI
 from nuchic.constants import MEV, MQE as mN
