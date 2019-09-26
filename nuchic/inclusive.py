@@ -31,7 +31,7 @@ class Inclusive:
 
         self.nucleus = nucleus
 
-        self.wrange = [1, 650]
+        self.wrange = [1, energy]
 
         self.folding = None
         if FLAGS.folding:
@@ -79,7 +79,7 @@ class Quasielastic(Inclusive):
 
         super().__init__(nucleus, energy, thetalept)
 
-        self.width = 1e-2
+        self.width = 1e3
         self.f_g = fg
         self.iform = 2
         xsec.dirac_matrices.dirac_matrices_in(MQE/HBARC)
@@ -170,7 +170,7 @@ class Quasielastic(Inclusive):
 
     def _delta(self, omegap, mom, qval, cost):
         arg = omegap**2 - mom**2 - qval**2 - MQE**2 - 2*mom*qval*cost
-        return 1.0/(self.width*np.pi)*np.exp(-(arg / self.width)**2)
+        return 1.0/(self.width * np.sqrt(np.pi))*np.exp(-(arg/self.width)**2)
 
     def _map_vars(self, point):
         domega = self.wmax - self.wmin
@@ -216,7 +216,7 @@ class Quasielastic(Inclusive):
             wgt_f = self.folding(variables['omega'], variables['omegap'])\
                 * wgt_f * domega + self.folding.transparency*wgt
 
-            return wgt_f, wgt
+            return [wgt_f, wgt], variables, qval
 
         return wgt, variables, qval
 

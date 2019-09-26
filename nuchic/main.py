@@ -1,18 +1,21 @@
 """ Main driving code for the nuChic program """
 
 import os
+from ast import literal_eval
 
 from absl import flags, app, logging
-import vegas
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
+from .vegas import Integrator
 from .inclusive import Quasielastic
 from .nucleus import Nucleus
 from .constants import MEV as MeV
 from .cascade import FSI
 from .utils import momentum_sort
+from .histogram import Histogram
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
@@ -23,106 +26,120 @@ flags.DEFINE_bool('testing', None, 'Flag to test the basics of the program')
 DIR, FILE = os.path.split(__file__)
 
 
-def run():
-    """ Runs the nuChic code with given settings."""
-    omega = []
+# TODO: Figure out how to implement this correctly
+def init_histograms(filename='hists.txt'):
+    """ Load the desired histograms to be plotted from input file. """
+    histograms = {}
+    with open(filename) as hist_file:
+        for line in hist_file:
+            print(line)
+            tmp = literal_eval(line)
+            histograms[tmp.name] = tmp
 
-    p_px_pre = []
-    p_py_pre = []
-    p_pz_pre = []
-    p_e_pre = []
 
-    p_px = []
-    p_py = []
-    p_pz = []
-    p_e = []
+class NuChic:
+    """ Main driver class for the nuChic code. """
+    def __init__(self, nevents):
+        self.histograms = {'omega': Histogram([0, 500], 500),
+                           'px_pre': Histogram([-500, 500], 1000),
+                           'py_pre': Histogram([-500, 500], 1000),
+                           'pz_pre': Histogram([-500, 500], 1000),
+                           'e_pre': Histogram([-500, 500], 1000),
+                           'px_post': Histogram([-500, 500], 1000),
+                           'py_post': Histogram([-500, 500], 1000),
+                           'pz_post': Histogram([-500, 500], 1000),
+                           'e_post': Histogram([-500, 500], 1000),
+                           'px_diff': Histogram([-500, 500], 1000),
+                           'py_diff': Histogram([-500, 500], 1000),
+                           'pz_diff': Histogram([-500, 500], 1000),
+                           'e_diff': Histogram([-500, 500], 1000),
+                           'escape': Histogram([-0.5, 12.5], 13),
+                           'wgts': Histogram(bins=np.logspace(-4, 4, 400)),
+                           }
 
-    p_px_diff = []
-    p_py_diff = []
-    p_pz_diff = []
-    p_e_diff = []
+        argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
+        self.inclusive = Quasielastic(argon_nucleus, 730, 37.1)
+        if FLAGS.cascade:
+            self.fsi = FSI(argon_nucleus, 1)
 
-    wgts = []
-    wgts_f = []
-    escape = []
+        self.nevents = int(nevents)
 
-    ndims = 3
-    if FLAGS.folding:
-        ndims += 1
+    def run(self):
+        """ Runs the nuChic code with given settings."""
+        ndims = 4
+        if FLAGS.folding:
+            ndims += 1
 
-    argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
-    inclusive = Quasielastic(argon_nucleus, 730, 37.1)
-    if FLAGS.cascade:
-        fsi = FSI(argon_nucleus, 1)
+        integ = Integrator([[0, 1]]*ndims)
+        result = integ(self.generate_one_event, nitn=10, neval=1e4)
+        print(result.summary())
 
-    integ = vegas.Integrator([[0, 1]]*ndims)
+        zeros = 0
 
-    result = integ(inclusive.generate_weight, nitn=20, neval=1e4)
-
-    print(result.summary())
-
-    nitn = 20
-    count = 0
-    zeros = 0
-    zeros_f = 0
-    for _ in range(nitn):
-        for point, weight in integ.random():
-
-            if count % 10000 == 0:
-                print(count)
-            count += 1
-
-            wgt = inclusive.generate_weight(point)
-
-            if FLAGS.folding:
-                wgt_f = wgt[0]
-                wgt = wgt[1]
-            else:
-                wgt_f = 0
-
-            if wgt == 0:
+        points, weights, _ = integ.generate(self.nevents)
+        for i in tqdm(range(self.nevents), ncols=80):
+            if self.generate_one_event(points[i], weights[i]) == 0:
                 zeros += 1
 
-            if wgt_f == 0:
-                zeros_f += 1
+        print(zeros)
+        # plot_results(self.histograms)
 
-            # mom.append(p_int)
-            # energies.append(e_int)
-            momentum = inclusive.generate_momentum(point)
-            if momentum is not None:
-                # omega.append(inclusive.w)
-                p_e_pre.append(momentum.energy)
-                p_px_pre.append(momentum.p_x)
-                p_py_pre.append(momentum.p_y)
-                p_pz_pre.append(momentum.p_z)
-                wgts.append(wgt*weight/nitn)
-                wgts_f.append(wgt_f*weight/nitn)
+    def generate_one_event(self, point, weight=None):
+        """ Generate the output for a single event. """
 
-                if FLAGS.cascade:
-                    fsi.kick(momentum)
-                    escaped_part = fsi()
-                    escape.append(len(escaped_part))
-                    fsi.reset()
+        wgt, variables, qval = self.inclusive.generate_weight(point)
+        if weight is None:
+            return wgt
 
-                    if escaped_part:
-                        escaped_part.sort(reverse=True, key=momentum_sort)
-                        momentum = escaped_part[0].mom
+        if wgt == 0:
+            return 0
 
-                p_e.append(momentum.energy)
-                p_px.append(momentum.p_x)
-                p_py.append(momentum.p_y)
-                p_pz.append(momentum.p_z)
+        momentum = self.inclusive.generate_momentum(variables, qval)
 
-                p_e_diff.append(momentum.energy-p_e_pre[-1])
-                p_px_diff.append(momentum.p_x-p_px_pre[-1])
-                p_py_diff.append(momentum.p_y-p_py_pre[-1])
-                p_pz_diff.append(momentum.p_z-p_pz_pre[-1])
+        if FLAGS.folding:
+            wgt = wgt[1]
 
-    print(sum(wgts), sum(wgts_f))
-    print(count)
-    print(zeros)
-    print(zeros_f)
+        self.fill_hists(momentum, variables, wgt*weight)
 
+        return wgt*weight
+
+    def fill_hists(self, momentum, variables, wgt):
+        """ Fill the histograms. """
+        if momentum is not None:
+            self.histograms['omega'].fill(variables['omega'], wgt)
+            self.histograms['e_pre'].fill(momentum.energy, wgt)
+            self.histograms['px_pre'].fill(momentum.p_x, wgt)
+            self.histograms['py_pre'].fill(momentum.p_y, wgt)
+            self.histograms['pz_pre'].fill(momentum.p_z, wgt)
+            self.histograms['wgts'].fill(wgt)
+
+            if FLAGS.cascade:
+                self.fsi.kick(momentum)
+                escaped_part = self.fsi()
+                self.histograms['escape'].fill(len(escaped_part), wgt)
+                self.fsi.reset()
+
+                if escaped_part:
+                    escaped_part.sort(reverse=True, key=momentum_sort)
+                    momentum_post = escaped_part[0].mom
+
+                    self.histograms['e_pre'].fill(momentum_post.energy, wgt)
+                    self.histograms['px_pre'].fill(momentum_post.p_x, wgt)
+                    self.histograms['py_pre'].fill(momentum_post.p_y, wgt)
+                    self.histograms['pz_pre'].fill(momentum_post.p_z, wgt)
+
+                    self.histograms['e_diff'].fill(
+                        momentum_post.energy - momentum.energy, wgt)
+                    self.histograms['px_diff'].fill(
+                        momentum_post.p_x - momentum.p_x, wgt)
+                    self.histograms['py_diff'].fill(
+                        momentum_post.p_y - momentum.p_y, wgt)
+                    self.histograms['pz_diff'].fill(
+                        momentum_post.p_z - momentum.p_z, wgt)
+
+
+def plot_results(histograms):
+    """ Plot results of the run. """
     data = pd.read_csv(os.path.join(DIR, 'data', '12C.dat'), header=None,
                        sep=r'\s+',
                        names=[
@@ -208,7 +225,8 @@ def main(argv):
 
     logging.info('Starting nuChic...')
     if not FLAGS.testing:
-        run()
+        nuchic = NuChic(1e5)
+        nuchic.run()
 
     logging.info('nuChic finished successfully!')
 
