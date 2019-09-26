@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from nuChic.vegas import Integrator
+from nuchic.vegas import Integrator
 
 
 def _func(x):
