@@ -1,7 +1,6 @@
 Short term:
 -----------
 
- - Finish reformatting
  - Implement FSI folding functions according to blackboard discussion
  - Refactor cascade code
  - Understand Geant4 variable `center of mass momentum'
