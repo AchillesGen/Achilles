@@ -9,7 +9,7 @@ from .utils import to_cartesian, timing
 from .four_vector import Vec4
 from .three_vector import Vec3
 from .particle import Particle
-from .constants import FM as fm, MQE as mN, GEV
+from .constants import FM as fm, MQE as mN, GEV, HBARC
 from .data.parse_data import GeantData
 from .interaction import sigma_pp, sigma_np
 
@@ -31,7 +31,7 @@ class FSI:
               - reabsorption routine
     """
 
-    def __init__(self, nucleus, dt):
+    def __init__(self, nucleus, distance):
         """
         Generates nucleus configuration and kicked nucleon.
 
@@ -41,7 +41,8 @@ class FSI:
             dt: float, time step
         """
         self.nucleus = nucleus
-        self.time_step = dt
+        self.time_step = None
+        self.distance = distance
 
         # Generate p,n position distribution
         protons, neutrons = self.nucleus.generate_config()
@@ -126,6 +127,16 @@ class FSI:
         self.cylinder_pt1 = 0
         self.cylinder_pt2 = 0
 
+    def adaptive_step(self, distance):
+        '''Adapt the time step so that highest boost particle travels a
+        distance `distance'
+        '''
+        beta = 0
+        for idx in self.kicked_idxs:
+            if self.nucleons[idx].beta > beta:
+                beta=self.nucleons[idx].beta
+        self.time_step = distance/(beta*HBARC)  # This is the adapted time step
+    
     @timing
     def __call__(self):
         ''' Performs the full propagation of the kicked nucleons inside
@@ -141,6 +152,8 @@ class FSI:
             if self.kicked_idxs == []:
                 logging.debug('No more particles propagating - DONE!')
                 break
+            # Adapt time step
+            self.adaptive_step(self.distance)
             # Update formation zones
             for i in range(len(self.nucleons)):
                 if self.nucleons[i].is_in_formation_zone():
