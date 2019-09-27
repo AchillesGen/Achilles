@@ -61,7 +61,7 @@ class NuChic:
         argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
         self.inclusive = Quasielastic(argon_nucleus, 730, 37.1)
         if FLAGS.cascade:
-            self.fsi = FSI(argon_nucleus, 1)
+            self.fsi = FSI(argon_nucleus, 0.2)
 
         self.nevents = int(self.settings.nevents)
 
@@ -83,7 +83,7 @@ class NuChic:
                 zeros += 1
 
         print(zeros)
-        self.plot_results()
+        # self.plot_results()
 
     def generate_one_event(self, point, weight=None):
         """ Generate the output for a single event. """

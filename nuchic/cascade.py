@@ -137,7 +137,7 @@ class FSI:
         # positions = []
         # positions_temp = []
         for step in range(10000):
-            logging.debug('*******  STEP ', step, ' *******')
+            logging.debug('*******  STEP {} *******'.format(step))
             if self.kicked_idxs == []:
                 logging.debug('No more particles propagating - DONE!')
                 break
@@ -148,26 +148,30 @@ class FSI:
             # copy to avoid changing during iteration
             new_kicked_idxs = list(self.kicked_idxs)
             for kick_idx in self.kicked_idxs:
-                logging.debug('kick_idx = ', kick_idx)
-                did_hit, new_kick_idx = self.interacted(kick_idx, sigma)
-                if did_hit:
+                logging.debug('kick_idx = {}'.format(kick_idx))
+                new_kick_idxs = self.interacted(kick_idx, sigma)
+
+                print(new_kick_idxs)
+                new_kick_idxs = new_kick_idxs.tolist()
+
+                if new_kick_idxs:
                     logging.debug('Hit?')
                     (really_did_hit, self.nucleons[kick_idx],
-                     self.nucleons[new_kick_idx]) = \
+                     self.nucleons[new_kick_idxs[0]]) = \
                         self.generate_final_phase_space(
                             self.nucleons[kick_idx],
-                            self.nucleons[new_kick_idx]
+                            self.nucleons[new_kick_idxs[0]]
                         )
                     # if it really hit, add index to new kicked index
                     # list and delete duplicates
                     if really_did_hit:
                         logging.debug('Hit!!!!')
-                        new_kicked_idxs.append(new_kick_idx)
+                        new_kicked_idxs.append(new_kick_idxs[0])
                         new_kicked_idxs = list(
                             set(new_kicked_idxs))  # Remove duplicates
 
             self.kicked_idxs = new_kicked_idxs
-            logging.debug('kicked_idxs = ', self.kicked_idxs)
+            logging.debug('kicked_idxs = {}'.format(self.kicked_idxs))
 
             # After-hit checks
             not_propagating = []
@@ -194,9 +198,10 @@ class FSI:
             for i in sorted(not_propagating, reverse=True):
                 del self.kicked_idxs[i]
 
-        logging.debug('Number of steps: ', step)
+        logging.debug('Number of steps: {}'.format(step))
         stat_list = [n.status for n in self.nucleons]
-        logging.debug('Number of final state nucleons: ', sum(stat_list))
+        logging.debug('Number of final state nucleons: '
+                      '{}'.format(sum(stat_list)))
         if -1 in stat_list:
             logging.fatal(
                 "Cascade Failed at step: {}, ",
@@ -219,9 +224,11 @@ class FSI:
         position = np.asarray(position)
         vec = pt2 - pt1
         const = radius * np.linalg.norm(vec)
-        return (np.dot(position - pt1, vec) >= 0
-                and np.dot(position - pt2, vec) <= 0
-                and np.linalg.norm(np.cross(position - pt1, vec)) <= const)
+        return np.logical_and(np.dot(position - pt1, vec) >= 0,
+                              np.logical_and(np.dot(position - pt2, vec) <= 0,
+                                             np.linalg.norm(
+                                                 np.cross(position - pt1, vec),
+                                                 axis=-1) <= const))
 
     @timing
     def interacted(self, idx, sigma):
@@ -261,24 +268,27 @@ class FSI:
         # Stops when first is found (not closest one)
         # TODO: optimize with self.n_particles?
         idxs = np.arange(len(self.nucleons))
+        idxs = idxs[np.where(idxs != idx)]
         in_cylinder = False
         if self.nucleons[idx].is_in_formation_zone():
-            return False, np.nan
-        for i in idxs[np.where(idxs != idx)]:
+            return np.array([])
+
+        positions = []
+        for i in idxs:
             if self.nucleons[i].is_final() or \
                     self.nucleons[i].is_in_formation_zone():
+                idxs = idxs[np.where(idxs != i)]
                 continue
-            position = self.nucleons[i].pos.vec
-            in_cylinder = self.points_in_cylinder(
-                self.cylinder_pt1.array,
-                self.cylinder_pt2.array,
-                cylinder_r,
-                position
-            )
-            if in_cylinder:
-                # Found particle in cylinder
-                return in_cylinder, i
-        return False, None
+            positions.append(self.nucleons[i].pos.vec)
+        in_cylinder = self.points_in_cylinder(
+            self.cylinder_pt1.array,
+            self.cylinder_pt2.array,
+            cylinder_r,
+            positions
+        )
+        print(idxs, idx)
+        print(in_cylinder)
+        return idxs[in_cylinder]
 
     @timing
     def generate_final_phase_space(self, particle1, particle2):
@@ -314,6 +324,7 @@ class FSI:
             TODO: Implement realistic phase space
         '''
 
+        print('Before: ', particle1, particle2)
         # Is particle 2 a background particle? If so, we need to
         # generate it's momentum
         if particle2.is_background():
@@ -428,6 +439,7 @@ class FSI:
             # Hit background nucleon becomes propagating nucleon
             particle2.status = -1
 
+        print('After: ', particle1, particle2)
         return really_did_hit, particle1, particle2
 
     @timing

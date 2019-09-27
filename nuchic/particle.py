@@ -24,6 +24,10 @@ class Particle:
         self.daughters = daughters if daughters is not None else []
         self.formation_zone = 0
 
+    def __str__(self):
+        return 'Particle({}, {} , {}, {})'.format(self.pid, self.mom,
+                                                  self.pos, self.status)
+
     def vec(self):
         """ Return the momentum 3 vector. """
         return Vec3(self.mom[1]/self.mom[0],
