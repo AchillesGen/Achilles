@@ -68,7 +68,7 @@ class Nucleus:
         updated to account for the influence of the potential.
         """
         # Is the position still within the nucleus?
-        if particle.pos.p < self.radius:
+        if particle.pos.mag < self.radius:
             return False
         # Is the "kinetic energy" less than the binding potential?
         energy_total = np.sqrt(particle.mom.mom2 + particle.mom.mass2)

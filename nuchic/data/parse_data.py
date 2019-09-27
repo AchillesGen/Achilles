@@ -7,6 +7,8 @@ import numpy as np
 from scipy import interpolate, optimize
 from absl import logging
 
+from ..utils import timing
+
 DIR, FILE = os.path.split(__file__)
 
 
@@ -82,6 +84,7 @@ class GeantData:
                              result[0]))
             return result[0]
 
+    @timing
     def call(self, mode, energy, rand):
         """ Return the angle that has a probability rand at the given energy.
 
@@ -95,6 +98,7 @@ class GeantData:
         """
         return self(mode, energy, rand)
 
+    @timing
     def cross_section(self, mode, energy):
         """ Return the total cross-section at a given center of mass energy."""
         return self._cross_section[mode](energy)

@@ -2,6 +2,7 @@
 
 import numpy as np
 from .three_vector import Vec3
+from .utils import timing
 
 
 class Vec4:
@@ -160,6 +161,7 @@ class Vec4:
                     self.p_y/self.energy,
                     self.p_z/self.energy)
 
+    @timing
     def boost(self, beta):
         """Boosts the four-fector along the three-vector beta. A discussion of
         the relevant formulae appears, e.g., around Eq (11.19) in in Sec 11.3

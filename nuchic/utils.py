@@ -5,12 +5,36 @@ import functools
 import logging
 import numpy as np
 
+"""
+Some useful utilities / decorators for debuging
+"""
+
+LOGGER = logging.getLogger(__name__)
+
+
+def timing(fcn):
+    """Time the execution of fcn. Use as decorator."""
+    @functools.wraps(fcn)
+    def wrap(*args, **kwargs):
+        """Wrapped version of the function."""
+        t_initial = time.perf_counter()
+        result = fcn(*args, **kwargs)
+        t_final = time.perf_counter()
+        LOGGER.info(
+            "TIMING: %s took: %.4e sec",
+            fcn.__name__,
+            t_final - t_initial
+        )
+        return result
+    return wrap
+
 
 def momentum_sort(elem):
     """ Sort the array by momentum. """
     return elem.mom.mom
 
 
+@timing
 def to_cartesian(coords, axis=0):
     """Convert spherical coordinates to cartesian coordinates. """
     coords = np.moveaxis(coords, axis, 0)
@@ -32,27 +56,3 @@ def to_spherical(coords, axis=0):
     phi = np.where(phi > 0, phi, phi + 2*np.pi)
     coords = np.moveaxis(coords, 0, axis)
     return np.moveaxis(np.array([r, theta, phi]), 0, axis)
-
-
-"""
-Some useful utilities / decorators for debuging
-"""
-
-LOGGER = logging.getLogger(__name__)
-
-
-def timing(fcn):
-    """Time the execution of fcn. Use as decorator."""
-    @functools.wraps(fcn)
-    def wrap(*args, **kwargs):
-        """Wrapped version of the function."""
-        t_initial = time.time()
-        result = fcn(*args, **kwargs)
-        t_final = time.time()
-        LOGGER.info(
-            "TIMING: %s took: %.4f sec",
-            fcn.__name__,
-            t_final - t_initial
-        )
-        return result
-    return wrap

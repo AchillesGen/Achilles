@@ -4,6 +4,7 @@ import numpy as np
 from .constants import HBARC, MQE as mN
 from .four_vector import Vec4
 from .three_vector import Vec3
+from .utils import timing
 
 
 class Particle:
@@ -109,6 +110,7 @@ class Particle:
         prop_dist = Vec3(prop_dist_x, prop_dist_y, prop_dist_z)
         self.pos -= prop_dist
 
+    @timing
     def set_formation_zone(self, p_in, p_out):
         ''' When particles interact there is a coherence region in which the
         interaction takes place. In our treatment, we take the interaction to
