@@ -3,6 +3,8 @@ Short term:
 
  - Implement FSI folding functions according to blackboard discussion
  - Refactor cascade code
+    - Speed up angular variables calculation
+    - Clean-up cascade code
  - Understand Geant4 variable `center of mass momentum'
  - Polish user defined input file/interface
  - Implement two body currents
