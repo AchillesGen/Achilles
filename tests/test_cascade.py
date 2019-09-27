@@ -5,7 +5,7 @@ import numpy as np
 # import pytest
 
 from nuchic.cascade import FSI
-from nuchic.constants import MEV, MQE as mN, FM
+from nuchic.constants import MEV, MQE as mN, FM, HBARC
 from nuchic.four_vector import Vec4
 from nuchic.three_vector import Vec3
 from nuchic.particle import Particle
@@ -45,6 +45,25 @@ def test_kick(mock_nucleus):
     assert cascade.nucleons[cascade.kicked_idxs[0]].mom.p_x == 0
     assert cascade.nucleons[cascade.kicked_idxs[0]].mom.p_y == 0
     assert cascade.nucleons[cascade.kicked_idxs[0]].mom.p_z == p_p
+
+
+@patch('nuchic.nucleus.Nucleus')
+def test_adaptive_step(mock_nucleus):
+    """ Test adaptive_step. """
+    mock_nucleus.generate_config.return_value = (PROTONS, NEUTRONS)
+    cascade = FSI(mock_nucleus, 1.0)
+
+    cascade.nucleons[0].pos = Vec3(0, 0, 0)
+    cascade.nucleons[0].mom = Vec4(1000, 0, 0, 500)
+    cascade.nucleons[0].status = -1
+    cascade.kicked_idxs = [0]
+    cascade.adaptive_step(1.0)
+
+    assert cascade.time_step == 1.0/(0.5*HBARC)
+
+    cascade.nucleons[0].propagate(cascade.time_step)
+
+    assert cascade.nucleons[0].pos == Vec3(0, 0, 1.0)
 
 
 def _get_momentums(particles, mode):

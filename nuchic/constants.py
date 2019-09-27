@@ -3,8 +3,8 @@
 Values taken from PDG 2018,
 see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-phys-constants.pdf
 """
-MB = 0.1  # 1 MB = 0.1 FM^2
 FM = 1.0
+MB = 0.1 * FM**2  # 1 MB = 0.1 FM^2
 M = 1E15 * FM
 MEV = 1.0
 GEV = 1.E3 * MEV

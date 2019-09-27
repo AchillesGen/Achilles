@@ -9,7 +9,7 @@ from .utils import to_cartesian, timing
 from .four_vector import Vec4
 from .three_vector import Vec3
 from .particle import Particle
-from .constants import FM as fm, MQE as mN, GEV, HBARC
+from .constants import FM as fm, MQE as mN, GEV, HBARC, MB
 from .data.parse_data import GeantData
 from .interaction import sigma_pp, sigma_np
 
@@ -134,9 +134,9 @@ class FSI:
         beta = 0
         for idx in self.kicked_idxs:
             if self.nucleons[idx].beta > beta:
-                beta=self.nucleons[idx].beta
+                beta = self.nucleons[idx].beta
         self.time_step = distance/(beta*HBARC)  # This is the adapted time step
-    
+
     @timing
     def __call__(self):
         ''' Performs the full propagation of the kicked nucleons inside
@@ -144,7 +144,7 @@ class FSI:
         all status=+1 particles
         '''
         # Overestimate cross section
-        sigma = 100*fm**2  # 0.1 barn xsec = 10 fm^2
+        sigma = 50*MB  # 1 barn xsec = 100 fm^2
         # positions = []
         # positions_temp = []
         for step in range(10000):
@@ -155,7 +155,7 @@ class FSI:
             # Adapt time step
             self.adaptive_step(self.distance)
             # Update formation zones
-            for i in range(len(self.nucleons)):
+            for i in self.kicked_idxs:
                 if self.nucleons[i].is_in_formation_zone():
                     self.nucleons[i].formation_zone -= self.time_step
             # copy to avoid changing during iteration
@@ -164,7 +164,7 @@ class FSI:
                 logging.debug('kick_idx = {}'.format(kick_idx))
                 new_kick_idxs = self.interacted(kick_idx, sigma)
 
-                print(new_kick_idxs)
+                logging.debug('new_kick_idxs = {}'.format(new_kick_idxs))
                 new_kick_idxs = new_kick_idxs.tolist()
 
                 if new_kick_idxs:
@@ -194,15 +194,15 @@ class FSI:
                     not_propagating.append(i)
                     if self.nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
-                        logging.debug('nucleon {} is OOOOOOUT! \
-                                       status: {}'.format(
+                        logging.debug('nucleon {} is OOOOOOUT! '
+                                      'status: {}'.format(
                                            kick_idx,
                                            self.nucleons[kick_idx].status)
                                       )
                     else:
                         self.nucleons[kick_idx].status = 2
-                        logging.debug('nucleon {} is captured! \
-                                       status: {}'.format(
+                        logging.debug('nucleon {} is captured! '
+                                      'status: {}'.format(
                                            kick_idx,
                                            self.nucleons[kick_idx].status)
                                       )
@@ -271,8 +271,14 @@ class FSI:
                   generate_final_phase_space?
         '''
 
+        # Ensure not in formation zone
+        if self.nucleons[idx].is_in_formation_zone():
+            self.nucleons[idx].propagate(self.time_step)
+            return np.array([])
+
         # Builds up cylinder
         self.cylinder_pt1 = self.nucleons[idx].pos
+        logging.debug('Before propagate: {}'.format(self.nucleons[idx]))
         self.nucleons[idx].propagate(self.time_step)
         self.cylinder_pt2 = self.nucleons[idx].pos
         cylinder_r = np.sqrt(sigma/np.pi)
@@ -283,8 +289,6 @@ class FSI:
         idxs = np.arange(len(self.nucleons))
         idxs = idxs[np.where(idxs != idx)]
         in_cylinder = False
-        if self.nucleons[idx].is_in_formation_zone():
-            return np.array([])
 
         positions = []
         for i in idxs:
@@ -292,6 +296,8 @@ class FSI:
                     self.nucleons[i].is_in_formation_zone():
                 idxs = idxs[np.where(idxs != i)]
                 continue
+            logging.debug('Index: {}, Position: '
+                          '{}'.format(i, self.nucleons[i].pos.vec))
             positions.append(self.nucleons[i].pos.vec)
         in_cylinder = self.points_in_cylinder(
             self.cylinder_pt1.array,
@@ -299,8 +305,8 @@ class FSI:
             cylinder_r,
             positions
         )
-        print(idxs, idx)
-        print(in_cylinder)
+        logging.debug('indices = {}, prop = {}'.format(idxs, idx))
+        logging.debug('in_cylinder = {}'.format(in_cylinder))
         return idxs[in_cylinder]
 
     @timing
@@ -337,7 +343,8 @@ class FSI:
             TODO: Implement realistic phase space
         '''
 
-        print('Before: ', particle1, particle2)
+        logging.debug('Before:\nPart1 = {}\nPart2 = {}'.format(particle1,
+                                                               particle2))
         # Is particle 2 a background particle? If so, we need to
         # generate it's momentum
         if particle2.is_background():
@@ -387,14 +394,12 @@ class FSI:
         # Check cylinder:
         # (using global cylinder variables defined in interacted)
         cylinder_r = np.sqrt(sigma_p_dependent/np.pi)
-        really_did_hit = self.points_in_cylinder(
-            self.cylinder_pt1.array,
-            self.cylinder_pt2.array,
-            cylinder_r,
-            particle2.pos.vec
-        )
-        if not really_did_hit:
-            return really_did_hit, particle1, particle2
+        vec = self.cylinder_pt2.array - self.cylinder_pt1.array
+        cylinder_r *= np.linalg.norm(vec)
+        particle_r = np.linalg.norm(np.cross(
+            particle2.pos.array - self.cylinder_pt1.array, vec))
+        if not particle_r <= cylinder_r:
+            return False, particle1, particle2
 
         return self.finalize_momentum(mode, particle1, particle2, boost_vec)
 
@@ -452,7 +457,8 @@ class FSI:
             # Hit background nucleon becomes propagating nucleon
             particle2.status = -1
 
-        print('After: ', particle1, particle2)
+        logging.debug('After:\nPart1 = {}\nPart2 = {}'.format(particle1,
+                                                              particle2))
         return really_did_hit, particle1, particle2
 
     @timing
