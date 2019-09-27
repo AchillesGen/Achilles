@@ -11,7 +11,7 @@ from tqdm import tqdm
 from .vegas import Integrator
 from .inclusive import Quasielastic
 from .nucleus import Nucleus
-from .constants import MEV as MeV
+from .constants import MEV as MeV, FM
 from .cascade import FSI
 from .utils import momentum_sort
 from .histogram import Histogram
@@ -61,7 +61,7 @@ class NuChic:
         argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
         self.inclusive = Quasielastic(argon_nucleus, 730, 37.1)
         if FLAGS.cascade:
-            self.fsi = FSI(argon_nucleus, 1)
+            self.fsi = FSI(argon_nucleus, self.settings.distance*FM)
 
         self.nevents = int(self.settings.nevents)
 

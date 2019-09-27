@@ -96,6 +96,12 @@ class Particle:
 
         return prop_dist
 
+    @property
+    def beta(self):
+        ''' 
+        '''
+        return self.mom.boost_vector().mag
+    
     def back_propagate(self, time):
         """ Revert previous propagation. """
         dist = self.mom.mom/self.mom.energy*time*HBARC

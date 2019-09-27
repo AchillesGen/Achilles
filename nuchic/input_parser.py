@@ -34,6 +34,11 @@ class Settings:
         """ Get the event output format. """
         return self.settings['run']['output']
 
+    @property
+    def distance(self):
+        """ Maximum propagation distance of particles in cascade. """
+        return self.settings['parameters']['cascade_distance']
+
     def get_histograms(self):
         """ Build the requested histograms from the yaml file. """
         histograms = {}

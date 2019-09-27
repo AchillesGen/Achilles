@@ -5,7 +5,7 @@ import numpy as np
 # import pytest
 
 from nuchic.cascade import FSI
-from nuchic.constants import MEV, MQE as mN
+from nuchic.constants import MEV, MQE as mN, FM
 from nuchic.four_vector import Vec4
 from nuchic.three_vector import Vec3
 from nuchic.particle import Particle
@@ -125,6 +125,7 @@ def test_interacted(mock_nucleus):
             pid=2212, mom=Vec4(e_p, 0, 0, p_p), pos=Vec3(0, 0, 0))
         cascade.kicked_idxs = []
         cascade.kicked_idxs.append(0)
+        cascade.adaptive_step(0.2*FM)
         # propagating nucleon
         cascade.nucleons[cascade.kicked_idxs[0]].status = -1
         cascade.nucleons[10] = Particle(
