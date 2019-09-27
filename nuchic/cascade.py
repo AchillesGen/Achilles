@@ -5,7 +5,7 @@
 import numpy as np
 from absl import logging
 
-from .utils import to_cartesian
+from .utils import to_cartesian, timing
 from .four_vector import Vec4
 from .three_vector import Vec3
 from .particle import Particle
@@ -126,6 +126,7 @@ class FSI:
         self.cylinder_pt1 = 0
         self.cylinder_pt2 = 0
 
+    @timing
     def __call__(self):
         ''' Performs the full propagation of the kicked nucleons inside
         the nucleus. Updates the list of outgoing_particles with
@@ -172,7 +173,7 @@ class FSI:
             not_propagating = []
             for i, kick_idx in enumerate(self.kicked_idxs):
                 # Nucleon becomes final particle if outside nucleus
-                if self.nucleons[kick_idx].pos.p > self.nucleus.radius:
+                if self.nucleons[kick_idx].pos.mag > self.nucleus.radius:
                     not_propagating.append(i)
                     if self.nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
@@ -204,6 +205,7 @@ class FSI:
         return [n for n in self.nucleons if n.is_final()]
 
     @staticmethod
+    @timing
     def points_in_cylinder(pt1, pt2, radius, position):
         ''' Check if a point is within a cylinder
         Args:
@@ -221,6 +223,7 @@ class FSI:
                 and np.dot(position - pt2, vec) <= 0
                 and np.linalg.norm(np.cross(position - pt1, vec)) <= const)
 
+    @timing
     def interacted(self, idx, sigma):
         ''' Decides if an interaction occurred for a propagating particle
         within given time step
@@ -277,6 +280,7 @@ class FSI:
                 return in_cylinder, i
         return False, None
 
+    @timing
     def generate_final_phase_space(self, particle1, particle2):
         ''' Generates phase space (isotropic), checks if particle is inside
         cylinder for proper cross section, checks for Pauli blocking
@@ -370,6 +374,7 @@ class FSI:
 
         return self.finalize_momentum(mode, particle1, particle2, boost_vec)
 
+    @timing
     def finalize_momentum(self, mode, particle1, particle2, boost_vec):
         """ Finalize generated momentum. """
 
@@ -380,14 +385,20 @@ class FSI:
         pcm = particle1.mom.mom*mN/ecm
 
         # Generate one outgoing momentum
-        momentum = np.random.random(3)
-        momentum[0] = p1_cm.mom
-        momentum[1] = np.radians(
-            self.interactions(mode, pcm / GEV, momentum[1]))
-        momentum[2] = momentum[2]*2*np.pi
+        @timing
+        def make_momentum():
+            momentum = np.random.random(3)
+            momentum[0] = p1_cm.mom
+            momentum[1] = np.radians(
+                self.interactions.call(mode, pcm / GEV, momentum[1]))
+            momentum[2] = momentum[2]*2*np.pi
 
-        # Three momentum in cartesian coordinates:
-        momentum = to_cartesian(momentum)
+            # Three momentum in cartesian coordinates:
+            momentum = to_cartesian(momentum)
+
+            return momentum
+
+        momentum = make_momentum()
 
         # Outgoing 4-momenta
         p1_out = Vec4(*[p1_cm.energy, *momentum])
@@ -395,8 +406,8 @@ class FSI:
 
         # Get q0 in lab frame for formation zone
         # TODO: what happens in inelastic scatterings?
-        q_lab = p2_out.boost_back(p2_cm.boost_vector()) - \
-            p2_cm.boost_back(p2_cm.boost_vector())
+        # q_lab = p2_out.boost_back(p2_cm.boost_vector()) - \
+        #     p2_cm.boost_back(p2_cm.boost_vector())
 
         # Boost to original frame
         p1_out = p1_out.boost(boost_vec)
@@ -406,21 +417,20 @@ class FSI:
         really_did_hit = not(self.pauli_blocking(
             p1_out) or self.pauli_blocking(p2_out))
         if really_did_hit:
+            # Assign formation zone
+            particle1.set_formation_zone(particle1.mom, p1_out)
+            particle2.set_formation_zone(particle2.mom, p2_out)
+
             # Assign momenta to particles
             particle1.mom = p1_out
             particle2.mom = p2_out
-
-            # Assign formation zone
-            # FIXME: Change formation zone in particle.py
-            mass2 = q_lab.mass2
-            particle1.set_formation_zone(q_lab.energy, mass2, 0.139)
-            particle2.set_formation_zone(q_lab.energy, mass2, 0.139)
 
             # Hit background nucleon becomes propagating nucleon
             particle2.status = -1
 
         return really_did_hit, particle1, particle2
 
+    @timing
     def pauli_blocking(self, four_momentum):
         ''' Checks if Pauli blocking occurred
 
