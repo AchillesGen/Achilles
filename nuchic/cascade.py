@@ -196,15 +196,15 @@ class FSI:
                         self.nucleons[kick_idx].status = 1
                         logging.debug('nucleon {} is OOOOOOUT! '
                                       'status: {}'.format(
-                                           kick_idx,
-                                           self.nucleons[kick_idx].status)
+                                          kick_idx,
+                                          self.nucleons[kick_idx].status)
                                       )
                     else:
                         self.nucleons[kick_idx].status = 2
                         logging.debug('nucleon {} is captured! '
                                       'status: {}'.format(
-                                           kick_idx,
-                                           self.nucleons[kick_idx].status)
+                                          kick_idx,
+                                          self.nucleons[kick_idx].status)
                                       )
             # Delete indices of non-propagating particles.
             # Delete in reverse order to avoid shifting elements.
@@ -360,6 +360,7 @@ class FSI:
         boost_vec = total_momentum.boost_vector()
 
         # Particle 4-momentum in CoM frame
+        # See PDG2018 Kinematics Eq. 47.6
         ecm = total_momentum.mass
         pcm = particle1.mom.mom*mN/ecm
 

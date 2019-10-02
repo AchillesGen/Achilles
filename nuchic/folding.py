@@ -18,7 +18,7 @@ class Folding:
     with a folding function.
     """
 
-    def __init__(self):
+    def __init__(self, width=9, shift=-15):
         logging.info('Initializing folding function')
         with open(os.path.join(DIR, 'pke', 'folding.in')) as infile:
             transparency, hwfold, nwfold = infile.readline().split()
@@ -49,8 +49,10 @@ class Folding:
                               % (i, self.kin[i], i, pot[i]))
 
         self.kinematic = interpolate.interp1d(self.kin, pot)
+        self.width = width
+        self.shift = shift
 
-    def __call__(self, omega, omegap):
+    def noemi(self, omega, omegap):
         """ Preform the folding function.
 
         Args:
@@ -63,6 +65,29 @@ class Folding:
         if abs(omega-omegap) <= self.wmax and abs(omega-omegap) >= self.wmin:
             return self.fold(abs(omega-omegap))
         return 0
+
+    def breit_wigner(self, omega, omegap):
+        """ Preform the folding function with a BW.
+        Args:
+            omega: Final transfered energy
+            omegap: Initial transfered energy
+
+        Returns:
+            folded result
+        """
+        return (self.width/np.pi
+                / (self.width**2+(omega-omegap-self.shift)**2)
+                * (1-self.transparency))
+
+    __dict__ = {'noemi': noemi, 'breit_wigner': breit_wigner}
+
+    def __call__(self, name, omega, omegap):
+        func = getattr(self, name, None)
+        if func is not None:
+            return func(omega, omegap)
+        raise NotImplementedError('Requested folding function {} is not '
+                                  'defined. Possible choices are {}.'.format(
+                                      name, vars(self)))
 
     @property
     def wmin(self):

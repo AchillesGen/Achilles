@@ -39,6 +39,11 @@ class Settings:
         """ Maximum propagation distance of particles in cascade. """
         return self.settings['parameters']['cascade_distance']
 
+    @property
+    def folding_func(self):
+        """ Get the user folding function. """
+        return self.settings['run']['folding_func']
+
     def get_histograms(self):
         """ Build the requested histograms from the yaml file. """
         histograms = {}

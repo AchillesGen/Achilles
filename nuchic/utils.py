@@ -20,7 +20,7 @@ def timing(fcn):
         t_initial = time.perf_counter()
         result = fcn(*args, **kwargs)
         t_final = time.perf_counter()
-        LOGGER.info(
+        LOGGER.debug(
             "TIMING: %s took: %.4e sec",
             fcn.__name__,
             t_final - t_initial

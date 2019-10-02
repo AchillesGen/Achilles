@@ -21,9 +21,10 @@ DIR, FILE = os.path.split(__file__)
 
 class Inclusive:
     """ Base class to implement inclusive cross-section calculations."""
-    def __init__(self, nucleus, energy, thetalept):
+    def __init__(self, settings, nucleus, energy, thetalept):
         self.beam_energy = energy
         self.thetalept = thetalept*np.pi/180.0
+        self.settings = settings
 
         if not isinstance(nucleus, Nucleus):
             raise ValueError('Requires Nucleus as input, got {}'.format(
@@ -74,10 +75,10 @@ class Inclusive:
 class Quasielastic(Inclusive):
     """ Class to calculate quasielastic scattering of an electron
     on a nucleus."""
-    def __init__(self, nucleus, energy, thetalept, fg=0):
+    def __init__(self, fg, *args):
         logging.info('Initializing Quasielastic calculation')
 
-        super().__init__(nucleus, energy, thetalept)
+        super().__init__(*args)
 
         self.width = 1e3
         self.f_g = fg
@@ -137,21 +138,20 @@ class Quasielastic(Inclusive):
         else:
             omegat = variables['omega']-variables['energy']+MQE-e_out
 
-        # TODO: How to include u_pq if cost_te is an integration variable?
-        # u_pq = 0.0
-        # if FLAGS.folding:
-        #     tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
-        #     if self.folding.kin_max < tkin_pf < self.folding.kin_min:
-        #         u_pq = self.folding.kinematic(tkin_pf)
+        u_pq = 0.0
+        if FLAGS.folding:
+            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
+            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+                u_pq = self.folding.kinematic(tkin_pf)
 
-        # cost_te is now an integration variable
-        # cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
-        #             - MQE**2)
-        #            / (2*variables['mom']*qval))
-        # if abs(cost_te) > 1:
-        #     logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-        #                   % (omegat, e_out, mom, qval, MQE))
-        #     return 0
+        cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
+                    - MQE**2)
+                   / (2*variables['mom']*qval))
+        if abs(cost_te) > 1:
+            logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
+                          % (omegat, e_out, variables['mom'], qval, MQE))
+            return 0
+        variables['cost_te'] = cost_te
 
         mom_f = np.sqrt(variables['mom']**2 + qval**2
                         + 2*qval*variables['mom']*variables['cost_te'])
@@ -181,20 +181,18 @@ class Quasielastic(Inclusive):
         e_int = denergy*point[1] + self.emin
         dmom = self.pmax - self.pmin
         p_int = dmom*point[2] + self.pmin
-        cost_te = 2*point[3] - 1
 
         variables = {'mom': p_int,
                      'energy': e_int,
-                     'omega': omega,
-                     'cost_te': cost_te}
+                     'omega': omega}
 
-        ps_wgt = domega*denergy*2*dmom
+        ps_wgt = domega*denergy*dmom
         qval = np.sqrt((2.0 * self.beam_energy * (self.beam_energy - omega)
                         * (1.0 - self.coste)) + omega**2)
 
         if FLAGS.folding:
             domegap = self.wmax - self.wmin
-            omegap = domegap*point[4] + self.wmin
+            omegap = domegap*point[3] + self.wmin
             variables['omegap'] = omegap
             ps_wgt = domegap*denergy*2*dmom
             return variables, ps_wgt, qval, domega
@@ -209,13 +207,16 @@ class Quasielastic(Inclusive):
         wgt *= 1e9*ps_wgt
 
         if FLAGS.folding:
-            qval_f = np.sqrt(2.0*self.energy*(self.energy-variables['omegap'])
+            qval_f = np.sqrt(2.0*self.beam_energy*(self.beam_energy
+                                                   - variables['omegap'])
                              * (1.0-self.coste) + variables['omegap']**2)
 
             wgt_f = self._eval(variables, qval_f,
                                self.pke(variables['mom'], variables['energy']))
             wgt_f *= 1e9*ps_wgt
-            wgt_f = self.folding(variables['omega'], variables['omegap'])\
+            wgt_f = self.folding(self.settings.folding_func,
+                                 variables['omega'],
+                                 variables['omegap'])\
                 * wgt_f * domega + self.folding.transparency*wgt
 
             return [wgt_f, wgt], variables, qval
@@ -223,6 +224,25 @@ class Quasielastic(Inclusive):
         return wgt, variables, qval
 
     def generate_momentum(self, variables, qval):
+        e_out = np.sqrt(variables['mom']**2+MQE**2)
+        if self.f_g == 1:
+            omegat = variables['omega']
+        else:
+            omegat = variables['omega']-variables['energy']+MQE-e_out
+        u_pq = 0.0
+        if FLAGS.folding:
+            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
+            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+                u_pq = self.folding.kinematic(tkin_pf)
+
+        cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
+                    - MQE**2)
+                   / (2*variables['mom']*qval))
+        if abs(cost_te) > 1:
+            logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
+                          % (omegat, e_out, variables['mom'], qval, MQE))
+            return None
+        variables['cost_te'] = cost_te
         mom_f = np.sqrt(variables['mom']**2 + qval**2 +
                         2*qval*variables['mom']*variables['cost_te'])
         epf = np.sqrt(MQE**2+mom_f**2)

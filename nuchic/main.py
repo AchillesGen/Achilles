@@ -59,7 +59,8 @@ class NuChic:
                            }
 
         argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
-        self.inclusive = Quasielastic(argon_nucleus, 730, 37.1)
+        self.inclusive = Quasielastic(0, self.settings,
+                                      argon_nucleus, 730, 37.1)
         if FLAGS.cascade:
             self.fsi = FSI(argon_nucleus, self.settings.distance*FM)
 
@@ -67,7 +68,7 @@ class NuChic:
 
     def run(self):
         """ Runs the nuChic code with given settings."""
-        ndims = 4
+        ndims = 3
         if FLAGS.folding:
             ndims += 1
 
@@ -83,7 +84,7 @@ class NuChic:
                 zeros += 1
 
         print(zeros)
-        # self.plot_results()
+        self.plot_results()
 
     def generate_one_event(self, point, weight=None):
         """ Generate the output for a single event. """
@@ -124,10 +125,10 @@ class NuChic:
                     escaped_part.sort(reverse=True, key=momentum_sort)
                     momentum_post = escaped_part[0].mom
 
-                    self.histograms['e_pre'].fill(momentum_post.energy, wgt)
-                    self.histograms['px_pre'].fill(momentum_post.p_x, wgt)
-                    self.histograms['py_pre'].fill(momentum_post.p_y, wgt)
-                    self.histograms['pz_pre'].fill(momentum_post.p_z, wgt)
+                    self.histograms['e_post'].fill(momentum_post.energy, wgt)
+                    self.histograms['px_post'].fill(momentum_post.p_x, wgt)
+                    self.histograms['py_post'].fill(momentum_post.p_y, wgt)
+                    self.histograms['pz_post'].fill(momentum_post.p_z, wgt)
 
                     self.histograms['e_diff'].fill(
                         momentum_post.energy - momentum.energy, wgt)
@@ -168,7 +169,8 @@ class NuChic:
         # hist /= bin_widths
         # hist_f /= bin_widths
 
-        # _, ax1 = plt.subplots(nrows=1, ncols=1)
+        _, ax1 = plt.subplots(nrows=1, ncols=1)
+        self.histograms['omega'].plot(ax1)
         # ax1.errorbar(data_omega*1000, data_dsigma,
         #              yerr=data_error, fmt='o', color='red')
         # # ax1.plot(omega_f,dsigma, color='red', ls='steps')

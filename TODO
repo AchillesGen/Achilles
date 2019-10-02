@@ -2,17 +2,19 @@ Short term:
 -----------
 
  - Implement FSI folding functions according to blackboard discussion
- - Refactor cascade code
-    - Speed up angular variables calculation
-    - Clean-up cascade code
- - Understand Geant4 variable `center of mass momentum'
- - Polish user defined input file/interface
+    - Breit-Wigner
+    - Use final state momentum to correct matrix element
+    - Obtain potential from scattering for folding function
  - Implement two body currents
  - Compare with electron scattering data
 
 Long term:
 ----------
 
+ - Refactor cascade code
+    - Speed up angular variables calculation
+    - Clean-up cascade code
+ - Polish user defined input file/interface
  - Implement RES
  - Implement DIS
  - Implement neutrinos
