@@ -11,6 +11,7 @@ from .four_vector import Vec4
 from .nucleus import Nucleus
 from .constants import MEV, HBARC, MQE
 from .folding import Folding
+from .config import SETTINGS
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
@@ -21,10 +22,9 @@ DIR, FILE = os.path.split(__file__)
 
 class Inclusive:
     """ Base class to implement inclusive cross-section calculations."""
-    def __init__(self, settings, nucleus, energy, thetalept):
+    def __init__(self, nucleus, energy, thetalept):
         self.beam_energy = energy
         self.thetalept = thetalept*np.pi/180.0
-        self.settings = settings
 
         if not isinstance(nucleus, Nucleus):
             raise ValueError('Requires Nucleus as input, got {}'.format(
@@ -214,7 +214,7 @@ class Quasielastic(Inclusive):
             wgt_f = self._eval(variables, qval_f,
                                self.pke(variables['mom'], variables['energy']))
             wgt_f *= 1e9*ps_wgt
-            wgt_f = self.folding(self.settings.folding_func,
+            wgt_f = self.folding(SETTINGS.run.folding_func,
                                  variables['omega'],
                                  variables['omegap'])\
                 * wgt_f * domega + self.folding.transparency*wgt

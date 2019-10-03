@@ -15,7 +15,7 @@ from .constants import MEV as MeV, FM
 from .cascade import FSI
 from .utils import momentum_sort
 from .histogram import Histogram
-from .input_parser import Settings
+from .config import SETTINGS
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
@@ -40,7 +40,7 @@ def init_histograms(filename='hists.txt'):
 class NuChic:
     """ Main driver class for the nuChic code. """
     def __init__(self, run_card):
-        self.settings = Settings(run_card)
+        SETTINGS.load(run_card)
         self.histograms = {'omega': Histogram([0, 500], 100),
                            'px_pre': Histogram([-500, 500], 100),
                            'py_pre': Histogram([-500, 500], 100),
@@ -59,12 +59,11 @@ class NuChic:
                            }
 
         argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
-        self.inclusive = Quasielastic(0, self.settings,
-                                      argon_nucleus, 730, 37.1)
+        self.inclusive = Quasielastic(0, argon_nucleus, 730, 37.1)
         if FLAGS.cascade:
-            self.fsi = FSI(argon_nucleus, self.settings.distance*FM)
+            self.fsi = FSI(argon_nucleus, SETTINGS.distance*FM)
 
-        self.nevents = int(self.settings.nevents)
+        self.nevents = int(SETTINGS.nevents)
 
     def run(self):
         """ Runs the nuChic code with given settings."""
