@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 import pytest
 
-from nuchic.input_parser import Settings
+from nuchic.config import SETTINGS
 
 YAML = """
 run:
@@ -43,17 +43,17 @@ def run_file():
 
 def test_settings_init(run_file):
     """ Test settings initialization. """
-    settings = Settings(run_file.name)
-    assert not settings.cascade
-    assert not settings.folding
-    assert settings.nevents == 1000
-    assert settings.output_format == 'lhe'
+    SETTINGS.load(run_file.name)
+    assert not SETTINGS.cascade
+    assert not SETTINGS.folding
+    assert SETTINGS.nevents == 1000
+    assert SETTINGS.output_format == 'lhe'
 
 
 @patch('nuchic.histogram.Histogram.__init__', return_value=None)
 def test_get_histograms(mock_hist, run_file):
     """ Test getting histograms. """
-    settings = Settings(run_file.name)
-    histograms = settings.get_histograms()
+    SETTINGS.load(run_file.name)
+    histograms = SETTINGS.get_histograms()
     assert len(histograms) == 3
     assert mock_hist.call_count == 3

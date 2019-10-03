@@ -150,7 +150,7 @@ def test_interacted(mock_nucleus):
         cascade.nucleons[10] = Particle(
             pid=2212, mom=Vec4(mN, 0, 0, 0), pos=position)
         print(cascade.nucleons[0].pos, cascade.nucleons[10].pos)
-        in_cylinder, _ = cascade.interacted(0, sigma=1)
+        in_cylinder = cascade.interacted(0, sigma=1)
 #        assert in_cylinder==tests[i]
         print(in_cylinder,
               tests[i], cascade.nucleons[0].pos, cascade.nucleons[10].pos)

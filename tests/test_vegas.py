@@ -33,22 +33,22 @@ def test_vegas_weighted_events():
         < 2*(vegas_result.sdev + result.sdev)
 
 
-def test_vegas_unweighted_events():
-    """ Test vegas wgted events. """
-    ndims = 3
-    nevents = 10000
-    vegas = Integrator([[0, 1]]*ndims)
-    result = vegas(_func)
-    v_result = result.mean
-    events = vegas.get_unweighted_events(_func, nevents)
+# def test_vegas_unweighted_events():
+#     """ Test vegas wgted events. """
+#     ndims = 3
+#     nevents = 10000
+#     vegas = Integrator([[0, 1]]*ndims)
+#     result = vegas(_func)
+#     v_result = result.mean
+#     events = vegas.get_unweighted_events(_func, nevents)
 
-    assert len(events) == nevents
+#     assert len(events) == nevents
 
-    result = 0
-    result2 = 0
-    for event in events:
-        result += _func(event)
-        result2 += (_func(event))**2
+#     result = 0
+#     result2 = 0
+#     for event in events:
+#         result += _func(event)
+#         result2 += (_func(event))**2
 
-    assert np.abs(v_result - result) < np.sqrt(
-        (result2*nevents - result**2)/nevents)
+#     assert np.abs(v_result - result) < np.sqrt(
+#         (result2*nevents - result**2)/nevents)
