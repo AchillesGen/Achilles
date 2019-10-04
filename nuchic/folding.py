@@ -79,7 +79,7 @@ class Folding:
                 / (self.width**2+(omega-omegap-self.shift)**2)
                 * (1-self.transparency))
 
-    __dict__ = {'noemi': noemi, 'breit_wigner': breit_wigner}
+    folding_funcs = ['noemi', 'breit_wigner']
 
     def __call__(self, name, omega, omegap):
         func = getattr(self, name, None)
@@ -87,7 +87,7 @@ class Folding:
             return func(omega, omegap)
         raise NotImplementedError('Requested folding function {} is not '
                                   'defined. Possible choices are {}.'.format(
-                                      name, vars(self)))
+                                      name, self.folding_funcs))
 
     @property
     def wmin(self):

@@ -156,16 +156,14 @@ class Quasielastic(Inclusive):
         mom_f = np.sqrt(variables['mom']**2 + qval**2
                         + 2*qval*variables['mom']*variables['cost_te'])
         if mom_f >= self.k_f:
-            delta = self._delta((omegat + e_out), variables['mom'], qval,
-                                variables['cost_te'])
             phi = 2.0*np.pi*np.random.rand(1)
             sig = xsec.cc1(qval/HBARC, variables['omega'], omegat,
                            variables['mom']/HBARC,
-                           mom_f/HBARC, phi, self.energy, self.thetalept,
+                           mom_f/HBARC, phi, self.beam_energy, self.thetalept,
                            self.iform)
             return (variables['mom']**2*pke[0]*(self.n_z*sig)
-                    * np.sqrt(MQE**2 + mom_f**2)
-                    / (variables['mom']*qval)*2*np.pi)*delta
+                    * np.sqrt(MQE**2 + mom_f**2)*2*np.pi
+                    / (variables['mom']*qval))
         return 0
 
     # TODO: How to best implement this numerically?
@@ -194,7 +192,7 @@ class Quasielastic(Inclusive):
             domegap = self.wmax - self.wmin
             omegap = domegap*point[3] + self.wmin
             variables['omegap'] = omegap
-            ps_wgt = domegap*denergy*2*dmom
+            ps_wgt = domegap*denergy*dmom
             return variables, ps_wgt, qval, domega
 
         return variables, ps_wgt, qval, None
@@ -211,15 +209,19 @@ class Quasielastic(Inclusive):
                                                    - variables['omegap'])
                              * (1.0-self.coste) + variables['omegap']**2)
 
+            variables['omega'], variables['omegap'] = variables['omegap'], variables['omega']
+
             wgt_f = self._eval(variables, qval_f,
                                self.pke(variables['mom'], variables['energy']))
             wgt_f *= 1e9*ps_wgt
-            wgt_f = self.folding(SETTINGS.run.folding_func,
+            wgt_f = self.folding(SETTINGS.run['folding_func'],
                                  variables['omega'],
                                  variables['omegap'])\
                 * wgt_f * domega + self.folding.transparency*wgt
 
-            return [wgt_f, wgt], variables, qval
+            variables['omega'], variables['omegap'] = variables['omegap'], variables['omega']
+
+            return wgt_f, variables, qval
 
         return wgt, variables, qval
 

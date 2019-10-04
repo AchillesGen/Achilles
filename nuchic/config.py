@@ -17,10 +17,8 @@ class _Settings:
         with open(filename, 'r') as settings_file:
             self.__dict__.update(yaml.safe_load(settings_file))
 
-    def __getattr__(self, name):
-        if name == '__wrapped__':
-            return False
-        return self.__dict__[name]
+#    def __getattr__(self, name):
+#        return self.__dict__.get(name, False)
 
     @property
     def settings(self):

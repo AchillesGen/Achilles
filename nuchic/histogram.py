@@ -76,6 +76,11 @@ class Histogram:
         return (self.bins[1:] + self.bins[:-1])/2.
 
     @property
+    def bin_widths(self):
+        """ Get the bin widths. """
+        return np.diff(self.bins)
+
+    @property
     def min(self):
         """ Get minimum value of histogram. """
         return self.range[0]
@@ -145,14 +150,18 @@ class Histogram:
 
     def show(self, **kwargs):
         """ Open window displaying histogram. """
+        self.weights /= self.bin_widths
         self.weights = np.insert(self.weights, 0, self.weights[0])
         plt.plot(self.bins, self.weights, ds='steps', **kwargs)
         plt.show()
         self.weights = self.weights[1:]
+        self.weights *= self.bin_widths
 
     def plot(self, axis, **kwargs):
         """ Return a histogram plot given an axis. """
+        self.weights /= self.bin_widths
         self.weights = np.insert(self.weights, 0, self.weights[0])
         axis.plot(self.bins, self.weights, ds='steps', **kwargs)
         self.weights = self.weights[1:]
+        self.weights *= self.bin_widths
         return axis

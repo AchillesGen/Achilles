@@ -16,6 +16,7 @@ from .cascade import FSI
 from .utils import momentum_sort
 from .histogram import Histogram
 from .config import SETTINGS
+from .qe_data import QuasielasticData
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
@@ -97,9 +98,6 @@ class NuChic:
 
         momentum = self.inclusive.generate_momentum(variables, qval)
 
-        if FLAGS.folding:
-            wgt = wgt[1]
-
         self.fill_hists(momentum, variables, wgt*weight)
 
         return wgt*weight
@@ -140,53 +138,16 @@ class NuChic:
 
     def plot_results(self):
         """ Plot results of the run. """
-        # TODO: Use QuasielasticData class to load and plot the desired data
-        # data = pd.read_csv(os.path.join(DIR, 'data', '12C.dat'), header=None,
-        #                    sep=r'\s+',
-        #                    names=[
-        #                        'Z', 'A', 'Ee', 'Angle', 'omega',
-        #                        'dsigma', 'error', 'citation'
-        #                    ])
+        qe_data = QuasielasticData('12C')
+        energy = 0.730
+        angle = 37.1
 
-        # energy = 0.730
-        # angle = 37.1
-
-        # mask_energy = data['Ee'] == energy
-        # mask_angle = data['Angle'] == angle
-        # data_tmp = data[mask_energy & mask_angle]
-        # data_omega = data_tmp['omega'].values
-        # data_dsigma = data_tmp['dsigma'].values
-        # data_error = data_tmp['error'].values
-
-        # bins = np.linspace(0, data_omega[-2]*1000, data_omega[-2]*1000/5.+1)
-        # bin_widths = np.diff(bins)
-        # print(bins)
-
-        # hist, bins = np.histogram(omega, weights=wgts, bins=bins)
-        # hist_f, bins = np.histogram(omega, weights=wgts_f, bins=bins)
-
-        # hist /= bin_widths
-        # hist_f /= bin_widths
+        data = qe_data.get_data(energy, angle)
 
         _, ax1 = plt.subplots(nrows=1, ncols=1)
         self.histograms['omega'].plot(ax1)
-        # ax1.errorbar(data_omega*1000, data_dsigma,
-        #              yerr=data_error, fmt='o', color='red')
-        # # ax1.plot(omega_f,dsigma, color='red', ls='steps')
-        # ax1.plot(bins[:-1], hist, color='blue', ds='steps', label='No FSI')
-        # ax1.plot(bins[:-1], hist_f, color='green', ds='steps', label='FSI')
-        # ax1.legend()
-        # ax1.hist(omega,weights=wgts,bins=data_omega[:-1]*1000,color='blue')
-        # ax1.hist(omega,weights=wgts_f,bins=data_omega[:-1]*1000,color='green')
-        # ax2.hist(mom,weights=wgts,bins=400)
-        # ax3.hist(energies,weights=wgts,bins=400)
-
-        fig2, axs = plt.subplots(nrows=2, ncols=2)
-        self.histograms['e_post'].plot(axs[0][0])
-        self.histograms['px_post'].plot(axs[0][1])
-        self.histograms['py_post'].plot(axs[1][0])
-        self.histograms['pz_post'].plot(axs[1][1])
-        fig2.suptitle('After Cascade')
+        ax1.errorbar(data[0]*1000, data[1],
+                     yerr=data[2], fmt='o', color='red')
 
         fig3, axs2 = plt.subplots(nrows=2, ncols=2)
         self.histograms['e_pre'].plot(axs2[0][0])
@@ -195,14 +156,21 @@ class NuChic:
         self.histograms['pz_pre'].plot(axs2[1][1])
         fig3.suptitle('Before Cascade')
 
-        fig4, axs3 = plt.subplots(nrows=2, ncols=2)
-        self.histograms['e_diff'].plot(axs3[0][0])
-        self.histograms['px_diff'].plot(axs3[0][1])
-        self.histograms['py_diff'].plot(axs3[1][0])
-        self.histograms['pz_diff'].plot(axs3[1][1])
-        fig4.suptitle('Difference in momentum')
-
         if FLAGS.cascade:
+            fig2, axs = plt.subplots(nrows=2, ncols=2)
+            self.histograms['e_post'].plot(axs[0][0])
+            self.histograms['px_post'].plot(axs[0][1])
+            self.histograms['py_post'].plot(axs[1][0])
+            self.histograms['pz_post'].plot(axs[1][1])
+            fig2.suptitle('After Cascade')
+
+            fig4, axs3 = plt.subplots(nrows=2, ncols=2)
+            self.histograms['e_diff'].plot(axs3[0][0])
+            self.histograms['px_diff'].plot(axs3[0][1])
+            self.histograms['py_diff'].plot(axs3[1][0])
+            self.histograms['pz_diff'].plot(axs3[1][1])
+            fig4.suptitle('Difference in momentum')
+
             _, ax8 = plt.subplots(nrows=1, ncols=1)
             self.histograms['escape'].plot(ax8)
             ax8.set_yscale('log')
