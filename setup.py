@@ -63,7 +63,7 @@ setup(
     # Provide executable script to run the main code
     entry_points={'console_scripts': ['nuchic = nuchic.main:nu_chic', ], },
     ext_modules=[EXT1],
-    package_data={'': ['data/*', 'pke/*', 'configurations/*']},
+    package_data={'': ['data/*', 'data/qe/*', 'pke/*', 'configurations/*']},
     extras_require={
         'test': ['pytest', 'coverage', 'pytest-cov'],
     },
