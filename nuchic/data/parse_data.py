@@ -1,15 +1,11 @@
 """ Parse data from GEANT for pp and np interactions. """
 
-import os
-
 import h5py
 import numpy as np
 from scipy import interpolate, optimize
 from absl import logging
 
-from ..utils import timing
-
-DIR, FILE = os.path.split(__file__)
+from ..utils import timing, make_path
 
 
 class GeantData:
@@ -37,7 +33,7 @@ class GeantData:
         self._sig_tot = {}
         self._sig = {}
         self._theta = np.linspace(0.5, 179.5, 180)
-        with h5py.File(os.path.join(DIR, 'GeantData.hdf5'), 'r') as data:
+        with h5py.File(make_path('GeantData.hdf5', 'data'), 'r') as data:
             self._pcm['pp'] = data['pp/pcm'][:]
             self._pcm['np'] = data['np/pcm'][:]
             self._sig_tot['pp'] = data['pp/sigtot'][:]

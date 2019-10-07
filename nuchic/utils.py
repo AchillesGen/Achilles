@@ -1,5 +1,6 @@
 """ Implementation of utility functions for the nuchic code. """
 
+import os
 import time
 import functools
 import logging
@@ -10,6 +11,7 @@ Some useful utilities / decorators for debuging
 """
 
 LOGGER = logging.getLogger(__name__)
+DIR, FILE = os.path.split(__file__)
 
 
 def timing(fcn):
@@ -27,6 +29,12 @@ def timing(fcn):
         )
         return result
     return wrap
+
+
+def make_path(filename, path=''):
+    """ Make a file path to an installed nuchic file. """
+    loc = os.path.join(DIR, path, filename)
+    return loc
 
 
 def momentum_sort(elem):

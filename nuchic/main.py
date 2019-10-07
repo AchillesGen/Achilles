@@ -1,6 +1,4 @@
 """ Main driving code for the nuChic program """
-
-import os
 from ast import literal_eval
 
 from absl import flags, app, logging
@@ -23,8 +21,6 @@ flags.DEFINE_bool(
     'cascade', None, 'Flag to turn on/off the cascade', short_name='c')
 flags.DEFINE_bool('folding', None, 'Flag to turn on/off the folding function')
 flags.DEFINE_bool('testing', None, 'Flag to test the basics of the program')
-
-DIR, FILE = os.path.split(__file__)
 
 
 # TODO: Figure out how to implement this correctly
@@ -59,10 +55,9 @@ class NuChic:
                            'wgts': Histogram(bins=np.logspace(-4, 4, 400)),
                            }
 
-        argon_nucleus = Nucleus(6, 12, 8.6*MeV, 225*MeV)
-        self.inclusive = Quasielastic(0, argon_nucleus, 730, 37.1)
+        self.inclusive = Quasielastic(0, SETTINGS.nucleus, 730, 37.1)
         if FLAGS.cascade:
-            self.fsi = FSI(argon_nucleus, SETTINGS.distance*FM)
+            self.fsi = FSI(SETTINGS.nucleus, SETTINGS.distance*FM)
 
         self.nevents = int(SETTINGS.nevents)
 
@@ -138,7 +133,7 @@ class NuChic:
 
     def plot_results(self):
         """ Plot results of the run. """
-        qe_data = QuasielasticData('12C')
+        qe_data = QuasielasticData(str(SETTINGS.nucleus))
         energy = 0.730
         angle = 37.1
 

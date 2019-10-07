@@ -1,15 +1,28 @@
 """ Implement a class for information about the nucleus. """
 
-import os
+import re
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation
+from absl import logging
 
 # from nuChic.particle import Particle
 from .constants import MEV, MQE as mN
+from .utils import make_path
 
+Z_TO_NAME = {
+    1: 'H',
+    2: 'He',
+    3: 'Li',
+    6: 'C',
+    8: 'O',
+    13: 'Al',
+    18: 'Ar',
+    20: 'Ca',
+    26: 'Fe',
+}
 
-DIR, FILE = os.path.split(__file__)
+NAME_TO_Z = {value: key for key, value in Z_TO_NAME.items()}
 
 
 def main():
@@ -52,7 +65,7 @@ class Nucleus:
         # index   pid    x    y    z
         if Z == 6 and A == 12:
             self.c12_density_db = pd.read_csv(
-                os.path.join(DIR, 'configurations', 'pos_part_in_v2.out.gz'),
+                make_path('pos_part_in_v2.out.gz', 'configurations'),
                 sep=r'\s+',
                 names=['index', 'pid', 'x', 'y', 'z'],
                 compression='gzip'
@@ -61,6 +74,23 @@ class Nucleus:
             raise NotImplementedError('The nucleus with {} protons and {} '
                                       'neutrons is currently not '
                                       'implemented.'.format(Z, Z-A))
+
+    @staticmethod
+    def make_nucleus(name, binding, kf):
+        logging.info('Initializing Nucleus: Found nucleus {}'.format(name))
+        match = re.match(r'([0-9]+)([a-zA-Z]+)', name, re.I)
+        if match:
+            nucleons, protons = match.groups()
+            nucleons = int(nucleons)
+            protons = NAME_TO_Z[protons]
+
+            return Nucleus(protons, nucleons, binding, kf)
+        raise ValueError('Invalid nucleus {}.'.format(name))
+
+    def __str__(self):
+        """ Convert nucleus into a string, written in nuclear notation. """
+        return str(self.nucleons) + Z_TO_NAME[self.protons]
+
 
     def escape(self, particle):
         """Check whether or not the particle escaped.

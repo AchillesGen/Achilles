@@ -1,14 +1,12 @@
 """ Implement the FSI Folding function """
-import os
-
 from scipy import interpolate
 from absl import flags
 from absl import logging
 import numpy as np
 
-FLAGS = flags.FLAGS
+from .utils import make_path
 
-DIR, FILE = os.path.split(__file__)
+FLAGS = flags.FLAGS
 
 
 class Folding:
@@ -20,7 +18,7 @@ class Folding:
 
     def __init__(self, width=9, shift=-15):
         logging.info('Initializing folding function')
-        with open(os.path.join(DIR, 'pke', 'folding.in')) as infile:
+        with open(make_path('folding.in', 'pke')) as infile:
             transparency, hwfold, nwfold = infile.readline().split()
             transparency = float(transparency)
             hwfold = float(hwfold)
@@ -39,7 +37,7 @@ class Folding:
         self.fold = interpolate.interp1d(self.wfold, fold)
 
         logging.info('Initializing optical potential')
-        with open(os.path.join(DIR, 'pke', 'realOP_12C_EDAI.dat')) as infile:
+        with open(make_path('realOP_12C_EDAI.dat', 'pke')) as infile:
             npot = int(infile.readline())
             self.kin = np.empty(npot)
             pot = np.empty(npot)

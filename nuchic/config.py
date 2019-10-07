@@ -1,8 +1,13 @@
 """ Class to parse the nuchic input file and to store the settings. """
 
-import yaml
+import shutil
 
-from nuchic.histogram import Histogram
+import yaml
+from absl import logging
+
+from .utils import make_path
+from .nucleus import Nucleus
+from .histogram import Histogram
 
 
 class _Settings:
@@ -10,12 +15,23 @@ class _Settings:
     overwrite from commandline. """
 
     def __init__(self):
-        pass
+        self.nucleus = None
 
     def load(self, filename='run.yml'):
         """ Load a settings file. """
-        with open(filename, 'r') as settings_file:
-            self.__dict__.update(yaml.safe_load(settings_file))
+        try:
+            with open(filename, 'r') as settings_file:
+                self.__dict__.update(yaml.safe_load(settings_file))
+        except FileNotFoundError:
+            shutil.copyfile(make_path('template.yml'), 'run.yml')
+            logging.fatal('{} could not be found. '
+                          'Creating template at `run.yml` and '
+                          'quitting.'.format(filename))
+
+        self.nucleus = Nucleus.make_nucleus(
+            self.__dict__['run']['nucleus'],
+            self.__dict__['parameters']['binding_energy'],
+            self.__dict__['parameters']['fermi_momentum'])
 
 #    def __getattr__(self, name):
 #        return self.__dict__.get(name, False)

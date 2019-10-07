@@ -3,13 +3,13 @@
 import os
 import pandas as pd
 
-DIR, FILE = os.path.split(__file__)
+from .utils import make_path
 
 
 class QuasielasticData:
     """ Class to hold and manipulate QE electron scattering data."""
     def __init__(self, element):
-        data_file = os.path.join(DIR, 'data', 'qe', element+'.dat')
+        data_file = make_path(element+'.dat', os.path.join('data', 'qe'))
         self.data = pd.read_csv(data_file,
                                 sep=r'\s+',
                                 names=('Z', 'A', 'Energy', 'Angle', 'Peak',
