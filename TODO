@@ -20,3 +20,4 @@ Long term:
  - Implement neutrinos
  - Implement incoming beams
  - Other Event output file formats than LHE
+ - Allow user to add custom libraries

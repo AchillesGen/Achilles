@@ -75,10 +75,10 @@ class Inclusive:
 class Quasielastic(Inclusive):
     """ Class to calculate quasielastic scattering of an electron
     on a nucleus."""
-    def __init__(self, fg, *args):
+    def __init__(self, fg, *args, **kwargs):
         logging.info('Initializing Quasielastic calculation')
 
-        super().__init__(*args)
+        super().__init__(*args, **kwargs)
 
         self.width = 1e3
         self.f_g = fg
