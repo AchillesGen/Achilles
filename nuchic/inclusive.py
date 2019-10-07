@@ -1,5 +1,4 @@
 """ Implement inclusive cross-section calculations"""
-import os
 
 import xsec
 import numpy as np
@@ -12,12 +11,11 @@ from .nucleus import Nucleus
 from .constants import MEV, HBARC, MQE
 from .folding import Folding
 from .config import SETTINGS
+from .utils import make_path
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
     'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
-
-DIR, FILE = os.path.split(__file__)
 
 
 class Inclusive:
@@ -86,7 +84,7 @@ class Quasielastic(Inclusive):
         xsec.dirac_matrices.dirac_matrices_in(MQE/HBARC)
 
         if fg != 1:
-            with open(os.path.join(DIR, 'pke', 'pke12_tot.data')) as infile:
+            with open(make_path('pke12_tot.data', 'pke')) as infile:
                 n_e, n_p = infile.readline().split()
                 n_e = int(n_e)
                 n_p = int(n_p)
@@ -209,7 +207,8 @@ class Quasielastic(Inclusive):
                                                    - variables['omegap'])
                              * (1.0-self.coste) + variables['omegap']**2)
 
-            variables['omega'], variables['omegap'] = variables['omegap'], variables['omega']
+            variables['omega'], variables['omegap'] = (variables['omegap'],
+                                                       variables['omega'])
 
             wgt_f = self._eval(variables, qval_f,
                                self.pke(variables['mom'], variables['energy']))
@@ -219,7 +218,8 @@ class Quasielastic(Inclusive):
                                  variables['omegap'])\
                 * wgt_f * domega + self.folding.transparency*wgt
 
-            variables['omega'], variables['omegap'] = variables['omegap'], variables['omega']
+            variables['omega'], variables['omegap'] = (variables['omegap'],
+                                                       variables['omega'])
 
             return wgt_f, variables, qval
 
