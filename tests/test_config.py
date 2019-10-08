@@ -14,9 +14,14 @@ from nuchic.config import SETTINGS
 YAML = """
 run:
     events: 1000
+    nucleus: 12C
     cascade: off
     folding: off
     output: lhe
+
+parameters:
+    binding_energy: 10
+    fermi_momentum: 10    
 
 histograms:
     test:
