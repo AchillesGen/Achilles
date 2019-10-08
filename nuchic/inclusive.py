@@ -1,5 +1,6 @@
 """ Implement inclusive cross-section calculations"""
 
+from collections import namedtuple
 import xsec
 import numpy as np
 from scipy import interpolate
@@ -8,7 +9,7 @@ from absl import logging
 
 from .four_vector import Vec4
 from .nucleus import Nucleus
-from .constants import MEV, HBARC, MQE
+from .constants import MEV, HBARC, MQE, GEV
 from .folding import Folding
 from .config import SETTINGS
 from .utils import make_path
@@ -18,7 +19,7 @@ flags.DEFINE_bool(
     'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
 
 
-class Inclusive:
+class Inclusive(object):
     """ Base class to implement inclusive cross-section calculations."""
     def __init__(self, nucleus, energy, thetalept):
         self.beam_energy = energy
@@ -70,41 +71,96 @@ class Inclusive:
         raise NotImplementedError()
 
 
+def read_spectral_function_data():
+    """
+    Reads spectral function data from the file 'pke12_tot.data'.
+    The data in this file appears in several stanzas.
+    The first line of the file specifies the sizes of the stanzas
+    
+    has the format:
+    n_e, n_p
+    energy (or is it momentum??)
+    energy, the value of the spectral function
+
+
+    """
+    spectral_params = namedtuple(
+        'SpectralParams',
+        ['n_e', 'n_p', 'mom', 'energy', 'pke', 'd_p', 'norm']
+    )
+    with open(make_path('pke12_tot.data', 'pke')) as infile:
+        n_e, n_p = infile.readline().split()
+        n_e = int(n_e)
+        n_p = int(n_p)
+        mom = np.empty(n_p)
+        pke = np.empty((n_e, n_p))
+        d_p = np.empty(n_p)
+        energy = np.empty(n_e)
+        for j in range(n_p):
+            mom[j] = float(infile.readline())
+            for i in range(int(n_e/4)):
+                tokens = infile.readline().split()
+                for k in range(4):
+                    energy[4*i+k] = tokens[2*k]
+                    pke[4*i+k, j] = tokens[2*k+1]
+    d_p = np.sum(pke, axis=0) * (energy[1] - energy[0])
+    norm = np.sum(mom**2 * d_p, axis=-1) * 4 * np.pi * (mom[1] - mom[0])
+    pke /= norm
+    return spectral_params(n_e, n_p, mom, energy, pke, d_p, norm)
+
+
+Variables = namedtuple(
+    'Variables',
+    ['mom', 'energy', 'omega', 'omegap', 'cost_te'],
+    defaults=[None, None, None, None, None]
+)
+
+def _update_variables(var, attr, new_val):
+    """
+    Creates a new instance of the named tuple Variable with an updated value
+    for the specified attributed.
+    Args:
+        var: Variables
+        attr: str, the name of the attribute to update
+        new_val: the value of the attribute for updating
+    Returns:
+        Variables
+    """
+    attrs = var._fields
+    kwargs = {attr_i: getattr(var, attr_i) for attr_i in attrs}
+    kwargs[attr] = new_val
+    return Variables(**kwargs)
+
+
 class Quasielastic(Inclusive):
-    """ Class to calculate quasielastic scattering of an electron
-    on a nucleus."""
+    """
+    Class to calculate quasielastic scattering of an electron on a nucleus.
+    Args:
+        fg: int, flag for whether or not use the spectral function
+    Raises:
+        NotImplementedError, when fg == 1.
+    """
     def __init__(self, fg, *args, **kwargs):
         logging.info('Initializing Quasielastic calculation')
 
-        super().__init__(*args, **kwargs)
-
-        self.width = 1e3
+        super(Quasielastic, self).__init__(*args, **kwargs)
         self.f_g = fg
-        self.iform = 2
+        self.width = 1e3  # Width of delta function, [width] = MeV^2
+        self.iform = 2  # hard-coded flag which gets passed to Noemi's code
         xsec.dirac_matrices.dirac_matrices_in(MQE/HBARC)
 
-        if fg != 1:
-            with open(make_path('pke12_tot.data', 'pke')) as infile:
-                n_e, n_p = infile.readline().split()
-                n_e = int(n_e)
-                n_p = int(n_p)
-                self.mom = np.empty(n_p)
-                self.pke = np.empty((n_e, n_p))
-                d_p = np.empty(n_p)
-                self.energy = np.empty(n_e)
-                for j in range(n_p):
-                    self.mom[j] = float(infile.readline())
-                    for i in range(int(n_e/4)):
-                        tokens = infile.readline().split()
-                        for k in range(4):
-                            self.energy[4*i+k] = tokens[2*k]
-                            self.pke[4*i+k, j] = tokens[2*k+1]
+        if fg == 1:
+            raise NotImplementedError(
+                'Quasielastic only implemented for fg != 1.')
+        else:
+            spectral_params = read_spectral_function_data()
 
-        d_p = np.sum(self.pke, axis=0)*(self.energy[1]-self.energy[0])
-        norm = np.sum(self.mom**2*d_p, axis=-1)*4*np.pi*(
-            self.mom[1]-self.mom[0])
-        self.pke /= norm
-        logging.info('n(k) norm initial = {0}'.format(norm))
+        self.mom = spectral_params.mom
+        self.energy = spectral_params.energy
+        self.pke = spectral_params.pke
+        self.d_p = spectral_params.d_p
+
+        logging.info('n(k) norm initial = {0}'.format(spectral_params.norm))
 
         self.pke = interpolate.interp2d(self.mom, self.energy,
                                         self.pke, kind='linear')
@@ -129,40 +185,63 @@ class Quasielastic(Inclusive):
         """ Maximum allowed energy in initial state. """
         return self.energy[-1]
 
-    def _eval(self, variables, qval, pke):
-        e_out = np.sqrt(variables['mom']**2+MQE**2)
+    def _eval(self, var, qval, pke):
+        """
+        Evaluates the weight using the charced-current cross secion and the
+        nuclear physics constraints on the process.
+        Args:
+            var: namedtuple Variables containing kinematic quantities
+            qval: ??
+            pke: the spectral function
+        
+        Returns:
+            (wgt, var): the wgt and the kinematic variables, which are updated
+                to include 'cost_te' from the energy-conserving delta function.
+        """
+        # Compute outgoing energy from relativistic dispersion
+        e_out = np.sqrt(var.mom**2 + MQE**2)
         if self.f_g == 1:
-            omegat = variables['omega']
+            omegat = var.omega
         else:
-            omegat = variables['omega']-variables['energy']+MQE-e_out
+            omegat = var.omega - var.energy + MQE - e_out
 
+        # Adjust the momentum due to the optical potential
         u_pq = 0.0
         if FLAGS.folding:
-            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
-            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+            tkin_pf = np.sqrt(qval**2 + MQE**2) - MQE
+            if self.folding.kin_min < tkin_pf < self.folding.kin_max:
                 u_pq = self.folding.kinematic(tkin_pf)
 
-        cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
-                    - MQE**2)
-                   / (2*variables['mom']*qval))
+        # Enforce value of cos(theta) from the energy-conserving delta function
+        cost_te = (((omegat + e_out + u_pq)**2 - var.mom**2 - qval**2 - MQE**2)
+                   / (2 * var.mom * qval))
         if abs(cost_te) > 1:
+            # Something bad happened, why is |cos(theta)| > 1?
             logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-                          % (omegat, e_out, variables['mom'], qval, MQE))
-            return 0
-        variables['cost_te'] = cost_te
+                          % (omegat, e_out, var.mom, qval, MQE))
+            return 0, var  # vanishing wgt
 
-        mom_f = np.sqrt(variables['mom']**2 + qval**2
-                        + 2*qval*variables['mom']*variables['cost_te'])
-        if mom_f >= self.k_f:
-            phi = 2.0*np.pi*np.random.rand(1)
-            sig = xsec.cc1(qval/HBARC, variables['omega'], omegat,
-                           variables['mom']/HBARC,
-                           mom_f/HBARC, phi, self.beam_energy, self.thetalept,
-                           self.iform)
-            return (variables['mom']**2*pke[0]*(self.n_z*sig)
-                    * np.sqrt(MQE**2 + mom_f**2)*2*np.pi
-                    / (variables['mom']*qval))
-        return 0
+        var = _update_variables(var, 'cost_te', cost_te)
+
+        # Compute the final momentum
+        mom_f = np.sqrt(var.mom**2 + qval**2 + 2 * qval * var.mom * var.cost_te)
+
+        # Check if the final momentum falls below the Fermi momentum
+        if mom_f < self.k_f:
+            return 0, var  # vanishing wgt
+
+        phi = 2.0 * np.pi * np.random.rand(1)  # Random azimuthal angle
+        # Compute charged-current cross section
+        sig = xsec.cc1(qval/HBARC, var.omega, omegat,
+                       var.mom/HBARC,
+                       mom_f/HBARC, phi, self.beam_energy, self.thetalept,
+                       self.iform)
+        wgt = (
+            (var.mom**2 * pke[0] * self.n_z * sig * np.sqrt(MQE**2 + mom_f**2)
+             * 2 * np.pi)
+            / (var.mom * qval)
+        )
+        return wgt, var
 
     # TODO: How to best implement this numerically?
     # Currently, this is very unstable from run to run
@@ -171,17 +250,25 @@ class Quasielastic(Inclusive):
         return 1.0/(self.width * np.sqrt(np.pi))*np.exp(-(arg/self.width)**2)
 
     def _map_vars(self, point):
+        """
+        Maps a point from the vegas integrator, which takes values in the unit
+        ball into the space of physical variables.
+        Args:
+            point, a point from the integrator
+
+        Returns:
+            (variables, ps_wg, qval), where
+                * variables is a dict with keys 'mom', 'energy', 'omega', and
+                  possibly 'omegap';
+                * ps_wgt is the phase space weight; and
+                * qval is the momentum (??)
+        """
         domega = self.wmax - self.wmin
         omega = domega*point[0] + self.wmin
         denergy = self.emax - self.emin
         e_int = denergy*point[1] + self.emin
         dmom = self.pmax - self.pmin
         p_int = dmom*point[2] + self.pmin
-
-        variables = {'mom': p_int,
-                     'energy': e_int,
-                     'omega': omega}
-
         ps_wgt = domega*denergy*dmom
         qval = np.sqrt((2.0 * self.beam_energy * (self.beam_energy - omega)
                         * (1.0 - self.coste)) + omega**2)
@@ -189,69 +276,73 @@ class Quasielastic(Inclusive):
         if FLAGS.folding:
             domegap = self.wmax - self.wmin
             omegap = domegap*point[3] + self.wmin
-            variables['omegap'] = omegap
             ps_wgt = domegap*denergy*dmom
-            return variables, ps_wgt, qval, domega
+            var = Variables(p_int, e_int, omega, omegap=omegap, cost_te=None)
+            return var, ps_wgt, qval, domega
 
-        return variables, ps_wgt, qval, None
+        var = Variables(p_int, e_int, omega, omegap=None, cost_te=None)
+        # TODO: Why don't we return domega as the final element of the tuple?
+        return var, ps_wgt, qval, None
 
     def generate_weight(self, point):
-        variables, ps_wgt, qval, domega = self._map_vars(point)
+        """
+        Generates the weight of an event given a point from a vegas integrator.
+        """
+        def _swap_omegas(var):
+            """Swaps omega and omegap."""
+            return Variables(
+                var.mom, var.energy, var.omegap, var.omega, var.cost_te)
 
-        wgt = self._eval(variables, qval, self.pke(variables['mom'],
-                                                   variables['energy']))
-        wgt *= 1e9*ps_wgt
+        var, ps_wgt, qval, domega = self._map_vars(point)
+
+        spectral_function = self.pke(var.mom, var.energy)
+        wgt, var = self._eval(var, qval, spectral_function)
+        wgt *= ps_wgt * GEV**3  # TODO: Check unit conversion
 
         if FLAGS.folding:
-            qval_f = np.sqrt(2.0*self.beam_energy*(self.beam_energy
-                                                   - variables['omegap'])
-                             * (1.0-self.coste) + variables['omegap']**2)
+            qval_f = np.sqrt(
+                2.0 * self.beam_energy
+                * (self.beam_energy - var.omegap)
+                * (1.0 - self.coste) + var.omegap**2)
+            swapped_var = _swap_omegas(var)
+            wgt_f, _ = self._eval(swapped_var, qval_f, spectral_function)
+            wgt_f *= ps_wgt * GEV**3  # TODO: Check unit converion
+            fold = self.folding(
+                SETTINGS.folding_func,
+                var.omega,
+                var.omegap
+            )
+            wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)          
+            return wgt_f, var, qval
 
-            variables['omega'], variables['omegap'] = (variables['omegap'],
-                                                       variables['omega'])
+        return wgt, var, qval
 
-            wgt_f = self._eval(variables, qval_f,
-                               self.pke(variables['mom'], variables['energy']))
-            wgt_f *= 1e9*ps_wgt
-            wgt_f = self.folding(SETTINGS.run['folding_func'],
-                                 variables['omega'],
-                                 variables['omegap'])\
-                * wgt_f * domega + self.folding.transparency*wgt
-
-            variables['omega'], variables['omegap'] = (variables['omegap'],
-                                                       variables['omega'])
-
-            return wgt_f, variables, qval
-
-        return wgt, variables, qval
-
-    def generate_momentum(self, variables, qval):
-        e_out = np.sqrt(variables['mom']**2+MQE**2)
+    def generate_momentum(self, var, qval):
+        e_out = np.sqrt(var.mom**2 + MQE**2)
         if self.f_g == 1:
-            omegat = variables['omega']
+            omegat = var.omega
         else:
-            omegat = variables['omega']-variables['energy']+MQE-e_out
+            omegat = var.omega - var.energy + MQE - e_out
         u_pq = 0.0
         if FLAGS.folding:
             tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
             if self.folding.kin_max < tkin_pf < self.folding.kin_min:
                 u_pq = self.folding.kinematic(tkin_pf)
 
-        cost_te = (((omegat+e_out+u_pq)**2 - variables['mom']**2 - qval**2
+        cost_te = (((omegat+e_out+u_pq)**2 - var.mom**2 - qval**2
                     - MQE**2)
-                   / (2*variables['mom']*qval))
+                   / (2*var.mom*qval))
         if abs(cost_te) > 1:
             logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-                          % (omegat, e_out, variables['mom'], qval, MQE))
+                          % (omegat, e_out, var.mom, qval, MQE))
             return None
-        variables['cost_te'] = cost_te
-        mom_f = np.sqrt(variables['mom']**2 + qval**2 +
-                        2*qval*variables['mom']*variables['cost_te'])
-        epf = np.sqrt(MQE**2+mom_f**2)
+        var = _update_variables(var, 'cost_te', cost_te)
+        mom_f = np.sqrt(var.mom**2 + qval**2 + 2 * qval * var.mom * var.cost_te)
+        epf = np.sqrt(MQE**2 + mom_f**2)
         phi = 2.0*np.pi*np.random.random()
 
         x_q = qval/HBARC
-        x_k = variables['mom']/HBARC
+        x_k = var.mom/HBARC
         x_p = mom_f/HBARC
 
         q_2 = x_q**2

@@ -1,6 +1,10 @@
 Short term:
 -----------
-
+ - Check conversion factor moving between weights and phase space weights,
+   around lines 300 and 309 in inclusive.py.
+   Previously it was a hard-coded magic number of 1e9, which I (wjay) think is
+   just 1e9 = (GeV/MeV)^3 = constants.GEV**3. This switch should be verified 
+   independently by another set of eyes.
  - Implement FSI folding functions according to blackboard discussion
     - Breit-Wigner
     - Use final state momentum to correct matrix element

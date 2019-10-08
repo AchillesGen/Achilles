@@ -100,7 +100,7 @@ class NuChic:
     def fill_hists(self, momentum, variables, wgt):
         """ Fill the histograms. """
         if momentum is not None:
-            self.histograms['omega'].fill(variables['omega'], wgt)
+            self.histograms['omega'].fill(variables.omega, wgt)
             self.histograms['e_pre'].fill(momentum.energy, wgt)
             self.histograms['px_pre'].fill(momentum.p_x, wgt)
             self.histograms['py_pre'].fill(momentum.p_y, wgt)
