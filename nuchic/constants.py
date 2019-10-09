@@ -5,6 +5,7 @@ see http://pdg.lbl.gov/2018/reviews/rpp2018-rev-phys-constants.pdf
 """
 FM = 1.0
 MB = 0.1 * FM**2  # 1 MB = 0.1 FM^2
+TO_NB = 1e6  # MB
 M = 1E15 * FM
 MEV = 1.0
 GEV = 1.E3 * MEV

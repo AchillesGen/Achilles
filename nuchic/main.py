@@ -9,7 +9,7 @@ from tqdm import tqdm
 from .vegas import Integrator
 from .inclusive import Quasielastic
 from .nucleus import Nucleus
-from .constants import MEV as MeV, FM
+from .constants import MEV as MeV, FM, GEV
 from .cascade import FSI
 from .utils import momentum_sort
 from .histogram import Histogram
@@ -38,7 +38,7 @@ class NuChic:
     """ Main driver class for the nuChic code. """
     def __init__(self, run_card):
         SETTINGS.load(run_card)
-        self.histograms = {'omega': Histogram([0, 500], 100),
+        self.histograms = {'omega': Histogram([0, 0.6], 200),
                            'px_pre': Histogram([-500, 500], 100),
                            'py_pre': Histogram([-500, 500], 100),
                            'pz_pre': Histogram([-500, 500], 100),
@@ -100,7 +100,7 @@ class NuChic:
     def fill_hists(self, momentum, variables, wgt):
         """ Fill the histograms. """
         if momentum is not None:
-            self.histograms['omega'].fill(variables.omega, wgt)
+            self.histograms['omega'].fill(variables.omega / GEV, wgt)
             self.histograms['e_pre'].fill(momentum.energy, wgt)
             self.histograms['px_pre'].fill(momentum.p_x, wgt)
             self.histograms['py_pre'].fill(momentum.p_y, wgt)
@@ -141,7 +141,7 @@ class NuChic:
 
         _, ax1 = plt.subplots(nrows=1, ncols=1)
         self.histograms['omega'].plot(ax1)
-        ax1.errorbar(data[0]*1000, data[1],
+        ax1.errorbar(data[0], data[1],
                      yerr=data[2], fmt='o', color='red')
 
         fig3, axs2 = plt.subplots(nrows=2, ncols=2)

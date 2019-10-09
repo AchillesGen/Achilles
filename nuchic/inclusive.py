@@ -9,7 +9,7 @@ from absl import logging
 
 from .four_vector import Vec4
 from .nucleus import Nucleus
-from .constants import MEV, HBARC, MQE, GEV
+from .constants import MEV, HBARC, MQE, GEV, TO_NB
 from .folding import Folding
 from .config import SETTINGS
 from .utils import make_path
@@ -213,7 +213,7 @@ class Quasielastic(Inclusive):
                 u_pq = self.folding.kinematic(tkin_pf)
 
         # Enforce value of cos(theta) from the energy-conserving delta function
-        cost_te = (((omegat + e_out + u_pq)**2 - var.mom**2 - qval**2 - MQE**2)
+        cost_te = (((omegat + e_out - u_pq)**2 - var.mom**2 - qval**2 - MQE**2)
                    / (2 * var.mom * qval))
         if abs(cost_te) > 1:
             # Something bad happened, why is |cos(theta)| > 1?
@@ -297,7 +297,7 @@ class Quasielastic(Inclusive):
 
         spectral_function = self.pke(var.mom, var.energy)
         wgt, var = self._eval(var, qval, spectral_function)
-        wgt *= ps_wgt * GEV**3  # TODO: Check unit conversion
+        wgt *= ps_wgt * TO_NB  # mb -> nb
 
         if FLAGS.folding:
             qval_f = np.sqrt(
@@ -306,7 +306,7 @@ class Quasielastic(Inclusive):
                 * (1.0 - self.coste) + var.omegap**2)
             swapped_var = _swap_omegas(var)
             wgt_f, _ = self._eval(swapped_var, qval_f, spectral_function)
-            wgt_f *= ps_wgt * GEV**3  # TODO: Check unit converion
+            wgt_f *= ps_wgt * TO_NB  # mb -> nb
             fold = self.folding(
                 SETTINGS.folding_func,
                 var.omega,

@@ -81,7 +81,7 @@ class Folding:
     with a folding function.
     """
 
-    def __init__(self, width=9, shift=-15):
+    def __init__(self, width=15, shift=-50):
         logging.info('Initializing folding function')
         folding_params = read_folding_data()
         self.wfold = folding_params.wfold
