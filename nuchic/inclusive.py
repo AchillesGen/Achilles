@@ -287,6 +287,11 @@ class Quasielastic(Inclusive):
     def generate_weight(self, point):
         """
         Generates the weight of an event given a point from a vegas integrator.
+        The code below intends to follow the following conventions:
+        wgt    <--> "weight"             <--> dsigma(omega, E, p)
+        ps_wgt <--> "phase space weight" <--> "weight x unit conversion factor"
+        wgt_f  <--> "folding weight"     <--> dsigma(omegap, E, p)
+        Note that wgt_f should be a function of omegap ("omega prime").
         """
         def _swap_omegas(var):
             """Swaps omega and omegap."""
@@ -312,7 +317,11 @@ class Quasielastic(Inclusive):
                 var.omega,
                 var.omegap
             )
-            wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)          
+            # Note: the term of the form (wgt * transparency) does NOT need a
+            # factor of domega. In the analytic expression, this term has a
+            # delta function ~ "delta(omega-omegap) domega". We do this trival
+            # integral analytically, which eliminates the factor of domega.
+            wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)
             return wgt_f, var, qval
 
         return wgt, var, qval
