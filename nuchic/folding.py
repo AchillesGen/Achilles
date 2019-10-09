@@ -100,7 +100,7 @@ class Folding:
         self.width = width
         self.shift = shift
 
-    def noemi(self, omega, omegap):
+    def particle_spectral(self, omega, omegap):
         """ Preform the folding function.
 
         Args:
@@ -127,7 +127,7 @@ class Folding:
                 / (self.width**2+(omega-omegap-self.shift)**2)
                 * (1-self.transparency))
 
-    folding_funcs = ['noemi', 'breit_wigner']
+    folding_funcs = ['particle_spectral', 'breit_wigner']
 
     def __call__(self, name, omega, omegap):
         func = getattr(self, name, None)
