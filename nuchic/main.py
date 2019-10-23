@@ -8,18 +8,22 @@ from tqdm import tqdm
 
 from .vegas import Integrator
 from .inclusive import Quasielastic
-from .nucleus import Nucleus
-from .constants import MEV as MeV, FM, GEV
 from .cascade import FSI
+
+from .constants import FM, GEV, MQE
 from .utils import momentum_sort
 from .histogram import Histogram
-from .config import SETTINGS
+from .config import settings
 from .qe_data import QuasielasticData
+from .particle import Particle
+from .four_vector import Vec4
+from .three_vector import Vec3
 
 FLAGS = flags.FLAGS
 flags.DEFINE_bool(
     'cascade', None, 'Flag to turn on/off the cascade', short_name='c')
 flags.DEFINE_bool('folding', None, 'Flag to turn on/off the folding function')
+flags.DEFINE_bool('cascade_test', None, 'Flag to test the cascade code')
 flags.DEFINE_bool('testing', None, 'Flag to test the basics of the program')
 
 
@@ -37,8 +41,9 @@ def init_histograms(filename='hists.txt'):
 class NuChic:
     """ Main driver class for the nuChic code. """
     def __init__(self, run_card):
-        SETTINGS.load(run_card)
+        settings().load(run_card)
         self.histograms = {'omega': Histogram([0, 0.6], 200),
+                           'omega2': Histogram([0, 0.6], 200),
                            'px_pre': Histogram([-500, 500], 100),
                            'py_pre': Histogram([-500, 500], 100),
                            'pz_pre': Histogram([-500, 500], 100),
@@ -50,19 +55,26 @@ class NuChic:
                            'px_diff': Histogram([-500, 500], 100),
                            'py_diff': Histogram([-500, 500], 100),
                            'pz_diff': Histogram([-500, 500], 100),
-                           'e_diff': Histogram([500, 1500], 100),
+                           'e_diff': Histogram([-500, 500], 100),
                            'escape': Histogram([-0.5, 12.5], 13),
                            'wgts': Histogram(bins=np.logspace(-4, 4, 400)),
                            }
 
-        self.inclusive = Quasielastic(0, SETTINGS.nucleus, 730, 37.1)
+        self.inclusive = Quasielastic(0,
+                                      settings().beam_energy,
+                                      settings().angle)
         if FLAGS.cascade:
-            self.fsi = FSI(SETTINGS.nucleus, SETTINGS.distance*FM)
+            self.fsi = FSI(settings().distance*FM)
 
-        self.nevents = int(SETTINGS.nevents)
+        self.nevents = int(settings().nevents)
 
     def run(self):
         """ Runs the nuChic code with given settings."""
+
+        if FLAGS.cascade_test:
+            print(self.calc_cross_section())
+            return
+
         ndims = 3
         if FLAGS.folding:
             ndims += 1
@@ -114,6 +126,7 @@ class NuChic:
                 self.fsi.reset()
 
                 if escaped_part:
+                    self.histograms['omega2'].fill(variables.omega / GEV, wgt)
                     escaped_part.sort(reverse=True, key=momentum_sort)
                     momentum_post = escaped_part[0].mom
 
@@ -133,16 +146,20 @@ class NuChic:
 
     def plot_results(self):
         """ Plot results of the run. """
-        qe_data = QuasielasticData(str(SETTINGS.nucleus))
-        energy = 0.730
-        angle = 37.1
+        qe_data = QuasielasticData(str(settings().nucleus))
+        energy = settings().beam_energy / GEV
+        angle = settings().angle
 
         data = qe_data.get_data(energy, angle)
 
         _, ax1 = plt.subplots(nrows=1, ncols=1)
         self.histograms['omega'].plot(ax1)
+        self.histograms['omega2'].plot(ax1)
         ax1.errorbar(data[0], data[1],
-                     yerr=data[2], fmt='o', color='red')
+                     yerr=data[2], fmt=',', color='red',
+                     capsize=2.5)
+
+        plt.savefig('omega.png', bbox_inches='tight')
 
         fig3, axs2 = plt.subplots(nrows=2, ncols=2)
         self.histograms['e_pre'].plot(axs2[0][0])
@@ -150,6 +167,8 @@ class NuChic:
         self.histograms['py_pre'].plot(axs2[1][0])
         self.histograms['pz_pre'].plot(axs2[1][1])
         fig3.suptitle('Before Cascade')
+
+        plt.savefig('before_cascade.png', bbox_inches='tight')
 
         if FLAGS.cascade:
             fig2, axs = plt.subplots(nrows=2, ncols=2)
@@ -159,6 +178,8 @@ class NuChic:
             self.histograms['pz_post'].plot(axs[1][1])
             fig2.suptitle('After Cascade')
 
+            plt.savefig('after_cascade.png', bbox_inches='tight')
+
             fig4, axs3 = plt.subplots(nrows=2, ncols=2)
             self.histograms['e_diff'].plot(axs3[0][0])
             self.histograms['px_diff'].plot(axs3[0][1])
@@ -166,11 +187,61 @@ class NuChic:
             self.histograms['pz_diff'].plot(axs3[1][1])
             fig4.suptitle('Difference in momentum')
 
+            plt.savefig('difference_cascade.png', bbox_inches='tight')
+
             _, ax8 = plt.subplots(nrows=1, ncols=1)
             self.histograms['escape'].plot(ax8)
             ax8.set_yscale('log')
 
-        plt.show()
+            plt.savefig('escape.png', bbox_inches='tight')
+
+    def calc_cross_section(self):
+        """ Calculate the pC and nC cross-sections
+
+        Returns: pC and nC cross-sections
+
+        """
+        # Initialize FSI
+        self.fsi = FSI(settings().distance*FM, final=False)
+
+        # Initialize variables
+        radius = settings().nucleus.radius
+        xsec = np.pi*radius**2
+        nscatter_p = 0
+        nscatter_n = 0
+
+        # Loop over events
+        for _ in range(self.nevents):
+            position_r = np.random.rand(1)[0]*radius
+            position_th = np.random.rand(1)[0]*2*np.pi
+            position = Vec3(position_r*np.cos(position_th),
+                            position_r*np.sin(position_th),
+                            -3*radius)
+            momentum = Vec4(np.sqrt(MQE**2 + settings().beam_energy**2),
+                            0, 0,
+                            settings().beam_energy)
+
+            # Perform proton calculation
+            proton = Particle(2212, momentum, position)
+            self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
+            self.fsi.nucleons.append(proton)
+            self.fsi.nucleons[-1].status = -1
+            self.fsi()
+            if self.fsi.scatter:
+                nscatter_p += 1
+            self.fsi.reset()
+
+            # Perform neutron calculation
+            neutron = Particle(2112, momentum, position)
+            self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
+            self.fsi.nucleons.append(neutron)
+            self.fsi.nucleons[-1].status = -1
+            self.fsi()
+            if self.fsi.scatter:
+                nscatter_n += 1
+            self.fsi.reset()
+
+        return xsec * nscatter_p/self.nevents, xsec * nscatter_n/self.nevents
 
 
 def main(argv):

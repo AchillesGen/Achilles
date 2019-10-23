@@ -5,13 +5,15 @@
 import numpy as np
 from absl import logging
 
+from .particle import Particle
+from .data.parse_data import GeantData
+from .interaction import sigma_pp, sigma_np
+
+from .constants import MQE as mN, GEV, HBARC, MB
 from .utils import to_cartesian, timing
 from .four_vector import Vec4
 from .three_vector import Vec3
-from .particle import Particle
-from .constants import FM as fm, MQE as mN, GEV, HBARC, MB
-from .data.parse_data import GeantData
-from .interaction import sigma_pp, sigma_np
+from .config import settings
 
 
 class FSI:
@@ -31,21 +33,20 @@ class FSI:
               - reabsorption routine
     """
 
-    def __init__(self, nucleus, distance):
+    def __init__(self, distance, final=True):
         """
         Generates nucleus configuration and kicked nucleon.
 
         Args:
-            nucleus: nuChic.Nucleus
             energy_transfer: float, energy transfered to the nucleus.
-            dt: float, time step
+            final: bool, check if nucleon is inside or outside nucleus.
         """
-        self.nucleus = nucleus
         self.time_step = None
         self.distance = distance
+        self.final = final
 
         # Generate p,n position distribution
-        protons, neutrons = self.nucleus.generate_config()
+        protons, neutrons = settings().nucleus.generate_config()
 
         # Define particles from configuration
         # NOTE: their 4-momentum is not physical right now
@@ -63,6 +64,7 @@ class FSI:
         self.cylinder_pt2 = 0
 
         self.kicked_idxs = []
+        self.scatter = False
 
         self.interactions = GeantData()
 
@@ -107,7 +109,7 @@ class FSI:
         Reset the FSI parameters to begin the next calculation
         '''
         # Generate p,n position distribution
-        protons, neutrons = self.nucleus.generate_config()
+        protons, neutrons = settings().nucleus.generate_config()
 
         # Define particles from configuration
         # NOTE: their 4-momentum is not physical right now
@@ -120,6 +122,7 @@ class FSI:
         self.nucleons += [Particle(pid=2112, mom=dummy_mom,
                                    pos=Vec3(*x_j)) for x_j in neutrons]
 
+        self.scatter = False
         # Keep outgoing particles after cascade
         # self.outgoing_particles = []
 
@@ -182,6 +185,9 @@ class FSI:
                         new_kicked_idxs.append(new_kick_idxs[0])
                         new_kicked_idxs = list(
                             set(new_kicked_idxs))  # Remove duplicates
+                        self.scatter = True
+                        if not self.final:
+                            return
 
             self.kicked_idxs = new_kicked_idxs
             logging.debug('kicked_idxs = {}'.format(self.kicked_idxs))
@@ -190,9 +196,10 @@ class FSI:
             not_propagating = []
             for i, kick_idx in enumerate(self.kicked_idxs):
                 # Nucleon becomes final particle if outside nucleus
-                if self.nucleons[kick_idx].pos.mag > self.nucleus.radius:
+                if self.nucleons[kick_idx].pos.mag > settings().nucleus.radius\
+                   and self.final:
                     not_propagating.append(i)
-                    if self.nucleus.escape(self.nucleons[kick_idx]):
+                    if settings().nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
                         logging.debug('nucleon {} is OOOOOOUT! '
                                       'status: {}'.format(
@@ -215,7 +222,7 @@ class FSI:
         stat_list = [n.status for n in self.nucleons]
         logging.debug('Number of final state nucleons: '
                       '{}'.format(sum(stat_list)))
-        if -1 in stat_list:
+        if -1 in stat_list and self.final:
             logging.fatal(
                 "Cascade Failed at step: {}, ",
                 "has at least one propagating nucleon still" % step)
@@ -349,7 +356,7 @@ class FSI:
         # generate it's momentum
         if particle2.is_background():
             # Sort background particle 4-momentum
-            p_i = Vec3(*self.nucleus.generate_momentum())
+            p_i = Vec3(*settings().nucleus.generate_momentum())
             energy = np.sqrt(mN**2+p_i.mag2)
             p_mu = Vec4(energy, *p_i.vec)
             particle2.mom = p_mu
@@ -481,6 +488,6 @@ class FSI:
             below Fermi motion
         '''
         # See if Pauli blocking occurs for the proposed interaction
-        if four_momentum.mom < self.nucleus.kf:
+        if four_momentum.mom < settings().nucleus.kf:
             return True
         return False

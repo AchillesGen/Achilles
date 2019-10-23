@@ -70,6 +70,16 @@ class _Settings:
         return self.run_settings['events']
 
     @property
+    def beam_energy(self):
+        """ Return the beam energy. """
+        return self.run_settings['beam_energy']
+
+    @property
+    def angle(self):
+        """ Return the angle of the outgoing electron in degrees. """
+        return self.run_settings['angle']
+
+    @property
     def cascade(self):
         """ Return if the cascade should be run. """
         return self.run_settings['cascade']
