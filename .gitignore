@@ -16,3 +16,4 @@ code_deuteron/
 *.mod
 dist/
 *.lhe
+.pylintrc
