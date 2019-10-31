@@ -58,9 +58,11 @@ def test_histogram_str():
     """ Test string output of histogram. """
     hist = Histogram([0., 1.], 2)
     line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}\n'
-    string = line_format.format('', 'left', 'right', 'wgt', 'wgt2')
-    string += line_format.format('.4e', 0.0, 0.5, 0.0, 0.0)
-    string += line_format.format('.4e', 0.5, 1.0, 0.0, 0.0)
+    line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}{5:^15{0}}\n'
+    string = line_format.format('', 'left', 'right', 'entries',
+                                'wgt', 'wgt2')
+    string += line_format.format('.4e', 0.0, 0.5, 0.0, 0.0, 0.0)
+    string += line_format.format('.4e', 0.5, 1.0, 0.0, 0.0, 0.0)
 
     assert str(hist) == string
 
