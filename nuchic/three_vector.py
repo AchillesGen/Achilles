@@ -110,3 +110,9 @@ class Vec3:
         return Vec3(self.y*vec.z - self.z*vec.y,
                     self.z*vec.x - self.x*vec.z,
                     self.x*vec.y - self.y*vec.x)
+
+    def rotate(self, rot_mat):
+        """ Rotate vector by the given rotation matrix. """
+        vec = np.array([self.x, self.y, self.z])
+        vec = np.matmul(rot_mat, vec)
+        return Vec3(vec[0], vec[1], vec[2])
