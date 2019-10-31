@@ -22,6 +22,7 @@ run:
 parameters:
     binding_energy: 10
     fermi_momentum: 10
+    config_type: MF
 
 histograms:
     test:
