@@ -44,6 +44,7 @@ class _Settings:
     def search(self, name):
         """ Search for a given setting. """
 
+    # Run settings
     @property
     def run_settings(self):
         """ Return the dictionary of run settings. """
@@ -53,16 +54,6 @@ class _Settings:
     def run_settings(self, name, value):
         """ Set a run setting. """
         self.__dict__['run'][name] = value
-
-    @property
-    def parameters(self):
-        """ Return the dictionary of parameter settings. """
-        return self.__dict__['parameters']
-
-    @parameters.setter
-    def parameters(self, name, value):
-        """ Set a parameter value. """
-        self.__dict__['parameters'][name] = value
 
     @property
     def nevents(self):
@@ -94,6 +85,17 @@ class _Settings:
         """ Get the event output format. """
         return self.run_settings['output']
 
+    # Parameter settings
+    @property
+    def parameters(self):
+        """ Return the dictionary of parameter settings. """
+        return self.__dict__['parameters']
+
+    @parameters.setter
+    def parameters(self, name, value):
+        """ Set a parameter value. """
+        self.__dict__['parameters'][name] = value
+
     @property
     def distance(self):
         """ Maximum propagation distance of particles in cascade. """
@@ -104,6 +106,7 @@ class _Settings:
         """ Get the user folding function. """
         return self.run_settings['folding_func']
 
+    # Other settings
     def get_histograms(self):
         """ Build the requested histograms from the yaml file. """
         histograms = {}
@@ -115,4 +118,9 @@ class _Settings:
         return histograms
 
 
-SETTINGS = _Settings()
+_SETTINGS = _Settings()
+
+
+def settings():
+    """ Accessor function for the settings. """
+    return _SETTINGS
