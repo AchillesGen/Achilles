@@ -18,17 +18,13 @@ flags.DEFINE_bool(
     'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
 
 
-class Inclusive(object):
+class Inclusive:
     """ Base class to implement inclusive cross-section calculations."""
-    def __init__(self, nucleus, energy, thetalept):
+    def __init__(self, energy, thetalept):
         self.beam_energy = energy
         self.thetalept = thetalept*np.pi/180.0
 
-        if not isinstance(nucleus, Nucleus):
-            raise ValueError('Requires Nucleus as input, got {}'.format(
-                type(nucleus)))
-
-        self.nucleus = nucleus
+        self.nucleus = settings().nucleus
 
         self.wrange = [1, energy]
 
@@ -75,7 +71,7 @@ def read_spectral_function_data():
     Reads spectral function data from the file 'pke12_tot.data'.
     The data in this file appears in several stanzas.
     The first line of the file specifies the sizes of the stanzas
-    
+
     has the format:
     n_e, n_p
     energy (or is it momentum??)
@@ -151,8 +147,7 @@ class Quasielastic(Inclusive):
         if fg == 1:
             raise NotImplementedError(
                 'Quasielastic only implemented for fg != 1.')
-        else:
-            spectral_params = read_spectral_function_data()
+        spectral_params = read_spectral_function_data()
 
         self.mom = spectral_params.mom
         self.energy = spectral_params.energy

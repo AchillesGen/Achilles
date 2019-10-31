@@ -77,6 +77,7 @@ class Nucleus:
 
     @staticmethod
     def make_nucleus(name, binding, kf):
+        """ Generate a nucleus from a string. """
         logging.info('Initializing Nucleus: Found nucleus {}'.format(name))
         match = re.match(r'([0-9]+)([a-zA-Z]+)', name, re.I)
         if match:
@@ -90,7 +91,6 @@ class Nucleus:
     def __str__(self):
         """ Convert nucleus into a string, written in nuclear notation. """
         return str(self.nucleons) + Z_TO_NAME[self.protons]
-
 
     def escape(self, particle):
         """Check whether or not the particle escaped.
