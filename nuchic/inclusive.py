@@ -8,10 +8,9 @@ from absl import flags
 from absl import logging
 
 from .four_vector import Vec4
-from .nucleus import Nucleus
-from .constants import MEV, HBARC, MQE, GEV, TO_NB
+from .constants import MEV, HBARC, MQE, TO_NB
 from .folding import Folding
-from .config import SETTINGS
+from .config import settings
 from .utils import make_path
 
 FLAGS = flags.FLAGS

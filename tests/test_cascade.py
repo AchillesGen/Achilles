@@ -1,15 +1,18 @@
 """ Testing cascade code. """
 
+import unittest
 from unittest.mock import patch
 import numpy as np
 # import pytest
 
 from nuchic.cascade import FSI
+from nuchic.particle import Particle
+
 from nuchic.constants import MEV, MQE as mN, FM, HBARC
 from nuchic.four_vector import Vec4
 from nuchic.three_vector import Vec3
-from nuchic.particle import Particle
 
+from nuchic.config import settings
 
 NPROTONS = 6
 PROTONS = np.random.random((NPROTONS, 3))

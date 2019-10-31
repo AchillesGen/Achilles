@@ -11,6 +11,7 @@ class Histogram:
         self.scale = scale
         self.range = None
         self.bins = None
+        self.hentry = None
         self.weights = None
         self.weights2 = None
         self.flow = np.array([0, 0])
@@ -23,6 +24,7 @@ class Histogram:
         self.scale = other.scale
         self.range = other.range
         self.bins = other.bins
+        self.hentry = other.hentry
         self.weights = other.weights
         self.weights2 = other.weights2
         self.flow = other.flow
@@ -68,7 +70,13 @@ class Histogram:
 
         self.weights = np.array(np.zeros_like(self.bin_centers))
         self.weights2 = np.array(np.zeros_like(self.weights))
-        self.flow = np.array([0, 0])
+        self.hentry = np.array(np.zeros_like(self.weights))
+        self.flow = np.array([[0, 0], [0, 0]])
+
+    @property
+    def entries(self):
+        """ Return the total number of entries in the histogram. """
+        return np.sum(self.hentry)
 
     @property
     def bin_centers(self):
@@ -79,6 +87,26 @@ class Histogram:
     def bin_widths(self):
         """ Get the bin widths. """
         return np.diff(self.bins)
+
+    @property
+    def noverflow(self):
+        """ Return number of overflow entries. """
+        return self.flow[1, 0]
+
+    @property
+    def nunderflow(self):
+        """ Return number of underflow entries. """
+        return self.flow[0, 0]
+
+    @property
+    def overflow(self):
+        """ Return weight of overflow entries. """
+        return self.flow[1, 1]
+
+    @property
+    def underflow(self):
+        """ Return weight of underflow entries. """
+        return self.flow[0, 1]
 
     @property
     def min(self):
@@ -94,34 +122,29 @@ class Histogram:
         """ Add a new event fill to the histogram. """
         loc = np.searchsorted(self.bins, value)
         if loc == len(self.bins):
-            self.flow[1] += weight
+            self.flow[1, 0] += 1
+            self.flow[1, 1] += weight
         elif loc == 0:
-            self.flow[0] += weight
+            self.flow[0, 0] += 1
+            self.flow[0, 1] += weight
         else:
+            self.hentry[loc-1] += 1
             self.weights[loc-1] += weight
             self.weights2[loc-1] += weight**2
 
     def __str__(self):
         """ Convert histogram to a string. """
-        line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}\n'
-        string = line_format.format('', 'left', 'right', 'wgt', 'wgt2')
+        line_format = '{1:^15{0}}{2:^15{0}}{3:^15{0}}{4:^15{0}}{5:^15{0}}\n'
+        string = line_format.format('', 'left', 'right', 'entries',
+                                    'wgt', 'wgt2')
         for i, _ in enumerate(self.bins[1:]):
             string += line_format.format('.4e',
                                          self.bins[i],
                                          self.bins[i+1],
+                                         self.hentry[i],
                                          self.weights[i],
                                          self.weights2[i])
         return string
-
-    @property
-    def underflow(self):
-        """ Get the amount of underflow. """
-        return self.flow[0]
-
-    @property
-    def overflow(self):
-        """ Get the amount of overflow. """
-        return self.flow[1]
 
     def integral(self):
         """ Return the integral of the histogram. """
@@ -148,20 +171,34 @@ class Histogram:
             raise ValueError('Expected either mode as `text` or `plot`, '
                              'got mode {}'.format(mode))
 
+    def _get_error(self):
+        """ Get the errors for the histogram. """
+        errsq = np.where(self.hentry > 0,
+                         np.where(self.hentry == 1,
+                                  self.weights,
+                                  np.abs(self.weights2
+                                         - self.weights**2/self.hentry)
+                                  * (self.hentry/(self.hentry-1.0))),
+                         0)
+        return np.sqrt(errsq)
+
     def show(self, **kwargs):
         """ Open window displaying histogram. """
-        self.weights /= self.bin_widths
-        self.weights = np.insert(self.weights, 0, self.weights[0])
-        plt.plot(self.bins, self.weights, ds='steps', **kwargs)
+        weights = self.weights/self.bin_widths
+        weights = np.insert(weights, 0, weights[0])
+        plt.plot(self.bins, weights, ds='steps', **kwargs)
         plt.show()
-        self.weights = self.weights[1:]
-        self.weights *= self.bin_widths
 
     def plot(self, axis, **kwargs):
         """ Return a histogram plot given an axis. """
-        self.weights /= self.bin_widths
-        self.weights = np.insert(self.weights, 0, self.weights[0])
-        axis.plot(self.bins, self.weights, ds='steps', **kwargs)
-        self.weights = self.weights[1:]
-        self.weights *= self.bin_widths
+        errors = self._get_error()/self.bin_widths
+        weights = self.weights/self.bin_widths
+        errors_up = weights + errors
+        errors_dw = weights - errors
+        weights = np.insert(weights, 0, weights[0])
+        errors_up = np.insert(errors_up, 0, errors_up[0])
+        errors_dw = np.insert(errors_dw, 0, errors_dw[0])
+        axis.plot(self.bins, weights, ds='steps', **kwargs)
+        axis.fill_between(self.bins, errors_up, errors_dw, step='pre',
+                          alpha=0.5, **kwargs)
         return axis

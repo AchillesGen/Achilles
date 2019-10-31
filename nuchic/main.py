@@ -1,5 +1,6 @@
 """ Main driving code for the nuChic program """
 from ast import literal_eval
+import os
 
 from absl import flags, app, logging
 import matplotlib.pyplot as plt

@@ -1,14 +1,13 @@
-""" Implementation of utility functions for the nuchic code. """
+""" Implementation of utility functions for the nuchic code.
+
+Some useful utilities / decorators for debuging
+"""
 
 import os
 import time
 import functools
 import logging
 import numpy as np
-
-"""
-Some useful utilities / decorators for debuging
-"""
 
 LOGGER = logging.getLogger(__name__)
 DIR, FILE = os.path.split(__file__)

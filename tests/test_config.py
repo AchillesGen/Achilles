@@ -9,7 +9,7 @@ from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 import pytest
 
-from nuchic.config import SETTINGS
+from nuchic.config import settings
 
 YAML = """
 run:
