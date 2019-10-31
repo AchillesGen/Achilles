@@ -1,12 +1,19 @@
 run:
     events: 1000
+    beam_energy: 730.0
+    angle: 37.1
     cascade: off
     folding: off
     output: lhe
-    folding_func: breit_wigner
+    folding_func: particle_spectral
+    nucleus: 12C
 
 parameters:
     cascade_distance: 0.2
+    binding_energy: 8.6
+    fermi_momentum: 225
+    fermi_energy: 20
+    config_type: QMC
 
 histograms:
     omega:
