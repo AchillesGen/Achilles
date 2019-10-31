@@ -141,7 +141,7 @@ class FSI:
         self.time_step = distance/(beta*HBARC)  # This is the adapted time step
 
     @timing
-    def __call__(self):
+    def __call__(self, max_steps=10000):
         ''' Performs the full propagation of the kicked nucleons inside
         the nucleus. Updates the list of outgoing_particles with
         all status=+1 particles
@@ -150,7 +150,7 @@ class FSI:
         sigma = 50*MB  # 1 barn xsec = 100 fm^2
         # positions = []
         # positions_temp = []
-        for step in range(10000):
+        for step in range(max_steps):
             logging.debug('*******  STEP {} *******'.format(step))
             if self.kicked_idxs == []:
                 logging.debug('No more particles propagating - DONE!')
