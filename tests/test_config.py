@@ -21,7 +21,7 @@ run:
 
 parameters:
     binding_energy: 10
-    fermi_momentum: 10    
+    fermi_momentum: 10
 
 histograms:
     test:
@@ -48,17 +48,17 @@ def run_file():
 
 def test_settings_init(run_file):
     """ Test settings initialization. """
-    SETTINGS.load(run_file.name)
-    assert not SETTINGS.cascade
-    assert not SETTINGS.folding
-    assert SETTINGS.nevents == 1000
-    assert SETTINGS.output_format == 'lhe'
+    settings().load(run_file.name)
+    assert not settings().cascade
+    assert not settings().folding
+    assert settings().nevents == 1000
+    assert settings().output_format == 'lhe'
 
 
 @patch('nuchic.histogram.Histogram.__init__', return_value=None)
 def test_get_histograms(mock_hist, run_file):
     """ Test getting histograms. """
-    SETTINGS.load(run_file.name)
-    histograms = SETTINGS.get_histograms()
+    settings().load(run_file.name)
+    histograms = settings().get_histograms()
     assert len(histograms) == 3
     assert mock_hist.call_count == 3
