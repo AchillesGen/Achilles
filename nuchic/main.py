@@ -58,6 +58,8 @@ class NuChic:
                            'pz_diff': Histogram([-500, 500], 100),
                            'e_diff': Histogram([-500, 500], 100),
                            'escape': Histogram([-0.5, 12.5], 13),
+                           'escape_proton': Histogram([-0.5, 12.5], 13),
+                           'pt_miss': Histogram([-500, 500], 100),
                            'wgts': Histogram(bins=np.logspace(-4, 4, 400)),
                            }
 
@@ -122,14 +124,38 @@ class NuChic:
 
             if FLAGS.cascade:
                 self.fsi.kick(momentum)
-                escaped_part = self.fsi()
-                self.histograms['escape'].fill(len(escaped_part), wgt)
+                escaped = self.fsi()
+                escaped_protons = [particle for particle in escaped
+                                   if particle.pid == 2212]
+                self.histograms['escape'].fill(len(escaped), wgt)
+                self.histograms['escape_proton'].fill(len(escaped_protons),
+                                                      wgt)
                 self.fsi.reset()
 
-                if escaped_part:
+                if len(escaped_protons) == 1:
+                    e_beam = settings().beam_energy
+                    e_prime = e_beam - variables.omega
+                    angle = settings().angle
+                    pt_electron = np.abs(e_prime*np.sin(angle))
+                    norm = variables.qval
+                    rot_mat = np.array([[e_beam - e_prime*np.cos(angle),
+                                         0,
+                                         -e_prime*np.sin(angle)],
+                                        [0, norm, 0],
+                                        [e_prime*np.sin(angle),
+                                         0,
+                                         e_beam - e_prime*np.cos(angle)]])
+                    rot_mat /= norm
+                    p_proton = escaped_protons[0].mom
+                    p_proton.set_vec3(p_proton.vec3.rotate(rot_mat))
+                    pt_proton = p_proton.p_t
+                    self.histograms['pt_miss'].fill(pt_proton - pt_electron,
+                                                    wgt)
+
+                if escaped:
                     self.histograms['omega2'].fill(variables.omega / GEV, wgt)
-                    escaped_part.sort(reverse=True, key=momentum_sort)
-                    momentum_post = escaped_part[0].mom
+                    escaped.sort(reverse=True, key=momentum_sort)
+                    momentum_post = escaped[0].mom
 
                     self.histograms['e_post'].fill(momentum_post.energy, wgt)
                     self.histograms['px_post'].fill(momentum_post.p_x, wgt)
@@ -193,8 +219,16 @@ class NuChic:
             _, ax8 = plt.subplots(nrows=1, ncols=1)
             self.histograms['escape'].plot(ax8)
             ax8.set_yscale('log')
-
             plt.savefig('escape.png', bbox_inches='tight')
+
+            _, ax9 = plt.subplots(nrows=1, ncols=1)
+            self.histograms['escape_proton'].plot(ax9)
+            ax9.set_yscale('log')
+            plt.savefig('escape_proton.png', bbox_inches='tight')
+
+            _, ax10 = plt.subplots(nrows=1, ncols=1)
+            self.histograms['pt_miss'].plot(ax10)
+            plt.savefig('pt_miss.png', bbox_inches='tight')
 
     def calc_cross_section(self):
         """ Calculate the pC and nC cross-sections
