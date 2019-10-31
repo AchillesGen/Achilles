@@ -65,7 +65,7 @@ class Nucleus:
         # index   pid    x    y    z
         if Z == 6 and A == 12:
             self.c12_density_db = pd.read_csv(
-                make_path('{}_configs.out.gz'.format(config_type),
+                make_path('{}_configs.out.gz'.format(config_type.upper()),
                           'configurations'),
                 sep=r'\s+',
                 names=['pid', 'x', 'y', 'z'],
@@ -84,7 +84,7 @@ class Nucleus:
         if match:
             nucleons, protons = match.groups()
             nucleons = int(nucleons)
-            protons = NAME_TO_Z[protons]
+            protons = NAME_TO_Z[protons.upper()]
 
             return Nucleus(protons, nucleons, binding, kf, config_type)
         raise ValueError('Invalid nucleus {}.'.format(name))

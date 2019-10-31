@@ -130,7 +130,7 @@ class Folding:
     folding_funcs = ['particle_spectral', 'breit_wigner']
 
     def __call__(self, name, omega, omegap):
-        func = getattr(self, name, None)
+        func = getattr(self, name.lower(), None)
         if func is not None:
             return func(omega, omegap)
         raise NotImplementedError('Requested folding function {} is not '
