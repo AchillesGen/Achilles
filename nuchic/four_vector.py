@@ -145,6 +145,19 @@ class Vec4:
             phi += 2*np.pi
         return phi
 
+    @property
+    def vec3(self):
+        """ Return the three vector momentum. """
+        return Vec3(self.p_x, self.p_y, self.p_z)
+
+    def set_vec3(self, vec):
+        """ Set the three momentum. """
+        if not isinstance(vec, Vec3):
+            raise Exception('Vec3')
+        self.p_x = vec.x
+        self.p_y = vec.y
+        self.p_z = vec.z
+
     def cross(self, other):
         """ The spatial cross product (p x v)_i = eps_{ijk} p_j v_k """
         if not isinstance(other, Vec4):
