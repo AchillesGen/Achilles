@@ -31,7 +31,8 @@ class _Settings:
         self.nucleus = Nucleus.make_nucleus(
             self.__dict__['run']['nucleus'],
             self.__dict__['parameters']['binding_energy'],
-            self.__dict__['parameters']['fermi_momentum'])
+            self.__dict__['parameters']['fermi_momentum'],
+            self.__dict__['parameters']['config_type'])
 
 #    def __getattr__(self, name):
 #        return self.__dict__.get(name, False)
@@ -105,6 +106,17 @@ class _Settings:
     def folding_func(self):
         """ Get the user folding function. """
         return self.run_settings['folding_func']
+
+    @property
+    def config_type(self):
+        """ Return the configuration type.
+
+        Get the configuration type for how to setup the nucleus.
+        Current options are either:
+            - QMC: Quantum Monte Carlo configuration
+            - MF: Mean field configuration
+        """
+        return self.parameters['config_type']
 
     # Other settings
     def get_histograms(self):
