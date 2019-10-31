@@ -65,9 +65,11 @@ class Nucleus:
         # index   pid    x    y    z
         if Z == 6 and A == 12:
             self.c12_density_db = pd.read_csv(
-                make_path('pos_part_in_v2.out.gz', 'configurations'),
+                # make_path('pos_part_in_v2.out.gz', 'configurations'),
+                make_path('QMC_configs.out.gz', 'configurations'),
                 sep=r'\s+',
-                names=['index', 'pid', 'x', 'y', 'z'],
+                # names=['index', 'pid', 'x', 'y', 'z'],
+                names=['pid', 'x', 'y', 'z'],
                 compression='gzip'
             )
         else:
@@ -158,7 +160,8 @@ class Nucleus:
 
         db_tmp = self.c12_density_db.iloc[idx0:idx0 + 12]
         proton_mask = db_tmp['pid'] == 1
-        neutron_mask = db_tmp['pid'] == 2
+        # neutron_mask = db_tmp['pid'] == 2
+        neutron_mask = db_tmp['pid'] == -1
         protons = np.asarray(db_tmp[proton_mask][['x', 'y', 'z']])
         neutrons = np.asarray(db_tmp[neutron_mask][['x', 'y', 'z']])
 
