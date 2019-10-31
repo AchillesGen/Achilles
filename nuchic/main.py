@@ -97,14 +97,14 @@ class NuChic:
     def generate_one_event(self, point, weight=None):
         """ Generate the output for a single event. """
 
-        wgt, variables, qval = self.inclusive.generate_weight(point)
+        wgt, variables = self.inclusive.generate_weight(point)
         if weight is None:
             return wgt
 
         if wgt == 0:
             return 0
 
-        momentum = self.inclusive.generate_momentum(variables, qval)
+        momentum = self.inclusive.generate_momentum(variables)
 
         self.fill_hists(momentum, variables, wgt*weight)
 

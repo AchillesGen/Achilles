@@ -61,7 +61,7 @@ class Inclusive:
         """ Generate weight for a given point. """
         raise NotImplementedError()
 
-    def generate_momentum(self, variables, qval):
+    def generate_momentum(self, var):
         """ Generate momentum for a given point. """
         raise NotImplementedError()
 
@@ -106,9 +106,10 @@ def read_spectral_function_data():
 
 Variables = namedtuple(
     'Variables',
-    ['mom', 'energy', 'omega', 'omegap', 'cost_te'],
-    defaults=[None, None, None, None, None]
+    ['mom', 'energy', 'omega', 'omegap', 'cost_te', 'qval'],
+    defaults=[None, None, None, None, None, None]
 )
+
 
 def _update_variables(var, attr, new_val):
     """
@@ -179,15 +180,14 @@ class Quasielastic(Inclusive):
         """ Maximum allowed energy in initial state. """
         return self.energy[-1]
 
-    def _eval(self, var, qval, pke):
+    def _eval(self, var, pke):
         """
         Evaluates the weight using the charced-current cross secion and the
         nuclear physics constraints on the process.
         Args:
             var: namedtuple Variables containing kinematic quantities
-            qval: ??
             pke: the spectral function
-        
+
         Returns:
             (wgt, var): the wgt and the kinematic variables, which are updated
                 to include 'cost_te' from the energy-conserving delta function.
@@ -202,23 +202,24 @@ class Quasielastic(Inclusive):
         # Adjust the momentum due to the optical potential
         u_pq = 0.0
         if FLAGS.folding:
-            tkin_pf = np.sqrt(qval**2 + MQE**2) - MQE
+            tkin_pf = np.sqrt(var.qval**2 + MQE**2) - MQE
             if self.folding.kin_min < tkin_pf < self.folding.kin_max:
                 u_pq = self.folding.kinematic(tkin_pf)
 
         # Enforce value of cos(theta) from the energy-conserving delta function
-        cost_te = (((omegat + e_out - u_pq)**2 - var.mom**2 - qval**2 - MQE**2)
-                   / (2 * var.mom * qval))
+        cost_te = (((omegat + e_out - u_pq)**2 - var.mom**2 - var.qval**2 - MQE**2)
+                   / (2 * var.mom * var.qval))
         if abs(cost_te) > 1:
             # Something bad happened, why is |cos(theta)| > 1?
             logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-                          % (omegat, e_out, var.mom, qval, MQE))
+                          % (omegat, e_out, var.mom, var.qval, MQE))
             return 0, var  # vanishing wgt
 
         var = _update_variables(var, 'cost_te', cost_te)
 
         # Compute the final momentum
-        mom_f = np.sqrt(var.mom**2 + qval**2 + 2 * qval * var.mom * var.cost_te)
+        mom_f = np.sqrt(var.mom**2 + var.qval**2
+                        + 2 * var.qval * var.mom * var.cost_te)
 
         # Check if the final momentum falls below the Fermi momentum
         if mom_f < self.k_f:
@@ -226,14 +227,14 @@ class Quasielastic(Inclusive):
 
         phi = 2.0 * np.pi * np.random.rand(1)  # Random azimuthal angle
         # Compute charged-current cross section
-        sig = xsec.cc1(qval/HBARC, var.omega, omegat,
+        sig = xsec.cc1(var.qval/HBARC, var.omega, omegat,
                        var.mom/HBARC,
                        mom_f/HBARC, phi, self.beam_energy, self.thetalept,
                        self.iform)
         wgt = (
             (var.mom**2 * pke[0] * self.n_z * sig * np.sqrt(MQE**2 + mom_f**2)
              * 2 * np.pi)
-            / (var.mom * qval)
+            / (var.mom * var.qval)
         )
         return wgt, var
 
@@ -251,11 +252,10 @@ class Quasielastic(Inclusive):
             point, a point from the integrator
 
         Returns:
-            (variables, ps_wg, qval), where
+            (variables, ps_wg), where
                 * variables is a dict with keys 'mom', 'energy', 'omega', and
                   possibly 'omegap';
                 * ps_wgt is the phase space weight; and
-                * qval is the momentum (??)
         """
         domega = self.wmax - self.wmin
         omega = domega*point[0] + self.wmin
@@ -271,12 +271,14 @@ class Quasielastic(Inclusive):
             domegap = self.wmax - self.wmin
             omegap = domegap*point[3] + self.wmin
             ps_wgt = domegap*denergy*dmom
-            var = Variables(p_int, e_int, omega, omegap=omegap, cost_te=None)
+            var = Variables(p_int, e_int, omega, omegap=omegap,
+                            cost_te=None, qval=qval)
             return var, ps_wgt, qval, domega
 
-        var = Variables(p_int, e_int, omega, omegap=None, cost_te=None)
+        var = Variables(p_int, e_int, omega, omegap=None,
+                        cost_te=None, qval=qval)
         # TODO: Why don't we return domega as the final element of the tuple?
-        return var, ps_wgt, qval, None
+        return var, ps_wgt, None
 
     def generate_weight(self, point):
         """
@@ -292,10 +294,10 @@ class Quasielastic(Inclusive):
             return Variables(
                 var.mom, var.energy, var.omegap, var.omega, var.cost_te)
 
-        var, ps_wgt, qval, domega = self._map_vars(point)
+        var, ps_wgt, domega = self._map_vars(point)
 
         spectral_function = self.pke(var.mom, var.energy)
-        wgt, var = self._eval(var, qval, spectral_function)
+        wgt, var = self._eval(var, spectral_function)
         wgt *= ps_wgt * TO_NB  # mb -> nb
 
         if FLAGS.folding:
@@ -303,11 +305,12 @@ class Quasielastic(Inclusive):
                 2.0 * self.beam_energy
                 * (self.beam_energy - var.omegap)
                 * (1.0 - self.coste) + var.omegap**2)
+            # TODO: Change swap to include changing qval
             swapped_var = _swap_omegas(var)
-            wgt_f, _ = self._eval(swapped_var, qval_f, spectral_function)
+            wgt_f, _ = self._eval(swapped_var, spectral_function)
             wgt_f *= ps_wgt * TO_NB  # mb -> nb
             fold = self.folding(
-                SETTINGS.folding_func,
+                settings().folding_func,
                 var.omega,
                 var.omegap
             )
@@ -316,11 +319,11 @@ class Quasielastic(Inclusive):
             # delta function ~ "delta(omega-omegap) domega". We do this trival
             # integral analytically, which eliminates the factor of domega.
             wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)
-            return wgt_f, var, qval
+            return wgt_f, var
 
-        return wgt, var, qval
+        return wgt, var
 
-    def generate_momentum(self, var, qval):
+    def generate_momentum(self, var):
         e_out = np.sqrt(var.mom**2 + MQE**2)
         if self.f_g == 1:
             omegat = var.omega
@@ -328,23 +331,24 @@ class Quasielastic(Inclusive):
             omegat = var.omega - var.energy + MQE - e_out
         u_pq = 0.0
         if FLAGS.folding:
-            tkin_pf = np.sqrt(qval**2+MQE**2)-MQE
+            tkin_pf = np.sqrt(var.qval**2+MQE**2)-MQE
             if self.folding.kin_max < tkin_pf < self.folding.kin_min:
                 u_pq = self.folding.kinematic(tkin_pf)
 
-        cost_te = (((omegat+e_out+u_pq)**2 - var.mom**2 - qval**2
+        cost_te = (((omegat+e_out-u_pq)**2 - var.mom**2 - var.qval**2
                     - MQE**2)
-                   / (2*var.mom*qval))
+                   / (2*var.mom*var.qval))
         if abs(cost_te) > 1:
             logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
-                          % (omegat, e_out, var.mom, qval, MQE))
+                          % (omegat, e_out, var.mom, var.qval, MQE))
             return None
         var = _update_variables(var, 'cost_te', cost_te)
-        mom_f = np.sqrt(var.mom**2 + qval**2 + 2 * qval * var.mom * var.cost_te)
+        mom_f = np.sqrt(var.mom**2 + var.qval**2
+                        + 2 * var.qval * var.mom * var.cost_te)
         epf = np.sqrt(MQE**2 + mom_f**2)
         phi = 2.0*np.pi*np.random.random()
 
-        x_q = qval/HBARC
+        x_q = var.qval/HBARC
         x_k = var.mom/HBARC
         x_p = mom_f/HBARC
 
