@@ -75,7 +75,7 @@ class NuChic:
         """ Runs the nuChic code with given settings."""
 
         if FLAGS.cascade_test:
-            print(self.calc_cross_section())
+            self.calc_cross_section()
             return
 
         ndims = 3
@@ -240,18 +240,18 @@ class NuChic:
         self.fsi = FSI(settings().distance*FM, final=False)
 
         # Initialize variables
-        radius = settings().nucleus.radius
-        xsec = np.pi*radius**2
+        radius = 5*settings().nucleus.radius
         nscatter_p = 0
         nscatter_n = 0
+        steps = int(np.ceil(2.1*radius/(settings().distance*FM)))
 
         # Loop over events
-        for _ in range(self.nevents):
+        for _ in tqdm(range(self.nevents), ncols=80):
             position_r = np.random.rand(1)[0]*radius
             position_th = np.random.rand(1)[0]*2*np.pi
             position = Vec3(position_r*np.cos(position_th),
                             position_r*np.sin(position_th),
-                            -3*radius)
+                            -1.1*radius)
             momentum = Vec4(np.sqrt(MQE**2 + settings().beam_energy**2),
                             0, 0,
                             settings().beam_energy)
@@ -261,7 +261,7 @@ class NuChic:
             self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
             self.fsi.nucleons.append(proton)
             self.fsi.nucleons[-1].status = -1
-            self.fsi()
+            self.fsi(steps)
             if self.fsi.scatter:
                 nscatter_p += 1
             self.fsi.reset()
@@ -271,12 +271,17 @@ class NuChic:
             self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
             self.fsi.nucleons.append(neutron)
             self.fsi.nucleons[-1].status = -1
-            self.fsi()
+            self.fsi(steps)
             if self.fsi.scatter:
                 nscatter_n += 1
             self.fsi.reset()
 
-        return xsec * nscatter_p/self.nevents, xsec * nscatter_n/self.nevents
+        with open(os.path.join('Results', 'xsec.txt'), 'a+') as out:
+            xsec_p = np.pi*radius**2*nscatter_p/float(self.nevents)
+            xsec_n = np.pi*radius**2*nscatter_n/float(self.nevents)
+            print(nscatter_p, nscatter_n)
+            out.write('{}, {}, {}\n'.format(settings().beam_energy,
+                                            xsec_p, xsec_n))
 
 
 def main(argv):
