@@ -13,7 +13,7 @@
     use dirac_matrices
     implicit none
     integer*4 :: ig!,i
-    real*8 :: xq, w,wt, xk, xp, ee0, theta,sig
+    real*8 :: xq, w,wt, xk, xp, ee0, theta,sig(2)
     real*8 :: ek,epf,xmf
     real*8 :: phi,xk_x,xk_y,xk_z
     real*8 :: p_4(4),pp_4(4),q_4(4), cosa
@@ -71,7 +71,7 @@
       real*8, parameter :: alpha=1.0d0/137.0d0
       real*8 :: tan2,sig_mott,qm2
       real*8 :: ff1s,ff2s,ff1v,ff2v,ffa,ffp,ges,gms,gev,gmv
-      real*8 :: sig,rlp,rtp,rln,rtn,al,at,ff1p,ff1n,ff2p,ff2n
+      real*8 :: sig(2),rlp,rtp,rln,rtn,al,at,ff1p,ff1n,ff2p,ff2n
 
       tan2 = (1.0d0-cost)/(1.0d0+cost)   
 !.....compute sigma_mott [ fm^2 --> mb ]
@@ -99,8 +99,8 @@
       call det_Ja(ff1n,ff2n)
       call det_res1b(rln,rtn)
       !write(6,*)'rl,rt',rl,rt
-      sig=sig_mott*0.5d0*(al*(rlp+rln)+at*(rtp+rtn))
-      
+      sig(1)=sig_mott*0.5d0*(al*rlp+at*rtp)
+      sig(2)=sig_mott*0.5d0*(al*rln+at*rtn)
       return
     end subroutine sigccc
 

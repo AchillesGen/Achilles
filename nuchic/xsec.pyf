@@ -34,7 +34,7 @@ python module xsec ! in
             real*8, intent(in) :: ee0
             real*8, intent(in) :: theta
             integer*4, intent(in) :: ig
-            real*8, intent(out) :: sig
+            real*8, dimension(2), intent(out) :: sig
         end subroutine cc1
         subroutine sigccc(sig,ig) ! in :xsec:xsec_new.f90
             use xsec
@@ -91,4 +91,4 @@ python module xsec ! in
 end python module xsec
 
 ! This file was auto-generated with f2py (version:2).
-! See http://cens.ioc.ee/projects/f2py2e/
+! See https://urldefense.proofpoint.com/v2/url?u=http-3A__cens.ioc.ee_projects_f2py2e_&d=DwIGAg&c=gRgGjJ3BkIsb5y6s49QqsA&r=NTQngx8uS00jBcc_ZpyUMYcIJKW3PMKlGMisE3xE2YY&m=czvL7Q7nZQepYWYZqSYuSdmHPro6KhnA60RB6urZjuk&s=Ilvl48pa1QcHNd9r__FLhLAPWozvTxQlX3GGE5m33a4&e= 
