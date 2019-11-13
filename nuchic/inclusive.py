@@ -213,7 +213,7 @@ class Quasielastic(Inclusive):
             # Something bad happened, why is |cos(theta)| > 1?
             logging.debug('omegat = %e, ep = %e, p = %e, qval = %e, mqe = %e'
                           % (omegat, e_out, var.mom, var.qval, MQE))
-            return 0, var  # vanishing wgt
+            return np.array([0.0, 0.0]), var  # vanishing wgt
 
         var = _update_variables(var, 'cost_te', cost_te)
 
@@ -223,7 +223,7 @@ class Quasielastic(Inclusive):
 
         # Check if the final momentum falls below the Fermi momentum
         if mom_f < self.k_f:
-            return 0, var  # vanishing wgt
+            return np.array([0.0, 0.0]), var  # vanishing wgt
 
         phi = 2.0 * np.pi * np.random.rand(1)  # Random azimuthal angle
         # Compute charged-current cross section
@@ -231,6 +231,7 @@ class Quasielastic(Inclusive):
                        var.mom/HBARC,
                        mom_f/HBARC, phi, self.beam_energy, self.thetalept,
                        self.iform)
+        sig = np.array(sig)
         wgt = (
             (var.mom**2 * pke[0] * self.n_z * sig * np.sqrt(MQE**2 + mom_f**2)
              * 2 * np.pi)
