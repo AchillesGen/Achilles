@@ -1,0 +1,29 @@
+run:
+    events: 10000
+    beam_energy: $beam_energy
+    angle: 0
+    cascade: off
+    folding: off
+    output: lhe
+    folding_func: breit_wigner #particle_spectral
+    nucleus: 12C
+
+parameters:
+    cascade_distance: 0.2
+    binding_energy: 8.6
+    fermi_momentum: 225
+    fermi_energy: 20
+
+histograms:
+    omega:
+        plot_range: [0, 1]
+        bins: 100
+    px_pre:
+        plot_range: [-500, 500]
+        bins: 100
+    py_pre:
+        bins: [0, 10, 50, 100, 200, 400]
+    pz_pre:
+        plot_range: [1.e-5, 500]
+        bins: 100
+        scale: log
