@@ -101,19 +101,21 @@ class NuChic:
 
         wgt, variables = self.inclusive.generate_weight(point)
         if weight is None:
-            return wgt
+            return np.sum(wgt)
 
-        if wgt == 0:
+        if wgt.all() == 0:
             return 0
 
         momentum = self.inclusive.generate_momentum(variables)
 
         self.fill_hists(momentum, variables, wgt*weight)
 
-        return wgt*weight
+        return np.sum(wgt)*weight
 
-    def fill_hists(self, momentum, variables, wgt):
+    def fill_hists(self, momentum, variables, lwgt):
         """ Fill the histograms. """
+
+        wgt = np.sum(lwgt)
         if momentum is not None:
             self.histograms['omega'].fill(variables.omega / GEV, wgt)
             self.histograms['e_pre'].fill(momentum.energy, wgt)
@@ -123,7 +125,7 @@ class NuChic:
             self.histograms['wgts'].fill(wgt)
 
             if FLAGS.cascade:
-                self.fsi.kick(momentum)
+                self.fsi.kick(momentum, lwgt)
                 escaped = self.fsi()
                 escaped_protons = [particle for particle in escaped
                                    if particle.pid == 2212]

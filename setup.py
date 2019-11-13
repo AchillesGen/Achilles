@@ -12,9 +12,9 @@ from numpy.distutils.core import setup, Extension
 
 EXT1 = Extension(name='xsec', sources=['nuchic/xsec.pyf',
                                        'nuchic/currents_opt_v1.f90',
-                                       'nuchic/xsec.f90',
                                        'nuchic/mathtool.f90',
-                                       'nuchic/nform.f90'])
+                                       'nuchic/nform.f90',
+                                       'nuchic/xsec.f90'])
 
 HERE = path.abspath(path.dirname(__file__))
 
