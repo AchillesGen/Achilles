@@ -91,16 +91,40 @@ class FSI:
                 count += 1
         return count
 
-    def kick(self, energy_transfer):
+    @property
+    def proton_indices(self):
+        """ Returns the indices for the protons """
+        indices = []
+        for i, particle in enumerate(self.nucleons):
+            if particle.pid == 2212:
+                indices.append(i)
+        return indices
+
+    @property
+    def neutron_indices(self):
+        """ Returns the indices for the neutrons """
+        indices = []
+        for i, particle in enumerate(self.nucleons):
+            if particle.pid == 2112:
+                indices.append(i)
+        return indices
+
+    def kick(self, energy_transfer, dsigma):
         '''
         Randomize kicked particle
 
         Args:
             energy_transfer: float, energy transfered to the nucleus
+            dsigma (list): Cross-section for p and n separately
         '''
         self.kicked_idxs = []
-        self.kicked_idxs.append(np.random.randint(
-            low=0, high=len(self.nucleons)))
+
+        if np.random.random() < dsigma[0]/np.sum(dsigma):
+            indices = self.proton_indices
+        else:
+            indices = self.neutron_indices
+
+        self.kicked_idxs.append(np.random.choice(indices))
         self.nucleons[self.kicked_idxs[0]].status = -1  # propagating nucleon
         self.nucleons[self.kicked_idxs[0]].mom = energy_transfer
 
@@ -389,9 +413,9 @@ class FSI:
             sigma_p_dependent = self.interactions.cross_section(mode,
                                                                 pcm / GEV)
         except ValueError:  # Fall back on hard-coded if not in table
-            logging.warn('Center of mass momentum ({:.3f} MeV) not in table. '
-                         'Falling back on less accurate hard-coded '
-                         'values.'.format(pcm))
+            # logging.warn('Center of mass momentum ({:.3f} MeV) not in table. '
+            #              'Falling back on less accurate hard-coded '
+            #              'values.'.format(pcm))
             lab_particle1_momentum = \
                 particle1.mom.boost_back(particle2.mom.boost_vector()).mom
             if mode == 'pp':
