@@ -247,10 +247,13 @@ class NuChic:
 
         # Loop over events
         for _ in tqdm(range(self.nevents), ncols=80):
-            position_r = np.random.rand(1)[0]*radius
-            position_th = np.random.rand(1)[0]*2*np.pi
-            position = Vec3(position_r*np.cos(position_th),
-                            position_r*np.sin(position_th),
+            while True:
+                position = radius*(2*np.random.rand(2)-1)
+                if np.sum(position**2) < radius**2:
+                    break
+
+            position = Vec3(position[0],
+                            position[1],
                             -1.1*radius)
             momentum = Vec4(np.sqrt(MQE**2 + settings().beam_energy**2),
                             0, 0,
@@ -276,12 +279,9 @@ class NuChic:
                 nscatter_n += 1
             self.fsi.reset()
 
-        with open(os.path.join('Results', 'xsec.txt'), 'a+') as out:
-            xsec_p = np.pi*radius**2*nscatter_p/float(self.nevents)
-            xsec_n = np.pi*radius**2*nscatter_n/float(self.nevents)
-            print(nscatter_p, nscatter_n)
-            out.write('{}, {}, {}\n'.format(settings().beam_energy,
-                                            xsec_p, xsec_n))
+        xsec = np.pi*radius**2/float(self.nevents)*np.array([nscatter_p, nscatter_n])
+        print(xsec.tolist())
+        return xsec.tolist()
 
 
 def main(argv):
