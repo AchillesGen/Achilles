@@ -1,12 +1,12 @@
 """ Implement inclusive cross-section calculations"""
 
 from collections import namedtuple
-import xsec
-import numpy as np
 from scipy import interpolate
 from absl import flags
 from absl import logging
+import numpy as np
 
+import xsec
 from .four_vector import Vec4
 from .constants import MEV, HBARC, MQE, TO_NB
 from .folding import Folding
@@ -106,8 +106,8 @@ def read_spectral_function_data():
 
 Variables = namedtuple(
     'Variables',
-    ['mom', 'energy', 'omega', 'omegap', 'cost_te', 'qval'],
-    defaults=[None, None, None, None, None, None]
+    ['mom', 'energy', 'omega', 'omegap', 'cost_te', 'qval', 'qval_f'],
+    defaults=[None, None, None, None, None, None, None]
 )
 
 
@@ -271,12 +271,16 @@ class Quasielastic(Inclusive):
             domegap = self.wmax - self.wmin
             omegap = domegap*point[3] + self.wmin
             ps_wgt = domegap*denergy*dmom
+            qval_f = np.sqrt(
+                2.0 * self.beam_energy
+                * (self.beam_energy - omegap)
+                * (1.0 - self.coste) + omegap**2)
             var = Variables(p_int, e_int, omega, omegap=omegap,
-                            cost_te=None, qval=qval)
-            return var, ps_wgt, qval, domega
+                            cost_te=None, qval=qval, qval_f=qval_f)
+            return var, ps_wgt, domega
 
         var = Variables(p_int, e_int, omega, omegap=None,
-                        cost_te=None, qval=qval)
+                        cost_te=None, qval=qval, qval_f=None)
         # TODO: Why don't we return domega as the final element of the tuple?
         return var, ps_wgt, None
 
@@ -289,10 +293,11 @@ class Quasielastic(Inclusive):
         wgt_f  <--> "folding weight"     <--> dsigma(omegap, E, p)
         Note that wgt_f should be a function of omegap ("omega prime").
         """
-        def _swap_omegas(var):
-            """Swaps omega and omegap."""
+        def _swap_folding(var):
+            """Swaps omega <--> omegap and qval <--> qval_f."""
             return Variables(
-                var.mom, var.energy, var.omegap, var.omega, var.cost_te)
+                var.mom, var.energy, var.omegap, var.omega, var.cost_te,
+                var.qval_f, var.qval)
 
         var, ps_wgt, domega = self._map_vars(point)
 
@@ -301,12 +306,7 @@ class Quasielastic(Inclusive):
         wgt *= ps_wgt * TO_NB  # mb -> nb
 
         if FLAGS.folding:
-            qval_f = np.sqrt(
-                2.0 * self.beam_energy
-                * (self.beam_energy - var.omegap)
-                * (1.0 - self.coste) + var.omegap**2)
-            # TODO: Change swap to include changing qval
-            swapped_var = _swap_omegas(var)
+            swapped_var = _swap_folding(var)
             wgt_f, _ = self._eval(swapped_var, spectral_function)
             wgt_f *= ps_wgt * TO_NB  # mb -> nb
             fold = self.folding(
