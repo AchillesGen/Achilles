@@ -106,8 +106,8 @@ def read_spectral_function_data():
 
 Variables = namedtuple(
     'Variables',
-    ['mom', 'energy', 'omega', 'omegap', 'cost_te', 'qval', 'qval_f'],
-    defaults=[None, None, None, None, None, None, None]
+    ['mom', 'energy', 'omega', 'omegap', 'cost_te', 'qval', 'qval_f']  #,
+    # defaults=[None, None, None, None, None, None, None]
 )
 
 

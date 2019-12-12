@@ -171,7 +171,7 @@ class FSI:
         all status=+1 particles
         '''
         # Overestimate cross section
-        sigma = 50*MB  # 1 barn xsec = 100 fm^2
+        sigma = 1000*MB  # 1 barn xsec = 100 fm^2
         # positions = []
         # positions_temp = []
         for step in range(max_steps):
@@ -220,8 +220,9 @@ class FSI:
             not_propagating = []
             for i, kick_idx in enumerate(self.kicked_idxs):
                 # Nucleon becomes final particle if outside nucleus
-                if self.nucleons[kick_idx].pos.mag > settings().nucleus.radius\
-                   and self.final:
+                if((self.nucleons[kick_idx].pos.mag > settings().nucleus.radius
+                   and self.nucleons[kick_idx].status != -2)
+                       or self.nucleons[kick_idx].pos.z > settings().nucleus.radius):
                     not_propagating.append(i)
                     if settings().nucleus.escape(self.nucleons[kick_idx]):
                         self.nucleons[kick_idx].status = 1
@@ -247,9 +248,15 @@ class FSI:
         logging.debug('Number of final state nucleons: '
                       '{}'.format(sum(stat_list)))
         if -1 in stat_list and self.final:
+            for p in self.nucleons:
+                print(p.status, p.mom, p.pos)
             logging.fatal(
-                "Cascade Failed at step: {}, ",
-                "has at least one propagating nucleon still" % step)
+                "Cascade Failed at step: {}, "
+                "has at least one propagating nucleon still".format(step))
+
+        for part in self.nucleons:
+            if part.status == -2:
+                part.status = 1
 
         return [n for n in self.nucleons if n.is_final()]
 

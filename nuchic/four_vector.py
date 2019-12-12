@@ -94,6 +94,10 @@ class Vec4:
                 return (self.dot(self))**(power/2)
         raise Exception('Vec4')
 
+    @property
+    def array(self):
+        return np.array([self.energy, self.p_x, self.p_y, self.p_z])
+
     def dot(self, other):
         """ Computes the dot product with the four-vector v """
         if not isinstance(other, Vec4):

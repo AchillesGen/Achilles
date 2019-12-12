@@ -1,5 +1,5 @@
 run:
-    events: 50000
+    events: 10000
     beam_energy: $beam_energy
     angle: 0
     cascade: off

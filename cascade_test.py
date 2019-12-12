@@ -43,8 +43,8 @@ def main(argv):
         if not os.path.exists('runs'):
             os.mkdir('runs')
 
-        emin = 250
-        emax = 2500
+        emin = 200
+        emax = 2000
         energies = np.linspace(emin, emax, (emax-emin)/10+1, dtype='float64')
         xsec_p = np.zeros_like(energies)
         xsec_n = np.zeros_like(energies)

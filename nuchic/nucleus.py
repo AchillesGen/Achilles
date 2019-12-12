@@ -98,9 +98,14 @@ class Nucleus:
         If the particle escapes, the spatial components of the momentum are
         updated to account for the influence of the potential.
         """
-        # Is the position still within the nucleus?
-        if particle.pos.mag < self.radius:
-            return False
+        if particle.status == -2:
+            return True
+        # # Is the position still within the nucleus?
+        # if particle.pos.mag < self.radius:
+        #     return False
+        # Is the particle moving inwards or outwards?
+        # if np.any(np.abs(np.sign(particle.pos.array) - np.sign(particle.mom.array[1:])) > 1):
+        #     return False
         # Is the "kinetic energy" less than the binding potential?
         energy_total = np.sqrt(particle.mom.mom2 + particle.mom.mass2)
         energy_kinetic = energy_total - particle.mom.mass

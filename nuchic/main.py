@@ -1,4 +1,3 @@
-""" Main driving code for the nuChic program """
 from ast import literal_eval
 import os
 
@@ -239,13 +238,13 @@ class NuChic:
 
         """
         # Initialize FSI
-        self.fsi = FSI(settings().distance*FM, final=False)
+        self.fsi = FSI(settings().distance*FM)
 
         # Initialize variables
-        radius = 5*settings().nucleus.radius
-        nscatter_p = 0
+        radius = 10*FM
+        nscatter_p = []
         nscatter_n = 0
-        steps = int(np.ceil(2.1*radius/(settings().distance*FM)))
+        steps = 800
 
         # Loop over events
         for _ in tqdm(range(self.nevents), ncols=80):
@@ -256,7 +255,7 @@ class NuChic:
 
             position = Vec3(position[0],
                             position[1],
-                            -1.1*radius)
+                            -4)
             momentum = Vec4(np.sqrt(MQE**2 + settings().beam_energy**2),
                             0, 0,
                             settings().beam_energy)
@@ -265,23 +264,26 @@ class NuChic:
             proton = Particle(2212, momentum, position)
             self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
             self.fsi.nucleons.append(proton)
-            self.fsi.nucleons[-1].status = -1
-            self.fsi(steps)
-            if self.fsi.scatter:
-                nscatter_p += 1
+            self.fsi.nucleons[-1].status = -2
+            output = self.fsi(steps)
+            nscatter_p.append(float(len([x for x in output if x.pid == 2212])))
             self.fsi.reset()
 
             # Perform neutron calculation
-            neutron = Particle(2112, momentum, position)
-            self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
-            self.fsi.nucleons.append(neutron)
-            self.fsi.nucleons[-1].status = -1
-            self.fsi(steps)
-            if self.fsi.scatter:
-                nscatter_n += 1
-            self.fsi.reset()
+            # neutron = Particle(2112, momentum, position)
+            # self.fsi.kicked_idxs = [len(self.fsi.nucleons)]
+            # self.fsi.nucleons.append(neutron)
+            # self.fsi.nucleons[-1].status = -1
+            # self.fsi(steps)
+            # if self.fsi.scatter:
+            #     nscatter_n += 1
+            # self.fsi.reset()
 
-        xsec = np.pi*radius**2/float(self.nevents)*np.array([nscatter_p, nscatter_n])
+        print(nscatter_p)
+        _, nscatter_p = np.unique(np.array(nscatter_p), return_counts=True)
+        print(nscatter_p)
+        xsec = np.pi*radius**2/float(self.nevents)*np.array(nscatter_p)
+        print(np.pi*radius**2)
         print(xsec.tolist())
         return xsec.tolist()
 
