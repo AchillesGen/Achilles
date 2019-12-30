@@ -10,11 +10,11 @@ from numpy.distutils.core import setup, Extension
 # It ensures open() defaults to text mode with universal newlines,
 # and accepts an argument to specify the text encoding
 
-EXT1 = Extension(name='xsec', sources=['nuchic/xsec.pyf',
-                                       'nuchic/currents_opt_v1.f90',
-                                       'nuchic/mathtool.f90',
-                                       'nuchic/nform.f90',
-                                       'nuchic/xsec.f90'])
+EXT1 = Extension(name='xsec', sources=['src/nuchic/xsec.pyf',
+                                       'src/nuchic/currents_opt_v1.f90',
+                                       'src/nuchic/mathtool.f90',
+                                       'src/nuchic/nform.f90',
+                                       'src/nuchic/xsec.f90'])
 
 HERE = path.abspath(path.dirname(__file__))
 
