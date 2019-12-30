@@ -14,6 +14,7 @@ Long term:
     - Speed up angular variables calculation
     - Clean-up cascade code
  - Polish user defined input file/interface
+ - Hook up run card with command line arguments
  - Implement two body currents
  - Implement RES
  - Implement DIS
