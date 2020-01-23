@@ -13,6 +13,7 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 include_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/include)
 link_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/lib)
 include_directories(${NUCHIC_SOURCE_DIR}/include)
+include_directories(${HDF5_INCLUDE_DIRS})
 
 add_library(utilities SHARED
     src/nuchic/FourVector.cc

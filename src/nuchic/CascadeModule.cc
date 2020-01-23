@@ -8,7 +8,6 @@
 #include "nuchic/Interactions.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
-#include "nuchic/Types.hh"
 
 namespace py = pybind11;
 
