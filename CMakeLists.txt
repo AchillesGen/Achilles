@@ -22,7 +22,6 @@ add_library(utilities SHARED
     src/nuchic/ThreeVector.cc
     src/nuchic/Utilities.cc
 )
-message(${Python_INCLUDE_DIRS})
 target_include_directories(utilities PUBLIC ${Python_INCLUDE_DIRS})
 
 add_library(physics SHARED
