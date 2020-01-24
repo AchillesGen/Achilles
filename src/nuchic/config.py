@@ -6,8 +6,8 @@ import yaml
 from absl import logging
 
 from .utils import make_path
-from .nucleus import Nucleus
-from .histogram import Histogram
+#from .nucleus import Nucleus
+#from .histogram import Histogram
 
 
 class _Settings:
@@ -28,24 +28,38 @@ class _Settings:
                           'Creating template at `run.yml` and '
                           'quitting.'.format(filename))
 
-        self.nucleus = Nucleus.make_nucleus(
-            self.__dict__['run']['nucleus'],
-            self.__dict__['parameters']['binding_energy'],
-            self.__dict__['parameters']['fermi_momentum'],
-            self.__dict__['parameters']['config_type'])
-
-#    def __getattr__(self, name):
-#        return self.__dict__.get(name, False)
-
     @property
     def settings(self):
         """ Get all settings. """
         return self.__dict__
 
-    def search(self, name):
+    def get(self, name, default=''):
+        """ Get a given setting returning default if not found. """
+        return _Settings.search(self.__dict__, name, default)[1]
+
+    @staticmethod
+    def search(dictionary, name, default=''):
         """ Search for a given setting. """
+        found = False
+        next_level = []
+        for key, value in dictionary.items():
+            if key == name:
+                found = True
+                return found, value
+            if isinstance(value, dict):
+                next_level.append(value)
+        for sub_dict in next_level:
+            found, result = _Settings.search(sub_dict, name, default)
+            if found:
+                return found, result
+        return found, default
+
 
     # Run settings
+    def get_run(self, name, default=''):
+        """ Search for a setting in the run section. """
+        return self.__dict__['run'].get(name, default)
+
     @property
     def run_settings(self):
         """ Return the dictionary of run settings. """
@@ -85,6 +99,21 @@ class _Settings:
     def output_format(self):
         """ Get the event output format. """
         return self.run_settings['output']
+
+    # Nucleus settings
+    def nucleus_params(self, name):
+        return self.__dict__['{}_params'.format(name)]
+
+    def nucleus_binding(self, name):
+        return self.nucleus_params(name)['binding_energy']
+
+    def nucleus_kf(self, name):
+        return self.nucleus_params(name)['fermi_momentum']
+
+    @property
+    def nucleus_config(self):
+        """ Get a dictionary for the nucleus configuration generation options. """
+        return self.__dict__['nucleus_config']
 
     # Parameter settings
     @property
