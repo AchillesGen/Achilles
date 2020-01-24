@@ -58,7 +58,7 @@ class Nucleus {
         std::function<Particles()> density;
 
         static const std::map<int, std::string> ZToName;
-        static const std::map<std::string, int> NameToZ;
+        static int NameToZ(const std::string&);
 
         randutils::mt19937_rng rng;
 };

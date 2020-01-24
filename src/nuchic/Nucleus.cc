@@ -23,21 +23,9 @@ const std::map<int, std::string> Nucleus::ZToName = {
     {26, "Fe"}
 };
 
-const std::map<std::string, int> Nucleus::NameToZ = {
-    {"H", 1},
-    {"He", 2},
-    {"Li", 3},
-    {"C", 6},
-    {"O", 8},
-    {"Al", 13},
-    {"Ar", 18},
-    {"Ca", 20},
-    {"Fe", 26}
-};
-
 Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
                  const double& kf, const std::function<Particles()>& _density) 
-                : binding(bEnergy), fermiMomentum(kf), density(density) {
+                : binding(bEnergy), fermiMomentum(kf), density(_density) {
 
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
@@ -129,12 +117,22 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
 
     if(std::regex_match(name, match, regex)) {
         const int nucleons = std::stoi(match[1].str());
-        const int protons = NameToZ.at(match[2].str()); 
+        const int protons = NameToZ(match[2].str()); 
 
         return Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
     }
 
     throw std::runtime_error("Invalid nucleus " + name);
+}
+
+int Nucleus::NameToZ(const std::string& name) {
+    auto it = std::find_if(ZToName.begin(), ZToName.end(),
+                           [&name](const std::pair<int, std::string> &p) {
+                               return p.second == name;
+                          });
+    if(it == ZToName.end()) 
+        throw std::runtime_error("Invalid nucleus: " + name + " does not exist.");
+    return it -> first;
 }
 
 const std::string Nucleus::ToString() const noexcept {
