@@ -8,6 +8,7 @@ import time
 import functools
 import logging
 import numpy as np
+from scipy.special import gammainc
 
 LOGGER = logging.getLogger(__name__)
 DIR, FILE = os.path.split(__file__)
@@ -63,3 +64,19 @@ def to_spherical(coords, axis=0):
     phi = np.where(phi > 0, phi, phi + 2*np.pi)
     coords = np.moveaxis(coords, 0, axis)
     return np.moveaxis(np.array([r, theta, phi]), 0, axis)
+
+def rand_sphere(radius, num):
+    """ Generate points uniformly within a sphere of a given radius.
+
+    Args:
+        radius (float): Radius of the sphere to generate within
+        num (int): Number of points to generate within the sphere
+
+    Returns:
+        nd.ndarray: A (num, 3) sized array of the randomly sampled points
+    """
+    pts = np.random.normal(size=(num, 3))
+    ssq = np.sum(pts**2, axis=1)
+    tmp = radius*gammainc(3./2., ssq/2.)**(1./3.)/np.sqrt(ssq)
+    tmp_tiled = np.tile(tmp.reshape(num, 1), (1, 3))
+    return np.multiply(pts, tmp_tiled)
