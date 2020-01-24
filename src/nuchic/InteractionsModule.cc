@@ -61,9 +61,4 @@ PYBIND11_MODULE(interactions, m) {
         .def_static("instance", &InteractionFactory::Instance)
         .def("register", &InteractionFactory::Register)
         .def("create", &InteractionFactory::Create);
-
-    py::class_<GeantInteractions, Interactions, std::shared_ptr<GeantInteractions>>(m, "GeantInteractions")
-        .def(py::init<const std::string&>())
-        .def("CrossSection", &GeantInteractions::CrossSection)
-        .def("MakeMomentum", &GeantInteractions::MakeMomentum);
 }
