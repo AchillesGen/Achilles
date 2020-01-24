@@ -17,3 +17,8 @@ code_deuteron/
 dist/
 *.lhe
 .pylintrc
+_build/
+compile_commands.json
+*.o
+*.back
+tags
