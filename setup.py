@@ -1,21 +1,39 @@
+#!/usr/bin/env python
+""" Setup script for the nuchic neutrino event generator."""
+
+import io
 import os
+from os.path import join
+from os.path import dirname
 import re
 import sys
 import platform
 import subprocess
 
+from distutils.version import LooseVersion
+import setuptools
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from distutils.version import LooseVersion
+
+
+def read(*names, **kwargs):
+    """ Read files. """
+    with io.open(
+            join(dirname(__file__), *names),
+            encoding=kwargs.get('encoding', 'utf8')
+    ) as fhs:
+        return fhs.read()
 
 
 class CMakeExtension(Extension):
+    """ Create a CMake extension type for python. """
     def __init__(self, name, sourcedir=''):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
 class CMakeBuild(build_ext):
+    """ Build a CMake project during the building of the python library. """
     def run(self):
         try:
             out = subprocess.check_output(['cmake', '--version'])
@@ -59,8 +77,44 @@ class CMakeBuild(build_ext):
 setup(
     name='nuchic',
     version='0.0.1',
-    author='Joshua Isaacson',
+    description='Neutrino Event Generator',
+    long_description=read('README.md'),
+    long_description_content_type='text/markdown',
+    url='https://github.com/jxi24/FNALNeuGen',
+    author='Joshua Isaacson, \
+            William Jay, \
+            Alessandro Lovato, \
+            Pedro A. Machado, \
+            Noemi Rocco,',
+    classifiers=[
+        # How mature is this project? Common values are
+        #   3 - Alpha
+        #   4 - Beta
+        #   5 - Production/Stable
+        'Development Status :: 3 - Alpha',
+
+        # Specify the Python versions you support here. In particular, ensure
+        # that you indicate whether you support Python 2, Python 3 or both.
+        'Programming Language :: Python :: 3',
+    ],
+    packages=setuptools.find_packages(where='src'),
+    package_dir={'': 'src'},
+    include_package_data=True,
+    python_requires='>=3.5, <4',
+    install_requires=[
+        'numpy',
+        'vegas',
+        'pandas',
+        'matplotlib',
+        'tqdm',
+        'pyyaml',
+    ],
+    entry_points={'console_scripts': ['nuchic = nuchic.main:nuchic', ], },
     ext_modules=[CMakeExtension('nuchic')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
+    package_data={'': ['data/*', 'data/qe/*', 'pke/*', 'configurations/*', 'template.yml']},
+    extras_require={
+        'test': ['pytest', 'coverage', 'pytest-cov'],
+    },
 )
