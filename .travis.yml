@@ -1,5 +1,11 @@
 language: cpp
 dist: bionic
+
+addons:
+    apt:
+        packages:
+            - libhdf5-serial-dev
+
 matrix:
     include:
         - name: "Python 3.6.7 on Xenial Linux"
@@ -14,7 +20,12 @@ matrix:
           os: osx
           env: PYTHON=3.7
 
-cache: pip # Cache pip dependencies
+cache: 
+    directories:
+        - $HOME/.cache/pip
+        - $HOME/.cache/hdf5
+        - $HOME/.ccache
+
 before_install:
 - |
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
