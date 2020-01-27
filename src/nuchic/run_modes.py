@@ -51,13 +51,12 @@ class RunMode:
                                                     binding_energy,
                                                     fermi_momentum,
                                                     density)
-        print(self.nucleus.generate_config())
 
     def generate_one_event(self):
         """ Generate one event according to the run mode. """
         raise NotImplementedError
 
-    def finalize(self):
+    def finalize(self, events):
         """ Finalize the events for this run mode. """
         raise NotImplementedError
 
@@ -101,7 +100,7 @@ class CalcMeanFreePath(RunMode):
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
-    def finalize(self):
+    def finalize(self, events):
         """ Convert the events to a total cross-section. """
 
 
@@ -123,7 +122,7 @@ class CalcTransparency(RunMode):
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
-    def finalize(self):
+    def finalize(self, events):
         """ Convert the events to a total cross-section. """
 
 
@@ -145,5 +144,5 @@ class CalcInteractions(RunMode):
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
-    def finalize(self):
+    def finalize(self, events):
         """ Convert the events to a total cross-section. """
