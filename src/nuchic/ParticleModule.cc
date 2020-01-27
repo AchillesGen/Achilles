@@ -10,6 +10,8 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(particle, m) {
+    py::object vectors = (py::object) py::module::import("vectors");
+
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
         // Constructors
         .def(py::init<const int&, const FourVector&, const ThreeVector&,
