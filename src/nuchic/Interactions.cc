@@ -210,9 +210,6 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
         }
     }
 
-    // for(auto t : theta) std::cout << t << ", ";
-    // std::cout << std::endl;
-
     if(samePID) {
         m_pcmPP = pcmVec;
         m_xsecPP = sigTotVec;
@@ -234,9 +231,9 @@ double GeantInteractions::CrossSection(const Particle& particle1,
 
     try {
         if(samePID)
-            return m_crossSectionPP(pcm);
+            return m_crossSectionPP(pcm/1000);
         else
-            return m_crossSectionNP(pcm);
+            return m_crossSectionNP(pcm/1000);
     } catch (std::domain_error &e) {
         FourVector momentum1 = particle1.Momentum();
         FourVector momentum2 = particle2.Momentum();
@@ -248,7 +245,7 @@ double GeantInteractions::CrossSection(const Particle& particle1,
 ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double& p1CM,
         const double& pcm, const std::array<double, 2>& rans) const {
     double pR = p1CM;
-    double pTheta = CrossSectionAngle(samePID, pcm, rans[0]);
+    double pTheta = CrossSectionAngle(samePID, pcm/1000, rans[0]);
     double pPhi = 2*M_PI*rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));

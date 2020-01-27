@@ -58,7 +58,7 @@ class GeantInteractions : public Interactions {
         GeantInteractions(const std::string&);
         static std::unique_ptr<Interactions> Create() {
             return std::unique_ptr<GeantInteractions>(
-                    new GeantInteractions("../data/GeantData.hdf5"));
+                    new GeantInteractions("src/nuchic/data/GeantData.hdf5"));
         }
 
         // Destructor
