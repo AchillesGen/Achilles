@@ -6,7 +6,12 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 
 """
 
+import numpy as np
+
+import vectors
+import particle
 import nucleus
+import interactions
 import cascade
 
 import nuchic.densities as densities
@@ -69,18 +74,49 @@ class CalcCrossSection(RunMode):
         # Remove the name argument
         args = args[1:]
 
-        # Delete unused kwargs
-        del kwargs
-
         # Initialize base class and additional variables
         super().__init__()
-        # self.fsi = cascade.Cascade()
+        self.radius = 10
+        self.pid = 2212
+        interaction = interactions.Interactions.create(settings().get_param('interaction'))
+        self.fsi = cascade.Cascade(interaction)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
+        particles = self.nucleus.generate_config()
 
-    def finalize(self):
+        # Generate random position in beam
+        while True:
+            position = self.radius*(2*np.random.rand(2)-1)
+            if np.sum(position**2) < self.radius**2:
+                break
+
+        # Add test particle to the rest of them
+        position = vectors.Vector3(position[0], position[1], -2.5)
+        energy = settings().beam_energy
+        nucleon_mass = settings().get_param('mn')
+        momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
+        test_part =  particle.Particle(self.pid, momentum, position, -2)
+        particles.append(test_part)
+        self.fsi.set_kicked(len(particles)-1)
+        particles = self.fsi(particles,
+                             self.nucleus.fermi_momentum(),
+                             2.5**2)
+
+        return particles
+
+    def finalize(self, events):
         """ Convert the events to a total cross-section. """
+        xsec = 0
+        for event in events:
+            count = 0
+            for part in event:
+                if part.status() == 1:
+                    count += 1
+            if count != 0:
+                xsec += 1
+
+        print(xsec)
 
 
 class CalcMeanFreePath(RunMode):
