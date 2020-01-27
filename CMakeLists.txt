@@ -1,10 +1,21 @@
 cmake_minimum_required(VERSION 3.9)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
+
 project(NUCHIC)
+
+# Policy to address @foo@ variable expansion
+if(POLICY CMP0053)
+    cmake_policy(SET CMP0053 NEW)
+endif()
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Setup CMake Directory
+set(NUCHIC_CMAKE_DIR "${NUCHIC_SOURCE_DIR}/CMake")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
 # Try to find pybind11
 find_package(pybind11)
