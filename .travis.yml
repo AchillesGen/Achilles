@@ -23,7 +23,7 @@ before_install:
     pip install --user --upgrade pip virtualenv
     virtualenv -p python$PYTHON venv
     source venv/bin/activate
-    pip install --user numpy
+    pip install numpy
 install:
 - |
     python setup.py sdist
