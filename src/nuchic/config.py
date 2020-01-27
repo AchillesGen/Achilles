@@ -7,7 +7,7 @@ from absl import logging
 
 from .utils import make_path
 #from .nucleus import Nucleus
-#from .histogram import Histogram
+from .histogram import Histogram
 
 
 class _Settings:
