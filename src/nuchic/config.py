@@ -116,6 +116,10 @@ class _Settings:
         return self.__dict__['nucleus_config']
 
     # Parameter settings
+    def get_param(self, name, default=''):
+        """ Search for a setting in the run section. """
+        return self.__dict__['parameters'].get(name, default)
+
     @property
     def parameters(self):
         """ Return the dictionary of parameter settings. """
