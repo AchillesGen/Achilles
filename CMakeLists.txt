@@ -6,8 +6,17 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-find_package(pybind11 REQUIRED)
-find_package(Python REQUIRED COMPONENTS Development)
+# Try to find pybind11
+find_package(pybind11)
+if(NOT ${pybind11_FOUND})
+    message(WARNING "Unable to find pybind11. Pulling pybind11 submodule.")
+    execute_process(COMMAND git submodule update --init -- external/pybind11
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+    add_subdirectory(external/pybind11)
+endif()
+
+
+# Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 include_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/include)
@@ -22,7 +31,7 @@ add_library(utilities SHARED
     src/nuchic/ThreeVector.cc
     src/nuchic/Utilities.cc
 )
-target_include_directories(utilities PUBLIC ${Python_INCLUDE_DIRS})
+target_include_directories(utilities)
 
 add_library(physics SHARED
     src/nuchic/Cascade.cc
