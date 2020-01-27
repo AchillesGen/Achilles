@@ -3,6 +3,9 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
 
+FourVector::FourVector(const ThreeVector& other, const double& E) noexcept
+    : vec({other[0], other[1], other[2], E}) {}
+
 const double FourVector::M() const noexcept {
     const double m2 = M2();
     if(std::abs(m2) < 1E-6) return 0;
@@ -57,6 +60,11 @@ FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
 FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
         const double& beta_z) noexcept {
     return Boost(ThreeVector(beta_x, beta_y, beta_z));
+}
+
+FourVector FourVector::Cross(const FourVector& other) const noexcept {
+    ThreeVector result = this -> Vec3().Cross(other.Vec3());
+    return FourVector(result, 0);
 }
 
 const ThreeVector FourVector::BoostVector() const noexcept {

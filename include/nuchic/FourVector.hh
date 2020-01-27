@@ -12,7 +12,9 @@ class FourVector {
         // Constructors and Destructors
         FourVector() noexcept : vec({0, 0, 0, 0}) {}
         FourVector(std::array<double, 4> p) noexcept : vec(p) {}
-        FourVector(double pX, double pY, double pZ, double E) noexcept : vec({pX, pY, pZ, E}) {}
+        FourVector(double pX, double pY, double pZ, double E) noexcept 
+            : vec({pX, pY, pZ, E}) {}
+        FourVector(const ThreeVector& other, const double& E) noexcept;
         FourVector(const FourVector& other) noexcept : vec(other.vec) {}
         FourVector(const FourVector&& other) noexcept : vec(std::move(other.vec)) {}
         ~FourVector() = default;
@@ -32,6 +34,10 @@ class FourVector {
 
         // Getters
         const std::array<double, 4>& Momentum() const noexcept {return vec;}
+        const double& X() const noexcept {return vec[0];}
+        const double& Y() const noexcept {return vec[1];}
+        const double& Z() const noexcept {return vec[2];}
+        const double& T() const noexcept {return vec[3];}
         const double& Px() const noexcept {return vec[0];}
         const double& Py() const noexcept {return vec[1];}
         const double& Pz() const noexcept {return vec[2];}
@@ -53,6 +59,7 @@ class FourVector {
         // Functions
         FourVector Boost(const ThreeVector&) noexcept;
         FourVector Boost(const double&, const double&, const double&) noexcept;
+        FourVector Cross(const FourVector&) const noexcept;
         const ThreeVector BoostVector() const noexcept;
         const double Dot(const FourVector& other) const noexcept {
             return (*this) * other;
@@ -82,8 +89,14 @@ class FourVector {
         bool operator!=(const FourVector& other) const noexcept {return !(*this == other);}
 
         // Access Operators
-        double& operator[](const std::size_t& idx) {return vec[idx];}
-        const double& operator[](const std::size_t& idx) const {return vec[idx];}
+        double& operator[](const std::size_t& idx) {
+            if(idx > 3) throw std::range_error("Max value is 3.");
+            return vec[idx];
+        }
+        const double& operator[](const std::size_t& idx) const {
+            if(idx > 3) throw std::range_error("Max value is 3.");
+            return vec[idx];
+        }
 
         // Stream Operators
         friend std::ostream& operator<<(std::ostream&, const FourVector&);
