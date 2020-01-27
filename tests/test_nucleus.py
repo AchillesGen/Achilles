@@ -2,19 +2,30 @@
 
 import numpy as np
 import pytest
-from nuchic.nucleus import Nucleus
+from nucleus import Nucleus
+from particle import Particle
+
+
+def density():
+    """ Dummy density function. """
+    protons = [Particle(2212)]*6
+    neutrons = [Particle(2112)]*6
+    protons.extend(neutrons)
+    return protons
 
 
 def test_nucleus_init():
     """ Initialize nucleus tests. """
+    Nucleus(6, 12, 10, 225, density)
+
     with pytest.raises(Exception):
-        Nucleus(12, 6, 10, 225, 'MF')
+        Nucleus(12, 6, 10, 225)
 
 
 def test_nucleus_radius():
     """ Test nucleus radius calculation. """
-    nuc = Nucleus(6, 12, 10, 225, 'MF')
-    assert nuc.radius > 0
+    nuc = Nucleus(6, 12, 10, 225)
+    assert nuc.radius() > 0
 
 
 def test_nucleus_config():
@@ -22,26 +33,19 @@ def test_nucleus_config():
     Z = 6
     A = 12
 
-    # Mean field
-    nuc = Nucleus(Z, A, 10, 225, 'MF')
-    protons, neutrons = nuc.generate_config()
+    nuc = Nucleus(Z, A, 10, 225, density)
+    nucleons = nuc.generate_config()
+    protons = nuc.protons()
+    neutrons = nuc.neutrons()
+    assert len(nucleons) == A
     assert len(protons) == Z and len(neutrons) == A-Z
-    assert len(np.unique(protons, axis=0)) == Z and len(
-        np.unique(neutrons, axis=0)) == A-Z
-
-    # Quantum Monte Carlo
-    nuc = Nucleus(Z, A, 10, 225, 'QMC')
-    protons, neutrons = nuc.generate_config()
-    assert len(protons) == Z and len(neutrons) == A-Z
-    assert len(np.unique(protons, axis=0)) == Z and len(
-        np.unique(neutrons, axis=0)) == A-Z
 
 
 def test_nucleus_momentum():
     """ Test generated momentum are valid. """
     Z = 6
     A = 12
-    nuc = Nucleus(Z, A, 10, 225, 'MF')
+    nuc = Nucleus(Z, A, 10, 225)
     momentum = nuc.generate_momentum()
     assert len(momentum) == 3
-    assert np.dot(momentum, momentum) < nuc.kf**2
+    assert np.dot(momentum, momentum) < nuc.fermi_momentum()**2

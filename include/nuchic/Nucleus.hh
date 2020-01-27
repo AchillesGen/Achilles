@@ -37,6 +37,7 @@ class Nucleus {
         const double& BindingEnergy() const noexcept {return binding;}
         const double& FermiMomentum() const noexcept {return fermiMomentum;}
         const double& PotentialEnergy() const noexcept {return potential;}
+        const double& Radius() const noexcept {return radius;}
 
         // Functions
         bool Escape(Particle&) noexcept;

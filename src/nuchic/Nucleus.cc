@@ -12,6 +12,7 @@
 const double mN = 938;
 
 const std::map<int, std::string> Nucleus::ZToName = {
+    {0, "mfp"},
     {1, "H"},
     {2, "He"},
     {3, "Li"},
@@ -20,7 +21,7 @@ const std::map<int, std::string> Nucleus::ZToName = {
     {13, "Al"},
     {18, "Ar"},
     {20, "Ca"},
-    {26, "Fe"}
+    {26, "Fe"},
 };
 
 Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,

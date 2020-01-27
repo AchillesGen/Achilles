@@ -10,10 +10,15 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(nucleus, m) {
+    py::object vectors = (py::object) py::module::import("vectors");
+    py::object particle = (py::object) py::module::import("particle");
+
     py::class_<Nucleus, std::shared_ptr<Nucleus>>(m, "Nucleus")
         // Constructors
         .def(py::init<const int&, const int&, const double&,
-                      const double&, const std::function<Particles()>&>())
+                      const double&, const std::function<Particles()>&>(),
+                      py::arg("Z"), py::arg("A"), py::arg("binding"),
+                      py::arg("kf"), py::arg("density") = std::function<Particles()>())
         // Setters
         .def("set_nucleons", &Nucleus::SetNucleons)
         .def("set_binding_energy", &Nucleus::SetBindingEnergy)
@@ -30,6 +35,7 @@ PYBIND11_MODULE(nucleus, m) {
         .def("binding_energy", &Nucleus::BindingEnergy)
         .def("fermi_momentum", &Nucleus::FermiMomentum)
         .def("potential_energy", &Nucleus::PotentialEnergy)
+        .def("radius", &Nucleus::Radius)
         // Functions
         .def("escape", &Nucleus::Escape)
         .def("generate_config", &Nucleus::GenerateConfig)
