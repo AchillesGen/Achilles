@@ -1,50 +1,39 @@
-language: python
+language: cpp
+dist: bionic
 matrix:
     include:
         - name: "Python 3.5.6 on Xenial Linux"
-          python: 3.5
-          sudo: required
-          before_install:
-              - sudo apt-get install gfortran
+          os: linux
+          env: PYTHON=3.5
 
         - name: "Python 3.6.7 on Xenial Linux"
-          python: 3.6
-          sudo: required
-          before_install:
-              - sudo apt-get install gfortran
+          os: linux
+          env: PYTHON=3.6
 
         - name: "Python 3.7.1 on Xenial Linux"
-          python: 3.7
-          sudo: required
-          before_install:
-              - sudo apt-get install gfortran
+          os: linux
+          env: PYTHON=3.7
 
         - name: "Python 3.7.4 on macOS"
           os: osx
-          osx_image: xcode11
-          language: shell
-          before_install:
-              - pip3 install mock
-
-# Ignore building on Windows for now
-#        - name: "Python 3.7.4 on Windows"
-#          os: windows
-#          language: shell
-#          before_install:
-#              - choco install python
-#              - python -m pip install --upgrade pip
-#              - pip3 install numpy
-#          env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+          env: PYTHON=3.7
 
 cache: pip # Cache pip dependencies
 before_install:
-    - pip3 install -U pip
-    - pip3 install -U pytest
-    - pip3 install codecov
+- |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then export CXX=g++-8 CC=gcc-8; fi
+    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+        brew update; brew install python3;
+    fi
+    pip install --user --upgrade pip virtualenv
+    virtualenv -p python$PYTHON venv
+    source venv/bin/activate
 install:
-    - pip3 install ".[test]" .
+- |
+    python setup.py sdist
+    pip install ".[test]" --verbose dist/*.tar.gz
 script:
-    - pytest
-    - nuchic --testing
+- pytest
+
 after_success:
     - codecov
