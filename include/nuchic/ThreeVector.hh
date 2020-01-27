@@ -16,18 +16,30 @@ class ThreeVector {
         ~ThreeVector() = default;
 
         // Setters
+        void SetXYZ(const std::array<double, 3> p) noexcept {
+            vec = p;
+        }
+        void SetXYZ(const double& x, const double& y, const double& z) noexcept {
+            vec = std::array<double, 3>{x, y, z};
+        }
         void SetPxPyPz(const std::array<double, 3> p) noexcept {
             vec = p;
         }
         void SetPxPyPz(const double& pX, const double& pY, const double& pZ) noexcept {
             vec = std::array<double, 3>{pX, pY, pZ};
         }
+        void SetX(const double& x) noexcept {vec[0] = x;}
+        void SetY(const double& y) noexcept {vec[1] = y;}
+        void SetZ(const double& z) noexcept {vec[2] = z;}
         void SetPx(const double& pX) noexcept {vec[0] = pX;}
         void SetPy(const double& pY) noexcept {vec[1] = pY;}
         void SetPz(const double& pZ) noexcept {vec[2] = pZ;}
 
         // Getters
         const std::array<double, 3>& Position() const noexcept {return vec;}
+        const double& X() const noexcept {return vec[0];}
+        const double& Y() const noexcept {return vec[1];}
+        const double& Z() const noexcept {return vec[2];}
         const double& Px() const noexcept {return vec[0];}
         const double& Py() const noexcept {return vec[1];}
         const double& Pz() const noexcept {return vec[2];}
@@ -71,8 +83,14 @@ class ThreeVector {
         bool operator!=(const ThreeVector& other) const noexcept {return !(*this == other);}
 
         // Access Operators
-        double& operator[](const std::size_t& idx) {return vec[idx];}
-        const double& operator[](const std::size_t& idx) const {return vec[idx];}
+        double& operator[](const std::size_t& idx) {
+            if(idx > 2) throw std::range_error("Max value is 2.");
+            return vec[idx];
+        }
+        const double& operator[](const std::size_t& idx) const {
+            if(idx > 2) throw std::range_error("Max value is 2.");
+            return vec[idx];
+        }
 
         // Stream Operators
         friend std::ostream& operator<<(std::ostream&, const ThreeVector&);

@@ -2,16 +2,14 @@
 
 import pytest
 import numpy as np
-from nuchic.three_vector import Vec3
+from vectors import Vector3 as Vec3
 
 
 def test_vec3_init():
     """ Test Vec3 initialization. """
     vec1 = Vec3(1, 2, 3)
     vec2 = Vec3()
-    vec2.x = 1
-    vec2.y = 2
-    vec2.z = 3
+    vec2.set_xyz(1, 2, 3)
     vec3 = Vec3(3, 2, 1)
 
     assert vec1 == vec2
@@ -27,21 +25,21 @@ def test_vec3_getitem():
     with pytest.raises(Exception):
         print(vec[3])
 
-    assert isinstance(vec.array, np.ndarray)
+    # assert isinstance(vec.array, np.ndarray)
 
 
 def test_vec3_repr():
     """ Test Vec3 repr. """
     vec = Vec3(1, 2, 3)
     string = repr(vec)
-    assert string == 'Vec3(1, 2, 3)'
+    assert string == 'ThreeVector(1.000000, 2.000000, 3.000000)'
 
 
 def test_vec3_str():
     """ Test Vec3 str. """
     vec = Vec3(1, 2, 3)
     string = str(vec)
-    assert string == '(1,2,3)'
+    assert string == 'ThreeVector(1.000000, 2.000000, 3.000000)'
 
 
 def test_vec3_add():
@@ -84,7 +82,7 @@ def test_vec3_mul():
     assert vec1 * vec1 == vec1.dot(vec1)
     assert scalar1 * vec1 == vec1 * scalar1
     assert scalar1 * vec1 == vec2
-    assert vec1.__rmul__(vec2) == vec2 * vec1
+    # assert vec1.__rmul__(vec2) == vec2 * vec1
 
     with pytest.raises(Exception):
         vec1.dot(scalar2)
@@ -106,8 +104,8 @@ def test_vec3_magnitude():
     vec1 = Vec3(4, 3, 2)
     pvec2 = 29
 
-    assert vec1.mag2 == pvec2
-    assert vec1.mag == np.sqrt(pvec2)
+    assert vec1.magnitude2() == pvec2
+    assert vec1.magnitude() == np.sqrt(pvec2)
 
 
 def test_vec3_angles():
@@ -115,9 +113,9 @@ def test_vec3_angles():
     vec = Vec3(0, 0, 4)
     vec1 = Vec3(1, 1, 1)
 
-    assert vec.theta == 0
-    assert vec.phi == 0
-    assert vec1.phi == np.pi / 4.0
+    assert vec.theta() == 0
+    assert vec.phi() == 0
+    assert vec1.phi() == np.pi / 4.0
 
 
 def test_vec3_cross():
