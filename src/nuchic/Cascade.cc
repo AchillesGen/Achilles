@@ -76,20 +76,36 @@ Particles Cascade::operator()(const Particles& _particles, const double& kf, con
         kickedIdxs = newKicked;
 
         // After step checks
+        //std::cout << "CURRENT STEP: " << step << std::endl;
         for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
             // Nucleon outside nucleus (will check if captured or escaped after cascade)
-            if(particles[*it].Position().Magnitude2() > radius2 && particles[*it].Status() != -2) {
-                particles[*it].SetStatus(1);
+            auto particle = &particles[*it];
+            //if(particle -> Status() == -2) {
+            //    std::cout << particle -> Position().Pz() << " " << sqrt(radius2) << std::endl;
+            //    std::cout << *particle << std::endl;
+            //}
+            if(particle -> Position().Magnitude2() > radius2 && particle -> Status() != -2) {
+                particle -> SetStatus(1);
+                it = kickedIdxs.erase(it);
+            } else if(particle -> Status() == -2 && particle -> Position().Pz() > sqrt(radius2)) {
                 it = kickedIdxs.erase(it);
             } else {
                 ++it;
             }
         }
+
+        for(auto particle : particles) {
+            if(particle.Position()[0] != particle.Position()[0])
+                throw;
+        }
     }
 
-    for(auto particle : particles) 
-        if(particle.Status() == -1)
+    for(auto particle : particles) {
+        if(particle.Status() == -1) {
+            for(auto p : particles) std::cout << p << std::endl;
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+        }
+    }
 
     return particles;
 }
@@ -131,8 +147,11 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
 
     // Build results vector
     for(std::size_t i = 0; i < particles.size(); ++i) {
-        if(i == idx) continue;
-        if(particles[i].InFormationZone()) continue;
+        // TODO: Should particles propagating be able to interact with 
+        //       other propagating particles?
+        if(particles[i].Status() == -1 || particles[i].Status() == -2) continue;
+        // if(i == idx) continue;
+        // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
         auto projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
         double dist2 = (projectedPosition - point1).Magnitude2();

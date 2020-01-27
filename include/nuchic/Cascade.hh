@@ -26,7 +26,8 @@ class Cascade {
         Particles Kick(const Particles&, const FourVector&, const std::array<double, 2>&);
         void Reset();
         Particles operator()(const Particles&, const double&, const double&,
-                const std::size_t& maxSteps=10000); 
+                const std::size_t& maxSteps=1000000); 
+        void SetKicked(const std::size_t& idx) {kickedIdxs.push_back(idx);}
 
     private:
         // Functions
