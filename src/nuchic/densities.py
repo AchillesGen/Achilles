@@ -111,15 +111,15 @@ class NuclearConstant(NuclearDensity):
         super().__init__()
 
         self.radius = kwargs['radius']
-        self.protons = kwargs['n_nucleons']
-        self.density = self.protons / (4.0/3.0 * np.pi * self.radius**3)
+        self.neutrons = kwargs['n_nucleons']
+        self.density = self.neutrons / (4.0/3.0 * np.pi * self.radius**3)
 
     def __call__(self):
         """ Generate a nuclear configuration with a constant density. """
-        nucleons = rand_sphere(self.radius, self.protons)
+        nucleons = rand_sphere(self.radius, self.neutrons)
         particles = []
         for nucleon in nucleons:
-            part = particle.Particle(2212,
+            part = particle.Particle(2112,
                                      vectors.Vector4(),
                                      vectors.Vector3(nucleon[0], nucleon[1], nucleon[2]))
             particles.append(part)
