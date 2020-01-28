@@ -227,7 +227,7 @@ double GeantInteractions::CrossSection(const Particle& particle1,
         const Particle& particle2) const {
     bool samePID = particle1.PID() == particle2.PID();
     const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * MN / totalMomentum.M();
+    const double pcm = particle1.Momentum().Vec3().Magnitude() * MN / totalMomentum.E();
 
     try {
         if(samePID)
@@ -238,7 +238,7 @@ double GeantInteractions::CrossSection(const Particle& particle1,
         FourVector momentum1 = particle1.Momentum();
         FourVector momentum2 = particle2.Momentum();
         FourVector labMomentum = momentum1.Boost(-momentum2.BoostVector());
-        return CrossSectionLab(samePID, labMomentum.Vec3().Magnitude());
+        return CrossSectionLab(samePID, labMomentum.Vec3().Magnitude()/1000);
     }
 }
 

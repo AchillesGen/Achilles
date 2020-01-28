@@ -173,7 +173,7 @@ int Cascade::Interacted(const Particles& particles, const Particle& kickedPartic
         const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
-        const double prob = 1.0/(2.0*M_PI)*exp(-dist.second/(2*xsec));
+        const double prob = 1.0/(2.0*M_PI)*exp(-dist.second/(2*xsec/10.));
         if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
