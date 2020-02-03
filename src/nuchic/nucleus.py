@@ -4,7 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 from scipy.spatial.transform import Rotation
-from absl import logging
+# from absl import logging
 
 # from nuChic.particle import Particle
 from .constants import MEV, MQE as mN
@@ -79,7 +79,7 @@ class Nucleus:
     @staticmethod
     def make_nucleus(name, binding, kf, config_type):
         """ Generate a nucleus from a string. """
-        logging.info('Initializing Nucleus: Found nucleus {}'.format(name))
+        # logging.info('Initializing Nucleus: Found nucleus {}'.format(name))
         match = re.match(r'([0-9]+)([a-zA-Z]+)', name, re.I)
         if match:
             nucleons, protons = match.groups()

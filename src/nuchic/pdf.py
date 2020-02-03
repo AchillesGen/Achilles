@@ -1,11 +1,11 @@
 """ Implement PDF interface class. """
 
-from absl import logging
+# from absl import logging
 
 try:
     import lhapdf
 except ImportError:
-    logging.warn('Could not find lhapdf. Using dummy class.')
+    # logging.warn('Could not find lhapdf. Using dummy class.')
     lhapdf = None
 
 

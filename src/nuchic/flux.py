@@ -2,7 +2,7 @@
 
 import pickle
 import numpy as np
-from sklearn.neighbors import KernelDensity
+# from sklearn.neighbors import KernelDensity
 import pandas as pd
 
 
@@ -20,10 +20,11 @@ def kde(x, x_grid, bandwidth=0.2, **kwargs):
     """ Generate a kernel density estimate of the distribution. """
     #    kde = gaussian_kde(x, bw_method=bandwidth / x.std(ddof=1), **kwargs)
     #    return kde.evaluate(x_grid)
-    _kde = KernelDensity(bandwidth=bandwidth, **kwargs)
-    _kde.fit(x[:, np.newaxis])
-    log_pdf = _kde.score_samples(x_grid[:, np.newaxis])
-    return np.exp(log_pdf)
+    # _kde = KernelDensity(bandwidth=bandwidth, **kwargs)
+    # _kde.fit(x[:, np.newaxis])
+    # log_pdf = _kde.score_samples(x_grid[:, np.newaxis])
+    # return np.exp(log_pdf)
+    return None
 
 
 def main():
@@ -35,11 +36,11 @@ def main():
     integral = np.sum(data['numu_flux'].values)
     random_from_cdf = generate(data['numu_flux'].values/integral, x_grid, 1E7)
 
-    try:
-        kdepdf = pickle.load(open('kde.pickle', 'rb'))
-    except (OSError, IOError):
-        kdepdf = kde(random_from_cdf, x_grid, bandwidth=0.1)
-        pickle.dump(kdepdf, open('kde.pickle', 'wb'))
+    # try:
+    kdepdf = pickle.load(open('kde.pickle', 'rb'))
+    # except (OSError, IOError):
+        # kdepdf = kde(random_from_cdf, x_grid, bandwidth=0.1)
+        # pickle.dump(kdepdf, open('kde.pickle', 'wb'))
     random_from_kde = generate(kdepdf, x_grid, 1E7)
 
     plt.subplot(121)

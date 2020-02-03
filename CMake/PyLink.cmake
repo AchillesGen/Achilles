@@ -1,0 +1,12 @@
+# Create a macro for properly linking the libraries for the pybind11 modules 
+macro(pylink target includes libraries)
+    target_include_directories(${target} PRIVATE ${includes})
+    set_target_properties(${target} PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+    target_link_libraries(${target} PRIVATE ${libraries})
+    if(UNIX AND NOT APPLE)
+        set_target_properties(${target} PROPERTIES INSTALL_RPATH "$ORIGIN")
+    elseif(APPLE)
+        set_target_properties(${target} PROPERTIES INSTALL_RPATH "@loader_path")
+    endif()
+    set_target_properties(${target} PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+endmacro()

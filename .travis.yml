@@ -12,12 +12,10 @@ matrix:
           os: linux
           env: PYTHON=3.6
 
-        - name: "Python 3.7.1 on Xenial Linux"
-          os: linux
-          env: PYTHON=3.7
-
         - name: "Python 3.7.4 on macOS"
           os: osx
+          osx_image: xcode10.2
+          language: generic
           env: PYTHON=3.7
 
 cache: 
@@ -29,16 +27,19 @@ cache:
 before_install:
 - |
     if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-        brew update; brew install python3;
+        brew update; brew install python3
+        pip3 install virtualenv
+        python3 -m virtualenv venv
+    else
+        pip install --user --upgrade pip virtualenv
+        virtualenv -p python$PYTHON venv
     fi
-    pip install --user --upgrade pip virtualenv
-    virtualenv -p python$PYTHON venv
     source venv/bin/activate
+    which python
+    python --version
     pip install numpy
 install:
-- |
-    python setup.py sdist
-    pip install ".[test]" --verbose dist/*.tar.gz
+- pip install ".[test]" --verbose -e .
 script:
 - pytest
 

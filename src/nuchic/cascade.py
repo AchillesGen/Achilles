@@ -3,7 +3,7 @@
 """ Implements the Cascade calculation """
 
 import numpy as np
-from absl import logging
+# from absl import logging
 
 from .particle import Particle
 from .data.parse_data import GeantData

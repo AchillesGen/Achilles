@@ -3,12 +3,12 @@ from collections import namedtuple
 
 from scipy import interpolate
 import numpy as np
-from absl import flags
-from absl import logging
+# from absl import flags
+# from absl import logging
 
 from .utils import make_path
 
-FLAGS = flags.FLAGS
+# FLAGS = flags.FLAGS
 
 
 def read_folding_data():

@@ -2,20 +2,20 @@
 
 from collections import namedtuple
 from scipy import interpolate
-from absl import flags
-from absl import logging
+# from absl import flags
+# from absl import logging
 import numpy as np
 
-import xsec
+# import xsec
 from .four_vector import Vec4
 from .constants import MEV, HBARC, MQE, TO_NB
 from .folding import Folding
 from .config import settings
 from .utils import make_path
 
-FLAGS = flags.FLAGS
-flags.DEFINE_bool(
-    'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
+# FLAGS = flags.FLAGS
+# flags.DEFINE_bool(
+#     'pwia', None, 'Flag to turn on/off the plane-wave impluse approximation')
 
 
 class Inclusive:
@@ -29,8 +29,8 @@ class Inclusive:
         self.wrange = [1, energy]
 
         self.folding = None
-        if FLAGS.folding:
-            self.folding = Folding()
+        # if FLAGS.folding:
+        #     self.folding = Folding()
 
     @property
     def n_z(self):
@@ -201,10 +201,10 @@ class Quasielastic(Inclusive):
 
         # Adjust the momentum due to the optical potential
         u_pq = 0.0
-        if FLAGS.folding:
-            tkin_pf = np.sqrt(var.qval**2 + MQE**2) - MQE
-            if self.folding.kin_min < tkin_pf < self.folding.kin_max:
-                u_pq = self.folding.kinematic(tkin_pf)
+        # if FLAGS.folding:
+        #     tkin_pf = np.sqrt(var.qval**2 + MQE**2) - MQE
+        #     if self.folding.kin_min < tkin_pf < self.folding.kin_max:
+        #         u_pq = self.folding.kinematic(tkin_pf)
 
         # Enforce value of cos(theta) from the energy-conserving delta function
         cost_te = (((omegat + e_out - u_pq)**2 - var.mom**2 - var.qval**2 - MQE**2)
@@ -268,17 +268,17 @@ class Quasielastic(Inclusive):
         qval = np.sqrt((2.0 * self.beam_energy * (self.beam_energy - omega)
                         * (1.0 - self.coste)) + omega**2)
 
-        if FLAGS.folding:
-            domegap = self.wmax - self.wmin
-            omegap = domegap*point[3] + self.wmin
-            ps_wgt = domegap*denergy*dmom
-            qval_f = np.sqrt(
-                2.0 * self.beam_energy
-                * (self.beam_energy - omegap)
-                * (1.0 - self.coste) + omegap**2)
-            var = Variables(p_int, e_int, omega, omegap=omegap,
-                            cost_te=None, qval=qval, qval_f=qval_f)
-            return var, ps_wgt, domega
+        # if FLAGS.folding:
+        #     domegap = self.wmax - self.wmin
+        #     omegap = domegap*point[3] + self.wmin
+        #     ps_wgt = domegap*denergy*dmom
+        #     qval_f = np.sqrt(
+        #         2.0 * self.beam_energy
+        #         * (self.beam_energy - omegap)
+        #         * (1.0 - self.coste) + omegap**2)
+        #     var = Variables(p_int, e_int, omega, omegap=omegap,
+        #                     cost_te=None, qval=qval, qval_f=qval_f)
+        #     return var, ps_wgt, domega
 
         var = Variables(p_int, e_int, omega, omegap=None,
                         cost_te=None, qval=qval, qval_f=None)
@@ -306,21 +306,21 @@ class Quasielastic(Inclusive):
         wgt, var = self._eval(var, spectral_function)
         wgt *= ps_wgt * TO_NB  # mb -> nb
 
-        if FLAGS.folding:
-            swapped_var = _swap_folding(var)
-            wgt_f, _ = self._eval(swapped_var, spectral_function)
-            wgt_f *= ps_wgt * TO_NB  # mb -> nb
-            fold = self.folding(
-                settings().folding_func,
-                var.omega,
-                var.omegap
-            )
-            # Note: the term of the form (wgt * transparency) does NOT need a
-            # factor of domega. In the analytic expression, this term has a
-            # delta function ~ "delta(omega-omegap) domega". We do this trival
-            # integral analytically, which eliminates the factor of domega.
-            wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)
-            return wgt_f, var
+        # if FLAGS.folding:
+        #     swapped_var = _swap_folding(var)
+        #     wgt_f, _ = self._eval(swapped_var, spectral_function)
+        #     wgt_f *= ps_wgt * TO_NB  # mb -> nb
+        #     fold = self.folding(
+        #         settings().folding_func,
+        #         var.omega,
+        #         var.omegap
+        #     )
+        #     # Note: the term of the form (wgt * transparency) does NOT need a
+        #     # factor of domega. In the analytic expression, this term has a
+        #     # delta function ~ "delta(omega-omegap) domega". We do this trival
+        #     # integral analytically, which eliminates the factor of domega.
+        #     wgt_f = (wgt_f * domega * fold) + (wgt * self.folding.transparency)
+        #     return wgt_f, var
 
         return wgt, var
 
@@ -331,10 +331,10 @@ class Quasielastic(Inclusive):
         else:
             omegat = var.omega - var.energy + MQE - e_out
         u_pq = 0.0
-        if FLAGS.folding:
-            tkin_pf = np.sqrt(var.qval**2+MQE**2)-MQE
-            if self.folding.kin_max < tkin_pf < self.folding.kin_min:
-                u_pq = self.folding.kinematic(tkin_pf)
+        # if FLAGS.folding:
+        #     tkin_pf = np.sqrt(var.qval**2+MQE**2)-MQE
+        #     if self.folding.kin_max < tkin_pf < self.folding.kin_min:
+        #         u_pq = self.folding.kinematic(tkin_pf)
 
         cost_te = (((omegat+e_out-u_pq)**2 - var.mom**2 - var.qval**2
                     - MQE**2)
