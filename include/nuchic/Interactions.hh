@@ -21,6 +21,7 @@ class Interactions {
     public:
         // Constructors
         Interactions() {}
+        Interactions(const std::string& data="") {}
         virtual ~Interactions() {}
 
         // Functions
@@ -56,9 +57,9 @@ class GeantInteractions : public Interactions {
     public:
         // Initialize GeantInteractions class
         GeantInteractions(const std::string&);
-        static std::unique_ptr<Interactions> Create() {
+        static std::unique_ptr<Interactions> Create(const std::string& data) {
             return std::unique_ptr<GeantInteractions>(
-                    new GeantInteractions("src/nuchic/data/GeantData.hdf5"));
+                    new GeantInteractions(data));
         }
 
         // Destructor

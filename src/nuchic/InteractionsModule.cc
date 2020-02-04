@@ -53,7 +53,7 @@ PYBIND11_MODULE(interactions, m) {
 
     py::class_<Interactions, PyInteraction/*Trampoline*/, std::shared_ptr<Interactions>>(m, "Interactions")
         .def(py::init<>())
-        .def_static("create", [](const std::string& name){return InteractionFactory::Instance().Create(name);})
+        .def_static("create", [](const std::string& name, const std::string& data){return InteractionFactory::Instance().Create(name, data);})
         .def("CrossSection", &Interactions::CrossSection)
         .def("MakeMomentum", &Interactions::MakeMomentum);
 
