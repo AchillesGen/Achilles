@@ -11,13 +11,22 @@ const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
 bool sortPairSecond(const std::pair<std::size_t, double>& a,
                     const std::pair<std::size_t, double>& b);
 
+/// A class implementing the Brent method for root finding. This method of root finding
+/// tries to take the optimal approach to finding the roots. Details on how the algorithm
+/// works can be found at: https://en.wikipedia.org/wiki/Brent's_method
 class Brent {
     public:
-        // Constructor
+        /// Constructor
+        ///@param func: Function to find the root of
+        ///@param tol: The tolerance in the solution
         Brent(std::function<double(double)> const& func, double tol=1e-6)
             : m_func(func), m_tol(tol) {}
 
         // Functions
+        /// Calculate the root in the given range. Throws a domain_error if no root exists
+        ///@param a: The lower bound to search for the root
+        ///@param b: The upper bound to search for the root
+        ///@return double: The root that was found within the given tolerance
         double CalcRoot(double, double) const;
 
     private:
@@ -39,21 +48,35 @@ class Brent {
         double m_tol;
 };
 
+/// Template class to act as a helper for generating ranges in log space. This is done in 
+/// a way to mimic the logspace function found within the numpy python library.
 template<typename T>
 class LogspaceGen {
-private:
-    T curValue, base;
-
-public:
-    LogspaceGen(T first, T base) : curValue(first), base(base) {}
-
-    T operator()() {
-        T retval = curValue;
-        curValue *= base;
-        return retval;
-    }
+    private:
+        T curValue, base;
+    
+    public:
+        /// Construct a helper object for generating equally spaced points in log space
+        ///@param first: The value to start the range at
+        ///@param base: The base of the exponent
+        LogspaceGen(T first, T base) : curValue(first), base(base) {}
+    
+        /// Get the next value in the log space chain
+        ///@return T: The next value in the chain
+        T operator()() {
+            T retval = curValue;
+            curValue *= base;
+            return retval;
+        }
 };
 
+/// Function to generate a range of numbers equally spaced in log space from base^start to 
+/// base^stop. This function mimics the logspace function found within the numpy python library.
+///@param start: The starting exponent to generate from
+///@param stop: The ending exponent to generate to
+///@param num: The number of points to generate within the range
+///@param base: The base value to be used for the range
+///@return std::vector<double>: A vector containing equally spaced points in log space
 inline std::vector<double> Logspace(double start, double stop, int num = 50, double base = 10) {
     double realStart = pow(base, start);
     double realBase = pow(base, (stop-start)/(num-1));
@@ -64,21 +87,34 @@ inline std::vector<double> Logspace(double start, double stop, int num = 50, dou
     return retval;
 } 
 
+/// Template class to act as a helper for generating ranges in linear space. This is done in 
+/// a way to mimic the linspace function found within the numpy python library.
 template<typename T>
 class LinspaceGen {
-private:
-    T curValue, base;
-
-public:
-    LinspaceGen(T first, T base) : curValue(first), base(base) {}
-
-    T operator()() {
-        T retval = curValue;
-        curValue += base;
-        return retval;
-    }
+    private:
+        T curValue, step;
+    
+    public:
+        /// Construct a helper object for generating equally spaced points in linear space
+        ///@param first: The value to start the range at
+        ///@param step: The value to add at each step
+        LinspaceGen(T first, T step) : curValue(first), step(step) {}
+    
+        /// Get the next value in the linear space chain
+        ///@return T: The next value in the chain
+        T operator()() {
+            T retval = curValue;
+            curValue += step;
+            return retval;
+        }
 };
 
+/// Function to generate a range of numbers equally spaced in linear space from start to 
+/// stop. This function mimics the linspace function found within the numpy python library.
+///@param start: The starting value to generate from
+///@param stop: The ending value to generate to
+///@param num: The number of points to generate within the range
+///@return std::vector<double>: A vector containing equally spaced points in linear space
 inline std::vector<double> Linspace(double start, double stop, int num = 50) {
     double step = (stop-start)/(num-1);
 
