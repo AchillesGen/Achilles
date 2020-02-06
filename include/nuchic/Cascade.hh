@@ -15,19 +15,52 @@ class Interactions;
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
 
+/// The Cascade class performs a cascade of the nucleons inside the nucleus. The nucleons that
+/// are struck in the hard interaction propagate through the nuclear medium. To determine if an
+/// interaction occurs, we calculate the interaction cross-section of Np and Nn, where N is the
+/// propagating nucleon.
 class Cascade {
     public:
-        // Constructor and Destructor
-        Cascade(const std::shared_ptr<Interactions> interactions, const double& dist = 0.05) 
-            : distance(dist), m_interactions(interactions) {}
-        ~Cascade() {}
+        /// @name Constructor and Destructor
+        ///@{
 
-        // Functions
+        /// Create the Cascade object
+        ///@param interactions: The interaction model for pp, pn, and np interactions
+        ///@param dist: The maximum distance step to take when propagating
+        Cascade(const std::shared_ptr<Interactions> interactions, const double& dist = 0.05)
+            : distance(dist), m_interactions(interactions) {}
+
+        /// Default destructor
+        ~Cascade() {}
+        ///@}
+
+        /// @name Functions
+        ///@{
+
+        /// Give a random particle in the nucleus a kick. The kick is defined by a input
+        /// four vector. To determine whether a proton or a neutron is kicked, the cross-section
+        /// for protons and neutrons needs to be supplied.
+        ///@param particles: The list of particles inside the nucleus
+        ///@param energyTransfer: The energy transfered to the nucleon during the kick
+        ///@param sigma: An array representing the cross-section for different kicked nucleons
         Particles Kick(const Particles&, const FourVector&, const std::array<double, 2>&);
+
+        /// Reset the cascade internal variables for the next cascade
         void Reset();
+
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// the background.
+        ///@param particles: The list of particles in the nucleus
+        ///@param kf: The Fermi Momentum to use for Pauli Blocking
+        ///@param radius2: The squared radius denoting the edge of the nucleus
+        ///@param maxSteps: The maximum steps to take in the cascade
         Particles operator()(const Particles&, const double&, const double&,
-                const std::size_t& maxSteps=1000000); 
+                const std::size_t& maxSteps=1000000);
+
+        /// Helper function to make a specific nucleon as the kicked nucleon
+        ///@param idx: The index of the particle that has been kicked
         void SetKicked(const std::size_t& idx) {kickedIdxs.push_back(idx);}
+        ///@}
 
     private:
         // Functions
