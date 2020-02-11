@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iosfwd>
 
+namespace nuchic {
+
 /// @brief ThreeVector is a container for dealing with three vectors
 ///
 /// The ThreeVector class provides an easy to use container to handle three
@@ -296,5 +298,7 @@ class ThreeVector {
 };
 
 ThreeVector operator*(const double&, const ThreeVector&) noexcept;
+
+}
 
 #endif // end of include guard: THREEVECTOR_HH

@@ -6,11 +6,11 @@
 #define mN 938
 #define HBARC 200
 
-void Particle::SetFormationZone(const FourVector& p1, const FourVector& p2) noexcept {
+void nuchic::Particle::SetFormationZone(const nuchic::FourVector& p1, const nuchic::FourVector& p2) noexcept {
     formationZone = p1.E()/std::abs(mN*mN-p1*p2);
 }
 
-void Particle::Propagate(const double& time) noexcept {
+void nuchic::Particle::Propagate(const double& time) noexcept {
     const double dist = momentum.P()/momentum.E()*time*HBARC;
 
     const double theta = momentum.Theta();
@@ -20,12 +20,12 @@ void Particle::Propagate(const double& time) noexcept {
     const double propDistY = dist*std::sin(theta)*std::sin(phi);
     const double propDistZ = dist*std::cos(theta);
 
-    const ThreeVector propDist(propDistX, propDistY, propDistZ);
+    const nuchic::ThreeVector propDist(propDistX, propDistY, propDistZ);
 
     position += propDist;
 }
 
-void Particle::BackPropagate(const double& time) noexcept {
+void nuchic::Particle::BackPropagate(const double& time) noexcept {
     const double dist = momentum.P()/momentum.E()*time*HBARC;
 
     const double theta = momentum.Theta();
@@ -35,11 +35,11 @@ void Particle::BackPropagate(const double& time) noexcept {
     const double propDistY = dist*std::sin(theta)*std::sin(phi);
     const double propDistZ = dist*std::cos(theta);
 
-    const ThreeVector propDist(propDistX, propDistY, propDistZ);
+    const nuchic::ThreeVector propDist(propDistX, propDistY, propDistZ);
     position -= propDist;
 }
 
-bool Particle::operator==(const Particle& other) const noexcept {
+bool nuchic::Particle::operator==(const nuchic::Particle& other) const noexcept {
     if(pid != other.pid) return false;
     if(status != other.status) return false;
     if(formationZone != other.formationZone) return false;
@@ -50,22 +50,24 @@ bool Particle::operator==(const Particle& other) const noexcept {
     return true;
 }
 
-const std::string Particle::ToString() const noexcept {
+const std::string nuchic::Particle::ToString() const noexcept {
     return "Particle(" + std::to_string(pid) + ", " + momentum.ToString()
         + ", " + position.ToString() + ", " + std::to_string(status) + ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const Particle& particle) {
+namespace nuchic {
+
+std::ostream& operator<<(std::ostream& os, const nuchic::Particle& particle) {
     os << "Particle(" << particle.pid << ", " << particle.momentum << ", " 
        << particle.position << ", " << particle.status << ")";
     return os;
 }
 
-std::istream& operator>>(std::istream& is, Particle& particle) {
+std::istream& operator>>(std::istream& is, nuchic::Particle& particle) {
     std::string head(9, ' '), sep1(1, ' '), sep2(1, ' '), sep3(1, ' '), tail(1, ' ');
     int pid, status;
-    FourVector momentum;
-    ThreeVector position;
+    nuchic::FourVector momentum;
+    nuchic::ThreeVector position;
     is.read(&head[0], 9);
     is >> pid;
     is.read(&sep1[0], 1);
@@ -78,6 +80,8 @@ std::istream& operator>>(std::istream& is, Particle& particle) {
     if(head == "Particle(" &&
        sep1 == "," && sep2 == "," &&
        sep3 == "," && tail == ")")
-        particle = Particle(pid, momentum, position, status);
+        particle = nuchic::Particle(pid, momentum, position, status);
     return is;
+}
+
 }

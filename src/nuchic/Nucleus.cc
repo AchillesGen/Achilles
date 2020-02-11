@@ -11,7 +11,7 @@
 
 const double mN = 938;
 
-const std::map<int, std::string> Nucleus::ZToName = {
+const std::map<int, std::string> nuchic::Nucleus::ZToName = {
     {0, "mfp"},
     {1, "H"},
     {2, "He"},
@@ -24,9 +24,9 @@ const std::map<int, std::string> Nucleus::ZToName = {
     {26, "Fe"},
 };
 
-Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
-                 const double& kf, const std::function<Particles()>& _density) 
-                : binding(bEnergy), fermiMomentum(kf), density(_density) {
+nuchic::Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
+                         const double& kf, const std::function<nuchic::Particles()>& _density) 
+                        : binding(bEnergy), fermiMomentum(kf), density(_density) {
 
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
@@ -42,7 +42,7 @@ Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
     potential = sqrt(mN*mN + pow(fermiMomentum, 2)) - mN + 8;
 }
 
-void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
+void nuchic::Nucleus::SetNucleons(nuchic::Particles& _nucleons) noexcept {
     nucleons = _nucleons;
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
@@ -52,7 +52,7 @@ void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     }
 }
 
-bool Nucleus::Escape(Particle& particle) noexcept {
+bool nuchic::Nucleus::Escape(nuchic::Particle& particle) noexcept {
     // Remove background particles
     if(particle.Status() == 0) return false;
 
@@ -71,13 +71,13 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     const double px = particle.Momentum().Px() - potential * std::sin(theta) * std::cos(phi);
     const double py = particle.Momentum().Py() - potential * std::sin(theta) * std::sin(phi);
     const double pz = particle.Momentum().Pz() - potential * std::cos(theta);
-    particle.SetMomentum(FourVector(px, py, pz, particle.Momentum().E()));
+    particle.SetMomentum(nuchic::FourVector(px, py, pz, particle.Momentum().E()));
     return true;
 }
 
-Particles Nucleus::GenerateConfig() {
+nuchic::Particles nuchic::Nucleus::GenerateConfig() {
     // Get a configuration from the density function
-    Particles particles = density();
+    nuchic::Particles particles = density();
 
     // Ensure the number of protons and neutrons are correct
     if(particles.size() != nucleons.size())
@@ -91,7 +91,7 @@ Particles Nucleus::GenerateConfig() {
         auto mom3 = GenerateMomentum();
         double energy2 = mN*mN;
         for(auto mom : mom3) energy2 += mom*mom;
-        particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
+        particle.SetMomentum(nuchic::FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
     }
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
@@ -101,18 +101,18 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum() noexcept {
+const std::array<double, 3> nuchic::Nucleus::GenerateMomentum() noexcept {
     std::array<double, 3> momentum;
     momentum[0] = rng.uniform(0.0, fermiMomentum);
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
 
-    return ToCartesian(momentum);
+    return nuchic::ToCartesian(momentum);
 }
 
-Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
-                             const double& fermiMomentum,
-                             const std::function<Particles()>& density) {
+nuchic::Nucleus nuchic::Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
+                                             const double& fermiMomentum,
+                                             const std::function<nuchic::Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -120,13 +120,13 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
         const int nucleons = std::stoi(match[1].str());
         const int protons = NameToZ(match[2].str()); 
 
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
+        return nuchic::Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
     }
 
     throw std::runtime_error("Invalid nucleus " + name);
 }
 
-int Nucleus::NameToZ(const std::string& name) {
+int nuchic::Nucleus::NameToZ(const std::string& name) {
     auto it = std::find_if(ZToName.begin(), ZToName.end(),
                            [&name](const std::pair<int, std::string> &p) {
                                return p.second == name;
@@ -136,6 +136,6 @@ int Nucleus::NameToZ(const std::string& name) {
     return it -> first;
 }
 
-const std::string Nucleus::ToString() const noexcept {
+const std::string nuchic::Nucleus::ToString() const noexcept {
     return std::to_string(NNucleons()) + ZToName.at(NProtons());
 }

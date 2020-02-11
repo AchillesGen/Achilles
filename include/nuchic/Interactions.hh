@@ -9,6 +9,8 @@
 
 #include "nuchic/Interpolation.hh"
 
+namespace nuchic {
+
 class ThreeVector;
 class Particle;
 
@@ -30,7 +32,7 @@ class Interactions {
         Interactions() {}
 
         /// Base class constructor for classes that need data files
-        Interactions(const std::string& data="") {}
+        Interactions(const std::string& data) {}
 
         /// Default destructor
         virtual ~Interactions() {}
@@ -66,7 +68,7 @@ class Interactions {
 class InteractionFactory {
     public:
         /// Typedef for easier coding
-        using TCreateMethod = std::unique_ptr<Interactions>(*)();
+        using TCreateMethod = std::unique_ptr<Interactions>(*)(const std::string&);
 
         /// Member function to hold how to create a given Interaction object
         TCreateMethod CreateFunc;
@@ -86,7 +88,7 @@ class InteractionFactory {
         ///@param name: Name of the subclass object to be created
         ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
         ///     (**NOTE**: Returns nullptr if name is not registered)
-        std::shared_ptr<Interactions> Create(const std::string&);
+        std::shared_ptr<Interactions> Create(const std::string&, const std::string& data);
 
     private:
         InteractionFactory() : methods() {};
@@ -146,5 +148,7 @@ class GeantInteractions : public Interactions {
         Interp1D m_crossSectionPP, m_crossSectionNP;
         Interp2D m_thetaDistPP, m_thetaDistNP;
 };
+
+}
 
 #endif // end of include guard: INTERACTIONS_HH

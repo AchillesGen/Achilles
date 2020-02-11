@@ -1,6 +1,6 @@
 #include "nuchic/Utilities.hh"
 
-const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec) {
+const std::array<double, 3> nuchic::ToCartesian(const std::array<double, 3>& vec) {
     const double x = vec[0] * std::sin(vec[1]) * std::cos(vec[2]);
     const double y = vec[0] * std::sin(vec[1]) * std::sin(vec[2]);
     const double z = vec[0] * std::cos(vec[1]);
@@ -8,16 +8,16 @@ const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec) {
     return {x, y, z};
 }
 
-bool sortPairSecond(const std::pair<std::size_t, double>& a,
+bool nuchic::sortPairSecond(const std::pair<std::size_t, double>& a,
                     const std::pair<std::size_t, double>& b) {
 
     return a.second < b.second;
 }
 
 // Use the Brent algorithm to calculate the root of a given function
-double Brent::CalcRoot(double a, double b) const {
+double nuchic::Brent::CalcRoot(double a, double b) const {
     double fa = m_func(a), fb = m_func(b), fc;
-    if(fa*fb >= 0) throw std::runtime_error("No root in given range");
+    if(fa*fb >= 0) throw std::domain_error("No root in given range");
     swap(fa, fb, a, b);
     double c = a;
     bool m_flag = true;

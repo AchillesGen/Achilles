@@ -7,6 +7,8 @@
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 
+namespace nuchic {
+
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
 /// the position of the particle, the status code associated with the particle, the particle's
@@ -228,5 +230,7 @@ class Particle {
         ThreeVector position;
         FourVector momentum;
 };
+
+}
 
 #endif // end of include guard: PARTICLE_HH

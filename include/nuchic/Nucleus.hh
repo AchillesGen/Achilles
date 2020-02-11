@@ -9,6 +9,8 @@
 
 #include "nuchic/Random.hh"
 
+namespace nuchic {
+
 class Particle;
 class ThreeVector;
 
@@ -187,6 +189,6 @@ class Nucleus {
         randutils::mt19937_rng rng;
 };
 
-
+}
 
 #endif // end of include guard: NUCLEUS_HH

@@ -7,6 +7,8 @@
 #include <functional>
 #include <vector>
 
+namespace nuchic {
+
 const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
 bool sortPairSecond(const std::pair<std::size_t, double>& a,
                     const std::pair<std::size_t, double>& b);
@@ -123,5 +125,7 @@ inline std::vector<double> Linspace(double start, double stop, int num = 50) {
     std::generate_n(std::back_inserter(retval), num, LinspaceGen<double>(start,step));
     return retval;
 } 
+
+}
 
 #endif // end of include guard: UTILITIES_HH

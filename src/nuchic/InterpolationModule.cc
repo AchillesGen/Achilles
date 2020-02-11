@@ -6,6 +6,10 @@
 
 namespace py = pybind11;
 
+// These are for convenience
+using nuchic::Interp1D;
+using nuchic::Interp2D;
+
 void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<double>& y,
         const pyArray& z) {
     // Ensure inputs are valid

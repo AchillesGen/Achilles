@@ -10,7 +10,7 @@
 #define HBARC 200
 #define mN 938
 
-Particles Cascade::Kick(const Particles& particles, const FourVector& energyTransfer,
+nuchic::Particles nuchic::Cascade::Kick(const nuchic::Particles& particles, const nuchic::FourVector& energyTransfer,
         const std::array<double, 2>& sigma) {
     std::vector<std::size_t> indices;
 
@@ -31,14 +31,14 @@ Particles Cascade::Kick(const Particles& particles, const FourVector& energyTran
     return result;
 }
 
-void Cascade::Reset() {
+void nuchic::Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-Particles Cascade::operator()(const Particles& _particles, const double& kf, const double& radius2,
+nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particles, const double& kf, const double& radius2,
         const std::size_t& maxSteps) {
 
-    Particles particles = _particles;
+    nuchic::Particles particles = _particles;
     fermiMomentum = kf;
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -110,7 +110,7 @@ Particles Cascade::operator()(const Particles& _particles, const double& kf, con
     return particles;
 }
 
-void Cascade::AdaptiveStep(const Particles& particles, const double& distance) noexcept {
+void nuchic::Cascade::AdaptiveStep(const Particles& particles, const double& distance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
         if(particles[idx].Beta().Magnitude() > beta)
@@ -120,29 +120,32 @@ void Cascade::AdaptiveStep(const Particles& particles, const double& distance) n
     timeStep = distance/(beta*HBARC);
 }
 
-bool Cascade::BetweenPlanes(const ThreeVector& position, const ThreeVector& point1, const ThreeVector& point2) const noexcept {
+bool nuchic::Cascade::BetweenPlanes(const nuchic::ThreeVector& position,
+                                    const nuchic::ThreeVector& point1,
+                                    const nuchic::ThreeVector& point2) const noexcept {
     // Get distance between planes
-    const ThreeVector dist = point2 - point1;
+    const nuchic::ThreeVector dist = point2 - point1;
 
     // Determine if point is between planes
     return ((position - point1).Dot(dist) >= 0 && (position - point2).Dot(dist) <=0);
 }
 
-const ThreeVector Cascade::Project(const ThreeVector& position,
-        const ThreeVector& planePt, const ThreeVector& planeVec) const noexcept {
+const nuchic::ThreeVector nuchic::Cascade::Project(const nuchic::ThreeVector& position,
+                                                   const nuchic::ThreeVector& planePt,
+                                                   const nuchic::ThreeVector& planeVec) const noexcept {
     // Project point onto a plane
-    const ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
+    const nuchic::ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
     return position - projection;
 }
 
-const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
-        const std::size_t& idx) const noexcept {
-    InteractionDistances results;
+const nuchic::InteractionDistances nuchic::Cascade::AllowedInteractions(nuchic::Particles& particles,
+                                                                        const std::size_t& idx) const noexcept {
+    nuchic::InteractionDistances results;
 
     // Build planes
-    const ThreeVector point1 = particles[idx].Position();
+    const nuchic::ThreeVector point1 = particles[idx].Position();
     particles[idx].Propagate(timeStep);
-    const ThreeVector point2 = particles[idx].Position();
+    const nuchic::ThreeVector point2 = particles[idx].Position();
     auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
 
     // Build results vector
@@ -165,12 +168,13 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
     return results;
 }
 
-const double Cascade::GetXSec(const Particle& particle1, const Particle& particle2) const {
+const double nuchic::Cascade::GetXSec(const nuchic::Particle& particle1,
+                                      const nuchic::Particle& particle2) const {
     return m_interactions -> CrossSection(particle1, particle2);
 }
 
-int Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
-        const InteractionDistances& dists) noexcept {
+int nuchic::Cascade::Interacted(const Particles& particles, const nuchic::Particle& kickedParticle,
+                                const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
         const double prob = 1.0/(2.0*M_PI)*exp(-dist.second/(2*xsec/10.));
@@ -180,7 +184,8 @@ int Cascade::Interacted(const Particles& particles, const Particle& kickedPartic
     return -1;
 }
 
-bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcept {
+bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
+                                       nuchic::Particle& particle2) noexcept {
     // Boost to center of mass frame
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
@@ -220,6 +225,6 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
     return hit;
 }
 
-bool Cascade::PauliBlocking(const FourVector& momentum) const noexcept {
+bool nuchic::Cascade::PauliBlocking(const nuchic::FourVector& momentum) const noexcept {
     return momentum.Vec3().Magnitude() < fermiMomentum;
 }

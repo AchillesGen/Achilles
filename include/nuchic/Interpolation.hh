@@ -9,6 +9,8 @@ namespace py = pybind11;
 
 using pyArray = py::array_t<double, py::array::c_style | py::array::forcecast>;
 
+namespace nuchic {
+
 /// Class to perform one-dimensional interpolations of data. Currently, only Cubic Splines are
 /// implemented as an interpolator. The Cubic Spline is based off of the algorithm provided by
 /// Numerical Recipes.
@@ -93,5 +95,6 @@ class Interp2D {
         std::vector<Interp1D> derivs2;
 };
 
+}
 
 #endif // end of include guard: INTERPOLATION_HH

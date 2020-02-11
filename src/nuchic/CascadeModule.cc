@@ -11,6 +11,10 @@
 
 namespace py = pybind11;
 
+// These are for convenience
+using nuchic::Cascade; 
+using nuchic::Interactions;
+
 PYBIND11_MODULE(cascade, m) {
     py::object vectors = (py::object) py::module::import("vectors");
     py::object particle = (py::object) py::module::import("particle");

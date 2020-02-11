@@ -9,6 +9,9 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
 
+namespace nuchic {
+
+class Nucleus;
 class Particle;
 class Interactions;
 
@@ -60,6 +63,8 @@ class Cascade {
         /// Helper function to make a specific nucleon as the kicked nucleon
         ///@param idx: The index of the particle that has been kicked
         void SetKicked(const std::size_t& idx) {kickedIdxs.push_back(idx);}
+
+        Particles Evolve(const Nucleus& nuc, const std::size_t& maxSteps);
         ///@}
 
     private:
@@ -80,5 +85,7 @@ class Cascade {
         std::shared_ptr<Interactions> m_interactions;
         randutils::mt19937_rng rng;
 };
+
+}
 
 #endif // end of include guard: CASCADE_HH

@@ -9,6 +9,11 @@
 
 namespace py = pybind11;
 
+// These are for convenience
+using nuchic::Particle;
+using nuchic::FourVector;
+using nuchic::ThreeVector;
+
 PYBIND11_MODULE(particle, m) {
     py::object vectors = (py::object) py::module::import("vectors");
 

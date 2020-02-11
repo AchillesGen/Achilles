@@ -7,6 +7,10 @@
 
 namespace py = pybind11;
 
+// Convience names
+using nuchic::ThreeVector;
+using nuchic::FourVector;
+
 PYBIND11_MODULE(vectors, m) {
     py::class_<ThreeVector, std::shared_ptr<ThreeVector>>(m, "Vector3")
         .def(py::init<>())
@@ -14,7 +18,7 @@ PYBIND11_MODULE(vectors, m) {
         .def(py::init<const double&, const double&, const double&>())
         .def(py::init<const ThreeVector&>())
         // Setters
-        .def("set_xyz", (void (ThreeVector::*)(const std::array<double, 3>)) &ThreeVector::SetXYZ)
+        .def("set_xyz", (void (ThreeVector::*)(const std::array<double, 3>&)) &ThreeVector::SetXYZ)
         .def("set_xyz", (void (ThreeVector::*)(const double&, const double&, const double&)) &ThreeVector::SetXYZ)
         .def("set_pxpypz", (void (ThreeVector::*)(const std::array<double, 3>)) &ThreeVector::SetPxPyPz)
         .def("set_pxpypz", (void (ThreeVector::*)(const double&, const double&, const double&)) &ThreeVector::SetPxPyPz)

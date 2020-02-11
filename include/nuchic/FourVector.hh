@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iosfwd>
 
+namespace nuchic {
+
 class ThreeVector;
 
 /// @brief FourVector is a container for dealing with four vectors
@@ -329,5 +331,7 @@ class FourVector {
 };
 
 FourVector operator*(const double&, const FourVector&) noexcept;
+
+}
 
 #endif /* end of include guard: FOURVECTOR_HH */

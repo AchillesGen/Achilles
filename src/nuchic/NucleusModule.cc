@@ -13,37 +13,37 @@ PYBIND11_MODULE(nucleus, m) {
     py::object vectors = (py::object) py::module::import("vectors");
     py::object particle = (py::object) py::module::import("particle");
 
-    py::class_<Nucleus, std::shared_ptr<Nucleus>>(m, "Nucleus")
+    py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>>(m, "Nucleus")
         // Constructors
         .def(py::init<const int&, const int&, const double&,
-                      const double&, const std::function<Particles()>&>(),
+                      const double&, const std::function<nuchic::Particles()>&>(),
                       py::arg("Z"), py::arg("A"), py::arg("binding"),
-                      py::arg("kf"), py::arg("density") = std::function<Particles()>())
+                      py::arg("kf"), py::arg("density") = std::function<nuchic::Particles()>())
         // Setters
-        .def("set_nucleons", &Nucleus::SetNucleons)
-        .def("set_binding_energy", &Nucleus::SetBindingEnergy)
-        .def("set_fermi_momentum", &Nucleus::SetFermiMomentum)
-        .def("set_potential", &Nucleus::SetPotential)
-        .def("set_density", &Nucleus::SetDensity)
+        .def("set_nucleons", &nuchic::Nucleus::SetNucleons)
+        .def("set_binding_energy", &nuchic::Nucleus::SetBindingEnergy)
+        .def("set_fermi_momentum", &nuchic::Nucleus::SetFermiMomentum)
+        .def("set_potential", &nuchic::Nucleus::SetPotential)
+        .def("set_density", &nuchic::Nucleus::SetDensity)
         // Getters
-        .def("nucleons", &Nucleus::Nucleons)
-        .def("protons", &Nucleus::Protons)
-        .def("neutrons", &Nucleus::Neutrons)
-        .def("n_nucleons", &Nucleus::NNucleons)
-        .def("n_protons", &Nucleus::NProtons)
-        .def("n_neutrons", &Nucleus::NNeutrons)
-        .def("binding_energy", &Nucleus::BindingEnergy)
-        .def("fermi_momentum", &Nucleus::FermiMomentum)
-        .def("potential_energy", &Nucleus::PotentialEnergy)
-        .def("radius", &Nucleus::Radius)
+        .def("nucleons", &nuchic::Nucleus::Nucleons)
+        .def("protons", &nuchic::Nucleus::Protons)
+        .def("neutrons", &nuchic::Nucleus::Neutrons)
+        .def("n_nucleons", &nuchic::Nucleus::NNucleons)
+        .def("n_protons", &nuchic::Nucleus::NProtons)
+        .def("n_neutrons", &nuchic::Nucleus::NNeutrons)
+        .def("binding_energy", &nuchic::Nucleus::BindingEnergy)
+        .def("fermi_momentum", &nuchic::Nucleus::FermiMomentum)
+        .def("potential_energy", &nuchic::Nucleus::PotentialEnergy)
+        .def("radius", &nuchic::Nucleus::Radius)
         // Functions
-        .def("escape", &Nucleus::Escape)
-        .def("generate_config", &Nucleus::GenerateConfig)
-        .def("generate_momentum", &Nucleus::GenerateMomentum)
+        .def("escape", &nuchic::Nucleus::Escape)
+        .def("generate_config", &nuchic::Nucleus::GenerateConfig)
+        .def("generate_momentum", &nuchic::Nucleus::GenerateMomentum)
         // String Methods
-        .def("__str__", &Nucleus::ToString)
-        .def("__repr__", &Nucleus::ToString)
+        .def("__str__", &nuchic::Nucleus::ToString)
+        .def("__repr__", &nuchic::Nucleus::ToString)
         // Static Methods
-        .def_static("make_nucleus", &Nucleus::MakeNucleus);
+        .def_static("make_nucleus", &nuchic::Nucleus::MakeNucleus);
 }
 
