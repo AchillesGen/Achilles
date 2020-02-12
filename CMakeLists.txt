@@ -33,4 +33,10 @@ execute_process(COMMAND git submodule update --init -- external/pybind11
 add_subdirectory(external/pybind11)
 include_directories(${PYBIND11_INCLUDE_DIR})
 
+# Pull down spdlog submodule
+execute_process(COMMAND git submodule update --init -- external/spdlog
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+set(SPDLOG_BUILD_SHARED ON CACHE BOOL "Build shared library" FORCE)
+add_subdirectory(external/spdlog)
+
 add_subdirectory(src/nuchic)

@@ -16,9 +16,14 @@ add_library(physics SHARED
     Nucleus.cc
 )
 target_include_directories(physics PRIVATE ${NUCHIC_INCLUDES})
-target_link_libraries(physics PRIVATE ${NUCHIC_LIBS})
+target_link_libraries(physics PRIVATE ${NUCHIC_LIBS} spdlog::spdlog)
 
 set(NUCHIC_LIBS ${NUCHIC_LIBS} physics)
+
+pybind11_add_module(logger MODULE
+    LoggingModule.cc
+)
+target_link_libraries(logger PRIVATE spdlog::spdlog)
 
 pybind11_add_module(vectors MODULE
     VectorModule.cc
