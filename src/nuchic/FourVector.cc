@@ -145,12 +145,12 @@ const std::string nuchic::FourVector::ToString() const noexcept {
         + ", " + std::to_string(vec[2]) + ", " + std::to_string(vec[3]) + ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const nuchic::FourVector& vec) {
+std::ostream& nuchic::operator<<(std::ostream& os, const nuchic::FourVector& vec) {
     os << "FourVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ", " << vec.E() << ")";
     return os;
 }
 
-std::istream& operator>>(std::istream& is, nuchic::FourVector& vec) {
+std::istream& nuchic::operator>>(std::istream& is, nuchic::FourVector& vec) {
     std::string head(11, ' '), sep1(1, ' '), sep2(1, ' '),
         sep3(1, ' '), tail(1, ' ');
     double px, py, pz, e;
@@ -170,6 +170,6 @@ std::istream& operator>>(std::istream& is, nuchic::FourVector& vec) {
     return is;
 }
 
-nuchic::FourVector operator*(const double& s, const nuchic::FourVector& v) noexcept {
+nuchic::FourVector nuchic::operator*(const double& s, const nuchic::FourVector& v) noexcept {
     return v*s;
 }

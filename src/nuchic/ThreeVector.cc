@@ -95,12 +95,12 @@ const std::string nuchic::ThreeVector::ToString() const noexcept {
         + std::to_string(vec[1]) + ", " + std::to_string(vec[2]) + ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const nuchic::ThreeVector& vec) {
+std::ostream& nuchic::operator<<(std::ostream& os, const nuchic::ThreeVector& vec) {
     os << "ThreeVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ")";
     return os;
 }
 
-std::istream& operator>>(std::istream& is, nuchic::ThreeVector& vec) {
+std::istream& nuchic::operator>>(std::istream& is, nuchic::ThreeVector& vec) {
     std::string head(12, ' '), sep1(1, ' '), sep2(1, ' '), tail(1, ' ');
     double px, py, pz, e;
     is.read(&head[0], 12);
@@ -117,6 +117,6 @@ std::istream& operator>>(std::istream& is, nuchic::ThreeVector& vec) {
     return is;
 }
 
-nuchic::ThreeVector operator*(const double& s, const nuchic::ThreeVector& v) noexcept {
+nuchic::ThreeVector nuchic::operator*(const double& s, const nuchic::ThreeVector& v) noexcept {
     return v*s;
 }
