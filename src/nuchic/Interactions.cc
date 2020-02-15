@@ -145,7 +145,7 @@ REGISTER_INTERACTION(nuchic::GeantInteractions);
 nuchic::GeantInteractions::GeantInteractions(const std::string& filename) : nuchic::Interactions(filename) {
     // Initialize theta vector
     m_theta = nuchic::Linspace(0.5, 179.5, 180);
-    m_cdf = nuchic::Logspace(-4, 0, 200);
+    m_cdf = nuchic::Logspace(-3, 0, 200);
 
     // Read in the Geant4 hdf5 file and get the np and pp groups
     std::cout << "Loading Geant4 data..." << std::endl;

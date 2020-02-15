@@ -1,6 +1,7 @@
 #include <random>
-
 #include <iostream>
+
+#include "spdlog/spdlog.h"
 
 #include "nuchic/Cascade.hh"
 #include "nuchic/Particle.hh"
@@ -41,6 +42,7 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
     nuchic::Particles particles = _particles;
     fermiMomentum = kf;
     for(std::size_t step = 0; step < maxSteps; ++step) {
+        SPDLOG_DEBUG("Step number: %d" step);
         // Stop loop if no particles are propagating
         if(kickedIdxs.size() == 0) break;
         

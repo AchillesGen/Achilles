@@ -78,7 +78,8 @@ class CalcCrossSection(RunMode):
         super().__init__()
         self.radius = 10
         self.pid = 2212
-        interaction = interactions.Interactions.create(settings().get_param('interaction'))
+        interaction = interactions.Interactions.create(settings().get_param('interaction'),
+                                                       settings().get_param('interaction_file'))
         self.fsi = cascade.Cascade(interaction)
 
     def generate_one_event(self):
@@ -116,7 +117,12 @@ class CalcCrossSection(RunMode):
             if count != 0:
                 xsec += 1
 
-        print(xsec)
+        uncertainty = np.sqrt(xsec)
+        xsec *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
+        uncertainty *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
+        energy = settings.beam_energy()**2/(2000)
+
+        print("E: {}\txsec: {} +/- {} mb".format(energy, xsec, uncertainty))
 
 
 class CalcMeanFreePath(RunMode):
