@@ -43,7 +43,6 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
     fermiMomentum = kf;
     radius2= _radius2;
     for(std::size_t step = 0; step < maxSteps; ++step) {
-        SPDLOG_DEBUG("Step number: %d" step);
         // Stop loop if no particles are propagating
         if(kickedIdxs.size() == 0) break;
         
@@ -54,9 +53,11 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
         auto newKicked = kickedIdxs;
         for(auto idx : kickedIdxs) {
             Particle* kickNuc = &particles[idx];
+
             // Update formation zones
             if(kickNuc -> InFormationZone()) {
                 kickNuc -> UpdateFormationZone(timeStep);
+                kickNuc -> Propagate(timeStep);
                 continue;
             }
 
@@ -103,12 +104,12 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
         }
     }
 
-    // for(auto particle : particles) {
-    //     if(particle.Status() == -1) {
-    //         for(auto p : particles) std::cout << p << std::endl;
-    //         throw std::runtime_error("Cascade has failed. Insufficient max steps.");
-    //     }
-    // }
+    for(auto particle : particles) {
+        if(particle.Status() == -1) {
+            for(auto p : particles) std::cout << p << std::endl;
+            throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+        }
+    }
 
     return particles;
 }
@@ -218,8 +219,8 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
 
     if(hit) {
         // Assign formation zone
-        particle1.SetFormationZone(particle1.Momentum(), p1Out);
-        particle2.SetFormationZone(particle2.Momentum(), p2Out);
+        particle1.SetFormationZone(p1Lab, p1Out);
+        particle2.SetFormationZone(p2Lab, p2Out);
 
         // Hit nucleon is now propagating
         particle2.SetStatus(-1);
