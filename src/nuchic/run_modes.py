@@ -120,7 +120,7 @@ class CalcCrossSection(RunMode):
         uncertainty = np.sqrt(xsec)
         xsec *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
         uncertainty *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
-        energy = settings.beam_energy()**2/(2000)
+        energy = settings().beam_energy**2/(2000)
 
         print("E: {}\txsec: {} +/- {} mb".format(energy, xsec, uncertainty))
 

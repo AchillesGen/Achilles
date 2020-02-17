@@ -77,11 +77,11 @@ class Cascade {
         int Interacted(const Particles&, const Particle&,
                 const InteractionDistances&) noexcept;
         bool FinalizeMomentum(Particle&, Particle&) noexcept;
-        bool PauliBlocking(const FourVector&) const noexcept;
+        bool PauliBlocking(const Particle&) const noexcept;
 
         // Variables
         std::vector<std::size_t> kickedIdxs;
-        double distance, timeStep, fermiMomentum;
+        double distance, timeStep, fermiMomentum, radius2;
         std::shared_ptr<Interactions> m_interactions;
         randutils::mt19937_rng rng;
 };

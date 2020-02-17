@@ -227,7 +227,8 @@ double nuchic::GeantInteractions::CrossSection(const Particle& particle1,
                                                const Particle& particle2) const {
     bool samePID = particle1.PID() == particle2.PID();
     const nuchic::FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * MN / totalMomentum.E();
+    const double pcm = particle1.Momentum().Vec3().Magnitude() * MN / totalMomentum.M();
+
 
     try {
         if(samePID)

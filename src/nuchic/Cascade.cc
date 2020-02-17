@@ -36,11 +36,12 @@ void nuchic::Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particles, const double& kf, const double& radius2,
+nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particles, const double& kf, const double& _radius2,
         const std::size_t& maxSteps) {
 
     nuchic::Particles particles = _particles;
     fermiMomentum = kf;
+    radius2= _radius2;
     for(std::size_t step = 0; step < maxSteps; ++step) {
         SPDLOG_DEBUG("Step number: %d" step);
         // Stop loop if no particles are propagating
@@ -102,12 +103,12 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
         }
     }
 
-    for(auto particle : particles) {
-        if(particle.Status() == -1) {
-            for(auto p : particles) std::cout << p << std::endl;
-            throw std::runtime_error("Cascade has failed. Insufficient max steps.");
-        }
-    }
+    // for(auto particle : particles) {
+    //     if(particle.Status() == -1) {
+    //         for(auto p : particles) std::cout << p << std::endl;
+    //         throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+    //     }
+    // }
 
     return particles;
 }
@@ -179,7 +180,7 @@ int nuchic::Cascade::Interacted(const Particles& particles, const nuchic::Partic
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
-        const double prob = 1.0/(2.0*M_PI)*exp(-dist.second/(2*xsec/10.));
+        const double prob = exp(-M_PI*dist.second/(xsec/10.));
         if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
@@ -195,7 +196,7 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
 
     // Generate outgoing momentum
     bool samePID = particle1.PID() == particle2.PID(); 
-    double ecm = (p1CM + p2CM).E();
+    double ecm = (p1CM + p2CM).M();
     const double pcm = particle1.Momentum().Vec3().Magnitude() * mN / ecm;
     std::array<double, 2> rans;
     rng.generate(rans, 0.0, 1.0);
@@ -208,25 +209,30 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
+    // Assign momenta to particles
+    particle1.SetMomentum(p1Out);
+    particle2.SetMomentum(p2Out);
+
     // Check for Pauli Blocking
-    bool hit = !(PauliBlocking(p1Out) || PauliBlocking(p2Out));
+    bool hit = !(PauliBlocking(particle1) || PauliBlocking(particle2));
 
     if(hit) {
         // Assign formation zone
         particle1.SetFormationZone(particle1.Momentum(), p1Out);
         particle2.SetFormationZone(particle2.Momentum(), p2Out);
 
-        // Assign momenta to particles
-        particle1.SetMomentum(p1Out);
-        particle2.SetMomentum(p2Out);
-
         // Hit nucleon is now propagating
         particle2.SetStatus(-1);
+    } else {
+        // Assign momenta to particles
+        particle1.SetMomentum(p1Lab);
+        particle2.SetMomentum(p2Lab);
     }
 
     return hit;
 }
 
-bool nuchic::Cascade::PauliBlocking(const nuchic::FourVector& momentum) const noexcept {
-    return momentum.Vec3().Magnitude() < fermiMomentum;
+bool nuchic::Cascade::PauliBlocking(const nuchic::Particle& particle) const noexcept {
+    if(particle.Status() == -2 && particle.Position().Magnitude2() > radius2) return false;
+    return particle.Momentum().Vec3().Magnitude() < fermiMomentum;
 }
