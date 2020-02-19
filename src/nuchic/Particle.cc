@@ -57,12 +57,6 @@ const std::string nuchic::Particle::ToString() const noexcept {
 
 namespace nuchic {
 
-std::ostream& operator<<(std::ostream& os, const nuchic::Particle& particle) {
-    os << "Particle(" << particle.pid << ", " << particle.momentum << ", " 
-       << particle.position << ", " << particle.status << ")";
-    return os;
-}
-
 std::istream& operator>>(std::istream& is, nuchic::Particle& particle) {
     std::string head(9, ' '), sep1(1, ' '), sep2(1, ' '), sep3(1, ' '), tail(1, ' ');
     int pid, status;

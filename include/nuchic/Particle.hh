@@ -4,6 +4,8 @@
 #include <iosfwd>
 #include <vector>
 
+#include "spdlog/fmt/ostr.h"
+
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 
@@ -20,7 +22,7 @@ namespace nuchic {
 /// +-------------+-----------------------+
 /// | Status Code | Meaning               |
 /// +=============+=======================+
-/// |     -1      |  Propagating Particle | 
+/// |     -1      |  Propagating Particle |
 /// +-------------+-----------------------+
 /// |      0      |  Background Particle  |
 /// +-------------+-----------------------+
@@ -32,7 +34,7 @@ class Particle {
     public:
         /// @name Constructors and Destructors
         ///@{
-        
+
         /// Create a particle
         ///@param pid: The PID of the particle (default = 0)
         ///@param momentum: The momentum of the particle (default = FourVector())
@@ -88,10 +90,10 @@ class Particle {
         void AddDaughter(const int& idx) noexcept {daughters.push_back(idx);}
 
         /// Set the formation zone of the particle. The formation zone is a time in which
-        /// the particle is not allowed to interact. The formation zone is discussed in detail in: 
+        /// the particle is not allowed to interact. The formation zone is discussed in detail in:
         ///
         /// * L. Stodolsky, Formation Zone Description in Multiproduction, 1975
-        /// * Phys. Rev. C. 86.015505. 
+        /// * Phys. Rev. C. 86.015505.
         ///
         /// The equation is given by:
         /// @f[
@@ -161,7 +163,7 @@ class Particle {
         const double Pz() const noexcept {return momentum.Pz();}
 
         /// Return the energy
-        ///@return double: Value of energy 
+        ///@return double: Value of energy
         const double E() const noexcept {return momentum.E();}
         const double Radius() const noexcept {return position.Magnitude();}
         ///@}
@@ -207,7 +209,7 @@ class Particle {
         ///@return bool: False if the particles are the same, otherwise True
         bool operator!=(const Particle& other) const noexcept {return !(*this == other);}
         ///@}
-        
+
         /// @name Stream Operators
         /// @{
         /// Stream operators for writing to and reading from streams
@@ -215,7 +217,12 @@ class Particle {
         /// Write out a particle to an output stream
         ///@param ostr: Output stream to write to
         ///@param part: The particle to be written out
-        friend std::ostream& operator<<(std::ostream&, const Particle&);
+        template<typename OStream>
+        friend OStream& operator<<(OStream &os, const Particle &particle) {
+            os << "Particle(" << particle.pid << ", " << particle.momentum << ", "
+               << particle.position << ", " << particle.status << ")";
+            return os;
+        }
 
         /// Write in a particle to an input stream
         ///@param istr: Input stream to read from

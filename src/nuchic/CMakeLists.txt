@@ -6,6 +6,7 @@ add_library(utilities SHARED
     Utilities.cc
 )
 target_include_directories(utilities PRIVATE ${NUCHIC_INCLUDES} PUBLIC ${Python_INCLUDE_DIRS})
+target_link_libraries(utilities PRIVATE ${NUCHIC_LIBS} spdlog::spdlog)
 
 set(NUCHIC_LIBS ${NUCHIC_LIBS} utilities ${HDF5_LIBRARIES})
 
@@ -24,6 +25,8 @@ pybind11_add_module(logger MODULE
     LoggingModule.cc
 )
 target_link_libraries(logger PRIVATE spdlog::spdlog)
+
+set(NUCHIC_LIBS ${NUCHIC_LIBS} spdlog::spdlog)
 
 pybind11_add_module(vectors MODULE
     VectorModule.cc
