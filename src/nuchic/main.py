@@ -1,6 +1,7 @@
 """ Main driver code. """
 
 from tqdm import tqdm
+import logger
 
 import nuchic.run_modes as run_modes
 from .config import settings
@@ -25,6 +26,7 @@ class NuChic:
 
 def nuchic():
     """ External entry point. """
+    logger.init('nuchic', 'nuchic.log')
     driver = NuChic('run.yml')
     driver.run()
 
