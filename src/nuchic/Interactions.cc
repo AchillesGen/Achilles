@@ -42,12 +42,12 @@ const std::map<std::string, double> JWN = {
     {"beta", 0.00895741 * pow(1_MeV, -0.8)}
 };
 
-double CrossSection(bool samePID, const double& pcm) {
+double nuchic::CrossSection(bool samePID, const double& pcm) {
     // TODO: Implement GEANT4 cross-section or something else
     throw std::domain_error("Invalid energy!");
 }
 
-double CrossSectionLab(bool samePID, const double& pLab) noexcept {
+double nuchic::CrossSectionLab(bool samePID, const double& pLab) noexcept {
     const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
         if(pLab < 1.8_GeV) {
@@ -82,13 +82,13 @@ double CrossSectionLab(bool samePID, const double& pLab) noexcept {
     }
 }
 
-double CrossSectionAngle(bool samePID, const double& pcm, const double& ran) {
+double nuchic::CrossSectionAngle(bool samePID, const double& pcm, const double& ran) {
     // For testing right now
     // TODO: Implement GEANT4 angular distribution or something else
     return std::acos(2*ran - 1);
 }
 
-ThreeVector MakeMomentumAngular(bool samePID, const double& p1CM, const double& pcm,
+ThreeVector nuchic::MakeMomentumAngular(bool samePID, const double& p1CM, const double& pcm,
         const std::array<double, 2>& rans) {
     double pR = p1CM;
     double pTheta = nuchic::CrossSectionAngle(samePID, pcm, rans[0]);
