@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iosfwd>
 
+#include "spdlog/fmt/ostr.h"
+
 namespace nuchic {
 
 /// @brief ThreeVector is a container for dealing with three vectors
@@ -285,7 +287,11 @@ class ThreeVector {
         /// Write out a vector to an output stream
         ///@param ostr: Output stream to write to
         ///@param vec: The three vector to be written out
-        friend std::ostream& operator<<(std::ostream&, const ThreeVector&);
+        template<typename OStream>
+        friend OStream& operator<<(OStream& os, const ThreeVector& vec) {
+            os << "ThreeVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ")";
+            return os;
+        }
 
         /// Write in a vector to an input stream
         ///@param istr: Input stream to read from

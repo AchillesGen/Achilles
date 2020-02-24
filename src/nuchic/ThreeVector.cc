@@ -97,10 +97,7 @@ const std::string ThreeVector::ToString() const noexcept {
         + std::to_string(vec[1]) + ", " + std::to_string(vec[2]) + ")";
 }
 
-std::ostream& operator<<(std::ostream& os, const ThreeVector& vec) {
-    os << "ThreeVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ")";
-    return os;
-}
+namespace nuchic {
 
 std::istream& operator>>(std::istream& is, ThreeVector& vec) {
     std::string head(12, ' '), sep1(1, ' '), sep2(1, ' '), tail(1, ' ');
@@ -121,4 +118,6 @@ std::istream& operator>>(std::istream& is, ThreeVector& vec) {
 
 ThreeVector operator*(const double& s, const ThreeVector& v) noexcept {
     return v*s;
+}
+
 }
