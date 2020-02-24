@@ -1,88 +1,80 @@
 #include <iostream>
 #include <map>
 
+#include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interactions.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Utilities.hh"
 
-#define FM 1.0
-#define TO_NB 1e6
-#define MEV 1.0
-#define GEV 1.e3
-#define C 2.9979245858E8*M
-#define HBARC 197.3269788*MEV*FM
-#define MP 938
-#define MN 939
-#define HBARC2 3.8937966E8
-
 using namespace H5;
+using namespace nuchic;
 
 const std::map<std::string, double> HZETRN = {
-    {"a", 5.0 * MEV},
-    {"b", 0.199/sqrt(MEV)},
-    {"c", 0.451 * pow(MEV, -0.258)},
-    {"d", 25.0 * MEV},
-    {"e", 134.0 * MEV},
-    {"f", 1.187 * pow(MEV, -0.35)},
-    {"g", 0.1 * MEV},
-    {"h", 0.282 * MEV}
+    {"a", 5.0_MeV},
+    {"b", 0.199/sqrt(1_MeV)},
+    {"c", 0.451 * pow(1_MeV, -0.258)},
+    {"d", 25.0_MeV},
+    {"e", 134.0_MeV},
+    {"f", 1.187 * pow(1_MeV, -0.35)},
+    {"g", 0.1_MeV},
+    {"h", 0.282_MeV}
 };
 
 const std::map<std::string, double> PDG = {
-    {"Zpp", 33.45},  //mb
-    {"Zpn", 35.80},  //mb
-    {"Y1pp", 42.53}, //mb
-    {"Y1pn", 40.15}, //mb
-    {"Y2pp", 33.34}, //mbs
-    {"Y2pn", 30.00}, //mb
-    {"B", 0.308},    //mb
-    {"s1", 1.0 * pow(GEV, 2)},
-    {"s0", pow(5.38 * GEV, 2)},
+    {"Zpp", 33.45_mb},  
+    {"Zpn", 35.80_mb},  
+    {"Y1pp", 42.53_mb}, 
+    {"Y1pn", 40.15_mb}, 
+    {"Y2pp", 33.34_mb}, 
+    {"Y2pn", 30.00_mb}, 
+    {"B", 0.308_mb},    
+    {"s1", 1.0 * pow(1_GeV, 2)},
+    {"s0", pow(5.38_GeV, 2)},
     {"n1", 0.458},
     {"n2", 0.545}
 };
 
 const std::map<std::string, double> JWN = {
-    {"gamma", 52.5 * pow(GEV, 0.16)}, //mb
-    {"alpha", 0.00369 / MEV},
-    {"beta", 0.00895741 * pow(MEV, -0.8)}
+    {"gamma", 52.5 * pow(1_GeV, 0.16)}, //mb
+    {"alpha", 0.00369 / 1_MeV},
+    {"beta", 0.00895741 * pow(1_MeV, -0.8)}
 };
 
-double nuchic::CrossSection(bool samePID, const double& pcm) {
+double CrossSection(bool samePID, const double& pcm) {
     // TODO: Implement GEANT4 cross-section or something else
     throw std::domain_error("Invalid energy!");
 }
 
-double nuchic::CrossSectionLab(bool samePID, const double& pLab) noexcept {
-    const double tLab = sqrt(pow(pLab, 2) + pow(MN, 2)) - MN;
+double CrossSectionLab(bool samePID, const double& pLab) noexcept {
+    const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
-        if(pLab < 1.8 * GEV) {
-            if(tLab >= 25 * MEV)
+        if(pLab < 1.8_GeV) {
+            if(tLab >= 25_MeV)
                 return (1.0+HZETRN.at("a")/tLab) * (40+109.0*std::cos(HZETRN.at("b")*sqrt(tLab))
                         * exp(-HZETRN.at("c")*pow(tLab-HZETRN.at("d"), 0.258)));
             else
                 return exp(6.51*exp(-pow(tLab/HZETRN.at("e"), 0.7)));
-        } else if(pLab <= 4.7 * GEV) {
+        } else if(pLab <= 4.7_GeV) {
             return JWN.at("gamma")/pow(pLab, 0.16);
         } else {
-            double ecm2 = 2*MN*(MN+sqrt(pow(pLab, 2) + pow(MN, 2)));
+            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
             return PDG.at("Zpp") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
                 + PDG.at("Y1pp")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
                 - PDG.at("Y2pp")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
         }
     } else {
-        if(pLab < 0.5 * 1e3) {
-            if(tLab >= 0.1 * MEV)
+        if(pLab < 0.5_GeV) {
+            if(tLab >= 0.1_MeV)
                 return 38.0 + 12500.0*exp(-HZETRN.at("f")*pow(tLab-HZETRN.at("g"), 0.35));
             else
                 return 26000 * exp(-pow(tLab/HZETRN.at("h"), 0.3));
-        } else if(pLab <= 2.0 * 1e3) {
+        } else if(pLab <= 2.0_GeV) {
             return 40 + 10*cos(JWN.at("alpha")*pLab - 0.943)
                 * exp(-JWN.at("beta")*pow(pLab, 0.8)+2);
         } else {
-            double ecm2 = 2*MN*(MN+sqrt(pow(pLab, 2) + pow(MN, 2)));
+            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
             return PDG.at("Zpn") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
                 + PDG.at("Y1pn")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
                 - PDG.at("Y2pn")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
@@ -90,49 +82,49 @@ double nuchic::CrossSectionLab(bool samePID, const double& pLab) noexcept {
     }
 }
 
-double nuchic::CrossSectionAngle(bool samePID, const double& pcm, const double& ran) {
+double CrossSectionAngle(bool samePID, const double& pcm, const double& ran) {
     // For testing right now
     // TODO: Implement GEANT4 angular distribution or something else
     return std::acos(2*ran - 1);
 }
 
-nuchic::ThreeVector nuchic::MakeMomentumAngular(bool samePID, const double& p1CM, const double& pcm,
+ThreeVector MakeMomentumAngular(bool samePID, const double& p1CM, const double& pcm,
         const std::array<double, 2>& rans) {
     double pR = p1CM;
     double pTheta = nuchic::CrossSectionAngle(samePID, pcm, rans[0]);
     double pPhi = 2*M_PI*rans[1];
 
-    return nuchic::ThreeVector(nuchic::ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-double nuchic::Interactions::CrossSectionLab(bool samePID, const double& pLab) const noexcept {
-    const double tLab = sqrt(pow(pLab, 2) + pow(MN, 2)) - MN;
+double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noexcept {
+    const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
-        if(pLab < 1.8 * GEV) {
-            if(tLab >= 25 * MEV)
+        if(pLab < 1.8_GeV) {
+            if(tLab >= 25_MeV)
                 return (1.0+HZETRN.at("a")/tLab) * (40+109.0*std::cos(HZETRN.at("b")*sqrt(tLab))
                         * exp(-HZETRN.at("c")*pow(tLab-HZETRN.at("d"), 0.258)));
             else
                 return exp(6.51*exp(-pow(tLab/HZETRN.at("e"), 0.7)));
-        } else if(pLab <= 4.7 * GEV) {
+        } else if(pLab <= 4.7_GeV) {
             return JWN.at("gamma")/pow(pLab, 0.16);
         } else {
-            double ecm2 = 2*MN*(MN+sqrt(pow(pLab, 2) + pow(MN, 2)));
+            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
             return PDG.at("Zpp") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
                 + PDG.at("Y1pp")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
                 - PDG.at("Y2pp")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
         }
     } else {
-        if(pLab < 0.5 * GEV) {
-            if(tLab >= 0.1 * MEV)
+        if(pLab < 0.5_GeV) {
+            if(tLab >= 0.1_MeV)
                 return 38.0 + 12500.0*exp(-HZETRN.at("f")*pow(tLab-HZETRN.at("g"), 0.35));
             else
                 return 26000 * exp(-pow(tLab/HZETRN.at("h"), 0.3));
-        } else if(pLab <= 2.0 * GEV) {
+        } else if(pLab <= 2.0_GeV) {
             return 40 + 10*cos(JWN.at("alpha")*pLab - 0.943)
                 * exp(-JWN.at("beta")*pow(pLab, 0.8)+2);
         } else {
-            double ecm2 = 2*MN*(MN+sqrt(pow(pLab, 2) + pow(MN, 2)));
+            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
             return PDG.at("Zpn") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
                 + PDG.at("Y1pn")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
                 - PDG.at("Y2pn")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
@@ -140,12 +132,12 @@ double nuchic::Interactions::CrossSectionLab(bool samePID, const double& pLab) c
     }
 }
 
-REGISTER_INTERACTION(nuchic::GeantInteractions);
+REGISTER_INTERACTION(GeantInteractions);
 
-nuchic::GeantInteractions::GeantInteractions(const std::string& filename) : nuchic::Interactions(filename) {
+GeantInteractions::GeantInteractions(const std::string& filename) : Interactions(filename) {
     // Initialize theta vector
-    m_theta = nuchic::Linspace(0.5, 179.5, 180);
-    m_cdf = nuchic::Logspace(-3, 0, 200);
+    m_theta =Linspace(0.5, 179.5, 180);
+    m_cdf = Logspace(-3, 0, 200);
 
     // Read in the Geant4 hdf5 file and get the np and pp groups
     std::cout << "Loading Geant4 data..." << std::endl;
@@ -160,7 +152,7 @@ nuchic::GeantInteractions::GeantInteractions(const std::string& filename) : nuch
     LoadData(true, dataPP);
 }
 
-void nuchic::GeantInteractions::LoadData(bool samePID, const Group& group) {
+void GeantInteractions::LoadData(bool samePID, const Group& group) {
     // Load datasets
     DataSet pcm(group.openDataSet("pcm"));
     DataSet sigTot(group.openDataSet("sigtot"));
@@ -223,38 +215,38 @@ void nuchic::GeantInteractions::LoadData(bool samePID, const Group& group) {
     }
 }
 
-double nuchic::GeantInteractions::CrossSection(const Particle& particle1,
-                                               const Particle& particle2) const {
+double GeantInteractions::CrossSection(const Particle& particle1,
+                                       const Particle& particle2) const {
     bool samePID = particle1.PID() == particle2.PID();
-    const nuchic::FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * MN / totalMomentum.M();
+    const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
+    const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / totalMomentum.M();
 
 
     try {
         if(samePID)
-            return m_crossSectionPP(pcm/GEV);
+            return m_crossSectionPP(pcm/1_GeV);
         else
-            return m_crossSectionNP(pcm/GEV);
+            return m_crossSectionNP(pcm/1_GeV);
     } catch (std::domain_error &e) {
         nuchic::FourVector momentum1 = particle1.Momentum();
         nuchic::FourVector momentum2 = particle2.Momentum();
         nuchic::FourVector labMomentum = momentum1.Boost(-momentum2.BoostVector());
-        return nuchic::CrossSectionLab(samePID, labMomentum.Vec3().Magnitude()/GEV);
+        return nuchic::CrossSectionLab(samePID, labMomentum.Vec3().Magnitude()/1_GeV);
     }
 }
 
-nuchic::ThreeVector nuchic::GeantInteractions::MakeMomentum(bool samePID, const double& p1CM,
-                                                            const double& pcm,
-                                                            const std::array<double, 2>& rans) const {
+ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double& p1CM,
+                                            const double& pcm,
+                                            const std::array<double, 2>& rans) const {
     double pR = p1CM;
-    double pTheta = CrossSectionAngle(samePID, pcm/GEV, rans[0]);
+    double pTheta = CrossSectionAngle(samePID, pcm/1_GeV, rans[0]);
     double pPhi = 2*M_PI*rans[1];
 
-    return nuchic::ThreeVector(nuchic::ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-double nuchic::GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
-        const double& ran) const {
+double GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
+                                            const double& ran) const {
     if(samePID) return m_thetaDistPP(energy, ran);
     else return m_thetaDistNP(energy, ran);
 }

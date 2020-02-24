@@ -1,12 +1,14 @@
 #include "nuchic/Interactions.hh"
 
-nuchic::InteractionFactory& nuchic::InteractionFactory::Instance() {
-    static nuchic::InteractionFactory factory = InteractionFactory();
+using namespace nuchic;
+
+InteractionFactory& InteractionFactory::Instance() {
+    static InteractionFactory factory = InteractionFactory();
     return factory;
 }
 
-bool nuchic::InteractionFactory::Register(const std::string& name,
-                                  nuchic::InteractionFactory::TCreateMethod funcCreate) {
+bool InteractionFactory::Register(const std::string& name,
+                                  InteractionFactory::TCreateMethod funcCreate) {
     auto it = methods.find(name);
     if(it == methods.end()) {
         methods.insert(std::make_pair(name, funcCreate));
@@ -15,7 +17,7 @@ bool nuchic::InteractionFactory::Register(const std::string& name,
     return false;
 }
 
-std::shared_ptr<nuchic::Interactions> nuchic::InteractionFactory::Create(const std::string& name,
+std::shared_ptr<Interactions> InteractionFactory::Create(const std::string& name,
                                                                          const std::string& filename) {
     auto it = methods.find(name);
     if(it != methods.end())

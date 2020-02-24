@@ -6,7 +6,9 @@
 
 #include "nuchic/Interpolation.hh"
 
-void nuchic::Interp1D::CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+using namespace nuchic;
+
+void Interp1D::CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
                                    const double& derivLeft, const double& derivRight) {
     
     if(!std::is_sorted(x.begin(), x.end()))
@@ -57,7 +59,7 @@ void nuchic::Interp1D::CubicSpline(const std::vector<double>& x, const std::vect
     kInit = true;
 }
 
-double nuchic::Interp1D::operator()(const double& x) const {
+double Interp1D::operator()(const double& x) const {
     // Ensure the interpolation is initialized first
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
@@ -79,7 +81,7 @@ double nuchic::Interp1D::operator()(const double& x) const {
             + (pow(b, 3) - b)*derivs2[idxHigh])*pow(height, 2)/6.0;
 }
 
-void nuchic::Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<double>& y,
+void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<double>& y,
                                      const std::vector<double>& z) {
     if(!std::is_sorted(x.begin(), x.end()))
         std::runtime_error("Inputs must be increasing.");
@@ -105,7 +107,7 @@ void nuchic::Interp2D::BicubicSpline(const std::vector<double>& x, const std::ve
     kInit = true;
 }
 
-double nuchic::Interp2D::operator()(const double& x, const double& y) const {
+double Interp2D::operator()(const double& x, const double& y) const {
     // Ensure the interpolation is initialized first
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
