@@ -191,6 +191,10 @@ class Particle {
         ///@param timeStep: The amount of time to propagate the particle for
         void Propagate(const double&) noexcept;
 
+        /// Returns the distance travelled by the particle
+        /// @return double: the distance travelled by the particle
+        double GetDistanceTraveled() {return distanceTraveled;}
+
         /// Propagate a particle back in time. Useful for testing purposes
         ///@param timeStep: The amount of time to propagate a particle back in time for
         void BackPropagate(const double&) noexcept;
@@ -236,6 +240,7 @@ class Particle {
         double formationZone;
         ThreeVector position;
         FourVector momentum;
+        double distanceTraveled = 0.0;
 };
 
 }

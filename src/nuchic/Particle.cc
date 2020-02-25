@@ -21,7 +21,7 @@ void nuchic::Particle::Propagate(const double& time) noexcept {
     const double propDistZ = dist*std::cos(theta);
 
     const nuchic::ThreeVector propDist(propDistX, propDistY, propDistZ);
-
+    if (status == -3) distanceTraveled += propDist.Magnitude();
     position += propDist;
 }
 

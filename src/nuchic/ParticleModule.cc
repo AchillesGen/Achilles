@@ -50,6 +50,7 @@ PYBIND11_MODULE(particle, m) {
         .def("pz", &Particle::Pz)
         .def("energy", &Particle::E)
         .def("radius", &Particle::Radius)
+        .def("get_distance_traveled", &Particle::GetDistanceTraveled)
         // Logical Functions
         .def("is_in_formation_zone", &Particle::InFormationZone)
         .def("is_background", &Particle::IsBackground)
