@@ -32,5 +32,8 @@ PYBIND11_MODULE(cascade, m) {
         .def("call", &Cascade::operator())
         .def("__call__", &Cascade::operator(),
                 py::arg("particles"), py::arg("fermi_momentum"),
+                py::arg("radius2"), py::arg("max_steps") = 10000)
+        .def("mean_free_path", &Cascade::MeanFreePath,
+                py::arg("particles"), py::arg("fermi_momentum"),
                 py::arg("radius2"), py::arg("max_steps") = 10000);
 }

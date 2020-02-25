@@ -72,8 +72,10 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
 
             // Finalize Momentum
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-
-            if(hit) newKicked.push_back(hitIdx);
+            if(hit) {
+                newKicked.push_back(hitIdx);
+                hitNuc->SetStatus(-1);
+            }
         }
 
         // Replace kicked indices with new list
@@ -111,6 +113,49 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
         }
     }
 
+    return particles;
+}
+
+nuchic::Particles nuchic::Cascade::MeanFreePath(
+    const nuchic::Particles& _particles,
+    const double& kf,
+    const double& _radius2,
+    const std::size_t& maxSteps) {
+
+    nuchic::Particles particles = _particles;
+    fermiMomentum = kf;
+    radius2 = _radius2;
+    auto idx = kickedIdxs[0];
+    Particle* kickNuc = &particles[idx];
+    
+    if (kickedIdxs.size() != 1) {
+        std::runtime_error("MeanFreePath: only one particle should be kicked.");
+    }
+    if (kickNuc -> Status() != -3) {
+        std::runtime_error(
+            "MeanFreePath: kickNuc must have status -3 "
+            "in order to accumulate DistanceTraveled."
+            );
+    }
+    bool hit = false;
+    for(std::size_t step = 0; step < maxSteps; ++step) {
+        // Are we alrady outside nucleus?
+        if (kickNuc->Position().Magnitude2() >= radius2) break;
+        AdaptiveStep(particles, distance);
+        // Identify nearby particles which might interact
+        auto nearby_particles = AllowedInteractions(particles, idx);
+        if (nearby_particles.size() == 0) continue;
+        // Did we hit?
+        auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
+        if (hitIdx == -1) continue;
+        Particle* hitNuc = &particles[hitIdx];
+        // Did we *really* hit? Finalize momentum, check for Pauli blocking.
+        hit = FinalizeMomentum(*kickNuc, *hitNuc);
+        // Stop as soon as we hit anything
+        if (hit) break;
+    }
+    if (!hit) kickNuc->SetStatus(1);  // Escaped
+    kickedIdxs.clear();  // Clean up
     return particles;
 }
 
@@ -156,7 +201,7 @@ const nuchic::InteractionDistances nuchic::Cascade::AllowedInteractions(nuchic::
     for(std::size_t i = 0; i < particles.size(); ++i) {
         // TODO: Should particles propagating be able to interact with 
         //       other propagating particles?
-        if(particles[i].Status() == -1 || particles[i].Status() == -2) continue;
+        if (particles[i].Status() < 0) continue;
         // if(i == idx) continue;
         // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
@@ -223,7 +268,7 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
         particle2.SetFormationZone(p2Lab, p2Out);
 
         // Hit nucleon is now propagating
-        particle2.SetStatus(-1);
+        // Users are responsibile for updating the status externally as desired
     } else {
         // Assign momenta to particles
         particle1.SetMomentum(p1Lab);
