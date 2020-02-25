@@ -5,6 +5,8 @@
 #include <cmath>
 #include <iosfwd>
 
+#include "spdlog/fmt/ostr.h"
+
 namespace nuchic {
 
 class ThreeVector;
@@ -318,7 +320,11 @@ class FourVector {
         /// Write out a vector to an output stream
         ///@param ostr: Output stream to write to
         ///@param vec: The four vector to be written out
-        friend std::ostream& operator<<(std::ostream&, const FourVector&);
+        template<typename OStream>
+        friend OStream& operator<<(OStream &os, const FourVector &vec) {
+            os << "FourVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ", " << vec.E() << ")";
+            return os;
+        }
 
         /// Write in a vector to an input stream
         ///@param istr: Input stream to read from

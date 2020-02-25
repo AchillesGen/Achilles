@@ -4,14 +4,15 @@
 
 #include <iostream>
 
+#include "nuchic/Constants.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Utilities.hh"
 
-const double mN = 938;
+using namespace nuchic;
 
-const std::map<int, std::string> nuchic::Nucleus::ZToName = {
+const std::map<int, std::string> Nucleus::ZToName = {
     {0, "mfp"},
     {1, "H"},
     {2, "He"},
@@ -24,8 +25,8 @@ const std::map<int, std::string> nuchic::Nucleus::ZToName = {
     {26, "Fe"},
 };
 
-nuchic::Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
-                         const double& kf, const std::function<nuchic::Particles()>& _density) 
+Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
+                         const double& kf, const std::function<Particles()>& _density) 
                         : binding(bEnergy), fermiMomentum(kf), density(_density) {
 
     if(Z > A) {
@@ -39,10 +40,11 @@ nuchic::Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
     protons.resize(Z);
     neutrons.resize(A-Z);
     radius = pow(A / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
-    potential = sqrt(mN*mN + pow(fermiMomentum, 2)) - mN + 8;
+    potential = sqrt(Constant::mN*Constant::mN 
+                     + pow(fermiMomentum, 2)) - Constant::mN + 8;
 }
 
-void nuchic::Nucleus::SetNucleons(nuchic::Particles& _nucleons) noexcept {
+void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     nucleons = _nucleons;
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
@@ -52,7 +54,7 @@ void nuchic::Nucleus::SetNucleons(nuchic::Particles& _nucleons) noexcept {
     }
 }
 
-bool nuchic::Nucleus::Escape(nuchic::Particle& particle) noexcept {
+bool Nucleus::Escape(Particle& particle) noexcept {
     // Remove background particles
     if(particle.Status() == 0) return false;
 
@@ -71,13 +73,13 @@ bool nuchic::Nucleus::Escape(nuchic::Particle& particle) noexcept {
     const double px = particle.Momentum().Px() - potential * std::sin(theta) * std::cos(phi);
     const double py = particle.Momentum().Py() - potential * std::sin(theta) * std::sin(phi);
     const double pz = particle.Momentum().Pz() - potential * std::cos(theta);
-    particle.SetMomentum(nuchic::FourVector(px, py, pz, particle.Momentum().E()));
+    particle.SetMomentum(FourVector(px, py, pz, particle.Momentum().E()));
     return true;
 }
 
-nuchic::Particles nuchic::Nucleus::GenerateConfig() {
+Particles Nucleus::GenerateConfig() {
     // Get a configuration from the density function
-    nuchic::Particles particles = density();
+    Particles particles = density();
 
     // Ensure the number of protons and neutrons are correct
     if(particles.size() != nucleons.size())
@@ -89,9 +91,9 @@ nuchic::Particles nuchic::Nucleus::GenerateConfig() {
 
         // Set momentum for each nucleon
         auto mom3 = GenerateMomentum();
-        double energy2 = mN*mN;
+        double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
-        particle.SetMomentum(nuchic::FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
+        particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
     }
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
@@ -101,18 +103,18 @@ nuchic::Particles nuchic::Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> nuchic::Nucleus::GenerateMomentum() noexcept {
+const std::array<double, 3> Nucleus::GenerateMomentum() noexcept {
     std::array<double, 3> momentum;
     momentum[0] = rng.uniform(0.0, fermiMomentum);
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
 
-    return nuchic::ToCartesian(momentum);
+    return ToCartesian(momentum);
 }
 
-nuchic::Nucleus nuchic::Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
+Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
                                              const double& fermiMomentum,
-                                             const std::function<nuchic::Particles()>& density) {
+                                             const std::function<Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -120,13 +122,13 @@ nuchic::Nucleus nuchic::Nucleus::MakeNucleus(const std::string& name, const doub
         const int nucleons = std::stoi(match[1].str());
         const int protons = NameToZ(match[2].str()); 
 
-        return nuchic::Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
     }
 
     throw std::runtime_error("Invalid nucleus " + name);
 }
 
-int nuchic::Nucleus::NameToZ(const std::string& name) {
+int Nucleus::NameToZ(const std::string& name) {
     auto it = std::find_if(ZToName.begin(), ZToName.end(),
                            [&name](const std::pair<int, std::string> &p) {
                                return p.second == name;
@@ -136,6 +138,6 @@ int nuchic::Nucleus::NameToZ(const std::string& name) {
     return it -> first;
 }
 
-const std::string nuchic::Nucleus::ToString() const noexcept {
+const std::string Nucleus::ToString() const noexcept {
     return std::to_string(NNucleons()) + ZToName.at(NProtons());
 }
