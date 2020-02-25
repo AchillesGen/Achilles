@@ -7,6 +7,8 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 """
 
 import numpy as np
+import seaborn as sns
+import pylab as plt
 
 import vectors
 import particle
@@ -46,12 +48,20 @@ class RunMode:
 
     def __init__(self):
         """ General run mode initialization. """
-        density = densities.NuclearDensity(settings().get_run('nuclear_density'),
+        #TODO: Switch print statements to logging
+        density_name = settings().get_run('nuclear_density')
+        print(f"[+] Using density '{density_name}'.")
+        print(f"[+] Found settings {settings().nucleus_config}.")
+        density = densities.NuclearDensity(density_name,
                                            **settings().nucleus_config)
 
         name = settings().get_run('nucleus')
         binding_energy = settings().nucleus_binding(name)
         fermi_momentum = settings().nucleus_kf(name)
+        print(
+            f"[+] Building nucleus '{name}' "
+            f"with Fermi momentum {fermi_momentum} and "
+            f"binding_energy {binding_energy}.")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
                                                     binding_energy,
                                                     fermi_momentum,
@@ -97,7 +107,7 @@ class CalcCrossSection(RunMode):
         energy = settings().beam_energy
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
-        test_part =  particle.Particle(self.pid, momentum, position, -2)
+        test_part = particle.Particle(self.pid, momentum, position, -2)
         particles.append(test_part)
         self.fsi.set_kicked(len(particles)-1)
         particles = self.fsi(particles,
@@ -130,6 +140,8 @@ class CalcMeanFreePath(RunMode):
     name = 'mfp'
 
     def __init__(self, *args, **kwargs):
+        #TODO: Switch print statments to logging
+        print("[+] Welcome to mean free path.")
         # Remove the name argument
         args = args[1:]
 
@@ -138,12 +150,68 @@ class CalcMeanFreePath(RunMode):
 
         # Initialize base class and additional variables
         super().__init__()
+        self.radius = 10
+        self.pid = 2212
+        name = settings().get_param('interaction')
+        fname = settings().get_param('interaction_file')
+        print(f"[+] Creating interaction: '{name}' "
+              f"using interaction data from file: {fname}.")
+        interaction = interactions.Interactions.create(name, fname)
+        self.fsi = cascade.Cascade(interaction)
+        print(
+            f"[+] A={self.nucleus.n_nucleons()}, "
+            f"Z={self.nucleus.n_protons()}, "
+            f"A-Z={self.nucleus.n_neutrons()}"
+        )
+        print(f"[+] binding_energy={self.nucleus.binding_energy()}")
+        print(f"[+] kf={self.nucleus.fermi_momentum()}")
+        print(f"[+] potential_energy={self.nucleus.potential_energy()}")
+        print(f"[+] r={self.nucleus.radius()}")
+
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
+        # Kick in a random direction
+        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
+        # x in [0,1] --> phi in [0,2*pi]
+        x = np.random.random(2)
+        theta = np.arccos(2 * x[0] - 1)
+        phi = 2 * np.pi * x[1]
+        p_kick = settings().beam_energy
+        particles = self.nucleus.generate_config()
+
+        # Select a random particle to kick
+        kicked_idx = np.random.choice(np.arange(len(particles)))
+        self.fsi.set_kicked(kicked_idx)
+        kicked_particle = particles[kicked_idx]
+        kicked_particle.set_status(-3)
+        kicked_particle.set_momentum(vectors.Vector4(
+            p_kick * np.sin(theta) * np.cos(phi),
+            p_kick * np.sin(theta) * np.sin(phi),
+            p_kick * np.cos(theta),
+            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
+
+        particles = self.fsi.mean_free_path(
+            particles,
+            self.nucleus.fermi_momentum(),
+            self.nucleus.radius()**2)
+
+        return particles
+
     def finalize(self, events):
-        """ Convert the events to a total cross-section. """
+        """ Plot a histogram of distance traveled """
+        distance_traveled = []
+        nhits = 0
+        for event in events:
+            for aparticle in event:
+                if aparticle.status() == -3:
+                    distance_traveled.append(aparticle.get_distance_traveled())
+                    nhits = nhits + 1
+        print(f"nhits / nevents : {nhits} / {len(events)}")
+        _, ax = plt.subplots(1)
+        sns.distplot(distance_traveled, ax=ax)
+        plt.show()
 
 
 class CalcTransparency(RunMode):
