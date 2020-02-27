@@ -4,6 +4,9 @@
 
 #include <iostream>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+
 #include "nuchic/Constants.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Particle.hh"
@@ -35,10 +38,11 @@ Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
         errorMsg += " protons and " + std::to_string(A) + " nucleons";
         throw std::runtime_error(errorMsg);
     }
-                                
+    
     nucleons.resize(A);
     protons.resize(Z);
     neutrons.resize(A-Z);
+    spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
     radius = pow(A / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
     potential = sqrt(Constant::mN*Constant::mN 
                      + pow(fermiMomentum, 2)) - Constant::mN + 8;
@@ -121,7 +125,10 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
     if(std::regex_match(name, match, regex)) {
         const int nucleons = std::stoi(match[1].str());
         const int protons = NameToZ(match[2].str()); 
-
+        spdlog::info(
+            "Nucleus: parsing nuclear name '{0}', expecting a density "
+            "with A={1} total nucleons and Z={2} protons.", 
+            name, nucleons, protons);
         return Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
     }
 

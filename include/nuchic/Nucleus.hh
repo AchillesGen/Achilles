@@ -66,6 +66,10 @@ class Nucleus {
         void SetDensity(const std::function<Particles()>& _density) noexcept {density = _density;}
         ///@}
 
+        /// Set the radius of the nucleus in fm
+        /// @param radius: The radius to be set in fm
+        void SetRadius(const double& _radius) noexcept {radius = _radius;}
+
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the Nucleus object

@@ -25,6 +25,7 @@ PYBIND11_MODULE(nucleus, m) {
         .def("set_fermi_momentum", &nuchic::Nucleus::SetFermiMomentum)
         .def("set_potential", &nuchic::Nucleus::SetPotential)
         .def("set_density", &nuchic::Nucleus::SetDensity)
+        .def("set_radius", &nuchic::Nucleus::SetRadius)
         // Getters
         .def("nucleons", &nuchic::Nucleus::Nucleons)
         .def("protons", &nuchic::Nucleus::Protons)
