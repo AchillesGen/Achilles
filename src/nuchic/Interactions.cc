@@ -1,6 +1,9 @@
 #include <iostream>
 #include <map>
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
+
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interactions.hh"
@@ -140,7 +143,7 @@ GeantInteractions::GeantInteractions(const std::string& filename) : Interactions
     m_cdf = Logspace(-3, 0, 200);
 
     // Read in the Geant4 hdf5 file and get the np and pp groups
-    std::cout << "Loading Geant4 data..." << std::endl;
+    spdlog::info("GeantInteractions: Loading Geant4 data from {0}.", filename);
     H5File file(filename, H5F_ACC_RDONLY);
     Group dataNP(file.openGroup("np")); 
     Group dataPP(file.openGroup("pp"));
