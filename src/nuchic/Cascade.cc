@@ -139,7 +139,7 @@ Particles Cascade::MeanFreePath(
     }
     bool hit = false;
     for(std::size_t step = 0; step < maxSteps; ++step) {
-        // Are we alrady outside nucleus?
+        // Are we already outside nucleus?
         if (kickNuc->Position().Magnitude2() >= radius2) break;
         AdaptiveStep(particles, distance);
         // Identify nearby particles which might interact
