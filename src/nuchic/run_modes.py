@@ -7,8 +7,10 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 """
 
 import numpy as np
+
 import seaborn as sns
 import pylab as plt
+import scipy.stats
 
 import vectors
 import particle
@@ -49,9 +51,11 @@ class RunMode:
 
     def __init__(self):
         """ General run mode initialization. """
+        instance_name = self.__class__.__name__
         density_name = settings().get_run('nuclear_density')
-        logger.info(f"Using density '{density_name}'.")
-        logger.info(f"Found settings {settings().nucleus_config}.")
+        logger.info(f"{instance_name}: using density '{density_name}'.")
+        logger.info(f"{instance_name}: using nuclear configuration settings "
+                    f"{settings().nucleus_config}.")
         density = densities.NuclearDensity(density_name,
                                            **settings().nucleus_config)
 
@@ -59,7 +63,7 @@ class RunMode:
         binding_energy = settings().nucleus_binding(name)
         fermi_momentum = settings().nucleus_kf(name)
         logger.info(
-            f"Building nucleus '{name}' "
+            f"{instance_name}: Building nucleus '{name}' "
             f"with Fermi momentum {fermi_momentum} MeV and "
             f"binding_energy {binding_energy} MeV.")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
@@ -140,7 +144,6 @@ class CalcMeanFreePath(RunMode):
     name = 'mfp'
 
     def __init__(self, *args, **kwargs):
-        logger.info('Welcome to mean free path')
         # Remove the name argument
         args = args[1:]
 
@@ -149,22 +152,27 @@ class CalcMeanFreePath(RunMode):
 
         # Initialize base class and additional variables
         super().__init__()
-        self.radius = 10
+        logger.info("CalcMeanFreePath: overriding nuclear radius "
+                    "with value from run card.")
+        self.nucleus.set_radius(settings().nucleus_config['radius'])
+        self.radius = self.nucleus.radius
         self.pid = 2212
         name = settings().get_param('interaction')
         fname = settings().get_param('interaction_file')
-        logger.info(f"Creating interaction: '{name}' "
-                    f"using interaction data from file: {fname}.")
+        logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
         interaction = interactions.Interactions.create(name, fname)
         self.fsi = cascade.Cascade(interaction)
-        logger.info("Nucleus contains "
-                    f"A={self.nucleus.n_nucleons()} total nucleons, "
-                    f"Z={self.nucleus.n_protons()} protons, and "
-                    f"(A-Z)={self.nucleus.n_neutrons()} neutrons")
-        logger.info(f"Binding energy E={self.nucleus.binding_energy()} MeV")
-        logger.info(f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV")
-        logger.info(f"Potential energy V={self.nucleus.potential_energy():.2f} MeV")
-        logger.info(f"Radius r={self.nucleus.radius():.2f} fm")
+        logger.info(
+            "CalcMeanFreePath: nucleus contains "
+            f"A={self.nucleus.n_nucleons()} total nucleons, "
+            f"Z={self.nucleus.n_protons()} protons, and "
+            f"(A-Z)={self.nucleus.n_neutrons()} neutrons.")
+        logger.info(
+            "CalcMeanFreePath: nucleus has "
+            f"Binding energy E={self.nucleus.binding_energy()} MeV, "
+            f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV, "
+            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and"
+            f"Radius r={self.nucleus.radius():.2f} fm.")
 
 
     def generate_one_event(self):
@@ -207,13 +215,19 @@ class CalcMeanFreePath(RunMode):
                     distance_traveled.append(aparticle.get_distance_traveled())
                     nhits = nhits + 1
         logger.info(f"nhits / nevents : {nhits} / {len(events)}")
+
         _, ax = plt.subplots(1)
-        sns.distplot(distance_traveled, ax=ax, kde=False)
+        loc, scale = scipy.stats.expon.fit(distance_traveled)
+        fit_label = f"$\lambda$={scale:.2f} fm"
+        sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
+                     label='events', fit_kws={'label':fit_label})
         ax.set_xlabel(r'Distance traveled [fm]')
         ax.set_ylabel("Counts")
+        ax.set_yscale('log')
         ax.set_title(
             f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
         )
+        ax.legend()
         plt.show()
 
 
