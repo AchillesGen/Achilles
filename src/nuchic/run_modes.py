@@ -15,6 +15,7 @@ import particle
 import nucleus
 import interactions
 import cascade
+import logger
 
 import nuchic.densities as densities
 from .config import settings
@@ -48,20 +49,19 @@ class RunMode:
 
     def __init__(self):
         """ General run mode initialization. """
-        #TODO: Switch print statements to logging
         density_name = settings().get_run('nuclear_density')
-        print(f"[+] Using density '{density_name}'.")
-        print(f"[+] Found settings {settings().nucleus_config}.")
+        logger.info(f"Using density '{density_name}'.")
+        logger.info(f"Found settings {settings().nucleus_config}.")
         density = densities.NuclearDensity(density_name,
                                            **settings().nucleus_config)
 
         name = settings().get_run('nucleus')
         binding_energy = settings().nucleus_binding(name)
         fermi_momentum = settings().nucleus_kf(name)
-        print(
-            f"[+] Building nucleus '{name}' "
-            f"with Fermi momentum {fermi_momentum} and "
-            f"binding_energy {binding_energy}.")
+        logger.info(
+            f"Building nucleus '{name}' "
+            f"with Fermi momentum {fermi_momentum} MeV and "
+            f"binding_energy {binding_energy} MeV.")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
                                                     binding_energy,
                                                     fermi_momentum,
@@ -140,8 +140,7 @@ class CalcMeanFreePath(RunMode):
     name = 'mfp'
 
     def __init__(self, *args, **kwargs):
-        #TODO: Switch print statments to logging
-        print("[+] Welcome to mean free path.")
+        logger.info('Welcome to mean free path')
         # Remove the name argument
         args = args[1:]
 
@@ -154,19 +153,18 @@ class CalcMeanFreePath(RunMode):
         self.pid = 2212
         name = settings().get_param('interaction')
         fname = settings().get_param('interaction_file')
-        print(f"[+] Creating interaction: '{name}' "
-              f"using interaction data from file: {fname}.")
+        logger.info(f"Creating interaction: '{name}' "
+                    f"using interaction data from file: {fname}.")
         interaction = interactions.Interactions.create(name, fname)
         self.fsi = cascade.Cascade(interaction)
-        print(
-            f"[+] A={self.nucleus.n_nucleons()}, "
-            f"Z={self.nucleus.n_protons()}, "
-            f"A-Z={self.nucleus.n_neutrons()}"
-        )
-        print(f"[+] binding_energy={self.nucleus.binding_energy()}")
-        print(f"[+] kf={self.nucleus.fermi_momentum()}")
-        print(f"[+] potential_energy={self.nucleus.potential_energy()}")
-        print(f"[+] r={self.nucleus.radius()}")
+        logger.info("Nucleus contains "
+                    f"A={self.nucleus.n_nucleons()} total nucleons, "
+                    f"Z={self.nucleus.n_protons()} protons, and "
+                    f"(A-Z)={self.nucleus.n_neutrons()} neutrons")
+        logger.info(f"Binding energy E={self.nucleus.binding_energy()} MeV")
+        logger.info(f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV")
+        logger.info(f"Potential energy V={self.nucleus.potential_energy():.2f} MeV")
+        logger.info(f"Radius r={self.nucleus.radius():.2f} fm")
 
 
     def generate_one_event(self):
@@ -208,9 +206,14 @@ class CalcMeanFreePath(RunMode):
                 if aparticle.status() == -3:
                     distance_traveled.append(aparticle.get_distance_traveled())
                     nhits = nhits + 1
-        print(f"nhits / nevents : {nhits} / {len(events)}")
+        logger.info(f"nhits / nevents : {nhits} / {len(events)}")
         _, ax = plt.subplots(1)
-        sns.distplot(distance_traveled, ax=ax)
+        sns.distplot(distance_traveled, ax=ax, kde=False)
+        ax.set_xlabel(r'Distance traveled [fm]')
+        ax.set_ylabel("Counts")
+        ax.set_title(
+            f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
+        )
         plt.show()
 
 
