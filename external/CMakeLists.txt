@@ -28,7 +28,7 @@ FetchContent_Declare(
 FetchContent_GetProperties(extern_spdlog)
 if(NOT extern_spdlog_POPULATED)
     FetchContent_Populate(extern_spdlog)
-    set(SPDLOG_BUILD_SHARED ON)
+    set(SPDLOG_BUILD_SHARED ON CACHE INTERNAL "")
     add_subdirectory(
         ${extern_spdlog_SOURCE_DIR}
         ${extern_spdlog_BINARY_DIR}
