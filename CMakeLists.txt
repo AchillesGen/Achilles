@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.9)
+cmake_minimum_required(VERSION 3.12)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS TRUE)
 
@@ -27,16 +27,5 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 set(NUCHIC_INCLUDES ${NUCHIC_BUILD_INSTALL_PREFIX}/include ${NUCHIC_SOURCE_DIR}/include ${HDF5_INCLUDE_DIRS})
 link_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/lib)
 
-# Pull down pybind11 submodule
-execute_process(COMMAND git submodule update --init -- external/pybind11
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-add_subdirectory(external/pybind11)
-include_directories(${PYBIND11_INCLUDE_DIR})
-
-# Pull down spdlog submodule
-execute_process(COMMAND git submodule update --init -- external/spdlog
-                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
-set(SPDLOG_BUILD_SHARED ON CACHE BOOL "Build shared library" FORCE)
-add_subdirectory(external/spdlog)
-
+add_subdirectory(external)
 add_subdirectory(src/nuchic)
