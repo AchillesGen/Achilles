@@ -1,5 +1,18 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 85ecd90..c385d9e 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -97,7 +97,7 @@ if(NOT (CMAKE_VERSION VERSION_LESS 3.0))  # CMake >= 3.0
+   # Build an interface library target:
+   add_library(pybind11 INTERFACE)
+   add_library(pybind11::pybind11 ALIAS pybind11)  # to match exported target
+-  target_include_directories(pybind11 INTERFACE $<BUILD_INTERFACE:${PYBIND11_INCLUDE_DIR}>
++  target_include_directories(pybind11 SYSTEM INTERFACE $<BUILD_INTERFACE:${PYBIND11_INCLUDE_DIR}>
+                                                 $<BUILD_INTERFACE:${PYTHON_INCLUDE_DIRS}>
+                                                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+   target_compile_options(pybind11 INTERFACE $<BUILD_INTERFACE:${PYBIND11_CPP_STANDARD}>)
 diff --git a/include/pybind11/cast.h b/include/pybind11/cast.h
-index 5529768..e976129 100644
+index 605acb3..66e4259 100644
 --- a/include/pybind11/cast.h
 +++ b/include/pybind11/cast.h
 @@ -10,6 +10,7 @@
@@ -10,7 +23,7 @@ index 5529768..e976129 100644
  #include "pytypes.h"
  #include "detail/typeid.h"
  #include "detail/descr.h"
-@@ -1496,9 +1497,55 @@ protected:
+@@ -1510,9 +1511,55 @@ protected:
      holder_type holder;
  };
  
@@ -68,7 +81,7 @@ index 5529768..e976129 100644
  
  template <typename type, typename holder_type>
  struct move_only_holder_caster {
-@@ -1540,6 +1587,9 @@ template <typename base, typename holder> struct is_holder_type :
+@@ -1554,6 +1601,9 @@ template <typename base, typename holder> struct is_holder_type :
  template <typename base, typename deleter> struct is_holder_type<base, std::unique_ptr<base, deleter>> :
      std::true_type {};
  
@@ -79,7 +92,7 @@ index 5529768..e976129 100644
  template <> struct handle_type_name<bytes> { static constexpr auto name = _(PYBIND11_BYTES_NAME); };
  template <> struct handle_type_name<args> { static constexpr auto name = _("*args"); };
 diff --git a/include/pybind11/pytypes.h b/include/pybind11/pytypes.h
-index fa5ed7c..fe88fcc 100644
+index 96eab96..916fe11 100644
 --- a/include/pybind11/pytypes.h
 +++ b/include/pybind11/pytypes.h
 @@ -20,6 +20,8 @@ NAMESPACE_BEGIN(PYBIND11_NAMESPACE)

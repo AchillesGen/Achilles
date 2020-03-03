@@ -6,7 +6,7 @@ FetchContent_Declare(
 
     GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
     GIT_TAG "v2.4"
-    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/shared_ptr.patch" 
+    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch" 
     )
 
 FetchContent_GetProperties(extern_pybind11)
@@ -28,6 +28,7 @@ FetchContent_Declare(
 FetchContent_GetProperties(extern_spdlog)
 if(NOT extern_spdlog_POPULATED)
     FetchContent_Populate(extern_spdlog)
+    set(SPDLOG_BUILD_SHARED ON)
     add_subdirectory(
         ${extern_spdlog_SOURCE_DIR}
         ${extern_spdlog_BINARY_DIR}
