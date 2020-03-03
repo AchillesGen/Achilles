@@ -22,6 +22,24 @@ import logger
 import nuchic.densities as densities
 from .config import settings
 
+class ConstantInteraction(interactions.Interactions):
+    def __init__(self, xsec):
+        interactions.Interactions.__init__(self)
+        self.xsec = xsec
+        logger.info(f"ConstantInteraction: xsec {self.xsec}")
+    # doesn't work:
+    # def cross_section(self, part1, part2):
+    #     return self.xsec
+    # neither does this:
+    def CrossSection(self, part1, part2):
+        return self.xsec
+
+    def IsRegistered(self):
+        return True
+
+    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):
+        return vectors.Vector3()
+
 class RunMode:
     """ General RunMode class that must be inherited from. """
 
@@ -158,10 +176,18 @@ class CalcMeanFreePath(RunMode):
         self.radius = self.nucleus.radius
         self.pid = 2212
         name = settings().get_param('interaction')
-        fname = settings().get_param('interaction_file')
+        fname = str(settings().get('xsec'))
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
-        interaction = interactions.Interactions.create(name, fname)
+        # interaction = interactions.Interactions.create(name, fname)
+        interaction = ConstantInteraction(xsec=settings().get('xsec'))
+
+        part1 = particle.Particle()
+        part2 = particle.Particle()
+        logger.info(f"{interaction.CrossSection(part1, part2)}")
+        print(interaction)
+
         self.fsi = cascade.Cascade(interaction)
+        del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
             f"A={self.nucleus.n_nucleons()} total nucleons, "
@@ -171,7 +197,7 @@ class CalcMeanFreePath(RunMode):
             "CalcMeanFreePath: nucleus has "
             f"Binding energy E={self.nucleus.binding_energy()} MeV, "
             f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV, "
-            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and"
+            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and "
             f"Radius r={self.nucleus.radius():.2f} fm.")
 
 
