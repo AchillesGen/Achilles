@@ -136,6 +136,7 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
 }
 
 REGISTER_INTERACTION(GeantInteractions);
+REGISTER_INTERACTION(ConstantInteractions);
 
 GeantInteractions::GeantInteractions(const std::string& filename) : Interactions(filename) {
     // Initialize theta vector

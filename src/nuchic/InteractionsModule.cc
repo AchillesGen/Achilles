@@ -20,7 +20,7 @@ public:
         PYBIND11_OVERLOAD_PURE(
             bool,            // Return type
             Interactions,      // Parent class
-            IsRegistered      // Name of function in C++ (must match Python name)
+            IsRegistered,      // Name of function in C++ (must match Python name)
         );
     }
 
