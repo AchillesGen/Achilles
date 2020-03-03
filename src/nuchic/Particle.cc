@@ -50,7 +50,7 @@ bool Particle::operator==(const Particle& other) const noexcept {
     return true;
 }
 
-const std::string Particle::ToString() const noexcept {
+std::string Particle::ToString() const noexcept {
     return "Particle(" + std::to_string(pid) + ", " + momentum.ToString()
         + ", " + position.ToString() + ", " + std::to_string(status) + ")";
 }

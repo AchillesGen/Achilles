@@ -342,7 +342,7 @@ void seed_seq_fe<count,IntRep,mix_rounds>::param(OutputIterator dest) const
         auto hash_const = INIT_A*fast_exp(MULT_A, IntRep(count * count));
 
         for (auto src = mixer_copy.rbegin(); src != mixer_copy.rend(); ++src)
-            for (auto dest = mixer_copy.rbegin(); dest != mixer_copy.rend();
+            for (dest = mixer_copy.rbegin(); dest != mixer_copy.rend();
                  ++dest)
                 if (src != dest) {
                     IntRep revhashed = *src;
@@ -447,14 +447,14 @@ class auto_seeded : public SeedSeq {
 
     static constexpr uint32_t fnv(uint32_t hash, const char* pos)
     {
-        return *pos == '\0' ? hash : fnv((hash * 16777619U) ^ *pos, pos+1);
+        return *pos == '\0' ? hash : fnv((hash * 16777619U) ^ static_cast<uint32_t>(*pos), pos+1);
     }
 
     default_seeds local_entropy()
     {
         // This is a constant that changes every time we compile the code
-        constexpr uint32_t compile_stamp =
-            fnv(2166136261U, __DATE__ __TIME__ __FILE__);
+        // constexpr uint32_t compile_stamp =
+        //     fnv(2166136261U, __DATE__ __TIME__ __FILE__);
 
         // Some people think you shouldn't use the random device much because
         // on some platforms it could be expensive to call or "use up" vital
@@ -486,7 +486,7 @@ class auto_seeded : public SeedSeq {
         // The address of the time function.  It should hopefully be in
         // a system library that hopefully isn't always in the same place
         // (might not change until system is rebooted though)
-        auto time_func = hash(&std::chrono::high_resolution_clock::now);
+        // auto time_func = hash(&std::chrono::high_resolution_clock::now);
 
         // The address of the exit function.  It should hopefully be in
         // a system library that hopefully isn't always in the same place

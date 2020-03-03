@@ -15,7 +15,7 @@ using nuchic::FourVector;
 using nuchic::ThreeVector;
 
 PYBIND11_MODULE(particle, m) {
-    py::object vectors = (py::object) py::module::import("vectors");
+    py::object vectors = static_cast<py::object>(py::module::import("vectors"));
 
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
         // Constructors

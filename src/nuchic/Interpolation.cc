@@ -101,7 +101,7 @@ void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<dou
 
     for(std::size_t i = 0; i < x.size(); ++i) {
         derivs2.push_back(Interp1D());
-        derivs2[i].CubicSpline(y, std::vector<double>(z.begin()+i*y.size(), z.begin()+(i+1)*y.size()));
+        derivs2[i].CubicSpline(y, std::vector<double>(z.begin()+static_cast<int>(i*y.size()), z.begin()+static_cast<int>((i+1)*y.size())));
     }
 
     kInit = true;

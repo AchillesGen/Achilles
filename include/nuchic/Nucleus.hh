@@ -31,7 +31,7 @@ class Nucleus {
         ///@param fermiMomentum: The Fermi Momentum of the nucleus
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
-        Nucleus(const int&, const int&, const double&, const double&,
+        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
                 const std::function<Particles()>&);
 
         /// Default destructor
@@ -88,15 +88,15 @@ class Nucleus {
 
         /// Return the number of nucleons in the nucleus
         ///@return int: The number of nucleons in the nucleus
-        const int NNucleons() const noexcept {return nucleons.size();}
+        std::size_t NNucleons() const noexcept {return nucleons.size();}
 
         /// Return the number of protons in the nucleus
         ///@return int: The number of protons in the nucleus
-        const int NProtons() const noexcept {return protons.size();}
+        std::size_t NProtons() const noexcept {return protons.size();}
 
         /// Return the number of neutrons in the nucleus
         ///@return int: The number of neutrons in the nucleus
-        const int NNeutrons() const noexcept {return neutrons.size();}
+        std::size_t NNeutrons() const noexcept {return neutrons.size();}
 
         /// Return the current binding energy of the nucleus
         ///@return double: The binding energy in MeV
@@ -187,8 +187,8 @@ class Nucleus {
         double binding, fermiMomentum, radius, potential;
         std::function<Particles()> density;
 
-        static const std::map<int, std::string> ZToName;
-        static int NameToZ(const std::string&);
+        static const std::map<std::size_t, std::string> ZToName;
+        static std::size_t NameToZ(const std::string&);
 
         randutils::mt19937_rng rng;
 };

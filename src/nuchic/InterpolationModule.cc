@@ -5,6 +5,8 @@
 #include "nuchic/Interpolation.hh"
 
 namespace py = pybind11;
+template<typename... Args>
+using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
 
 // These are for convenience
 using nuchic::Interp1D;
@@ -25,21 +27,21 @@ void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<dou
     // Ensure shape is correct
     if(z.ndim() != 2)
         std::runtime_error("Data should be in a 2D array");
-    if(x.size() != z.shape()[0])
+    if(x.size() != static_cast<std::size_t>(z.shape()[0]))
         std::runtime_error("Input and output arrays must be the same size.");
-    if(y.size() != z.shape()[1])
+    if(y.size() != static_cast<std::size_t>(z.shape()[1]))
         std::runtime_error("Input and output arrays must be the same size.");
 
     knotX = x;
     knotY = y;
 
     // Copy numpy array into std::vector<double>
-    knotZ.resize(z.size());
-    std::memcpy(knotZ.data(), z.data(), z.size()*sizeof(double));
+    knotZ.resize(static_cast<std::size_t>(z.size()));
+    std::memcpy(knotZ.data(), z.data(), static_cast<std::size_t>(z.size())*sizeof(double));
 
     for(std::size_t i = 0; i < x.size(); ++i) {
         derivs2.push_back(Interp1D());
-        derivs2[i].CubicSpline(y, std::vector<double>(z.at(i, 0), z.at(i, y.size()-1)));
+        derivs2[i].CubicSpline(y, std::vector<double>(static_cast<std::size_t>(z.at(i, 0)), z.at(i, y.size()-1)));
     }
 
     kInit = true;
@@ -61,11 +63,11 @@ PYBIND11_MODULE(interpolation, m) {
         .def(py::init<>())
         // Functions
         .def("bicubic_spline",
-                (void (Interp2D::*)(const std::vector<double>&, const std::vector<double>&,
-                                    const std::vector<double>&)) &Interp2D::BicubicSpline)
+                overload_cast_<const std::vector<double>&, const std::vector<double>&,
+                               const std::vector<double>&>()(&Interp2D::BicubicSpline))
         .def("bicubic_spline",
-                (void (Interp2D::*)(const std::vector<double>&, const std::vector<double>&,
-                                    const pyArray&)) &Interp2D::BicubicSpline)
+                overload_cast_<const std::vector<double>&, const std::vector<double>&,
+                               const pyArray&>()(&Interp2D::BicubicSpline))
         .def("call", &Interp2D::operator())
         .def("__call__", &Interp2D::operator());
 }

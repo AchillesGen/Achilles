@@ -15,7 +15,7 @@
 
 using namespace nuchic;
 
-const std::map<int, std::string> Nucleus::ZToName = {
+const std::map<std::size_t, std::string> Nucleus::ZToName = {
     {0, "mfp"},
     {1, "H"},
     {2, "He"},
@@ -28,7 +28,7 @@ const std::map<int, std::string> Nucleus::ZToName = {
     {26, "Fe"},
 };
 
-Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
+Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
                          const double& kf, const std::function<Particles()>& _density) 
                         : binding(bEnergy), fermiMomentum(kf), density(_density) {
 
@@ -43,7 +43,7 @@ Nucleus::Nucleus(const int& Z, const int& A, const double& bEnergy,
     protons.resize(Z);
     neutrons.resize(A-Z);
     spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
-    radius = pow(A / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
+    radius = pow(static_cast<double>(A) / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
     potential = sqrt(Constant::mN*Constant::mN 
                      + pow(fermiMomentum, 2)) - Constant::mN + 8;
 }
@@ -88,7 +88,7 @@ Particles Nucleus::GenerateConfig() {
     // Ensure the number of protons and neutrons are correct
     if(particles.size() != nucleons.size())
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
-    int nProtons = 0, nNeutrons = 0;
+    std::size_t nProtons = 0, nNeutrons = 0;
     for(Particle& particle : particles) {
         if(particle.PID() == 2212) nProtons++;
         if(particle.PID() == 2112) nNeutrons++;
@@ -123,8 +123,8 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
     std::smatch match;
 
     if(std::regex_match(name, match, regex)) {
-        const int nucleons = std::stoi(match[1].str());
-        const int protons = NameToZ(match[2].str()); 
+        const std::size_t nucleons = std::stoul(match[1].str());
+        const std::size_t protons = NameToZ(match[2].str()); 
         spdlog::info(
             "Nucleus: parsing nuclear name '{0}', expecting a density "
             "with A={1} total nucleons and Z={2} protons.", 
@@ -135,7 +135,7 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
     throw std::runtime_error("Invalid nucleus " + name);
 }
 
-int Nucleus::NameToZ(const std::string& name) {
+std::size_t Nucleus::NameToZ(const std::string& name) {
     auto it = std::find_if(ZToName.begin(), ZToName.end(),
                            [&name](const std::pair<int, std::string> &p) {
                                return p.second == name;

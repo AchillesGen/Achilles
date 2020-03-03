@@ -45,7 +45,7 @@ const std::map<std::string, double> JWN = {
     {"beta", 0.00895741 * pow(1_MeV, -0.8)}
 };
 
-double nuchic::CrossSection(bool samePID, const double& pcm) {
+double nuchic::CrossSection(bool, const double&) {
     // TODO: Implement GEANT4 cross-section or something else
     throw std::domain_error("Invalid energy!");
 }
@@ -85,7 +85,7 @@ double nuchic::CrossSectionLab(bool samePID, const double& pLab) noexcept {
     }
 }
 
-double nuchic::CrossSectionAngle(bool samePID, const double& pcm, const double& ran) {
+double nuchic::CrossSectionAngle(bool, const double&, const double& ran) {
     // For testing right now
     // TODO: Implement GEANT4 angular distribution or something else
     return std::acos(2*ran - 1);
@@ -135,10 +135,10 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
     }
 }
 
-REGISTER_INTERACTION(GeantInteractions);
-REGISTER_INTERACTION(ConstantInteractions);
+REGISTER_INTERACTION(GeantInteractions)
+REGISTER_INTERACTION(ConstantInteractions)
 
-GeantInteractions::GeantInteractions(const std::string& filename) : Interactions(filename) {
+GeantInteractions::GeantInteractions(const std::string& filename) : Interactions() {
     // Initialize theta vector
     m_theta =Linspace(0.5, 179.5, 180);
     m_cdf = Logspace(-3, 0, 200);

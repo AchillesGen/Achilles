@@ -16,7 +16,7 @@ Particles Cascade::Kick(const Particles& particles, const FourVector& energyTran
     std::vector<std::size_t> indices;
 
     auto ddSigma = {sigma[0], sigma[1]};
-    std::size_t index = rng.variate<int, std::discrete_distribution>(ddSigma);
+    std::size_t index = rng.variate<std::size_t, std::discrete_distribution>(ddSigma);
 
     int interactPID = index == 0 ? 2212 : 2112;
 
@@ -67,7 +67,7 @@ Particles Cascade::operator()(const Particles& _particles, const double& kf, con
 
             // Get interaction
             auto hitIdx = Interacted(particles, *kickNuc, dist2);
-            if(hitIdx == -1) continue;
+            if(hitIdx == SIZE_MAX) continue;
             Particle* hitNuc = &particles[hitIdx];
 
             // Finalize Momentum
@@ -147,7 +147,7 @@ Particles Cascade::MeanFreePath(
         if (nearby_particles.size() == 0) continue;
         // Did we hit?
         auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
-        if (hitIdx == -1) continue;
+        if (hitIdx == SIZE_MAX) continue;
         Particle* hitNuc = &particles[hitIdx];
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
         hit = FinalizeMomentum(*kickNuc, *hitNuc);
@@ -159,14 +159,14 @@ Particles Cascade::MeanFreePath(
     return particles;
 }
 
-void Cascade::AdaptiveStep(const Particles& particles, const double& distance) noexcept {
+void Cascade::AdaptiveStep(const Particles& particles, const double& stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
         if(particles[idx].Beta().Magnitude() > beta)
             beta = particles[idx].Beta().Magnitude();
     }
 
-    timeStep = distance/(beta*Constant::HBARC);
+    timeStep = stepDistance/(beta*Constant::HBARC);
 }
 
 bool Cascade::BetweenPlanes(const ThreeVector& position,
@@ -217,12 +217,12 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
     return results;
 }
 
-const double Cascade::GetXSec(const Particle& particle1,
+double Cascade::GetXSec(const Particle& particle1,
                                       const Particle& particle2) const {
     return m_interactions -> CrossSection(particle1, particle2);
 }
 
-int Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
+std::size_t Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
@@ -230,7 +230,7 @@ int Cascade::Interacted(const Particles& particles, const Particle& kickedPartic
         if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
-    return -1;
+    return SIZE_MAX;
 }
 
 bool Cascade::FinalizeMomentum(Particle& particle1,

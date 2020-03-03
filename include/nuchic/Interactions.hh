@@ -32,7 +32,7 @@ class Interactions {
         Interactions() {}
 
         /// Base class constructor for classes that need data files
-        Interactions(const std::string& data) {}
+        // Interactions(const std::string& data) {}
 
         /// Default destructor
         virtual ~Interactions() {}
@@ -179,7 +179,7 @@ class ConstantInteractions : public Interactions {
         // These functions are defined in the base class
         bool IsRegistered() const noexcept {return registered;}
         double CrossSection(const Particle&, const Particle&) const { return m_xsec; }
-        ThreeVector MakeMomentum(bool s, const double& p1, const double& pcm,
+        ThreeVector MakeMomentum(bool, const double&, const double& pcm,
                 const std::array<double, 2>& rans) const {
             double ctheta = 2*rans[0]-1;
             double stheta = sqrt(1-ctheta*ctheta);

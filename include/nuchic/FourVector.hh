@@ -129,55 +129,55 @@ class FourVector {
 
         /// Return the transverse momentum squared
         ///@return double: Transverse momentum squared
-        const double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
+        double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
 
         /// Return the transverse momentum
         ///@return double: Transverse momentum
-        const double Pt() const noexcept {return sqrt(Pt2());}
+        double Pt() const noexcept {return sqrt(Pt2());}
 
         /// Return the three momentum squared
         ///@return double: Three momentum squared
-        const double P2() const noexcept {return Pt2() + pow(vec[2], 2);}
+        double P2() const noexcept {return Pt2() + pow(vec[2], 2);}
 
         /// Return the three momentum
         ///@return double: Three momentum
-        const double P() const noexcept {return sqrt(P2());}
+        double P() const noexcept {return sqrt(P2());}
 
         /// Return the invariant mass squared
         ///@return double: The invariant mass squared
-        const double M2() const noexcept {return (*this)*(*this);} 
+        double M2() const noexcept {return (*this)*(*this);} 
 
         /// Return the invariant mass
         ///@return double: The invariant mass
-        const double M() const noexcept;
+        double M() const noexcept;
 
         /// Return the Minkowski magnitude squared
         ///@return double: The magnitude squared
-        const double Magnitude2() const noexcept {return M2();}
+        double Magnitude2() const noexcept {return M2();}
 
         /// Return the Minkowski magnitude
         ///@return double: The magnitude
-        const double Magnitude() const noexcept {return M();}
+        double Magnitude() const noexcept {return M();}
 
         /// Return the angle between the z-axis and the transverse plane
         ///@return double: Angle between z-axis and transverse plane
-        const double Theta() const noexcept;
+        double Theta() const noexcept;
 
         /// Return the angle in the transverse plane
         ///@return double: The angle in the transverse plane
-        const double Phi() const noexcept;
+        double Phi() const noexcept;
 
         /// Return the rapidity of the momentum
         ///@return double: The rapidity associated with the momentum
-        const double Rapidity() const noexcept;
+        double Rapidity() const noexcept;
 
         /// Return the distance in the Eta-Phi plane between two four vectors
         ///@return double: Distance between two four vectors in Eta-Phi plane
-        const double DeltaR(const FourVector&) const noexcept;
+        double DeltaR(const FourVector&) const noexcept;
 
         /// Return the three momentum component
         ///@return ThreeVector: The three momentum component
-        const ThreeVector Vec3() const noexcept;
+        ThreeVector Vec3() const noexcept;
         ///@}
 
         /// @name Functions
@@ -203,18 +203,18 @@ class FourVector {
         /// Return the the boost vector required to boost to the rest frame of a given
         /// four vector
         ///@return ThreeVector: Boost vector
-        const ThreeVector BoostVector() const noexcept;
+        ThreeVector BoostVector() const noexcept;
 
         /// Calculate the dot product between two four vectors
         ///@param other: four vector to take dot product with
         ///@return double: the value of the dot product
-        const double Dot(const FourVector& other) const noexcept {
+        double Dot(const FourVector& other) const noexcept {
             return (*this) * other;
         }
 
         /// Return a string representation of the vector
         ///@return std::string: a string representation of the vector
-        const std::string ToString() const noexcept;
+        std::string ToString() const noexcept;
         ///@}
 
         /// @name Operator Overloads

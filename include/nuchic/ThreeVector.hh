@@ -129,35 +129,35 @@ class ThreeVector {
 
         /// Return the transverse momentum squared
         ///@return double: containing the transverse momentum squared
-        const double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
+        double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
 
         /// Return the transverse momentum
         ///@return double: containing the transverse momentum
-        const double Pt() const noexcept {return sqrt(Pt2());}
+        double Pt() const noexcept {return sqrt(Pt2());}
 
         /// Return the three momentum squared
         ///@return double: containing the three momentum squared
-        const double P2() const noexcept {return (*this)*(*this);}
+        double P2() const noexcept {return (*this)*(*this);}
 
         /// Return the three momentum
         ///@return double: containing the three momentum
-        const double P() const noexcept {return sqrt(P2());}
+        double P() const noexcept {return sqrt(P2());}
 
         /// Return the magnitude squared of the vector
         ///@return double: containing the magnitude squared of the vector
-        const double Magnitude2() const noexcept {return P2();}
+        double Magnitude2() const noexcept {return P2();}
 
         /// Return the magnitude of the vector
         ///@return double: containing the magnitude of the vector
-        const double Magnitude() const noexcept {return P();}
+        double Magnitude() const noexcept {return P();}
 
         /// Return the angle between the z-component and the transverse component
         ///@return double: containing the angle between the z and transverse components
-        const double Theta() const noexcept;
+        double Theta() const noexcept;
 
         /// Return the angle between the x and y components
         ///@return double: containing the angle between the x and y components
-        const double Phi() const noexcept;
+        double Phi() const noexcept;
         ///@}
 
         /// @name Functions
@@ -166,22 +166,22 @@ class ThreeVector {
         /// Calculate the dot product between two three vectors
         ///@param other: three vector to take dot product with
         ///@return double: the value of the dot product
-        const double Dot(const ThreeVector& other) const noexcept {
+        double Dot(const ThreeVector& other) const noexcept {
             return (*this) * other;
         }
 
         /// Calculate the cross product between two three vectors
         ///@param other: three vector to take cross product with
         ///@return ThreeVector: the resultant cross product
-        const ThreeVector Cross(const ThreeVector&) const noexcept;
+        ThreeVector Cross(const ThreeVector&) const noexcept;
 
         /// Return a unit vector in the direction of the vector
         ///@return ThreeVector: a unit vector in the direction of the vector
-        const ThreeVector Unit() const noexcept;
+        ThreeVector Unit() const noexcept;
 
         /// Return a string representation of the vector
         ///@return std::string: a string representation of the vector
-        const std::string ToString() const noexcept;
+        std::string ToString() const noexcept;
         ///@}
 
         /// @name Operator Overloads

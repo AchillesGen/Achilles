@@ -8,33 +8,33 @@ using namespace nuchic;
 FourVector::FourVector(const ThreeVector& other, const double& E) noexcept
     : vec({other[0], other[1], other[2], E}) {}
 
-const double FourVector::M() const noexcept {
+double FourVector::M() const noexcept {
     const double m2 = M2();
     if(std::abs(m2) < 1E-6) return 0;
     return sqrt(m2);
 }
 
-const double FourVector::Theta() const noexcept {
+double FourVector::Theta() const noexcept {
     return atan2(Pt(), vec[2]);
 }
 
-const double FourVector::Phi() const noexcept {
+double FourVector::Phi() const noexcept {
     const double phi = atan2(vec[1], vec[0]);
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }
 
-const double FourVector::Rapidity() const noexcept {
+double FourVector::Rapidity() const noexcept {
     return 0.5*log((E() + Pz())/(E() - Pz()));
 }
 
-const double FourVector::DeltaR(const FourVector& other) const noexcept {
+double FourVector::DeltaR(const FourVector& other) const noexcept {
     const double DEta = Rapidity() - other.Rapidity();
     const double DPhi = Phi() - other.Phi();
     return sqrt(DEta*DEta + DPhi*DPhi);
 }
 
-const ThreeVector FourVector::Vec3() const noexcept {
+ThreeVector FourVector::Vec3() const noexcept {
     return ThreeVector(vec[0], vec[1], vec[2]);
 }
 
@@ -69,7 +69,7 @@ FourVector FourVector::Cross(const FourVector& other) const noexcept {
     return FourVector(result, 0);
 }
 
-const ThreeVector FourVector::BoostVector() const noexcept {
+ThreeVector FourVector::BoostVector() const noexcept {
     return ThreeVector(vec[0]/vec[3], vec[1]/ vec[3], vec[2]/vec[3]);
 }
 
@@ -142,7 +142,7 @@ bool FourVector::operator==(const FourVector& other) const noexcept {
     return vec==other.vec;
 }
 
-const std::string FourVector::ToString() const noexcept {
+std::string FourVector::ToString() const noexcept {
     return "FourVector(" + std::to_string(vec[0]) + ", " + std::to_string(vec[1])
         + ", " + std::to_string(vec[2]) + ", " + std::to_string(vec[3]) + ")";
 }

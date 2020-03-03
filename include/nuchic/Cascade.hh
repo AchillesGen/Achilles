@@ -83,8 +83,8 @@ class Cascade {
         bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const InteractionDistances AllowedInteractions(Particles&, const std::size_t&) const noexcept;
-        const double GetXSec(const Particle&, const Particle&) const;
-        int Interacted(const Particles&, const Particle&,
+        double GetXSec(const Particle&, const Particle&) const;
+        std::size_t Interacted(const Particles&, const Particle&,
                 const InteractionDistances&) noexcept;
         bool FinalizeMomentum(Particle&, Particle&) noexcept;
         bool PauliBlocking(const Particle&) const noexcept;

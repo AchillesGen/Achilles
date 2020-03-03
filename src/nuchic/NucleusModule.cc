@@ -10,8 +10,8 @@
 namespace py = pybind11;
 
 PYBIND11_MODULE(nucleus, m) {
-    py::object vectors = (py::object) py::module::import("vectors");
-    py::object particle = (py::object) py::module::import("particle");
+    py::object vectors = static_cast<py::object>(py::module::import("vectors"));
+    py::object particle = static_cast<py::object>(py::module::import("particle"));
 
     py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>>(m, "Nucleus")
         // Constructors
