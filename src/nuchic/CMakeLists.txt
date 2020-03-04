@@ -18,32 +18,28 @@ target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_LIBRARIES})
 
-set(NUCHIC_LIBS ${NUCHIC_LIBS} physics)
-
 pybind11_add_module(logger MODULE
     LoggingModule.cc
 )
-target_link_libraries(logger PRIVATE spdlog::spdlog)
-
-set(NUCHIC_LIBS ${NUCHIC_LIBS} spdlog::spdlog)
+target_link_libraries(logger PUBLIC spdlog::spdlog)
 
 pybind11_add_module(vectors MODULE
     VectorModule.cc
 )
 target_link_libraries(vectors PRIVATE project_options project_warnings
-                              PUBLIC physics utilities)
+                              PUBLIC utilities)
 
 pybind11_add_module(interpolation MODULE
     InterpolationModule.cc
 )
 target_link_libraries(interpolation PRIVATE project_options project_warnings
-                                    PUBLIC physics utilities)
+                                    PUBLIC utilities)
 
 pybind11_add_module(particle MODULE
     ParticleModule.cc
 )
 target_link_libraries(particle PRIVATE project_options project_warnings
-                               PUBLIC physics utilities)
+                               PUBLIC utilities)
 
 pybind11_add_module(nucleus MODULE
     NucleusModule.cc
