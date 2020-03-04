@@ -321,8 +321,8 @@ class FourVector {
         ///@param ostr: Output stream to write to
         ///@param vec: The four vector to be written out
         template<typename OStream>
-        friend OStream& operator<<(OStream &os, const FourVector &vec) {
-            os << "FourVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ", " << vec.E() << ")";
+        friend OStream& operator<<(OStream &os, const FourVector &vec4) {
+            os << "FourVector(" << vec4.Px() << ", " << vec4.Py() << ", " << vec4.Pz() << ", " << vec4.E() << ")";
             return os;
         }
 

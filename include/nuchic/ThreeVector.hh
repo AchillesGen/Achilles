@@ -288,8 +288,8 @@ class ThreeVector {
         ///@param ostr: Output stream to write to
         ///@param vec: The three vector to be written out
         template<typename OStream>
-        friend OStream& operator<<(OStream& os, const ThreeVector& vec) {
-            os << "ThreeVector(" << vec.Px() << ", " << vec.Py() << ", " << vec.Pz() << ")";
+        friend OStream& operator<<(OStream& os, const ThreeVector& vec3) {
+            os << "ThreeVector(" << vec3.Px() << ", " << vec3.Py() << ", " << vec3.Pz() << ")";
             return os;
         }
 
