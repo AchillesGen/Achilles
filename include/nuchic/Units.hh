@@ -18,7 +18,7 @@ namespace nuchic {
         return static_cast<double>(x);
     }
     constexpr double operator"" _m(long double x) {
-        return static_cast<double>(x*1.0e15);
+        return static_cast<double>(x)*1.0e15;
     }
     constexpr double operator"" _m(unsigned long long int x) {
         return static_cast<double>(x)*1.0e15;
