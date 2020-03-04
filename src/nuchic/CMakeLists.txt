@@ -14,7 +14,7 @@ add_library(physics SHARED
     InteractionsFactory.cc
     Nucleus.cc
 )
-target_include_directories(physics PUBLIC ${HDF5_INCLUDE_DIRS})
+target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_LIBRARIES})
 
