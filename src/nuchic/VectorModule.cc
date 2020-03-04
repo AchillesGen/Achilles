@@ -56,7 +56,12 @@ PYBIND11_MODULE(vectors, m) {
         .def(py::self - py::self)
         .def(py::self * py::self)
         .def(-py::self)
-        .def(py::self -= py::self)
+        // NOTE: There is a clang bug that creates a warning for the line below
+        //.def(py::self -= py::self)
+        // Therefore, we have to do the following as a workaround
+        .def("__isub__", [](ThreeVector &a, const ThreeVector &b) {
+                return a -= b;
+            }, py::is_operator())
         .def(float() * py::self)
         .def(py::self * float())
         .def(py::self *= float())
@@ -117,7 +122,12 @@ PYBIND11_MODULE(vectors, m) {
         .def(py::self - py::self)
         .def(py::self * py::self)
         .def(-py::self)
-        .def(py::self -= py::self)
+        // NOTE: There is a clang bug that creates a warning for the line below
+        //.def(py::self -= py::self)
+        // Therefore, we have to do the following as a workaround
+        .def("__isub__", [](FourVector &a, const FourVector &b) {
+                return a -= b;
+            }, py::is_operator())
         .def(float() * py::self)
         .def(py::self * float())
         .def(py::self *= float())
