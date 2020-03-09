@@ -23,7 +23,9 @@ FetchContent_Declare(
     extern_spdlog
 
     GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
-    GIT_TAG "v1.x")
+    GIT_TAG "v1.x"
+    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/spdlog.patch"
+    )
 
 FetchContent_GetProperties(extern_spdlog)
 if(NOT extern_spdlog_POPULATED)

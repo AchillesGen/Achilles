@@ -1,0 +1,13 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index d617790d..88ea666b 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -136,7 +136,7 @@ endif()
+ add_library(spdlog::spdlog ALIAS spdlog)
+ 
+ target_compile_definitions(spdlog PUBLIC SPDLOG_COMPILED_LIB)
+-target_include_directories(spdlog PUBLIC
++target_include_directories(spdlog SYSTEM PUBLIC
+         "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+         "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>")
+ target_link_libraries(spdlog PUBLIC Threads::Threads)
