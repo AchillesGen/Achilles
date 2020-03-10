@@ -9,7 +9,7 @@ namespace py = pybind11;
 PYBIND11_MODULE(logger, m) {
     m.def("init",  [](const std::string &logname, const std::string &logfile) {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        console_sink->set_level(spdlog::level::warn);
+        console_sink->set_level(spdlog::level::info);
         console_sink->set_pattern("[%^%l%$] %v");
 
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logfile, true); 

@@ -16,10 +16,10 @@ using nuchic::Cascade;
 using nuchic::Interactions;
 
 PYBIND11_MODULE(cascade, m) {
-    py::object vectors = (py::object) py::module::import("vectors");
-    py::object particle = (py::object) py::module::import("particle");
-    py::object nucleus = (py::object) py::module::import("nucleus");
-    py::object interactions = (py::object) py::module::import("interactions");
+    py::object vectors = static_cast<py::object>(py::module::import("vectors"));
+    py::object particle = static_cast<py::object>(py::module::import("particle"));
+    py::object nucleus = static_cast<py::object>(py::module::import("nucleus"));
+    py::object interactions = static_cast<py::object>(py::module::import("interactions"));
 
     py::class_<Cascade, std::shared_ptr<Cascade>>(m, "Cascade")
         // Constructors
@@ -31,6 +31,9 @@ PYBIND11_MODULE(cascade, m) {
         .def("set_kicked", &Cascade::SetKicked)
         .def("call", &Cascade::operator())
         .def("__call__", &Cascade::operator(),
+                py::arg("particles"), py::arg("fermi_momentum"),
+                py::arg("radius2"), py::arg("max_steps") = 10000)
+        .def("mean_free_path", &Cascade::MeanFreePath,
                 py::arg("particles"), py::arg("fermi_momentum"),
                 py::arg("radius2"), py::arg("max_steps") = 10000);
 }

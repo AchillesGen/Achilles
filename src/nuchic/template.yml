@@ -1,19 +1,41 @@
 run:
-    events: 1000
-    beam_energy: 730.0
-    angle: 37.1
+    mode: xsec
+    events: 10000
+    beam_energy: 331.66
+    angle: 0.0
     cascade: off
     folding: off
     output: lhe
-    folding_func: particle_spectral
+    folding_func: breit_wigner #particle_spectral
+    # nucleus: mfp_calc #12C
     nucleus: 12C
+    nuclear_density: configuration
 
-parameters:
-    cascade_distance: 0.2
+nucleus_config:
+    config_type: QMC
+    radius: 10
+    n_nucleons: 100
+
+12C_params:
     binding_energy: 8.6
     fermi_momentum: 225
     fermi_energy: 20
-    config_type: QMC
+
+100mfp_params:
+    binding_energy: 0
+    fermi_momentum: 0
+    fermi_energy: 0
+
+parameters:
+    interaction: GeantInteractions
+    interaction_file: src/nuchic/data/GeantData.hdf5
+    cascade_distance: 0.05
+    mn: 938
+
+mean_free_path:
+    xsec: 10.0
+    radius: 10.0
+    nucleons: 300
 
 histograms:
     omega:

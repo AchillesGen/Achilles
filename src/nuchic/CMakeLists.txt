@@ -5,9 +5,8 @@ add_library(utilities SHARED
     ThreeVector.cc
     Utilities.cc
 )
-target_include_directories(utilities PRIVATE ${NUCHIC_INCLUDES} PUBLIC ${Python_INCLUDE_DIRS})
-
-set(NUCHIC_LIBS ${NUCHIC_LIBS} utilities ${HDF5_LIBRARIES})
+target_link_libraries(utilities PRIVATE project_options project_warnings
+                                PUBLIC spdlog::spdlog pybind11::pybind11)
 
 add_library(physics SHARED
     Cascade.cc
@@ -15,42 +14,47 @@ add_library(physics SHARED
     InteractionsFactory.cc
     Nucleus.cc
 )
-target_include_directories(physics PRIVATE ${NUCHIC_INCLUDES})
-target_link_libraries(physics PRIVATE ${NUCHIC_LIBS} spdlog::spdlog)
-
-set(NUCHIC_LIBS ${NUCHIC_LIBS} physics)
+target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+target_link_libraries(physics PRIVATE project_options project_warnings
+                              PUBLIC utilities ${HDF5_LIBRARIES})
 
 pybind11_add_module(logger MODULE
     LoggingModule.cc
 )
-target_link_libraries(logger PRIVATE spdlog::spdlog)
+target_link_libraries(logger PUBLIC spdlog::spdlog)
 
 pybind11_add_module(vectors MODULE
     VectorModule.cc
 )
-pylink(vectors "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(vectors PRIVATE project_options project_warnings
+                              PUBLIC utilities)
 
 pybind11_add_module(interpolation MODULE
     InterpolationModule.cc
 )
-pylink(interpolation "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(interpolation PRIVATE project_options project_warnings
+                                    PUBLIC utilities)
 
 pybind11_add_module(particle MODULE
     ParticleModule.cc
 )
-pylink(particle "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(particle PRIVATE project_options project_warnings
+                               PUBLIC utilities)
 
 pybind11_add_module(nucleus MODULE
     NucleusModule.cc
 )
-pylink(nucleus "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(nucleus PRIVATE project_options project_warnings 
+                              PUBLIC physics utilities)
 
 pybind11_add_module(interactions MODULE
     InteractionsModule.cc
 )
-pylink(interactions "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(interactions PRIVATE project_options project_warnings 
+                                   PUBLIC physics utilities)
 
 pybind11_add_module(cascade MODULE
     CascadeModule.cc
 )
-pylink(cascade "${NUCHIC_INCLUDES}" "${NUCHIC_LIBS}")
+target_link_libraries(cascade PRIVATE project_options project_warnings 
+                              PUBLIC physics utilities)

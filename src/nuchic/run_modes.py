@@ -8,14 +8,37 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 
 import numpy as np
 
+import seaborn as sns
+import pylab as plt
+import scipy.stats
+
 import vectors
 import particle
 import nucleus
 import interactions
 import cascade
+import logger
 
 import nuchic.densities as densities
 from .config import settings
+
+class ConstantInteraction(interactions.Interactions):
+    def __init__(self, xsec):
+        interactions.Interactions.__init__(self)
+        self.xsec = xsec
+        logger.info(f"ConstantInteraction: xsec {self.xsec}")
+    # doesn't work:
+    # def cross_section(self, part1, part2):
+    #     return self.xsec
+    # neither does this:
+    def CrossSection(self, part1, part2):
+        return self.xsec
+
+    def IsRegistered(self):
+        return True
+
+    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):
+        return vectors.Vector3()
 
 class RunMode:
     """ General RunMode class that must be inherited from. """
@@ -46,12 +69,21 @@ class RunMode:
 
     def __init__(self):
         """ General run mode initialization. """
-        density = densities.NuclearDensity(settings().get_run('nuclear_density'),
+        instance_name = self.__class__.__name__
+        density_name = settings().get_run('nuclear_density')
+        logger.info(f"{instance_name}: using density '{density_name}'.")
+        logger.info(f"{instance_name}: using nuclear configuration settings "
+                    f"{settings().nucleus_config}.")
+        density = densities.NuclearDensity(density_name,
                                            **settings().nucleus_config)
 
         name = settings().get_run('nucleus')
         binding_energy = settings().nucleus_binding(name)
         fermi_momentum = settings().nucleus_kf(name)
+        logger.info(
+            f"{instance_name}: Building nucleus '{name}' "
+            f"with Fermi momentum {fermi_momentum} MeV and "
+            f"binding_energy {binding_energy} MeV.")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
                                                     binding_energy,
                                                     fermi_momentum,
@@ -97,7 +129,7 @@ class CalcCrossSection(RunMode):
         energy = settings().beam_energy
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
-        test_part =  particle.Particle(self.pid, momentum, position, -2)
+        test_part = particle.Particle(self.pid, momentum, position, -2)
         particles.append(test_part)
         self.fsi.set_kicked(len(particles)-1)
 
@@ -143,12 +175,91 @@ class CalcMeanFreePath(RunMode):
 
         # Initialize base class and additional variables
         super().__init__()
+        logger.info("CalcMeanFreePath: overriding nuclear radius "
+                    "with value from run card.")
+        self.nucleus.set_radius(settings().nucleus_config['radius'])
+        self.radius = self.nucleus.radius
+        self.pid = 2212
+        name = settings().get_param('interaction')
+        fname = str(settings().get('xsec'))
+        logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
+        # interaction = interactions.Interactions.create(name, fname)
+        interaction = ConstantInteraction(xsec=settings().get('xsec'))
+
+        part1 = particle.Particle()
+        part2 = particle.Particle()
+        logger.info(f"{interaction.CrossSection(part1, part2)}")
+        print(interaction)
+
+        self.fsi = cascade.Cascade(interaction)
+        del interaction
+        logger.info(
+            "CalcMeanFreePath: nucleus contains "
+            f"A={self.nucleus.n_nucleons()} total nucleons, "
+            f"Z={self.nucleus.n_protons()} protons, and "
+            f"(A-Z)={self.nucleus.n_neutrons()} neutrons.")
+        logger.info(
+            "CalcMeanFreePath: nucleus has "
+            f"Binding energy E={self.nucleus.binding_energy()} MeV, "
+            f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV, "
+            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and "
+            f"Radius r={self.nucleus.radius():.2f} fm.")
+
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
+        # Kick in a random direction
+        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
+        # x in [0,1] --> phi in [0,2*pi]
+        x = np.random.random(2)
+        theta = np.arccos(2 * x[0] - 1)
+        phi = 2 * np.pi * x[1]
+        p_kick = settings().beam_energy
+        particles = self.nucleus.generate_config()
+
+        # Select a random particle to kick
+        kicked_idx = np.random.choice(np.arange(len(particles)))
+        self.fsi.set_kicked(kicked_idx)
+        kicked_particle = particles[kicked_idx]
+        kicked_particle.set_status(-3)
+        kicked_particle.set_momentum(vectors.Vector4(
+            p_kick * np.sin(theta) * np.cos(phi),
+            p_kick * np.sin(theta) * np.sin(phi),
+            p_kick * np.cos(theta),
+            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
+
+        particles = self.fsi.mean_free_path(
+            particles,
+            self.nucleus.fermi_momentum(),
+            self.nucleus.radius()**2)
+
+        return particles
+
     def finalize(self, events):
-        """ Convert the events to a total cross-section. """
+        """ Plot a histogram of distance traveled """
+        distance_traveled = []
+        nhits = 0
+        for event in events:
+            for aparticle in event:
+                if aparticle.status() == -3:
+                    distance_traveled.append(aparticle.get_distance_traveled())
+                    nhits = nhits + 1
+        logger.info(f"nhits / nevents : {nhits} / {len(events)}")
+
+        _, ax = plt.subplots(1)
+        loc, scale = scipy.stats.expon.fit(distance_traveled)
+        fit_label = f"$\lambda$={scale:.2f} fm"
+        sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
+                     label='events', fit_kws={'label':fit_label})
+        ax.set_xlabel(r'Distance traveled [fm]')
+        ax.set_ylabel("Counts")
+        ax.set_yscale('log')
+        ax.set_title(
+            f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
+        )
+        ax.legend()
+        plt.show()
 
 
 class CalcTransparency(RunMode):

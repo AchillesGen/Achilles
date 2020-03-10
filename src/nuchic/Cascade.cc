@@ -4,19 +4,19 @@
 #include "spdlog/spdlog.h"
 
 #include "nuchic/Cascade.hh"
+#include "nuchic/Constants.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
 
-#define HBARC 200
-#define mN 938
+using namespace nuchic;
 
-nuchic::Particles nuchic::Cascade::Kick(const nuchic::Particles& particles, const nuchic::FourVector& energyTransfer,
+Particles Cascade::Kick(const Particles& particles, const FourVector& energyTransfer,
         const std::array<double, 2>& sigma) {
     std::vector<std::size_t> indices;
 
     auto ddSigma = {sigma[0], sigma[1]};
-    std::size_t index = rng.variate<int, std::discrete_distribution>(ddSigma);
+    std::size_t index = rng.variate<std::size_t, std::discrete_distribution>(ddSigma);
 
     int interactPID = index == 0 ? 2212 : 2112;
 
@@ -32,14 +32,14 @@ nuchic::Particles nuchic::Cascade::Kick(const nuchic::Particles& particles, cons
     return result;
 }
 
-void nuchic::Cascade::Reset() {
+void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particles, const double& kf, const double& _radius2,
+Particles Cascade::operator()(const Particles& _particles, const double& kf, const double& _radius2,
         const std::size_t& maxSteps) {
 
-    nuchic::Particles particles = _particles;
+    Particles particles = _particles;
     fermiMomentum = kf;
     radius2= _radius2;
     for(std::size_t step = 0; step < maxSteps; ++step) {
@@ -67,13 +67,15 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
 
             // Get interaction
             auto hitIdx = Interacted(particles, *kickNuc, dist2);
-            if(hitIdx == -1) continue;
+            if(hitIdx == SIZE_MAX) continue;
             Particle* hitNuc = &particles[hitIdx];
 
             // Finalize Momentum
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-
-            if(hit) newKicked.push_back(hitIdx);
+            if(hit) {
+                newKicked.push_back(hitIdx);
+                hitNuc->SetStatus(-1);
+            }
         }
 
         // Replace kicked indices with new list
@@ -114,49 +116,92 @@ nuchic::Particles nuchic::Cascade::operator()(const nuchic::Particles& _particle
     return particles;
 }
 
-void nuchic::Cascade::AdaptiveStep(const Particles& particles, const double& distance) noexcept {
+Particles Cascade::MeanFreePath(
+    const Particles& _particles,
+    const double& kf,
+    const double& _radius2,
+    const std::size_t& maxSteps) {
+
+    Particles particles = _particles;
+    fermiMomentum = kf;
+    radius2 = _radius2;
+    auto idx = kickedIdxs[0];
+    Particle* kickNuc = &particles[idx];
+    
+    if (kickedIdxs.size() != 1) {
+        std::runtime_error("MeanFreePath: only one particle should be kicked.");
+    }
+    if (kickNuc -> Status() != -3) {
+        std::runtime_error(
+            "MeanFreePath: kickNuc must have status -3 "
+            "in order to accumulate DistanceTraveled."
+            );
+    }
+    bool hit = false;
+    for(std::size_t step = 0; step < maxSteps; ++step) {
+        // Are we already outside nucleus?
+        if (kickNuc->Position().Magnitude2() >= radius2) break;
+        AdaptiveStep(particles, distance);
+        // Identify nearby particles which might interact
+        auto nearby_particles = AllowedInteractions(particles, idx);
+        if (nearby_particles.size() == 0) continue;
+        // Did we hit?
+        auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
+        if (hitIdx == SIZE_MAX) continue;
+        Particle* hitNuc = &particles[hitIdx];
+        // Did we *really* hit? Finalize momentum, check for Pauli blocking.
+        hit = FinalizeMomentum(*kickNuc, *hitNuc);
+        // Stop as soon as we hit anything
+        if (hit) break;
+    }
+    if (!hit) kickNuc->SetStatus(1);  // Escaped
+    kickedIdxs.clear();  // Clean up
+    return particles;
+}
+
+void Cascade::AdaptiveStep(const Particles& particles, const double& stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
         if(particles[idx].Beta().Magnitude() > beta)
             beta = particles[idx].Beta().Magnitude();
     }
 
-    timeStep = distance/(beta*HBARC);
+    timeStep = stepDistance/(beta*Constant::HBARC);
 }
 
-bool nuchic::Cascade::BetweenPlanes(const nuchic::ThreeVector& position,
-                                    const nuchic::ThreeVector& point1,
-                                    const nuchic::ThreeVector& point2) const noexcept {
+bool Cascade::BetweenPlanes(const ThreeVector& position,
+                                    const ThreeVector& point1,
+                                    const ThreeVector& point2) const noexcept {
     // Get distance between planes
-    const nuchic::ThreeVector dist = point2 - point1;
+    const ThreeVector dist = point2 - point1;
 
     // Determine if point is between planes
     return ((position - point1).Dot(dist) >= 0 && (position - point2).Dot(dist) <=0);
 }
 
-const nuchic::ThreeVector nuchic::Cascade::Project(const nuchic::ThreeVector& position,
-                                                   const nuchic::ThreeVector& planePt,
-                                                   const nuchic::ThreeVector& planeVec) const noexcept {
+const ThreeVector Cascade::Project(const ThreeVector& position,
+                                                   const ThreeVector& planePt,
+                                                   const ThreeVector& planeVec) const noexcept {
     // Project point onto a plane
-    const nuchic::ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
+    const ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
     return position - projection;
 }
 
-const nuchic::InteractionDistances nuchic::Cascade::AllowedInteractions(nuchic::Particles& particles,
+const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
                                                                         const std::size_t& idx) const noexcept {
-    nuchic::InteractionDistances results;
+    InteractionDistances results;
 
     // Build planes
-    const nuchic::ThreeVector point1 = particles[idx].Position();
+    const ThreeVector point1 = particles[idx].Position();
     particles[idx].Propagate(timeStep);
-    const nuchic::ThreeVector point2 = particles[idx].Position();
+    const ThreeVector point2 = particles[idx].Position();
     auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
 
     // Build results vector
     for(std::size_t i = 0; i < particles.size(); ++i) {
         // TODO: Should particles propagating be able to interact with 
         //       other propagating particles?
-        if(particles[i].Status() == -1 || particles[i].Status() == -2) continue;
+        if (particles[i].Status() < 0) continue;
         // if(i == idx) continue;
         // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
@@ -172,12 +217,12 @@ const nuchic::InteractionDistances nuchic::Cascade::AllowedInteractions(nuchic::
     return results;
 }
 
-const double nuchic::Cascade::GetXSec(const nuchic::Particle& particle1,
-                                      const nuchic::Particle& particle2) const {
+double Cascade::GetXSec(const Particle& particle1,
+                                      const Particle& particle2) const {
     return m_interactions -> CrossSection(particle1, particle2);
 }
 
-int nuchic::Cascade::Interacted(const Particles& particles, const nuchic::Particle& kickedParticle,
+std::size_t Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
@@ -185,11 +230,11 @@ int nuchic::Cascade::Interacted(const Particles& particles, const nuchic::Partic
         if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
-    return -1;
+    return SIZE_MAX;
 }
 
-bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
-                                       nuchic::Particle& particle2) noexcept {
+bool Cascade::FinalizeMomentum(Particle& particle1,
+                                       Particle& particle2) noexcept {
     // Boost to center of mass frame
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
@@ -198,7 +243,7 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
     // Generate outgoing momentum
     bool samePID = particle1.PID() == particle2.PID(); 
     double ecm = (p1CM + p2CM).M();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * mN / ecm;
+    const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / ecm;
     std::array<double, 2> rans;
     rng.generate(rans, 0.0, 1.0);
     ThreeVector momentum = m_interactions -> MakeMomentum(samePID, p1CM.Vec3().Magnitude(), pcm, rans);
@@ -223,7 +268,7 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
         particle2.SetFormationZone(p2Lab, p2Out);
 
         // Hit nucleon is now propagating
-        particle2.SetStatus(-1);
+        // Users are responsibile for updating the status externally as desired
     } else {
         // Assign momenta to particles
         particle1.SetMomentum(p1Lab);
@@ -233,7 +278,7 @@ bool nuchic::Cascade::FinalizeMomentum(nuchic::Particle& particle1,
     return hit;
 }
 
-bool nuchic::Cascade::PauliBlocking(const nuchic::Particle& particle) const noexcept {
+bool Cascade::PauliBlocking(const Particle& particle) const noexcept {
     if(particle.Status() == -2 && particle.Position().Magnitude2() > radius2) return false;
     return particle.Momentum().Vec3().Magnitude() < fermiMomentum;
 }

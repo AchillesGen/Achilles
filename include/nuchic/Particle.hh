@@ -4,6 +4,8 @@
 #include <iosfwd>
 #include <vector>
 
+#include "spdlog/fmt/ostr.h"
+
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 
@@ -20,7 +22,7 @@ namespace nuchic {
 /// +-------------+-----------------------+
 /// | Status Code | Meaning               |
 /// +=============+=======================+
-/// |     -1      |  Propagating Particle | 
+/// |     -1      |  Propagating Particle |
 /// +-------------+-----------------------+
 /// |      0      |  Background Particle  |
 /// +-------------+-----------------------+
@@ -32,7 +34,7 @@ class Particle {
     public:
         /// @name Constructors and Destructors
         ///@{
-        
+
         /// Create a particle
         ///@param pid: The PID of the particle (default = 0)
         ///@param momentum: The momentum of the particle (default = FourVector())
@@ -88,10 +90,10 @@ class Particle {
         void AddDaughter(const int& idx) noexcept {daughters.push_back(idx);}
 
         /// Set the formation zone of the particle. The formation zone is a time in which
-        /// the particle is not allowed to interact. The formation zone is discussed in detail in: 
+        /// the particle is not allowed to interact. The formation zone is discussed in detail in:
         ///
         /// * L. Stodolsky, Formation Zone Description in Multiproduction, 1975
-        /// * Phys. Rev. C. 86.015505. 
+        /// * Phys. Rev. C. 86.015505.
         ///
         /// The equation is given by:
         /// @f[
@@ -146,24 +148,24 @@ class Particle {
 
         /// Return the mass of the given particle
         ///@return double: The mass of the particle
-        const double Mass() const noexcept {return momentum.M();}
+        double Mass() const noexcept {return momentum.M();}
 
         /// Return the momentum in the x-direction
         ///@return double: Value of momentum in x-direction
-        const double Px() const noexcept {return momentum.Px();}
+        double Px() const noexcept {return momentum.Px();}
 
         /// Return the momentum in the y-direction
         ///@return double: Value of momentum in y-direction
-        const double Py() const noexcept {return momentum.Py();}
+        double Py() const noexcept {return momentum.Py();}
 
         /// Return the momentum in the z-direction
         ///@return double: Value of momentum in z-direction
-        const double Pz() const noexcept {return momentum.Pz();}
+        double Pz() const noexcept {return momentum.Pz();}
 
         /// Return the energy
-        ///@return double: Value of energy 
-        const double E() const noexcept {return momentum.E();}
-        const double Radius() const noexcept {return position.Magnitude();}
+        ///@return double: Value of energy
+        double E() const noexcept {return momentum.E();}
+        double Radius() const noexcept {return position.Magnitude();}
         ///@}
 
         /// @name Functions
@@ -171,23 +173,27 @@ class Particle {
 
         /// Check to see if the particle is in the formation zone
         ///@return bool: True if in formation zone, False otherwise
-        const bool InFormationZone() const noexcept {return formationZone > 0;}
+        bool InFormationZone() const noexcept {return formationZone > 0;}
 
         /// Check to see if the particle is a background particle
         ///@return bool: True if a background particle, False otherwise
-        const bool IsBackground() const noexcept {return status == 0;}
+        bool IsBackground() const noexcept {return status == 0;}
 
         /// Check to see if the particle is a propagating particle in the nucleus
         ///@return bool: True if a propagating particle, False otherwise
-        const bool IsPropagating() const noexcept {return status == -1;}
+        bool IsPropagating() const noexcept {return status == -1;}
 
         /// Check to see if the particle is a final state particle
         ///@return bool: True if a final state particle, False otherwise
-        const bool IsFinal() const noexcept {return status == 1;}
+        bool IsFinal() const noexcept {return status == 1;}
 
         /// Propagate the particle according to its momentum by a given time step
         ///@param timeStep: The amount of time to propagate the particle for
         void Propagate(const double&) noexcept;
+
+        /// Returns the distance travelled by the particle
+        /// @return double: the distance travelled by the particle
+        double GetDistanceTraveled() {return distanceTraveled;}
 
         /// Propagate a particle back in time. Useful for testing purposes
         ///@param timeStep: The amount of time to propagate a particle back in time for
@@ -195,7 +201,7 @@ class Particle {
 
         /// Return a string representation of the particle
         ///@return std::string: a string representation of the particle
-        const std::string ToString() const noexcept;
+        std::string ToString() const noexcept;
 
         /// Determine if two particles are the same particle
         ///@param other: Particle to compare against
@@ -207,7 +213,7 @@ class Particle {
         ///@return bool: False if the particles are the same, otherwise True
         bool operator!=(const Particle& other) const noexcept {return !(*this == other);}
         ///@}
-        
+
         /// @name Stream Operators
         /// @{
         /// Stream operators for writing to and reading from streams
@@ -215,7 +221,12 @@ class Particle {
         /// Write out a particle to an output stream
         ///@param ostr: Output stream to write to
         ///@param part: The particle to be written out
-        friend std::ostream& operator<<(std::ostream&, const Particle&);
+        template<typename OStream>
+        friend OStream& operator<<(OStream &os, const Particle &particle) {
+            os << "Particle(" << particle.pid << ", " << particle.momentum << ", "
+               << particle.position << ", " << particle.status << ")";
+            return os;
+        }
 
         /// Write in a particle to an input stream
         ///@param istr: Input stream to read from
@@ -224,11 +235,13 @@ class Particle {
         /// @}
 
     private:
-        int pid, status;
+        int pid;
+        FourVector momentum;
+        ThreeVector position;
+        int status;
         std::vector<int> mothers, daughters;
         double formationZone;
-        ThreeVector position;
-        FourVector momentum;
+        double distanceTraveled = 0.0;
 };
 
 }

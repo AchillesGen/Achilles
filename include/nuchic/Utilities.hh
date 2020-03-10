@@ -61,7 +61,7 @@ class LogspaceGen {
         /// Construct a helper object for generating equally spaced points in log space
         ///@param first: The value to start the range at
         ///@param base: The base of the exponent
-        LogspaceGen(T first, T base) : curValue(first), base(base) {}
+        LogspaceGen(T first, T base_) : curValue(first), base(base_) {}
     
         /// Get the next value in the log space chain
         ///@return T: The next value in the chain
@@ -79,9 +79,9 @@ class LogspaceGen {
 ///@param num: The number of points to generate within the range
 ///@param base: The base value to be used for the range
 ///@return std::vector<double>: A vector containing equally spaced points in log space
-inline std::vector<double> Logspace(double start, double stop, int num = 50, double base = 10) {
+inline std::vector<double> Logspace(double start, double stop, std::size_t num = 50, double base = 10) {
     double realStart = pow(base, start);
-    double realBase = pow(base, (stop-start)/(num-1));
+    double realBase = pow(base, (stop-start)/(static_cast<double>(num)-1));
 
     std::vector<double> retval;
     retval.reserve(num);
@@ -100,7 +100,7 @@ class LinspaceGen {
         /// Construct a helper object for generating equally spaced points in linear space
         ///@param first: The value to start the range at
         ///@param step: The value to add at each step
-        LinspaceGen(T first, T step) : curValue(first), step(step) {}
+        LinspaceGen(T first, T step_) : curValue(first), step(step_) {}
     
         /// Get the next value in the linear space chain
         ///@return T: The next value in the chain
@@ -117,8 +117,8 @@ class LinspaceGen {
 ///@param stop: The ending value to generate to
 ///@param num: The number of points to generate within the range
 ///@return std::vector<double>: A vector containing equally spaced points in linear space
-inline std::vector<double> Linspace(double start, double stop, int num = 50) {
-    double step = (stop-start)/(num-1);
+inline std::vector<double> Linspace(double start, double stop, std::size_t num = 50) {
+    double step = (stop-start)/(static_cast<double>(num)-1);
 
     std::vector<double> retval;
     retval.reserve(num);
