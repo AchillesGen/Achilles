@@ -38,7 +38,6 @@ def main(argv):
     energies = None
     xsec_p = None
     uncertainty = None
-    xsec_n = None
     if rank == 0:
         if not os.path.exists('Results'):
             os.mkdir('Results')
@@ -51,7 +50,6 @@ def main(argv):
         energies = np.sqrt(2000*energies)
         xsec_p = np.zeros_like(energies)
         uncertainty = np.zeros_like(energies)
-        xsec_n = np.zeros_like(energies)
         energies_split = np.array_split(energies, size)
         energies_size = [len(energies_split[i]) for i in range(len(energies_split))]
         energies_disp = np.insert(np.cumsum(energies_size), 0, 0)[0:-1]
@@ -65,7 +63,6 @@ def main(argv):
     energies_disp = comm.bcast(energies_disp, root = 0)
     energies_local = np.zeros(energies_size[rank])
     local_xsec_p = np.zeros(energies_size[rank])
-    local_xsec_n = np.zeros(energies_size[rank])
     local_uncertainty = np.zeros(energies_size[rank])
     comm.Scatterv([energies, energies_size, energies_disp, MPI.DOUBLE], energies_local, root = 0)
 
@@ -75,12 +72,10 @@ def main(argv):
         xsec, unc = main.run()
         local_xsec_p[i] = xsec
         local_uncertainty[i] = unc
-        # local_xsec_n[i] = xsec[1]
 
     comm.Barrier()
     comm.Gatherv(local_xsec_p, [xsec_p, energies_size, energies_disp, MPI.DOUBLE], root = 0)
     comm.Gatherv(local_uncertainty, [uncertainty, energies_size, energies_disp, MPI.DOUBLE], root = 0)
-
 
     if rank == 0:
         with open(os.path.join('Results', 'xsec.txt'), 'w') as output:
