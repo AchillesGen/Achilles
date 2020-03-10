@@ -20,7 +20,7 @@ class NuChic:
             event = self.calc.generate_one_event()
             events.append(event)
 
-        self.calc.finalize(events)
+        return self.calc.finalize(events)
 
 
 def nuchic():

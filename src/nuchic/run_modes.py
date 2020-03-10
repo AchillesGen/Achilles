@@ -100,9 +100,13 @@ class CalcCrossSection(RunMode):
         test_part =  particle.Particle(self.pid, momentum, position, -2)
         particles.append(test_part)
         self.fsi.set_kicked(len(particles)-1)
-        particles = self.fsi(particles,
-                             self.nucleus.fermi_momentum(),
-                             2.5**2)
+
+        try:
+            particles = self.fsi(particles,
+                                 self.nucleus.fermi_momentum(),
+                                 2.5**2)
+        except RuntimeError:
+            return None
 
         return particles
 
@@ -123,6 +127,7 @@ class CalcCrossSection(RunMode):
         energy = settings().beam_energy**2/(2000)
 
         print("E: {}\txsec: {} +/- {} mb".format(energy, xsec, uncertainty))
+        return xsec, uncertainty
 
 
 class CalcMeanFreePath(RunMode):

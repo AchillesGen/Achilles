@@ -9,6 +9,7 @@ import numpy as np
 from absl import flags, app
 
 from nuchic.main import NuChic
+from nuchic.constants import MQE
 
 FLAGS = flags.FLAGS
 
@@ -36,6 +37,7 @@ def main(argv):
 
     energies = None
     xsec_p = None
+    uncertainty = None
     xsec_n = None
     if rank == 0:
         if not os.path.exists('Results'):
@@ -43,14 +45,17 @@ def main(argv):
         if not os.path.exists('runs'):
             os.mkdir('runs')
 
-        emin = 200
-        emax = 2000
-        energies = np.linspace(emin, emax, (emax-emin)/10+1, dtype='float64')
+        emin = 10
+        emax = 1000
+        energies = np.linspace(emin, emax, (emax-emin)/5+1, dtype='float64')
+        energies = np.sqrt(2000*energies)
         xsec_p = np.zeros_like(energies)
+        uncertainty = np.zeros_like(energies)
         xsec_n = np.zeros_like(energies)
         energies_split = np.array_split(energies, size)
         energies_size = [len(energies_split[i]) for i in range(len(energies_split))]
         energies_disp = np.insert(np.cumsum(energies_size), 0, 0)[0:-1]
+        print(size, energies_split, energies_size, energies_disp)
     else:
         energies_split = None
         energies_size = None
@@ -61,24 +66,26 @@ def main(argv):
     energies_local = np.zeros(energies_size[rank])
     local_xsec_p = np.zeros(energies_size[rank])
     local_xsec_n = np.zeros(energies_size[rank])
+    local_uncertainty = np.zeros(energies_size[rank])
     comm.Scatterv([energies, energies_size, energies_disp, MPI.DOUBLE], energies_local, root = 0)
 
     for i, energy in enumerate(energies_local):
-        print(energy)
-        create_run({PARAMETERS[0]: energy}, 'runs/run_{}.yml'.format(energy))
-        main = NuChic('runs/run_{}.yml'.format(energy))
-        xsec = main.calc_cross_section()
-        local_xsec_p[i] = xsec[0]
-        local_xsec_n[i] = xsec[1]
+        create_run({PARAMETERS[0]: energy}, 'runs/run_{}.yml'.format(int(energy)))
+        main = NuChic('runs/run_{}.yml'.format(int(energy)))
+        xsec, unc = main.run()
+        local_xsec_p[i] = xsec
+        local_uncertainty[i] = unc
+        # local_xsec_n[i] = xsec[1]
 
     comm.Barrier()
     comm.Gatherv(local_xsec_p, [xsec_p, energies_size, energies_disp, MPI.DOUBLE], root = 0)
-    comm.Gatherv(local_xsec_n, [xsec_n, energies_size, energies_disp, MPI.DOUBLE], root = 0)
+    comm.Gatherv(local_uncertainty, [uncertainty, energies_size, energies_disp, MPI.DOUBLE], root = 0)
+
 
     if rank == 0:
         with open(os.path.join('Results', 'xsec.txt'), 'w') as output:
             for i, energy in enumerate(energies):
-                output.write('{} {} {}\n'.format(energy, xsec_p[i], xsec_n[i]))
+                output.write('{} {} {}\n'.format(energy, xsec_p[i], uncertainty[i]))
 
 
 if __name__ == '__main__':
