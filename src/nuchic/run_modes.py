@@ -119,13 +119,16 @@ class CalcCrossSection(RunMode):
         # Remove the name argument
         args = args[1:]
 
+        # Delete unused kwargs
+        del kwargs
+
         # Initialize base class and additional variables
         super().__init__()
         self.radius = 10
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -189,17 +192,12 @@ class CalcMeanFreePath(RunMode):
         self.radius = self.nucleus.radius
         self.pid = 2212
         name = settings().get_param('interaction')
-        fname = str(settings().get('xsec'))
+        # fname = str(settings().get('xsec'))
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
         # interaction = interactions.Interactions.create(name, fname)
         interaction = ConstantInteraction(xsec=settings().get('xsec'))
 
-        part1 = particle.Particle()
-        part2 = particle.Particle()
-        logger.info(f"{interaction.CrossSection(part1, part2)}")
-        print(interaction)
-
-        self.fsi = cascade.Cascade(interaction)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
         del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
@@ -213,7 +211,6 @@ class CalcMeanFreePath(RunMode):
             f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and "
             f"Radius r={self.nucleus.radius():.2f} fm.")
 
-
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
@@ -226,16 +223,17 @@ class CalcMeanFreePath(RunMode):
         p_kick = settings().beam_energy
         particles = self.nucleus.generate_config()
 
-        # Select a random particle to kick
-        kicked_idx = np.random.choice(np.arange(len(particles)))
-        self.fsi.set_kicked(kicked_idx)
-        kicked_particle = particles[kicked_idx]
-        kicked_particle.set_status(-3)
-        kicked_particle.set_momentum(vectors.Vector4(
+        # Place a test particle in the center and give it a kick
+        position = vectors.Vector3(0.0, 0.0, 0.0)
+        nucleon_mass = settings().get_param('mn')
+        momentum = vectors.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
-            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
+            np.sqrt(p_kick**2.0+nucleon_mass**2))
+        test_part = particle.Particle(2212, momentum, position, -3)
+        particles.append(test_part)
+        self.fsi.set_kicked(len(particles)-1)
 
         particles = self.fsi.mean_free_path(
             particles,
@@ -255,9 +253,16 @@ class CalcMeanFreePath(RunMode):
                     nhits = nhits + 1
         logger.info(f"nhits / nevents : {nhits} / {len(events)}")
 
+        expected_mfp = (
+            (self.nucleus.n_nucleons()+1)
+            / (4.0/3.0*np.pi*self.nucleus.radius()**3.0)
+            * settings().get('xsec')/10.0)**-1
+        logger.info(f"Expected result: {expected_mfp} fm")
+
         _, ax = plt.subplots(1)
-        loc, scale = scipy.stats.expon.fit(distance_traveled)
-        fit_label = f"$\lambda$={scale:.2f} fm"
+        _, scale = scipy.stats.expon.fit(distance_traveled)
+        logger.info(f"Fitted result: {scale} fm")
+        fit_label = rf"$\lambda$={scale:.2f} fm"
         sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
                      label='events', fit_kws={'label':fit_label})
         ax.set_xlabel(r'Distance traveled [fm]')
@@ -266,6 +271,11 @@ class CalcMeanFreePath(RunMode):
         ax.set_title(
             f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
         )
+
+        x_vals = np.linspace(0, 6, 1000)
+        y_vals = np.exp(-x_vals/expected_mfp)/expected_mfp
+
+        ax.plot(x_vals, y_vals, label='Expected')
         ax.legend()
         plt.show()
 
