@@ -94,6 +94,14 @@ class RunMode:
                                                     fermi_momentum,
                                                     density)
 
+        try:
+            self.cascade_prob = cascade.Cascade.__dict__[settings().get_param("cascade_prob")]
+        except KeyError as error:
+            logger.error(f"Invalid probability model {error}")
+            raise
+
+        logger.info(f"{instance_name}: using cascade probability: '{self.cascade_prob}'.")
+
     def generate_one_event(self):
         """ Generate one event according to the run mode. """
         raise NotImplementedError
