@@ -22,23 +22,28 @@ import logger
 import nuchic.densities as densities
 from .config import settings
 
+
 class ConstantInteraction(interactions.Interactions):
+    """ Interaction model that always returns a constant value. """
+    _registered = True
+
     def __init__(self, xsec):
         interactions.Interactions.__init__(self)
         self.xsec = xsec
         logger.info(f"ConstantInteraction: xsec {self.xsec}")
-    # doesn't work:
-    # def cross_section(self, part1, part2):
-    #     return self.xsec
-    # neither does this:
-    def CrossSection(self, part1, part2):
+
+    def CrossSection(self, part1, part2):  # pylint: disable=unused-argument
+        """ Return the cross-section value. """
         return self.xsec
 
-    def IsRegistered(self):
-        return True
+    def IsRegistered(self):  # pylint: disable=invalid-name
+        """ Check if the interaction has been registered in the factory. """
+        return self._registered
 
-    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):
+    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):  # pylint: disable=unused-argument
+        """ Make the momentum for the outgoing nucleons. """
         return vectors.Vector3()
+
 
 class RunMode:
     """ General RunMode class that must be inherited from. """
@@ -89,6 +94,14 @@ class RunMode:
                                                     fermi_momentum,
                                                     density)
 
+        try:
+            self.cascade_prob = cascade.Cascade.__dict__[settings().get_param("cascade_prob")]
+        except KeyError as error:
+            logger.error(f"Invalid probability model {error}")
+            raise
+
+        logger.info(f"{instance_name}: using cascade probability: '{self.cascade_prob}'.")
+
     def generate_one_event(self):
         """ Generate one event according to the run mode. """
         raise NotImplementedError
@@ -106,13 +119,16 @@ class CalcCrossSection(RunMode):
         # Remove the name argument
         args = args[1:]
 
+        # Delete unused kwargs
+        del kwargs
+
         # Initialize base class and additional variables
         super().__init__()
         self.radius = 10
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -132,9 +148,13 @@ class CalcCrossSection(RunMode):
         test_part = particle.Particle(self.pid, momentum, position, -2)
         particles.append(test_part)
         self.fsi.set_kicked(len(particles)-1)
-        particles = self.fsi(particles,
-                             self.nucleus.fermi_momentum(),
-                             2.5**2)
+
+        try:
+            particles = self.fsi(particles,
+                                 self.nucleus.fermi_momentum(),
+                                 2.5**2)
+        except RuntimeError:
+            return None
 
         return particles
 
@@ -155,6 +175,7 @@ class CalcCrossSection(RunMode):
         energy = settings().beam_energy**2/(2000)
 
         print("E: {}\txsec: {} +/- {} mb".format(energy, xsec, uncertainty))
+        return xsec, uncertainty
 
 
 class CalcMeanFreePath(RunMode):
@@ -176,17 +197,12 @@ class CalcMeanFreePath(RunMode):
         self.radius = self.nucleus.radius
         self.pid = 2212
         name = settings().get_param('interaction')
-        fname = str(settings().get('xsec'))
+        # fname = str(settings().get('xsec'))
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
         # interaction = interactions.Interactions.create(name, fname)
         interaction = ConstantInteraction(xsec=settings().get('xsec'))
 
-        part1 = particle.Particle()
-        part2 = particle.Particle()
-        logger.info(f"{interaction.CrossSection(part1, part2)}")
-        print(interaction)
-
-        self.fsi = cascade.Cascade(interaction)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
         del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
@@ -200,10 +216,95 @@ class CalcMeanFreePath(RunMode):
             f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and "
             f"Radius r={self.nucleus.radius():.2f} fm.")
 
-
     def generate_one_event(self):
         """ Generate one pN or nC event. """
 
+        # Kick in a random direction
+        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
+        # x in [0,1] --> phi in [0,2*pi]
+        x = np.random.random(2)
+        theta = np.arccos(2 * x[0] - 1)
+        phi = 2 * np.pi * x[1]
+        p_kick = settings().beam_energy
+        particles = self.nucleus.generate_config()
+
+        # Place a test particle in the center and give it a kick
+        position = vectors.Vector3(0.0, 0.0, 0.0)
+        nucleon_mass = settings().get_param('mn')
+        momentum = vectors.Vector4(
+            p_kick * np.sin(theta) * np.cos(phi),
+            p_kick * np.sin(theta) * np.sin(phi),
+            p_kick * np.cos(theta),
+            np.sqrt(p_kick**2.0+nucleon_mass**2))
+        test_part = particle.Particle(2212, momentum, position, -3)
+        particles.append(test_part)
+        self.fsi.set_kicked(len(particles)-1)
+
+        particles = self.fsi.mean_free_path(
+            particles,
+            self.nucleus.fermi_momentum(),
+            self.nucleus.radius()**2)
+
+        return particles
+
+    def finalize(self, events):
+        """ Plot a histogram of distance traveled """
+        distance_traveled = []
+        nhits = 0
+        for event in events:
+            for aparticle in event:
+                if aparticle.status() == -3:
+                    distance_traveled.append(aparticle.get_distance_traveled())
+                    nhits = nhits + 1
+        logger.info(f"nhits / nevents : {nhits} / {len(events)}")
+
+        expected_mfp = (
+            (self.nucleus.n_nucleons()+1)
+            / (4.0/3.0*np.pi*self.nucleus.radius()**3.0)
+            * settings().get('xsec')/10.0)**-1
+        logger.info(f"Expected result: {expected_mfp} fm")
+
+        _, ax = plt.subplots(1)
+        _, scale = scipy.stats.expon.fit(distance_traveled)
+        logger.info(f"Fitted result: {scale} fm")
+        fit_label = rf"$\lambda$={scale:.2f} fm"
+        sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
+                     label='events', fit_kws={'label':fit_label})
+        ax.set_xlabel(r'Distance traveled [fm]')
+        ax.set_ylabel("Counts")
+        ax.set_yscale('log')
+        ax.set_title(
+            f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
+        )
+
+        x_vals = np.linspace(0, 6, 1000)
+        y_vals = np.exp(-x_vals/expected_mfp)/expected_mfp
+
+        ax.plot(x_vals, y_vals, label='Expected')
+        ax.legend()
+        plt.show()
+
+
+class CalcTransparency(RunMode):
+    """ Class implementing the calculation of pN and nC cross-sections."""
+    name = 'transparency'
+
+    def __init__(self, *args, **kwargs):
+        # Remove the name argument
+        args = args[1:]
+
+        # Delete unused kwargs
+        del kwargs
+
+        # Initialize base class and additional variables
+        super().__init__()
+        self.pid = 2212
+        interaction = interactions.Interactions.create(settings().get_param('interaction'),
+                                                       settings().get_param('interaction_file'))
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
+
+    def generate_one_event(self):
+        """ Generate one pN or nC event. """
         # Kick in a random direction
         # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
         # x in [0,1] --> phi in [0,2*pi]
@@ -232,51 +333,18 @@ class CalcMeanFreePath(RunMode):
         return particles
 
     def finalize(self, events):
-        """ Plot a histogram of distance traveled """
-        distance_traveled = []
+        """ Convert the events to a total cross-section. """
         nhits = 0
         for event in events:
             for aparticle in event:
                 if aparticle.status() == -3:
-                    distance_traveled.append(aparticle.get_distance_traveled())
                     nhits = nhits + 1
-        logger.info(f"nhits / nevents : {nhits} / {len(events)}")
 
-        _, ax = plt.subplots(1)
-        loc, scale = scipy.stats.expon.fit(distance_traveled)
-        fit_label = f"$\lambda$={scale:.2f} fm"
-        sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
-                     label='events', fit_kws={'label':fit_label})
-        ax.set_xlabel(r'Distance traveled [fm]')
-        ax.set_ylabel("Counts")
-        ax.set_yscale('log')
-        ax.set_title(
-            f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
-        )
-        ax.legend()
-        plt.show()
+        transparency = 1.0 - nhits / len(events)
+        uncertainty = transparency / np.sqrt(nhits)
+        logger.info(f"transparency: {transparency} +/- {uncertainty}")
 
-
-class CalcTransparency(RunMode):
-    """ Class implementing the calculation of pN and nC cross-sections."""
-    name = 'transparency'
-
-    def __init__(self, *args, **kwargs):
-        # Remove the name argument
-        args = args[1:]
-
-        # Delete unused kwargs
-        del kwargs
-
-        # Initialize base class and additional variables
-        super().__init__()
-        self.fsi = cascade.Cascade()
-
-    def generate_one_event(self):
-        """ Generate one pN or nC event. """
-
-    def finalize(self, events):
-        """ Convert the events to a total cross-section. """
+        return transparency, uncertainty
 
 
 class CalcInteractions(RunMode):

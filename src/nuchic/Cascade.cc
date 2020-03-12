@@ -4,7 +4,6 @@
 #include "spdlog/spdlog.h"
 
 #include "nuchic/Cascade.hh"
-#include "nuchic/Constants.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"

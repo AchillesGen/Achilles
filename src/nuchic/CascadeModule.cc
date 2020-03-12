@@ -21,10 +21,11 @@ PYBIND11_MODULE(cascade, m) {
     py::object nucleus = static_cast<py::object>(py::module::import("nucleus"));
     py::object interactions = static_cast<py::object>(py::module::import("interactions"));
 
-    py::class_<Cascade, std::shared_ptr<Cascade>>(m, "Cascade")
+    py::class_<Cascade, std::shared_ptr<Cascade>> cascade(m, "Cascade");
+
         // Constructors
-        .def(py::init<const std::shared_ptr<Interactions>, const double&>(),
-                py::arg("interactions"), py::arg("distance") = 0.05)
+        cascade.def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, const double&>(),
+                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.05)
         // Functions
         .def("kick", &Cascade::Kick)
         .def("reset", &Cascade::Reset)
@@ -36,4 +37,9 @@ PYBIND11_MODULE(cascade, m) {
         .def("mean_free_path", &Cascade::MeanFreePath,
                 py::arg("particles"), py::arg("fermi_momentum"),
                 py::arg("radius2"), py::arg("max_steps") = 10000);
+
+    py::enum_<Cascade::ProbabilityType>(cascade, "Probability")
+        .value("Gaussian", Cascade::ProbabilityType::Gaussian)
+        .value("Pion", Cascade::ProbabilityType::Pion)
+        .export_values();
 }
