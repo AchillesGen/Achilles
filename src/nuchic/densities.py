@@ -13,7 +13,7 @@ from scipy.spatial.transform import Rotation
 import vectors
 import particle
 
-from .config import settings
+# from .config import settings
 from .utils import make_path, rand_sphere
 
 class NuclearDensity:

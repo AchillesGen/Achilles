@@ -22,23 +22,28 @@ import logger
 import nuchic.densities as densities
 from .config import settings
 
+
 class ConstantInteraction(interactions.Interactions):
+    """ Interaction model that always returns a constant value. """
+    _registered = True
+
     def __init__(self, xsec):
         interactions.Interactions.__init__(self)
         self.xsec = xsec
         logger.info(f"ConstantInteraction: xsec {self.xsec}")
-    # doesn't work:
-    # def cross_section(self, part1, part2):
-    #     return self.xsec
-    # neither does this:
-    def CrossSection(self, part1, part2):
+
+    def CrossSection(self, part1, part2):  # pylint: disable=unused-argument
+        """ Return the cross-section value. """
         return self.xsec
 
-    def IsRegistered(self):
-        return True
+    def IsRegistered(self):  # pylint: disable=invalid-name
+        """ Check if the interaction has been registered in the factory. """
+        return self._registered
 
-    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):
+    def MakeMomentum(self, same_pid, p1_cm, pcm, rans):  # pylint: disable=unused-argument
+        """ Make the momentum for the outgoing nucleons. """
         return vectors.Vector3()
+
 
 class RunMode:
     """ General RunMode class that must be inherited from. """
