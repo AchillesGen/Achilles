@@ -293,13 +293,53 @@ class CalcTransparency(RunMode):
 
         # Initialize base class and additional variables
         super().__init__()
-        self.fsi = cascade.Cascade()
+        self.pid = 2212
+        interaction = interactions.Interactions.create(settings().get_param('interaction'),
+                                                       settings().get_param('interaction_file'))
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
+        # Kick in a random direction
+        # x in [0,1] --> cos(theta) in [-1,1] --> theta in [0,pi]
+        # x in [0,1] --> phi in [0,2*pi]
+        x = np.random.random(2)
+        theta = np.arccos(2 * x[0] - 1)
+        phi = 2 * np.pi * x[1]
+        p_kick = settings().beam_energy
+        particles = self.nucleus.generate_config()
+
+        # Select a random particle to kick
+        kicked_idx = np.random.choice(np.arange(len(particles)))
+        self.fsi.set_kicked(kicked_idx)
+        kicked_particle = particles[kicked_idx]
+        kicked_particle.set_status(-3)
+        kicked_particle.set_momentum(vectors.Vector4(
+            p_kick * np.sin(theta) * np.cos(phi),
+            p_kick * np.sin(theta) * np.sin(phi),
+            p_kick * np.cos(theta),
+            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
+
+        particles = self.fsi.mean_free_path(
+            particles,
+            self.nucleus.fermi_momentum(),
+            self.nucleus.radius()**2)
+
+        return particles
 
     def finalize(self, events):
         """ Convert the events to a total cross-section. """
+        nhits = 0
+        for event in events:
+            for aparticle in event:
+                if aparticle.status() == -3:
+                    nhits = nhits + 1
+
+        transparency = 1.0 - nhits / len(events)
+        uncertainty = transparency / np.sqrt(nhits)
+        logger.info(f"transparency: {transparency} +/- {uncertainty}")
+
+        return transparency, uncertainty
 
 
 class CalcInteractions(RunMode):
