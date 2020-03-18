@@ -112,7 +112,7 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction)
+        self.fsi = cascade.Cascade(interaction,'c12.prova.txt')
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """

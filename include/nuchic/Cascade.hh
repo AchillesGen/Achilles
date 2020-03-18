@@ -8,6 +8,8 @@
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
+#include "nuchic/Interpolation.hh"
+
 
 namespace nuchic {
 
@@ -30,8 +32,7 @@ class Cascade {
         /// Create the Cascade object
         ///@param interactions: The interaction model for pp, pn, and np interactions
         ///@param dist: The maximum distance step to take when propagating
-        Cascade(const std::shared_ptr<Interactions> interactions, const double& dist = 0.05)
-            : distance(dist), m_interactions(interactions) {}
+        Cascade(const std::shared_ptr<Interactions> interactions,  const std::string&, const double& );
 
         /// Default destructor
         ~Cascade() {}
@@ -92,6 +93,7 @@ class Cascade {
         // Variables
         std::vector<std::size_t> kickedIdxs;
         double distance, timeStep, fermiMomentum, radius2;
+        Interp1D rho_interp;	
         std::shared_ptr<Interactions> m_interactions;
         randutils::mt19937_rng rng;
 };

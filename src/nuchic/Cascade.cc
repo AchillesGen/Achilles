@@ -1,5 +1,12 @@
 #include <random>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <map>
+#include <vector>
+
+
 
 #include "spdlog/spdlog.h"
 
@@ -9,7 +16,40 @@
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
 
+
 using namespace nuchic;
+
+
+
+
+Cascade:: Cascade(const std::shared_ptr<Interactions> interactions,  const std::string& name, const double& dist = 0.05){
+    distance=dist;
+    m_interactions=interactions;
+    std:: ifstream f;
+    double x, y, dummy;
+    std:: string lineContent;
+    std::vector<double> vecX, vecY;
+    
+    
+    f.open (name.c_str());
+    for(int i=0; i<16; i++)
+   {	   
+   f.ignore(std:: numeric_limits<std:: streamsize>::max(), '\n' ); // this does not work for some reason
+   }
+   while (f >> x >> y >> dummy)
+{
+    vecX.push_back(x);
+    vecY.push_back(y);
+//    std:: cout << x << "," << y << "\n";    
+}
+//    xx= vecX;
+//    yy=vecY;
+    rho_interp.CubicSpline(vecX,vecY);
+}
+
+
+
+
 
 Particles Cascade::Kick(const Particles& particles, const FourVector& energyTransfer,
         const std::array<double, 2>& sigma) {
@@ -278,7 +318,15 @@ bool Cascade::FinalizeMomentum(Particle& particle1,
     return hit;
 }
 
-bool Cascade::PauliBlocking(const Particle& particle) const noexcept {
-    if(particle.Status() == -2 && particle.Position().Magnitude2() > radius2) return false;
-    return particle.Momentum().Vec3().Magnitude() < fermiMomentum;
+bool Cascade::PauliBlocking(const Particle& particle) const noexcept { 
+    const double hc=197.32;	
+    double xval=particle.Position().Magnitude();	
+    double fermiMomentum_Local=pow(rho_interp(xval)*3.0*pow(M_PI,2),1.0/3.0)*hc;
+//    if(particle.Status() == -2 && particle.Position().Magnitude2() > radius2) return false;
+//    return particle.Momentum().Vec3().Magnitude() < fermiMomentum;
+//    std :: cout << "kf local" <<  fermiMomentum_Local  << "\n";    
+    return particle.Momentum().Vec3().Magnitude() < fermiMomentum_Local;
 }
+
+
+

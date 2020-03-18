@@ -23,8 +23,8 @@ PYBIND11_MODULE(cascade, m) {
 
     py::class_<Cascade, std::shared_ptr<Cascade>>(m, "Cascade")
         // Constructors
-        .def(py::init<const std::shared_ptr<Interactions>, const double&>(),
-                py::arg("interactions"), py::arg("distance") = 0.05)
+        .def(py::init<const std::shared_ptr<Interactions>, const std::string&, const double&>(),
+                py::arg("interactions"),py::arg("file"), py::arg("distance") = 0.05)
         // Functions
         .def("kick", &Cascade::Kick)
         .def("reset", &Cascade::Reset)
