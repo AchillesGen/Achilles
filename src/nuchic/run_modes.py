@@ -128,7 +128,8 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
+        density_file = settings().get_param('density_file')
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -201,8 +202,9 @@ class CalcMeanFreePath(RunMode):
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
         # interaction = interactions.Interactions.create(name, fname)
         interaction = ConstantInteraction(xsec=settings().get('xsec'))
+        density_file = settings().get_param('density_file')
 
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
         del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
@@ -301,7 +303,9 @@ class CalcTransparency(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
+        density_file = settings().get_param('density_file')
+
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """

@@ -1,14 +1,63 @@
 #include <random>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <map>
+#include <vector>
+
+
 
 #include "spdlog/spdlog.h"
 
+#include "nuchic/Constants.hh"
 #include "nuchic/Cascade.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
 
+
 using namespace nuchic;
+
+
+
+
+Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
+                 const ProbabilityType& prob,
+                 const std::string& densityFilename,
+                 const double& dist = 0.05) 
+        : distance(dist), m_interactions(interactions) {
+
+    switch(prob) {
+        case ProbabilityType::Gaussian:
+            probability = [](const double &b2, const double &sigma) -> double {
+                return exp(-M_PI*b2/sigma);
+            };
+            break;
+        case ProbabilityType::Pion:
+            probability = [](const double &b2, const double &sigma) -> double {
+                double b = sqrt(b2);
+                return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
+            };
+            break;
+    }
+
+    std:: ifstream densityFile(densityFilename);
+    std:: string lineContent;
+    
+    for(int i=0; i<16; ++i) {	   
+        std::getline(densityFile, lineContent);
+    }
+
+    double radius, density, densityErr;
+    std::vector<double> vecRadius, vecDensity;
+    while(densityFile >> radius >> density >> densityErr) {
+        vecRadius.push_back(radius);
+        vecDensity.push_back(density);
+    }
+
+    rhoInterp.CubicSpline(vecRadius, vecDensity);
+}
 
 Particles Cascade::Kick(const Particles& particles, const FourVector& energyTransfer,
         const std::array<double, 2>& sigma) {
@@ -277,7 +326,11 @@ bool Cascade::FinalizeMomentum(Particle& particle1,
     return hit;
 }
 
-bool Cascade::PauliBlocking(const Particle& particle) const noexcept {
-    if(particle.Status() == -2 && particle.Position().Magnitude2() > radius2) return false;
-    return particle.Momentum().Vec3().Magnitude() < fermiMomentum;
+bool Cascade::PauliBlocking(const Particle& particle) const noexcept { 
+    double position = particle.Position().Magnitude();	
+    double fermiMomentumLocal = std::cbrt(rhoInterp(position)*3.0*M_PI*M_PI)*Constant::HBARC;
+    return particle.Momentum().Vec3().Magnitude() < fermiMomentumLocal;
 }
+
+
+

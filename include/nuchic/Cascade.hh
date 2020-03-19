@@ -5,10 +5,11 @@
 #include <memory>
 #include <vector>
 
-#include "nuchic/Constants.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
+#include "nuchic/Interpolation.hh"
+
 
 namespace nuchic {
 
@@ -36,24 +37,14 @@ class Cascade {
 
         /// Create the Cascade object
         ///@param interactions: The interaction model for pp, pn, and np interactions
+        ///@param prob: The interaction probability function to be used
+        ///@param densityFile: The file containing density information for Pauli Blocking
+        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
+        ///      passed in as an object
         ///@param dist: The maximum distance step to take when propagating
-        Cascade(const std::shared_ptr<Interactions> interactions, const ProbabilityType& prob, const double& dist = 0.05)
-            : distance(dist), m_interactions(interactions) {
-
-            switch(prob) {
-                case ProbabilityType::Gaussian:
-                    probability = [](const double &b2, const double &sigma) -> double {
-                        return exp(-M_PI*b2/sigma);
-                    };
-                    break;
-                case ProbabilityType::Pion:
-                    probability = [](const double &b2, const double &sigma) -> double {
-                        double b = sqrt(b2);
-                        return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
-                    };
-                    break;
-            }
-        }
+        ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
+        Cascade(const std::shared_ptr<Interactions>,  const ProbabilityType&,
+                const std::string&, const double&);
 
         /// Default destructor
         ~Cascade() {}
@@ -113,6 +104,7 @@ class Cascade {
         // Variables
         std::vector<std::size_t> kickedIdxs;
         double distance, timeStep, fermiMomentum, radius2;
+        Interp1D rhoInterp;	
         std::shared_ptr<Interactions> m_interactions;
         std::function<double(double, double)> probability;
         randutils::mt19937_rng rng;
