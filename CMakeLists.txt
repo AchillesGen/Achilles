@@ -48,21 +48,18 @@ find_package(Python REQUIRED COMPONENTS Development)
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
+add_subdirectory(external)
+add_subdirectory(src/nuchic)
+
 if(ENABLE_TESTING)
     enable_testing()
-    message("Building Tests.")
+    message(STATUS "Building Tests.")
     add_subdirectory(test)
 endif()
 
 if(ENABLE_FUZZING)
-    message(
+    message(STATUS 
         "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html"
     )
     add_subdirectory(fuzz_test)
 endif()
-
-#set(NUCHIC_INCLUDES ${NUCHIC_BUILD_INSTALL_PREFIX}/include ${NUCHIC_SOURCE_DIR}/include ${HDF5_INCLUDE_DIRS})
-#link_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/lib)
-
-add_subdirectory(external)
-add_subdirectory(src/nuchic)

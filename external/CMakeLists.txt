@@ -36,3 +36,34 @@ if(NOT extern_spdlog_POPULATED)
         ${extern_spdlog_BINARY_DIR}
         EXCLUDE_FROM_ALL)
 endif()
+
+# Catch2
+if(ENABLE_TESTING OR ENABLE_FUZZING)
+    FetchContent_Declare(
+        extern_catch2
+
+        GIT_REPOSITORY "https://github.com/catchorg/Catch2.git"
+    )
+
+    FetchContent_GetProperties(extern_catch2)
+    if(NOT extern_catch2_POPULATED)
+        FetchContent_Populate(extern_catch2)
+        add_subdirectory(
+            ${extern_catch2_SOURCE_DIR}
+            ${extern_catch2_BINARY_DIR})
+    endif()
+
+    FetchContent_Declare(
+        extern_trompeloeil
+
+        GIT_REPOSITORY "https://github.com/rollbear/trompeloeil.git"
+    )
+
+    FetchContent_GetProperties(extern_trompeloeil)
+    if(NOT extern_trompeloeil_POPULATED)
+        FetchContent_Populate(extern_trompeloeil)
+        add_subdirectory(
+            ${extern_trompeloeil_SOURCE_DIR}
+            ${extern_trompeloeil_BINARY_DIR})
+    endif()
+endif()
