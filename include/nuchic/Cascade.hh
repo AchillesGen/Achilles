@@ -88,9 +88,13 @@ class Cascade {
         ///@param maxSteps: The maximum steps to take in the particle evolution
         Particles MeanFreePath(const Particles&, const double&, const double&,
                 const std::size_t& maxSteps=1000000);
+	Particles  NuWro_Style(const Particles&, const double&, const double&,
+                const std::size_t& maxSteps=1000000);
+
         ///@}
     private:
         // Functions
+        std::size_t GetInter(Particles&, const Particle&, double& stepDistance); 
         void AdaptiveStep(const Particles&, const double&) noexcept;
         bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;

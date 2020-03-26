@@ -76,9 +76,58 @@ Particles Cascade::Kick(const Particles& particles, const FourVector& energyTran
     Particles result = particles;
     result[kickedIdxs.back()].SetStatus(-1);
     result[kickedIdxs.back()].SetMomentum(result[kickedIdxs.back()].Momentum() + energyTransfer);
-
+    
     return result;
 }
+
+
+std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, double& stepDistance) {
+    std::vector<std::size_t> index_same, index_diff;
+//
+
+    for(std::size_t i = 0; i < particles.size(); ++i) {
+        if (particles[i].Status() < 0) continue;
+	if (particles[i].PID() ==particle1.PID()) index_same.push_back(i);
+        else index_diff.push_back(i);
+    
+   }
+    std::size_t idx1=rng.pick(index_same);
+    std::size_t idx2=rng.pick(index_diff);
+    FourVector ptmp= particles[idx2].Momentum(); 
+    particles[idx2].SetMomentum(particles[idx1].Momentum());
+    double position = particle1.Position().Magnitude();	
+    double rho=rhoInterp(position);
+    if(rho< 0.0) rho=0.0;
+    double xsec1=GetXSec(particle1,particles[idx1]), xsec2= GetXSec(particle1,particles[idx2]);
+    double lambda_tilde= 1.0/(xsec1/10.0*rho+xsec2/10.0*rho);
+    double lambda=-log(rng.uniform(0.0, 1.0))*lambda_tilde;
+//    std:: cout << "Lambda tilde" << " " << lambda_tilde << "position" << " " << position <<"\n";
+//    std:: cout << "xsec1" << " " << xsec1 << "xsec2" << " " << xsec2 << "\n";
+//    std:: cout << "rho" << " " << rho << "\n";
+    
+    
+    if(lambda > stepDistance) {
+     particles[idx2].SetMomentum(ptmp);
+     return SIZE_MAX;
+    }
+//    std:: cout << "idx1" << " " << idx1 << "idx2" << " " << idx2 << "\n";
+    
+    stepDistance=lambda;
+//    std:: cout << "Lambda" << " " << lambda << "\n";    
+    double ichoic=rng.uniform(0.0, 1.0);
+    if(ichoic< xsec1/(xsec1+xsec2)) {
+     particles[idx1].SetPosition(particle1.Position());	    
+     particles[idx2].SetMomentum(ptmp);
+     return idx1;
+    }
+    else {
+    particles[idx2].SetPosition(particle1.Position());	        	    
+    return idx2;
+    }
+}    
+	
+
+
 
 void Cascade::Reset() {
     kickedIdxs.resize(0);
@@ -164,6 +213,92 @@ Particles Cascade::operator()(const Particles& _particles, const double& kf, con
     return particles;
 }
 
+
+
+
+Particles Cascade:: NuWro_Style(
+    const Particles& _particles,
+    const double& kf,
+    const double& _radius2,
+    const std::size_t& maxSteps) { 
+	
+    Particles particles = _particles;
+    fermiMomentum = kf;
+    radius2 = _radius2;
+    for(std::size_t step = 0; step < maxSteps; ++step) {
+        // Stop loop if no particles are propagating
+        if(kickedIdxs.size() == 0) break;
+
+	 // Adapt time step
+        AdaptiveStep(particles, distance);
+        
+        // Make local copy of kickedIdxs
+        auto newKicked = kickedIdxs;
+        for(auto idx : kickedIdxs) {
+            Particle* kickNuc = &particles[idx];
+
+            // Update formation zones
+
+            if(kickNuc -> InFormationZone()) {
+	//	timeStep= distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);			   
+                kickNuc -> UpdateFormationZone(timeStep);
+               kickNuc -> SpacePropagate(distance);		
+                continue;
+            }
+	    double step_prop=distance;
+            auto hitIdx=GetInter(particles,*kickNuc,step_prop); 
+            kickNuc -> SpacePropagate(step_prop);
+            if (hitIdx == SIZE_MAX) continue;
+	    Particle* hitNuc = &particles[hitIdx];
+            bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
+            if(hit) {
+                newKicked.push_back(hitIdx);
+                hitNuc->SetStatus(-1);
+            }
+        }
+
+        // Replace kicked indices with new list
+        kickedIdxs = newKicked;
+
+        // After step checks
+        //std::cout << "CURRENT STEP: " << step << std::endl;
+        for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
+            // Nucleon outside nucleus (will check if captured or escaped after cascade)
+            auto particle = &particles[*it];
+            //if(particle -> Status() == -2) {
+            //    std::cout << particle -> Position().Pz() << " " << sqrt(radius2) << std::endl;
+            //    std::cout << *particle << std::endl;
+            //}
+            if(particle -> Position().Magnitude2() > radius2 && particle -> Status() != -2) {
+                particle -> SetStatus(1);
+                it = kickedIdxs.erase(it);
+            } else if(particle -> Status() == -2 && particle -> Position().Pz() > sqrt(radius2)) {
+                it = kickedIdxs.erase(it);
+            } else {
+                ++it;
+            }
+        }
+
+        for(auto particle : particles) {
+            if(particle.Position()[0] != particle.Position()[0])
+                throw;
+        }
+    }
+
+    for(auto particle : particles) {
+        if(particle.Status() == -1) {
+            for(auto p : particles) std::cout << p << std::endl;
+            throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+        }
+    }
+
+    return particles;
+}
+
+
+
+
+
 Particles Cascade::MeanFreePath(
     const Particles& _particles,
     const double& kf,
@@ -207,6 +342,8 @@ Particles Cascade::MeanFreePath(
     return particles;
 }
 
+
+
 void Cascade::AdaptiveStep(const Particles& particles, const double& stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
@@ -234,6 +371,9 @@ const ThreeVector Cascade::Project(const ThreeVector& position,
     const ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
     return position - projection;
 }
+
+
+
 
 const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
                                                                         const std::size_t& idx) const noexcept {

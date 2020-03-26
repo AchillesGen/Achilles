@@ -151,9 +151,13 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles)-1)
 
         try:
-            particles = self.fsi(particles,
-                                 self.nucleus.fermi_momentum(),
-                                 2.5**2)
+        #    particles = self.fsi(particles,
+        #                         self.nucleus.fermi_momentum(),
+        #                         2.5**2)
+            particles = self.fsi.fsi_nuwro(
+            particles,
+            self.nucleus.fermi_momentum(),
+            2.5**2)
         except RuntimeError:
             return None
 
