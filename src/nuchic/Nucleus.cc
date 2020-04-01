@@ -1,8 +1,7 @@
 #include <cmath>
 #include <map>
 #include <regex>
-
-#include <iostream>
+#include <fstream>
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -29,8 +28,8 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
-                         const double& kf, const std::function<Particles()>& _density) 
-                        : binding(bEnergy), fermiMomentum(kf), density(_density) {
+                 const std::string& densityFilename, const std::function<Particles()>& _density) 
+                        : binding(bEnergy), density(_density) {
 
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
@@ -46,6 +45,22 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     radius = pow(static_cast<double>(A) / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
     potential = sqrt(Constant::mN*Constant::mN 
                      + pow(fermiMomentum, 2)) - Constant::mN + 8;
+
+    std:: ifstream densityFile(densityFilename);
+    std:: string lineContent;
+    
+    for(int i=0; i<16; ++i) {	   
+        std::getline(densityFile, lineContent);
+    }
+
+    double radius_, density_, densityErr;
+    std::vector<double> vecRadius, vecDensity;
+    while(densityFile >> radius_ >> density_ >> densityErr) {
+        vecRadius.push_back(radius_);
+        vecDensity.push_back(density_);
+    }
+
+    rhoInterp.CubicSpline(vecRadius, vecDensity);
 }
 
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
@@ -94,7 +109,7 @@ Particles Nucleus::GenerateConfig() {
         if(particle.PID() == 2112) nNeutrons++;
 
         // Set momentum for each nucleon
-        auto mom3 = GenerateMomentum();
+        auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
         particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
@@ -107,9 +122,13 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum() noexcept {
+double Nucleus::FermiMomentum(const double &position) const noexcept {
+    return std::cbrt(rhoInterp(position)*3.0*M_PI*M_PI)*Constant::HBARC;
+}
+
+const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum;
-    momentum[0] = rng.uniform(0.0, fermiMomentum);
+    momentum[0] = rng.uniform(0.0, FermiMomentum(position));
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
 
@@ -117,8 +136,8 @@ const std::array<double, 3> Nucleus::GenerateMomentum() noexcept {
 }
 
 Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
-                                             const double& fermiMomentum,
-                                             const std::function<Particles()>& density) {
+                             const std::string& densityFilename, 
+                             const std::function<Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -129,7 +148,7 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
             "Nucleus: parsing nuclear name '{0}', expecting a density "
             "with A={1} total nucleons and Z={2} protons.", 
             name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, density);
+        return Nucleus(protons, nucleons, bEnergy, densityFilename, density);
     }
 
     throw std::runtime_error("Invalid nucleus " + name);

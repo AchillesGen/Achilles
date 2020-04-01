@@ -15,10 +15,11 @@ PYBIND11_MODULE(nucleus, m) {
 
     py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>>(m, "Nucleus")
         // Constructors
-        .def(py::init<const int&, const int&, const double&,
-                      const double&, const std::function<nuchic::Particles()>&>(),
+        .def(py::init<const std::size_t&, const std::size_t&, const double&,
+                      const std::string&, const std::function<nuchic::Particles()>&>(),
                       py::arg("Z"), py::arg("A"), py::arg("binding"),
-                      py::arg("kf"), py::arg("density") = std::function<nuchic::Particles()>())
+                      py::arg("density_file"),
+                      py::arg("density") = std::function<nuchic::Particles()>())
         // Setters
         .def("set_nucleons", &nuchic::Nucleus::SetNucleons)
         .def("set_binding_energy", &nuchic::Nucleus::SetBindingEnergy)

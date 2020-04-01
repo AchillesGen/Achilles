@@ -84,14 +84,15 @@ class RunMode:
 
         name = settings().get_run('nucleus')
         binding_energy = settings().nucleus_binding(name)
-        fermi_momentum = settings().nucleus_kf(name)
+        # fermi_momentum = settings().nucleus_kf(name)
+        density_file = settings().get_param('density_file')
         logger.info(
             f"{instance_name}: Building nucleus '{name}' "
-            f"with Fermi momentum {fermi_momentum} MeV and "
+            f"with density file {density_file} and "
             f"binding_energy {binding_energy} MeV.")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
                                                     binding_energy,
-                                                    fermi_momentum,
+                                                    density_file,
                                                     density)
 
         try:
@@ -128,8 +129,7 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        density_file = settings().get_param('density_file')
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """

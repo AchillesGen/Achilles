@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
 
 namespace nuchic {
@@ -28,10 +29,12 @@ class Nucleus {
         ///@param Z: The number of protons
         ///@param A: The number of nucleons
         ///@param binding: The binding energy of the nucleus
-        ///@param fermiMomentum: The Fermi Momentum of the nucleus
+        ///@param densityFile: The file containing density information for Pauli Blocking
+        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
+        ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
-        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
+        Nucleus(const std::size_t&, const std::size_t&, const double&, const std::string&,
                 const std::function<Particles()>&);
 
         /// Default destructor
@@ -48,27 +51,27 @@ class Nucleus {
 
         /// Set the binding energy of the nucleus in MeV
         ///@param energy: The binding energy to be set in MeV
-        void SetBindingEnergy(const double& energy) noexcept {binding = energy;}
+        void SetBindingEnergy(const double& energy) noexcept { binding = energy; }
 
         /// Set the Fermi Momentum of the nucleus in MeV
         ///@param mom: The Fermi Momentum to be set in MeV
-        void SetFermiMomentum(const double& mom) noexcept {fermiMomentum = mom;}
+        void SetFermiMomentum(const double& mom) noexcept { fermiMomentum = mom; }
 
         /// Set the potential energy of the nucleus. This value defaults to:
         /// @f[
         ///     \sqrt{m_{N}^2+k_{f}^2} - m_{N} + 8 \text{MeV}.
         /// @f]
         ///@param energy: The potential energy to be set in MeV
-        void SetPotential(const double& energy) noexcept {potential = energy;}
+        void SetPotential(const double& energy) noexcept { potential = energy; }
 
         /// Set the density function to use for configuration generation
         ///@param density: The function to be use for generating nucleons
-        void SetDensity(const std::function<Particles()>& _density) noexcept {density = _density;}
+        void SetDensity(const std::function<Particles()>& _density) noexcept { density = _density; }
         ///@}
 
         /// Set the radius of the nucleus in fm
         /// @param radius: The radius to be set in fm
-        void SetRadius(const double& _radius) noexcept {radius = _radius;}
+        void SetRadius(const double& _radius) noexcept { radius = _radius; }
 
         /// @name Getters
         /// @{
@@ -76,43 +79,43 @@ class Nucleus {
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
-        Particles Nucleons() const noexcept {return nucleons;}
+        Particles& Nucleons() noexcept { return nucleons; }
 
         /// Return a vector of the current protons
         ///@return Particles: The current protons generated for the nucleus
-        Particles Protons() const noexcept {return protons;}
+        Particles& Protons() noexcept { return protons; }
 
         /// Return a vector of the current neutrons
         ///@return Particles: The current neutrons generated for the nucleus
-        Particles Neutrons() const noexcept {return neutrons;}
+        Particles& Neutrons() noexcept { return neutrons; }
 
         /// Return the number of nucleons in the nucleus
         ///@return int: The number of nucleons in the nucleus
-        std::size_t NNucleons() const noexcept {return nucleons.size();}
+        std::size_t NNucleons() const noexcept { return nucleons.size(); }
 
         /// Return the number of protons in the nucleus
         ///@return int: The number of protons in the nucleus
-        std::size_t NProtons() const noexcept {return protons.size();}
+        std::size_t NProtons() const noexcept { return protons.size(); }
 
         /// Return the number of neutrons in the nucleus
         ///@return int: The number of neutrons in the nucleus
-        std::size_t NNeutrons() const noexcept {return neutrons.size();}
+        std::size_t NNeutrons() const noexcept { return neutrons.size(); }
 
         /// Return the current binding energy of the nucleus
         ///@return double: The binding energy in MeV
-        const double& BindingEnergy() const noexcept {return binding;}
+        const double& BindingEnergy() const noexcept { return binding; }
 
         /// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
-        const double& FermiMomentum() const noexcept {return fermiMomentum;}
+        double FermiMomentum(const double&) const noexcept;
 
         /// Return the current potential energy of the nucleus
         ///@return double: The potential energy in MeV
-        const double& PotentialEnergy() const noexcept {return potential;}
+        const double& PotentialEnergy() const noexcept { return potential; }
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
-        const double& Radius() const noexcept {return radius;}
+        const double& Radius() const noexcept { return radius; }
         ///@}
 
         /// @name Functions
@@ -129,7 +132,7 @@ class Nucleus {
 
         /// Generate a random momentum for a nucleon in the nucleus
         ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-        const std::array<double, 3> GenerateMomentum() noexcept;
+        const std::array<double, 3> GenerateMomentum(const double&) noexcept;
 
         /// Return a string representation of the nucleus
         ///@return std::string: a string representation of the nucleus
@@ -169,10 +172,12 @@ class Nucleus {
         /// @endrst
         ///@param name: Nucleus in format discussed above
         ///@param binding: The binding energy of the nucleus
-        ///@param fermiMomentum: The Fermi Momentum of the nucleus
+        ///@param densityFile: The file containing density information for Pauli Blocking
+        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
+        ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&,
-                                   const double&, const std::function<Particles()>&);
+                                   const std::string&, const std::function<Particles()>&);
 
         /// @name Stream Operators
         /// @{
@@ -186,6 +191,7 @@ class Nucleus {
         Particles nucleons, protons, neutrons;
         double binding, fermiMomentum, radius, potential;
         std::function<Particles()> density;
+        Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
