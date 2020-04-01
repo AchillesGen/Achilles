@@ -96,7 +96,7 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     return true;
 }
 
-Particles Nucleus::GenerateConfig() {
+void Nucleus::GenerateConfig() {
     // Get a configuration from the density function
     Particles particles = density();
 
@@ -119,7 +119,6 @@ Particles Nucleus::GenerateConfig() {
 
     // Update the nucleons in the nucleus
     SetNucleons(particles);
-    return particles;
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept {

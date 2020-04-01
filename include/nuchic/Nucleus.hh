@@ -127,8 +127,7 @@ class Nucleus {
         bool Escape(Particle&) noexcept;
 
         /// Generate a configuration of the nucleus based on the density function
-        ///@return Particles: A list of nucleons that represent a random configuration
-        Particles GenerateConfig();
+        void GenerateConfig();
 
         /// Generate a random momentum for a nucleon in the nucleus
         ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
