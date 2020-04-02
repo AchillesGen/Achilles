@@ -116,6 +116,11 @@ class Nucleus {
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
         const double& Radius() const noexcept { return radius; }
+
+        /// Return the density of the nucleus at a given location
+        ///@param position: The radius to calculate the density at
+        ///@return double: The density at the input radius
+        double Rho(const double &position) const noexcept { return rhoInterp(position); }
         ///@}
 
         /// @name Functions

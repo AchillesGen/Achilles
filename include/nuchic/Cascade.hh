@@ -60,30 +60,35 @@ class Cascade {
         /// Reset the cascade internal variables for the next cascade
         void Reset();
 
-        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
-        /// the background.
-        ///@param particles: The list of particles in the nucleus
-        ///@param kf: The Fermi Momentum to use for Pauli Blocking
-        ///@param radius2: The squared radius denoting the edge of the nucleus
-        ///@param maxSteps: The maximum steps to take in the cascade
-        void Evolve(std::shared_ptr<Nucleus>, const std::size_t& maxSteps=1000000);
-
         /// Helper function to make a specific nucleon as the kicked nucleon
         ///@param idx: The index of the particle that has been kicked
-        void SetKicked(const std::size_t& idx) {kickedIdxs.push_back(idx);}
+        void SetKicked(const std::size_t& idx) { kickedIdxs.push_back(idx); }
 
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// the background.
+        ///@param nucleus: The nucleus to evolve
+        ///@param maxSteps: The maximum steps to take in the cascade
+        Particles Evolve(std::shared_ptr<Nucleus>, const Particle&,
+                         const std::size_t& maxSteps=1000000);
 
         /// Simulate evolution of a kicked particle until it interacts for the 
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
-        ///@param particles: The list of particles in the nucleus
-        ///@param kf: The Fermi momentum to use for Pauli Blocking
-        ///@param radius2: The squared radius denoting the edge of the nucleus
+        ///@param nucleus: The nucleus to evolve according to the mean free path calculation
         ///@param maxSteps: The maximum steps to take in the particle evolution
-        void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t& maxSteps=1000000);
+        Particles MeanFreePath(std::shared_ptr<Nucleus>, const Particle&,
+                               const std::size_t& maxSteps=1000000);
+
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// the background. This is done according to the NuWro algorithm.
+        ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
+        ///@param maxSteps: The maximum steps to take in the particle evolution
+	Particles NuWro(std::shared_ptr<Nucleus>, const Particle&, 
+                        const std::size_t& maxSteps=1000000);
         ///@}
     private:
         // Functions
+        std::size_t GetInter(Particles&, const Particle&, double& stepDistance); 
         void AdaptiveStep(const Particles&, const double&) noexcept;
         bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;

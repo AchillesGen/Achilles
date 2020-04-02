@@ -49,7 +49,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     std:: ifstream densityFile(densityFilename);
     std:: string lineContent;
     
-    for(int i=0; i<16; ++i) {	   
+    for(size_t i = 0; i < 16; ++i) {	   
         std::getline(densityFile, lineContent);
     }
 
@@ -103,6 +103,7 @@ void Nucleus::GenerateConfig() {
     // Ensure the number of protons and neutrons are correct
     if(particles.size() != nucleons.size())
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
+
     std::size_t nProtons = 0, nNeutrons = 0;
     for(Particle& particle : particles) {
         if(particle.PID() == 2212) nProtons++;
@@ -113,6 +114,9 @@ void Nucleus::GenerateConfig() {
         double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
         particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
+
+        // Ensure status is set to 0
+        particle.SetStatus(0);
     }
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
@@ -122,7 +126,8 @@ void Nucleus::GenerateConfig() {
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept {
-    return std::cbrt(rhoInterp(position)*3.0*M_PI*M_PI)*Constant::HBARC;
+    double result = std::cbrt(rhoInterp(position)*3.0*M_PI*M_PI)*Constant::HBARC;
+    return result;
 }
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {

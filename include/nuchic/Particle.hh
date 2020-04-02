@@ -191,6 +191,8 @@ class Particle {
         ///@param timeStep: The amount of time to propagate the particle for
         void Propagate(const double&) noexcept;
 
+	void SpacePropagate(const double&) noexcept; 
+
         /// Returns the distance travelled by the particle
         /// @return double: the distance travelled by the particle
         double GetDistanceTraveled() {return distanceTraveled;}

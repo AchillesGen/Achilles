@@ -25,6 +25,22 @@ void Particle::Propagate(const double& time) noexcept {
     position += propDist;
 }
 
+
+void Particle::SpacePropagate(const double& dist) noexcept {
+
+    const double theta = momentum.Theta();
+    const double phi = momentum.Phi();
+
+    const double propDistX = dist*std::sin(theta)*std::cos(phi);
+    const double propDistY = dist*std::sin(theta)*std::sin(phi);
+    const double propDistZ = dist*std::cos(theta);
+
+    const ThreeVector propDist(propDistX, propDistY, propDistZ);
+    if (status == -3) distanceTraveled += propDist.Magnitude();
+    position += propDist;
+}
+
+
 void Particle::BackPropagate(const double& time) noexcept {
     const double dist = momentum.P()/momentum.E()*time*Constant::HBARC;
 

@@ -134,7 +134,7 @@ class CalcCrossSection(RunMode):
     def generate_one_event(self):
         """ Generate one pN or nC event. """
         self.nucleus.generate_config()
-        particles = self.nucleus.Nucleons()
+        particles = self.nucleus.nucleons()
 
         # Generate random position in beam
         while True:
@@ -148,16 +148,14 @@ class CalcCrossSection(RunMode):
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
         test_part = particle.Particle(self.pid, momentum, position, -2)
-        particles.append(test_part)
-        self.nucleus.SetNucleons(particles)
-        self.fsi.set_kicked(len(particles)-1)
+        self.fsi.set_kicked(len(particles))
 
         try:
-            self.fsi.Evolve(self.nucleus)
+            particles = self.fsi.evolve(self.nucleus, test_part)
         except RuntimeError:
             return None
 
-        return self.nucleus.Nucleons()
+        return particles
 
     def finalize(self, events):
         """ Convert the events to a total cross-section. """
@@ -170,6 +168,7 @@ class CalcCrossSection(RunMode):
             if count != 0:
                 xsec += 1
 
+        print(f"nhits: {xsec}")
         uncertainty = np.sqrt(xsec)
         xsec *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
         uncertainty *= np.pi*self.radius**2/settings().nevents*10  # fm^2 to mb
@@ -202,9 +201,8 @@ class CalcMeanFreePath(RunMode):
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
         # interaction = interactions.Interactions.create(name, fname)
         interaction = ConstantInteraction(xsec=settings().get('xsec'))
-        density_file = settings().get_param('density_file')
 
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
         del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
@@ -229,7 +227,7 @@ class CalcMeanFreePath(RunMode):
         phi = 2 * np.pi * x[1]
         p_kick = settings().beam_energy
         self.nucleus.generate_config()
-        particles = self.nucleus.Nucleons()
+        particles = self.nucleus.nucleons()
 
         # Place a test particle in the center and give it a kick
         position = vectors.Vector3(0.0, 0.0, 0.0)
@@ -240,13 +238,10 @@ class CalcMeanFreePath(RunMode):
             p_kick * np.cos(theta),
             np.sqrt(p_kick**2.0+nucleon_mass**2))
         test_part = particle.Particle(2212, momentum, position, -3)
-        particles.append(test_part)
-        self.nucleus.SetNucleons(particles)
-        self.fsi.set_kicked(len(particles)-1)
+        self.fsi.set_kicked(len(particles))
 
-        self.fsi.mean_free_path(self.nucleus)
-
-        return self.nucleus.Nucleons()
+        particles = self.fsi.mean_free_path(self.nucleus, test_part)
+        return particles
 
     def finalize(self, events):
         """ Plot a histogram of distance traveled """
@@ -302,9 +297,8 @@ class CalcTransparency(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        density_file = settings().get_param('density_file')
 
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob, density_file)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -316,7 +310,7 @@ class CalcTransparency(RunMode):
         phi = 2 * np.pi * x[1]
         p_kick = settings().beam_energy
         self.nucleus.generate_config()
-        particles = self.nucleus.Nucleons()
+        particles = self.nucleus.nucleons()
 
         # Select a random particle to kick
         kicked_idx = np.random.choice(np.arange(len(particles)))
@@ -329,10 +323,10 @@ class CalcTransparency(RunMode):
             p_kick * np.cos(theta),
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
 
-        self.nucleus.SetNucleons(particles)
-        self.fsi.mean_free_path(self.nucleus)
+        self.nucleus.set_nucleons(particles)
+        particles = self.fsi.mean_free_path(self.nucleus)
 
-        return self.nucleus.Nucleons()
+        return particles
 
     def finalize(self, events):
         """ Convert the events to a total cross-section. """
