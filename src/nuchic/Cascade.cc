@@ -96,8 +96,8 @@ void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-Particles Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
-                          const std::size_t& maxSteps) {
+void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
+                     const std::size_t& maxSteps = 1000000) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
     if(testPart != Particle()) particles.push_back(testPart);
@@ -152,11 +152,11 @@ Particles Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &test
         }
     }
 
-    return particles;
+    nucleus -> Nucleons() = particles;
 }
 
-Particles Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
-                         const std::size_t& maxSteps) { 
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
+                    const std::size_t& maxSteps = 1000000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
     if(testPart != Particle()) particles.push_back(testPart);
@@ -206,12 +206,11 @@ Particles Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testP
         }
     }
 
-    return particles;
+    nucleus -> Nucleons() = particles;
 }
 
-Particles Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, 
-                                const Particle &testPart = Particle(),
-                                const std::size_t& maxSteps) {
+void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
+                           const std::size_t& maxSteps = 1000000) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
     if(testPart != Particle()) particles.push_back(testPart);
@@ -246,7 +245,7 @@ Particles Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus,
         if (hit) break;
     }
 
-    return particles;
+    nucleus -> Nucleons() = particles;
 }
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
@@ -301,9 +300,6 @@ const ThreeVector Cascade::Project(const ThreeVector& position,
     const ThreeVector projection = (position - planePt).Dot(planeVec)*planeVec; 
     return position - projection;
 }
-
-
-
 
 const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
                                                         const std::size_t& idx) const noexcept {

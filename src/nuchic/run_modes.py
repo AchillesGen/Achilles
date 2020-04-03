@@ -148,14 +148,12 @@ class CalcCrossSection(RunMode):
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
         test_part = particle.Particle(self.pid, momentum, position, -2)
+
+        # Set up kicked
         self.fsi.set_kicked(len(particles))
+        self.fsi.evolve(self.nucleus, test_part)
 
-        try:
-            particles = self.fsi.evolve(self.nucleus, test_part)
-        except RuntimeError:
-            return None
-
-        return particles
+        return self.nucleus.nucleons()
 
     def finalize(self, events):
         """ Convert the events to a total cross-section. """
@@ -238,10 +236,12 @@ class CalcMeanFreePath(RunMode):
             p_kick * np.cos(theta),
             np.sqrt(p_kick**2.0+nucleon_mass**2))
         test_part = particle.Particle(2212, momentum, position, -3)
-        self.fsi.set_kicked(len(particles))
 
-        particles = self.fsi.mean_free_path(self.nucleus, test_part)
-        return particles
+        # Evolve the nucleus
+        self.fsi.set_kicked(len(particles))
+        self.fsi.mean_free_path(self.nucleus, test_part)
+
+        return self.nucleus.nucleons()
 
     def finalize(self, events):
         """ Plot a histogram of distance traveled """
@@ -323,10 +323,11 @@ class CalcTransparency(RunMode):
             p_kick * np.cos(theta),
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
 
+        # Evolve the nucleus
         self.nucleus.set_nucleons(particles)
-        particles = self.fsi.mean_free_path(self.nucleus)
+        self.fsi.mean_free_path(self.nucleus)
 
-        return particles
+        return self.nucleus.nucleons()
 
     def finalize(self, events):
         """ Convert the events to a total cross-section. """

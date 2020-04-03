@@ -61,6 +61,22 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     }
 
     rhoInterp.CubicSpline(vecRadius, vecDensity);
+
+    // Ensure the number of protons and neutrons are correct
+    // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
+    // not necessarily be caught 
+    auto particles = density();
+    if(particles.size() != nucleons.size())
+        throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
+
+    std::size_t nProtons = 0, nNeutrons = 0;
+    for(auto particle : particles) {
+        if(particle.PID() == 2212) nProtons++;
+        if(particle.PID() == 2112) nNeutrons++;
+    }
+
+    if(nProtons != NProtons() || nNeutrons != NNeutrons())
+        throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
 }
 
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
@@ -100,15 +116,7 @@ void Nucleus::GenerateConfig() {
     // Get a configuration from the density function
     Particles particles = density();
 
-    // Ensure the number of protons and neutrons are correct
-    if(particles.size() != nucleons.size())
-        throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
-
-    std::size_t nProtons = 0, nNeutrons = 0;
     for(Particle& particle : particles) {
-        if(particle.PID() == 2212) nProtons++;
-        if(particle.PID() == 2112) nNeutrons++;
-
         // Set momentum for each nucleon
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = Constant::mN*Constant::mN;
@@ -118,8 +126,6 @@ void Nucleus::GenerateConfig() {
         // Ensure status is set to 0
         particle.SetStatus(0);
     }
-    if(nProtons != NProtons() || nNeutrons != NNeutrons())
-        throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
 
     // Update the nucleons in the nucleus
     SetNucleons(particles);
