@@ -48,6 +48,9 @@ find_package(Python REQUIRED COMPONENTS Development)
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
+# Try to find yaml-cpp
+find_package(yaml-cpp)
+
 if(ENABLE_TESTING)
     enable_testing()
     message("Building Tests.")

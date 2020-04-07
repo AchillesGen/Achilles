@@ -36,3 +36,27 @@ if(NOT extern_spdlog_POPULATED)
         ${extern_spdlog_BINARY_DIR}
         EXCLUDE_FROM_ALL)
 endif()
+
+# yaml-cpp
+if(yaml-cpp_FOUND)
+    MESSAGE(STATUS "Found yaml-cpp at ${YAML_CPP_INCLUDE_DIR}")
+else()
+    MESSAGE(STATUS "yaml-cpp not found. Cloning from github as external dependency")
+    FetchContent_Declare(
+        extern_yamlcpp
+    
+        GIT_REPOSITORY "https://github.com/jbeder/yaml-cpp.git"
+        GIT_TAG "yaml-cpp-0.6.3"
+        )
+    
+    FetchContent_GetProperties(extern_yamlcpp)
+    if(NOT extern_yamlcpp_POPULATED)
+        FetchContent_Populate(extern_yamlcpp)
+        set(YAML_CPP_BUILD_TESTS OFF CACHE INTERNAL "")
+        set(YAML_BUILD_SHARED_LIBS ON CACHE INTERNAL "")
+        add_subdirectory(
+            ${extern_yamlcpp_SOURCE_DIR}
+            ${extern_yamlcpp_BINARY_DIR}
+            )
+    endif()
+endif()
