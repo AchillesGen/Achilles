@@ -30,10 +30,17 @@ class ThreeVector {
         ThreeVector(double pX, double pY, double pZ) noexcept : vec({pX, pY, pZ}) {}
         /// Create a copy of a ThreeVector object
         ///@param other: The vector to be copied
-        ThreeVector(const ThreeVector& other) noexcept : vec(other.vec) {}
+        ThreeVector(const ThreeVector& other) noexcept = default;
         /// Move a ThreeVector object to another
         ///@param other: The vector to be moved
-        ThreeVector(const ThreeVector&& other) noexcept : vec(std::move(other.vec)) {}
+        ThreeVector(ThreeVector&& other) noexcept = default; 
+
+        /// Assign a vector to another vector object
+        ///@param other: three vector to be assigned
+        ///@return ThreeVector: assigned new vector
+        ThreeVector& operator=(const ThreeVector&) noexcept = default;
+        ThreeVector& operator=(ThreeVector&&) noexcept = default;
+
         /// Default destructor
         ~ThreeVector() = default;
         ///@}
@@ -187,14 +194,6 @@ class ThreeVector {
         /// @name Operator Overloads
         /// @{
         /// Operator overloads of math functions for ease of use
-
-        /// Assign a vector to another vector object
-        ///@param other: three vector to be assigned
-        ///@return ThreeVector: assigned new vector
-        ThreeVector& operator=(const ThreeVector& other) noexcept {
-            vec = other.vec;
-            return *this;
-        }
 
         /// Add two three vectors together
         ///@param other: three vector to add to this one
