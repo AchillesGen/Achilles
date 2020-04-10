@@ -21,7 +21,7 @@ void Particle::Propagate(const double& time) noexcept {
     const double propDistZ = dist*std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
-    if (status == -3) distanceTraveled += propDist.Magnitude();
+    if (status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
     position += propDist;
 }
 
@@ -36,7 +36,7 @@ void Particle::SpacePropagate(const double& dist) noexcept {
     const double propDistZ = dist*std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
-    if (status == -3) distanceTraveled += propDist.Magnitude();
+    if (status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
     position += propDist;
 }
 
@@ -56,7 +56,7 @@ void Particle::BackPropagate(const double& time) noexcept {
 }
 
 bool Particle::operator==(const Particle& other) const noexcept {
-    if(pid != other.pid) return false;
+    if(info != other.info) return false;
     if(status != other.status) return false;
     if(formationZone != other.formationZone) return false;
     if(momentum != other.momentum) return false;
@@ -67,8 +67,8 @@ bool Particle::operator==(const Particle& other) const noexcept {
 }
 
 std::string Particle::ToString() const noexcept {
-    return "Particle(" + std::to_string(pid) + ", " + momentum.ToString()
-        + ", " + position.ToString() + ", " + std::to_string(status) + ")";
+    return "Particle(" + std::to_string(info.IntID()) + ", " + momentum.ToString()
+        + ", " + position.ToString() + ", " + std::to_string(static_cast<int>(status)) + ")";
 }
 
 namespace nuchic {
