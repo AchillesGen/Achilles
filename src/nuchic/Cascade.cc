@@ -13,6 +13,8 @@
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
 
+#include "nuchic/ParticleInfo.hh"
+
 using namespace nuchic;
 
 Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
@@ -33,6 +35,8 @@ Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
             };
             break;
     }
+
+    BuildParticleDatabase("Particles.yml");
 }
 
 void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTransfer,
@@ -40,17 +44,17 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTra
     std::vector<std::size_t> indices;
 
     auto ddSigma = {sigma[0], sigma[1]};
-    std::size_t index = rng.variate<std::size_t, std::discrete_distribution>(ddSigma);
+    auto index = rng.variate<std::size_t, std::discrete_distribution>(ddSigma);
 
-    int interactPID = index == 0 ? 2212 : 2112;
+    auto interactPID = index == 0 ? PID::proton() : PID::neutron();
 
     for(std::size_t i = 0; i < nucleus -> Nucleons().size(); ++i) {
-        if(nucleus -> Nucleons()[i].PID() == interactPID) indices.push_back(i);
+        if(nucleus -> Nucleons()[i].ID() == interactPID) indices.push_back(i);
     }
 
     kickedIdxs.push_back(rng.pick(indices));
     auto kicked = &nucleus -> Nucleons()[kickedIdxs.back()];
-    kicked -> SetStatus(-1);
+    kicked -> SetStatus(ParticleStatus::propagating);
     kicked -> SetMomentum(kicked -> Momentum() + energyTransfer);
 }
 
@@ -58,8 +62,8 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     std::vector<std::size_t> index_same, index_diff;
 
     for(std::size_t i = 0; i < particles.size(); ++i) {
-        if (particles[i].Status() < 0) continue;
-	if (particles[i].PID() == particle1.PID()) index_same.push_back(i);
+        if (particles[i].Status() < ParticleStatus::background) continue;
+	if (particles[i].ID() == particle1.ID()) index_same.push_back(i);
         else index_diff.push_back(i);
     }
 
@@ -72,7 +76,7 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     if(rho < 0.0) rho = 0.0;
     double xsec1 = GetXSec(particle1, particles[idx1]);
     double xsec2 = GetXSec(particle1, particles[idx2]);
-    double lambda_tilde = 1.0/(xsec1/10.0*rho+xsec2/10.0*rho);
+    double lambda_tilde = 1.0/(xsec1/10*rho+xsec2/10*rho);
     double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
     
     if(lambda > stepDistance) {
@@ -134,7 +138,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart 
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
             if(hit) {
                 newKicked.push_back(hitIdx);
-                hitNuc->SetStatus(-1);
+                hitNuc->SetStatus(ParticleStatus::propagating);
             }
         }
 
@@ -146,7 +150,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart 
     }
 
     for(auto particle : particles) {
-        if(particle.Status() == -1) {
+        if(particle.Status() == ParticleStatus::propagating) {
             for(auto p : particles) std::cout << p << std::endl;
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
@@ -189,7 +193,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart =
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
             if(hit) {
                 newKicked.push_back(hitIdx);
-                hitNuc->SetStatus(-1);
+                hitNuc->SetStatus(ParticleStatus::propagating);
             }
         }
 
@@ -200,7 +204,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart =
     }
 
     for(auto particle : particles) {
-        if(particle.Status() == -1) {
+        if(particle.Status() == ParticleStatus::propagating) {
             for(auto p : particles) std::cout << p << std::endl;
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
@@ -221,7 +225,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const Particle &tes
     if (kickedIdxs.size() != 1) {
         std::runtime_error("MeanFreePath: only one particle should be kicked.");
     }
-    if (kickNuc -> Status() != -3) {
+    if (kickNuc -> Status() != ParticleStatus::internal_test) {
         std::runtime_error(
             "MeanFreePath: kickNuc must have status -3 "
             "in order to accumulate DistanceTraveled."
@@ -254,7 +258,7 @@ void Cascade::Escaped(Particles &particles) {
     for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
         // Nucleon outside nucleus (will check if captured or escaped after cascade)
         auto particle = &particles[*it];
-        if(particle -> Status() == 0)
+        if(particle -> Status() == ParticleStatus::background)
             throw std::domain_error("Invalid Particle in kicked list");
         //if(particle -> Status() == -2) {
         //    std::cout << particle -> Position().Pz() << " " << sqrt(radius2) << std::endl;
@@ -262,10 +266,10 @@ void Cascade::Escaped(Particles &particles) {
         //}
         auto radius = localNucleus -> Radius();
         if(particle -> Position().Magnitude2() > pow(radius, 2)
-           && particle -> Status() != -2) {
-            particle -> SetStatus(1);
+           && particle -> Status() != ParticleStatus::external_test) {
+            particle -> SetStatus(ParticleStatus::escaped);
             it = kickedIdxs.erase(it);
-        } else if(particle -> Status() == -2 && particle -> Position().Pz() > sqrt(radius)) {
+        } else if(particle -> Status() == ParticleStatus::external_test && particle -> Position().Pz() > sqrt(radius)) {
             it = kickedIdxs.erase(it);
         } else {
             ++it;
@@ -315,7 +319,7 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
     for(std::size_t i = 0; i < particles.size(); ++i) {
         // TODO: Should particles propagating be able to interact with 
         //       other propagating particles?
-        if (particles[i].Status() < 0) continue;
+        if (particles[i].Status() < ParticleStatus::background) continue;
         // if(i == idx) continue;
         // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
@@ -353,10 +357,10 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
     FourVector p1CM = p1Lab.Boost(-boostCM), p2CM = p2Lab.Boost(-boostCM);
 
     // Generate outgoing momentum
-    bool samePID = particle1.PID() == particle2.PID(); 
+    bool samePID = particle1.ID() == particle2.ID(); 
     double ecm = (p1CM + p2CM).M();
     const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / ecm;
-    std::array<double, 2> rans;
+    std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
     ThreeVector momentum = m_interactions -> MakeMomentum(samePID, p1CM.Vec3().Magnitude(), pcm, rans);
 

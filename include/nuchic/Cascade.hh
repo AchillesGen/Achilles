@@ -41,9 +41,13 @@ class Cascade {
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
         Cascade(const std::shared_ptr<Interactions>,  const ProbabilityType&, const double&);
+        Cascade(const Cascade&) = default;
+        Cascade(Cascade&&) = default;
+        Cascade& operator=(const Cascade&) = default;
+        Cascade& operator=(Cascade&&) = default;
 
         /// Default destructor
-        ~Cascade() {}
+        ~Cascade() = default;
         ///@}
 
         /// @name Functions
@@ -102,7 +106,7 @@ class Cascade {
 
         // Variables
         std::vector<std::size_t> kickedIdxs;
-        double distance, timeStep;
+        double distance, timeStep{};
         std::shared_ptr<Interactions> m_interactions;
         std::function<double(double, double)> probability;
         randutils::mt19937_rng rng;
