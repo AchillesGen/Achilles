@@ -2,6 +2,7 @@
 #include "yaml-cpp/yaml.h"
 
 #include <iostream>
+#include <memory>
 
 using nuchic::PID;
 using nuchic::ParticleInfoEntry;
@@ -69,7 +70,7 @@ void nuchic::BuildParticleDatabase(const std::string &datafile) {
     YAML::Node particleYAML = YAML::LoadFile(datafile);
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
-        auto entry = std::shared_ptr<ParticleInfoEntry>(new ParticleInfoEntry(particle["Particle"].as<ParticleInfoEntry>()));
+        auto entry = std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());
         nuchic::Database::particleDB.emplace(entry -> id, entry);
     }
     PrintParticleDatabase();
@@ -88,23 +89,22 @@ ParticleInfoEntry::ParticleInfoEntry(const nuchic::PID &id_, const double &mass_
                                      const int &strong_, const int &spin_,
                                      const int &stable_, const int &majorana_, 
                                      const bool &massive_, const bool &hadron_,
-                                     const std::string &idname_, const std::string &antiname_) 
+                                     std::string idname_, std::string antiname_) 
     : id(id_), mass(mass_), hmass(mass_), width(width_), icharge(icharge_), strong(strong_),
       spin(spin_), stable(stable_), majorana(majorana_), massive(massive_), hadron(hadron_), 
-      idname(idname_), antiname(antiname_) {}
+      idname(std::move(idname_)), antiname(std::move(antiname_)) {}
 
 std::ostream& operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
-    os << fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
-          static_cast<int>(entry.id), entry.idname, entry.antiname, entry.mass, entry.width);
+    os << entry.ToString();
     return os;
 }
 
-bool ParticleInfo::IsBaryon() const {
+bool ParticleInfo::IsBaryon() const noexcept {
     if(IntID() % 10000 < 1000) return false;
     return true;
 }
 
-bool ParticleInfo::IsBHadron() const {
+bool ParticleInfo::IsBHadron() const noexcept {
     if(IntID() < 100) return false;
     if(IntID()-100*IntID()/100 < 10) return false;
     if((IntID()-100*IntID()/100) / 10 == 5) return true;
@@ -113,7 +113,7 @@ bool ParticleInfo::IsBHadron() const {
     return false;
 }
 
-bool ParticleInfo::IsCHadron() const {
+bool ParticleInfo::IsCHadron() const noexcept {
     if(IntID() < 100) return false;
     if(IntID() - 100*IntID()/100 < 10) return false;
     if((IntID()-100*IntID()/100) / 10 == 4) return true;
@@ -127,7 +127,7 @@ double ParticleInfo::GenerateLifeTime() const {
     return 0.0;
 }
 
-bool ParticleInfo::IsStable() const {
+bool ParticleInfo::IsStable() const noexcept {
     if(info -> stable == 0) return false;
     if(info -> stable == 1) return true;
     if(info -> stable == 2 && !IsAnti()) return true;
