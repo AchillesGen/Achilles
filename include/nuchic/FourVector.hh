@@ -38,10 +38,11 @@ class FourVector {
         FourVector(const ThreeVector& other, const double& E) noexcept;
         /// Create a copy of a FourVector object
         ///@param other: The vector to be copied
-        FourVector(const FourVector& other) noexcept : vec(other.vec) {}
+        FourVector(const FourVector& other) noexcept = default;
         /// Move a FourVector object to another
         ///@param other: The vector to be moved
-        FourVector(const FourVector&& other) noexcept : vec(std::move(other.vec)) {}
+        FourVector(FourVector&&) noexcept = default;
+
         /// Default destructor
         ~FourVector() = default;
         ///@}
@@ -224,10 +225,8 @@ class FourVector {
         /// Assign a vector to another vector object
         ///@param other: four vector to be assigned
         ///@return FourVector: assigned new vector
-        FourVector& operator=(const FourVector& other) noexcept {
-            vec = other.vec;
-            return *this;
-        }
+        FourVector& operator=(const FourVector&) noexcept = default;
+        FourVector& operator=(FourVector&&) noexcept = default;
 
         /// Add two four vectors together
         ///@param other: four vector to add to this one
