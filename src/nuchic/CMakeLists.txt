@@ -43,6 +43,12 @@ pybind11_add_module(particle MODULE
 target_link_libraries(particle PRIVATE project_options project_warnings
                                PUBLIC utilities)
 
+pybind11_add_module(particle_info MODULE
+    ParticleInfoModule.cc
+)
+target_link_libraries(particle_info PRIVATE project_options project_warnings
+                                    PUBLIC utilities)
+
 pybind11_add_module(nucleus MODULE
     NucleusModule.cc
 )
