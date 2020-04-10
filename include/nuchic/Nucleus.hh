@@ -35,10 +35,14 @@ class Nucleus {
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
         Nucleus(const std::size_t&, const std::size_t&, const double&, const std::string&,
-                const std::function<Particles()>&);
+                std::function<Particles()>);
+        Nucleus(const Nucleus&) = default;
+        Nucleus(Nucleus&&) = default;
+        Nucleus& operator=(const Nucleus&) = default;
+        Nucleus& operator=(Nucleus&&) = default;
 
         /// Default destructor
-        ~Nucleus() {};
+        ~Nucleus() = default;
         ///@}
 
         /// @name Setters
@@ -193,7 +197,7 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum, radius, potential;
+        double binding, fermiMomentum{}, radius, potential;
         std::function<Particles()> density;
         Interp1D rhoInterp;	
 

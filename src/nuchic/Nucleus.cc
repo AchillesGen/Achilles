@@ -28,8 +28,8 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
-                 const std::string& densityFilename, const std::function<Particles()>& _density) 
-                        : binding(bEnergy), density(_density) {
+                 const std::string& densityFilename, std::function<Particles()> _density) 
+                        : binding(bEnergy), density(std::move(_density)) {
 
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
@@ -42,22 +42,27 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     protons.resize(Z);
     neutrons.resize(A-Z);
     spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
-    radius = pow(static_cast<double>(A) / (4.0 / 3.0 * M_PI * 0.16), 1.0 / 3.0);
+    // TODO: Refactor elsewhere in the code, maybe make dynamic?
+    constexpr double nucDensity = 0.16;
+    constexpr double potentialShift = 8;
+
+    radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
     potential = sqrt(Constant::mN*Constant::mN 
-                     + pow(fermiMomentum, 2)) - Constant::mN + 8;
+                     + pow(fermiMomentum, 2)) - Constant::mN + potentialShift;
 
     std:: ifstream densityFile(densityFilename);
     std:: string lineContent;
-    
-    for(size_t i = 0; i < 16; ++i) {	   
+   
+    constexpr size_t HeaderLength = 16;
+    for(size_t i = 0; i < HeaderLength; ++i) {	   
         std::getline(densityFile, lineContent);
     }
 
     double radius_, density_, densityErr;
     std::vector<double> vecRadius, vecDensity;
     while(densityFile >> radius_ >> density_ >> densityErr) {
-        vecRadius.push_back(radius_);
-        vecDensity.push_back(density_);
+        vecRadius.push_back(std::move(radius_));
+        vecDensity.push_back(std::move(density_));
     }
 
     rhoInterp.CubicSpline(vecRadius, vecDensity);
@@ -71,8 +76,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
 
     std::size_t nProtons = 0, nNeutrons = 0;
     for(auto particle : particles) {
-        if(particle.PID() == 2212) nProtons++;
-        if(particle.PID() == 2112) nNeutrons++;
+        if(particle.ID() == PID::proton()) nProtons++;
+        if(particle.ID() == PID::neutron()) nNeutrons++;
     }
 
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
@@ -84,17 +89,17 @@ void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
     for(auto particle : nucleons) {
-        if(particle.PID() == 2212) protons[proton_idx++] = particle;
-        if(particle.PID() == 2112) neutrons[neutron_idx++] = particle;
+        if(particle.ID() == PID::proton()) protons[proton_idx++] = particle;
+        if(particle.ID() == PID::neutron()) neutrons[neutron_idx++] = particle;
     }
 }
 
 bool Nucleus::Escape(Particle& particle) noexcept {
     // Remove background particles
-    if(particle.Status() == 0) return false;
+    if(particle.Status() == ParticleStatus::background) return false;
 
     // Special case for testing pN cross-section
-    if(particle.Status() == -2) return true;
+    if(particle.Status() == ParticleStatus::external_test) return true;
 
     // Calculate kinetic energy, and if less than potential it is captured
     const double totalEnergy = sqrt(particle.Momentum().P2() + particle.Momentum().M2());
@@ -123,8 +128,8 @@ void Nucleus::GenerateConfig() {
         for(auto mom : mom3) energy2 += mom*mom;
         particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
 
-        // Ensure status is set to 0
-        particle.SetStatus(0);
+        // Ensure status is set to background
+        particle.SetStatus(ParticleStatus::background);
     }
 
     // Update the nucleons in the nucleus
@@ -132,12 +137,11 @@ void Nucleus::GenerateConfig() {
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept {
-    double result = std::cbrt(rhoInterp(position)*3.0*M_PI*M_PI)*Constant::HBARC;
-    return result;
+    return std::cbrt(rhoInterp(position)*3*M_PI*M_PI)*Constant::HBARC;
 }
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
-    std::array<double, 3> momentum;
+    std::array<double, 3> momentum{};
     momentum[0] = rng.uniform(0.0, FermiMomentum(position));
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
