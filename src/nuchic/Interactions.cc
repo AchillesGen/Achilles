@@ -14,6 +14,9 @@
 using namespace H5;
 using namespace nuchic;
 
+REGISTER_INTERACTION(GeantInteractions);
+REGISTER_INTERACTION(ConstantInteractions);
+
 const std::map<std::string, double> HZETRN = {
     {"a", 5.0_MeV},
     {"b", 0.199/sqrt(1_MeV)},
@@ -135,13 +138,17 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
     }
 }
 
-REGISTER_INTERACTION(GeantInteractions)
-REGISTER_INTERACTION(ConstantInteractions)
-
-GeantInteractions::GeantInteractions(const std::string& filename) : Interactions() {
+GeantInteractions::GeantInteractions(const std::string& filename) {
     // Initialize theta vector
-    m_theta =Linspace(0.5, 179.5, 180);
-    m_cdf = Logspace(-3, 0, 200);
+    constexpr double thetaMin = 0.5;
+    constexpr double thetaMax = 179.5;
+    constexpr size_t nTheta = 180;
+    m_theta = Linspace(thetaMin, thetaMax, nTheta);
+
+    constexpr double cdfMin = -3;
+    constexpr double cdfMax = 0;
+    constexpr size_t nCDF = 200;
+    m_cdf = Logspace(cdfMin, cdfMax, nCDF);
 
     // Read in the Geant4 hdf5 file and get the np and pp groups
     spdlog::info("GeantInteractions: Loading Geant4 data from {0}.", filename);
@@ -165,21 +172,21 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
     // Get data for center of momentum
     DataSpace pcmSpace = pcm.getSpace();
     hsize_t dimPcm[1];
-    pcmSpace.getSimpleExtentDims(dimPcm, NULL);
+    pcmSpace.getSimpleExtentDims(dimPcm, nullptr);
     std::vector<double> pcmVec(dimPcm[0]);
     pcm.read(pcmVec.data(), PredType::NATIVE_DOUBLE, pcmSpace, pcmSpace);
 
     // Get data for total cross-section
     DataSpace sigTotSpace = sigTot.getSpace();
     hsize_t dimSigTot[1];
-    sigTotSpace.getSimpleExtentDims(dimSigTot, NULL);
+    sigTotSpace.getSimpleExtentDims(dimSigTot, nullptr);
     std::vector<double> sigTotVec(dimSigTot[0]);
     sigTot.read(sigTotVec.data(), PredType::NATIVE_DOUBLE, sigTotSpace, sigTotSpace);
 
     // Get data for angular cross-section
     DataSpace sigSpace = sig.getSpace();
     hsize_t dimSig[2];
-    sigSpace.getSimpleExtentDims(dimSig, NULL);
+    sigSpace.getSimpleExtentDims(dimSig, nullptr);
     hsize_t dims = dimSig[0] * dimSig[1];
     std::vector<double> sigAngular(dims);
     sig.read(sigAngular.data(), PredType::NATIVE_DOUBLE, sigSpace, sigSpace);
@@ -189,20 +196,21 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
     interp.BicubicSpline(pcmVec, m_theta, sigAngular);
 
     std::vector<double> theta(pcmVec.size()*m_cdf.size());
+    constexpr double accuracy = 1E-6;
     for(size_t i = 0; i < pcmVec.size(); ++i) {
         for(size_t j = 0; j < m_cdf.size(); ++j) {
             auto func = [interp, pcmVec, this, i, j](double x){
                 return interp(pcmVec[i], x) - this -> m_cdf[j];
             };
-            nuchic::Brent brent(func, 1e-6);
+            nuchic::Brent brent(func, accuracy);
             if(j != m_cdf.size() - 1)
                 try{
-                    theta[i*m_cdf.size() + j] = brent.CalcRoot(0.5, 179.5);
+                    theta[i*m_cdf.size() + j] = brent.CalcRoot(*m_theta.begin(), *m_theta.end());
                 } catch (std::runtime_error &e) {
-                    theta[i*m_cdf.size() + j] = 0.5/sigAngular[i*180 + j] * m_cdf[j];
+                    theta[i*m_cdf.size() + j] = *m_theta.begin()/sigAngular[i*180 + j]*m_cdf[j];
                 }
             else
-                theta[i*m_cdf.size() + j] = 179.5;
+                theta[i*m_cdf.size() + j] = *m_theta.end();
         }
     }
 
@@ -221,7 +229,7 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
 
 double GeantInteractions::CrossSection(const Particle& particle1,
                                        const Particle& particle2) const {
-    bool samePID = particle1.PID() == particle2.PID();
+    bool samePID = particle1.ID() == particle2.ID();
     const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
     const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / totalMomentum.M();
 

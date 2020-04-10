@@ -3,6 +3,7 @@
 
 #include <array>
 #include <map>
+#include <memory>
 #include <vector>
 
 #include "H5Cpp.h"
@@ -29,18 +30,18 @@ class Interactions {
         ///@{
 
         /// Base class constructor
-        Interactions() {}
+        Interactions() = default;
+        Interactions(const Interactions&) = default;
+        Interactions(Interactions&&) = default;
+        Interactions& operator=(const Interactions&) = default;
+        Interactions& operator=(Interactions&&) = default;
 
         /// Base class constructor for classes that need data files
         // Interactions(const std::string& data) {}
 
         /// Default destructor
-        virtual ~Interactions() {}
+        virtual ~Interactions() = default;
         ///@}
-
-        /// Determines if a subclass has been registered to InteractionFactory
-        ///@return bool: True if registered, otherwise False
-        virtual bool IsRegistered() const noexcept = 0;
 
         /// Function to determine the cross-section between two particles
         ///@param part1: The first particle involved with the interaction
@@ -70,34 +71,34 @@ class InteractionFactory {
         /// Typedef for easier coding
         using TCreateMethod = std::unique_ptr<Interactions>(*)(const std::string&);
 
-        /// Member function to hold how to create a given Interaction object
-        TCreateMethod CreateFunc;
-
-        /// Used to ensure only one instance of the factory is created
-        ///@return InteractionFactory: An instance of the interaction factory class
-        static InteractionFactory& Instance();
+        InteractionFactory() = delete;
 
         /// Register a new Interactions subclass to the factory
         ///@param name: The name of the subclass
         ///@param funcCreate: The Create function of the subclass
         ///@return bool: True if the class was registered to the factory, False if the
         ///              registration failed
-        bool Register(const std::string&, TCreateMethod);
+        static bool Register(const std::string&, TCreateMethod);
 
         /// Create an instance of the desired subclass based on the input string
         ///@param name: Name of the subclass object to be created
         ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
         ///     (**NOTE**: Returns nullptr if name is not registered)
-        std::shared_ptr<Interactions> Create(const std::string&, const std::string& data);
+        static std::shared_ptr<Interactions> Create(const std::string&, const std::string&);
+
+        /// Produce a list of all the registered interactions
+        static void ListInteractions();
 
     private:
-        InteractionFactory() : methods() {};
-        std::map<std::string, TCreateMethod> methods;
+        static auto &methods() {
+            static std::unordered_map<std::string, TCreateMethod> map;
+            return map;
+        }
 };
 
 #define REGISTER_INTERACTION(interaction) \
-    bool interaction::registered = InteractionFactory::Instance().Register(interaction::GetName(), \
-            interaction::Create);
+    bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
+                                                                interaction::Create)
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
@@ -110,31 +111,30 @@ class GeantInteractions : public Interactions {
         /// Initialize GeantInteractions class. This loads data from an input file
         ///@param filename: The location of the Geant4 hdf5 data file
         GeantInteractions(const std::string&);
+        GeantInteractions(const GeantInteractions&) = default;
+        GeantInteractions(GeantInteractions&&) = default;
+        GeantInteractions& operator=(const GeantInteractions&) = default;
+        GeantInteractions& operator=(GeantInteractions&&) = default;
 
         /// Generate a GeantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
         static std::unique_ptr<Interactions> Create(const std::string& data) {
-            return std::unique_ptr<GeantInteractions>(new GeantInteractions(data));
+            return std::make_unique<GeantInteractions>(data);
         }
 
         /// Default Destructor
-        ~GeantInteractions() {};
+        ~GeantInteractions() override = default;
         ///@}
 
         /// Returns the name of the class, used in the InteractionFactory
         ///@return std::string: The name of the class
-        static std::string GetName() {return "GeantInteractions";}
+        static std::string GetName() { return "GeantInteractions"; }
 
         // These functions are defined in the base class
-        bool IsRegistered() const noexcept {return registered;}
-        double CrossSection(const Particle&, const Particle&) const;
+        static bool IsRegistered() noexcept { return registered; }
+        double CrossSection(const Particle&, const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double&, const double&,
-                const std::array<double, 2>&) const;
-
-    protected:
-        /// Variable to store if the class has been registered to the InteractionFactory or not
-        static bool registered;
-
+                                 const std::array<double, 2>&) const override;
     private:
         // Functions
         double CrossSectionAngle(bool, const double&, const double&) const;
@@ -146,6 +146,7 @@ class GeantInteractions : public Interactions {
         std::vector<double> m_pcmNP, m_xsecNP;
         Interp1D m_crossSectionPP, m_crossSectionNP;
         Interp2D m_thetaDistPP, m_thetaDistNP;
+        static bool registered;
 };
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
@@ -158,42 +159,41 @@ class ConstantInteractions : public Interactions {
 
         /// Initialize ConstantInteractions class. This loads data from an input file
         ///@param filename: The location of the Geant4 hdf5 data file
-        ConstantInteractions(const std::string& xsec) {
-            m_xsec = std::stod(xsec);
-        }
+        ConstantInteractions(const std::string& xsec) : m_xsec(std::stod(xsec)) {}
+        ConstantInteractions(const ConstantInteractions&) = default;
+        ConstantInteractions(ConstantInteractions&&) = default;
+        ConstantInteractions& operator=(const ConstantInteractions&) = default;
+        ConstantInteractions& operator=(ConstantInteractions&&) = default;
 
         /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
         static std::unique_ptr<Interactions> Create(const std::string& data) {
-            return std::unique_ptr<ConstantInteractions>(new ConstantInteractions(data));
+            return std::make_unique<ConstantInteractions>(data);
         }
 
         /// Default Destructor
-        ~ConstantInteractions() {};
+        ~ConstantInteractions() override = default;
         ///@}
 
         /// Returns the name of the class, used in the InteractionFactory
         ///@return std::string: The name of the class
-        static std::string GetName() {return "ConstantInteractions";}
+        static std::string GetName() { return "ConstantInteractions"; }
 
         // These functions are defined in the base class
-        bool IsRegistered() const noexcept {return registered;}
-        double CrossSection(const Particle&, const Particle&) const { return m_xsec; }
+        static bool IsRegistered() noexcept { return registered; }
+        double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
         ThreeVector MakeMomentum(bool, const double&, const double& pcm,
-                const std::array<double, 2>& rans) const {
+                                 const std::array<double, 2>& rans) const override {
             double ctheta = 2*rans[0]-1;
             double stheta = sqrt(1-ctheta*ctheta);
             double phi = 2*M_PI*rans[1];
             return pcm*ThreeVector(stheta*cos(phi), stheta*sin(phi), ctheta);
         }
 
-    protected:
-        /// Variable to store if the class has been registered to the InteractionFactory or not
-        static bool registered;
-
     private:
         // Variables
         double m_xsec;
+        static bool registered;
 };
 
 }
