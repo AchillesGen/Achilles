@@ -40,7 +40,7 @@ void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<dou
     std::memcpy(knotZ.data(), z.data(), static_cast<std::size_t>(z.size())*sizeof(double));
 
     for(std::size_t i = 0; i < x.size(); ++i) {
-        derivs2.push_back(Interp1D());
+        derivs2.emplace_back();
         derivs2[i].CubicSpline(y, std::vector<double>(static_cast<std::size_t>(z.at(i, 0)), z.at(i, y.size()-1)));
     }
 

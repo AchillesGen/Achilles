@@ -20,9 +20,14 @@ class Interp1D {
         ///@{
 
         /// Constructor
-        Interp1D() : kInit(false) {}
+        Interp1D() = default;
+        Interp1D(const Interp1D&) = default;
+        Interp1D(Interp1D&&) = default;
+        Interp1D& operator=(const Interp1D&) = default;
+        Interp1D& operator=(Interp1D&&) = default;
+
         /// Destructor
-        ~Interp1D() {}
+        ~Interp1D() = default;
         ///@}
 
         ///@name Interpolation Functions
@@ -34,7 +39,7 @@ class Interp1D {
         ///@param derivLeft: The derivative of the left most knot
         ///@param derivRight: The derivative of the right most knot
         void CubicSpline(const std::vector<double>&, const std::vector<double>&,
-                const double& derivLeft=1.e30, const double& derivRight=1.e30);
+                const double& derivLeft=maxDeriv, const double& derivRight=maxDeriv);
 
         /// Function to perform the interpolation at the given input point
         ///@param x: Value to interpolate the function at
@@ -43,10 +48,10 @@ class Interp1D {
         ///@}
 
     private:
-        bool kInit;
+        static constexpr double maxDeriv = 1.E30;
+        bool kInit{};
         std::vector<double> knotX, knotY, derivs2;
 };
-
 
 /// Class to perform two-dimensional interpolations of data. Currently, only Bicubic Splines are
 /// implemented as an interpolator. The Bicubic Spline is based off of the algorithm provided by
@@ -57,9 +62,14 @@ class Interp2D {
         ///@{
 
         /// Constructor
-        Interp2D() : kInit(false) {}
+        Interp2D() = default;
+        Interp2D(const Interp2D&) = default;
+        Interp2D(Interp2D&&) = default;
+        Interp2D& operator=(const Interp2D&) = default;
+        Interp2D& operator=(Interp2D&&) = default;
+
         /// Destructor
-        ~Interp2D() {}
+        ~Interp2D() = default;
         ///@}
 
         ///@name Interpolation Functions
@@ -90,7 +100,7 @@ class Interp2D {
         ///@}
 
     private:
-        bool kInit;
+        bool kInit{};
         std::vector<double> knotX, knotY, knotZ;
         std::vector<Interp1D> derivs2;
 };
