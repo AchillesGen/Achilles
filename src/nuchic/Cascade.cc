@@ -13,8 +13,6 @@
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
 
-#include "nuchic/ParticleInfo.hh"
-
 using namespace nuchic;
 
 Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
@@ -35,8 +33,6 @@ Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
             };
             break;
     }
-
-    BuildParticleDatabase("Particles.yml");
 }
 
 void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTransfer,
