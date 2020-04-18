@@ -17,6 +17,13 @@ using nuchic::ThreeVector;
 PYBIND11_MODULE(particle, m) {
     py::object vectors = static_cast<py::object>(py::module::import("vectors"));
 
+    py::enum_<nuchic::ParticleStatus>(m, "ParticleStatus")
+        .value("internal_test", nuchic::ParticleStatus::internal_test)
+        .value("external_test", nuchic::ParticleStatus::external_test)
+        .value("propagating", nuchic::ParticleStatus::propagating)
+        .value("background", nuchic::ParticleStatus::background)
+        .value("escaped", nuchic::ParticleStatus::escaped);
+
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
         // Constructors
         .def(py::init<const int&, const FourVector&, const ThreeVector&,

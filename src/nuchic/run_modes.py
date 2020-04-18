@@ -147,7 +147,10 @@ class CalcCrossSection(RunMode):
         energy = settings().beam_energy
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
-        test_part = particle.Particle(self.pid, momentum, position, -2)
+        test_part = particle.Particle(self.pid,
+                                      momentum,
+                                      position,
+                                      particle.ParticleStatus.external_test)
 
         # Set up kicked
         self.fsi.set_kicked(len(particles))
@@ -163,7 +166,7 @@ class CalcCrossSection(RunMode):
         for event in events:
             count = 0
             for part in event:
-                if part.status() == 1:
+                if part.status() == particle.ParticleStatus.escaped:
                     count += 1
             if count != 0:
                 xsec += 1
@@ -237,7 +240,10 @@ class CalcMeanFreePath(RunMode):
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
             np.sqrt(p_kick**2.0+nucleon_mass**2))
-        test_part = particle.Particle(2212, momentum, position, -3)
+        test_part = particle.Particle(2212,
+                                      momentum,
+                                      position,
+                                      particle.ParticleStatus.internal_test)
 
         # Evolve the nucleus
         self.fsi.set_kicked(len(particles))
@@ -253,7 +259,7 @@ class CalcMeanFreePath(RunMode):
         nhits = 0
         for event in events:
             for aparticle in event:
-                if aparticle.status() == -3:
+                if aparticle.status() == particle.ParticleStatus.internal_test:
                     distance_traveled.append(aparticle.get_distance_traveled())
                     nhits = nhits + 1
         logger.info(f"nhits / nevents : {nhits} / {len(events)}")
@@ -320,7 +326,7 @@ class CalcTransparency(RunMode):
         kicked_idx = np.random.choice(np.arange(len(particles)))
         self.fsi.set_kicked(kicked_idx)
         kicked_particle = particles[kicked_idx]
-        kicked_particle.set_status(-3)
+        kicked_particle.set_status(particle.ParticleStatus.internal_test)
         kicked_particle.set_momentum(vectors.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
@@ -338,7 +344,7 @@ class CalcTransparency(RunMode):
         nhits = 0
         for event in events:
             for aparticle in event:
-                if aparticle.status() == -3:
+                if aparticle.status() == particle.ParticleStatus.internal_test:
                     nhits = nhits + 1
 
         transparency = 1.0 - nhits / len(events)
