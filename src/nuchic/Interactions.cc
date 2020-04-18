@@ -205,7 +205,7 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
             nuchic::Brent brent(func, accuracy);
             if(j != m_cdf.size() - 1)
                 try{
-                    theta[i*m_cdf.size() + j] = brent.CalcRoot(*m_theta.begin(), *m_theta.end());
+                    theta[i*m_cdf.size() + j] = brent.CalcRoot(m_theta.front(), m_theta.back());
                 } catch (std::domain_error &e) {
                     theta[i*m_cdf.size() + j] = *m_theta.begin()/sigAngular[i*180 + j]*m_cdf[j];
                 }
