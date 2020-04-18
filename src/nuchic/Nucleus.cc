@@ -89,8 +89,18 @@ void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
     for(auto particle : nucleons) {
-        if(particle.ID() == PID::proton()) protons[proton_idx++] = particle;
-        if(particle.ID() == PID::neutron()) neutrons[neutron_idx++] = particle;
+        if(particle.ID() == PID::proton()) {
+            if(proton_idx >= protons.size()) {
+                protons.push_back(particle);
+                proton_idx++;
+            } else protons[proton_idx++] = particle;
+        }
+        else if(particle.ID() == PID::neutron()) {
+            if(neutron_idx >= neutrons.size()) {
+                neutrons.push_back(particle);
+                neutron_idx++;
+            } else neutrons[neutron_idx++] = particle;
+        }
     }
 }
 

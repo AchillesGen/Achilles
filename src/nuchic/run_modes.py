@@ -151,7 +151,9 @@ class CalcCrossSection(RunMode):
 
         # Set up kicked
         self.fsi.set_kicked(len(particles))
-        self.fsi.evolve(self.nucleus, test_part)
+        particles.append(test_part)
+        self.nucleus.set_nucleons(particles)
+        self.fsi.evolve(self.nucleus)
 
         return self.nucleus.nucleons()
 
@@ -239,7 +241,9 @@ class CalcMeanFreePath(RunMode):
 
         # Evolve the nucleus
         self.fsi.set_kicked(len(particles))
-        self.fsi.mean_free_path(self.nucleus, test_part)
+        particles.append(test_part)
+        self.nucleus.set_nucleons(particles)
+        self.fsi.mean_free_path(self.nucleus)
 
         return self.nucleus.nucleons()
 
