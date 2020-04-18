@@ -65,10 +65,6 @@ PYBIND11_MODULE(particle_info, m) {
                  .def(py::self != py::self)
                  .def("__str__", &ParticleInfoEntry::ToString);
 
-    m.def("particle_db", [](){ return nuchic::Database::particleDB; });
-    m.def("build_particle_database", &nuchic::BuildParticleDatabase);
-    m.def("print_particle_database", &nuchic::PrintParticleDatabase);
-
     particleInfo.def(py::init<const std::shared_ptr<ParticleInfoEntry>&, const bool&>())
                 .def(py::init<const long int&>())
                 .def(py::init<const PID&, const bool&>())
@@ -102,5 +98,8 @@ PYBIND11_MODULE(particle_info, m) {
                 .def("width", &ParticleInfo::Width)
                 .def("generate_lifetime", &ParticleInfo::GenerateLifeTime)
                 .def(py::self == py::self)
-                .def(py::self != py::self);
+                .def(py::self != py::self)
+                .def_static("init_database", &ParticleInfo::InitDatabase)
+                .def_static("print_database", &ParticleInfo::PrintDatabase)
+                .def_static("database", &ParticleInfo::Database);
 }

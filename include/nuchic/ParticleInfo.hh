@@ -3,7 +3,7 @@
 
 // The classes in this file are inspired from the implementation found in Sherpa
 
-#include <unordered_map>
+#include <map>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -122,15 +122,9 @@ namespace nuchic {
             std::string idname, antiname;
     };
 
-    struct PIDHasher {
-        std::size_t operator()(const PID& key) const noexcept {
-            return std::hash<long int>{}(key.AsInt()); 
-        }
-    };
-
     class ParticleInfo {
         private:
-            using ParticleDB = std::unordered_map<PID, std::shared_ptr<ParticleInfoEntry>, PIDHasher>;
+            using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
             static ParticleDB particleDB;
             static void BuildDatabase(const std::string&);
 
@@ -221,6 +215,8 @@ namespace nuchic {
 
     namespace Database {
         static constexpr auto Particle = ParticleInfo::Database;
+        static constexpr auto InitParticle = ParticleInfo::InitDatabase;
+        static constexpr auto PrintParticle = ParticleInfo::PrintDatabase;
     }
 
 }
