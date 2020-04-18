@@ -96,11 +96,9 @@ void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
-                     const std::size_t& maxSteps = 1000000) {
+void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
-    if(testPart != Particle()) particles.push_back(testPart);
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -147,7 +145,8 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart 
 
     for(auto particle : particles) {
         if(particle.Status() == ParticleStatus::propagating) {
-            for(auto p : particles) std::cout << p << std::endl;
+            std::cout << "\n";
+            for(auto p : particles) spdlog::error("{}", p);
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
     }
@@ -155,11 +154,9 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const Particle &testPart 
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
-                    const std::size_t& maxSteps = 1000000) { 
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
-    if(testPart != Particle()) particles.push_back(testPart);
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -209,11 +206,9 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const Particle &testPart =
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const Particle &testPart = Particle(),
-                           const std::size_t& maxSteps = 1000000) {
+void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
-    if(testPart != Particle()) particles.push_back(testPart);
 
     auto idx = kickedIdxs[0];
     Particle* kickNuc = &particles[idx];
@@ -358,7 +353,10 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
     const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / ecm;
     std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
-    ThreeVector momentum = m_interactions -> MakeMomentum(samePID, p1CM.Vec3().Magnitude(), pcm, rans);
+    ThreeVector momentum = m_interactions -> MakeMomentum(samePID,
+                                                          p1CM.Vec3().Magnitude(),
+                                                          pcm,
+                                                          rans);
 
     FourVector p1Out = FourVector(momentum[0], momentum[1], momentum[2], p1CM.E()); 
     FourVector p2Out = FourVector(-momentum[0], -momentum[1], -momentum[2], p1CM.E()); 

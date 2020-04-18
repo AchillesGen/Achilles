@@ -32,14 +32,11 @@ PYBIND11_MODULE(cascade, m) {
         .def("reset", &Cascade::Reset)
         .def("set_kicked", &Cascade::SetKicked)
         .def("evolve", &Cascade::Evolve,
-             py::arg("nucleus"), py::arg("testPart") = nuchic::Particle(),
-             py::arg("max_steps") = 10000)
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
 	.def("nuwro", &Cascade::NuWro,
-             py::arg("nucleus"), py::arg("testPart") = nuchic::Particle(),
-             py::arg("max_steps") = 10000)
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
         .def("mean_free_path", &Cascade::MeanFreePath,
-             py::arg("nucleus"), py::arg("testPart") = nuchic::Particle(),
-             py::arg("max_steps") = 10000);
+             py::arg("nucleus"), py::arg("max_steps") = 10000);
 
     py::enum_<Cascade::ProbabilityType>(cascade, "Probability")
         .value("Gaussian", Cascade::ProbabilityType::Gaussian)

@@ -72,23 +72,20 @@ class Cascade {
         /// the background.
         ///@param nucleus: The nucleus to evolve
         ///@param maxSteps: The maximum steps to take in the cascade
-        void Evolve(std::shared_ptr<Nucleus>, const Particle&,
-                         const std::size_t& maxSteps);
+        void Evolve(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
 
         /// Simulate evolution of a kicked particle until it interacts for the 
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
         ///@param nucleus: The nucleus to evolve according to the mean free path calculation
         ///@param maxSteps: The maximum steps to take in the particle evolution
-        void MeanFreePath(std::shared_ptr<Nucleus>, const Particle&,
-                          const std::size_t& maxSteps);
+        void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
 
         /// Simulate the cascade until all particles either escape, are recaptured, or are in 
         /// the background. This is done according to the NuWro algorithm.
         ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
         ///@param maxSteps: The maximum steps to take in the particle evolution
-	void NuWro(std::shared_ptr<Nucleus>, const Particle&, 
-                   const std::size_t& maxSteps);
+	void NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
         ///@}
     private:
         // Functions
