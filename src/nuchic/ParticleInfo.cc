@@ -8,7 +8,7 @@ using nuchic::PID;
 using nuchic::ParticleInfoEntry;
 using nuchic::ParticleInfo;
 
-nuchic::Database::ParticleDB nuchic::Database::particleDB{};
+// nuchic::Database::ParticleDB nuchic::Database::particleDB{};
 
 // PID::PID(const long int &id_, bool validate) : id(PID::undefined()) {
 //     if(!validate)
@@ -66,20 +66,20 @@ struct convert<ParticleInfoEntry> {
 };
 }
 
-void nuchic::BuildParticleDatabase(const std::string &datafile) {
+void nuchic::ParticleInfo::BuildDatabase(const std::string &datafile) {
     YAML::Node particleYAML = YAML::LoadFile(datafile);
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
         auto entry = std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());
-        nuchic::Database::particleDB.emplace(entry -> id, entry);
+        particleDB.emplace(entry -> id, entry);
     }
-    PrintParticleDatabase();
+    PrintDatabase();
 }
 
-void nuchic::PrintParticleDatabase() {
+void nuchic::ParticleInfo::PrintDatabase() {
     fmt::print("{:>7s} {:<20s} {:<20s} {:^10s}\t{:^10s}\n",
                "PID", "Name", "Anti-name", "Mass (MeV)", "Width (MeV)");
-    for(const auto &part : nuchic::Database::particleDB) {
+    for(const auto &part : particleDB) {
         std::cout <<  *(part.second) << "\n";
     }
 }
@@ -98,6 +98,8 @@ std::ostream& operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
     os << entry.ToString();
     return os;
 }
+
+ParticleInfo::ParticleDB ParticleInfo::particleDB;
 
 bool ParticleInfo::IsBaryon() const noexcept {
     if(IntID() % 10000 < 1000) return false;

@@ -3,11 +3,12 @@
 
 // The classes in this file are inspired from the implementation found in Sherpa
 
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <utility>
+#include <functional>
 
 namespace YAML {
     template<typename T>
@@ -74,10 +75,7 @@ namespace nuchic {
             long int id;
     };
 
-
     class ParticleInfo;
-    void BuildParticleDatabase(const std::string&);
-    void PrintParticleDatabase();
 
     class ParticleInfoEntry {
         public:
@@ -112,7 +110,6 @@ namespace nuchic {
 
             friend class ParticleInfo;
             friend struct YAML::convert<ParticleInfoEntry>;
-            friend void BuildParticleDatabase(const std::string&);
             friend std::ostream& ::operator<<(std::ostream&, const ParticleInfoEntry&);
 
         private:
@@ -125,29 +122,38 @@ namespace nuchic {
             std::string idname, antiname;
     };
 
-    namespace Database {
-        using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
-        extern ParticleDB particleDB;
-    }
+    struct PIDHasher {
+        std::size_t operator()(const PID& key) const noexcept {
+            return std::hash<long int>{}(key.AsInt()); 
+        }
+    };
 
     class ParticleInfo {
+        private:
+            using ParticleDB = std::unordered_map<PID, std::shared_ptr<ParticleInfoEntry>, PIDHasher>;
+            static ParticleDB particleDB;
+            static void BuildDatabase(const std::string&);
+
         public:
             ParticleInfo(std::shared_ptr<ParticleInfoEntry> info_, const bool &anti_=false)
                 : info(std::move(info_)), anti(false) {
+                InitDatabase("data/Particles.yml");
                 if(anti && info -> majorana == 0) anti = anti_;
             }
 
             ParticleInfo(const long int &id) : info(nullptr), anti(false) {
-                auto it(Database::particleDB.find(static_cast<PID>(std::abs(id))));
-                if(it != Database::particleDB.end()) 
+                InitDatabase("data/Particles.yml");
+                auto it(particleDB.find(static_cast<PID>(std::abs(id))));
+                if(it != particleDB.end()) 
                     info = it -> second;
                 else
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", id));
                 if(id < 0 && info -> majorana == 0) anti = true;
             }
 
-            ParticleInfo(const PID &id, const bool &anti_ = false) : info(nullptr), anti(false) {
-                auto it(Database::particleDB.find(id));
+            ParticleInfo(const PID &id, const bool &anti_) : info(nullptr), anti(false) {
+                InitDatabase("data/Particles.yml");
+                auto it(particleDB.find(id));
                 info = it -> second;
                 if(anti_ && info -> majorana == 0) anti = anti_;
             }
@@ -199,10 +205,24 @@ namespace nuchic {
             }
             bool operator!=(const ParticleInfo &other) const noexcept { return !(*this == other); }
 
+            static ParticleDB Database() { return particleDB; }
+            static void InitDatabase(const std::string &filename) {
+                if(particleDB.size() == 0) {
+                    particleDB[PID::undefined()] =  std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
+                    BuildDatabase(filename);
+                }
+            }
+            static void PrintDatabase();
+
         private:
             std::shared_ptr<ParticleInfoEntry> info;
             bool anti;
     };
+
+    namespace Database {
+        static constexpr auto Particle = ParticleInfo::Database;
+    }
+
 }
 
 #endif
