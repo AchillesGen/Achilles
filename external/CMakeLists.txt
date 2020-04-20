@@ -37,8 +37,9 @@ if(NOT extern_spdlog_POPULATED)
         EXCLUDE_FROM_ALL)
 endif()
 
-# Catch2
+# Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
+    # Catch2
     FetchContent_Declare(
         extern_catch2
 
@@ -53,6 +54,7 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
             ${extern_catch2_BINARY_DIR})
     endif()
 
+    # Trompeloeil
     FetchContent_Declare(
         extern_trompeloeil
 
