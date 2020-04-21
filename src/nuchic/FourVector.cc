@@ -13,11 +13,11 @@ double FourVector::M() const noexcept {
 }
 
 double FourVector::Theta() const noexcept {
-    return atan2(Pt(), vec[2]);
+    return atan2(Pt(), Pz());
 }
 
 double FourVector::Phi() const noexcept {
-    const double phi = atan2(vec[1], vec[0]);
+    const double phi = atan2(Py(), Px());
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }

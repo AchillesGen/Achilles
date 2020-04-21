@@ -6,6 +6,7 @@ add_library(utilities SHARED
     Utilities.cc
     ParticleInfo.cc
 )
+target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog pybind11::pybind11 yaml-cpp)
 

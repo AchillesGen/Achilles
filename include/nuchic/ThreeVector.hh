@@ -108,55 +108,61 @@ class ThreeVector {
 
         /// Return the position as an array
         ///@return std::array<double, 3>: containing the position
-        const std::array<double, 3>& Position() const noexcept {return vec;}
+        const std::array<double, 3>& Position() const noexcept { return vec; }
 
         /// Return the position in the x-direction
         ///@return double: containing the position in the x-direction
-        const double& X() const noexcept {return vec[0];}
+        const double& X() const noexcept { return vec[0]; }
+        // double& X() noexcept { return vec[0]; }
 
         /// Return the position in the y-direction
         ///@return double: containing the position in the y-direction
-        const double& Y() const noexcept {return vec[1];}
+        const double& Y() const noexcept { return vec[1]; }
+        // double& Y() noexcept { return vec[1]; }
 
         /// Return the position in the z-direction
         ///@return double: containing the position in the z-direction
-        const double& Z() const noexcept {return vec[2];}
+        const double& Z() const noexcept { return vec[2]; }
+        // double& Z() noexcept { return vec[2]; }
 
         /// Return the momentum in the x-direction
         ///@return double: containing the momentum in the x-direction
-        const double& Px() const noexcept {return vec[0];}
+        const double& Px() const noexcept { return vec[0]; }
+        // double& Px() noexcept { return vec[0]; }
 
         /// Return the momentum in the y-direction
         ///@return double: containing the momentum in the y-direction
-        const double& Py() const noexcept {return vec[1];}
+        const double& Py() const noexcept { return vec[1]; }
+        // double& Py() noexcept { return vec[1]; }
 
         /// Return the momentum in the z-direction
         ///@return double: containing the momentum in the z-direction
-        const double& Pz() const noexcept {return vec[2];}
+        const double& Pz() const noexcept { return vec[2]; }
+        // double& Pz() noexcept { return vec[2]; }
 
         /// Return the transverse momentum squared
         ///@return double: containing the transverse momentum squared
-        double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
+        double Pt2() const noexcept { return pow(vec[0], 2) + pow(vec[1], 2); }
 
         /// Return the transverse momentum
         ///@return double: containing the transverse momentum
-        double Pt() const noexcept {return sqrt(Pt2());}
+        double Pt() const noexcept { return sqrt(Pt2()); }
 
         /// Return the three momentum squared
         ///@return double: containing the three momentum squared
-        double P2() const noexcept {return (*this)*(*this);}
+        double P2() const noexcept { return (*this)*(*this); }
 
         /// Return the three momentum
         ///@return double: containing the three momentum
-        double P() const noexcept {return sqrt(P2());}
+        double P() const noexcept { return sqrt(P2()); }
 
         /// Return the magnitude squared of the vector
         ///@return double: containing the magnitude squared of the vector
-        double Magnitude2() const noexcept {return P2();}
+        double Magnitude2() const noexcept { return P2(); }
 
         /// Return the magnitude of the vector
         ///@return double: containing the magnitude of the vector
-        double Magnitude() const noexcept {return P();}
+        double Magnitude() const noexcept { return P(); }
 
         /// Return the angle between the z-component and the transverse component
         ///@return double: containing the angle between the z and transverse components

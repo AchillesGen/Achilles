@@ -5,11 +5,11 @@
 using namespace nuchic;
 
 double ThreeVector::Theta() const noexcept {
-    return atan2(Pt(), vec[2]);
+    return atan2(Pt(), Pz());
 }
 
 double ThreeVector::Phi() const noexcept {
-    const double phi = atan2(vec[1], vec[0]);
+    const double phi = atan2(Py(), Px());
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }
