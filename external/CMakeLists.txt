@@ -1,62 +1,37 @@
-include(FetchContent)
+#pybind11
+CPMAddPackage(
+    NAME pybind11
+    GITHUB_REPOSITORY pybind/pybind11
+    GIT_TAG v2.4.0
+    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch"
+)
+add_library(pybind11::pybind11 ALIAS pybind11)
 
-# pybind11
-FetchContent_Declare(
-    extern_pybind11
+CPMFindPackage(
+    NAME fmt
+    # Use this commit which eliminates variable shadowing but is a stable point
+    GIT_TAG 63479c8519c7fa3571707ec7f40b87438b9b9c51
+    GITHUB_REPOSITORY fmtlib/fmt
+)
+add_library(fmt::fmt ALIAS fmt)
 
-    GIT_REPOSITORY "https://github.com/pybind/pybind11.git"
-    GIT_TAG "v2.4"
-    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch" 
-    )
 
-FetchContent_GetProperties(extern_pybind11)
-if(NOT extern_pybind11_POPULATED)
-    FetchContent_Populate(extern_pybind11)
-    add_subdirectory(
-        ${extern_pybind11_SOURCE_DIR}
-        ${extern_pybind11_BINARY_DIR}
-        EXCLUDE_FROM_ALL)
-endif()
+CPMFindPackage(
+    NAME spdlog
+    GIT_TAG "v1.5.0"
+    GITHUB_REPOSITORY gabime/spdlog
+    OPTIONS 
+        "SPDLOG_FMT_EXTERNAL ON"
+        "SPDLOG_BUILD_SHARED ON"
+)
+add_library(spdlog::spdlog ALIAS spdlog)
 
-# spdlog
-FetchContent_Declare(
-    extern_spdlog
-
-    GIT_REPOSITORY "https://github.com/gabime/spdlog.git"
-    GIT_TAG "v1.x"
-    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/spdlog.patch"
-    )
-
-FetchContent_GetProperties(extern_spdlog)
-if(NOT extern_spdlog_POPULATED)
-    FetchContent_Populate(extern_spdlog)
-    set(SPDLOG_BUILD_SHARED ON CACHE INTERNAL "")
-    add_subdirectory(
-        ${extern_spdlog_SOURCE_DIR}
-        ${extern_spdlog_BINARY_DIR}
-        EXCLUDE_FROM_ALL)
-endif()
-
-# yaml-cpp
-if(yaml-cpp_FOUND)
-    MESSAGE(STATUS "Found yaml-cpp at ${YAML_CPP_INCLUDE_DIR}")
-else()
-    MESSAGE(STATUS "yaml-cpp not found. Cloning from github as external dependency")
-    FetchContent_Declare(
-        extern_yamlcpp
-    
-        GIT_REPOSITORY "https://github.com/jbeder/yaml-cpp.git"
-        GIT_TAG "yaml-cpp-0.6.3"
-        )
-    
-    FetchContent_GetProperties(extern_yamlcpp)
-    if(NOT extern_yamlcpp_POPULATED)
-        FetchContent_Populate(extern_yamlcpp)
-        set(YAML_CPP_BUILD_TESTS OFF CACHE INTERNAL "")
-        set(YAML_BUILD_SHARED_LIBS ON CACHE INTERNAL "")
-        add_subdirectory(
-            ${extern_yamlcpp_SOURCE_DIR}
-            ${extern_yamlcpp_BINARY_DIR}
-            )
-    endif()
-endif()
+CPMFindPackage(
+    NAME yaml-cpp
+    GITHUB_REPOSITORY jbeder/yaml-cpp
+    VERSION 0.6.3
+    OPTIONS
+        "YAML_CPP_BUILD_TESTS OFF"
+        "YAML_CPP_BUILD_CONTRIB OFF"
+        "YAML_CPP_BUILD_TOOLS OFF"
+)

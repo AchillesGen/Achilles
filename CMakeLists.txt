@@ -67,5 +67,9 @@ endif()
 #set(NUCHIC_INCLUDES ${NUCHIC_BUILD_INSTALL_PREFIX}/include ${NUCHIC_SOURCE_DIR}/include ${HDF5_INCLUDE_DIRS})
 #link_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/lib)
 
+# Add dependencies
+include(CMake/CPM.cmake)
 add_subdirectory(external)
+
+# Main code
 add_subdirectory(src/nuchic)
