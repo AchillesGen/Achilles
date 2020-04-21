@@ -29,7 +29,7 @@ add_library(spdlog::spdlog ALIAS spdlog)
 CPMFindPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
-    VERSION 0.6.3
+    GIT_TAG 4edff1fa5dbfca16fc72d89870841bee89f8ef89
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
