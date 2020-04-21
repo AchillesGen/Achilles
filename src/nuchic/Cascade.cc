@@ -334,7 +334,7 @@ std::size_t Cascade::Interacted(const Particles& particles, const Particle& kick
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
-        const double prob = exp(-M_PI*dist.second/(xsec/10.));
+        const double prob = probability(dist.second, xsec/10);
         if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
