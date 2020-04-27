@@ -22,6 +22,12 @@ using Particles = std::vector<Particle>;
 /// on if nucleons are captured in the potential or escape.
 class Nucleus {
     public:
+        // Fermigas Model
+        enum FermigasType {
+            Local,
+            Global
+        };
+
         /// @name Constructors and Destructors
         /// @{
 
@@ -35,7 +41,7 @@ class Nucleus {
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
         Nucleus(const std::size_t&, const std::size_t&, const double&, const std::string&,
-                std::function<Particles()>);
+                const FermigasType&, std::function<Particles()>);
         Nucleus(const Nucleus&) = default;
         Nucleus(Nucleus&&) = default;
         Nucleus& operator=(const Nucleus&) = default;
@@ -185,7 +191,7 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&,
-                                   const std::string&, const std::function<Particles()>&);
+                                   const std::string&, const FermigasType&, const std::function<Particles()>&);
 
         /// @name Stream Operators
         /// @{
@@ -202,7 +208,10 @@ class Nucleus {
         Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
+
         static std::size_t NameToZ(const std::string&);
+        std::function<double(double, double)> fermigas;
+	
 
         randutils::mt19937_rng rng;
 };

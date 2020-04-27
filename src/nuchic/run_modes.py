@@ -86,13 +86,21 @@ class RunMode:
         binding_energy = settings().nucleus_binding(name)
         # fermi_momentum = settings().nucleus_kf(name)
         density_file = settings().get_param('density_file')
+#        try:
+        self.fermi_gas= nucleus.Nucleus.__dict__[settings().get_param("fermi_gas")]
+
+#        except KeyError as error:
+#            logger.error(f"Invalid FG model {error}")
+#            raise
+    
         logger.info(
             f"{instance_name}: Building nucleus '{name}' "
             f"with density file {density_file} and "
-            f"binding_energy {binding_energy} MeV.")
+            f"binding_energy {binding_energy} MeV."
+            f"Fermi gas model implemented {self.fermi_gas}")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
                                                     binding_energy,
-                                                    density_file,
+                                                    density_file, self.fermi_gas,
                                                     density)
 
         try:
@@ -143,7 +151,7 @@ class CalcCrossSection(RunMode):
                 break
 
         # Add test particle to the rest of them
-        position = vectors.Vector3(position[0], position[1], -2.5)
+        position = vectors.Vector3(position[0], position[1], -6.5)
         energy = settings().beam_energy
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
@@ -156,7 +164,7 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles))
         particles.append(test_part)
         self.nucleus.set_nucleons(particles)
-        self.fsi.evolve(self.nucleus)
+        self.fsi.nuwro(self.nucleus)
 
         return self.nucleus.nucleons()
 

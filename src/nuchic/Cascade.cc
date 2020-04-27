@@ -65,9 +65,20 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
 
     std::size_t idx1 = rng.pick(index_same);
     std::size_t idx2 = rng.pick(index_diff);
-    FourVector ptmp = particles[idx2].Momentum(); 
-    particles[idx2].SetMomentum(particles[idx1].Momentum());
+    FourVector ptmp1 = particles[idx1].Momentum(); 
+    FourVector ptmp2 = particles[idx2].Momentum(); 
+    
     double position = particle1.Position().Magnitude();	
+    auto mom1=localNucleus -> GenerateMomentum(position);
+    double energy1 = Constant::mN*Constant::mN;
+    for(auto mom : mom1) energy1 += mom*mom;
+    particles[idx1].SetMomentum(FourVector(mom1[0], mom1[1], mom1[2], sqrt(energy1)));
+   
+
+    auto mom2=localNucleus -> GenerateMomentum(position);
+    double energy2 = Constant::mN*Constant::mN;
+    for(auto mom : mom2) energy2 += mom*mom;
+    particles[idx2].SetMomentum(FourVector(mom2[0], mom2[1], mom2[2], sqrt(energy2)));
     double rho = localNucleus -> Rho(position);
     if(rho < 0.0) rho = 0.0;
     double xsec1 = GetXSec(particle1, particles[idx1]);
@@ -76,7 +87,8 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
     
     if(lambda > stepDistance) {
-       particles[idx2].SetMomentum(ptmp);
+       particles[idx1].SetMomentum(ptmp1);	    
+       particles[idx2].SetMomentum(ptmp2);
        return SIZE_MAX;
     }
     
@@ -84,11 +96,13 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     double ichoic=rng.uniform(0.0, 1.0);
     if(ichoic< xsec1/(xsec1+xsec2)) {
        particles[idx1].SetPosition(particle1.Position());	    
-       particles[idx2].SetMomentum(ptmp);
+       particles[idx2].SetMomentum(ptmp2);
        return idx1;
     } 
 
-    particles[idx2].SetPosition(particle1.Position());	        	    
+    particles[idx2].SetPosition(particle1.Position());
+    particles[idx1].SetMomentum(ptmp1);
+    
     return idx2;
 }    
 	
@@ -96,7 +110,7 @@ void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
+void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 100000) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -154,7 +168,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) { 
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 100000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 

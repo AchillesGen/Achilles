@@ -13,11 +13,12 @@ PYBIND11_MODULE(nucleus, m) {
     py::object vectors = static_cast<py::object>(py::module::import("vectors"));
     py::object particle = static_cast<py::object>(py::module::import("particle"));
 
-    py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>>(m, "Nucleus")
+    py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>> nucleus(m, "Nucleus");
         // Constructors
-        .def(py::init<const std::size_t&, const std::size_t&, const double&,
-                      const std::string&, const std::function<nuchic::Particles()>&>(),
-                      py::arg("Z"), py::arg("A"), py::arg("binding"),
+        nucleus.def(py::init<const std::size_t&, const std::size_t&, const double&,
+                      const std::string&, const nuchic::Nucleus::FermigasType&,
+		      const std::function<nuchic::Particles()>&>(),
+                      py::arg("Z"), py::arg("A"), py::arg("binding"),py::arg("fermi_gas"),
                       py::arg("density_file"),
                       py::arg("density") = std::function<nuchic::Particles()>())
         // Setters
@@ -47,5 +48,11 @@ PYBIND11_MODULE(nucleus, m) {
         .def("__repr__", &nuchic::Nucleus::ToString)
         // Static Methods
         .def_static("make_nucleus", &nuchic::Nucleus::MakeNucleus);
+
+        py::enum_<nuchic::Nucleus::FermigasType>(nucleus, "Fermigas")
+        .value("Local", nuchic::Nucleus::FermigasType::Local)
+        .value("Global", nuchic::Nucleus::FermigasType::Global)
+        .export_values();
+
 }
 
