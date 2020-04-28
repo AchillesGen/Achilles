@@ -118,7 +118,7 @@ class Nucleus {
 
 	/// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
-        const double& FermiMomentum() const noexcept {return fermiMomentum;}
+        //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
 	///@return double: The potential in MeV	
@@ -140,17 +140,8 @@ class Nucleus {
 	
         /// Return the Fermi momentum according to a given FG model
 	///@param position: The radius to calculate the density
-	double FermiMomentum(const double &position) const noexcept { 
-            const double rho = rhoInterp(position);
-            switch(fermiGas) {
-                case FermiGasType::Local:
-                    return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
-                case FermiGasType::Global:
-                    static constexpr double small = 1E-6;
-                    return rho < small ? small : fermiMomentum;
-            }
-        }
-        ///@}
+        double FermiMomentum(const double&) const noexcept;	//
+	///@}
 
         /// @name Functions
         /// @{

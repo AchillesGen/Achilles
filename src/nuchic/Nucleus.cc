@@ -68,26 +68,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     }
 
     rhoInterp.CubicSpline(vecRadius, vecDensity);
-
-//    switch(fg_type) {
-//    case FermigasType::Local:
-//       fermigas = [&](const double &position) -> double {
-//	   double rho=rhoInterp(position);    
-//           return  std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
-//           ;
-//       };
-//       break;
-//    case FermigasType::Global:
-//       fermigas = [&](const double &position) -> double {
-//           double small=1E-6;
-//    	   double fermimomentum=225.0;
-//	   double rho=rhoInterp(position);    
-//   	   if(rho<small) return small;
-//           return fermimomentum; 
-//       };
-//       break;
-//    }
-
+    
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
     // not necessarily be caught 
@@ -154,7 +135,6 @@ void Nucleus::GenerateConfig() {
 
     for(Particle& particle : particles) {
         // Set momentum for each nucleon
-	std:: cout << "ancora qui" << std::endl;
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
@@ -172,11 +152,11 @@ void Nucleus::GenerateConfig() {
 double Nucleus::Potential(const double &position) const noexcept{
     constexpr double potentialShift = 8;
     return  sqrt(Constant::mN*Constant::mN 
-                + pow(fermigas(position), 2)) - Constant::mN + potentialShift;
+                + pow(FermiMomentum(position), 2)) - Constant::mN + potentialShift;
 }	
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = rng.uniform(0.0, fermigas(position));
+    momentum[0] = rng.uniform(0.0,FermiMomentum(position));
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
 
@@ -184,7 +164,7 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
 }
 
 Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy, const double& fermiMomentum,
-                             const std::string& densityFilename, const FermigasType& fg_type,
+                             const std::string& densityFilename, const FermiGasType& fg_type,
                              const std::function<Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
@@ -215,3 +195,16 @@ std::size_t Nucleus::NameToZ(const std::string& name) {
 const std::string Nucleus::ToString() const noexcept {
     return std::to_string(NNucleons()) + ZToName.at(NProtons());
 }
+
+double Nucleus::FermiMomentum(const double &position) const noexcept { 
+    double rho = rhoInterp(position);
+    switch(fermiGas) {
+    case FermiGasType::Local:
+         return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
+         case FermiGasType::Global:
+         static constexpr double small = 1E-2;
+         return rho < small ? small : fermiMomentum;
+   }
+}
+
+

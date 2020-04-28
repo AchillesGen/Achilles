@@ -141,11 +141,7 @@ class CalcCrossSection(RunMode):
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
-        
-        logger.info(f"sono qui 1")
         self.nucleus.generate_config() 
-        logger.info(f"sono qui 2")
-
         particles = self.nucleus.nucleons()
 
         # Generate random position in beam

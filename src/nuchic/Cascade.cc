@@ -408,5 +408,5 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle& particle) const noexcept { 
     double position = particle.Position().Magnitude();	
-    return particle.Momentum().Vec3().Magnitude() < localNucleus -> Fermi(position);
+    return particle.Momentum().Vec3().Magnitude() < localNucleus -> FermiMomentum(position);
 }
