@@ -29,7 +29,8 @@ Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
         case ProbabilityType::Pion:
             probability = [](const double &b2, const double &sigma) -> double {
                 double b = sqrt(b2);
-                return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
+                //return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
+		return exp(-sqrt(2*M_PI/sigma)*b);
             };
             break;
     }
@@ -62,7 +63,9 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
 	if (particles[i].ID() == particle1.ID()) index_same.push_back(i);
         else index_diff.push_back(i);
     }
-
+    if(index_same.size()==0 ||index_diff.size()==0) {
+       return SIZE_MAX;
+    }	    
     std::size_t idx1 = rng.pick(index_same);
     std::size_t idx2 = rng.pick(index_diff);
     FourVector ptmp1 = particles[idx1].Momentum(); 
@@ -168,7 +171,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 100000) { 
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 5000000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -405,5 +408,5 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle& particle) const noexcept { 
     double position = particle.Position().Magnitude();	
-    return particle.Momentum().Vec3().Magnitude() < localNucleus -> FermiMomentum(position);
+    return particle.Momentum().Vec3().Magnitude() < localNucleus -> Fermi(position);
 }

@@ -2,6 +2,8 @@
 #include <map>
 #include <regex>
 #include <fstream>
+#include <iostream>
+
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
@@ -28,25 +30,10 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
-                 const std::string& densityFilename, const FermigasType& fg_type,
+                 const double& kf, const std::string& densityFilename, const FermigasType& fg_type,
 		 std::function<Particles()> _density) 
-                        : binding(bEnergy), density(std::move(_density)) {
+                        : binding(bEnergy), fermiMomentum(kf), density(std::move(_density)) {
 
-    switch(fg_type) {
-        case FermigasType::Local:
-            fermigas = [](const double &b2, const double &sigma) -> double {
-                return exp(-M_PI*b2/sigma);
-            };
-            break;
-        case FermigasType::Global:
-            fermigas = [](const double &b2, const double &sigma) -> double {
-                double b = sqrt(b2);
-                return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
-            };
-            break;
-    }
-    double fm=fermigas(2,3);
-    fm=fm*1.0;    
 
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
@@ -61,11 +48,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     constexpr double nucDensity = 0.16;
-    constexpr double potentialShift = 8;
 
     radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
-    potential = sqrt(Constant::mN*Constant::mN 
-                     + pow(fermiMomentum, 2)) - Constant::mN + potentialShift;
 
     std:: ifstream densityFile(densityFilename);
     std:: string lineContent;
@@ -83,6 +67,25 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     }
 
     rhoInterp.CubicSpline(vecRadius, vecDensity);
+
+    switch(fg_type) {
+    case FermigasType::Local:
+       fermigas = [&](const double &position) -> double {
+	   double rho=rhoInterp(position);    
+           return  std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
+           ;
+       };
+       break;
+    case FermigasType::Global:
+       fermigas = [&](const double &position) -> double {
+           double small=1E-6;
+    	   double fermimomentum=225.0;
+	   double rho=rhoInterp(position);    
+   	   if(rho<small) return small;
+           return fermimomentum; 
+       };
+       break;
+    }
 
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
@@ -131,15 +134,15 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     // Calculate kinetic energy, and if less than potential it is captured
     const double totalEnergy = sqrt(particle.Momentum().P2() + particle.Momentum().M2());
     const double kineticEnergy = totalEnergy - particle.Mass();
-    if(kineticEnergy < potential) return false;
+    if(kineticEnergy < Potential(particle.Position().Magnitude())) return false;
 
     // If the particle escapes, adjust momentum to account for this
     // TODO: This adjusts the mass. Is that acceptable?
     const double theta = particle.Momentum().Theta();
     const double phi = particle.Momentum().Phi();
-    const double px = particle.Momentum().Px() - potential * std::sin(theta) * std::cos(phi);
-    const double py = particle.Momentum().Py() - potential * std::sin(theta) * std::sin(phi);
-    const double pz = particle.Momentum().Pz() - potential * std::cos(theta);
+    const double px = particle.Momentum().Px() - Potential(particle.Position().Magnitude()) * std::sin(theta) * std::cos(phi);
+    const double py = particle.Momentum().Py() - Potential(particle.Position().Magnitude()) * std::sin(theta) * std::sin(phi);
+    const double pz = particle.Momentum().Pz() - Potential(particle.Position().Magnitude()) * std::cos(theta);
     particle.SetMomentum(FourVector(px, py, pz, particle.Momentum().E()));
     return true;
 }
@@ -150,6 +153,7 @@ void Nucleus::GenerateConfig() {
 
     for(Particle& particle : particles) {
         // Set momentum for each nucleon
+	std:: cout << "ancora qui" << std::endl;
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
@@ -163,20 +167,22 @@ void Nucleus::GenerateConfig() {
     SetNucleons(particles);
 }
 
-double Nucleus::FermiMomentum(const double &position) const noexcept {
-    return std::cbrt(rhoInterp(position)*3*M_PI*M_PI)*Constant::HBARC;
-}
 
+double Nucleus::Potential(const double &position) const noexcept{
+    constexpr double potentialShift = 8;
+    return  sqrt(Constant::mN*Constant::mN 
+                + pow(fermigas(position), 2)) - Constant::mN + potentialShift;
+}	
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = rng.uniform(0.0, FermiMomentum(position));
+    momentum[0] = rng.uniform(0.0, fermigas(position));
     momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
     momentum[2] = rng.uniform(0.0, 2*M_PI);
 
     return ToCartesian(momentum);
 }
 
-Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
+Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy, const double& fermiMomentum,
                              const std::string& densityFilename, const FermigasType& fg_type,
                              const std::function<Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
@@ -189,7 +195,7 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
             "Nucleus: parsing nuclear name '{0}', expecting a density "
             "with A={1} total nucleons and Z={2} protons.", 
             name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, densityFilename, fg_type, density);
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg_type, density);
     }
 
     throw std::runtime_error("Invalid nucleus " + name);

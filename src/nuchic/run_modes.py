@@ -84,7 +84,7 @@ class RunMode:
 
         name = settings().get_run('nucleus')
         binding_energy = settings().nucleus_binding(name)
-        # fermi_momentum = settings().nucleus_kf(name)
+        fermi_momentum = settings().nucleus_kf(name)
         density_file = settings().get_param('density_file')
 #        try:
         self.fermi_gas= nucleus.Nucleus.__dict__[settings().get_param("fermi_gas")]
@@ -99,10 +99,10 @@ class RunMode:
             f"binding_energy {binding_energy} MeV."
             f"Fermi gas model implemented {self.fermi_gas}")
         self.nucleus = nucleus.Nucleus.make_nucleus(name,
-                                                    binding_energy,
+                                                    binding_energy, fermi_momentum,
                                                     density_file, self.fermi_gas,
                                                     density)
-
+        
         try:
             self.cascade_prob = cascade.Cascade.__dict__[settings().get_param("cascade_prob")]
         except KeyError as error:
@@ -141,7 +141,11 @@ class CalcCrossSection(RunMode):
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
-        self.nucleus.generate_config()
+        
+        logger.info(f"sono qui 1")
+        self.nucleus.generate_config() 
+        logger.info(f"sono qui 2")
+
         particles = self.nucleus.nucleons()
 
         # Generate random position in beam
@@ -164,7 +168,7 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles))
         particles.append(test_part)
         self.nucleus.set_nucleons(particles)
-        self.fsi.nuwro(self.nucleus)
+        self.fsi.evolve(self.nucleus)
 
         return self.nucleus.nucleons()
 
