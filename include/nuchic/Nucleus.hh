@@ -41,8 +41,8 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
-        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&, const std::string&,
-                const FermiGasType&, std::function<Particles()>);
+        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
+                const std::string&, const FermiGasType&, std::function<Particles()>);
         Nucleus(const Nucleus&) = default;
         Nucleus(Nucleus&&) = default;
         Nucleus& operator=(const Nucleus&) = default;
@@ -200,8 +200,9 @@ class Nucleus {
         ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
         ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
-        static Nucleus MakeNucleus(const std::string&, const double&,const double&,
-                                   const std::string&, const FermiGasType&, const std::function<Particles()>&);
+        static Nucleus MakeNucleus(const std::string&, const double&, const double&,
+                                   const std::string&, const FermiGasType&,
+                                   const std::function<Particles()>&);
 
         /// @name Stream Operators
         /// @{
@@ -213,7 +214,7 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum, radius, potential;
+        double binding, fermiMomentum, radius, potential{};
         FermiGasType fermiGas;
         std::function<Particles()> density;
         Interp1D rhoInterp;	

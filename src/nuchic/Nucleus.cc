@@ -35,7 +35,6 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
                         : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType),
                           density(std::move(_density)) {
 
-
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
         errorMsg += " number of nucleons. Got " + std::to_string(Z);
@@ -148,12 +147,12 @@ void Nucleus::GenerateConfig() {
     SetNucleons(particles);
 }
 
-
 double Nucleus::Potential(const double &position) const noexcept{
     constexpr double potentialShift = 8;
     return  sqrt(Constant::mN*Constant::mN 
                 + pow(FermiMomentum(position), 2)) - Constant::mN + potentialShift;
-}	
+}
+
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
     momentum[0] = rng.uniform(0.0,FermiMomentum(position));
@@ -197,11 +196,11 @@ const std::string Nucleus::ToString() const noexcept {
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept { 
-    double rho = rhoInterp(position);
+    const double rho = rhoInterp(position);
     switch(fermiGas) {
     case FermiGasType::Local:
          return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
-         case FermiGasType::Global:
+    case FermiGasType::Global:
          static constexpr double small = 1E-2;
          return rho < small ? small : fermiMomentum;
    }
