@@ -59,53 +59,47 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     std::vector<std::size_t> index_same, index_diff;
 
     for(std::size_t i = 0; i < particles.size(); ++i) {
-        if (particles[i].Status() < ParticleStatus::background) continue;
+        if (particles[i].Status() != ParticleStatus::background) continue;
 	if (particles[i].ID() == particle1.ID()) index_same.push_back(i);
         else index_diff.push_back(i);
     }
-    if(index_same.size()==0 ||index_diff.size()==0) {
-       return SIZE_MAX;
-    }	    
-    std::size_t idx1 = rng.pick(index_same);
-    std::size_t idx2 = rng.pick(index_diff);
-    FourVector ptmp1 = particles[idx1].Momentum(); 
-    FourVector ptmp2 = particles[idx2].Momentum(); 
-    
-    double position = particle1.Position().Magnitude();	
-    auto mom1=localNucleus -> GenerateMomentum(position);
-    double energy1 = Constant::mN*Constant::mN;
-    for(auto mom : mom1) energy1 += mom*mom;
-    particles[idx1].SetMomentum(FourVector(mom1[0], mom1[1], mom1[2], sqrt(energy1)));
-   
 
-    auto mom2=localNucleus -> GenerateMomentum(position);
-    double energy2 = Constant::mN*Constant::mN;
-    for(auto mom : mom2) energy2 += mom*mom;
-    particles[idx2].SetMomentum(FourVector(mom2[0], mom2[1], mom2[2], sqrt(energy2)));
+    double position = particle1.Position().Magnitude();	
+    auto mom = localNucleus -> GenerateMomentum(position);
+    double energy = Constant::mN*Constant::mN;
+    for(auto p : mom) energy += p*p;
+
+    std::size_t idx1 = SIZE_MAX;
+    double xsec1 = 0;
+    if(index_same.size() != 0) {
+        idx1 = rng.pick(index_same);
+        particles[idx1].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+        xsec1 = GetXSec(particle1, particles[idx1]);
+    }
+
+    std::size_t idx2 = SIZE_MAX;
+    double xsec2 = 0;
+    if(index_diff.size() != 0) {
+        idx2 = rng.pick(index_same);
+        particles[idx2].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+        xsec2 = GetXSec(particle1, particles[idx2]);
+    }
+
     double rho = localNucleus -> Rho(position);
-    if(rho < 0.0) rho = 0.0;
-    double xsec1 = GetXSec(particle1, particles[idx1]);
-    double xsec2 = GetXSec(particle1, particles[idx2]);
+    if(rho <= 0.0) return SIZE_MAX;
     double lambda_tilde = 1.0/(xsec1/10*rho+xsec2/10*rho);
     double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
     
-    if(lambda > stepDistance) {
-       particles[idx1].SetMomentum(ptmp1);	    
-       particles[idx2].SetMomentum(ptmp2);
-       return SIZE_MAX;
-    }
+    if(lambda > stepDistance) return SIZE_MAX;
     
-    stepDistance=lambda;
-    double ichoic=rng.uniform(0.0, 1.0);
-    if(ichoic< xsec1/(xsec1+xsec2)) {
+    stepDistance = lambda;
+    double ichoice = rng.uniform(0.0, 1.0);
+    if(ichoice < xsec1/(xsec1+xsec2)) {
        particles[idx1].SetPosition(particle1.Position());	    
-       particles[idx2].SetMomentum(ptmp2);
        return idx1;
     } 
 
     particles[idx2].SetPosition(particle1.Position());
-    particles[idx1].SetMomentum(ptmp1);
-    
     return idx2;
 }    
 	
