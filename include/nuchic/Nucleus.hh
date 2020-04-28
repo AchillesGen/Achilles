@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Constants.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
 
@@ -23,7 +24,7 @@ using Particles = std::vector<Particle>;
 class Nucleus {
     public:
         // Fermigas Model
-        enum FermigasType {
+        enum FermiGasType {
             Local,
             Global
         };
@@ -40,8 +41,8 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
-        Nucleus(const std::size_t&, const std::size_t&, const double&,const double&, const std::string&,
-                const FermigasType&, std::function<Particles()>);
+        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&, const std::string&,
+                const FermiGasType&, std::function<Particles()>);
         Nucleus(const Nucleus&) = default;
         Nucleus(Nucleus&&) = default;
         Nucleus& operator=(const Nucleus&) = default;
@@ -119,11 +120,9 @@ class Nucleus {
         ///@return double: The Fermi Momentum in MeV
         const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
-
         /// Return the phenomenological potential
 	///@return double: The potential in MeV	
         double Potential(const double&) const noexcept;
-	
 
         /// Return the current potential energy of the nucleus
         ///@return double: The potential energy in MeV
@@ -138,12 +137,20 @@ class Nucleus {
         ///@return double: The density at the input radius
         double Rho(const double &position) const noexcept { return rhoInterp(position); }
         ///@}
-	//
+	
         /// Return the Fermi momentum according to a given FG model
 	///@param position: The radius to calculate the density
-	double Fermi(const double &position) const noexcept { return fermigas(position); }
+	double FermiMomentum(const double &position) const noexcept { 
+            const double rho = rhoInterp(position);
+            switch(fermiGas) {
+                case FermiGasType::Local:
+                    return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
+                case FermiGasType::Global:
+                    static constexpr double small = 1E-6;
+                    return rho < small ? small : fermiMomentum;
+            }
+        }
         ///@}
-
 
         /// @name Functions
         /// @{
@@ -203,7 +210,7 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&,const double&,
-                                   const std::string&, const FermigasType&, const std::function<Particles()>&);
+                                   const std::string&, const FermiGasType&, const std::function<Particles()>&);
 
         /// @name Stream Operators
         /// @{
@@ -216,14 +223,12 @@ class Nucleus {
     private:
         Particles nucleons, protons, neutrons;
         double binding, fermiMomentum, radius, potential;
+        FermiGasType fermiGas;
         std::function<Particles()> density;
         Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
-
         static std::size_t NameToZ(const std::string&);
-        std::function<double(double)> fermigas;
-	
 
         randutils::mt19937_rng rng;
 };
