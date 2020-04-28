@@ -64,6 +64,7 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
         else index_diff.push_back(i);
     }
 
+    if(index_diff.size()==0 && index_same.size()==0) return SIZE_MAX; 
     double position = particle1.Position().Magnitude();	
     auto mom = localNucleus -> GenerateMomentum(position);
     double energy = Constant::mN*Constant::mN;
@@ -80,11 +81,11 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     std::size_t idx2 = SIZE_MAX;
     double xsec2 = 0;
     if(index_diff.size() != 0) {
-        idx2 = rng.pick(index_same);
+        idx2 = rng.pick(index_diff);
         particles[idx2].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
         xsec2 = GetXSec(particle1, particles[idx2]);
     }
-
+ 
     double rho = localNucleus -> Rho(position);
     if(rho <= 0.0) return SIZE_MAX;
     double lambda_tilde = 1.0/(xsec1/10*rho+xsec2/10*rho);

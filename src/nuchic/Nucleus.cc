@@ -196,7 +196,8 @@ const std::string Nucleus::ToString() const noexcept {
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept { 
-    const double rho = rhoInterp(position);
+    double rho = rhoInterp(position);
+    if(position>10) rho=0;	    
     switch(fermiGas) {
     case FermiGasType::Local:
          return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;

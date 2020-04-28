@@ -164,7 +164,7 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles))
         particles.append(test_part)
         self.nucleus.set_nucleons(particles)
-        self.fsi.evolve(self.nucleus)
+        self.fsi.nuwro(self.nucleus)
 
         return self.nucleus.nucleons()
 
