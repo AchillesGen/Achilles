@@ -237,7 +237,10 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
     bool hit = false;
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Are we already outside nucleus?
-        if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) break;
+        if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
+            kickNuc -> SetStatus(ParticleStatus::escaped);
+            break;
+        }
         AdaptiveStep(particles, distance);
         // Identify nearby particles which might interact
         auto nearby_particles = AllowedInteractions(particles, idx);
@@ -253,6 +256,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
     }
 
     nucleus -> Nucleons() = particles;
+    Reset();
 }
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
