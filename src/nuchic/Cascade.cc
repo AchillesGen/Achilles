@@ -259,6 +259,47 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
     Reset();
 }
 
+
+void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
+    localNucleus = nucleus;
+    Particles particles = nucleus -> Nucleons();
+
+    auto idx = kickedIdxs[0];
+    Particle* kickNuc = &particles[idx];
+    
+    if (kickedIdxs.size() != 1) {
+        std::runtime_error("MeanFreePath: only one particle should be kicked.");
+    }
+    if (kickNuc -> Status() != ParticleStatus::internal_test) {
+        std::runtime_error(
+            "MeanFreePath: kickNuc must have status -3 "
+            "in order to accumulate DistanceTraveled."
+            );
+    }
+    bool hit = false;
+    for(std::size_t step = 0; step < maxSteps; ++step) {
+        // Are we already outside nucleus?
+        if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
+            kickNuc -> SetStatus(ParticleStatus::escaped);
+            break;
+        }
+        //AdaptiveStep(particles, distance);
+        double step_prop = distance;
+        // Did we hit?
+        auto hitIdx = GetInter(particles,*kickNuc,step_prop); 
+        kickNuc -> SpacePropagate(step_prop);	
+       	if (hitIdx == SIZE_MAX) continue;
+        Particle* hitNuc = &particles[hitIdx];
+        // Did we *really* hit? Finalize momentum, check for Pauli blocking.
+        hit = FinalizeMomentum(*kickNuc, *hitNuc);
+        // Stop as soon as we hit anything
+        if (hit) break;
+    }
+
+    nucleus -> Nucleons() = particles;
+    Reset();
+}
+
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 void Cascade::Escaped(Particles &particles) {
     //std::cout << "CURRENT STEP: " << step << std::endl;

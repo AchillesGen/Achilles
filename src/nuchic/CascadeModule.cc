@@ -36,6 +36,8 @@ PYBIND11_MODULE(cascade, m) {
 	.def("nuwro", &Cascade::NuWro,
              py::arg("nucleus"), py::arg("max_steps") = 10000)
         .def("mean_free_path", &Cascade::MeanFreePath,
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
+	 .def("mean_free_path_nuwro", &Cascade::MeanFreePath_NuWro,
              py::arg("nucleus"), py::arg("max_steps") = 10000);
 
     py::enum_<Cascade::ProbabilityType>(cascade, "Probability")
