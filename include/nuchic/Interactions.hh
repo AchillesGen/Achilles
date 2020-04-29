@@ -2,23 +2,15 @@
 #define INTERACTIONS_HH
 
 #include <array>
-#include <map>
+#include <unordered_map>
 #include <memory>
 #include <vector>
 
-#include "H5Cpp.h"
-
-#include "nuchic/Interpolation.hh"
 #include "nuchic/ThreeVector.hh"
 
 namespace nuchic {
 
 class Particle;
-
-double CrossSection(bool, const double&);
-double CrossSectionAngle(bool, const double&, const double&);
-double CrossSectionLab(bool, const double&) noexcept;
-ThreeVector MakeMomentumAngular(bool, const double&, const double&, const std::array<double, 2>&);
 
 /// Base class for implementing interaction models. These interaction models focus on the
 /// interactions that occur between hadrons during the intranuclear cascade. This base class
@@ -99,102 +91,6 @@ class InteractionFactory {
 #define REGISTER_INTERACTION(interaction) \
     bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
                                                                 interaction::Create)
-
-/// Class for implementing an interaction model based on the Geant4 cross-section data. This
-/// interaction model contains information about the angular distribution of pp, pn, and nn
-/// interactions that occur during the intranuclear cascade.
-class GeantInteractions : public Interactions {
-    public:
-        ///@name Constructors and Destructors
-        ///@{
-
-        /// Initialize GeantInteractions class. This loads data from an input file
-        ///@param filename: The location of the Geant4 hdf5 data file
-        GeantInteractions(const std::string&);
-        GeantInteractions(const GeantInteractions&) = default;
-        GeantInteractions(GeantInteractions&&) = default;
-        GeantInteractions& operator=(const GeantInteractions&) = default;
-        GeantInteractions& operator=(GeantInteractions&&) = default;
-
-        /// Generate a GeantInteractions object. This is used in the InteractionFactory.
-        ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const std::string& data) {
-            return std::make_unique<GeantInteractions>(data);
-        }
-
-        /// Default Destructor
-        ~GeantInteractions() override = default;
-        ///@}
-
-        /// Returns the name of the class, used in the InteractionFactory
-        ///@return std::string: The name of the class
-        static std::string GetName() { return "GeantInteractions"; }
-
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&, const double&,
-                                 const std::array<double, 2>&) const override;
-    private:
-        // Functions
-        double CrossSectionAngle(bool, const double&, const double&) const;
-        void LoadData(bool, const H5::Group&);
-
-        // Variables
-        std::vector<double> m_theta, m_cdf;
-        std::vector<double> m_pcmPP, m_xsecPP;
-        std::vector<double> m_pcmNP, m_xsecNP;
-        Interp1D m_crossSectionPP, m_crossSectionNP;
-        Interp2D m_thetaDistPP, m_thetaDistNP;
-        static bool registered;
-};
-
-/// Class for implementing an interaction model based on the Geant4 cross-section data. This
-/// interaction model contains information about the angular distribution of pp, pn, and nn
-/// interactions that occur during the intranuclear cascade.
-class ConstantInteractions : public Interactions {
-    public:
-        ///@name Constructors and Destructors
-        ///@{
-
-        /// Initialize ConstantInteractions class. This loads data from an input file
-        ///@param filename: The location of the Geant4 hdf5 data file
-        ConstantInteractions(const std::string& xsec) : m_xsec(std::stod(xsec)) {}
-        ConstantInteractions(const ConstantInteractions&) = default;
-        ConstantInteractions(ConstantInteractions&&) = default;
-        ConstantInteractions& operator=(const ConstantInteractions&) = default;
-        ConstantInteractions& operator=(ConstantInteractions&&) = default;
-
-        /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
-        ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const std::string& data) {
-            return std::make_unique<ConstantInteractions>(data);
-        }
-
-        /// Default Destructor
-        ~ConstantInteractions() override = default;
-        ///@}
-
-        /// Returns the name of the class, used in the InteractionFactory
-        ///@return std::string: The name of the class
-        static std::string GetName() { return "ConstantInteractions"; }
-
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
-        ThreeVector MakeMomentum(bool, const double&, const double& pcm,
-                                 const std::array<double, 2>& rans) const override {
-            double ctheta = 2*rans[0]-1;
-            double stheta = sqrt(1-ctheta*ctheta);
-            double phi = 2*M_PI*rans[1];
-            return pcm*ThreeVector(stheta*cos(phi), stheta*sin(phi), ctheta);
-        }
-
-    private:
-        // Variables
-        double m_xsec;
-        static bool registered;
-};
 
 }
 

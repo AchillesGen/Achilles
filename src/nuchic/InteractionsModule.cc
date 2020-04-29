@@ -56,11 +56,6 @@ private:
 REGISTER_INTERACTION(PyInteraction);
 
 PYBIND11_MODULE(interactions, m) {
-    m.def("cross_section", &CrossSection);
-    m.def("cross_section_lab", &CrossSectionLab);
-    m.def("cross_section_angle", &CrossSectionAngle);
-    m.def("make_momentum_angular", &MakeMomentumAngular);
-
     py::class_<Interactions, PyInteraction,
                std::shared_ptr<Interactions>>(m, "Interactions")
         .def(py::init<>())

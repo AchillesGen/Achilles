@@ -52,8 +52,16 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 include(CMake/CPM.cmake)
 add_subdirectory(external)
 
+# Configure System Specific variables for Plugins
+set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
+set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+configure_file(include/Plugins/System.hh.in include/Plugins/System.hh)
+
 # Main code
 add_subdirectory(src/nuchic)
+
+# Build Plugin Library
+add_subdirectory(src/Plugins/)
 
 # Testing
 if(ENABLE_TESTING)

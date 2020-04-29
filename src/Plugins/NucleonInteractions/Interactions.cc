@@ -2,6 +2,7 @@
 #include <map>
 
 #include "spdlog/spdlog.h"
+#include "spdlog/sinks/basic_file_sink.h"
 
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
