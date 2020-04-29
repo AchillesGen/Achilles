@@ -135,7 +135,9 @@ class Nucleus {
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
-        double Rho(const double &position) const noexcept { return rhoInterp(position); }
+        double Rho(const double &position) const noexcept { 
+            return position > rhoInterp.max() ? 0 : rhoInterp(position); 
+        }
         ///@}
 	
         /// Return the Fermi momentum according to a given FG model

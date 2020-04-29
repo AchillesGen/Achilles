@@ -196,15 +196,19 @@ const std::string Nucleus::ToString() const noexcept {
 }
 
 double Nucleus::FermiMomentum(const double &position) const noexcept { 
-    double rho = rhoInterp(position);
-    if(position>10) rho=0;	    
+    double rho = Rho(position);
+    double result{};
     switch(fermiGas) {
-    case FermiGasType::Local:
-         return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
-    case FermiGasType::Global:
-         static constexpr double small = 1E-2;
-         return rho < small ? small : fermiMomentum;
-   }
+        case FermiGasType::Local:
+            result = std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
+            break;
+        case FermiGasType::Global:
+            static constexpr double small = 1E-2;
+            result = rho < small ? small : fermiMomentum;
+            break;
+    }
+
+    return result;
 }
 
 

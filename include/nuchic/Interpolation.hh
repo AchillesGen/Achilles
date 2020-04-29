@@ -41,6 +41,9 @@ class Interp1D {
         void CubicSpline(const std::vector<double>&, const std::vector<double>&,
                 const double& derivLeft=maxDeriv, const double& derivRight=maxDeriv);
 
+        const double& min() const { return knotX.front(); }
+        const double& max() const { return knotX.back(); }
+
         /// Function to perform the interpolation at the given input point
         ///@param x: Value to interpolate the function at
         ///@return double: The interpolated value of the function
