@@ -47,9 +47,9 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     neutrons.resize(A-Z);
     spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
-    constexpr double nucDensity = 0.16;
+    //constexpr double nucDensity = 0.16;
 
-    radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
+    //radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
     std:: ifstream densityFile(densityFilename);
     std:: string lineContent;
@@ -60,10 +60,16 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     }
 
     double radius_, density_, densityErr;
+    size_t j=0;
     std::vector<double> vecRadius, vecDensity;
     while(densityFile >> radius_ >> density_ >> densityErr) {
         vecRadius.push_back(std::move(radius_));
         vecDensity.push_back(std::move(density_));
+	if(density_<1E-6 && j==0) {
+		radius=radius_;
+		j+=1;
+	}	
+		
     }
 
     rhoInterp.CubicSpline(vecRadius, vecDensity);
@@ -197,9 +203,10 @@ const std::string Nucleus::ToString() const noexcept {
 
 double Nucleus::FermiMomentum(const double &position) const noexcept { 
     double rho = rhoInterp(position);
-    if(position>10) rho=0;	    
+    if(position>Radius()) rho=0;
     switch(fermiGas) {
     case FermiGasType::Local:
+	 if(rho<0) rho=0;   
          return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
     case FermiGasType::Global:
          static constexpr double small = 1E-2;

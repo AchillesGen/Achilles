@@ -90,6 +90,11 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     if(rho <= 0.0) return SIZE_MAX;
     double lambda_tilde = 1.0/(xsec1/10*rho+xsec2/10*rho);
     double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
+
+//    double prob=xsec1*rho/10+xsec2*rho/10;
+//    prob *=stepDistance;
+//    if(rng.uniform(0.0, 1.0)>prob) return SIZE_MAX;
+
     
     if(lambda > stepDistance) return SIZE_MAX;
     
@@ -166,7 +171,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 5000000) { 
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -181,22 +186,32 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
         auto newKicked = kickedIdxs;
         for(auto idx : kickedIdxs) {
             Particle* kickNuc = &particles[idx];
+//            if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
+//            break;
+//        }
+
 
             // Update formation zones
-            if(kickNuc -> InFormationZone()) {
+        //    if(kickNuc -> InFormationZone()) {
 	//	timeStep= distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);			   
-                kickNuc -> UpdateFormationZone(timeStep);
-                kickNuc -> SpacePropagate(distance);		
-                continue;
-            }
+        //        kickNuc -> UpdateFormationZone(timeStep);
+        //        kickNuc -> SpacePropagate(distance);		
+        //        continue;
+        //    }
 
 	    double step_prop = distance;
             auto hitIdx = GetInter(particles,*kickNuc,step_prop); 
             kickNuc -> SpacePropagate(step_prop);
+	    //kickNuc -> Propagate(timeStep);	    	    
             if (hitIdx == SIZE_MAX) continue;
 	    Particle* hitNuc = &particles[hitIdx];
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-            if(hit) {
+//            if (hit) {
+//		    kickNuc-> SetStatus(ParticleStatus::escaped);
+//		    break;
+//   }		    
+	    
+           if(hit) {
                 newKicked.push_back(hitIdx);
                 hitNuc->SetStatus(ParticleStatus::propagating);
             }
@@ -216,6 +231,8 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
     }
 
     nucleus -> Nucleons() = particles;
+    Reset();
+    
 }
 
 void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
