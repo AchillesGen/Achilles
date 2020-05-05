@@ -137,7 +137,7 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob,0.2)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob,0.02)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -151,7 +151,7 @@ class CalcCrossSection(RunMode):
                 break
 
         # Add test particle to the rest of them
-        position = vectors.Vector3(position[0], position[1], -5)
+        position = vectors.Vector3(position[0], position[1], -6.5)
         energy = settings().beam_energy
         nucleon_mass = settings().get_param('mn')
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
@@ -164,7 +164,7 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles))
         particles.append(test_part)
         self.nucleus.set_nucleons(particles)
-        self.fsi.nuwro(self.nucleus)
+        self.fsi.evolve(self.nucleus)
 
         return self.nucleus.nucleons()
 
@@ -343,7 +343,7 @@ class CalcTransparency(RunMode):
 
         # Evolve the nucleus
         self.nucleus.set_nucleons(particles)
-        self.fsi.mean_free_path_nuwro(self.nucleus)
+        self.fsi.mean_free_path(self.nucleus)
 
         return self.nucleus.nucleons()
 

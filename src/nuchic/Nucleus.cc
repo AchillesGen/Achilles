@@ -210,6 +210,8 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
          return std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
     case FermiGasType::Global:
          static constexpr double small = 1E-2;
+	 //rho*=1;
+	 //return fermiMomentum;
          return rho < small ? small : fermiMomentum;
    }
 }
