@@ -2,6 +2,7 @@
 
 from tqdm import tqdm
 import logger
+import interactions
 
 import nuchic.run_modes as run_modes
 from .config import settings
@@ -27,6 +28,7 @@ class NuChic:
 def nuchic():
     """ External entry point. """
     logger.init('nuchic', 'nuchic.log')
+    interactions.InteractionLoader.load_plugins(["./src/Plugins/lib"])
     driver = NuChic('run.yml')
     driver.run()
 

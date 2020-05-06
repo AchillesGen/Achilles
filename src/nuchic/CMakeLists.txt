@@ -9,7 +9,7 @@ add_library(utilities SHARED
 target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog pybind11::pybind11 yaml-cpp)
-set_target_properties(utilities PROPERTIES LIBRARY_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/src/nuchic)
+set_target_properties(utilities PROPERTIES LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(interaction_plugin SHARED
     InteractionLoader.cc
@@ -17,7 +17,7 @@ add_library(interaction_plugin SHARED
     InteractionsFactory.cc
 )
 target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
-                                         PUBLIC spdlog::spdlog
+                                         PUBLIC spdlog::spdlog stdc++fs dl
 )
 
 add_library(physics SHARED

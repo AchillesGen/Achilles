@@ -7,6 +7,8 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
+#include "Plugins/InteractionLoader.hh"
+
 namespace py = pybind11;
 using namespace nuchic;
 
@@ -68,4 +70,8 @@ PYBIND11_MODULE(interactions, m) {
         .def("register", &InteractionFactory::Register)
         .def("create", &InteractionFactory::Create)
         .def("list", &InteractionFactory::ListInteractions);
+
+    py::class_<InteractionLoader>(m, "InteractionLoader")
+        .def_static("load_plugins", &InteractionLoader::LoadInteractions);
+
 }

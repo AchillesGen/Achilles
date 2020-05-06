@@ -61,7 +61,7 @@ configure_file(include/Plugins/System.hh.in include/Plugins/System.hh)
 add_subdirectory(src/nuchic)
 
 # Build Plugin Library
-add_subdirectory(src/Plugins/)
+add_subdirectory(src/Plugins)
 
 # Testing
 if(ENABLE_TESTING)
