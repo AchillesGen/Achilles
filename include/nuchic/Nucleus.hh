@@ -136,7 +136,8 @@ class Nucleus {
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
         double Rho(const double &position) const noexcept { 
-            return position > rhoInterp.max() ? 0 : rhoInterp(position); 
+            const double rho = rhoInterp(position);
+            return position > rhoInterp.max() ? 0 : (rho > 0 ? rho : 0); 
         }
         ///@}
 	
