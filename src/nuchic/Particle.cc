@@ -28,12 +28,12 @@ void Particle::Propagate(const double& time) noexcept {
 
 void Particle::SpacePropagate(const double& dist) noexcept {
 
-//    const double theta = momentum.Theta();
-//    const double phi = momentum.Phi();
+    const double theta = momentum.Theta();
+    const double phi = momentum.Phi();
 
-    const double propDistX = 0;//dist*std::sin(theta)*std::cos(phi);
-    const double propDistY = 0;//dist*std::sin(theta)*std::sin(phi);
-    const double propDistZ = dist;//*std::cos(theta);
+    const double propDistX = dist*std::sin(theta)*std::cos(phi);
+    const double propDistY = dist*std::sin(theta)*std::sin(phi);
+    const double propDistZ = dist*std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if (status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();

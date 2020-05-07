@@ -87,12 +87,12 @@ class RunMode:
         fermi_momentum = settings().nucleus_kf(name)
         density_file = settings().get_param('density_file')
 #        try:
-        self.fermi_gas= nucleus.Nucleus.__dict__[settings().get_param("fermi_gas")]
+        self.fermi_gas = nucleus.Nucleus.__dict__[settings().get_param("fermi_gas")]
 
 #        except KeyError as error:
 #            logger.error(f"Invalid FG model {error}")
 #            raise
-    
+
         logger.info(
             f"{instance_name}: Building nucleus '{name}' "
             f"with density file {density_file} and "
@@ -102,7 +102,7 @@ class RunMode:
                                                     binding_energy, fermi_momentum,
                                                     density_file, self.fermi_gas,
                                                     density)
-        
+
         try:
             self.cascade_prob = cascade.Cascade.__dict__[settings().get_param("cascade_prob")]
         except KeyError as error:
@@ -137,11 +137,11 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob,0.02)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob, 0.02)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
-        self.nucleus.generate_config() 
+        self.nucleus.generate_config()
         particles = self.nucleus.nucleons()
 
         # Generate random position in beam
