@@ -14,12 +14,11 @@
 #include "nuchic/Interactions.hh"
 #include "nuchic/ThreeVector.hh"
 
-
 using namespace nuchic;
 
 Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
                  const ProbabilityType& prob,
-                 const double& dist = 0.03) 
+                 const double& dist = 0.03)
         : distance(dist), m_interactions(interactions) {
 
     switch(prob) {
@@ -31,10 +30,15 @@ Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
         case ProbabilityType::Pion:
             probability = [](const double &b2, const double &sigma) -> double {
                 double b = sqrt(b2);
-                //return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC); 
-		return exp(-sqrt(2*M_PI/sigma)*b);
+                // TODO: This does not work, we need to rethink this
+                // return (135_MeV*sigma)/Constant::HBARC/(2*M_PI*b)*exp(-135_MeV*b/Constant::HBARC);
+                return exp(-sqrt(2*M_PI/sigma)*b);
             };
             break;
+        case ProbabilityType::Cylinder:
+            probability = [](const double &b2, const double &sigma) -> double {
+                return b2 < sigma/M_PI ? 1 : 0;
+            };
     }
 }
 

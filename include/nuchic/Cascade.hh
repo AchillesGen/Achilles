@@ -29,7 +29,8 @@ class Cascade {
         // Probability Enums
         enum ProbabilityType {
             Gaussian,
-            Pion
+            Pion,
+            Cylinder
         };
 
         /// @name Constructor and Destructor
