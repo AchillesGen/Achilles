@@ -102,8 +102,8 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     double rhoSame=0.0;
     double rhoDiff=0.0;
     if(position < localNucleus -> Radius()) {
-         rhoSame = localNucleus -> Rho(position)*2*index_same.size()/particles.size();
-         rhoDiff = localNucleus -> Rho(position)*2*index_diff.size()/particles.size();
+         rhoSame = localNucleus -> Rho(position)*2*static_cast<double>(index_same.size())/static_cast<double>(particles.size());
+         rhoDiff = localNucleus -> Rho(position)*2*static_cast<double>(index_diff.size())/static_cast<double>(particles.size());
     }
     if(rhoSame <= 0.0 && rhoDiff <=0.0) return SIZE_MAX;
     double lambda_tilde = 1.0 / (xsecSame / 10 * rhoSame + xsecDiff / 10 * rhoDiff);
