@@ -96,6 +96,10 @@ double nuchic::CrossSectionAngle(bool, const double&, const double& ran) {
 
 ThreeVector nuchic::MakeMomentumAngular(bool samePID, const double& p1CM, const double& pcm,
         const std::array<double, 2>& rans) {
+    if(samePID) {
+    double dummy=pcm;
+    dummy+=1;
+    }    
     double pR = p1CM;
     double pTheta = nuchic::CrossSectionAngle(samePID, pcm, rans[0]);
     double pPhi = 2*M_PI*rans[1];
@@ -230,20 +234,44 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
 double GeantInteractions::CrossSection(const Particle& particle1,
                                        const Particle& particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
-    const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / totalMomentum.M();
-
+    //const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM), p2CM = p2Lab.Boost(-boostCM);
+    // Generate outgoing momentum
+    const double pcm = p1CM.Vec3().Magnitude();
+//    const double pcm2=particle1.Momentum().Vec3().Magnitude() * Constant::mN / totalMomentum.M();
 
     try {
-        if(samePID)
-            return m_crossSectionPP(pcm/1_GeV);
-        else
-            return m_crossSectionNP(pcm/1_GeV);
+	if(pcm<1.5_GeV) {    
+        if(samePID) {
+	    double xsec=m_crossSectionPP(pcm/1_GeV);
+	    //double xsec= Interactions::CrossSectionLab(samePID,plab); 
+            return xsec;
+	}
+        else {
+	    double xsec=m_crossSectionNP(pcm/1_GeV);
+	    //double xsec= Interactions::CrossSectionLab(samePID,plab); 
+            return xsec;
+	}
+	
+        } else {
+	double s = pow(p1CM.E() + p2CM.E(),2);
+        double plab= sqrt(pow(s,2)/(4.0*pow(Constant::mN, 2))-s);
+	 if(samePID) {
+	    double xsec= Interactions::CrossSectionLab(samePID,plab); 
+            return xsec;
+	}
+        else {
+	    double xsec= Interactions::CrossSectionLab(samePID,plab); 
+            return xsec;
+	}
+	}
     } catch (std::domain_error &e) {
         nuchic::FourVector momentum1 = particle1.Momentum();
         nuchic::FourVector momentum2 = particle2.Momentum();
         nuchic::FourVector labMomentum = momentum1.Boost(-momentum2.BoostVector());
-        return nuchic::CrossSectionLab(samePID, labMomentum.Vec3().Magnitude()/1_GeV);
+        return nuchic::CrossSectionLab(samePID, labMomentum.Vec3().Magnitude()/1_GeV); //it shouldn't be divided by GeV
     }
 }
 

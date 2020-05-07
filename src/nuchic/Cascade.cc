@@ -12,12 +12,14 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/Utilities.hh"
 #include "nuchic/Interactions.hh"
+#include "nuchic/ThreeVector.hh"
+
 
 using namespace nuchic;
 
 Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
                  const ProbabilityType& prob,
-                 const double& dist = 0.05) 
+                 const double& dist = 0.03) 
         : distance(dist), m_interactions(interactions) {
 
     switch(prob) {
@@ -69,7 +71,6 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
     auto mom = localNucleus -> GenerateMomentum(position);
     double energy = Constant::mN*Constant::mN;
     for(auto p : mom) energy += p*p;
-
     std::size_t idx1 = SIZE_MAX;
     double xsec1 = 0;
     if(index_same.size() != 0) {
@@ -77,23 +78,44 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
         particles[idx1].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
         xsec1 = GetXSec(particle1, particles[idx1]);
     }
+    auto mom2 = localNucleus -> GenerateMomentum(position);
+    energy = Constant::mN*Constant::mN;
+    for(auto p : mom2) energy += p*p;
 
     std::size_t idx2 = SIZE_MAX;
     double xsec2 = 0;
     if(index_diff.size() != 0) {
         idx2 = rng.pick(index_diff);
-        particles[idx2].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+        particles[idx2].SetMomentum(FourVector(mom2[0], mom2[1], mom2[2], sqrt(energy)));
         xsec2 = GetXSec(particle1, particles[idx2]);
+	//std :: cout << "xsec2=" << xsec2 << std::endl;
     }
  
-    double rho = localNucleus -> Rho(position);
-    if(rho <= 0.0) return SIZE_MAX;
-    double lambda_tilde = 1.0/(xsec1/10*rho+xsec2/10*rho);
-    double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
+    double rhop=0.0;
+    double rhon=0.0;
+    //double rho=0.0;
+    if(position< localNucleus -> Radius()) {
+         rhop = localNucleus -> Rho(position);//*index_same.size()/(particles.size()/2);
+         rhon = localNucleus -> Rho(position);//*index_diff.size()/(particles.size()/2);
+         //rho = localNucleus -> Rho(position);
+    }  
+    if(rhop <= 0.0 && rhon <=0.0 ) return SIZE_MAX;
+//    double lambda_tilde = 1.0/(xsec1/10*rhop+xsec2/10*rhon);
+//    double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
+     
+    double prob=xsec1*rhop/10+xsec2*rhon/10;
+    prob *=stepDistance;
+    //std::cout << "prob=" << prob << std::endl;
+    //std::cout << "xsec1=" << xsec1 << " " << "rhop=" << rhop << " " << "position=" << position<<std::endl;
+    //std::cout << "xsec2=" << xsec2 << " " << "rhop=" << rhon << " " << "position=" << position<<std::endl;
     
-    if(lambda > stepDistance) return SIZE_MAX;
     
-    stepDistance = lambda;
+    if(rng.uniform(0.0, 1.0)>prob) return SIZE_MAX;
+
+    
+//    if(lambda > stepDistance) return SIZE_MAX;
+    
+//    stepDistance = lambda;
     double ichoice = rng.uniform(0.0, 1.0);
     if(ichoice < xsec1/(xsec1+xsec2)) {
        particles[idx1].SetPosition(particle1.Position());	    
@@ -107,6 +129,8 @@ std::size_t  Cascade::GetInter(Particles& particles, const Particle& particle1, 
 void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
+
+
 
 void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 100000) {
     localNucleus = nucleus;
@@ -166,7 +190,11 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 5000000) { 
+
+
+
+
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000000) { 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -181,10 +209,14 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
         auto newKicked = kickedIdxs;
         for(auto idx : kickedIdxs) {
             Particle* kickNuc = &particles[idx];
+	    
+//    	    if (kickNuc -> Position().Pz() >= nucleus -> Radius()) {
+//                    break;
+//	    }
 
             // Update formation zones
             if(kickNuc -> InFormationZone()) {
-	//	timeStep= distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);			   
+		timeStep= distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);			   
                 kickNuc -> UpdateFormationZone(timeStep);
                 kickNuc -> SpacePropagate(distance);		
                 continue;
@@ -192,11 +224,19 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
 
 	    double step_prop = distance;
             auto hitIdx = GetInter(particles,*kickNuc,step_prop); 
-            kickNuc -> SpacePropagate(step_prop);
-            if (hitIdx == SIZE_MAX) continue;
+            if (hitIdx == SIZE_MAX) {
+                   kickNuc -> SpacePropagate(step_prop);		    
+		    continue;	    
+            }		    
 	    Particle* hitNuc = &particles[hitIdx];
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-            if(hit) {
+            kickNuc -> SpacePropagate(step_prop);	    
+            //if (hit) {
+	    //	    kickNuc-> SetStatus(ParticleStatus::escaped);
+            //		    break;
+            //}		    
+
+           if(hit) {
                 newKicked.push_back(hitIdx);
                 hitNuc->SetStatus(ParticleStatus::propagating);
             }
@@ -216,6 +256,8 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
     }
 
     nucleus -> Nucleons() = particles;
+    Reset();
+    
 }
 
 void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
@@ -300,7 +342,6 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus, const std::si
     Reset();
 }
 
-// TODO: Rewrite to have most of the logic built into the Nucleus class?
 void Cascade::Escaped(Particles &particles) {
     //std::cout << "CURRENT STEP: " << step << std::endl;
     for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
@@ -312,13 +353,16 @@ void Cascade::Escaped(Particles &particles) {
         //    std::cout << particle -> Position().Pz() << " " << sqrt(radius2) << std::endl;
         //    std::cout << *particle << std::endl;
         //}
+	double en= particle -> Momentum().E() - Constant::mN -10.0;
         auto radius = localNucleus -> Radius();
         if(particle -> Position().Magnitude2() > pow(radius, 2)
            && particle -> Status() != ParticleStatus::external_test) {
-            particle -> SetStatus(ParticleStatus::escaped);
+            if(en >0) {particle -> SetStatus(ParticleStatus::escaped);
+            } else { particle -> SetStatus(ParticleStatus::background);
+            }		    
             it = kickedIdxs.erase(it);
-        } else if(particle -> Status() == ParticleStatus::external_test && particle -> Position().Pz() > sqrt(radius)) {
-            it = kickedIdxs.erase(it);
+        } else if(particle -> Status() == ParticleStatus::external_test && particle -> Position().Pz() > radius) {
+            it = kickedIdxs.erase(it);		    	    
         } else {
             ++it;
         }
@@ -390,13 +434,19 @@ double Cascade::GetXSec(const Particle& particle1, const Particle& particle2) co
 std::size_t Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
-        const double xsec = GetXSec(kickedParticle, particles[dist.first]);
-        const double prob = probability(dist.second, xsec/10);
-        if(rng.uniform(0.0, 1.0) < prob) return dist.first;
+        
+	const double xsec = GetXSec(kickedParticle, particles[dist.first]);
+	//...cylinder Implementation
+	if(dist.second < xsec/10.0/M_PI) return dist.first;
+	
+        //const double prob = probability(dist.second, xsec/10);
+        // if(rng.uniform(0.0, 1.0) < prob) return dist.first;
     }
 
     return SIZE_MAX;
 }
+
+	
 
 bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcept {
     // Boost to center of mass frame
@@ -448,5 +498,6 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle& particle) const noexcept { 
     double position = particle.Position().Magnitude();	
+    //std::cout << "position=" << position << " " << "fm=" << localNucleus -> FermiMomentum(position) << std::endl;    
     return particle.Momentum().Vec3().Magnitude() < localNucleus -> FermiMomentum(position);
 }

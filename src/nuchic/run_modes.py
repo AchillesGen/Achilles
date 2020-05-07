@@ -137,7 +137,7 @@ class CalcCrossSection(RunMode):
         self.pid = 2212
         interaction = interactions.Interactions.create(settings().get_param('interaction'),
                                                        settings().get_param('interaction_file'))
-        self.fsi = cascade.Cascade(interaction, self.cascade_prob)
+        self.fsi = cascade.Cascade(interaction, self.cascade_prob,0.02)
 
     def generate_one_event(self):
         """ Generate one pN or nC event. """
@@ -164,7 +164,7 @@ class CalcCrossSection(RunMode):
         self.fsi.set_kicked(len(particles))
         particles.append(test_part)
         self.nucleus.set_nucleons(particles)
-        self.fsi.nuwro(self.nucleus)
+        self.fsi.evolve(self.nucleus)
 
         return self.nucleus.nucleons()
 
