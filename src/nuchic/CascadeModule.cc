@@ -27,22 +27,23 @@ PYBIND11_MODULE(cascade, m) {
         // Constructors
         cascade.def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, 
                     const double&>(),
-                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.05)
+                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.03)
         // Functions
         .def("kick", &Cascade::Kick)
         .def("reset", &Cascade::Reset)
         .def("set_kicked", &Cascade::SetKicked)
         .def("evolve", &Cascade::Evolve,
              py::arg("nucleus"), py::arg("max_steps") = 10000)
-	.def("nuwro", &Cascade::NuWro,
+        .def("nuwro", &Cascade::NuWro,
              py::arg("nucleus"), py::arg("max_steps") = 10000)
         .def("mean_free_path", &Cascade::MeanFreePath,
              py::arg("nucleus"), py::arg("max_steps") = 10000)
-	 .def("mean_free_path_nuwro", &Cascade::MeanFreePath_NuWro,
+        .def("mean_free_path_nuwro", &Cascade::MeanFreePath_NuWro,
              py::arg("nucleus"), py::arg("max_steps") = 10000);
 
     py::enum_<Cascade::ProbabilityType>(cascade, "Probability")
         .value("Gaussian", Cascade::ProbabilityType::Gaussian)
         .value("Pion", Cascade::ProbabilityType::Pion)
+        .value("Cylinder", Cascade::ProbabilityType::Cylinder)
         .export_values();
 }
