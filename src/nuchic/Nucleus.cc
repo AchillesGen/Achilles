@@ -31,7 +31,7 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
                  const double& kf, const std::string& densityFilename, const FermiGasType& fgType,
                  std::function<Particles()> _density) 
-                        : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType),
+                        : binding(bEnergy), fermiMomentum(kf), radius{}, fermiGas(fgType),
                           density(std::move(_density)) {
 
     if(Z > A) {
