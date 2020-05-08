@@ -217,7 +217,7 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum, radius, potential{};
+        double binding, fermiMomentum, radius{}, potential{};
         FermiGasType fermiGas;
         std::function<Particles()> density;
         Interp1D rhoInterp;	
