@@ -279,11 +279,7 @@ double NasaInteractions::CrossSection(const Particle& particle1,
     // Generate outgoing momentum
     double s = (p1Lab+p2Lab).M2();
     double plab = sqrt(pow(s,2)/(4.0*pow(Constant::mN, 2))-s);
-    if(samePID) {
-        return CrossSectionLab(samePID,plab); 
-    } else {
-        return CrossSectionLab(samePID,plab); 
-    }
+    return CrossSectionLab(samePID,plab); 
 }
 
 ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
