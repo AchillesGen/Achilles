@@ -13,7 +13,7 @@ PYBIND11_MODULE(logger, m) {
         console_sink->set_pattern("[%^%l%$] %v");
 
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logfile, true); 
-        file_sink->set_level(spdlog::level::trace);
+        file_sink->set_level(spdlog::level::debug);
     
         spdlog::logger logger(logname, {console_sink, file_sink});
         auto logger_ptr = std::make_shared<spdlog::logger>(logger);
