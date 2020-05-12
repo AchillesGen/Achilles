@@ -15,6 +15,7 @@ using namespace H5;
 using namespace nuchic;
 
 REGISTER_INTERACTION(GeantInteractions);
+REGISTER_INTERACTION(NasaInteractions);
 REGISTER_INTERACTION(ConstantInteractions);
 
 const std::map<std::string, double> HZETRN = {
@@ -171,22 +172,22 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
   
     // Get data for center of momentum
     DataSpace pcmSpace = pcm.getSpace();
-    hsize_t dimPcm[1];
-    pcmSpace.getSimpleExtentDims(dimPcm, nullptr);
+    std::array<hsize_t, 1> dimPcm{};
+    pcmSpace.getSimpleExtentDims(dimPcm.data(), nullptr);
     std::vector<double> pcmVec(dimPcm[0]);
     pcm.read(pcmVec.data(), PredType::NATIVE_DOUBLE, pcmSpace, pcmSpace);
 
     // Get data for total cross-section
     DataSpace sigTotSpace = sigTot.getSpace();
-    hsize_t dimSigTot[1];
-    sigTotSpace.getSimpleExtentDims(dimSigTot, nullptr);
+    std::array<hsize_t, 1> dimSigTot{};
+    sigTotSpace.getSimpleExtentDims(dimSigTot.data(), nullptr);
     std::vector<double> sigTotVec(dimSigTot[0]);
     sigTot.read(sigTotVec.data(), PredType::NATIVE_DOUBLE, sigTotSpace, sigTotSpace);
 
     // Get data for angular cross-section
     DataSpace sigSpace = sig.getSpace();
-    hsize_t dimSig[2];
-    sigSpace.getSimpleExtentDims(dimSig, nullptr);
+    std::array<hsize_t, 2> dimSig{};
+    sigSpace.getSimpleExtentDims(dimSig.data(), nullptr);
     hsize_t dims = dimSig[0] * dimSig[1];
     std::vector<double> sigAngular(dims);
     sig.read(sigAngular.data(), PredType::NATIVE_DOUBLE, sigSpace, sigSpace);
@@ -230,48 +231,30 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
 double GeantInteractions::CrossSection(const Particle& particle1,
                                        const Particle& particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
-    //const FourVector totalMomentum = particle1.Momentum() + particle2.Momentum();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM), p2CM = p2Lab.Boost(-boostCM);
+    FourVector p1CM = p1Lab.Boost(-boostCM);
     // Generate outgoing momentum
     const double pcm = p1CM.Vec3().Magnitude();
-//    const double pcm2=particle1.Momentum().Vec3().Magnitude() * Constant::mN / totalMomentum.M();
 
     try {
-        if(pcm<1.5_GeV) {    
-            if(samePID) {
-                double xsec=m_crossSectionPP(pcm/1_GeV);
-                //double xsec= Interactions::CrossSectionLab(samePID,plab); 
-                return xsec;
-            } else {
-                double xsec=m_crossSectionNP(pcm/1_GeV);
-                //double xsec= Interactions::CrossSectionLab(samePID,plab); 
-                return xsec;
-            }
+        if(samePID) {
+            return m_crossSectionPP(pcm/1_GeV);
         } else {
-            double s = pow(p1CM.E() + p2CM.E(),2);
-            double plab= sqrt(pow(s,2)/(4.0*pow(Constant::mN, 2))-s);
-            if(samePID) {
-                double xsec= Interactions::CrossSectionLab(samePID,plab); 
-                return xsec;
-            } else {
-                double xsec= Interactions::CrossSectionLab(samePID,plab); 
-                return xsec;
-            }
+            return m_crossSectionNP(pcm/1_GeV);
         }
     } catch (std::domain_error &e) {
-        nuchic::FourVector momentum1 = particle1.Momentum();
-        nuchic::FourVector momentum2 = particle2.Momentum();
-        nuchic::FourVector labMomentum = momentum1.Boost(-momentum2.BoostVector());
-        return nuchic::CrossSectionLab(samePID, labMomentum.Vec3().Magnitude());
+        spdlog::debug("Using Nasa Interaction");
+        double s = (p1Lab+p2Lab).M2();
+        double plab = sqrt(pow(s, 2)/(4*pow(Constant::mN, 2)) - s);
+        return Interactions::CrossSectionLab(samePID, plab);
     }
 }
 
-ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double& p1CM,
+ThreeVector GeantInteractions::MakeMomentum(bool samePID,
                                             const double& pcm,
                                             const std::array<double, 2>& rans) const {
-    double pR = p1CM;
+    double pR = pcm;
     double pTheta = CrossSectionAngle(samePID, pcm/1_GeV, rans[0]);
     double pPhi = 2*M_PI*rans[1];
 
@@ -280,6 +263,34 @@ ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double& p1CM,
 
 double GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
                                             const double& ran) const {
-    if(samePID) return m_thetaDistPP(energy, ran);
-    else return m_thetaDistNP(energy, ran);
+    try{
+        if(samePID) return m_thetaDistPP(energy, ran);
+        else return m_thetaDistNP(energy, ran);
+    } catch(std::domain_error &e) {
+        spdlog::debug("Using flat angular distribution");
+        return acos(2*ran-1);
+    }
+}
+
+double NasaInteractions::CrossSection(const Particle& particle1,
+                                       const Particle& particle2) const {
+    bool samePID = particle1.ID() == particle2.ID();
+    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    // Generate outgoing momentum
+    double s = (p1Lab+p2Lab).M2();
+    double plab = sqrt(pow(s,2)/(4.0*pow(Constant::mN, 2))-s);
+    if(samePID) {
+        return CrossSectionLab(samePID,plab); 
+    } else {
+        return CrossSectionLab(samePID,plab); 
+    }
+}
+
+ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
+                                           const std::array<double, 2>& rans) const {
+    double pR = pcm;
+    double pTheta = acos(2*rans[0]-1);
+    double pPhi = 2*M_PI*rans[1];
+
+    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }

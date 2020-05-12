@@ -54,8 +54,8 @@ class Interactions {
         ///@param p1CM: The momentum of the first particle in the center of mass frame
         ///@param pcm: The center of mass momentum
         ///@param rans: An array containing two random numbers used to generate phase space
-        virtual ThreeVector MakeMomentum(bool, const double&, const double&,
-                const std::array<double, 2>&) const = 0;
+        virtual ThreeVector MakeMomentum(bool, const double&,
+                                         const std::array<double, 2>&) const = 0;
 
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;
@@ -100,6 +100,26 @@ class InteractionFactory {
     bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
                                                                 interaction::Create)
 
+
+class NasaInteractions : public Interactions {
+    public:
+        NasaInteractions(const std::string&) {};
+
+        static std::unique_ptr<Interactions> Create(const std::string& data) {
+            return std::make_unique<NasaInteractions>(data);
+        }
+
+        static std::string GetName() { return "NasaInteractions"; }
+
+        // These functions are defined in the base class
+        static bool IsRegistered() noexcept { return registered; }
+        double CrossSection(const Particle&, const Particle&) const override;
+        ThreeVector MakeMomentum(bool, const double&,
+                                 const std::array<double, 2>&) const override;
+    private:
+        static bool registered;
+};
+
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
@@ -133,7 +153,7 @@ class GeantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&, const double&,
+        ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override;
     private:
         // Functions
@@ -182,7 +202,7 @@ class ConstantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
-        ThreeVector MakeMomentum(bool, const double&, const double& pcm,
+        ThreeVector MakeMomentum(bool, const double& pcm,
                                  const std::array<double, 2>& rans) const override {
             double ctheta = 2*rans[0]-1;
             double stheta = sqrt(1-ctheta*ctheta);
