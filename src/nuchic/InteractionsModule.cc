@@ -39,13 +39,13 @@ public:
     }
 
     // Trampoline for MakeMomentum
-    ThreeVector MakeMomentum(bool samePID, const double& p1CM,
+    ThreeVector MakeMomentum(bool samePID,
             const double& pcm, const std::array<double, 2>& rans) const override {
         PYBIND11_OVERLOAD_PURE(
             ThreeVector,                // Return type
             Interactions,               // Parent class
             MakeMomentum,               // Name of function in C++ (must match Python name)
-            samePID, p1CM, pcm, rans    // Argument(s)
+            samePID, pcm, rans    // Argument(s)
         );
     }
 

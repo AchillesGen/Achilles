@@ -281,7 +281,6 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
     Reset();
 }
 
-
 void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
                                  const std::size_t& maxSteps = 10000) {
     localNucleus = nucleus;
@@ -425,22 +424,18 @@ std::size_t Cascade::Interacted(const Particles& particles, const Particle& kick
     return SIZE_MAX;
 }
 
-
-
 bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcept {
     // Boost to center of mass frame
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM), p2CM = p2Lab.Boost(-boostCM);
+    FourVector p1CM = p1Lab.Boost(-boostCM);
 
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
-    double ecm = (p1CM + p2CM).M();
-    const double pcm = particle1.Momentum().Vec3().Magnitude() * Constant::mN / ecm;
+    const double pcm = p1CM.Vec3().Magnitude();
     std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
     ThreeVector momentum = m_interactions -> MakeMomentum(samePID,
-                                                          p1CM.Vec3().Magnitude(),
                                                           pcm,
                                                           rans);
 
