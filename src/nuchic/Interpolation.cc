@@ -4,6 +4,7 @@
 
 #include <iostream>
 
+#include "fmt/format.h"
 #include "nuchic/Interpolation.hh"
 
 using namespace nuchic;
@@ -39,10 +40,10 @@ void Interp1D::CubicSpline(const std::vector<double>& x, const std::vector<doubl
         derivs2[i] = (sig-1.0)/p;
         u[i] = (knotY[i+1]-knotY[i])/(knotX[i+1]-knotX[i])
             - (knotY[i]-knotY[i-1])/(knotX[i]-knotX[i-1]);
-        u[i] = (6*u[i]/(knotX[i+1]-knotX[i-1])-sig*u[i-1])/p;
+        u[i] = (6.0*u[i]/(knotX[i+1]-knotX[i-1])-sig*u[i-1])/p;
     }
 
-    double dn, un;
+    double dn{}, un{};
     if(derivRight >= maxDeriv) {
         dn = 0.0;
         un = 0.0;
@@ -65,11 +66,15 @@ double Interp1D::operator()(const double& x) const {
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
 
-    std::size_t idxLow = 0, idxHigh = knotX.size(), idx; 
+    // Disallow extrapolation
+    if(x > knotX.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum value ({})", x, knotX.back()));
+
+    std::size_t idxLow = 0, idxHigh = knotX.size(), idx = 0; 
 
     // Find range by bisection
     while(idxHigh - idxLow > 1) {
-        idx=(idxHigh + idxLow) >> 1;
+        idx = (idxHigh + idxLow) >> 1;
         if(knotX[idx] > x) idxHigh = idx;
         else idxLow = idx;
     }
@@ -79,7 +84,7 @@ double Interp1D::operator()(const double& x) const {
     const double b = (x - knotX[idxLow])/height;
 
     return a*knotY[idxLow] + b*knotY[idxHigh] + ((pow(a, 3) - a)*derivs2[idxLow]
-            + (pow(b, 3) - b)*derivs2[idxHigh])*pow(height, 2)/6;
+            + (pow(b, 3) - b)*derivs2[idxHigh])*pow(height, 2)/6.0;
 }
 
 void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<double>& y,
@@ -112,6 +117,13 @@ double Interp2D::operator()(const double& x, const double& y) const {
     // Ensure the interpolation is initialized first
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
+
+    // Disallow extrapolation
+    if(x > knotX.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum x value ({})", x, knotX.back()));
+    if(y > knotY.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum y value ({})", y, knotY.back()));
+
 
     std::vector<double> zTmp(knotX.size()); 
     for(std::size_t i = 0; i < knotX.size(); ++i)
