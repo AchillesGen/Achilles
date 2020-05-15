@@ -18,6 +18,7 @@ import nucleus
 import interactions
 import cascade
 import logger
+import constants
 
 import nuchic.densities as densities
 from .config import settings
@@ -153,7 +154,7 @@ class CalcCrossSection(RunMode):
         # Add test particle to the rest of them
         position = vectors.Vector3(position[0], position[1], -6.5)
         energy = settings().beam_energy
-        nucleon_mass = settings().get_param('mn')
+        nucleon_mass = constants.mN
         momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
         test_part = particle.Particle(self.pid,
                                       momentum,
@@ -242,7 +243,7 @@ class CalcMeanFreePath(RunMode):
 
         # Place a test particle in the center and give it a kick
         position = vectors.Vector3(0.0, 0.0, 0.0)
-        nucleon_mass = settings().get_param('mn')
+        nucleon_mass = constants.mN
         momentum = vectors.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),

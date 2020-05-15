@@ -25,6 +25,11 @@ pybind11_add_module(logger MODULE
 )
 target_link_libraries(logger PUBLIC spdlog::spdlog)
 
+pybind11_add_module(constants MODULE
+    ConstantsModule.cc
+)
+target_link_libraries(constants PRIVATE project_options)
+
 pybind11_add_module(vectors MODULE
     VectorModule.cc
 )
