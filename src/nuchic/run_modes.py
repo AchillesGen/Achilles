@@ -335,12 +335,14 @@ class CalcTransparency(RunMode):
         kicked_idx = np.random.choice(np.arange(len(particles)))
         self.fsi.set_kicked(kicked_idx)
         kicked_particle = particles[kicked_idx]
-        kicked_particle.set_status(particle.ParticleStatus.internal_test)
-        kicked_particle.set_momentum(vectors.Vector4(
+        kick_momentum = vectors.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
-            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0)))
+            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
+        kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
+        kicked_particle.set_status(particle.ParticleStatus.internal_test)
+        kicked_particle.set_momentum()
 
         # Evolve the nucleus
         self.nucleus.set_nucleons(particles)
