@@ -61,10 +61,11 @@ class NuclearConfiguration(NuclearDensity):
         super().__init__()
 
         filename = '{}_configs.out.gz'.format(kwargs['config_type'].upper())
-        self.density = pd.read_csv(make_path(filename, 'configurations'),
-                                   sep=r'\s+',
-                                   names=['pid', 'x', 'y', 'z'],
-                                   compression='gzip')
+        self.density = read_density(make_path(filename, 'configurations'))
+        # self.density = pd.read_csv(make_path(filename, 'configurations'),
+        #                            sep=r'\s+',
+        #                            names=['pid', 'x', 'y', 'z'],
+        #                            compression='gzip')
 
     def __call__(self):
         """ Generate a nuclear configuration based on a configuration file. """
@@ -125,3 +126,53 @@ class NuclearConstant(NuclearDensity):
             particles.append(part)
 
         return particles
+
+
+def read_density(fname, file_format='new'):
+    if file_format == 'new':
+        return _read_density_new(fname)
+    elif file_format == 'old':
+        return _read_density_old(fname)
+    else:
+        raise ValueError("Must choose new ")
+
+
+def _read_density_old(fname):
+    return pd.read_csv(fname,
+                       sep=r'\s+',
+                       names=['pid', 'x', 'y', 'z'],
+                       compression='gzip')
+
+
+def _read_density_new(fname, n_nucleons=12, n_cols=4):
+    """
+    Reads quantum Monte Carlo output txt files. Output files contain a
+    single header line, followed by the data lines. The header contains
+    three numbers ('n_configs', 'max_weight', 'min_weight'). The data lines
+    appear in 14-line stanzas:
+        * 12 lines of four columns ('pid', 'x', 'y', z')
+        * 1 line with a weight
+        * 1 blank line
+    Args:
+        fname: str, full path the the file
+        n_nucleons: int, defaults to Carbon-12
+        n_cols: int, number of columns in data stanzas
+    """
+    with open(fname) as ifile:
+        # grab header: (n_configs, max_weight, min_weight)
+        n_configs, _, _ = np.loadtxt(ifile, max_rows=1)
+        n_configs = int(n_configs)
+        # make room
+        configs = np.zeros((n_configs * n_nucleons, n_cols))
+        weights = np.zeros(n_configs * n_nucleons)
+        # read data
+        for idx in range(n_configs):
+            start = idx * n_nucleons
+            stop = start + n_nucleons
+            # blank line between stanzas is skipped automatically
+            configs[start:stop] = np.loadtxt(ifile, max_rows=n_nucleons)
+            weights[start:stop] = np.loadtxt(ifile, max_rows=1)
+    # back to Pandas
+    configs = pd.DataFrame(configs, columns=['pid', 'x', 'y', 'z'])
+    weights = pd.DataFrame(weights, columns=['weight'])
+    return pd.concat([configs, weights], axis=1)
