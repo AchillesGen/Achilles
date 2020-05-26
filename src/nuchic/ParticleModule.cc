@@ -17,6 +17,13 @@ using nuchic::ThreeVector;
 PYBIND11_MODULE(particle, m) {
     py::object vectors = static_cast<py::object>(py::module::import("vectors"));
 
+    py::enum_<nuchic::ParticleStatus>(m, "ParticleStatus")
+        .value("internal_test", nuchic::ParticleStatus::internal_test)
+        .value("external_test", nuchic::ParticleStatus::external_test)
+        .value("propagating", nuchic::ParticleStatus::propagating)
+        .value("background", nuchic::ParticleStatus::background)
+        .value("escaped", nuchic::ParticleStatus::escaped);
+
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
         // Constructors
         .def(py::init<const int&, const FourVector&, const ThreeVector&,
@@ -26,7 +33,6 @@ PYBIND11_MODULE(particle, m) {
              py::arg("mothers") = std::vector<int>(),
              py::arg("daughters") = std::vector<int>())
         // Setters
-        .def("set_pid", &Particle::SetPID)
         .def("set_position", &Particle::SetPosition)
         .def("set_momentum", &Particle::SetMomentum)
         .def("set_status", &Particle::SetStatus)
@@ -36,7 +42,7 @@ PYBIND11_MODULE(particle, m) {
         .def("add_daughter", &Particle::AddDaughter)
         .def("set_formation_zone", &Particle::SetFormationZone)
         // Getters
-        .def("pid", &Particle::PID)
+        .def("pid", &Particle::ID)
         .def("position", &Particle::Position)
         .def("momentum", &Particle::Momentum)
         .def("beta", &Particle::Beta)

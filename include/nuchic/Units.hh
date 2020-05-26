@@ -2,6 +2,8 @@
 #define UNITS_HH
 
 namespace nuchic {
+    constexpr double base_to_femto = 1.0e15;
+
     // Time literals
     constexpr double operator"" _s(long double x) {
         return static_cast<double>(x);
@@ -18,10 +20,10 @@ namespace nuchic {
         return static_cast<double>(x);
     }
     constexpr double operator"" _m(long double x) {
-        return static_cast<double>(x)*1.0e15;
+        return static_cast<double>(x)*base_to_femto;
     }
     constexpr double operator"" _m(unsigned long long int x) {
-        return static_cast<double>(x)*1.0e15;
+        return static_cast<double>(x)*base_to_femto;
     }
 
     // Cross-section literals
@@ -43,7 +45,7 @@ namespace nuchic {
         return static_cast<double>(x*1000);
     }
     constexpr double operator"" _GeV(unsigned long long int x) {
-        return static_cast<double>(x)*1000.0;
+        return static_cast<double>(x)*1000;
     }
 
 }

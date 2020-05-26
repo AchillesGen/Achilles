@@ -1,6 +1,6 @@
 run:
-    mode: xsec
-    events: 100000
+    mode: transparency
+    events: 6000
     beam_energy: $beam_energy
     angle: 0.0
     cascade: off
@@ -29,7 +29,10 @@ nucleus_config:
 parameters:
     interaction: GeantInteractions
     interaction_file: src/nuchic/data/GeantData.hdf5
-    cascade_distance: 0.05
+    density_file: c12.prova.txt
+    fermi_gas: Local
+    cascade_distance: 0.04
+    cascade_prob: Gaussian
     mn: 938
 
 mean_free_path:
@@ -50,3 +53,4 @@ histograms:
         plot_range: [1.e-5, 500]
         bins: 100
         scale: log
+

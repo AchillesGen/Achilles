@@ -1,0 +1,49 @@
+Particles:
+    # [pid, mass, width, icharge, strong, spin, stable, majorana, masive, hadron, name, antiname]
+    # Baryons
+    - Particle: [2212,  938.27,      0.0,  3, 0, 1, 1, 0, true, true,   proton, anti-proton]
+    - Particle: [2112,  939.57,      0.0,  0, 0, 1, 1, 0, true, true,  neutron, anti-neutron]
+    - Particle: [2224, 1230.55,    112.2,  6, 0, 3, 0, 0, true, true,  delta++, deltabar--]
+    - Particle: [2214, 1234.90,    131.1,  3, 0, 3, 0, 0, true, true,   delta+, deltabar-]
+    - Particle: [2114, 1231.30,    112.5,  0, 0, 3, 0, 0, true, true,   delta0, deltabar0]
+    # - Particle: [1114, ]
+    - Particle: [3122, 1115.68,  2.5e-12,  0, 0, 1, 0, 0, true, true,   lambda, lambdabar]
+    - Particle: [3222, 1189.37, 8.21e-12,  3, 0, 1, 0, 0, true, true,   sigma+, sigmabar-]
+    - Particle: [3212, 1192.64,  8.89e-3,  0, 0, 1, 0, 0, true, true,   sigma0, sigmabar0]
+    - Particle: [3112, 1197.45, 4.45e-12, -3, 0, 1, 0, 0, true, true,   sigma-, sigmabar+]
+    - Particle: [3322, 1314.86, 2.27e-12,  0, 0, 1, 0, 0, true, true, cascade0, cascadebar0]
+    - Particle: [3312, 1321.71, 4.02e-12, -3, 0, 1, 0, 0, true, true, cascade-, cascadebar+]
+    - Particle: [3334, 1672.45, 8.02e-12, -3, 0, 3, 0, 0, true, true,   omega-, omegabar+]
+
+    # Mesons
+    - Particle: [111, 134.977,      0.0, 0, 0, 0, 1, 1, true, true, pion0, pion0]
+    - Particle: [211, 139.571,      0.0, 3, 0, 0, 1, 0, true, true, pion+, pion-]
+    - Particle: [221, 547.862,  1.31e-9, 0, 0, 0, 0, 1, true, true,   eta, eta]
+    - Particle: [130, 497.611, 1.28e-14, 0, 0, 0, 1, 1, true, true,   KL0, KL0]
+    - Particle: [310, 497.611, 7.35e-12, 0, 0, 0, 0, 1, true, true,   KS0, KS0]
+    - Particle: [321, 493.677, 5.32e-14, 3, 0, 0, 1, 0, true, true,    K+, K-]
+    - Particle: [411, 1869.65, 6.33e-10, 3, 0, 0, 0, 0, true, true,    D+, D-]
+    - Particle: [421, 1864.83,  1.61e-9, 0, 0, 0, 0, 1, true, true,    D0, D0]
+
+    # Quarks
+    - Particle: [1,    4.67,    0.0, -1, 3, 1, 2, 0, false, false, d, dbar]
+    - Particle: [2,    2.16,    0.0,  2, 3, 1, 2, 0, false, false, u, ubar]
+    - Particle: [3,    93.0,    0.0, -1, 3, 1, 2, 0, false, false, s, sbar]
+    - Particle: [4,  1.27e3,    0.0,  2, 3, 1, 2, 0,  true, false, c, cbar]
+    - Particle: [5,  4.18e3,    0.0, -1, 3, 1, 2, 0,  true, false, s, sbar]
+    - Particle: [6, 172.9e3, 1.42e3,  2, 3, 1, 2, 0,  true, false, t, tbar]
+
+    # Leptons
+    - Particle: [11,   0.511, 0.0, -3, 0, 1, 1, 0, false, false,     e-, e+]
+    - Particle: [12,     0.0, 0.0,  0, 0, 1, 1, 0, false, false,   nu_e, nu_ebar]
+    - Particle: [13,   105.7, 0.0, -3, 0, 1, 1, 0,  true, false,    mu-, mu+]
+    - Particle: [14,     0.0, 0.0,  0, 0, 1, 1, 0, false, false,  nu_mu, nu_mubar]
+    - Particle: [15, 1776.86, 0.0, -3, 0, 1, 1, 0,  true, false,   tau-, tau+]
+    - Particle: [16,     0.0, 0.0,  0, 0, 1, 1, 0, false, false, nu_tau, nu_taubar]
+
+    # Gauge Bosons
+    - Particle: [21,     0.0,     0.0, 0, 8, 2, 1, 1, false, false,  gluon, gluon]
+    - Particle: [22,     0.0,     0.0, 0, 0, 2, 1, 1, false, false, photon, photon]
+    - Particle: [23, 91.18e3, 2.495e3, 0, 0, 2, 0, 1,  true, false,      Z, Z]
+    - Particle: [24, 80.38e3, 2.085e3, 3, 0, 2, 0, 0,  true, false,     W+, W-]
+    - Particle: [25, 125.1e3,     4.0, 0, 0, 0, 0, 1,  true, false,  Higgs, Higgs]

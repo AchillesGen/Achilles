@@ -12,7 +12,7 @@ include(CMake/StandardProjectSettings.cmake)
 # Link this 'library' to set the c++ standard / compile-time options requested
 # Additionally, link to get include and external dependencies
 add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_11)
+target_compile_features(project_options INTERFACE cxx_std_14)
 target_include_directories(project_options INTERFACE include external)
 
 
@@ -48,21 +48,23 @@ find_package(Python REQUIRED COMPONENTS Development)
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
+# Add dependencies
+include(CMake/CPM.cmake)
+add_subdirectory(external)
+
+# Main code
+add_subdirectory(src/nuchic)
+
+# Testing
 if(ENABLE_TESTING)
     enable_testing()
-    message("Building Tests.")
+    message(STATUS "Building Tests.")
     add_subdirectory(test)
 endif()
 
 if(ENABLE_FUZZING)
-    message(
+    message(STATUS 
         "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html"
     )
     add_subdirectory(fuzz_test)
 endif()
-
-#set(NUCHIC_INCLUDES ${NUCHIC_BUILD_INSTALL_PREFIX}/include ${NUCHIC_SOURCE_DIR}/include ${HDF5_INCLUDE_DIRS})
-#link_directories(${NUCHIC_BUILD_INSTALL_PREFIX}/lib)
-
-add_subdirectory(external)
-add_subdirectory(src/nuchic)

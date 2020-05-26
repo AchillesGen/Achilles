@@ -5,11 +5,11 @@
 using namespace nuchic;
 
 double ThreeVector::Theta() const noexcept {
-    return atan2(Pt(), vec[3]);
+    return atan2(Pt(), Pz());
 }
 
 double ThreeVector::Phi() const noexcept {
-    const double phi = atan2(vec[1], vec[0]);
+    const double phi = atan2(Py(), Px());
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }
@@ -19,13 +19,13 @@ ThreeVector ThreeVector::Cross(const ThreeVector& other) const noexcept {
     const double py = vec[2]*other.vec[0] - vec[0]*other.vec[2];
     const double pz = vec[0]*other.vec[1] - vec[1]*other.vec[0];    
 
-    return ThreeVector(px, py, pz);
+    return {px, py, pz};
 }
 
 ThreeVector ThreeVector::Unit() const noexcept {
     const double norm = Magnitude();
 
-    return ThreeVector(vec[0]/norm, vec[1]/norm, vec[2]/norm);
+    return {vec[0]/norm, vec[1]/norm, vec[2]/norm};
 }
 
 ThreeVector& ThreeVector::operator+=(const ThreeVector& other) noexcept {
@@ -65,11 +65,11 @@ double ThreeVector::operator*(const ThreeVector& other) const noexcept {
 }
 
 ThreeVector ThreeVector::operator-() const noexcept {
-   return ThreeVector(-vec[0], -vec[1], -vec[2]);
+   return {-vec[0], -vec[1], -vec[2]};
 }
 
 ThreeVector ThreeVector::operator+() const noexcept {
-    return ThreeVector(*this);
+    return *this;
 }
 
 ThreeVector ThreeVector::operator*(const double& scale) const noexcept {

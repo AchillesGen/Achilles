@@ -8,6 +8,7 @@
 #include "nuchic/Interactions.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
+#include "nuchic/ThreeVector.hh"
 
 namespace py = pybind11;
 
@@ -24,22 +25,25 @@ PYBIND11_MODULE(cascade, m) {
     py::class_<Cascade, std::shared_ptr<Cascade>> cascade(m, "Cascade");
 
         // Constructors
-        cascade.def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, const double&>(),
-                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.05)
+        cascade.def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, 
+                    const double&>(),
+                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.03)
         // Functions
         .def("kick", &Cascade::Kick)
         .def("reset", &Cascade::Reset)
         .def("set_kicked", &Cascade::SetKicked)
-        .def("call", &Cascade::operator())
-        .def("__call__", &Cascade::operator(),
-                py::arg("particles"), py::arg("fermi_momentum"),
-                py::arg("radius2"), py::arg("max_steps") = 10000)
+        .def("evolve", &Cascade::Evolve,
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
+        .def("nuwro", &Cascade::NuWro,
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
         .def("mean_free_path", &Cascade::MeanFreePath,
-                py::arg("particles"), py::arg("fermi_momentum"),
-                py::arg("radius2"), py::arg("max_steps") = 10000);
+             py::arg("nucleus"), py::arg("max_steps") = 10000)
+        .def("mean_free_path_nuwro", &Cascade::MeanFreePath_NuWro,
+             py::arg("nucleus"), py::arg("max_steps") = 10000);
 
     py::enum_<Cascade::ProbabilityType>(cascade, "Probability")
         .value("Gaussian", Cascade::ProbabilityType::Gaussian)
         .value("Pion", Cascade::ProbabilityType::Pion)
+        .value("Cylinder", Cascade::ProbabilityType::Cylinder)
         .export_values();
 }

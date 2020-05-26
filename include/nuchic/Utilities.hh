@@ -5,6 +5,8 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <memory>
+#include <utility>
 #include <vector>
 
 namespace nuchic {
@@ -21,8 +23,8 @@ class Brent {
         /// Constructor
         ///@param func: Function to find the root of
         ///@param tol: The tolerance in the solution
-        Brent(std::function<double(double)> const& func, double tol=1e-6)
-            : m_func(func), m_tol(tol) {}
+        Brent(std::function<double(double)>  func, double tol=base_tol)
+            : m_func(std::move(func)), m_tol(tol) {}
 
         // Functions
         /// Calculate the root in the given range. Throws a domain_error if no root exists
@@ -48,6 +50,7 @@ class Brent {
         // Variables
         std::function<double(double)> m_func;
         double m_tol;
+        static constexpr double base_tol = 1e-6;
 };
 
 /// Template class to act as a helper for generating ranges in log space. This is done in 
@@ -125,6 +128,16 @@ inline std::vector<double> Linspace(double start, double stop, std::size_t num =
     std::generate_n(std::back_inserter(retval), num, LinspaceGen<double>(start,step));
     return retval;
 } 
+
+template<typename T>
+constexpr T ipow(const T &x, const size_t &pow) {
+    return pow == 0 ? 1 : x*ipow(x, pow-1);
+}
+
+template<typename T>
+constexpr T factorial(const T &x) {
+    return x == 0 ? 1 : x * factorial(x-1);
+}
 
 }
 

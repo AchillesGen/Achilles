@@ -9,23 +9,21 @@ FourVector::FourVector(const ThreeVector& other, const double& E) noexcept
     : vec({other[0], other[1], other[2], E}) {}
 
 double FourVector::M() const noexcept {
-    const double m2 = M2();
-    if(std::abs(m2) < 1E-6) return 0;
-    return sqrt(m2);
+    return std::sqrt(M2());
 }
 
 double FourVector::Theta() const noexcept {
-    return atan2(Pt(), vec[2]);
+    return atan2(Pt(), Pz());
 }
 
 double FourVector::Phi() const noexcept {
-    const double phi = atan2(vec[1], vec[0]);
+    const double phi = atan2(Py(), Px());
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }
 
 double FourVector::Rapidity() const noexcept {
-    return 0.5*log((E() + Pz())/(E() - Pz()));
+    return log((E() + Pz())/(E() - Pz()))/2;
 }
 
 double FourVector::DeltaR(const FourVector& other) const noexcept {
@@ -35,7 +33,7 @@ double FourVector::DeltaR(const FourVector& other) const noexcept {
 }
 
 ThreeVector FourVector::Vec3() const noexcept {
-    return ThreeVector(vec[0], vec[1], vec[2]);
+    return {vec[0], vec[1], vec[2]};
 }
 
 void FourVector::SetVectM(const ThreeVector& vec3, const double& mass) noexcept {
@@ -56,7 +54,7 @@ FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
     double pZ = vec[2] + gamma2*betap*beta[2]+gamma*beta[2]*vec[3];
     double E = gamma*(vec[3] + betap);
 
-    return FourVector(pX, pY, pZ, E);
+    return {pX, pY, pZ, E};
 }
 
 FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
@@ -66,11 +64,11 @@ FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
 
 FourVector FourVector::Cross(const FourVector& other) const noexcept {
     ThreeVector result = this -> Vec3().Cross(other.Vec3());
-    return FourVector(result, 0);
+    return {result, 0};
 }
 
 ThreeVector FourVector::BoostVector() const noexcept {
-    return ThreeVector(vec[0]/vec[3], vec[1]/ vec[3], vec[2]/vec[3]);
+    return {vec[0]/vec[3], vec[1]/ vec[3], vec[2]/vec[3]};
 }
 
 FourVector& FourVector::operator+=(const FourVector& other) noexcept {
@@ -115,11 +113,11 @@ double FourVector::operator*(const FourVector& other) const noexcept {
 }
 
 FourVector FourVector::operator-() const noexcept {
-   return FourVector(-vec[0],-vec[1],-vec[2],-vec[3]);
+   return {-vec[0],-vec[1],-vec[2],-vec[3]};
 }
 
 FourVector FourVector::operator+() const noexcept {
-    return FourVector(*this);
+    return *this;
 }
 
 FourVector FourVector::operator*(const double& scale) const noexcept {

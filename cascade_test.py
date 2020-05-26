@@ -44,10 +44,11 @@ def main(argv):
         if not os.path.exists('runs'):
             os.mkdir('runs')
 
-        emin = 10
-        emax = 1000
-        energies = np.linspace(emin, emax, (emax-emin)/5+1, dtype='float64')
-        energies = np.sqrt(2000*energies)
+        emin = 100
+        emax = 2500
+        #emax-emin)/5+1
+        energies = np.linspace(emin, emax, 15, dtype='float64')
+        #energies = np.sqrt(2000*energies)
         xsec_p = np.zeros_like(energies)
         uncertainty = np.zeros_like(energies)
         energies_split = np.array_split(energies, size)
@@ -78,7 +79,7 @@ def main(argv):
     comm.Gatherv(local_uncertainty, [uncertainty, energies_size, energies_disp, MPI.DOUBLE], root = 0)
 
     if rank == 0:
-        with open(os.path.join('Results', 'xsec.txt'), 'w') as output:
+        with open(os.path.join('Results', 'xsec.nuchic.QMC_Geant2.txt'), 'w') as output:
             for i, energy in enumerate(energies):
                 output.write('{} {} {}\n'.format(energy, xsec_p[i], uncertainty[i]))
 
