@@ -5,7 +5,8 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 void LoggingModule(py::module &m) {
-    m.def("init",  [](const std::string &logname, const std::string &logfile) {
+    py::module mlogger = m.def_submodule("logger", "Nuchic logger using spdlog");
+    mlogger.def("init",  [](const std::string &logname, const std::string &logfile) {
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
         console_sink->set_level(spdlog::level::info);
         console_sink->set_pattern("[%^%l%$] %v");
@@ -19,7 +20,7 @@ void LoggingModule(py::module &m) {
         spdlog::set_default_logger(logger_ptr);
     });
 
-    py::enum_<spdlog::level::level_enum>(m, "level")
+    py::enum_<spdlog::level::level_enum>(mlogger, "level")
         .value("trace", spdlog::level::level_enum::trace)
         .value("debug", spdlog::level::level_enum::debug)
         .value("info", spdlog::level::level_enum::info)
@@ -28,19 +29,19 @@ void LoggingModule(py::module &m) {
         .value("critical", spdlog::level::level_enum::critical)
         .value("off", spdlog::level::level_enum::off);
 
-    m.def("set_level", [](const spdlog::level::level_enum& level) {
+    mlogger.def("set_level", [](const spdlog::level::level_enum& level) {
         spdlog::set_level(level);
     });
-    m.def("set_pattern", [](const std::string& pattern) { spdlog::set_pattern(pattern); });
+    mlogger.def("set_pattern", [](const std::string& pattern) { spdlog::set_pattern(pattern); });
 
-    m.def("log", [](const spdlog::level::level_enum& level, const std::string& message) {
+    mlogger.def("log", [](const spdlog::level::level_enum& level, const std::string& message) {
         spdlog::log(level, message);
     });
 
-    m.def("trace", [](const std::string &message) { spdlog::trace(message); });
-    m.def("debug", [](const std::string &message) { spdlog::debug(message); });
-    m.def("info", [](const std::string &message) { spdlog::info(message); });
-    m.def("warning", [](const std::string &message) { spdlog::warn(message); });
-    m.def("error", [](const std::string &message) { spdlog::error(message); });
-    m.def("critical", [](const std::string &message) { spdlog::critical(message); });
+    mlogger.def("trace", [](const std::string &message) { spdlog::trace(message); });
+    mlogger.def("debug", [](const std::string &message) { spdlog::debug(message); });
+    mlogger.def("info", [](const std::string &message) { spdlog::info(message); });
+    mlogger.def("warning", [](const std::string &message) { spdlog::warn(message); });
+    mlogger.def("error", [](const std::string &message) { spdlog::error(message); });
+    mlogger.def("critical", [](const std::string &message) { spdlog::critical(message); });
 }
