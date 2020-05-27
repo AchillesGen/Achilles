@@ -61,6 +61,10 @@ before_install:
       fi
     - cmake --version
 
+    #############################################################################
+    # Return to root directory of the project
+    #############################################################################
+    - cd "${TRAVIS_BUILD_DIR}"
 
 install:
     - pip install ".[test]" -e .
