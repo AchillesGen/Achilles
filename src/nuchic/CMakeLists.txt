@@ -41,3 +41,10 @@ pybind11_add_module(_nuchic MODULE
 )
 target_link_libraries(_nuchic PRIVATE project_options project_warnings
                               PUBLIC spdlog::spdlog utilities physics)
+set_target_properties(_nuchic PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
+if(UNIX AND NOT APPLE)
+    set_target_properties(_nuchic PROPERTIES INSTALL_RPATH "$ORIGIN")
+elseif(APPLE)
+    set_target_properties(_nuchic PROPERTIES INSTALL_RPATH "@loader_path")
+endif()
+set_target_properties(_nuchic PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
