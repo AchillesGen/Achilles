@@ -68,7 +68,8 @@ before_install:
     #############################################################################
     # Return to root directory of the project
     #############################################################################
-    - cd $HOME/FNALNeuGen
+    - cd ${TRAVIS_HOME}
+    - pwd
 
 install:
     - pip install ".[test]" -e .
