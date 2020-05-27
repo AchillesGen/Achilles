@@ -1,5 +1,5 @@
 language: cpp
-dist: bionic
+dist: focal
 
 addons:
     apt:
@@ -39,7 +39,7 @@ before_install:
     python --version
     pip install numpy
 install:
-- pip install ".[test]" --verbose -e .
+- pip install ".[test]" -e .
 script:
 - pytest
 
