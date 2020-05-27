@@ -340,7 +340,7 @@ class CalcTransparency(RunMode):
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
         kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
         kicked_particle.set_status(physics.ParticleStatus.internal_test)
-        kicked_particle.set_momentum()
+        kicked_particle.set_momentum(kick_momentum)
 
         # Evolve the nucleus
         self.nucleus.set_nucleons(particles)
