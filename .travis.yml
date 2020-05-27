@@ -41,9 +41,12 @@ before_install:
     - |
         if [ "$TRAVIS_OS_NAME" = "osx" ]; then
             brew update; brew install python3
+            pip3 install virtualenv
+            python3 -m virtualenv venv
+        else
+            python -m pip install --user --upgrade pip virtualenv
+            virtualenv -p python$PYTHON venv
         fi
-        python -m pip install --user --upgrade pip virtualenv
-        virtualenv -p python$PYTHON venv
         source venv/bin/activate
         which python
         python --version
@@ -65,12 +68,14 @@ before_install:
     #############################################################################
     # Return to root directory of the project
     #############################################################################
-    - cd "${TRAVIS_BUILD_DIR}"
+    - cd $HOME
 
 install:
     - pip install ".[test]" -e .
 
 script:
+    - ls
+    - ls src/nuchic/
     - pytest --cov-report term --cov-report html:htmlcov --cov-report xml --cov=src/nuchic
 
 after_success:
