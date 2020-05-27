@@ -12,15 +12,13 @@ import seaborn as sns
 import pylab as plt
 import scipy.stats
 
-import vectors
-import particle
-import nucleus
-import interactions
-import cascade
-import logger
-import constants
+from . import physics
+from . import interactions
+from . import cascade
+from .utilities import logger
+from .utilities import constants
 
-import nuchic.densities as densities
+from . import densities
 from .config import settings
 
 
@@ -43,7 +41,7 @@ class ConstantInteraction(interactions.Interactions):
 
     def MakeMomentum(self, same_pid, p1_cm, pcm, rans):  # pylint: disable=unused-argument
         """ Make the momentum for the outgoing nucleons. """
-        return vectors.Vector3()
+        return physics.Vector3()
 
 
 class RunMode:
@@ -88,7 +86,7 @@ class RunMode:
         fermi_momentum = settings().nucleus_kf(name)
         density_file = settings().get_param('density_file')
 #        try:
-        self.fermi_gas = nucleus.Nucleus.__dict__[settings().get_param("fermi_gas")]
+        self.fermi_gas = physics.Nucleus.__dict__[settings().get_param("fermi_gas")]
 
 #        except KeyError as error:
 #            logger.error(f"Invalid FG model {error}")
@@ -99,7 +97,7 @@ class RunMode:
             f"with density file {density_file} and "
             f"binding_energy {binding_energy} MeV."
             f"Fermi gas model implemented {self.fermi_gas}")
-        self.nucleus = nucleus.Nucleus.make_nucleus(name,
+        self.nucleus = physics.Nucleus.make_nucleus(name,
                                                     binding_energy, fermi_momentum,
                                                     density_file, self.fermi_gas,
                                                     density)
@@ -152,14 +150,14 @@ class CalcCrossSection(RunMode):
                 break
 
         # Add test particle to the rest of them
-        position = vectors.Vector3(position[0], position[1], -6.5)
+        position = physics.Vector3(position[0], position[1], -6.5)
         energy = settings().beam_energy
         nucleon_mass = constants.mN
-        momentum = vectors.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
-        test_part = particle.Particle(self.pid,
-                                      momentum,
-                                      position,
-                                      particle.ParticleStatus.external_test)
+        momentum = physics.Vector4(0, 0, energy, np.sqrt(energy**2+nucleon_mass**2))
+        test_part = physics.Particle(self.pid,
+                                     momentum,
+                                     position,
+                                     physics.ParticleStatus.external_test)
 
         # Set up kicked
         self.fsi.set_kicked(len(particles))
@@ -175,7 +173,7 @@ class CalcCrossSection(RunMode):
         for event in events:
             count = 0
             for part in event:
-                if part.status() == particle.ParticleStatus.escaped:
+                if part.status() == physics.ParticleStatus.escaped:
                     count += 1
             if count != 0:
                 xsec += 1
@@ -242,17 +240,17 @@ class CalcMeanFreePath(RunMode):
         particles = self.nucleus.nucleons()
 
         # Place a test particle in the center and give it a kick
-        position = vectors.Vector3(0.0, 0.0, 0.0)
+        position = physics.Vector3(0.0, 0.0, 0.0)
         nucleon_mass = constants.mN
-        momentum = vectors.Vector4(
+        momentum = physics.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
             np.sqrt(p_kick**2.0+nucleon_mass**2))
-        test_part = particle.Particle(2212,
-                                      momentum,
-                                      position,
-                                      particle.ParticleStatus.internal_test)
+        test_part = physics.Particle(2212,
+                                     momentum,
+                                     position,
+                                     physics.ParticleStatus.internal_test)
 
         # Evolve the nucleus
         self.fsi.set_kicked(len(particles))
@@ -268,7 +266,7 @@ class CalcMeanFreePath(RunMode):
         nhits = 0
         for event in events:
             for aparticle in event:
-                if aparticle.status() == particle.ParticleStatus.internal_test:
+                if aparticle.status() == physics.ParticleStatus.internal_test:
                     distance_traveled.append(aparticle.get_distance_traveled())
                     nhits = nhits + 1
         logger.info(f"nhits / nevents : {nhits} / {len(events)}")
@@ -335,13 +333,13 @@ class CalcTransparency(RunMode):
         kicked_idx = np.random.choice(np.arange(len(particles)))
         self.fsi.set_kicked(kicked_idx)
         kicked_particle = particles[kicked_idx]
-        kick_momentum = vectors.Vector4(
+        kick_momentum = physics.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
         kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
-        kicked_particle.set_status(particle.ParticleStatus.internal_test)
+        kicked_particle.set_status(physics.ParticleStatus.internal_test)
         kicked_particle.set_momentum()
 
         # Evolve the nucleus
@@ -355,7 +353,7 @@ class CalcTransparency(RunMode):
         nhits = 0
         for event in events:
             for aparticle in event:
-                if aparticle.status() == particle.ParticleStatus.internal_test:
+                if aparticle.status() == physics.ParticleStatus.internal_test:
                     nhits = nhits + 1
 
         transparency = 1.0 - nhits / len(events)

@@ -1,9 +1,9 @@
 """ Main driver code. """
 
 from tqdm import tqdm
-import logger
+from .utilities import logger
 
-import nuchic.run_modes as run_modes
+from . import run_modes
 from .config import settings
 
 

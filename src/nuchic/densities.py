@@ -6,12 +6,13 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 
 """
 
+import gzip
+
 import pandas as pd
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-import vectors
-import particle
+from . import physics
 
 # from .config import settings
 from .utils import make_path, rand_sphere
@@ -89,15 +90,15 @@ class NuclearConfiguration(NuclearDensity):
 
         particles = []
         for proton in protons:
-            part = particle.Particle(2212,
-                                     vectors.Vector4(0, 0, 0, 0),
-                                     vectors.Vector3(proton[0], proton[1], proton[2]))
+            part = physics.Particle(2212,
+                                    physics.Vector4(0, 0, 0, 0),
+                                    physics.Vector3(proton[0], proton[1], proton[2]))
             particles.append(part)
 
         for neutron in neutrons:
-            part = particle.Particle(2112,
-                                     vectors.Vector4(0, 0, 0, 0),
-                                     vectors.Vector3(neutron[0], neutron[1], neutron[2]))
+            part = physics.Particle(2112,
+                                    physics.Vector4(0, 0, 0, 0),
+                                    physics.Vector3(neutron[0], neutron[1], neutron[2]))
             particles.append(part)
 
         return particles
@@ -120,9 +121,9 @@ class NuclearConstant(NuclearDensity):
         nucleons = rand_sphere(self.radius, self.neutrons)
         particles = []
         for nucleon in nucleons:
-            part = particle.Particle(2112,
-                                     vectors.Vector4(),
-                                     vectors.Vector3(nucleon[0], nucleon[1], nucleon[2]))
+            part = physics.Particle(2112,
+                                    physics.Vector4(),
+                                    physics.Vector3(nucleon[0], nucleon[1], nucleon[2]))
             particles.append(part)
 
         return particles
@@ -158,9 +159,9 @@ def _read_density_new(fname, n_nucleons=12, n_cols=4):
         n_nucleons: int, defaults to Carbon-12
         n_cols: int, number of columns in data stanzas
     """
-    with open(fname) as ifile:
+    with gzip.open(fname) as ifile:
         # grab header: (n_configs, max_weight, min_weight)
-        n_configs, _, _ = np.loadtxt(ifile, max_rows=1)
+        n_configs, max_weight, _ = np.loadtxt(ifile, max_rows=1)
         n_configs = int(n_configs)
         # make room
         configs = np.zeros((n_configs * n_nucleons, n_cols))
