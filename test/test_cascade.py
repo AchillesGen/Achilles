@@ -11,7 +11,7 @@ from nuchic.physics import Nucleus
 from nuchic._nuchic import Cascade
 from nuchic._nuchic import Interactions
 
-from nuchic.utilities import mN, hbarc
+from nuchic._nuchic.utilities.constants import mN, hbarc
 from nuchic.config import settings
 
 MEV = 1

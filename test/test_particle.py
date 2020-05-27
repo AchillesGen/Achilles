@@ -6,7 +6,7 @@ import numpy as np
 from nuchic.physics import Vector4, Vector3
 from nuchic.physics import Particle, ParticleStatus
 from nuchic.physics import PID, ParticleInfo
-from nuchic.utilities import mN
+from nuchic._nuchic.utilities.constants import mN
 
 
 def test_particle_init():
