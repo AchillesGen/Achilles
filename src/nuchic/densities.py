@@ -62,17 +62,17 @@ class NuclearConfiguration(NuclearDensity):
         super().__init__()
 
         filename = '{}_configs.out.gz'.format(kwargs['config_type'].upper())
-        self.density = read_density(make_path(filename, 'configurations'))
-        # self.density = pd.read_csv(make_path(filename, 'configurations'),
-        #                            sep=r'\s+',
-        #                            names=['pid', 'x', 'y', 'z'],
-        #                            compression='gzip')
+        self.max_weight, self.density = read_density(make_path(filename, 'configurations'))
 
     def __call__(self):
         """ Generate a nuclear configuration based on a configuration file. """
-        config_index = np.random.randint(
-            0, high=len(self.density.index) / 12)
-        idx0 = config_index * 12
+        while True:
+            config_index = np.random.randint(
+                0, high=len(self.density.index) / 12)
+            idx0 = config_index * 12
+            weight = self.density.iloc[idx0]['weight']
+            if weight/self.max_weight > np.random.uniform(0.0, 1.0):
+                break
 
         db_tmp = self.density.iloc[idx0:idx0 + 12]
         proton_mask = db_tmp['pid'] == 1
@@ -133,7 +133,7 @@ def read_density(fname, file_format='new'):
     if file_format == 'new':
         return _read_density_new(fname)
     elif file_format == 'old':
-        return _read_density_old(fname)
+        return (1, _read_density_old(fname))
     else:
         raise ValueError("Must choose new ")
 
@@ -176,4 +176,4 @@ def _read_density_new(fname, n_nucleons=12, n_cols=4):
     # back to Pandas
     configs = pd.DataFrame(configs, columns=['pid', 'x', 'y', 'z'])
     weights = pd.DataFrame(weights, columns=['weight'])
-    return pd.concat([configs, weights], axis=1)
+    return (max_weight, pd.concat([configs, weights], axis=1))
