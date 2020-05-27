@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from vectors import Vector4
+from nuchic.physics import Vector4
 
 
 def test_vec4_init():
