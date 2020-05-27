@@ -39,6 +39,8 @@ before_install:
     which python
     python --version
     pip install numpy
+    which cmake
+    cmake --version
 install:
 - pip install ".[test]" -e .
 script:
