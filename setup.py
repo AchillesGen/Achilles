@@ -117,7 +117,7 @@ setup(
         'h5py',
     ],
     entry_points={'console_scripts': ['nuchic = nuchic.main:nuchic', ], },
-    ext_modules=[CMakeExtension('nuchic')],
+    ext_modules=[CMakeExtension('nuchic/nuchic')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     package_data={'': ['data/*', 'data/qe/*', 'pke/*', 'configurations/*', 'template.yml']},

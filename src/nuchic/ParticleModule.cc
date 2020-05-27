@@ -1,30 +1,22 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/stl_bind.h"
-#include "pybind11/operators.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Particle.hh"
-
-namespace py = pybind11;
 
 // These are for convenience
 using nuchic::Particle;
 using nuchic::FourVector;
 using nuchic::ThreeVector;
 
-PYBIND11_MODULE(particle, m) {
-    py::object vectors = static_cast<py::object>(py::module::import("vectors"));
-
-    py::enum_<nuchic::ParticleStatus>(m, "ParticleStatus")
+void ParticleModule(py::module &m) {
+    py::enum_<nuchic::ParticleStatus>(m, "ParticleStatus", py::module_local())
         .value("internal_test", nuchic::ParticleStatus::internal_test)
         .value("external_test", nuchic::ParticleStatus::external_test)
         .value("propagating", nuchic::ParticleStatus::propagating)
         .value("background", nuchic::ParticleStatus::background)
         .value("escaped", nuchic::ParticleStatus::escaped);
 
-    py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
+    py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle", py::module_local())
         // Constructors
         .def(py::init<const int&, const FourVector&, const ThreeVector&,
                       const int&, const std::vector<int>&, const std::vector<int>&>(),

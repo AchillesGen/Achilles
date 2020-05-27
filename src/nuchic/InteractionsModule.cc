@@ -1,13 +1,8 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/operators.h"
-#include "pybind11/functional.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/Interactions.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
-namespace py = pybind11;
 using namespace nuchic;
 
 class PyInteraction : public Interactions {
@@ -55,7 +50,7 @@ private:
 
 REGISTER_INTERACTION(PyInteraction);
 
-PYBIND11_MODULE(interactions, m) {
+void InteractionsModule(py::module &m) {
     m.def("cross_section", &CrossSection);
     m.def("cross_section_lab", &CrossSectionLab);
     m.def("cross_section_angle", &CrossSectionAngle);

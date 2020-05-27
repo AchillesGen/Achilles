@@ -1,12 +1,5 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/operators.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/Interpolation.hh"
-
-namespace py = pybind11;
-template<typename... Args>
-using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
 
 // These are for convenience
 using nuchic::Interp1D;
@@ -47,7 +40,7 @@ void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<dou
     kInit = true;
 }
 
-PYBIND11_MODULE(interpolation, m) {
+void InterpolationModule(py::module &m) {
     py::class_<Interp1D>(m, "Interp1D")
         // Constructors
         .def(py::init<>())
