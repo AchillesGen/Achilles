@@ -11,6 +11,8 @@ import numpy as np
 import seaborn as sns
 import pylab as plt
 import scipy.stats
+import os 
+
 
 from . import physics
 from . import interactions
@@ -207,13 +209,10 @@ class CalcMeanFreePath(RunMode):
         self.radius = self.nucleus.radius
         self.pid = 2212
         name = settings().get_param('interaction')
-        # fname = str(settings().get('xsec'))
+        fname = settings().get_param('interaction_file')
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
-        # interaction = interactions.Interactions.create(name, fname)
-        interaction = ConstantInteraction(xsec=settings().get('xsec'))
-
+        interaction = interactions.Interactions.create(name, fname)
         self.fsi = cascade.Cascade(interaction, self.cascade_prob)
-        del interaction
         logger.info(
             "CalcMeanFreePath: nucleus contains "
             f"A={self.nucleus.n_nucleons()} total nucleons, "
@@ -223,7 +222,7 @@ class CalcMeanFreePath(RunMode):
             "CalcMeanFreePath: nucleus has "
             f"Binding energy E={self.nucleus.binding_energy()} MeV, "
             f"Fermi momentum kf={self.nucleus.fermi_momentum()} MeV, "
-            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and "
+            f"Potential energy V={self.nucleus.potential_energy():.2f} MeV, and"
             f"Radius r={self.nucleus.radius():.2f} fm.")
 
     def generate_one_event(self):
@@ -240,21 +239,38 @@ class CalcMeanFreePath(RunMode):
         particles = self.nucleus.nucleons()
 
         # Place a test particle in the center and give it a kick
-        position = physics.Vector3(0.0, 0.0, 0.0)
-        nucleon_mass = constants.mN
-        momentum = physics.Vector4(
+
+        kicked_idx = np.random.choice(np.arange(len(particles)))
+        self.fsi.set_kicked(kicked_idx)
+        kicked_particle = particles[kicked_idx]
+        #logger_info(f"position={ kicked_particle.position()")
+#        self.initial_pos=kicked_particle.radius()
+        #logger.info(f"initial_position={initial_pos}")
+        kick_momentum = physics.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
-            np.sqrt(p_kick**2.0+nucleon_mass**2))
-        test_part = physics.Particle(2212,
-                                     momentum,
-                                     position,
-                                     physics.ParticleStatus.internal_test)
+            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
+        #kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
+        kicked_particle.set_status(physics.ParticleStatus.internal_test)
+        kicked_particle.set_momentum(kick_momentum)
+
+
+#        position = physics.Vector3(0.0, 0.0, 0.0)
+#        nucleon_mass = constants.mN
+#        momentum = physics.Vector4(
+#            p_kick * np.sin(theta) * np.cos(phi),
+#            p_kick * np.sin(theta) * np.sin(phi),
+#            p_kick * np.cos(theta),
+#            np.sqrt(p_kick**2.0+nucleon_mass**2))
+#        test_part = physics.Particle(2212,
+#                                     momentum,
+#                                     kicked_particle.position(),
+#                                     physics.ParticleStatus.internal_test)
 
         # Evolve the nucleus
-        self.fsi.set_kicked(len(particles))
-        particles.append(test_part)
+        #self.fsi.set_kicked(len(particles))
+        #particles.append(kicked_particle)
         self.nucleus.set_nucleons(particles)
         self.fsi.mean_free_path(self.nucleus)
 
@@ -264,13 +280,18 @@ class CalcMeanFreePath(RunMode):
         """ Plot a histogram of distance traveled """
         distance_traveled = []
         nhits = 0
-        for event in events:
-            for aparticle in event:
-                if aparticle.status() == physics.ParticleStatus.internal_test:
-                    distance_traveled.append(aparticle.get_distance_traveled())
-                    nhits = nhits + 1
-        logger.info(f"nhits / nevents : {nhits} / {len(events)}")
-
+        with open(os.path.join('Results', 'distance_traveled_0p18_QMC.txt'), 'w') as output:
+            for event in events:
+                #i=0
+                for aparticle in event:
+                    if aparticle.status() == physics.ParticleStatus.internal_test:
+                        dist=aparticle.get_distance_traveled()
+                        output.write('{}\n'.format(dist))
+                        distance_traveled.append(dist)
+                        nhits = nhits + 1
+                        #i+=1
+                        #logger.info(f"i {i}")            
+            logger.info(f"nhits / nevents : {nhits} / {len(events)}")
         expected_mfp = (
             (self.nucleus.n_nucleons()+1)
             / (4.0/3.0*np.pi*self.nucleus.radius()**3.0)
@@ -338,7 +359,7 @@ class CalcTransparency(RunMode):
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
-        kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
+        #kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
         kicked_particle.set_status(physics.ParticleStatus.internal_test)
         kicked_particle.set_momentum(kick_momentum)
 
