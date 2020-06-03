@@ -256,6 +256,7 @@ class CalcMeanFreePath(RunMode):
         kicked_particle.set_momentum(kick_momentum)
 
 
+
 #        position = physics.Vector3(0.0, 0.0, 0.0)
 #        nucleon_mass = constants.mN
 #        momentum = physics.Vector4(
@@ -280,7 +281,7 @@ class CalcMeanFreePath(RunMode):
         """ Plot a histogram of distance traveled """
         distance_traveled = []
         nhits = 0
-        with open(os.path.join('Results', 'distance_traveled_0p18_QMC.txt'), 'w') as output:
+        with open(os.path.join('Results', 'distance_traveled_50_QMC.txt'), 'w') as output:
             for event in events:
                 #i=0
                 for aparticle in event:
@@ -359,7 +360,7 @@ class CalcTransparency(RunMode):
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
             np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
-        #kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
+        kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
         kicked_particle.set_status(physics.ParticleStatus.internal_test)
         kicked_particle.set_momentum(kick_momentum)
 
