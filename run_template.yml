@@ -1,5 +1,5 @@
 run:
-    mode: transparency
+    mode: mfp
     events: 6000
     beam_energy: $beam_energy
     angle: 0.0
@@ -12,7 +12,7 @@ run:
     nuclear_density: configuration
 
 nucleus_config:
-    config_type: QMC
+    config_type: MF
     radius: 10
     n_nucleons: 100
 
