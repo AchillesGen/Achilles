@@ -334,8 +334,10 @@ void Cascade::Escaped(Particles &particles) {
         //     std::cout << particle -> Position().Pz() << " " << sqrt(radius2) << std::endl;
         //     std::cout << *particle << std::endl;
         // }
+        // TODO: Use the code from src/nuchic/Nucleus.cc:108 to properly handle 
+        //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
-    const double energy = particle -> Momentum().E() - Constant::mN - potential;
+        const double energy = particle -> Momentum().E() - Constant::mN - potential;
         auto radius = localNucleus -> Radius();
         if(particle -> Position().Magnitude2() > pow(radius, 2)
            && particle -> Status() != ParticleStatus::external_test) {

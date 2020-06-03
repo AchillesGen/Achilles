@@ -209,8 +209,8 @@ class CalcMeanFreePath(RunMode):
         name = settings().get_param('interaction')
         # fname = str(settings().get('xsec'))
         logger.info(f"CalcMeanFreePath: creating interaction: '{name}'.")
-        # interaction = interactions.Interactions.create(name, fname)
-        interaction = ConstantInteraction(xsec=settings().get('xsec'))
+        interaction = interactions.Interactions.create(settings().get_param('interaction'),
+                                                       settings().get_param('interaction_file'))
 
         self.fsi = cascade.Cascade(interaction, self.cascade_prob)
         del interaction
@@ -281,7 +281,8 @@ class CalcMeanFreePath(RunMode):
         _, scale = scipy.stats.expon.fit(distance_traveled)
         logger.info(f"Fitted result: {scale} fm")
         fit_label = rf"$\lambda$={scale:.2f} fm"
-        sns.distplot(distance_traveled, ax=ax, kde=False, fit=scipy.stats.expon,
+        bins = np.linspace(0, 6, 100)
+        sns.distplot(distance_traveled, bins=bins, ax=ax, kde=False, fit=scipy.stats.expon,
                      label='events', fit_kws={'label':fit_label})
         ax.set_xlabel(r'Distance traveled [fm]')
         ax.set_ylabel("Counts")

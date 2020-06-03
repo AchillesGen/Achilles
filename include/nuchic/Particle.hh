@@ -18,7 +18,8 @@ enum class ParticleStatus : int {
     external_test = -2,
     propagating = -1,
     background = 0,
-    escaped = 1
+    escaped = 1,
+    captured = 2
 };
 
 /// The Particle class provides a container to handle information about the particle.

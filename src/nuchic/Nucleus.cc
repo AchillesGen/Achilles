@@ -115,7 +115,10 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     // Calculate kinetic energy, and if less than potential it is captured
     const double totalEnergy = sqrt(particle.Momentum().P2() + particle.Momentum().M2());
     const double kineticEnergy = totalEnergy - particle.Mass();
-    if(kineticEnergy < Potential(particle.Position().Magnitude())) return false;
+    if(kineticEnergy < Potential(particle.Position().Magnitude())) {
+        particle.SetStatus(ParticleStatus::captured);
+        return false;
+    }
 
     // If the particle escapes, adjust momentum to account for this
     // TODO: This adjusts the mass. Is that acceptable?
@@ -125,6 +128,7 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     const double py = particle.Momentum().Py() - Potential(particle.Position().Magnitude()) * std::sin(theta) * std::sin(phi);
     const double pz = particle.Momentum().Pz() - Potential(particle.Position().Magnitude()) * std::cos(theta);
     particle.SetMomentum(FourVector(px, py, pz, particle.Momentum().E()));
+    particle.SetStatus(ParticleStatus::escaped);
     return true;
 }
 
