@@ -202,7 +202,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
 
             // Update formation zones
             if(kickNuc -> InFormationZone()) {
-        timeStep = distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);
+                timeStep = distance/(kickNuc -> Beta().Magnitude()*Constant::HBARC);
                 kickNuc -> UpdateFormationZone(timeStep);
                 kickNuc -> SpacePropagate(distance);
                 continue;
