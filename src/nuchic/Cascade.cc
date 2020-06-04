@@ -461,7 +461,7 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
     particle2.SetMomentum(p2Out);
 
     // Check for Pauli Blocking
-    bool hit = true;//!(PauliBlocking(particle1) || PauliBlocking(particle2));
+    bool hit = !(PauliBlocking(particle1) || PauliBlocking(particle2));
 
     if(hit) {
         // Assign formation zone
