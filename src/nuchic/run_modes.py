@@ -9,6 +9,8 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 import numpy as np
 
 import seaborn as sns
+import matplotlib as mpl
+from matplotlib.ticker import AutoMinorLocator
 import pylab as plt
 import scipy.stats
 import os 
@@ -241,38 +243,38 @@ class CalcMeanFreePath(RunMode):
 
         # Place a test particle in the center and give it a kick
 
-        kicked_idx = np.random.choice(np.arange(len(particles)))
-        self.fsi.set_kicked(kicked_idx)
-        kicked_particle = particles[kicked_idx]
-        #logger_info(f"position={ kicked_particle.position()")
-#        self.initial_pos=kicked_particle.radius()
-        #logger.info(f"initial_position={initial_pos}")
-        kick_momentum = physics.Vector4(
+        # kicked_idx = np.random.choice(np.arange(len(particles)))
+        # self.fsi.set_kicked(kicked_idx)
+        # kicked_particle = particles[kicked_idx]
+        # #logger_info(f"position={ kicked_particle.position()")
+#       #  self.initial_pos=kicked_particle.radius()
+        # #logger.info(f"initial_position={initial_pos}")
+        # kick_momentum = physics.Vector4(
+        #     p_kick * np.sin(theta) * np.cos(phi),
+        #     p_kick * np.sin(theta) * np.sin(phi),
+        #     p_kick * np.cos(theta),
+        #     np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
+        # #kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
+        # kicked_particle.set_status(physics.ParticleStatus.internal_test)
+        # kicked_particle.set_momentum(kick_momentum)
+
+
+
+        position = physics.Vector3(0.0, 0.0, 0.0)
+        nucleon_mass = constants.mN
+        momentum = physics.Vector4(
             p_kick * np.sin(theta) * np.cos(phi),
             p_kick * np.sin(theta) * np.sin(phi),
             p_kick * np.cos(theta),
-            np.sqrt(kicked_particle.mass()**2.0 + p_kick**2.0))
-        #kicked_particle.set_formation_zone(kicked_particle.momentum(), kick_momentum)
-        kicked_particle.set_status(physics.ParticleStatus.internal_test)
-        kicked_particle.set_momentum(kick_momentum)
-
-
-
-#        position = physics.Vector3(0.0, 0.0, 0.0)
-#        nucleon_mass = constants.mN
-#        momentum = physics.Vector4(
-#            p_kick * np.sin(theta) * np.cos(phi),
-#            p_kick * np.sin(theta) * np.sin(phi),
-#            p_kick * np.cos(theta),
-#            np.sqrt(p_kick**2.0+nucleon_mass**2))
-#        test_part = physics.Particle(2212,
-#                                     momentum,
-#                                     kicked_particle.position(),
-#                                     physics.ParticleStatus.internal_test)
+            np.sqrt(p_kick**2.0+nucleon_mass**2))
+        test_part = physics.Particle(2212,
+                                     momentum,
+                                     position,
+                                     physics.ParticleStatus.internal_test)
 
         # Evolve the nucleus
-        #self.fsi.set_kicked(len(particles))
-        #particles.append(kicked_particle)
+        self.fsi.set_kicked(len(particles))
+        particles.append(test_part)
         self.nucleus.set_nucleons(particles)
         self.fsi.mean_free_path(self.nucleus)
 
@@ -300,25 +302,34 @@ class CalcMeanFreePath(RunMode):
             * settings().get('xsec')/10.0)**-1
         logger.info(f"Expected result: {expected_mfp} fm")
 
-        _, ax = plt.subplots(1)
+        _, ax = plt.subplots(1, figsize=(16*0.53,3.0/4.0*16*0.53))
         _, scale = scipy.stats.expon.fit(distance_traveled)
         logger.info(f"Fitted result: {scale} fm")
         fit_label = rf"$\lambda$={scale:.2f} fm"
-        bins = np.linspace(0, 6, 100)
-        sns.distplot(distance_traveled, bins=bins, ax=ax, kde=False, fit=scipy.stats.expon,
-                     label='events', fit_kws={'label':fit_label})
-        ax.set_xlabel(r'Distance traveled [fm]')
-        ax.set_ylabel("Counts")
+        bins = np.linspace(0, self.nucleus.radius(), 100)
+        sns.distplot(distance_traveled, bins=bins, ax=ax, kde=False,
+                     fit=scipy.stats.expon,
+                     label='Events', fit_kws={'label':fit_label, 'lw':2})
+        ax.set_xlabel(r'Distance traveled (fm)', fontsize=16, labelpad=10)
+        ax.set_ylabel("Counts", fontsize=16, labelpad=10)
         ax.set_yscale('log')
-        ax.set_title(
-            f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
-        )
+        # ax.set_title(
+        #     f"Mean Free Path\n nhits / nevents : {nhits} / {len(events)}"
+        # )
 
-        x_vals = np.linspace(0, 6, 1000)
+        print((self.nucleus.n_nucleons()+1)
+            / (4.0/3.0*np.pi*self.nucleus.radius()**3.0))
+        x_vals = np.linspace(0, self.nucleus.radius(), 1000)
         y_vals = np.exp(-x_vals/expected_mfp)/expected_mfp
+        ax.tick_params(axis='both', direction='in', reset=True, labelsize=15,
+                       which='both')
+        ax.tick_params(which='major', length=7)
+        ax.tick_params(which='minor', length=4)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
 
-        ax.plot(x_vals, y_vals, label='Expected')
-        ax.legend()
+        ax.plot(x_vals, y_vals, label=f'Expected: {expected_mfp:.2f} fm', lw=2)
+        ax.legend(frameon=False, fontsize=14, borderpad=0.8)
+        plt.savefig('mean_free_path.pdf')
         plt.show()
 
 
