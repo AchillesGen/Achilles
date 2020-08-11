@@ -8,7 +8,7 @@ namespace nuchic {
 namespace Constant {
     // Fundamental constants
     constexpr double C = 2.9979245858E8_m / 1_s;
-    constexpr double HBARC = 200_fm * 1_MeV;
+    constexpr double HBARC = 197.3269804_fm * 1_MeV;
     constexpr double HBARC2 = 0.3893793721_mb * 1_GeV * 1_GeV;
 
     // Masses
