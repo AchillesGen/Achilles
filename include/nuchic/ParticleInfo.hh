@@ -63,6 +63,7 @@ namespace nuchic {
             // Mesons
             static constexpr PID pion0() { return PID{ 111 }; }
             static constexpr PID pionp() { return PID{ 211 }; }
+            static constexpr PID pionm() { return PID{ -211 }; }
             // Baryons
             static constexpr PID proton() { return PID{ 2212 }; }
             static constexpr PID neutron() { return PID{ 2112 }; }

@@ -176,6 +176,10 @@ class FourVector {
         ///@return double: Distance between two four vectors in Eta-Phi plane
         double DeltaR(const FourVector&) const noexcept;
 
+        /// Return the kinetic energy
+        ///@return double: Kinetic energy of the four vector
+        double Tk() const noexcept;
+
         /// Return the three momentum component
         ///@return ThreeVector: The three momentum component
         ThreeVector Vec3() const noexcept;

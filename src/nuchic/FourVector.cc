@@ -32,6 +32,10 @@ double FourVector::DeltaR(const FourVector& other) const noexcept {
     return sqrt(DEta*DEta + DPhi*DPhi);
 }
 
+double FourVector::Tk() const noexcept {
+    return E()-M();
+}
+
 ThreeVector FourVector::Vec3() const noexcept {
     return {vec[0], vec[1], vec[2]};
 }
