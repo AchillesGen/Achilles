@@ -156,14 +156,12 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
             // Get interaction
             auto hitIdx = Interacted(particles, *kickNuc, dist2);
             if(hitIdx == SIZE_MAX) continue;
-            Particle* hitNuc = &particles[hitIdx];
 
             // Finalize Momentum
-            bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-            if(hit) {
-                newKicked.push_back(hitIdx);
-                hitNuc -> SetStatus(ParticleStatus::propagating);
-            }
+            auto newKickedTmp = FinalizeMomentum(particles, idx, hitIdx);
+            for(auto newKickIdx : newKickedTmp)
+                newKicked.push_back(newKickIdx);
+            
         }
 
         // Replace kicked indices with new list
@@ -192,7 +190,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
         // Stop loop if no particles are propagating
         if(kickedIdxs.size() == 0) break;
 
-     // Adapt time step
+        // Adapt time step
         AdaptiveStep(particles, distance);
 
         // Make local copy of kickedIdxs
@@ -208,20 +206,18 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
                 continue;
             }
 
-        double step_prop = distance;
+            double step_prop = distance;
             auto hitIdx = GetInter(particles, *kickNuc, step_prop);
             if (hitIdx == SIZE_MAX) {
                 kickNuc -> SpacePropagate(step_prop);
-        continue;
+                continue;
             }
-        Particle* hitNuc = &particles[hitIdx];
-            bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-            kickNuc -> SpacePropagate(step_prop);
 
-            if(hit) {
-                newKicked.push_back(hitIdx);
-                hitNuc -> SetStatus(ParticleStatus::propagating);
-            }
+            // Finalize Momentum
+            auto newKickedTmp = FinalizeMomentum(particles, idx, hitIdx);
+            for(auto newKickIdx : newKickedTmp)
+                newKicked.push_back(newKickIdx);
+            kickNuc -> SpacePropagate(step_prop);
         }
 
         // Replace kicked indices with new list
@@ -256,7 +252,6 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
             "in order to accumulate DistanceTraveled."
             );
     }
-    bool hit = false;
     for(std::size_t step = 0; step < maxSteps; ++step) {
            AdaptiveStep(particles, distance);
 
@@ -278,11 +273,10 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
         // Did we hit?
         auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
         if (hitIdx == SIZE_MAX) continue;
-        Particle* hitNuc = &particles[hitIdx];
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        hit = FinalizeMomentum(*kickNuc, *hitNuc);
+        auto newKickedTmp = FinalizeMomentum(particles, idx, hitIdx);
         // Stop as soon as we hit anything
-        if (hit) break;
+        if (newKickedTmp.size() != 0) break;
     
     }
     nucleus -> Nucleons() = particles;
@@ -306,7 +300,6 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
             "in order to accumulate DistanceTraveled."
             );
     }
-    bool hit = false;
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Are we already outside nucleus?
         if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
@@ -319,11 +312,11 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
         auto hitIdx = GetInter(particles,*kickNuc,step_prop);
         kickNuc -> SpacePropagate(step_prop);
            if (hitIdx == SIZE_MAX) continue;
-        Particle* hitNuc = &particles[hitIdx];
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        hit = FinalizeMomentum(*kickNuc, *hitNuc);
+        auto newKickedTmp = FinalizeMomentum(particles, idx, hitIdx);
+        kickNuc -> SpacePropagate(step_prop);
         // Stop as soon as we hit anything
-        if (hit) break;
+        if (newKickedTmp.size() != 0) break;
     }
 
     nucleus -> Nucleons() = particles;
@@ -434,53 +427,61 @@ std::size_t Cascade::Interacted(const Particles& particles, const Particle& kick
     return SIZE_MAX;
 }
 
-bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcept {
+std::vector<size_t> Cascade::FinalizeMomentum(Particles &particles, size_t kickIdx, size_t hitIdx) noexcept {
+    // Get interacting particles
+    auto particle1 = particles[kickIdx];
+    auto particle2 = particles[hitIdx];
+
     // Boost to center of mass frame
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
 
     // Generate outgoing momentum
-    bool samePID = particle1.ID() == particle2.ID();
-    const double pcm = p1CM.Vec3().Magnitude();
-    std::array<double, 2> rans{};
-    rng.generate(rans, 0.0, 1.0);
-    ThreeVector momentum = m_interactions -> MakeMomentum(samePID,
-                                                          pcm,
-                                                          rans);
+    // The vector is ordered as:
+    // outgoing[0] = particle1
+    // outgoing[1] = particle2
+    // outgoing[i] = new particle for i > 1
+    auto outgoing = m_interactions -> GenerateFinalState(rng, particle1, particle2);
 
-    FourVector p1Out = FourVector(momentum[0], momentum[1], momentum[2], p1CM.E());
-    FourVector p2Out = FourVector(-momentum[0], -momentum[1], -momentum[2], p1CM.E());
+    // Loop over outgoing momentum
+    bool blocked = false;
+    for(auto &part : outgoing) {
+        // Boost back to lab frame
+        part.SetMomentum(part.Momentum().Boost(boostCM));
 
-    // Boost back to lab frame
-    p1Out = p1Out.Boost(boostCM);
-    p2Out = p2Out.Boost(boostCM);
-
-    // Assign momenta to particles
-    particle1.SetMomentum(p1Out);
-    particle2.SetMomentum(p2Out);
-
-    // Check for Pauli Blocking
-    bool hit = !(PauliBlocking(particle1) || PauliBlocking(particle2));
-
-    if(hit) {
-        // Assign formation zone
-        particle1.SetFormationZone(p1Lab, p1Out);
-        particle2.SetFormationZone(p2Lab, p2Out);
-
-        // Hit nucleon is now propagating
-        // Users are responsibile for updating the status externally as desired
-    } else {
-        // Assign momenta to particles
-        particle1.SetMomentum(p1Lab);
-        particle2.SetMomentum(p2Lab);
+        // Check for Pauli Blocking
+        blocked = blocked || PauliBlocking(part); 
     }
 
-    return hit;
+    std::vector<size_t> newKicked{};
+    if(!blocked) {
+        // Set formation zones
+        particles[kickIdx].SetFormationZone(particle1.Momentum(),
+                                            outgoing[0].Momentum());
+        particles[hitIdx].SetFormationZone(particle2.Momentum(),
+                                           outgoing[1].Momentum());
+
+        // Update status
+        particles[hitIdx].SetStatus(ParticleStatus::propagating);
+        newKicked.push_back(hitIdx);
+
+        // Handle new particles
+        for(size_t i = 2; i < outgoing.size(); ++i) {
+            particles.push_back(outgoing[i]);
+            particles.back().SetStatus(ParticleStatus::propagating);
+            newKicked.push_back(particles.size()-1);
+        }
+    }
+
+    return newKicked;
 }
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle& particle) const noexcept {
-    double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < localNucleus -> FermiMomentum(position);
+    if(particle.ID() == PID::proton() || particle.ID() == PID::neutron()) {
+        double position = particle.Position().Magnitude();
+        return particle.Momentum().Vec3().Magnitude() < localNucleus -> FermiMomentum(position);
+    }
+    return false;
 }

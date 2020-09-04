@@ -106,7 +106,7 @@ class Cascade {
         std::size_t Interacted(const Particles&, const Particle&,
                 const InteractionDistances&) noexcept;
         void Escaped(Particles&);
-        bool FinalizeMomentum(Particle&, Particle&) noexcept;
+        std::vector<size_t> FinalizeMomentum(Particles&, size_t, size_t) noexcept;
         bool PauliBlocking(const Particle&) const noexcept;
 
         // Variables
