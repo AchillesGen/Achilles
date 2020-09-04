@@ -130,6 +130,10 @@ class Particle {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the Particle object
+        
+        /// Return the information object for the particle
+        ///@return ParticleInfo: Particle information
+        ParticleInfo Info() const noexcept { return info; }
 
         /// Return the pid of the particle
         ///@return int: PID of the particle
