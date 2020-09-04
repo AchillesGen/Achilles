@@ -9,6 +9,7 @@
 #include "H5Cpp.h"
 
 #include "nuchic/Interpolation.hh"
+#include "nuchic/Random.hh"
 #include "nuchic/ThreeVector.hh"
 
 namespace nuchic {
@@ -43,11 +44,27 @@ class Interactions {
         virtual ~Interactions() = default;
         ///@}
 
-        /// Function to determine the cross-section between two particles
+        /// Function to determine the total cross-section between two particles
         ///@param part1: The first particle involved with the interaction
         ///@param part2: The second particle involved with the interaction
         ///@return double: The cross-section
         virtual double CrossSection(const Particle&, const Particle&) const = 0;
+
+        /// Function to calculate all possible cross-sections between two particles
+        /// as a vector for each unique final state.
+        ///@param part1: The first particle involved in the interaction in CM frame
+        ///@param part2: The second particle involved in the interaction in CM frame
+        ///@return std::vector<double>: Vector of all allowed cross-sections
+        virtual std::vector<double> CrossSections(const Particle&, const Particle&) const = 0;
+
+        /// Function to determine the final state of the calculation given the cross-sections
+        /// and a random number.
+        ///@param rng: Random number generator used to generate needed random numbers
+        ///@param part1: The first particle involved in the interaction in CM frame
+        ///@param part2: The second particle involved in the interaction in CM frame
+        ///@return std::vector<Particle>: Vector of generated final state particles
+        virtual std::vector<Particle> GenerateFinalState(randutils::mt19937_rng&, const Particle&,
+                                                         const Particle&) const = 0;
 
         /// Function to generate momentum for the particles after an interaction
         ///@param samePID: Used to determine if the two particles are the same type
@@ -55,7 +72,7 @@ class Interactions {
         ///@param pcm: The center of mass momentum
         ///@param rans: An array containing two random numbers used to generate phase space
         virtual ThreeVector MakeMomentum(bool, const double&,
-                                         const std::array<double, 2>&) const = 0;
+                                         const std::array<double, 2>&) const;
 
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;
@@ -114,6 +131,12 @@ class NasaInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
+        std::vector<double> CrossSections(const Particle &part1,
+                                          const Particle &part2) const override {
+            return { CrossSection(part1, part2) };
+        }
+        std::vector<Particle> GenerateFinalState(randutils::mt19937_rng&, const Particle&,
+                                                 const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override;
     private:
@@ -153,6 +176,12 @@ class GeantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
+        std::vector<double> CrossSections(const Particle &part1,
+                                          const Particle &part2) const override {
+            return { CrossSection(part1, part2) };
+        }
+        std::vector<Particle> GenerateFinalState(randutils::mt19937_rng&, const Particle&,
+                                                 const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override;
     private:
@@ -202,6 +231,11 @@ class ConstantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
+        std::vector<double> CrossSections(const Particle&, const Particle&) const override {
+            return { m_xsec };
+        }
+        std::vector<Particle> GenerateFinalState(randutils::mt19937_rng &rng,
+                                                 const Particle &, const Particle &) const override;
         ThreeVector MakeMomentum(bool, const double& pcm,
                                  const std::array<double, 2>& rans) const override {
             double ctheta = 2*rans[0]-1;

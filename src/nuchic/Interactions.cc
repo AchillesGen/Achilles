@@ -251,6 +251,28 @@ double GeantInteractions::CrossSection(const Particle& particle1,
     }
 }
 
+std::vector<Particle> GeantInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
+                                                            const Particle &particle1,
+                                                            const Particle &particle2) const {
+    std::vector<Particle> results = {particle1, particle2};
+    std::array<double, 2> rans{};
+    rng.generate(rans, 0.0, 1.0);
+
+    bool samePID = particle1.ID() == particle2.ID();
+    double pcm = particle1.Momentum().Vec3().Magnitude();
+    double theta = CrossSectionAngle(samePID, pcm/1_GeV, rans[0]);
+    double phi = 2*M_PI*rans[1];
+
+    auto mom = ThreeVector(ToCartesian({pcm, theta, phi}));
+    auto p1Out = FourVector(mom[0], mom[1], mom[2], particle1.E());
+    auto p2Out = FourVector(-mom[0], -mom[1], -mom[2], particle1.E());
+
+    results[0].SetMomentum(p1Out);
+    results[1].SetMomentum(p2Out);
+
+    return results;
+}
+
 ThreeVector GeantInteractions::MakeMomentum(bool samePID,
                                             const double& pcm,
                                             const std::array<double, 2>& rans) const {
@@ -282,6 +304,28 @@ double NasaInteractions::CrossSection(const Particle& particle1,
     return CrossSectionLab(samePID,plab); 
 }
 
+std::vector<Particle> NasaInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
+                                                           const Particle &particle1,
+                                                           const Particle &particle2) const {
+    std::vector<Particle> results = {particle1, particle2};
+    std::array<double, 2> rans{};
+    rng.generate(rans, 0.0, 1.0);
+    double ctheta = 2*rans[0]-1;
+    double stheta = sqrt(1-ctheta*ctheta);
+    double phi = 2*M_PI*rans[1];
+   
+    double pcm = particle1.Momentum().Vec3().Magnitude();
+    auto p1Out = FourVector(pcm*stheta*cos(phi), pcm*stheta*sin(phi),
+                            pcm*ctheta, particle1.E());
+    auto p2Out = FourVector(-pcm*stheta*cos(phi), -pcm*stheta*sin(phi),
+                            -pcm*ctheta, particle1.E());
+
+    results[0].SetMomentum(p1Out);
+    results[1].SetMomentum(p2Out);
+
+    return results;
+}
+
 ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
                                            const std::array<double, 2>& rans) const {
     double pR = pcm;
@@ -289,4 +333,26 @@ ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
     double pPhi = 2*M_PI*rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+}
+
+std::vector<Particle> ConstantInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
+                                                               const Particle &particle1,
+                                                               const Particle &particle2) const {
+    std::vector<Particle> results = {particle1, particle2};
+    std::array<double, 2> rans{};
+    rng.generate(rans, 0.0, 1.0);
+    double ctheta = 2*rans[0]-1;
+    double stheta = sqrt(1-ctheta*ctheta);
+    double phi = 2*M_PI*rans[1];
+   
+    double pcm = particle1.Momentum().Vec3().Magnitude();
+    auto p1Out = FourVector(pcm*stheta*cos(phi), pcm*stheta*sin(phi),
+                            pcm*ctheta, particle1.E());
+    auto p2Out = FourVector(-pcm*stheta*cos(phi), -pcm*stheta*sin(phi),
+                            -pcm*ctheta, particle1.E());
+
+    results[0].SetMomentum(p1Out);
+    results[1].SetMomentum(p2Out);
+
+    return results;
 }
