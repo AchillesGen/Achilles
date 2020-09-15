@@ -74,11 +74,12 @@ std::string Particle::ToString() const noexcept {
 namespace nuchic {
 
 std::istream& operator>>(std::istream& is, Particle& particle) {
-    std::string head(9, ' '), sep1(1, ' '), sep2(1, ' '), sep3(1, ' '), tail(1, ' ');
-    int pid, status;
+    static const std::string header = "Particle(";
+    std::string head(header.size(), ' '), sep1(1, ' '), sep2(1, ' '), sep3(1, ' '), tail(1, ' ');
+    int pid{}, status{};
     FourVector momentum;
     ThreeVector position;
-    is.read(&head[0], 9);
+    is.read(&head[0], static_cast<long>(header.size()));
     is >> pid;
     is.read(&sep1[0], 1);
     is >> momentum;
@@ -87,7 +88,7 @@ std::istream& operator>>(std::istream& is, Particle& particle) {
     is.read(&sep3[0], 1);
     is >> status;
     is.read(&tail[0], 1);
-    if(head == "Particle(" &&
+    if(head == header &&
        sep1 == "," && sep2 == "," &&
        sep3 == "," && tail == ")")
         particle = Particle(pid, momentum, position, status);

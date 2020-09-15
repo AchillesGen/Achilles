@@ -40,7 +40,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         errorMsg += " protons and " + std::to_string(A) + " nucleons";
         throw std::runtime_error(errorMsg);
     }
-    
+  
     nucleons.resize(A);
     protons.resize(Z);
     neutrons.resize(A-Z);
@@ -57,7 +57,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         std::getline(densityFile, lineContent);
     }
 
-    double radius_, density_, densityErr;
+    double radius_{}, density_{}, densityErr{};
     std::vector<double> vecRadius, vecDensity;
     constexpr double minDensity = 1E-6;
     while(densityFile >> radius_ >> density_ >> densityErr) {
@@ -69,8 +69,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     rhoInterp.CubicSpline(vecRadius, vecDensity);
     
     // Ensure the number of protons and neutrons are correct
-    // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
-    // not necessarily be caught 
+    // NOTE: This only is checked at startup, so if density returns a varying 
+    // number of nucleons it will not necessarily be caught 
     auto particles = density();
     if(particles.size() != nucleons.size())
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
@@ -166,7 +166,8 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
     return ToCartesian(momentum);
 }
 
-Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy, const double& fermiMomentum,
+Nucleus Nucleus::MakeNucleus(const std::string& name,
+                             const double& bEnergy, const double& fermiMomentum,
                              const std::string& densityFilename, const FermiGasType& fg_type,
                              const std::function<Particles()>& density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
@@ -207,8 +208,8 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
             result = std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
             break;
         case FermiGasType::Global:
-            static constexpr double small = 1E-2;
-            result = rho < small ? small : fermiMomentum;
+            static constexpr double minDensity = 1E-6;
+            result = rho < minDensity ? minDensity : fermiMomentum;
             break;
     }
 

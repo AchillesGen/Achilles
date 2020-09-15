@@ -215,16 +215,16 @@ class Nucleus {
         /// @}
 
     private:
-        Particles nucleons, protons, neutrons;
+        Particles nucleons{}, protons{}, neutrons{};
         double binding, fermiMomentum, radius{}, potential{};
         FermiGasType fermiGas;
-        std::function<Particles()> density;
+        std::function<Particles()> density{};
         Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
 
-        randutils::mt19937_rng rng;
+        randutils::mt19937_rng rng{};
 };
 
 }
