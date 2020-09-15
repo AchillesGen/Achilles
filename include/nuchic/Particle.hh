@@ -98,6 +98,10 @@ class Particle {
         ///@param std::vector<int>: A vector containing information about the daughter particles
         void SetDaughters(const std::vector<int>& _daughters) noexcept {daughters = _daughters;}
 
+        /// Set the PID of the particle to allow for charge exchange
+        ///@param PID: The new pid of the particle
+        void SetPID(const PID &pid) noexcept { info = ParticleInfo(pid); }
+
         /// Add a new mother particle to an existing particle
         ///@param idx: The index of the mother particle to be set
         void AddMother(const int& idx) noexcept {mothers.push_back(idx);}

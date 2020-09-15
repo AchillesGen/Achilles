@@ -254,6 +254,12 @@ double GeantInteractions::CrossSection(const Particle& particle1,
 std::vector<Particle> GeantInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
                                                             const Particle &particle1,
                                                             const Particle &particle2) const {
+
+    // Boost to center of mass frame
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
     std::vector<Particle> results = {particle1, particle2};
     std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
@@ -267,8 +273,9 @@ std::vector<Particle> GeantInteractions::GenerateFinalState(randutils::mt19937_r
     auto p1Out = FourVector(mom[0], mom[1], mom[2], particle1.E());
     auto p2Out = FourVector(-mom[0], -mom[1], -mom[2], particle1.E());
 
-    results[0].SetMomentum(p1Out);
-    results[1].SetMomentum(p2Out);
+    // Set momentum and boost back to lab frame
+    results[0].SetMomentum(p1Out.Boost(boostCM));
+    results[1].SetMomentum(p2Out.Boost(boostCM));
 
     return results;
 }
@@ -307,6 +314,11 @@ double NasaInteractions::CrossSection(const Particle& particle1,
 std::vector<Particle> NasaInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
                                                            const Particle &particle1,
                                                            const Particle &particle2) const {
+    // Boost to center of mass frame
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
     std::vector<Particle> results = {particle1, particle2};
     std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
@@ -320,8 +332,9 @@ std::vector<Particle> NasaInteractions::GenerateFinalState(randutils::mt19937_rn
     auto p2Out = FourVector(-pcm*stheta*cos(phi), -pcm*stheta*sin(phi),
                             -pcm*ctheta, particle1.E());
 
-    results[0].SetMomentum(p1Out);
-    results[1].SetMomentum(p2Out);
+    // Set momentum and boost back to lab frame
+    results[0].SetMomentum(p1Out.Boost(boostCM));
+    results[1].SetMomentum(p2Out.Boost(boostCM));
 
     return results;
 }
@@ -338,6 +351,11 @@ ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
 std::vector<Particle> ConstantInteractions::GenerateFinalState(randutils::mt19937_rng &rng,
                                                                const Particle &particle1,
                                                                const Particle &particle2) const {
+    // Boost to center of mass frame
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
     std::vector<Particle> results = {particle1, particle2};
     std::array<double, 2> rans{};
     rng.generate(rans, 0.0, 1.0);
@@ -351,8 +369,9 @@ std::vector<Particle> ConstantInteractions::GenerateFinalState(randutils::mt1993
     auto p2Out = FourVector(-pcm*stheta*cos(phi), -pcm*stheta*sin(phi),
                             -pcm*ctheta, particle1.E());
 
-    results[0].SetMomentum(p1Out);
-    results[1].SetMomentum(p2Out);
+    // Set momentum and boost back to lab frame
+    results[0].SetMomentum(p1Out.Boost(boostCM));
+    results[1].SetMomentum(p2Out.Boost(boostCM));
 
     return results;
 }

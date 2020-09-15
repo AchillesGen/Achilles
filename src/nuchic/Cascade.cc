@@ -432,12 +432,7 @@ std::vector<size_t> Cascade::FinalizeMomentum(Particles &particles, size_t kickI
     auto particle1 = particles[kickIdx];
     auto particle2 = particles[hitIdx];
 
-    // Boost to center of mass frame
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM);
-
-    // Generate outgoing momentum
+    // Generate outgoing momentum in lab frame
     // The vector is ordered as:
     // outgoing[0] = particle1
     // outgoing[1] = particle2
@@ -447,9 +442,6 @@ std::vector<size_t> Cascade::FinalizeMomentum(Particles &particles, size_t kickI
     // Loop over outgoing momentum
     bool blocked = false;
     for(auto &part : outgoing) {
-        // Boost back to lab frame
-        part.SetMomentum(part.Momentum().Boost(boostCM));
-
         // Check for Pauli Blocking
         blocked = blocked || PauliBlocking(part); 
     }

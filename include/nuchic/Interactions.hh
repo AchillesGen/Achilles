@@ -72,7 +72,7 @@ class Interactions {
         ///@param pcm: The center of mass momentum
         ///@param rans: An array containing two random numbers used to generate phase space
         virtual ThreeVector MakeMomentum(bool, const double&,
-                                         const std::array<double, 2>&) const;
+                                         const std::array<double, 2>&) const = 0;
 
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;

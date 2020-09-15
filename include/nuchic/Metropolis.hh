@@ -6,14 +6,17 @@
 #include <limits>
 
 #include "nuchic/Interactions.hh"
+#include "nuchic/ParticleInfo.hh"
+#include "nuchic/Rambo.hh"
 
 namespace nuchic {
 
 class Particle;
 
 using Particles = std::vector<Particle>;
+using RNG = randutils::mt19937_rng;
 
-enum class InteractionType {
+enum class ProbeType {
     nucleon, pion
 };
 
@@ -21,6 +24,8 @@ enum class InteractionType {
 enum class ChargeMode {
     ii, ij, zero
 };
+
+using InteractionType = std::pair<ProbeType, ChargeMode>;
 
 class MetropolisData {
     public:
@@ -36,15 +41,19 @@ class MetropolisData {
                                   const std::array<double, 2>&,
                                   const Particle&,
                                   const Particle&) const = 0;
-        virtual Particles CEX(ChargeMode, const Particle&, const Particle&) const { return {}; }
-        virtual Particles SinglePion(ChargeMode, const std::array<double, 5>&,
-                                     const Particle&, const Particle&) const = 0;
-        virtual Particles DoublePion(ChargeMode, const std::array<double, 5>&,
-                                     const Particle&, const Particle&) const = 0;
-        virtual bool IsAbsorption(ChargeMode, const double&, const double&) const { return false; }
+        virtual Particles CEX(ChargeMode, const double&, const std::array<double, 2>&, 
+                              const Particle&, const Particle&) const { return {}; }
+        virtual Particles SinglePion(ChargeMode, const std::vector<double>&,
+                                     const Particle&, const Particle&) = 0;
+        virtual Particles DoublePion(ChargeMode, const std::vector<double>&,
+                                     const Particle&, const Particle&) = 0;
+        virtual bool IsAbsorption(const std::vector<double>&, const double&) const { return false; }
         virtual bool IsInelastic(ChargeMode, const double&, const double&) const { return false; }
         virtual bool IsCEX(ChargeMode, const double&, const double&) const { return false; }
         virtual bool IsSinglePion(ChargeMode, const double&, const double&) const { return false; }
+
+    protected:
+        Rambo rambo{2};
 };
 
 class NucleonData : public MetropolisData {
@@ -65,14 +74,16 @@ class NucleonData : public MetropolisData {
                           const std::array<double, 2>&,
                           const Particle&,
                           const Particle&) const override;
-        Particles SinglePion(ChargeMode, const std::array<double, 5>&,
-                             const Particle&, const Particle&) const override;
+        Particles SinglePion(ChargeMode, const std::vector<double>&,
+                             const Particle&, const Particle&) override;
+        Particles DoublePion(ChargeMode, const std::vector<double>&,
+                             const Particle&, const Particle&) override;
         bool IsInelastic(ChargeMode, const double&, const double&) const override;
         bool IsSinglePion(ChargeMode, const double&, const double&) const override;
 
     private:
-        int PionCharge(const double&, int) const;
-        std::pair<int, int> DoublePionCharge(const double&, int) const;
+        std::vector<PID> PionCharge(const double&, const PID&, const PID&) const;
+        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
 
         // Data
         static constexpr DataTable energies = {335, 410, 510, 660, 840, 1160, 1780, 3900};
@@ -85,6 +96,8 @@ class NucleonData : public MetropolisData {
         static constexpr DataTable Bii = {0, 0, 0, 0, 0, 0, 0, 0};
         static constexpr DataTable Aij = {2.2, 1.8, 2.3, 8.8, 15.0, 29.4, std::numeric_limits<double>::max(), std::numeric_limits<double>::max()};
         static constexpr DataTable Bij = {-1.0, -1.1, -0.7, -0.2, 0, 0, 0, 0};
+
+        // Pion production parameters
         static constexpr std::array<double, 2> fpi0 = {0.11, 0.43};
         static constexpr std::array<double, 4> f2pi0 = {0.6, 0.2, 0.16, 0.10};
 };
@@ -104,14 +117,25 @@ class PionData : public MetropolisData {
 
         std::vector<double> XSec(ChargeMode, const Particle&, const Particle&) const override;
         Particles Elastic(ChargeMode, const double&,
-                          const std::array<double, 5>&,
+                          const std::array<double, 2>&,
                           const Particle&,
                           const Particle&) const override;
+        Particles CEX(ChargeMode, const double&, const std::array<double, 2>&,
+                      const Particle&, const Particle&) const override;
+        Particles SinglePion(ChargeMode, const std::vector<double>&,
+                             const Particle&, const Particle&) override;
+        Particles DoublePion(ChargeMode, const std::vector<double>&,
+                             const Particle&, const Particle&) override;
+        bool IsAbsorption(const std::vector<double>&, const double&) const override; 
         bool IsInelastic(ChargeMode, const double&, const double&) const override;
+        bool IsCEX(ChargeMode, const double&, const double&) const override;
         bool IsSinglePion(ChargeMode, const double&, const double&) const override;
 
 
     private:
+        std::vector<PID> PionCharge(ChargeMode, const double&, const PID&, const PID&) const;
+        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
+
         double XSecii(const Particle&) const;
         double XSecij(const Particle&) const;
         double XSecAbs(const Particle&) const;
@@ -134,6 +158,10 @@ class PionData : public MetropolisData {
         static constexpr DataTable Bij = {0.8, 0.7, 0.8, 1.0, 1.4, 2.6, 3.6, 4.0};
         static constexpr DataTable A0 = {3.4, 2.1, 1.9, 2.1, 2.5, 3.0, 3.0, 3.0};
         static constexpr DataTable B0 = {-1.8, -2.0, -1.4, 0, 1.7, 4.0, 4.0, 4.0};
+
+        // Pion production parameters
+        static constexpr std::array<double, 2> fpi0 = {0.55, 0.44};
+        static constexpr std::array<double, 2> f2pi0 = {0.1875, 0.0625};
 };
 
 class Metropolis : public Interactions {
@@ -150,28 +178,28 @@ class Metropolis : public Interactions {
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
         std::vector<double> CrossSections(const Particle&, const Particle&) const override;
-        std::vector<Particle> GenerateFinalState(randutils::mt19937_rng&, const Particle&,
-                                                 const Particle&) override;
+        std::vector<Particle> GenerateFinalState(RNG&, const Particle&,
+                                                 const Particle&) const override;
     private:
         // Functions
-        ChargeMode GetMode(const Particle&, const Particle&);
-        std::vector<double> XSec(ChargeMode, const Particle&) const;
-        Particles Absorption(ChargeMode, const Particle&, const Particle&) const;
-        Particles Elastic(ChargeMode, const double&, const Particle&, const Particle&) const;
-        Particles CEX(ChargeMode, const Particle&, const Particle&) const;
-        Particles SinglePion(ChargeMode, const Particle&, const Particle&) const;
-        Particles DoublePion(ChargeMode, const Particle&, const Particle&) const;
+        InteractionType  GetMode(const Particle&, const Particle&) const;
+        std::vector<double> XSec(InteractionType, const Particle&, const Particle&) const;
+        Particles Absorption(InteractionType, RNG&, const Particle&, const Particle&) const;
+        Particles Elastic(InteractionType, RNG&, const double&, const Particle&, const Particle&) const;
+        Particles CEX(InteractionType, RNG&, const double&, const Particle&, const Particle&) const;
+        Particles SinglePion(InteractionType, RNG&, const Particle&, const Particle&) const;
+        Particles DoublePion(InteractionType, RNG&, const Particle&, const Particle&) const;
 
-        bool IsAbsorption(ChargeMode, const double&, const double&) const;
-        bool IsInelastic(ChargeMode, const double&, const double&) const;
-        bool IsCEX(ChargeMode, const double&, const double&) const;
-        bool IsSinglePion(ChargeMode, const double&, const double&) const;
+        bool IsAbsorption(InteractionType, const std::vector<double>&, const double&) const;
+        bool IsInelastic(InteractionType, const double&, const double&) const;
+        bool IsCEX(InteractionType, const double&, const double&) const;
+        bool IsSinglePion(InteractionType, const double&, const double&) const;
+
+        std::shared_ptr<MetropolisData> GetProbe(const ProbeType&) const;
 
         // Data
         static bool registered;
-        std::shared_ptr<NucleonData> nucleon_data;
-        std::shared_ptr<PionData> pion_data;
-        std::shared_ptr<MetropolisData> current_data;
+        std::shared_ptr<MetropolisData> nucleon_data, pion_data;
 };
 
 }

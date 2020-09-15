@@ -5,6 +5,7 @@ add_library(utilities SHARED
     ThreeVector.cc
     Utilities.cc
     ParticleInfo.cc
+    Rambo.cc
 )
 target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
