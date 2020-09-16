@@ -35,7 +35,9 @@ using InteractionType = std::pair<ProbeType, ChargeMode>;
 
 class MetropolisData {
     public:
-        MetropolisData() = default;
+        MetropolisData(ProductionMethod mode) {
+            production = mode;
+        };
         MetropolisData(const MetropolisData&) = default;
         MetropolisData(MetropolisData&&) = default;
         MetropolisData& operator=(const MetropolisData&) = default;
@@ -50,18 +52,30 @@ class MetropolisData {
         virtual Particles CEX(ChargeMode, const double&, const std::array<double, 2>&, 
                               const Particle&, const Particle&) const { return {}; }
         virtual Particles SinglePion(ChargeMode, const std::vector<double>&,
-                                     const Particle&, const Particle&) = 0;
+                                     const Particle&, const Particle&);
         virtual Particles DoublePion(ChargeMode, const std::vector<double>&,
-                                     const Particle&, const Particle&) = 0;
+                                     const Particle&, const Particle&);
         virtual bool IsAbsorption(const std::vector<double>&, const double&) const { return false; }
         virtual bool IsInelastic(ChargeMode, const double&, const double&) const { return false; }
         virtual bool IsCEX(ChargeMode, const double&, const double&) const { return false; }
         virtual bool IsSinglePion(ChargeMode, const double&, const double&) const { return false; }
 
     protected:
-        Rambo rambo{2};
+        // General helper functions
         ThreeVector GetPosition(ProductionMethod, const double&,
                                 const ThreeVector&, const ThreeVector&) const;
+        Particles ElasticGen(const std::array<double, 2>&,
+                             const double&, const double&,
+                             const Particle&, const Particle&) const;
+
+        virtual std::vector<PID> PionCharge(ChargeMode, const double&, const PID&, const PID&) const = 0;
+        virtual std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const = 0;
+        
+        // Phase space generation
+        Rambo rambo{2};
+
+    private:
+        ProductionMethod production;
 };
 
 class NucleonData : public MetropolisData {
@@ -70,9 +84,7 @@ class NucleonData : public MetropolisData {
         using DataTable = std::array<double, size>;
 
     public:
-        NucleonData(ProductionMethod mode) {
-            production = mode;
-        } 
+        NucleonData(ProductionMethod mode) : MetropolisData(mode) {} 
         NucleonData(const NucleonData&) = default;
         NucleonData(NucleonData&&) = default;
         NucleonData& operator=(const NucleonData&) = default;
@@ -84,17 +96,13 @@ class NucleonData : public MetropolisData {
                           const std::array<double, 2>&,
                           const Particle&,
                           const Particle&) const override;
-        Particles SinglePion(ChargeMode, const std::vector<double>&,
-                             const Particle&, const Particle&) override;
-        Particles DoublePion(ChargeMode, const std::vector<double>&,
-                             const Particle&, const Particle&) override;
         bool IsInelastic(ChargeMode, const double&, const double&) const override;
         bool IsSinglePion(ChargeMode, const double&, const double&) const override;
 
     private:
-        ProductionMethod production;
-        std::vector<PID> PionCharge(const double&, const PID&, const PID&) const;
-        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
+        std::vector<PID> PionCharge(ChargeMode, const double&,
+                                    const PID&, const PID&) const override;
+        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const override;
 
         // Data
         static constexpr DataTable energies = {335, 410, 510, 660, 840, 1160, 1780, 3900};
@@ -119,9 +127,7 @@ class PionData : public MetropolisData {
         using DataTable = std::array<double, size>;
 
     public:
-        PionData(ProductionMethod mode) {
-            production = mode;
-        }
+        PionData(ProductionMethod mode) : MetropolisData(mode) {} 
         PionData(const PionData&) = default;
         PionData(PionData&&) = default;
         PionData& operator=(const PionData&) = default;
@@ -135,10 +141,6 @@ class PionData : public MetropolisData {
                           const Particle&) const override;
         Particles CEX(ChargeMode, const double&, const std::array<double, 2>&,
                       const Particle&, const Particle&) const override;
-        Particles SinglePion(ChargeMode, const std::vector<double>&,
-                             const Particle&, const Particle&) override;
-        Particles DoublePion(ChargeMode, const std::vector<double>&,
-                             const Particle&, const Particle&) override;
         bool IsAbsorption(const std::vector<double>&, const double&) const override; 
         bool IsInelastic(ChargeMode, const double&, const double&) const override;
         bool IsCEX(ChargeMode, const double&, const double&) const override;
@@ -146,9 +148,9 @@ class PionData : public MetropolisData {
 
 
     private:
-        ProductionMethod production;
-        std::vector<PID> PionCharge(ChargeMode, const double&, const PID&, const PID&) const;
-        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
+        std::vector<PID> PionCharge(ChargeMode, const double&,
+                                    const PID&, const PID&) const override;
+        std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const override;
 
         double XSecii(const Particle&) const;
         double XSecij(const Particle&) const;

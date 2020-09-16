@@ -66,6 +66,105 @@ nuchic::ThreeVector nuchic::MetropolisData::GetPosition(ProductionMethod mode,
     return position;
 }
 
+nuchic::Particles nuchic::MetropolisData::ElasticGen(const std::array<double, 2> &rans,
+                                                     const double &A, const double &B,
+                                                     const Particle &part1,
+                                                     const Particle &part2) const {
+
+    std::function<double(double)> func = [&](double x) {
+        const double norm = 5/(2*(A+5));
+        // Silence magic number warning, since this is a parameterized function
+        // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
+        return norm*(A/5*pow(x, 5)+B/4*pow(x, 4)+x+A/5-B/4+1)-rans[0];
+    };
+    auto brent = Brent(func);
+
+    double pcm = part1.Momentum().P();
+    double costheta = 0;
+    try {
+        costheta = brent.CalcRoot(-1, 1);
+    } catch (const std::domain_error &e) {
+        costheta = pow(2*rans[0]-1, 1.0/5);
+    }
+    double sintheta = std::sqrt(1-costheta*costheta);
+    double phi = 2*M_PI*rans[1];
+
+    // Setup the outgoing in the CM frame
+    Particles outgoing = { part1, part2 };
+    outgoing[0].SetMomentum({pcm*sintheta*cos(phi),
+                             pcm*sintheta*sin(phi),
+                             pcm*costheta, part1.E()});
+    outgoing[1].SetMomentum({-pcm*sintheta*cos(phi),
+                             -pcm*sintheta*sin(phi),
+                             -pcm*costheta, part1.E()});
+
+    return outgoing;
+}
+
+Particles nuchic::MetropolisData::SinglePion(ChargeMode mode, const std::vector<double> &rans,
+                                          const Particle &part1,
+                                          const Particle &part2) {
+    // Get pids for all three particles
+    auto PIDs = PionCharge(mode, rans.back(), part1.ID(), part2.ID());
+
+    // Setup outgoing particles
+    Particles outgoing = { part1, part2, Particle()};
+
+    // Generate final state using Rambo
+    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
+                                       FourVector(), FourVector(), FourVector()};
+    auto masses = {part1.Mass(), part2.Mass(),
+                   outgoing[0].Mass(), outgoing[1].Mass(),
+                   ParticleInfo(PID::pionp()).Mass()};
+    rambo.Nout(3);
+    rambo.GeneratePoint(momenta, masses, rans);
+
+    // Set position for pion
+    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
+                                        part1.Position(), part2.Position()));
+
+    // Set momentum and PIDs
+    for(size_t i = 0; i < outgoing.size(); ++i) {
+        outgoing[i].SetPID(PIDs[i]);
+        outgoing[i].SetMomentum(momenta[i+2]);
+    }
+
+    return outgoing;
+}
+
+Particles nuchic::MetropolisData::DoublePion(ChargeMode, const std::vector<double> &rans,
+                                          const Particle &part1,
+                                          const Particle &part2) {
+    // Get pids for all four particles
+    auto PIDs = DoublePionCharge(rans.back(), part1.ID(), part2.ID());
+
+    // Setup outgoing particles
+    Particles outgoing = { part1, part2, Particle(), Particle()};
+
+    // Generate final state using Rambo
+    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
+                                       FourVector(), FourVector(), FourVector(), FourVector()};
+    auto masses = {part1.Mass(), part2.Mass(),
+                   outgoing[0].Mass(), outgoing[1].Mass(),
+                   ParticleInfo(PID::pionp()).Mass(), ParticleInfo(PID::pionp()).Mass()};
+    rambo.Nout(4);
+    rambo.GeneratePoint(momenta, masses, rans);
+
+    // Set position for pion
+    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
+                                        part1.Position(), part2.Position()));
+    outgoing[3].SetPosition(GetPosition(production, rans[rans.size()-3],
+                                        part1.Position(), part2.Position()));
+
+    // Set momentum and PIDs
+    for(size_t i = 0; i < outgoing.size(); ++i) {
+        outgoing[i].SetPID(PIDs[i]);
+        outgoing[i].SetMomentum(momenta[i+2]);
+    }
+
+    return outgoing;
+}
+
 std::vector<double> nuchic::NucleonData::XSec(ChargeMode charge,
                                               const Particle &part1,
                                               const Particle &part2) const {
@@ -112,101 +211,11 @@ Particles nuchic::NucleonData::Elastic(ChargeMode charge,
     const auto BTable = (charge == ChargeMode::ii) ? Bii : Bij;
     const auto A = Lerp(kinetic, energies, ATable);
     const auto B = Lerp(kinetic, energies, BTable);
-    std::function<double(double)> func = [&](double x) {
-        const double norm = 5/(2*(A+5));
-        // Silence magic number warning, since this is a parameterized function
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
-        return norm*(A/5*pow(x, 5)+B/4*pow(x, 4)+x+A/5-B/4+1)-rans[0];
-    };
-    auto brent = Brent(func);
 
-    double pcm = part1.Momentum().P();
-    double costheta = 0;
-    try {
-        costheta = brent.CalcRoot(-1, 1);
-    } catch (const std::domain_error &e) {
-        costheta = pow(2*rans[0]-1, 1.0/5);
-    }
-    double sintheta = std::sqrt(1-costheta*costheta);
-    double phi = 2*M_PI*rans[1];
-
-    // Setup the outgoing in the CM frame
-    Particles outgoing = { part1, part2 };
-    outgoing[0].SetMomentum({pcm*sintheta*cos(phi),
-                             pcm*sintheta*sin(phi),
-                             pcm*costheta, part1.E()});
-    outgoing[1].SetMomentum({-pcm*sintheta*cos(phi),
-                             -pcm*sintheta*sin(phi),
-                             -pcm*costheta, part1.E()});
-
-    return outgoing;
+    return ElasticGen(rans, A, B, part1, part2);
 }
 
-Particles nuchic::NucleonData::SinglePion(ChargeMode, const std::vector<double> &rans,
-                                          const Particle &part1,
-                                          const Particle &part2) {
-    // Get pids for all three particles
-    auto PIDs = PionCharge(rans.back(), part1.ID(), part2.ID());
-
-    // Setup outgoing particles
-    Particles outgoing = { part1, part2, Particle()};
-
-    // Generate final state using Rambo
-    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
-                                       FourVector(), FourVector(), FourVector()};
-    auto masses = {part1.Mass(), part2.Mass(),
-                   outgoing[0].Mass(), outgoing[1].Mass(),
-                   ParticleInfo(PID::pionp()).Mass()};
-    rambo.Nout(3);
-    rambo.GeneratePoint(momenta, masses, rans);
-
-    // Set position for pion
-    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
-                                        part1.Position(), part2.Position()));
-
-    // Set momentum and PIDs
-    for(size_t i = 0; i < outgoing.size(); ++i) {
-        outgoing[i].SetPID(PIDs[i]);
-        outgoing[i].SetMomentum(momenta[i+2]);
-    }
-
-    return outgoing;
-}
-
-Particles nuchic::NucleonData::DoublePion(ChargeMode, const std::vector<double> &rans,
-                                          const Particle &part1,
-                                          const Particle &part2) {
-    // Get pids for all four particles
-    auto PIDs = DoublePionCharge(rans.back(), part1.ID(), part2.ID());
-
-    // Setup outgoing particles
-    Particles outgoing = { part1, part2, Particle(), Particle()};
-
-    // Generate final state using Rambo
-    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
-                                       FourVector(), FourVector(), FourVector(), FourVector()};
-    auto masses = {part1.Mass(), part2.Mass(),
-                   outgoing[0].Mass(), outgoing[1].Mass(),
-                   ParticleInfo(PID::pionp()).Mass(), ParticleInfo(PID::pionp()).Mass()};
-    rambo.Nout(4);
-    rambo.GeneratePoint(momenta, masses, rans);
-
-    // Set position for pion
-    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
-                                        part1.Position(), part2.Position()));
-    outgoing[3].SetPosition(GetPosition(production, rans[rans.size()-3],
-                                        part1.Position(), part2.Position()));
-
-    // Set momentum and PIDs
-    for(size_t i = 0; i < outgoing.size(); ++i) {
-        outgoing[i].SetPID(PIDs[i]);
-        outgoing[i].SetMomentum(momenta[i+2]);
-    }
-
-    return outgoing;
-}
-
-std::vector<nuchic::PID> nuchic::NucleonData::PionCharge(const double &ran,
+std::vector<nuchic::PID> nuchic::NucleonData::PionCharge(ChargeMode, const double &ran,
                                                          const PID &pid1,
                                                          const PID &pid2) const {
 
@@ -307,34 +316,7 @@ Particles nuchic::PionData::Elastic(ChargeMode charge,
 
     const auto A = Lerp(kinetic, energies, ATable);
     const auto B = Lerp(kinetic, energies, BTable);
-    std::function<double(double)> func = [&](double x) {
-        const double norm = 5/(2*(A+5));
-        // Silence magic number warning, since this is a parameterized function
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
-        return norm*(A/5*pow(x, 5)+B/4*pow(x, 4)+x+A/5-B/4+1)-rans[0];
-    };
-    auto brent = Brent(func);
-
-    double pcm = part1.Momentum().P();
-    double costheta = 0;
-    try {
-        costheta = brent.CalcRoot(-1, 1);
-    } catch (const std::domain_error &e) {
-        costheta = pow(2*rans[0]-1, 1.0/5);
-    }
-    double sintheta = std::sqrt(1-costheta*costheta);
-    double phi = 2*M_PI*rans[1];
-
-    // Setup the outgoing in the CM frame
-    Particles outgoing = { part1, part2 };
-    outgoing[0].SetMomentum({pcm*sintheta*cos(phi),
-                             pcm*sintheta*sin(phi),
-                             pcm*costheta, part1.E()});
-    outgoing[1].SetMomentum({-pcm*sintheta*cos(phi),
-                             -pcm*sintheta*sin(phi),
-                             -pcm*costheta, part1.E()});
-
-    return outgoing;
+    return ElasticGen(rans, A, B, part1, part2);
 }
 
 Particles nuchic::PionData::CEX(ChargeMode charge,
@@ -364,103 +346,14 @@ Particles nuchic::PionData::CEX(ChargeMode charge,
 
     const auto A = Lerp(kinetic, energies, ATable);
     const auto B = Lerp(kinetic, energies, BTable);
-    std::function<double(double)> func = [&](double x) {
-        const double norm = 5/(2*(A+5));
-        // Silence magic number warning, since this is a parameterized function
-        // NOLINTNEXTLINE(cppcoreguidelines-avoid-magic-numbers)
-        return norm*(A/5*pow(x, 5)+B/4*pow(x, 4)+x+A/5-B/4+1)-rans[0];
-    };
-    auto brent = Brent(func);
 
-    double pcm = part1.Momentum().P();
-    double costheta = 0;
-    try {
-        costheta = brent.CalcRoot(-1, 1);
-    } catch (const std::domain_error &e) {
-        costheta = pow(2*rans[0]-1, 1.0/5);
-    }
-    double sintheta = std::sqrt(1-costheta*costheta);
-    double phi = 2*M_PI*rans[1];
-
-    // Setup the outgoing in the CM frame
-    Particles outgoing = { part1, part2 };
+    Particles outgoing = ElasticGen(rans, A, B, part1, part2);
     if(part2.ID() == PID::proton()) {
         outgoing[0].SetPID(PID::pionp());
         outgoing[1].SetPID(PID::neutron());
     } else {
         outgoing[0].SetPID(PID::pionm());
         outgoing[1].SetPID(PID::proton());
-    }
-    outgoing[0].SetMomentum({pcm*sintheta*cos(phi),
-                             pcm*sintheta*sin(phi),
-                             pcm*costheta, part1.E()});
-    outgoing[1].SetMomentum({-pcm*sintheta*cos(phi),
-                             -pcm*sintheta*sin(phi),
-                             -pcm*costheta, part1.E()});
-
-    return outgoing;
-}
-
-Particles nuchic::PionData::SinglePion(ChargeMode mode, const std::vector<double> &rans,
-                                       const Particle &part1,
-                                       const Particle &part2) {
-    // Get pids for all three particles
-    auto PIDs = PionCharge(mode, rans.back(), part1.ID(), part2.ID());
-
-    // Setup outgoing particles
-    Particles outgoing = { part1, part2, Particle()};
-
-    // Generate final state using Rambo
-    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
-                                       FourVector(), FourVector(), FourVector()};
-    auto masses = {part1.Mass(), part2.Mass(),
-                   outgoing[0].Mass(), outgoing[1].Mass(),
-                   ParticleInfo(PID::pionp()).Mass()};
-    rambo.Nout(3);
-    rambo.GeneratePoint(momenta, masses, rans);
-
-    // Set position for pion
-    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
-                                        part1.Position(), part2.Position()));
-
-    // Set momentum and PIDs
-    for(size_t i = 0; i < outgoing.size(); ++i) {
-        outgoing[i].SetPID(PIDs[i]);
-        outgoing[i].SetMomentum(momenta[i+2]);
-    }
-
-
-    return outgoing;
-}
-
-Particles nuchic::PionData::DoublePion(ChargeMode, const std::vector<double> &rans,
-                                       const Particle &part1,
-                                       const Particle &part2) {
-    // Get pids for all four particles
-    auto PIDs = DoublePionCharge(rans.back(), part1.ID(), part2.ID());
-
-    // Setup outgoing particles
-    Particles outgoing = { part1, part2, Particle(), Particle()};
-
-    // Generate final state using Rambo
-    std::vector<FourVector> momenta = {part1.Momentum(), part2.Momentum(),
-                                       FourVector(), FourVector(), FourVector(), FourVector()};
-    auto masses = {part1.Mass(), part2.Mass(),
-                   outgoing[0].Mass(), outgoing[1].Mass(),
-                   ParticleInfo(PID::pionp()).Mass(), ParticleInfo(PID::pionp()).Mass()};
-    rambo.Nout(4);
-    rambo.GeneratePoint(momenta, masses, rans);
-
-    // Set position for pion
-    outgoing[2].SetPosition(GetPosition(production, rans[rans.size()-2],
-                                        part1.Position(), part2.Position()));
-    outgoing[3].SetPosition(GetPosition(production, rans[rans.size()-3],
-                                        part1.Position(), part2.Position()));
-
-    // Set momentum and PIDs
-    for(size_t i = 0; i < outgoing.size(); ++i) {
-        outgoing[i].SetPID(PIDs[i]);
-        outgoing[i].SetMomentum(momenta[i+2]);
     }
 
     return outgoing;
