@@ -394,9 +394,16 @@ double nuchic::PionData::XSecAbs(const Particle &pion) const {
     return Lerp(kinetic, energies, sigmaabs);
 }
 
-nuchic::Metropolis::Metropolis(const std::string&) {
-    nucleon_data = std::make_shared<nuchic::NucleonData>(); 
-    pion_data = std::make_shared<nuchic::PionData>(); 
+nuchic::Metropolis::Metropolis(const std::string &mode) {
+    // Set the pion production mode
+    ProductionMethod production; 
+    if(tolower(mode) == "probe") production = ProductionMethod::Probe;
+    else if(tolower(mode) == "taget") production = ProductionMethod::Target;
+    else if(tolower(mode) == "random") production = ProductionMethod::Random;
+    else throw std::runtime_error(fmt::format("Invalid production option: {}", mode));
+
+    nucleon_data = std::make_shared<nuchic::NucleonData>(production); 
+    pion_data = std::make_shared<nuchic::PionData>(production); 
 }
 
 double nuchic::Metropolis::CrossSection(const Particle &part1, const Particle &part2) const {
@@ -499,7 +506,11 @@ Particles nuchic::Metropolis::SinglePion(InteractionType mode,
                                          RNG &rng,
                                          const Particle &part1, 
                                          const Particle &part2) const {
-    constexpr size_t ndims = 13;
+    // Rambo: 4*n = 12
+    // Channel select: 1
+    // Position generation: 1
+    // Total Random numbers = 14
+    constexpr size_t ndims = 14;
     std::vector<double> rans(ndims);
     rng.generate(rans, 0.0, 1.0);
     return GetProbe(mode.first) -> SinglePion(mode.second, rans, part1, part2);

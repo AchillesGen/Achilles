@@ -152,6 +152,8 @@ constexpr double Lerp(double x, const std::array<double, N> &xdata, const std::a
     return ydata[idx] + t*(ydata[idx+1] - ydata[idx]);
 }
 
+std::string tolower(std::string s);
+
 }
 
 #endif // end of include guard: UTILITIES_HH

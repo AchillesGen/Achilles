@@ -15,6 +15,7 @@ add_library(physics SHARED
     Cascade.cc
     Interactions.cc
     InteractionsFactory.cc
+    Metropolis.cc
     Nucleus.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})

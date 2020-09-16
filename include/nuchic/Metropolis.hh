@@ -25,6 +25,12 @@ enum class ChargeMode {
     ii, ij, zero
 };
 
+enum class ProductionMethod {
+    Probe, // produce pions at the probe location
+    Target, // produce pions at the target location
+    Random // produce pions at a random point between probe and target
+};
+
 using InteractionType = std::pair<ProbeType, ChargeMode>;
 
 class MetropolisData {
@@ -54,6 +60,8 @@ class MetropolisData {
 
     protected:
         Rambo rambo{2};
+        ThreeVector GetPosition(ProductionMethod, const double&,
+                                const ThreeVector&, const ThreeVector&) const;
 };
 
 class NucleonData : public MetropolisData {
@@ -62,7 +70,9 @@ class NucleonData : public MetropolisData {
         using DataTable = std::array<double, size>;
 
     public:
-        NucleonData() = default;
+        NucleonData(ProductionMethod mode) {
+            production = mode;
+        } 
         NucleonData(const NucleonData&) = default;
         NucleonData(NucleonData&&) = default;
         NucleonData& operator=(const NucleonData&) = default;
@@ -82,6 +92,7 @@ class NucleonData : public MetropolisData {
         bool IsSinglePion(ChargeMode, const double&, const double&) const override;
 
     private:
+        ProductionMethod production;
         std::vector<PID> PionCharge(const double&, const PID&, const PID&) const;
         std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
 
@@ -108,7 +119,9 @@ class PionData : public MetropolisData {
         using DataTable = std::array<double, size>;
 
     public:
-        PionData() = default;
+        PionData(ProductionMethod mode) {
+            production = mode;
+        }
         PionData(const PionData&) = default;
         PionData(PionData&&) = default;
         PionData& operator=(const PionData&) = default;
@@ -133,6 +146,7 @@ class PionData : public MetropolisData {
 
 
     private:
+        ProductionMethod production;
         std::vector<PID> PionCharge(ChargeMode, const double&, const PID&, const PID&) const;
         std::vector<PID> DoublePionCharge(const double&, const PID&, const PID&) const;
 
@@ -180,6 +194,11 @@ class Metropolis : public Interactions {
         std::vector<double> CrossSections(const Particle&, const Particle&) const override;
         std::vector<Particle> GenerateFinalState(RNG&, const Particle&,
                                                  const Particle&) const override;
+
+        ThreeVector MakeMomentum(bool, const double&,
+                                 const std::array<double, 2> &) const override {
+            return {};
+        }
     private:
         // Functions
         InteractionType  GetMode(const Particle&, const Particle&) const;
