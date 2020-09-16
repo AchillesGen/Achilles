@@ -54,3 +54,10 @@ double nuchic::Brent::CalcRoot(double a, double b) const {
     }
     return b;
 }
+
+std::string nuchic::tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); }); 
+    return s;
+}
+
