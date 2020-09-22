@@ -4,7 +4,7 @@ __pycache__/*
 *cache*
 .DS_Store
 *.so
-nuChic.egg-info/
+*.egg-info/
 build/
 *.png
 *.eps
@@ -18,7 +18,9 @@ dist/
 *.lhe
 .pylintrc
 _build/
+_buildClang/
 compile_commands.json
 *.o
 *.back
 tags
+lib*.so*
