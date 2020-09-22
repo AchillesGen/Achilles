@@ -29,12 +29,12 @@ double nuchic::Brent::CalcRoot(double a, double b) const {
         } else {
             s = b - fb*(b-a)/(fb-fa);
         }
-        if((s > std::max((3.0*a+b)/4.0, b) || s < std::min((3.0*a+b)/4.0, b)) ||
-                (m_flag && std::abs(s-b) >= std::abs(b-c)/2.0) ||
-                (!m_flag && std::abs(s-b) >= std::abs(c-d)/2.0) ||
+        if((s > std::max((3*a+b)/4, b) || s < std::min((3*a+b)/4, b)) ||
+                (m_flag && std::abs(s-b) >= std::abs(b-c)/2) ||
+                (!m_flag && std::abs(s-b) >= std::abs(c-d)/2) ||
                 (m_flag && std::abs(b-c) < m_tol) ||
                 (!m_flag && std::abs(c-d) < m_tol)) {
-            s = (a+b)/2.0;
+            s = (a+b)/2;
             m_flag = true;
         } else {
             m_flag = false;

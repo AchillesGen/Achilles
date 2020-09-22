@@ -1,9 +1,9 @@
 """ Main driver code. """
 
 from tqdm import tqdm
-import logger
+from .utilities import logger
 
-import nuchic.run_modes as run_modes
+from . import run_modes
 from .config import settings
 from ._version import version
 
@@ -44,7 +44,7 @@ class NuChic:
             event = self.calc.generate_one_event()
             events.append(event)
 
-        self.calc.finalize(events)
+        return self.calc.finalize(events)
 
 
 def nuchic():

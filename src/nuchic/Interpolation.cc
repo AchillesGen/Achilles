@@ -4,10 +4,12 @@
 
 #include <iostream>
 
+#include "fmt/format.h"
 #include "nuchic/Interpolation.hh"
 
 using namespace nuchic;
 
+constexpr double Interp1D::maxDeriv;
 void Interp1D::CubicSpline(const std::vector<double>& x, const std::vector<double>& y,
                                    const double& derivLeft, const double& derivRight) {
     
@@ -24,30 +26,30 @@ void Interp1D::CubicSpline(const std::vector<double>& x, const std::vector<doubl
     std::vector<double> u(n);
     derivs2.resize(n);
 
-    if(derivLeft > 0.9e30) {
+    if(derivLeft >= maxDeriv) {
         derivs2[0] = 0.0;
         u[0] = 0.0;
     } else {
         derivs2[0] = -0.5;
-        u[0] = (3.0/(knotX[1]-knotX[0]))*((knotY[1]-knotY[0])/(knotX[1]-knotX[0])-derivLeft);
+        u[0] = (3/(knotX[1]-knotX[0]))*((knotY[1]-knotY[0])/(knotX[1]-knotX[0])-derivLeft);
     }
 
     for(std::size_t i = 1; i < n-1; ++i) {
         double sig = (x[i]-x[i-1])/(x[i+1]-x[i-1]);
-        double p = sig*derivs2[i-1]+2.0;
+        double p = sig*derivs2[i-1]+2;
         derivs2[i] = (sig-1.0)/p;
         u[i] = (knotY[i+1]-knotY[i])/(knotX[i+1]-knotX[i])
             - (knotY[i]-knotY[i-1])/(knotX[i]-knotX[i-1]);
         u[i] = (6.0*u[i]/(knotX[i+1]-knotX[i-1])-sig*u[i-1])/p;
     }
 
-    double dn, un;
-    if(derivRight > 0.9e30) {
+    double dn{}, un{};
+    if(derivRight >= maxDeriv) {
         dn = 0.0;
         un = 0.0;
     } else {
         dn = 0.5;
-        un = (3.0/(knotX[n-1]-knotX[n-2]))*(derivRight-(knotY[n-1]-knotY[n-2])
+        un = (3/(knotX[n-1]-knotX[n-2]))*(derivRight-(knotY[n-1]-knotY[n-2])
                 /(knotX[n-1]-knotX[n-2]));
     }
 
@@ -64,11 +66,15 @@ double Interp1D::operator()(const double& x) const {
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
 
-    std::size_t idxLow = 0, idxHigh = knotX.size(), idx; 
+    // Disallow extrapolation
+    if(x > knotX.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum value ({})", x, knotX.back()));
+
+    std::size_t idxLow = 0, idxHigh = knotX.size(), idx = 0; 
 
     // Find range by bisection
     while(idxHigh - idxLow > 1) {
-        idx=(idxHigh + idxLow) >> 1;
+        idx = (idxHigh + idxLow) >> 1;
         if(knotX[idx] > x) idxHigh = idx;
         else idxLow = idx;
     }
@@ -100,8 +106,8 @@ void Interp2D::BicubicSpline(const std::vector<double>& x, const std::vector<dou
     derivs2.resize(y.size());
 
     for(std::size_t i = 0; i < x.size(); ++i) {
-        derivs2.push_back(Interp1D());
-        derivs2[i].CubicSpline(y, std::vector<double>(z.begin()+i*y.size(), z.begin()+(i+1)*y.size()));
+        derivs2.emplace_back();
+        derivs2[i].CubicSpline(y, std::vector<double>(z.begin()+static_cast<int>(i*y.size()), z.begin()+static_cast<int>((i+1)*y.size())));
     }
 
     kInit = true;
@@ -111,6 +117,13 @@ double Interp2D::operator()(const double& x, const double& y) const {
     // Ensure the interpolation is initialized first
     if(!kInit)
         throw std::runtime_error("Interpolation is not initialized!");
+
+    // Disallow extrapolation
+    if(x > knotX.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum x value ({})", x, knotX.back()));
+    if(y > knotY.back()) 
+        throw std::domain_error(fmt::format("Input ({}) greater than maximum y value ({})", y, knotY.back()));
+
 
     std::vector<double> zTmp(knotX.size()); 
     for(std::size_t i = 0; i < knotX.size(); ++i)

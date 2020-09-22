@@ -62,6 +62,14 @@ class CMakeBuild(build_ext):
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
+        # Pile all libraries in one place
+        cmake_args += ['-DCMAKE_BUILD_WITH_INSTALL_RPATH=TRUE']
+        if platform.system() == 'Linux':
+            cmake_args += ['-DCMAKE_INSTALL_RPATH={}'.format("$ORIGIN")]
+        elif platform.system() == 'Darwin':
+            cmake_args += ['-DCMAKE_INSTALL_RPATH={}'.format("@loader_path")]
+
+
         if platform.system() == 'Windows':
             cmake_args += ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}'.format(cfg.upper(), extdir)]
             if sys.maxsize > 2**32:
@@ -77,7 +85,8 @@ class CMakeBuild(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        subprocess.check_call(['cmake', '--build', '.'] + build_args,
+                              cwd=self.build_temp)
 
 setup(
     name='nuchic',
@@ -117,7 +126,7 @@ setup(
         'h5py',
     ],
     entry_points={'console_scripts': ['nuchic = nuchic.main:nuchic', ], },
-    ext_modules=[CMakeExtension('nuchic')],
+    ext_modules=[CMakeExtension('nuchic/nuchic')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
     package_data={'': ['data/*', 'data/qe/*', 'pke/*', 'configurations/*', 'template.yml']},

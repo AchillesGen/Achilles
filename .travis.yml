@@ -1,5 +1,5 @@
 language: cpp
-dist: bionic
+dist: focal
 
 addons:
     apt:
@@ -23,25 +23,61 @@ cache:
         - $HOME/.cache/pip
         - $HOME/.cache/hdf5
         - $HOME/.ccache
+        - $HOME/.local/bin
+        - $HOME/.local/lib
+        - $HOME/.local/include
+        - $HOME/Library/Python
 
 before_install:
-- |
-    if [ "$TRAVIS_OS_NAME" = "osx" ]; then
-        brew update; brew install python3
-        pip3 install virtualenv
-        python3 -m virtualenv venv
-    else
-        pip install --user --upgrade pip virtualenv
-        virtualenv -p python$PYTHON venv
-    fi
-    source venv/bin/activate
-    which python
-    python --version
-    pip install numpy
+    ############################################################################
+    # All the dependencies are installed in ${HOME}/deps/
+    ############################################################################
+    - DEPS_DIR="${HOME}/deps"
+    - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
+    
+    ############################################################################
+    # Update the python versions and install numpy
+    ############################################################################
+    - |
+        if [ "$TRAVIS_OS_NAME" = "osx" ]; then
+            brew update; brew install python3
+            pip3 install virtualenv
+            python3 -m virtualenv venv
+        else
+            python -m pip install --user --upgrade pip virtualenv
+            virtualenv -p python$PYTHON venv
+        fi
+        source venv/bin/activate
+        which python
+        python --version
+        pip install numpy
+    
+    ############################################################################
+    # Install a recent CMake
+    ############################################################################
+    - |
+      if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
+        CMAKE_URL="https://cmake.org/files/v3.16/cmake-3.16.0-Linux-x86_64.tar.gz"
+        mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+        export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+      else
+        brew install cmake || brew upgrade cmake
+      fi
+    - cmake --version
+
+    #############################################################################
+    # Return to root directory of the project
+    #############################################################################
+    - cd -
+    - pwd
+
 install:
-- pip install ".[test]" --verbose -e .
+    - pip install ".[test]" -e .
+
 script:
-- pytest
+    - ls
+    - ls src/nuchic/
+    - pytest --cov-report term --cov-report html:htmlcov --cov-report xml --cov=src/nuchic
 
 after_success:
     - codecov

@@ -4,28 +4,28 @@
 
 using namespace nuchic;
 
-const double ThreeVector::Theta() const noexcept {
-    return atan2(Pt(), vec[3]);
+double ThreeVector::Theta() const noexcept {
+    return atan2(Pt(), Pz());
 }
 
-const double ThreeVector::Phi() const noexcept {
-    const double phi = atan2(vec[1], vec[0]);
+double ThreeVector::Phi() const noexcept {
+    const double phi = atan2(Py(), Px());
     if(phi < 0) return phi + 2*M_PI;
     return phi;
 }
 
-const ThreeVector ThreeVector::Cross(const ThreeVector& other) const noexcept {
+ThreeVector ThreeVector::Cross(const ThreeVector& other) const noexcept {
     const double px = vec[1]*other.vec[2] - vec[2]*other.vec[1];    
     const double py = vec[2]*other.vec[0] - vec[0]*other.vec[2];
     const double pz = vec[0]*other.vec[1] - vec[1]*other.vec[0];    
 
-    return ThreeVector(px, py, pz);
+    return {px, py, pz};
 }
 
-const ThreeVector ThreeVector::Unit() const noexcept {
+ThreeVector ThreeVector::Unit() const noexcept {
     const double norm = Magnitude();
 
-    return ThreeVector(vec[0]/norm, vec[1]/norm, vec[2]/norm);
+    return {vec[0]/norm, vec[1]/norm, vec[2]/norm};
 }
 
 ThreeVector& ThreeVector::operator+=(const ThreeVector& other) noexcept {
@@ -65,11 +65,11 @@ double ThreeVector::operator*(const ThreeVector& other) const noexcept {
 }
 
 ThreeVector ThreeVector::operator-() const noexcept {
-   return ThreeVector(-vec[0], -vec[1], -vec[2]);
+   return {-vec[0], -vec[1], -vec[2]};
 }
 
 ThreeVector ThreeVector::operator+() const noexcept {
-    return ThreeVector(*this);
+    return *this;
 }
 
 ThreeVector ThreeVector::operator*(const double& scale) const noexcept {
@@ -92,7 +92,7 @@ bool ThreeVector::operator==(const ThreeVector& other) const noexcept {
     return vec==other.vec;
 }
 
-const std::string ThreeVector::ToString() const noexcept {
+std::string ThreeVector::ToString() const noexcept {
     return "ThreeVector(" + std::to_string(vec[0]) + ", " 
         + std::to_string(vec[1]) + ", " + std::to_string(vec[2]) + ")";
 }
@@ -101,7 +101,7 @@ namespace nuchic {
 
 std::istream& operator>>(std::istream& is, ThreeVector& vec) {
     std::string head(12, ' '), sep1(1, ' '), sep2(1, ' '), tail(1, ' ');
-    double px, py, pz, e;
+    double px, py, pz;
     is.read(&head[0], 12);
     is >> px;
     is.read(&sep1[0], 1);

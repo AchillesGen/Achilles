@@ -1,0 +1,485 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 85ecd90..24a867d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -55,6 +55,7 @@ set(PYBIND11_HEADERS
+   include/pybind11/chrono.h
+   include/pybind11/common.h
+   include/pybind11/complex.h
++  include/pybind11/gil.h
+   include/pybind11/options.h
+   include/pybind11/eigen.h
+   include/pybind11/embed.h
+@@ -97,7 +98,7 @@ if(NOT (CMAKE_VERSION VERSION_LESS 3.0))  # CMake >= 3.0
+   # Build an interface library target:
+   add_library(pybind11 INTERFACE)
+   add_library(pybind11::pybind11 ALIAS pybind11)  # to match exported target
+-  target_include_directories(pybind11 INTERFACE $<BUILD_INTERFACE:${PYBIND11_INCLUDE_DIR}>
++  target_include_directories(pybind11 SYSTEM INTERFACE $<BUILD_INTERFACE:${PYBIND11_INCLUDE_DIR}>
+                                                 $<BUILD_INTERFACE:${PYTHON_INCLUDE_DIRS}>
+                                                 $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+   target_compile_options(pybind11 INTERFACE $<BUILD_INTERFACE:${PYBIND11_CPP_STANDARD}>)
+diff --git a/include/pybind11/cast.h b/include/pybind11/cast.h
+index 605acb3..1777f43 100644
+--- a/include/pybind11/cast.h
++++ b/include/pybind11/cast.h
+@@ -10,6 +10,7 @@
+ 
+ #pragma once
+ 
++#include "gil.h"
+ #include "pytypes.h"
+ #include "detail/typeid.h"
+ #include "detail/descr.h"
+@@ -462,19 +463,19 @@ PYBIND11_NOINLINE inline handle get_object_handle(const void *ptr, const detail:
+     return handle();
+ }
+ 
+-inline PyThreadState *get_thread_state_unchecked() {
+-#if defined(PYPY_VERSION)
+-    return PyThreadState_GET();
+-#elif PY_VERSION_HEX < 0x03000000
+-    return _PyThreadState_Current;
+-#elif PY_VERSION_HEX < 0x03050000
+-    return (PyThreadState*) _Py_atomic_load_relaxed(&_PyThreadState_Current);
+-#elif PY_VERSION_HEX < 0x03050200
+-    return (PyThreadState*) _PyThreadState_Current.value;
+-#else
+-    return _PyThreadState_UncheckedGet();
+-#endif
+-}
++// inline PyThreadState *get_thread_state_unchecked() {
++// #if defined(PYPY_VERSION)
++//     return PyThreadState_GET();
++// #elif PY_VERSION_HEX < 0x03000000
++//     return _PyThreadState_Current;
++// #elif PY_VERSION_HEX < 0x03050000
++//     return (PyThreadState*) _Py_atomic_load_relaxed(&_PyThreadState_Current);
++// #elif PY_VERSION_HEX < 0x03050200
++//     return (PyThreadState*) _PyThreadState_Current.value;
++// #else
++//     return _PyThreadState_UncheckedGet();
++// #endif
++// }
+ 
+ // Forward declarations
+ inline void keep_alive_impl(handle nurse, handle patient);
+@@ -1510,9 +1511,55 @@ protected:
+     holder_type holder;
+ };
+ 
+-/// Specialize for the common std::shared_ptr, so users don't need to
++/// Specialize type_caster for std::shared_ptr<T>.
++/// This is the same as copyable_holder_caster, except that when casting to C++
++/// we keep the Python object alive through the shared_ptr as e.g. virtual
++/// functions and derived state might be defined there.
+ template <typename T>
+-class type_caster<std::shared_ptr<T>> : public copyable_holder_caster<T, std::shared_ptr<T>> { };
++class type_caster<std::shared_ptr<T>>
++{
++    PYBIND11_TYPE_CASTER(std::shared_ptr<T>, _(PYBIND11_STRING_NAME));
++
++    // Re-use copyable_holder_caster
++    using BaseCaster = copyable_holder_caster<T, std::shared_ptr<T>>;
++
++    bool load(pybind11::handle src, bool b)
++    {
++        BaseCaster bc;
++        bool success = bc.load(src, b);
++        if (!success) {
++            return false;
++        }
++
++        // Get src as a py::object
++        auto py_obj = reinterpret_borrow<object>(src);
++
++        // Construct a shared_ptr to the py::object
++        auto py_obj_ptr = std::shared_ptr<object>{
++            new object{py_obj},
++            [](object* py_object_ptr) {
++                // It's possible that when the shared_ptr dies we won't have the
++                // gil (if the last holder is in a non-Python thread), so we
++                // make sure to acquire it in the deleter.
++                gil_scoped_acquire gil;
++                delete py_object_ptr;
++           }
++        };
++
++        // * Use BaseCaster to get it as the shared_ptr<T>
++        // * Use this to make an aliased shared_ptr<T> that keeps the py::object alive
++        auto base_ptr = static_cast<std::shared_ptr<T>>(bc);
++        value = std::shared_ptr<T>(py_obj_ptr, base_ptr.get());
++        return true;
++    }
++
++    static handle cast(std::shared_ptr<T> sp,
++                       return_value_policy rvp,
++                       handle h)
++    {
++        return BaseCaster::cast(sp, rvp, h);
++    }
++};
+ 
+ template <typename type, typename holder_type>
+ struct move_only_holder_caster {
+@@ -1554,6 +1601,9 @@ template <typename base, typename holder> struct is_holder_type :
+ template <typename base, typename deleter> struct is_holder_type<base, std::unique_ptr<base, deleter>> :
+     std::true_type {};
+ 
++template <typename T>
++struct is_holder_type<T, std::shared_ptr<T>> : std::true_type {};
++
+ template <typename T> struct handle_type_name { static constexpr auto name = _<T>(); };
+ template <> struct handle_type_name<bytes> { static constexpr auto name = _(PYBIND11_BYTES_NAME); };
+ template <> struct handle_type_name<args> { static constexpr auto name = _("*args"); };
+diff --git a/include/pybind11/gil.h b/include/pybind11/gil.h
+new file mode 100644
+index 0000000..5b9e110
+--- /dev/null
++++ b/include/pybind11/gil.h
+@@ -0,0 +1,168 @@
++#pragma once
++
++#include "detail/internals.h"
++
++NAMESPACE_BEGIN(pybind11)
++
++NAMESPACE_BEGIN(detail)
++inline PyThreadState *get_thread_state_unchecked() {
++#if defined(PYPY_VERSION)
++        return PyThreadState_GET();
++#elif PY_VERSION_HEX < 0x03000000
++        return _PyThreadState_Current;
++#elif PY_VERSION_HEX < 0x03050000
++        return (PyThreadState*) _Py_atomic_load_relaxed(&_PyThreadState_Current);
++#elif PY_VERSION_HEX < 0x03050200
++        return (PyThreadState*) _PyThreadState_Current.value;
++#else
++        return _PyThreadState_UncheckedGet();
++#endif
++}
++NAMESPACE_END(detail)
++
++#if defined(WITH_THREAD) && !defined(PYPY_VERSION)
++
++/* The functions below essentially reproduce the PyGILState_* API using a RAII
++ * pattern, but there are a few important differences:
++ *
++ * 1. When acquiring the GIL from an non-main thread during the finalization
++ *    phase, the GILState API blindly terminates the calling thread, which
++ *    is often not what is wanted. This API does not do this.
++ *
++ * 2. The gil_scoped_release function can optionally cut the relationship
++ *    of a PyThreadState and its associated thread, which allows moving it to
++ *    another thread (this is a fairly rare/advanced use case).
++ *
++ * 3. The reference count of an acquired thread state can be controlled. This
++ *    can be handy to prevent cases where callbacks issued from an external
++ *    thread would otherwise constantly construct and destroy thread state data
++ *    structures.
++ *
++ * See the Python bindings of NanoGUI (http://github.com/wjakob/nanogui) for an
++ * example which uses features 2 and 3 to migrate the Python thread of
++ * execution to another thread (to run the event loop on the original thread,
++ * in this case).
++ */
++
++class gil_scoped_acquire {
++public:
++    PYBIND11_NOINLINE gil_scoped_acquire() {
++        auto const &internals = detail::get_internals();
++        tstate = (PyThreadState *) PYBIND11_TLS_GET_VALUE(internals.tstate);
++
++        if (!tstate) {
++            /* Check if the GIL was acquired using the PyGILState_* API instead (e.g. if
++               calling from a Python thread). Since we use a different key, this ensures
++               we don't create a new thread state and deadlock in PyEval_AcquireThread
++               below. Note we don't save this state with internals.tstate, since we don't
++               create it we would fail to clear it (its reference count should be > 0). */
++            tstate = PyGILState_GetThisThreadState();
++        }
++
++        if (!tstate) {
++            tstate = PyThreadState_New(internals.istate);
++            #if !defined(NDEBUG)
++                if (!tstate)
++                    pybind11_fail("scoped_acquire: could not create thread state!");
++            #endif
++            tstate->gilstate_counter = 0;
++            PYBIND11_TLS_REPLACE_VALUE(internals.tstate, tstate);
++        } else {
++            release = detail::get_thread_state_unchecked() != tstate;
++        }
++
++        if (release) {
++            /* Work around an annoying assertion in PyThreadState_Swap */
++            #if defined(Py_DEBUG)
++                PyInterpreterState *interp = tstate->interp;
++                tstate->interp = nullptr;
++            #endif
++            PyEval_AcquireThread(tstate);
++            #if defined(Py_DEBUG)
++                tstate->interp = interp;
++            #endif
++        }
++
++        inc_ref();
++    }
++
++    void inc_ref() {
++        ++tstate->gilstate_counter;
++    }
++
++    PYBIND11_NOINLINE void dec_ref() {
++        --tstate->gilstate_counter;
++        #if !defined(NDEBUG)
++            if (detail::get_thread_state_unchecked() != tstate)
++                pybind11_fail("scoped_acquire::dec_ref(): thread state must be current!");
++            if (tstate->gilstate_counter < 0)
++                pybind11_fail("scoped_acquire::dec_ref(): reference count underflow!");
++        #endif
++        if (tstate->gilstate_counter == 0) {
++            #if !defined(NDEBUG)
++                if (!release)
++                    pybind11_fail("scoped_acquire::dec_ref(): internal error!");
++            #endif
++            PyThreadState_Clear(tstate);
++            PyThreadState_DeleteCurrent();
++            PYBIND11_TLS_DELETE_VALUE(detail::get_internals().tstate);
++            release = false;
++        }
++    }
++
++    PYBIND11_NOINLINE ~gil_scoped_acquire() {
++        dec_ref();
++        if (release)
++           PyEval_SaveThread();
++    }
++private:
++    PyThreadState *tstate = nullptr;
++    bool release = true;
++};
++
++class gil_scoped_release {
++public:
++    explicit gil_scoped_release(bool disassoc = false) : disassoc(disassoc) {
++        // `get_internals()` must be called here unconditionally in order to initialize
++        // `internals.tstate` for subsequent `gil_scoped_acquire` calls. Otherwise, an
++        // initialization race could occur as multiple threads try `gil_scoped_acquire`.
++        const auto &internals = detail::get_internals();
++        tstate = PyEval_SaveThread();
++        if (disassoc) {
++            auto key = internals.tstate;
++            PYBIND11_TLS_DELETE_VALUE(key);
++        }
++    }
++    ~gil_scoped_release() {
++        if (!tstate)
++            return;
++        PyEval_RestoreThread(tstate);
++        if (disassoc) {
++            auto key = detail::get_internals().tstate;
++            PYBIND11_TLS_REPLACE_VALUE(key, tstate);
++        }
++    }
++private:
++    PyThreadState *tstate;
++    bool disassoc;
++};
++#elif defined(PYPY_VERSION)
++class gil_scoped_acquire {
++    PyGILState_STATE state;
++public:
++    gil_scoped_acquire() { state = PyGILState_Ensure(); }
++    ~gil_scoped_acquire() { PyGILState_Release(state); }
++};
++
++class gil_scoped_release {
++    PyThreadState *state;
++public:
++    gil_scoped_release() { state = PyEval_SaveThread(); }
++    ~gil_scoped_release() { PyEval_RestoreThread(state); }
++};
++#else
++class gil_scoped_acquire { };
++class gil_scoped_release { };
++#endif
++
++NAMESPACE_END(pybind11)
+diff --git a/include/pybind11/pybind11.h b/include/pybind11/pybind11.h
+index c623705..7a38ce5 100644
+--- a/include/pybind11/pybind11.h
++++ b/include/pybind11/pybind11.h
+@@ -43,6 +43,7 @@
+ 
+ #include "attr.h"
+ #include "options.h"
++#include "gil.h"
+ #include "detail/class.h"
+ #include "detail/init.h"
+ 
+@@ -1865,152 +1866,6 @@ void print(Args &&...args) {
+     auto c = detail::collect_arguments<policy>(std::forward<Args>(args)...);
+     detail::print(c.args(), c.kwargs());
+ }
+-
+-#if defined(WITH_THREAD) && !defined(PYPY_VERSION)
+-
+-/* The functions below essentially reproduce the PyGILState_* API using a RAII
+- * pattern, but there are a few important differences:
+- *
+- * 1. When acquiring the GIL from an non-main thread during the finalization
+- *    phase, the GILState API blindly terminates the calling thread, which
+- *    is often not what is wanted. This API does not do this.
+- *
+- * 2. The gil_scoped_release function can optionally cut the relationship
+- *    of a PyThreadState and its associated thread, which allows moving it to
+- *    another thread (this is a fairly rare/advanced use case).
+- *
+- * 3. The reference count of an acquired thread state can be controlled. This
+- *    can be handy to prevent cases where callbacks issued from an external
+- *    thread would otherwise constantly construct and destroy thread state data
+- *    structures.
+- *
+- * See the Python bindings of NanoGUI (http://github.com/wjakob/nanogui) for an
+- * example which uses features 2 and 3 to migrate the Python thread of
+- * execution to another thread (to run the event loop on the original thread,
+- * in this case).
+- */
+-
+-class gil_scoped_acquire {
+-public:
+-    PYBIND11_NOINLINE gil_scoped_acquire() {
+-        auto const &internals = detail::get_internals();
+-        tstate = (PyThreadState *) PYBIND11_TLS_GET_VALUE(internals.tstate);
+-
+-        if (!tstate) {
+-            /* Check if the GIL was acquired using the PyGILState_* API instead (e.g. if
+-               calling from a Python thread). Since we use a different key, this ensures
+-               we don't create a new thread state and deadlock in PyEval_AcquireThread
+-               below. Note we don't save this state with internals.tstate, since we don't
+-               create it we would fail to clear it (its reference count should be > 0). */
+-            tstate = PyGILState_GetThisThreadState();
+-        }
+-
+-        if (!tstate) {
+-            tstate = PyThreadState_New(internals.istate);
+-            #if !defined(NDEBUG)
+-                if (!tstate)
+-                    pybind11_fail("scoped_acquire: could not create thread state!");
+-            #endif
+-            tstate->gilstate_counter = 0;
+-            PYBIND11_TLS_REPLACE_VALUE(internals.tstate, tstate);
+-        } else {
+-            release = detail::get_thread_state_unchecked() != tstate;
+-        }
+-
+-        if (release) {
+-            /* Work around an annoying assertion in PyThreadState_Swap */
+-            #if defined(Py_DEBUG)
+-                PyInterpreterState *interp = tstate->interp;
+-                tstate->interp = nullptr;
+-            #endif
+-            PyEval_AcquireThread(tstate);
+-            #if defined(Py_DEBUG)
+-                tstate->interp = interp;
+-            #endif
+-        }
+-
+-        inc_ref();
+-    }
+-
+-    void inc_ref() {
+-        ++tstate->gilstate_counter;
+-    }
+-
+-    PYBIND11_NOINLINE void dec_ref() {
+-        --tstate->gilstate_counter;
+-        #if !defined(NDEBUG)
+-            if (detail::get_thread_state_unchecked() != tstate)
+-                pybind11_fail("scoped_acquire::dec_ref(): thread state must be current!");
+-            if (tstate->gilstate_counter < 0)
+-                pybind11_fail("scoped_acquire::dec_ref(): reference count underflow!");
+-        #endif
+-        if (tstate->gilstate_counter == 0) {
+-            #if !defined(NDEBUG)
+-                if (!release)
+-                    pybind11_fail("scoped_acquire::dec_ref(): internal error!");
+-            #endif
+-            PyThreadState_Clear(tstate);
+-            PyThreadState_DeleteCurrent();
+-            PYBIND11_TLS_DELETE_VALUE(detail::get_internals().tstate);
+-            release = false;
+-        }
+-    }
+-
+-    PYBIND11_NOINLINE ~gil_scoped_acquire() {
+-        dec_ref();
+-        if (release)
+-           PyEval_SaveThread();
+-    }
+-private:
+-    PyThreadState *tstate = nullptr;
+-    bool release = true;
+-};
+-
+-class gil_scoped_release {
+-public:
+-    explicit gil_scoped_release(bool disassoc = false) : disassoc(disassoc) {
+-        // `get_internals()` must be called here unconditionally in order to initialize
+-        // `internals.tstate` for subsequent `gil_scoped_acquire` calls. Otherwise, an
+-        // initialization race could occur as multiple threads try `gil_scoped_acquire`.
+-        const auto &internals = detail::get_internals();
+-        tstate = PyEval_SaveThread();
+-        if (disassoc) {
+-            auto key = internals.tstate;
+-            PYBIND11_TLS_DELETE_VALUE(key);
+-        }
+-    }
+-    ~gil_scoped_release() {
+-        if (!tstate)
+-            return;
+-        PyEval_RestoreThread(tstate);
+-        if (disassoc) {
+-            auto key = detail::get_internals().tstate;
+-            PYBIND11_TLS_REPLACE_VALUE(key, tstate);
+-        }
+-    }
+-private:
+-    PyThreadState *tstate;
+-    bool disassoc;
+-};
+-#elif defined(PYPY_VERSION)
+-class gil_scoped_acquire {
+-    PyGILState_STATE state;
+-public:
+-    gil_scoped_acquire() { state = PyGILState_Ensure(); }
+-    ~gil_scoped_acquire() { PyGILState_Release(state); }
+-};
+-
+-class gil_scoped_release {
+-    PyThreadState *state;
+-public:
+-    gil_scoped_release() { state = PyEval_SaveThread(); }
+-    ~gil_scoped_release() { PyEval_RestoreThread(state); }
+-};
+-#else
+-class gil_scoped_acquire { };
+-class gil_scoped_release { };
+-#endif
+-
+ error_already_set::~error_already_set() {
+     if (m_type) {
+         gil_scoped_acquire gil;
+diff --git a/setup.py b/setup.py
+index f677f2a..330a903 100644
+--- a/setup.py
++++ b/setup.py
+@@ -29,6 +29,7 @@ else:
+         'include/pybind11/embed.h',
+         'include/pybind11/eval.h',
+         'include/pybind11/functional.h',
++        'include/pybind11/gil.h',
+         'include/pybind11/iostream.h',
+         'include/pybind11/numpy.h',
+         'include/pybind11/operators.h',

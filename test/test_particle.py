@@ -3,37 +3,37 @@
 import pytest
 import numpy as np
 
-from vectors import Vector4, Vector3
-from particle import Particle
-# from nuchic.constants import MQE as mN
-
-mN = 938
+from nuchic.physics import Vector4, Vector3
+from nuchic.physics import Particle, ParticleStatus
+from nuchic.physics import PID, ParticleInfo
+from nuchic._nuchic.utilities.constants import mN
 
 
 def test_particle_init():
     """ Test particle initialization. """
     part = Particle(2212, Vector4(4, 3, 2, 1), Vector3(0, 0, 0), 0, [], [])
-    assert part.pid() == 2212
+    assert part.pid() == PID(2212)
     assert part.momentum() == Vector4(4, 3, 2, 1)
     assert part.position() == Vector3(0, 0, 0)
-    assert part.status() == 0
+    assert part.status() == ParticleStatus.background
     assert part.mothers() == []
     assert part.daughters() == []
     with pytest.raises(Exception):
-        Particle(2212, Vector4(4, 3, 2, 1), Vector3(0, 0, 0), None, None, None)
+        Particle(PID(2212), Vector4(4, 3, 2, 1), Vector3(0, 0, 0), None, None, None)
 
 
 def test_particle_status():
     """ Test particle status codes. """
-    part = Particle(pid=2212, momentum=Vector4(4, 3, 2, 1), status=1)
+    part = Particle(pid=2212, momentum=Vector4(4, 3, 2, 1),
+                    status=ParticleStatus.escaped)
     assert part.is_final()
     assert not part.is_background()
     assert not part.is_propagating()
-    part.set_status(0)
+    part.set_status(ParticleStatus.background)
     assert not part.is_final()
     assert part.is_background()
     assert not part.is_propagating()
-    part.set_status(-1)
+    part.set_status(ParticleStatus.propagating)
     assert not part.is_final()
     assert not part.is_background()
     assert part.is_propagating()

@@ -1,23 +1,22 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/stl_bind.h"
-#include "pybind11/operators.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Particle.hh"
-
-namespace py = pybind11;
 
 // These are for convenience
 using nuchic::Particle;
 using nuchic::FourVector;
 using nuchic::ThreeVector;
 
-PYBIND11_MODULE(particle, m) {
-    py::object vectors = (py::object) py::module::import("vectors");
+void ParticleModule(py::module &m) {
+    py::enum_<nuchic::ParticleStatus>(m, "ParticleStatus", py::module_local())
+        .value("internal_test", nuchic::ParticleStatus::internal_test)
+        .value("external_test", nuchic::ParticleStatus::external_test)
+        .value("propagating", nuchic::ParticleStatus::propagating)
+        .value("background", nuchic::ParticleStatus::background)
+        .value("escaped", nuchic::ParticleStatus::escaped);
 
-    py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle")
+    py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle", py::module_local())
         // Constructors
         .def(py::init<const int&, const FourVector&, const ThreeVector&,
                       const int&, const std::vector<int>&, const std::vector<int>&>(),
@@ -26,7 +25,6 @@ PYBIND11_MODULE(particle, m) {
              py::arg("mothers") = std::vector<int>(),
              py::arg("daughters") = std::vector<int>())
         // Setters
-        .def("set_pid", &Particle::SetPID)
         .def("set_position", &Particle::SetPosition)
         .def("set_momentum", &Particle::SetMomentum)
         .def("set_status", &Particle::SetStatus)
@@ -36,7 +34,7 @@ PYBIND11_MODULE(particle, m) {
         .def("add_daughter", &Particle::AddDaughter)
         .def("set_formation_zone", &Particle::SetFormationZone)
         // Getters
-        .def("pid", &Particle::PID)
+        .def("pid", &Particle::ID)
         .def("position", &Particle::Position)
         .def("momentum", &Particle::Momentum)
         .def("beta", &Particle::Beta)

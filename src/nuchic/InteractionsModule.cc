@@ -1,27 +1,26 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/operators.h"
-#include "pybind11/functional.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/Interactions.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
-namespace py = pybind11;
 using namespace nuchic;
 
 class PyInteraction : public Interactions {
 public:
     // Inherit the constructors 
-    using Interactions::Interactions;
+    // using Interactions::Interactions;
+    PyInteraction() = default;
+    PyInteraction(const PyInteraction&) = default;
+    PyInteraction(PyInteraction&&) = default;
+    PyInteraction& operator=(const PyInteraction&) = default;
+    PyInteraction& operator=(PyInteraction&&) = default;
+    /// Default Destructor
+    ~PyInteraction() override = default;
 
-    // Trampoline for IsRegistered
-    bool IsRegistered() const noexcept override {
-        PYBIND11_OVERLOAD_PURE(
-            bool,            // Return type
-            Interactions,      // Parent class
-            IsRegistered      // Name of function in C++ (must match Python name)
-        );
+    static bool IsRegistered() noexcept { return registered; }
+    static std::string GetName() { return "PyInteraction"; }
+    static std::unique_ptr<Interactions> Create(const std::string&) {
+        return std::make_unique<PyInteraction>(); 
     }
 
     // Trampoline for CrossSection
@@ -35,18 +34,23 @@ public:
     }
 
     // Trampoline for MakeMomentum
-    ThreeVector MakeMomentum(bool samePID, const double& p1CM,
+    ThreeVector MakeMomentum(bool samePID,
             const double& pcm, const std::array<double, 2>& rans) const override {
         PYBIND11_OVERLOAD_PURE(
             ThreeVector,                // Return type
             Interactions,               // Parent class
             MakeMomentum,               // Name of function in C++ (must match Python name)
-            samePID, p1CM, pcm, rans    // Argument(s)
+            samePID, pcm, rans    // Argument(s)
         );
     }
+
+private:
+    static bool registered;
 };
 
-PYBIND11_MODULE(interactions, m) {
+REGISTER_INTERACTION(PyInteraction);
+
+void InteractionsModule(py::module &m) {
     m.def("cross_section", &CrossSection);
     m.def("cross_section_lab", &CrossSectionLab);
     m.def("cross_section_angle", &CrossSectionAngle);
@@ -56,12 +60,12 @@ PYBIND11_MODULE(interactions, m) {
                std::shared_ptr<Interactions>>(m, "Interactions")
         .def(py::init<>())
         .def_static("create", [](const std::string& name, const std::string& data){
-                return InteractionFactory::Instance().Create(name, data);})
-        .def("CrossSection", &Interactions::CrossSection)
-        .def("MakeMomentum", &Interactions::MakeMomentum);
+                return InteractionFactory::Create(name, data);})
+        .def("cross_section", &Interactions::CrossSection)
+        .def("make_momentum", &Interactions::MakeMomentum);
 
     py::class_<InteractionFactory>(m, "InteractionFactory")
-        .def_static("instance", &InteractionFactory::Instance)
         .def("register", &InteractionFactory::Register)
-        .def("create", &InteractionFactory::Create);
+        .def("create", &InteractionFactory::Create)
+        .def("list", &InteractionFactory::ListInteractions);
 }

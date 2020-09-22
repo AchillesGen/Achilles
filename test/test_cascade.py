@@ -5,14 +5,17 @@ from unittest.mock import patch
 import numpy as np
 # import pytest
 
-from vectors import Vector4, Vector3
-from particle import Particle
-from nucleus import Nucleus
-from cascade import Cascade
-import interactions
+from nuchic.physics import Vector4, Vector3
+from nuchic.physics import Particle, ParticleStatus
+from nuchic.physics import Nucleus
+from nuchic._nuchic import Cascade
+from nuchic._nuchic import Interactions
 
-from nuchic.constants import MEV, MQE as mN, FM, HBARC
+from nuchic._nuchic.utilities.constants import mN, hbarc
 from nuchic.config import settings
+
+MEV = 1
+FM = 1
 
 NPROTONS = 6
 PROTONS = 2.5*np.random.random((NPROTONS, 3))
@@ -38,7 +41,7 @@ def density():
     return nucleons
 
 
-class MockInteractions(interactions.Interactions):
+class MockInteractions(Interactions):
     def is_registered(self):
         return True
 
@@ -55,24 +58,27 @@ class TestCascade(unittest.TestCase):
     def test_init(self):
         """ Test cascade initialization. """
         mock_interact = MockInteractions()
-        cascade = Cascade(mock_interact)
+        cascade = Cascade(mock_interact, Cascade.Gaussian)
         self.assertIsInstance(cascade, Cascade)
 
     def test_kick(self):
         """ Test cascade kick. """
         mock_interact = MockInteractions()
-        mock_nucleus = Nucleus(6, 12, 10, 225, density)
-        particles = mock_nucleus.generate_config()
-        cascade = Cascade(mock_interact)
+        mock_nucleus = Nucleus(6, 12, 10, 225, "c12.prova.txt",
+                               Nucleus.Global, density)
+        mock_nucleus.generate_config()
+        cascade = Cascade(mock_interact, Cascade.Gaussian)
 
         e_p = mN + 500*MEV
         p_p = np.sqrt(e_p**2-mN**2)
         energy_transfer = Vector4(0, 0, p_p, e_p)
-        kicked_parts = cascade.kick(particles, energy_transfer, [1, 0])
+        particles = mock_nucleus.nucleons()
+        cascade.kick(mock_nucleus, energy_transfer, [1, 0])
+        kicked_parts = mock_nucleus.nucleons()
 
         kicked = []
         for i, part in enumerate(kicked_parts):
-            if part.status() == -1:
+            if part.status() == ParticleStatus.propagating:
                 kicked.append(part)
                 idx = i
 
