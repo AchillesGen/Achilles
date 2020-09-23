@@ -1,5 +1,7 @@
 #include "catch2/catch.hpp"
 
+#include <sstream>
+
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
 
@@ -32,6 +34,7 @@ TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
         CHECK((p1[0] == 0 && p1[1] == 0 && p1[2] == 0 && p1[3] == 0));
         CHECK(p2 == p3);
         CHECK(p2 == p4);
+        CHECK(p1 != p2);
     }
 
     SECTION("Move and Copy Constructors and Assignment") {
@@ -45,6 +48,46 @@ TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
         nuchic::FourVector p4 = p3;
         nuchic::FourVector p5 = std::move(p2);
         CHECK(p4 == p5);
+    }
+
+    SECTION("ThreeVector setters works as expected") {
+        nuchic::ThreeVector p1, p2, p3, p4;
+        p1.SetPxPyPz({1, 2, 3});
+        p2.SetPxPyPz(1, 2, 3);
+        p3.SetXYZ({1, 2, 3});
+        p4.SetXYZ(1, 2, 3);
+        CHECK(p1 == p2);
+        CHECK(p1 == p3);
+        CHECK(p1 == p4);
+
+        p1.SetPx(1);
+        p1.SetPy(2);
+        p1.SetPz(3);
+        p2.SetX(1);
+        p2.SetY(2);
+        p2.SetZ(3);
+        CHECK(p1 == p2);
+    }
+
+    SECTION("FourVector setters works as expected") {
+        nuchic::FourVector p;
+        p.SetVectM({1, 2, 3}, 4);
+        CHECK(p.M() == 4);
+        CHECK(p.Px() == 1);
+        CHECK(p.Py() == 2);
+        CHECK(p.Pz() == 3);
+
+        nuchic::FourVector p1, p2;
+        p1.SetPxPyPzE({1, 2, 3, 4});
+        p2.SetPxPyPzE(1, 2, 3, 4);
+        CHECK(p1 == p2);
+
+        nuchic::FourVector p3;
+        p3.SetPx(1);
+        p3.SetPy(2);
+        p3.SetPz(3);
+        p3.SetE(4);
+        CHECK(p3 == p1);
     }
 }
 
@@ -65,15 +108,34 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
         CHECK(p[3] == 4);
         CHECK_THROWS_AS(p[4], std::range_error);
     }
+
+    SECTION("Three Vector getters") {
+        nuchic::ThreeVector p(1, 2, 3);
+        CHECK(p.X() == p.Px());
+        CHECK(p.Y() == p.Py());
+        CHECK(p.Z() == p.Pz());
+
+        CHECK(p.Position() == std::array<double, 3>({1, 2, 3}));
+    }
+
+    SECTION("Four Vector getters") {
+        nuchic::FourVector p(1, 2, 3, 4);
+        CHECK(p.X() == p.Px());
+        CHECK(p.Y() == p.Py());
+        CHECK(p.Z() == p.Pz());
+        CHECK(p.T() == p.E());
+    }
 }
 
 TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     SECTION("Addition") {
         nuchic::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(2, 4, 6);
         CHECK(p1+p2 == p3);
+        CHECK(p1 != p3);
 
         p1 += p2;
         CHECK(p1 == p3);
+        CHECK(p1 == +p1);
     }
 
     SECTION("Subtraction and Negation") {
@@ -155,6 +217,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
 
         p1 += p2;
         CHECK(p1 == p3);
+        CHECK(p1 == +p1);
     }
 
     SECTION("Subtraction and Negation") {
@@ -201,7 +264,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK(p.M() == sqrt(mass)); 
     }
 
-    SECTION("Momentum and Transverse Momentum") {
+    SECTION("Momentum, Transverse Momentum, Kinetic Energy") {
         nuchic::FourVector p(1, 2, 3, 4);
         constexpr double pvec2 = 14;
         constexpr double pt2 = 5;
@@ -210,6 +273,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK(p.P() == sqrt(pvec2));
         CHECK(p.Pt2() == pt2);
         CHECK(p.Pt() == sqrt(pt2));
+        CHECK(p.Tk() == p.E() - p.M());
     }
 
     SECTION("Angles") {
@@ -235,6 +299,10 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
 
         CHECK((p3[0] == Approx(p1[0]) && p3[1] == Approx(p1[1])
                && p3[2] == Approx(p1[2]) && p3[3] == Approx(p1[3])));
+
+        auto p4 = p1.Boost(beta.Px(), beta.Py(), beta.Pz()).Boost(-beta);
+        CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1])
+               && p4[2] == Approx(p1[2]) && p4[3] == Approx(p1[3])));
     }
 
     SECTION("Rapidity") {
@@ -252,5 +320,29 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
 
         CHECK(p1.DeltaR(p2) == p2.DeltaR(p1));
         CHECK(p1.DeltaR(p2) == DR);
+    }
+}
+
+TEST_CASE("I/O Formats are correct", "[Vectors]") {
+    SECTION("ThreeVector I/O") {
+        nuchic::ThreeVector p(1, 2, 3);
+        CHECK(p.ToString() == "ThreeVector(1.000000, 2.000000, 3.000000)");
+
+        std::stringstream ss;
+        ss << p;
+        nuchic::ThreeVector p1;
+        ss >> p1;
+        CHECK(p1 == p);
+    }
+
+    SECTION("FourVector I/O") {
+        nuchic::FourVector p(1, 2, 3, 4);
+        CHECK(p.ToString() == "FourVector(1.000000, 2.000000, 3.000000, 4.000000)");
+
+        std::stringstream ss;
+        ss << p;
+        nuchic::FourVector p1;
+        ss >> p1;
+        CHECK(p1 == p);
     }
 }
