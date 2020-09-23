@@ -3,6 +3,9 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
+#include "Plugins/InteractionLoader.hh"
+
+namespace py = pybind11;
 using namespace nuchic;
 
 class PyInteraction : public Interactions {
@@ -51,11 +54,6 @@ private:
 REGISTER_INTERACTION(PyInteraction);
 
 void InteractionsModule(py::module &m) {
-    m.def("cross_section", &CrossSection);
-    m.def("cross_section_lab", &CrossSectionLab);
-    m.def("cross_section_angle", &CrossSectionAngle);
-    m.def("make_momentum_angular", &MakeMomentumAngular);
-
     py::class_<Interactions, PyInteraction,
                std::shared_ptr<Interactions>>(m, "Interactions")
         .def(py::init<>())
@@ -68,4 +66,8 @@ void InteractionsModule(py::module &m) {
         .def("register", &InteractionFactory::Register)
         .def("create", &InteractionFactory::Create)
         .def("list", &InteractionFactory::ListInteractions);
+
+    py::class_<InteractionLoader>(m, "InteractionLoader")
+        .def_static("load_plugins", &InteractionLoader::LoadInteractions);
+
 }

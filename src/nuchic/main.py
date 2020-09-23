@@ -2,6 +2,7 @@
 
 from tqdm import tqdm
 from .utilities import logger
+from . import interactions
 
 from . import run_modes
 from .config import settings
@@ -52,6 +53,7 @@ def nuchic():
     splash(print)
     logger.init('nuchic', 'nuchic.log')
     splash(logger.debug)
+    interactions.InteractionLoader.load_plugins(["./src/Plugins/lib"])
     driver = NuChic('run.yml')
     driver.run()
 

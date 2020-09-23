@@ -8,7 +8,8 @@ bool InteractionFactory::Register(const std::string& name,
     auto it = methods().find(name);
     if(it == methods().end()) {
         methods()[name] = funcCreate;
-        spdlog::info("Registered: {}", name);
+        if(name != "PyInteraction")
+            spdlog::info("Registered: {}", name);
         return true;
     }
     return false;
