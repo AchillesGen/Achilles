@@ -45,9 +45,21 @@ class Quasielastic : HardScattering {
 
 class QESpectral : Quasielastic {
     public:
-       size_t PhaseSpaceSize() const override { return 7; }
+       size_t PhaseSpaceSize() const override { return 10; }
        Particles GeneratePhaseSpace(const std::vector<double>&) const override;
        double CrossSection(const Particles&) const override;
+
+    private:
+       Tensor<2> HadronicTensor(const Particles&) const;
+};
+
+class DIS : HardScattering {
+    public:
+        HardScatteringType ScatteringType() const override {
+            return HardScatteringType::DeepInelastic;
+        }
+
+        size_t PhaseSpaceSize() const override { return 11; }
 };
 
 }
