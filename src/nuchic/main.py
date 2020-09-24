@@ -1,8 +1,10 @@
 """ Main driver code. """
 
 from tqdm import tqdm
+import argparse
+
 from .utilities import logger
-from ._nuchic import InteractionLoader
+from ._nuchic import InteractionLoader, InteractionFactory
 
 from . import run_modes
 from .config import settings
@@ -51,10 +53,26 @@ class NuChic:
 def nuchic():
     """ External entry point. """
     splash(print)
+
+    # Arguments for the nuchic code
+    description = 'Nuchic: The modular neutrino event generator.'
+    parser = argparse.ArgumentParser(description=description)
+    parser.add_argument('-m', '--model_fsi', action='store_const',
+                        const=True, default=False,
+                        help='List the available interaction models for fsi')
+    parser.add_argument('-i', '--input', default='run.yml',
+                        help='Input file to be used')
+
+    args = parser.parse_args()
+
+    # Startup running of main code
     logger.init('nuchic', 'nuchic.log')
     splash(logger.debug)
     InteractionLoader.load_plugins(["./src/Plugins/lib"])
-    driver = NuChic('run.yml')
+    if args.model_fsi:
+        InteractionFactory.list()
+        return
+    driver = NuChic(args.input)
     driver.run()
 
 
