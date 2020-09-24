@@ -63,9 +63,9 @@ void InteractionsModule(py::module &m) {
         .def("make_momentum", &Interactions::MakeMomentum);
 
     py::class_<InteractionFactory>(m, "InteractionFactory")
-        .def("register", &InteractionFactory::Register)
-        .def("create", &InteractionFactory::Create)
-        .def("list", &InteractionFactory::ListInteractions);
+        .def_static("register", &InteractionFactory::Register)
+        .def_static("create", &InteractionFactory::Create)
+        .def_static("list", &InteractionFactory::ListInteractions);
 
     py::class_<InteractionLoader>(m, "InteractionLoader")
         .def_static("load_plugins", &InteractionLoader::LoadInteractions);
