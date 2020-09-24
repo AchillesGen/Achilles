@@ -21,7 +21,8 @@ std::shared_ptr<Interactions> InteractionFactory::Create(const std::string& name
     if(it != methods().end())
         return it -> second(filename);
 
-    return nullptr;
+    spdlog::error("Interaction {} is undefined", name);
+    throw std::runtime_error(fmt::format("Invalid Interaction Mode", name));
 }
 
 void InteractionFactory::ListInteractions() {
