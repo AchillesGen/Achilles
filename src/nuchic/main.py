@@ -36,8 +36,6 @@ def nuchic():
     interactions.InteractionFactory.list()
     pyinteractions.PyInteraction.list_all()
     tmp = interactions.Interactions.create("PyConstantInteraction", "")
-    print(tmp.cross_section(particle.Particle(), particle.Particle()))
-    raise
     driver = NuChic('run.yml')
     driver.run()
 
