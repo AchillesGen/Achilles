@@ -3,9 +3,13 @@
 from tqdm import tqdm
 import logger
 import interactions
+import particle
 
 import nuchic.run_modes as run_modes
+from . import pyinteractions
 from .config import settings
+
+from . import python_plugins
 
 
 class NuChic:
@@ -29,6 +33,11 @@ def nuchic():
     """ External entry point. """
     logger.init('nuchic', 'nuchic.log')
     interactions.InteractionLoader.load_plugins(["./src/Plugins/lib"])
+    interactions.InteractionFactory.list()
+    pyinteractions.PyInteraction.list_all()
+    tmp = interactions.Interactions.create("PyConstantInteraction", "")
+    print(tmp.cross_section(particle.Particle(), particle.Particle()))
+    raise
     driver = NuChic('run.yml')
     driver.run()
 

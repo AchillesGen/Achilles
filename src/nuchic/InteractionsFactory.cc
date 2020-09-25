@@ -8,7 +8,7 @@ bool InteractionFactory::Register(const std::string& name,
     auto it = methods().find(name);
     if(it == methods().end()) {
         methods()[name] = funcCreate;
-        if(name != "PyInteraction")
+        if(name != "PyWrapper")
             spdlog::info("Registered: {}", name);
         return true;
     }
@@ -17,6 +17,11 @@ bool InteractionFactory::Register(const std::string& name,
 
 std::shared_ptr<Interactions> InteractionFactory::Create(const std::string& name,
                                                          const std::string& filename) {
+    if(name.substr(0, 2) == "Py") {
+        auto it = methods().find("PyWrapper");
+        if(it != methods().end())
+            return it -> second(name.substr(2));
+    }
     auto it = methods().find(name);
     if(it != methods().end())
         return it -> second(filename);
@@ -26,7 +31,11 @@ std::shared_ptr<Interactions> InteractionFactory::Create(const std::string& name
 
 void InteractionFactory::ListInteractions() {
     fmt::print("+{:-^30s}+\n|{:^30s}|\n+{:-^30s}+\n", "", "Interactions", "");
+    fmt::print("C++ Interactions:\n");
+    fmt::print("-----------------\n");
     for(auto method : methods()) {
-        fmt::print(" - {:30s}\n", method.first);
+        if(method.first != "PyWrapper")
+            fmt::print(" - {:30s}\n", method.first);
     }
+    fmt::print("\n");
 }
