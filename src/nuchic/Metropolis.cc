@@ -102,8 +102,8 @@ nuchic::Particles nuchic::MetropolisData::ElasticGen(const std::array<double, 2>
 }
 
 Particles nuchic::MetropolisData::SinglePion(ChargeMode mode, const std::vector<double> &rans,
-                                          const Particle &part1,
-                                          const Particle &part2) {
+                                             const Particle &part1,
+                                             const Particle &part2) {
     // Get pids for all three particles
     auto PIDs = PionCharge(mode, rans.back(), part1.ID(), part2.ID());
 
@@ -392,7 +392,7 @@ std::vector<nuchic::PID> nuchic::PionData::DoublePionCharge(const double &ran,
 
 bool nuchic::PionData::IsAbsorption(const std::vector<double> &xsec,
                                     const double &ran) const {
-    return ran < xsec[0]/xsec[1];
+    return ran < xsec[0]/(xsec[0]+xsec[1]);
 }
 
 bool nuchic::PionData::IsInelastic(ChargeMode mode,
