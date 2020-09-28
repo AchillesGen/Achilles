@@ -5,6 +5,7 @@
 
 namespace nuchic {
 
+class FourVector;
 class Particle;
 
 using Particles = std::vector<Particle>;
@@ -33,6 +34,8 @@ class HardScattering {
         virtual size_t PhaseSpaceSize() const = 0;
         virtual Particles GeneratePhaseSpace(const std::vector<double>&) const = 0;
         virtual double CrossSection(const Particles&) const = 0;
+        virtual bool HasInitialState() const { return false; }
+        virtual FourVector GenInitialState(const std::vector<FourVector>&) const;
 
 };
 
