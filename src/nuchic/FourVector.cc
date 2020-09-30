@@ -43,7 +43,7 @@ void FourVector::SetVectM(const ThreeVector& vec3, const double& mass) noexcept 
     vec[3] = sqrt(mass*mass + vec3*vec3);
 }
 
-FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
+FourVector FourVector::Boost(const ThreeVector& beta) const noexcept {
     const double beta2 = beta*beta;
     const double gamma = 1.0/sqrt(1.0 - beta2);
     const double betap = beta[0]*vec[0] + beta[1]*vec[1] + beta[2]*vec[2];
@@ -58,7 +58,7 @@ FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
 }
 
 FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
-                                             const double& beta_z) noexcept {
+                                             const double& beta_z) const noexcept {
     return Boost(ThreeVector(beta_x, beta_y, beta_z));
 }
 

@@ -105,8 +105,8 @@ void VectorModule(py::module &m) {
         .def("vec3", &FourVector::Vec3)
         // Functions
         .def("dot", &FourVector::Dot)
-        .def("boost", overload_cast_<const ThreeVector&>()(&FourVector::Boost))
-        .def("boost", overload_cast_<const double&, const double&, const double&>()(&FourVector::Boost))
+        .def("boost", overload_cast_<const ThreeVector&>()(&FourVector::Boost, py::const_))
+        .def("boost", overload_cast_<const double&, const double&, const double&>()(&FourVector::Boost, py::const_))
         .def("cross", &FourVector::Cross)
         .def("boost_vector", &FourVector::BoostVector)
         // Operator Overloads

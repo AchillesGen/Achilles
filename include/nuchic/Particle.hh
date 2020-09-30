@@ -135,6 +135,8 @@ class Particle {
         ///@return int: PID of the particle
         PID ID() const noexcept { return info.ID(); }
 
+        ParticleInfo Info() const noexcept { return info; }
+
         /// Returns the position of the particle
         ///@return ThreeVector: The position of the particle
         const ThreeVector& Position() const noexcept {return position;}

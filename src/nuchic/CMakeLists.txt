@@ -1,4 +1,5 @@
 add_library(utilities SHARED
+    Constants.cc
     FourVector.cc
     Interpolation.cc
     Particle.cc
@@ -19,6 +20,8 @@ add_library(physics SHARED
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_LIBRARIES})
+
+add_subdirectory(fortran)
 
 pybind11_add_module(_nuchic MODULE
     # Main file

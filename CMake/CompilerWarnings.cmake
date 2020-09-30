@@ -75,7 +75,6 @@ function(set_project_warnings project_name)
                      # probably wanted
         -Wuseless-cast # warn if you perform a cast to the same type
     )
-    message(${CMAKE_CXX_COMPILER_ID})
     if(MSVC)
         set(PROJECT_WARNINGS ${MSVC_WARNINGS})
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")

@@ -187,14 +187,14 @@ class FourVector {
         /// Boost the four vector to the frame given by the three vector velocities
         ///@param beta: The boost vector to determine the frame
         ///@return FourVector: The vector in the corresponding frame
-        FourVector Boost(const ThreeVector&) noexcept;
+        FourVector Boost(const ThreeVector&) const noexcept;
 
         /// Boost the four vector to the frame given by the three vector velocities
         ///@param beta_x: The boost in the x-direction
         ///@param beta_y: The boost in the y-direction
         ///@param beta_z: The boost in the z-direction
         ///@return FourVector: The vector in the corresponding frame
-        FourVector Boost(const double&, const double&, const double&) noexcept;
+        FourVector Boost(const double&, const double&, const double&) const noexcept;
 
         /// Calculate the cross product between two four vectors
         ///@param other: The vector to take the cross product with respect to
