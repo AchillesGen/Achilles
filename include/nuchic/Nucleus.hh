@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Constants.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
 
@@ -22,6 +23,12 @@ using Particles = std::vector<Particle>;
 /// on if nucleons are captured in the potential or escape.
 class Nucleus {
     public:
+        // Fermigas Model
+        enum FermiGasType {
+            Local,
+            Global
+        };
+
         /// @name Constructors and Destructors
         /// @{
 
@@ -34,8 +41,8 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
-        Nucleus(const std::size_t&, const std::size_t&, const double&, const std::string&,
-                std::function<Particles()>);
+        Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
+                const std::string&, const FermiGasType&, std::function<Particles()>);
         Nucleus(const Nucleus&) = default;
         Nucleus(Nucleus&&) = default;
         Nucleus& operator=(const Nucleus&) = default;
@@ -109,9 +116,13 @@ class Nucleus {
         ///@return double: The binding energy in MeV
         const double& BindingEnergy() const noexcept { return binding; }
 
-        /// Return the current Fermi Momentum of the nucleus
+	/// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
-        double FermiMomentum(const double&) const noexcept;
+        //const double& FermiMomentum() const noexcept {return fermiMomentum;}
+
+        /// Return the phenomenological potential
+	///@return double: The potential in MeV	
+        double Potential(const double&) const noexcept;
 
         /// Return the current potential energy of the nucleus
         ///@return double: The potential energy in MeV
@@ -124,8 +135,15 @@ class Nucleus {
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
-        double Rho(const double &position) const noexcept { return rhoInterp(position); }
+        double Rho(const double &position) const noexcept { 
+            return position > rhoInterp.max() ? 0 : rhoInterp(position);
+        }
         ///@}
+	
+        /// Return the Fermi momentum according to a given FG model
+	///@param position: The radius to calculate the density
+        double FermiMomentum(const double&) const noexcept;	//
+	///@}
 
         /// @name Functions
         /// @{
@@ -184,8 +202,9 @@ class Nucleus {
         ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
         ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
-        static Nucleus MakeNucleus(const std::string&, const double&,
-                                   const std::string&, const std::function<Particles()>&);
+        static Nucleus MakeNucleus(const std::string&, const double&, const double&,
+                                   const std::string&, const FermiGasType&,
+                                   const std::function<Particles()>&);
 
         /// @name Stream Operators
         /// @{
@@ -197,7 +216,8 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum{}, radius, potential;
+        double binding, fermiMomentum, radius{}, potential{};
+        FermiGasType fermiGas;
         std::function<Particles()> density;
         Interp1D rhoInterp;	
 

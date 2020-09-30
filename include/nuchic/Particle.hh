@@ -18,7 +18,8 @@ enum class ParticleStatus : int {
     external_test = -2,
     propagating = -1,
     background = 0,
-    escaped = 1
+    escaped = 1,
+    captured = 2
 };
 
 /// The Particle class provides a container to handle information about the particle.
@@ -133,6 +134,8 @@ class Particle {
         /// Return the pid of the particle
         ///@return int: PID of the particle
         PID ID() const noexcept { return info.ID(); }
+
+        ParticleInfo Info() const noexcept { return info; }
 
         /// Returns the position of the particle
         ///@return ThreeVector: The position of the particle

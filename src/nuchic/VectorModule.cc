@@ -1,20 +1,13 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/operators.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
-
-namespace py = pybind11;
-template<typename... Args>
-using overload_cast_ = pybind11::detail::overload_cast_impl<Args...>;
 
 // Convience names
 using nuchic::ThreeVector;
 using nuchic::FourVector;
 
-PYBIND11_MODULE(vectors, m) {
-    py::class_<ThreeVector, std::shared_ptr<ThreeVector>>(m, "Vector3")
+void VectorModule(py::module &m) {
+    py::class_<ThreeVector, std::shared_ptr<ThreeVector>>(m, "Vector3", py::module_local())
         .def(py::init<>())
         .def(py::init<const std::array<double, 3>&>())
         .def(py::init<const double&, const double&, const double&>())
@@ -77,7 +70,7 @@ PYBIND11_MODULE(vectors, m) {
         .def("__str__", &ThreeVector::ToString)
         .def("__repr__", &ThreeVector::ToString);
 
-    py::class_<FourVector, std::shared_ptr<FourVector>>(m, "Vector4")
+    py::class_<FourVector, std::shared_ptr<FourVector>>(m, "Vector4", py::module_local())
         .def(py::init<>())
         .def(py::init<const std::array<double, 4>&>())
         .def(py::init<const double&, const double&, const double&, const double&>())
@@ -112,8 +105,8 @@ PYBIND11_MODULE(vectors, m) {
         .def("vec3", &FourVector::Vec3)
         // Functions
         .def("dot", &FourVector::Dot)
-        .def("boost", overload_cast_<const ThreeVector&>()(&FourVector::Boost))
-        .def("boost", overload_cast_<const double&, const double&, const double&>()(&FourVector::Boost))
+        .def("boost", overload_cast_<const ThreeVector&>()(&FourVector::Boost, py::const_))
+        .def("boost", overload_cast_<const double&, const double&, const double&>()(&FourVector::Boost, py::const_))
         .def("cross", &FourVector::Cross)
         .def("boost_vector", &FourVector::BoostVector)
         // Operator Overloads

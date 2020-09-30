@@ -2,8 +2,9 @@
 
 import numpy as np
 import pytest
-from nucleus import Nucleus
-from particle import Particle
+
+from nuchic.physics import Nucleus
+from nuchic.physics import Particle
 
 
 def density():
@@ -16,15 +17,15 @@ def density():
 
 def test_nucleus_init():
     """ Initialize nucleus tests. """
-    Nucleus(6, 12, 10, 225, density)
+    Nucleus(6, 12, 10, 225, "c12.prova.txt", Nucleus.Global, density)
 
     with pytest.raises(Exception):
-        Nucleus(12, 6, 10, 225)
+        Nucleus(12, 6, 10, 225, "c12.prova.txt", Nucleus.Global, density)
 
 
 def test_nucleus_radius():
     """ Test nucleus radius calculation. """
-    nuc = Nucleus(6, 12, 10, 225)
+    nuc = Nucleus(6, 12, 10, 225, "c12.prova.txt", Nucleus.Global, density)
     assert nuc.radius() > 0
 
 
@@ -33,8 +34,9 @@ def test_nucleus_config():
     Z = 6
     A = 12
 
-    nuc = Nucleus(Z, A, 10, 225, density)
-    nucleons = nuc.generate_config()
+    nuc = Nucleus(Z, A, 10, 225, "c12.prova.txt", Nucleus.Global, density)
+    nuc.generate_config()
+    nucleons = nuc.nucleons()
     protons = nuc.protons()
     neutrons = nuc.neutrons()
     assert len(nucleons) == A
@@ -45,7 +47,7 @@ def test_nucleus_momentum():
     """ Test generated momentum are valid. """
     Z = 6
     A = 12
-    nuc = Nucleus(Z, A, 10, 225)
+    nuc = Nucleus(Z, A, 10, 225, "c12.prova.txt", Nucleus.Global, density)
     momentum = nuc.generate_momentum()
     assert len(momentum) == 3
     assert np.dot(momentum, momentum) < nuc.fermi_momentum()**2

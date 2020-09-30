@@ -6,12 +6,13 @@ https://stackoverflow.com/questions/55973284/how-to-create-self-registering-fact
 
 """
 
+import gzip
+
 import pandas as pd
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-import vectors
-import particle
+from . import physics
 
 # from .config import settings
 from .utils import make_path, rand_sphere
@@ -61,16 +62,17 @@ class NuclearConfiguration(NuclearDensity):
         super().__init__()
 
         filename = '{}_configs.out.gz'.format(kwargs['config_type'].upper())
-        self.density = pd.read_csv(make_path(filename, 'configurations'),
-                                   sep=r'\s+',
-                                   names=['pid', 'x', 'y', 'z'],
-                                   compression='gzip')
+        self.max_weight, self.density = read_density(make_path(filename, 'configurations'))
 
     def __call__(self):
         """ Generate a nuclear configuration based on a configuration file. """
-        config_index = np.random.randint(
-            0, high=len(self.density.index) / 12)
-        idx0 = config_index * 12
+        while True:
+            config_index = np.random.randint(
+                0, high=len(self.density.index) / 12)
+            idx0 = config_index * 12
+            weight = self.density.iloc[idx0]['weight']
+            if weight/self.max_weight > np.random.uniform(0.0, 1.0):
+                break
 
         db_tmp = self.density.iloc[idx0:idx0 + 12]
         proton_mask = db_tmp['pid'] == 1
@@ -88,15 +90,15 @@ class NuclearConfiguration(NuclearDensity):
 
         particles = []
         for proton in protons:
-            part = particle.Particle(2212,
-                                     vectors.Vector4(0, 0, 0, 0),
-                                     vectors.Vector3(proton[0], proton[1], proton[2]))
+            part = physics.Particle(2212,
+                                    physics.Vector4(0, 0, 0, 0),
+                                    physics.Vector3(proton[0], proton[1], proton[2]))
             particles.append(part)
 
         for neutron in neutrons:
-            part = particle.Particle(2112,
-                                     vectors.Vector4(0, 0, 0, 0),
-                                     vectors.Vector3(neutron[0], neutron[1], neutron[2]))
+            part = physics.Particle(2112,
+                                    physics.Vector4(0, 0, 0, 0),
+                                    physics.Vector3(neutron[0], neutron[1], neutron[2]))
             particles.append(part)
 
         return particles
@@ -119,9 +121,59 @@ class NuclearConstant(NuclearDensity):
         nucleons = rand_sphere(self.radius, self.neutrons)
         particles = []
         for nucleon in nucleons:
-            part = particle.Particle(2112,
-                                     vectors.Vector4(),
-                                     vectors.Vector3(nucleon[0], nucleon[1], nucleon[2]))
+            part = physics.Particle(2112,
+                                    physics.Vector4(),
+                                    physics.Vector3(nucleon[0], nucleon[1], nucleon[2]))
             particles.append(part)
 
         return particles
+
+
+def read_density(fname, file_format='new'):
+    if file_format == 'new':
+        return _read_density_new(fname)
+    elif file_format == 'old':
+        return (1, _read_density_old(fname))
+    else:
+        raise ValueError("Must choose new ")
+
+
+def _read_density_old(fname):
+    return pd.read_csv(fname,
+                       sep=r'\s+',
+                       names=['pid', 'x', 'y', 'z'],
+                       compression='gzip')
+
+
+def _read_density_new(fname, n_nucleons=12, n_cols=4):
+    """
+    Reads quantum Monte Carlo output txt files. Output files contain a
+    single header line, followed by the data lines. The header contains
+    three numbers ('n_configs', 'max_weight', 'min_weight'). The data lines
+    appear in 14-line stanzas:
+        * 12 lines of four columns ('pid', 'x', 'y', z')
+        * 1 line with a weight
+        * 1 blank line
+    Args:
+        fname: str, full path the the file
+        n_nucleons: int, defaults to Carbon-12
+        n_cols: int, number of columns in data stanzas
+    """
+    with gzip.open(fname) as ifile:
+        # grab header: (n_configs, max_weight, min_weight)
+        n_configs, max_weight, _ = np.loadtxt(ifile, max_rows=1)
+        n_configs = int(n_configs)
+        # make room
+        configs = np.zeros((n_configs * n_nucleons, n_cols))
+        weights = np.zeros(n_configs * n_nucleons)
+        # read data
+        for idx in range(n_configs):
+            start = idx * n_nucleons
+            stop = start + n_nucleons
+            # blank line between stanzas is skipped automatically
+            configs[start:stop] = np.loadtxt(ifile, max_rows=n_nucleons)
+            weights[start:stop] = np.loadtxt(ifile, max_rows=1)
+    # back to Pandas
+    configs = pd.DataFrame(configs, columns=['pid', 'x', 'y', 'z'])
+    weights = pd.DataFrame(weights, columns=['weight'])
+    return (max_weight, pd.concat([configs, weights], axis=1))

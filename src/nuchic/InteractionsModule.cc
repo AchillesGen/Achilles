@@ -1,13 +1,8 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/stl.h"
-#include "pybind11/operators.h"
-#include "pybind11/functional.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/Interactions.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
-namespace py = pybind11;
 using namespace nuchic;
 
 class PyInteraction : public Interactions {
@@ -39,13 +34,13 @@ public:
     }
 
     // Trampoline for MakeMomentum
-    ThreeVector MakeMomentum(bool samePID, const double& p1CM,
+    ThreeVector MakeMomentum(bool samePID,
             const double& pcm, const std::array<double, 2>& rans) const override {
         PYBIND11_OVERLOAD_PURE(
             ThreeVector,                // Return type
             Interactions,               // Parent class
             MakeMomentum,               // Name of function in C++ (must match Python name)
-            samePID, p1CM, pcm, rans    // Argument(s)
+            samePID, pcm, rans    // Argument(s)
         );
     }
 
@@ -55,7 +50,7 @@ private:
 
 REGISTER_INTERACTION(PyInteraction);
 
-PYBIND11_MODULE(interactions, m) {
+void InteractionsModule(py::module &m) {
     m.def("cross_section", &CrossSection);
     m.def("cross_section_lab", &CrossSectionLab);
     m.def("cross_section_angle", &CrossSectionAngle);

@@ -1,20 +1,15 @@
-#include "pybind11/pybind11.h"
-#include "pybind11/operators.h"
-#include "pybind11/stl.h"
-
+#include "nuchic/PyBindings.hh"
 #include "nuchic/ParticleInfo.hh"
-
-namespace py = pybind11;
 
 // These are for convenience
 using nuchic::PID;
 using nuchic::ParticleInfoEntry;
 using nuchic::ParticleInfo;
 
-PYBIND11_MODULE(particle_info, m) {
-    py::class_<PID, std::shared_ptr<PID>> pid(m, "PID");
-    py::class_<ParticleInfoEntry, std::shared_ptr<ParticleInfoEntry>> particleEntry(m, "ParticleInfoEntry");
-    py::class_<ParticleInfo, std::shared_ptr<ParticleInfo>> particleInfo(m, "ParticleInfo");
+void ParticleInfoModule(py::module &m) {
+    py::class_<PID, std::shared_ptr<PID>> pid(m, "PID", py::module_local());
+    py::class_<ParticleInfoEntry, std::shared_ptr<ParticleInfoEntry>> particleEntry(m, "ParticleInfoEntry", py::module_local());
+    py::class_<ParticleInfo, std::shared_ptr<ParticleInfo>> particleInfo(m, "ParticleInfo", py::module_local());
 
     pid.def(py::init<const long int&>())
        .def("as_int", &PID::AsInt)
