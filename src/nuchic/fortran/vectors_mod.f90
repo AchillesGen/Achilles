@@ -46,6 +46,7 @@ module libvectors
         procedure :: scale => scale3
         procedure :: get => get3
         procedure :: print => print3
+        procedure :: copy => new3
     end type threevector
 
     ! This will act as constructor
@@ -201,6 +202,13 @@ contains ! Implementation of functions
         type(c_ptr), intent(in) :: other
         type(threevector) :: copy_constructor3
         copy_constructor3%ptr = other
+    end function
+
+    function new3(this)
+        implicit none
+        class(threevector), intent(in) :: this
+        type(c_ptr) :: new3 
+        new3 = new3_c(this%ptr)
     end function
 
     subroutine delete_threevector(this)

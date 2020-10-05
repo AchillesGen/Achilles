@@ -11,6 +11,10 @@ extern "C" {
         return new Particle(pid, *momentum, *position, status);
     }
 
+    Particle* CopyParticle(Particle *self) {
+        return new Particle(*self);
+    }
+
     void DeleteParticle(Particle *self) {
         delete self;
     }

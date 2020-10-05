@@ -11,6 +11,13 @@ interface
         integer(c_int), intent(in), value :: istatus
     end function
 
+    function copy_particle_c(other) bind(C, name="CopyParticle")
+        use iso_c_binding
+        implicit none
+        type(c_ptr), intent(in), value :: other
+        type(c_ptr) :: copy_particle_c
+    end function
+
     subroutine delete_particle_c(self) bind(C, name="DeleteParticle")
         use iso_c_binding
         implicit none

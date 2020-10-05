@@ -86,6 +86,13 @@ interface
         real(c_double), value :: x, y, z 
     end function
 
+    function new3_c(this) bind(C, name="New3")
+        use iso_c_binding
+        implicit none
+        type(c_ptr) :: new3_c
+        type(c_ptr), intent(in), value :: this
+    end function
+
     subroutine delete_threevector_c(self) bind(C, name="DeleteThreeVector")
         use iso_c_binding
         implicit none

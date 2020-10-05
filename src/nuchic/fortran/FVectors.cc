@@ -44,6 +44,10 @@ extern "C" {
     Vec3* CreateThreeVector(const double x, const double y, const double z) {
         return new Vec3(x, y, z);
     }
+    Vec3* New3(Vec3 *self) {
+        return new Vec3(*self);
+    }
+
     void DeleteThreeVector(Vec3 *self) {
         delete self;
     }

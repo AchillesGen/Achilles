@@ -13,6 +13,7 @@ module libparticle
         final :: delete_particle
 
         ! Member functions
+        procedure :: self => get_ptr
         procedure :: status => get_status
         procedure :: info => get_info
         procedure :: momentum => get_momentum
@@ -23,6 +24,7 @@ module libparticle
 
     interface particle
         module procedure create_particle
+        module procedure copy_constructor
     end interface
 
 contains
@@ -36,12 +38,27 @@ contains
         integer, intent(in) :: status
         create_particle%ptr = create_particle_c(id, momentum%self(), position%self(), status)
     end function
+    
+    function copy_constructor(other)
+        use iso_c_binding
+        implicit none
+        type(c_ptr), intent(in), value :: other
+        type(particle) :: copy_constructor
+        copy_constructor%ptr = copy_particle_c(other)
+    end function
 
     subroutine delete_particle(this)
         implicit none
         type(particle) :: this
         call delete_particle_c(this%ptr)
     end subroutine
+
+    function get_ptr(this)
+        implicit none
+        class(particle) :: this
+        type(c_ptr) :: get_ptr
+        get_ptr = this%ptr
+    end function
 
     function get_status(this)
         implicit none

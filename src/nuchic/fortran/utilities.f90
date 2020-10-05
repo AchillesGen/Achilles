@@ -13,7 +13,7 @@ module libutilities
     interface
         function strlen(str) result(iszie) bind(C, name="strlen")
             use iso_c_binding
-            type(c_ptr), value :: str
+            type(c_ptr), intent(in), value :: str
             integer(c_int) :: isize
         end function strlen
 
@@ -36,7 +36,7 @@ contains
     function c2fstring(cstr) result(fstr)
         character (len=:), allocatable :: fstr
 
-        type(c_ptr) :: cstr
+        type(c_ptr), intent(in), value :: cstr
         integer(c_int) :: n
 
         if(c_associated(cstr)) then
