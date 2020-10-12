@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "nuchic/Constants.hh"
+#include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
 
@@ -143,6 +144,10 @@ class Nucleus {
         /// Return the Fermi momentum according to a given FG model
 	///@param position: The radius to calculate the density
         double FermiMomentum(const double&) const noexcept;	//
+
+        void SetRecoil(const FourVector recoil) {
+            m_recoil = recoil;
+        }
 	///@}
 
         /// @name Functions
@@ -225,6 +230,8 @@ class Nucleus {
         static std::size_t NameToZ(const std::string&);
 
         randutils::mt19937_rng rng;
+
+        FourVector m_recoil{};
 };
 
 }
