@@ -23,6 +23,7 @@ module libvectors
         procedure :: scale => scale4
         procedure :: get => get4
         procedure :: print => print4
+        procedure :: to_array => array4
     end type fourvector
 
     ! This will act as constructor
@@ -189,6 +190,17 @@ contains ! Implementation of functions
 
         call print4_c(this%ptr)
     end subroutine
+
+    function array4(this)
+        implicit none
+        class(fourvector), intent(in) :: this
+        double precision, dimension(4) :: array4
+
+        array4(1) = this%get(0)
+        array4(2) = this%get(1)
+        array4(3) = this%get(2)
+        array4(4) = this%get(3)
+    end function
 
     function create_threevector(x, y, z)
         implicit none
