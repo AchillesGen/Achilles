@@ -58,7 +58,7 @@ double VegasResult::chi2() const {
 }
 
 std::string VegasResult::Summary() const {
-    double chi2Dof;
+    double chi2Dof{};
     if(sMean.size() != 1) {
         chi2Dof = chi2()/dof();
     } else {
@@ -71,46 +71,65 @@ std::string VegasResult::Summary() const {
 }
 
 Vegas::Vegas(nuchic::AdaptiveMap map_, 
-             const std::map<std::string, std::string> &args) : map(std::move(map_)) {
+             const YAML::Node &args) : map(std::move(map_)) {
     nstrats = 0;
     sumSigF = lim::max();
     lastNEval = 0;
-    
+   
+    SetDefaults();
     Set(args);
-    auto seed = std::stoul(args.at("seed"));
+    auto seed = static_cast<size_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    if(args["seed"])
+        seed = args["seed"].as<size_t>();
 #if USING_MPI
     // seed += nuchic::mpi -> Rank();
 #endif
-    rand = new randutils::mt19937_rng(seed);
+    rand = randutils::mt19937_rng(seed);
 }
 
-void Vegas::Set(const std::map<std::string,std::string>& args) {
-    if(args.find("evaluations") != args.end()) 
-        neval = std::stoul(args.at("evaluations"));    
-    if(args.find("maxinc") != args.end())
-        maxinc = std::stoul(args.at("maxinc"));
-    if(args.find("nCubeBatch") != args.end())
-        nCubeBatch = std::stoul(args.at("nCubeBatch"));
-    if(args.find("maxCube") != args.end())
-        maxCube = std::stoul(args.at("maxCube"));
-    if(args.find("maxEvalCube") != args.end())
-        maxEvalCube = std::stoul(args.at("maxEvalCube"));
-    if(args.find("iterations") != args.end())
-        nitn = std::stoul(args.at("iterations"));
-    if(args.find("alpha") != args.end())
-        alpha = std::stod(args.at("alpha"));
-    if(args.find("beta") != args.end())
-        beta = std::stod(args.at("beta"));
-    if(args.find("adapt") != args.end())
-        adapt = args.at("adapt") == "true" ? true : false;
-    if(args.find("adaptErrors") != args.end())
-        adaptErrors = args.at("adaptErrors") == "true" ? true : false;
-    if(args.find("vegas_rtol") != args.end())
-        rtol = std::stod(args.at("vegas_rtol"));
-    if(args.find("vegas_atol") != args.end())
-        atol = std::stod(args.at("vegas_atol"));
-    if(args.find("sync") != args.end())
-        sync = args.at("sync") == "true" ? true : false;
+void Vegas::SetDefaults() {
+    nitn = nitn_default;
+    neval = neval_default;
+    maxinc = maxinc_default;
+    nCubeBatch = nCubeBatch_default;
+    maxCube = maxCube_default;
+    maxEvalCube = maxEvalCube_default;
+    alpha = alpha_default;
+    beta = beta_default;
+    adapt = adapt_default;
+    adaptErrors = adaptErrors_default;
+    rtol = rtol_default;
+    atol = atol_default;
+    sync = sync_default;
+}
+
+void Vegas::Set(const YAML::Node &args) {
+    if(args["iterations"])
+        nitn = args["iterations"].as<size_t>();
+    if(args["evaluations"])
+        neval = args["evaluations"].as<size_t>();
+    if(args["maxinc"])
+        maxinc = args["maxinc"].as<size_t>();
+    if(args["nCubeBatch"])
+        nCubeBatch = args["nCubeBatch"].as<size_t>();
+    if(args["maxCube"])
+        maxCube = static_cast<size_t>(args["maxCube"].as<double>());
+    if(args["maxEvalCube"])
+        maxEvalCube = static_cast<size_t>(args["maxEvalCube"].as<double>());
+    if(args["alpha"])
+        alpha = args["alpha"].as<double>();
+    if(args["beta"])
+        beta = args["beta"].as<double>();
+    if(args["adapt"])
+        adapt = args["adapt"].as<bool>();
+    if(args["adaptErrors"])
+        adaptErrors = args["adaptErrors"].as<bool>();
+    if(args["rtol"])
+        rtol = args["rtol"].as<double>();
+    if(args["atol"])
+        atol = args["atol"].as<double>();
+    if(args["sync"])
+        sync = args["sync"].as<bool>();
 
     Setup();
 }
@@ -140,6 +159,7 @@ void Vegas::Setup() {
         // ni > ns makes no sense with this mode
         if(ni > ns) ni = ns;
     }
+
 
     // Rebuild map with correct number of increments
     map.Adapt(0,ni);
@@ -171,7 +191,7 @@ nuchic::Batch2D Vegas::GenerateRandom(const std::size_t &dim1, const std::size_t
     nuchic::Batch2D batchResult(dim1);
     for(std::size_t i = 0; i < dim1; ++i) {
         std::vector<double> tmp(dim2);
-        rand -> generate<std::uniform_real_distribution>(tmp);
+        rand.generate<std::uniform_real_distribution>(tmp);
         batchResult[i] = tmp;
     }
     return batchResult;

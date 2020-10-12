@@ -18,18 +18,23 @@
 
 #include "spdlog/spdlog.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
+
 namespace nuchic {
 
 using lim = std::numeric_limits<double>;
 
 class KBNSummation{
     public:
-        KBNSummation(): sum{0}, correction{0} { };
+        KBNSummation() = default;
         inline double GetSum() noexcept {return sum + correction;};
         void AddTerm(double value) noexcept;
         inline void Reset() noexcept {sum = 0; correction = 0;} ;
     private:
-        double sum, correction;
+        double sum{}, correction{};
 };
 
 using VegasPt = std::array<double,2>;
@@ -59,14 +64,15 @@ class VegasResult {
 
 class Vegas {
     public:
-        Vegas(nuchic::AdaptiveMap, const std::map<std::string, std::string>&);
+        Vegas(nuchic::AdaptiveMap, const YAML::Node&);
         Vegas(const Vegas&) = default;
         Vegas(Vegas&&) = default;
         Vegas &operator=(const Vegas&) = default;
         Vegas &operator=(Vegas&&) = default;
-        ~Vegas() { delete rand; }
+        ~Vegas() = default;
 
-        void Set(const std::map<std::string,std::string>&);
+        void SetDefaults();
+        void Set(const YAML::Node&);
         void Clear() {result = VegasResult(adapt);}
         std::string Settings(const std::size_t& ngrid=0);
         void RandomBatch(std::size_t, std::size_t, Batch2D&, Batch2D&, Batch&, BatchInt&);
@@ -92,7 +98,22 @@ class Vegas {
         double alpha{}, beta{}, rtol{}, atol{};
         bool adapt{}, adaptErrors{}, sync{};
         VegasResult result;
-        randutils::mt19937_rng* rand;
+        randutils::mt19937_rng rand;
+
+        // Default parameters
+        static constexpr size_t nitn_default = 10;
+        static constexpr size_t neval_default = 1000;
+        static constexpr size_t maxinc_default = 1000;
+        static constexpr size_t nCubeBatch_default = 1000;
+        static constexpr size_t maxCube_default = 1e9;
+        static constexpr size_t maxEvalCube_default = 1e7;
+        static constexpr double alpha_default = 1.5;
+        static constexpr double beta_default = 0.75;
+        static constexpr bool adapt_default = true;
+        static constexpr bool adaptErrors_default = false;
+        static constexpr double rtol_default = 0;
+        static constexpr double atol_default = 0;
+        static constexpr bool sync_default = true;
 
 // #ifdef USING_MPI
 //         int GetMPIRank();
