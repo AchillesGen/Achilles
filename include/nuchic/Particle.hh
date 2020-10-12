@@ -169,24 +169,24 @@ class Particle {
 
         /// Return the mass of the given particle
         ///@return double: The mass of the particle
-        double Mass() const noexcept {return momentum.M();}
+        double Mass() const noexcept { return info.Mass(); }
 
         /// Return the momentum in the x-direction
         ///@return double: Value of momentum in x-direction
-        double Px() const noexcept {return momentum.Px();}
+        double Px() const noexcept { return momentum.Px(); }
 
         /// Return the momentum in the y-direction
         ///@return double: Value of momentum in y-direction
-        double Py() const noexcept {return momentum.Py();}
+        double Py() const noexcept { return momentum.Py(); }
 
         /// Return the momentum in the z-direction
         ///@return double: Value of momentum in z-direction
-        double Pz() const noexcept {return momentum.Pz();}
+        double Pz() const noexcept { return momentum.Pz(); }
 
         /// Return the energy
         ///@return double: Value of energy
-        double E() const noexcept {return momentum.E();}
-        double Radius() const noexcept {return position.Magnitude();}
+        double E() const noexcept { return momentum.E(); }
+        double Radius() const noexcept { return position.Magnitude(); }
         ///@}
 
         /// @name Functions
