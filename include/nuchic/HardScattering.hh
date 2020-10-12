@@ -13,6 +13,7 @@ using Particles = std::vector<Particle>;
 enum class HardScatteringType {
     Quasielastic,
     MesonExchangeCurrent,
+    Interference_QE_MEC,
     Resonance,
     ShallowInelastic,
     DeepInelastic
