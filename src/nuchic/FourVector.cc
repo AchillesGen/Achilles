@@ -32,6 +32,15 @@ double FourVector::DeltaR(const FourVector& other) const noexcept {
     return sqrt(DEta*DEta + DPhi*DPhi);
 }
 
+double FourVector::CosAngle(const FourVector &other) const noexcept {
+    auto p1 = Vec3(), p2 = other.Vec3();
+    return std::max(std::min(p1*p2/(p1.P()*p2.P()), 1.0), -1.0);
+}
+
+double FourVector::Angle(const FourVector &other) const noexcept {
+    return std::acos(CosAngle(other));
+}
+
 ThreeVector FourVector::Vec3() const noexcept {
     return {vec[0], vec[1], vec[2]};
 }

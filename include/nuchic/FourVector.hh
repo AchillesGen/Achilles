@@ -213,6 +213,16 @@ class FourVector {
             return (*this) * other;
         }
 
+        /// Calculate the cosine of the angle between two four vectors
+        ///@param other: four vector to take angle between
+        ///@return double: cos(angle) between the two four vectors in radians
+        double CosAngle(const FourVector&) const noexcept;
+
+        /// Calculate the angle between two four vectors
+        ///@param other: four vector to take angle between
+        ///@return double: angle between the two four vectors in radians
+        double Angle(const FourVector&) const noexcept;
+
         /// Return a string representation of the vector
         ///@return std::string: a string representation of the vector
         std::string ToString() const noexcept;
