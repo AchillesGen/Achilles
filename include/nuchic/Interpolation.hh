@@ -95,6 +95,12 @@ class Interp2D {
         void BicubicSpline(const std::vector<double>&, const std::vector<double>&,
                 const pyArray&);
 
+        const double& Xmin() const { return knotX.front(); }
+        const double& Xmax() const { return knotX.back(); }
+
+        const double& Ymin() const { return knotY.front(); }
+        const double& Ymax() const { return knotY.back(); }
+
         /// Function to perform the interpolation at the given input point
         ///@param x: x-value to interpolate the function at
         ///@param y: y-value to interpolate the fucntion at
