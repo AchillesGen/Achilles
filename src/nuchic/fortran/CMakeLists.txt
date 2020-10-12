@@ -13,6 +13,9 @@ add_library(fortran_interface SHARED
     particle_info_mod.f90
     logging_mod.f90
     interaction_mod.f90
+    FInterpolation.cc
+    interpolation_mod.f90
+    #    FHardScattering.cc
     )
 target_link_libraries(fortran_interface PRIVATE project_options
                                         PUBLIC physics)

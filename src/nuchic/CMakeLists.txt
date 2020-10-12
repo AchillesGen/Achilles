@@ -6,6 +6,9 @@ add_library(utilities SHARED
     ThreeVector.cc
     Utilities.cc
     ParticleInfo.cc
+    Vegas.cc
+    AdaptiveMap.cc
+    Histogram.cc
 )
 target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -16,6 +19,9 @@ add_library(physics SHARED
     Interactions.cc
     InteractionsFactory.cc
     Nucleus.cc
+    FormFactor.cc
+    Beams.cc
+    HardScattering.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
