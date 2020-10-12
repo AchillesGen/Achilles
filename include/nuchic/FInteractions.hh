@@ -18,11 +18,9 @@ class FortranInteraction : public Interactions {
     public:
         FortranInteraction(const std::string &name) {
             size_t len = name.size();
-            char* cname = new char[len];
-            strcpy(cname, name.c_str());
-            fmt::print("{}, {}\n", cname, strlen(cname));
-            InitializeInteraction(cname);
-            delete[] cname;
+            auto cname = std::unique_ptr<char>(new char[len]);
+            strcpy(cname.get(), name.c_str());
+            InitializeInteraction(cname.get());
         };
 
         static std::unique_ptr<Interactions> Create(const std::string &data) {
