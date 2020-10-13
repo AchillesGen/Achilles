@@ -196,6 +196,21 @@ class FourVector {
         ///@return FourVector: The vector in the corresponding frame
         FourVector Boost(const double&, const double&, const double&) const noexcept;
 
+        /// Rotate the four vector to the frame given by the 3 angles
+        ///@param mat: The rotation matrix
+        ///@return FourVector: The vector in the corresponding frame
+        FourVector Rotate(const std::array<double, 9>&) const noexcept;
+
+        /// Obtain the rotation matrix to align the vector with a given axis
+        ///@param axis: The axis to rotate to align with
+        ///@return std::array<double, 9>: The rotation matrix to align the vector
+        ///                               with the given axis
+        std::array<double, 9> Align(const ThreeVector&) const noexcept;
+
+        /// Get the rotation matrix to align the vector with the z-axis
+        ///@return std::array<double, 9>: The matrix needed to define the rotation
+        std::array<double, 9> AlignZ() const noexcept;
+
         /// Calculate the cross product between two four vectors
         ///@param other: The vector to take the cross product with respect to
         ///@return FourVector: The vector perpendicular to the two inputs

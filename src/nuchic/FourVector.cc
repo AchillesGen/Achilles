@@ -71,6 +71,29 @@ FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
     return Boost(ThreeVector(beta_x, beta_y, beta_z));
 }
 
+FourVector FourVector::Rotate(const std::array<double, 9> &mat) const noexcept {
+    return {mat[0]*vec[0]+mat[1]*vec[1]+mat[2]*vec[2],
+            mat[3]*vec[0]+mat[4]*vec[1]+mat[5]*vec[2],
+            mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2], vec[3]};
+}
+
+std::array<double, 9> FourVector::Align(const ThreeVector &axis) const noexcept {
+
+    ThreeVector a = Vec3().Unit();
+
+    auto v = a.Cross(axis);
+    double c = a.Dot(axis);
+
+    return {1-v[1]*v[1]/(1+c)-v[2]*v[2]/(1+c), -v[2]+v[0]*v[1]/(1+c), v[1]+v[0]*v[2]/(1+c),
+            v[2]+v[0]*v[1]/(1+c), 1-v[0]*v[0]/(1+c)-v[2]*v[2]/(1+c), -v[0]+v[1]*v[2]/(1+c),
+            -v[1]+v[0]*v[2]/(1+c), v[0]+v[1]*v[2]/(1+c), 1-v[0]*v[0]/(1+c)-v[1]*v[1]/(1+c)};
+}
+
+std::array<double, 9> FourVector::AlignZ() const noexcept {
+    ThreeVector z{0, 0, 1};
+    return Align(z);
+}
+
 FourVector FourVector::Cross(const FourVector& other) const noexcept {
     ThreeVector result = this -> Vec3().Cross(other.Vec3());
     return {result, 0};
