@@ -1,3 +1,4 @@
+#include "fmt/ostream.h"
 #include "nuchic/Interpolation.hh"
 
 #include <iostream>
@@ -63,6 +64,10 @@ extern "C" {
     }
 
     double Interpolate2D(nuchic::Interp2D *interp, double x, double y) {
-        return interp -> operator()(x, y);
+        try {
+            return interp -> operator()(x, y);
+        } catch (std::domain_error &e) {
+            return 0;
+        }
     }
 }
