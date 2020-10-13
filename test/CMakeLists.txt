@@ -8,7 +8,7 @@ target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
 
 add_executable(nuchic-testsuite 
     # Files with tests 
-    # test_vectors.cc
+    test_vectors.cc
     # test_utils.cc
     # test_nucleus.cc
     # test_form_factor.cc

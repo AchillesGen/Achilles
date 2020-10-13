@@ -254,3 +254,20 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK(p1.DeltaR(p2) == DR);
     }
 }
+
+TEST_CASE("Rotations", "[Vectors]") {
+    constexpr double eps = 1e-12;
+    SECTION("Four Vectors") {
+        nuchic::FourVector p(1, 2, 3, 4);
+        auto rotMat = p.AlignZ();
+        auto result = p.Rotate(rotMat);
+
+        CHECK(result[0] == Approx(0).margin(eps));
+        CHECK(result[1] == Approx(0).margin(eps));
+        CHECK(result[2] == Approx(p.P()).margin(eps));
+        CHECK(result[3] == p[3]);
+    }
+    SECTION("Three Vectors") {
+
+    }
+}
