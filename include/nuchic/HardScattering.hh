@@ -10,7 +10,6 @@
 #pragma GCC diagnostic pop
 
 #include "nuchic/Beams.hh"
-#include "nuchic/Nucleus.hh"
 
 #include "nuchic/Histogram.hh"
 
@@ -18,6 +17,7 @@ namespace nuchic {
 
 class FourVector;
 class Particle;
+class Nucleus;
 
 using Particles = std::vector<Particle>;
 
@@ -34,10 +34,10 @@ class HardScattering {
     public:
         HardScattering(Beam leptonBeam, std::shared_ptr<Nucleus> nuc) 
             : m_leptonBeam{std::move(leptonBeam)}, m_nuc{std::move(nuc)} {};
- //       HardScattering(const HardScattering&) = default;
- //       HardScattering(HardScattering&&) = default;
- //       HardScattering& operator=(const HardScattering&) = default;
- //       HardScattering& operator=(HardScattering&&) = default;
+        HardScattering(const HardScattering&) = default;
+        HardScattering(HardScattering&&) = default;
+        HardScattering& operator=(const HardScattering&) = default;
+        HardScattering& operator=(HardScattering&&) = default;
         virtual ~HardScattering() = default;
 
         // Validation information
@@ -96,6 +96,7 @@ class Quasielastic : public HardScattering {
 class QESpectral : public Quasielastic {
     public:
         QESpectral(Beam beam, std::shared_ptr<Nucleus> nuc) : Quasielastic(beam, nuc) {}
+        QESpectral(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 4; }
         Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
@@ -104,6 +105,13 @@ class QESpectral : public Quasielastic {
         double CrossSection(const Particles&) const override {
             return 10;
         }
+};
+
+class FQESpectral : public QESpectral {
+    public:
+        FQESpectral(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
+
+        double CrossSection(const Particles&) const override;
 };
 
 class DIS : HardScattering {

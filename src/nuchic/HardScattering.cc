@@ -1,6 +1,7 @@
 #include "nuchic/HardScattering.hh"
 #include "nuchic/Constants.hh"
 #include "nuchic/Particle.hh"
+#include "nuchic/Nucleus.hh"
 
 // Aliases for most common types
 using nuchic::Particles;
