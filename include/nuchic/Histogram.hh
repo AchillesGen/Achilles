@@ -7,6 +7,11 @@
 #include <stdexcept>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
+
 enum class HistOut { Native, YODA, ROOT };
 
 #ifdef HAVE_YODA
@@ -28,10 +33,6 @@ enum class HistOut { Native, YODA, ROOT };
 #endif
 
 
-namespace IO {
-    class Settings;
-}
-
 namespace nuchic {
 
 class FourVector;
@@ -42,6 +43,10 @@ class Histogram {
         Histogram(const size_t&, const double&, const double&,
                   std::string, std::string path="");
         Histogram(std::vector<double>, std::string, std::string path="");
+        Histogram(const Histogram&) = default;
+        Histogram(Histogram&&) = default;
+        Histogram& operator=(const Histogram&) = default;
+        Histogram& operator=(Histogram&&) = default;
         virtual ~Histogram() = default;
 
         virtual void Fill(const double& x, const double& wgt=1.0);
@@ -62,7 +67,6 @@ class Histogram {
         std::vector<double> binedges;
         std::vector<double> binvals;
         size_t FindBin(const double&) const;
-        std::mutex fillHist;
 };
 
 #ifdef HAVE_YODA
@@ -102,15 +106,12 @@ class ROOTHistogram : public Histogram {
 
 class HistogramCollection {
     public:
-        HistogramCollection(IO::Settings*);
-        virtual ~HistogramCollection() {
-            for(auto hist : hists) {
-                delete hist.second;
-            }
-#ifdef HAVE_ROOT
+        HistogramCollection(const YAML::Node&);
+#if HAVE_ROOT
+        ~HistogramCollection() {
             delete f;
-#endif
         }
+#endif
 
         void InitializeHists();
 
@@ -128,7 +129,7 @@ class HistogramCollection {
         TFile *f;
 #endif
         HistOut outputMode;
-        std::map<std::string, Histogram*> hists;
+        std::map<std::string, std::unique_ptr<Histogram>> hists;
 };
 
 }

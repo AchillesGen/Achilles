@@ -37,7 +37,6 @@ size_t Histogram::FindBin(const double& x) const {
 }
 
 void Histogram::Fill(const double& x, const double& wgt) {
-    std::lock_guard<std::mutex> lock(fillHist);
     const size_t loc = FindBin(x);
     if(loc != static_cast<size_t>(-1)) {
         binvals[loc-1] += wgt/(binedges[loc]-binedges[loc-1]);
@@ -113,7 +112,6 @@ YODAHistogram::YODAHistogram(const std::vector<double>& binedges, const std::str
 }
 
 void YODAHistogram::Fill(const double& x, const double& wgt) {
-    std::lock_guard<std::mutex> lock(fillHist);
     histogram.fill(x,wgt);
 }
 
@@ -159,7 +157,6 @@ ROOTHistogram::ROOTHistogram(const std::vector<double>& _binedges, const std::st
 }
 
 void ROOTHistogram::Fill(const double& x, const double& wgt) {
-    std::lock_guard<std::mutex> lock(fillHist);
     double bwidth = histogram -> GetBinWidth(histogram -> FindFixBin(x));
     histogram -> Fill(x,wgt/bwidth);
 }
