@@ -15,19 +15,33 @@ add_library(fortran_interface SHARED
     interaction_mod.f90
     FInterpolation.cc
     interpolation_mod.f90
-    #    FHardScattering.cc
-    )
+    FHardScattering.cc
+    hardscattering_mod.f90
+    OneBody/pke_read_xsec.f90
+    OneBody/contract.f90
+    OneBody/currents.f90
+    OneBody/nform.f90
+    OneBody/mathtool.f90
+)
 target_link_libraries(fortran_interface PRIVATE project_options
-                                        PUBLIC physics)
+                                        PUBLIC physics
+)
 
 add_executable(constant_test 
     test_constants.f90
 )
 target_link_libraries(constant_test PRIVATE project_options
-                                    PUBLIC fortran_interface)
+                                    PUBLIC fortran_interface
+)
 
 add_executable(interaction_test
     test_interaction.cc
 )
 target_link_libraries(interaction_test PRIVATE project_options
-                                       PUBLIC fortran_interface)
+                                       PUBLIC fortran_interface
+)
+
+add_executable(fqe_test test_fqe.cc)
+target_link_libraries(fqe_test PRIVATE project_options
+                               PUBLIC fortran_interface
+)
