@@ -10,6 +10,9 @@ extern "C" {
     Vec4* CreateFourVector(const double x, const double y, const double z, const double E) {
         return new Vec4(x, y, z, E);
     }
+    Vec4* CopyFourVector(const Vec4 *self) {
+        return new Vec4(*self);
+    }
     void DeleteFourVector(Vec4 *self) {
         delete self;
     }

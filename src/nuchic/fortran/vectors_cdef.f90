@@ -11,6 +11,14 @@ interface
         real(c_double), value :: e 
     end function
 
+    function copy_fourvector_c(ptr) bind(C, name="CopyFourVector")
+        use iso_c_binding
+        implicit none
+
+        type(c_ptr) :: copy_fourvector_c
+        type(c_ptr) :: ptr
+    end function
+
     subroutine delete_fourvector_c(self) bind(C, name="DeleteFourVector")
         use iso_c_binding
         implicit none

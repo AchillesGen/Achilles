@@ -91,7 +91,7 @@ contains ! Implementation of functions
         implicit none
         type(c_ptr), intent(in) :: other
         type(fourvector) :: copy_constructor4
-        copy_constructor4%ptr = other
+        copy_constructor4%ptr = copy_fourvector_c(other)
     end function
 
     subroutine delete_fourvector(this)
@@ -196,10 +196,10 @@ contains ! Implementation of functions
         class(fourvector), intent(in) :: this
         double precision, dimension(4) :: array4
 
-        array4(1) = this%get(0)
-        array4(2) = this%get(1)
-        array4(3) = this%get(2)
-        array4(4) = this%get(3)
+        array4(1) = this%get(3)
+        array4(2) = this%get(0)
+        array4(3) = this%get(1)
+        array4(4) = this%get(2)
     end function
 
     function create_threevector(x, y, z)
