@@ -78,9 +78,9 @@ Vegas::Vegas(nuchic::AdaptiveMap map_,
    
     SetDefaults();
     Set(args);
-    auto seed = static_cast<size_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(args["seed"])
-        seed = args["seed"].as<size_t>();
+        seed = args["seed"].as<unsigned int>();
 #if USING_MPI
     // seed += nuchic::mpi -> Rank();
 #endif
