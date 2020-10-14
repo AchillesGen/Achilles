@@ -10,8 +10,9 @@ extern "C" {
                                double, double, double, double, double, double);
 }
 
-nuchic::FQESpectral::FQESpectral(const YAML::Node &config, Beam beam, std::shared_ptr<Nucleus> nuc)
-    : nuchic::QESpectral(beam, nuc) {
+nuchic::FQESpectral::FQESpectral(const YAML::Node &config, Beam beam,
+                                 std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+    : nuchic::QESpectral(beam, nuc, mode) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();

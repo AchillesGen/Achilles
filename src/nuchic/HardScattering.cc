@@ -8,6 +8,19 @@ using nuchic::Particles;
 using nuchic::HardScattering;
 using nuchic::QESpectral;
 
+int HardScattering::LeptonVariables() const {
+    int nvars = GetBeam().NVariables();
+    switch(m_mode) {
+        case HardScatteringMode::FixedAngle:
+            nvars += 2;
+            break;
+        case HardScatteringMode::FullPhaseSpace:
+            nvars += 3;
+            break;
+    }
+    return nvars;
+}
+
 Particles HardScattering::GeneratePhaseSpace(const std::vector<double> &rans) const {
     std::vector<double> leptonRans(rans.begin(), rans.begin() + LeptonVariables());
     std::vector<double> hadronRans(rans.begin() + LeptonVariables(), rans.end());
@@ -36,10 +49,19 @@ Particles HardScattering::GenerateLeptons(const std::vector<double> &rans) const
     std::vector<double> leptonRans(rans.begin()+GetBeam().NVariables(), rans.end());
     leptons[0].SetMomentum(GetBeam().Flux(leptons[0].ID(), beamRans));
 
-    double cosT = 2*leptonRans[0] - 1;
-    double sinT = sqrt(1-cosT*cosT);
-    double phi = 2*M_PI*leptonRans[1];
-    double Elepton = leptons[0].E()*leptonRans[2];
+    double phi = 2*M_PI*leptonRans[0];
+    double Elepton = leptons[0].E()*leptonRans[1];
+    double cosT{}, sinT{};
+    switch(m_mode) {
+        case HardScatteringMode::FixedAngle:
+            cosT = std::cos(m_angle);
+            sinT = std::sin(m_angle); 
+            break;
+        case HardScatteringMode::FullPhaseSpace:
+            cosT = 2*leptonRans[2] - 1;
+            sinT = sqrt(1-cosT*cosT);
+            break;
+    }
     leptons[1].SetMomentum({Elepton*sinT*cos(phi),
                             Elepton*sinT*sin(phi),
                             Elepton*cosT, Elepton});
@@ -55,7 +77,15 @@ double HardScattering::PhaseSpaceWeight(const Particles &particles) const {
 }
 
 double HardScattering::LeptonWeight(const Particles &leptons) const {
-    return leptons[0].E()*leptons[1].E()*leptons[1].Momentum().P()*4*M_PI;
+    double wgt = leptons[0].E()*leptons[1].E()*leptons[1].Momentum().P()*2*M_PI;
+    switch(m_mode) {
+        case HardScatteringMode::FixedAngle:
+            break;
+        case HardScatteringMode::FullPhaseSpace:
+            wgt *= 2;
+            break;
+    }
+    return wgt;
 }
 
 Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const FourVector &Q) const {

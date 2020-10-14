@@ -30,10 +30,16 @@ enum class HardScatteringType {
     DeepInelastic
 };
 
+// TODO: Move and rename in the driver class
+enum class HardScatteringMode {
+    FixedAngle,
+    FullPhaseSpace
+};
+
 class HardScattering {
     public:
-        HardScattering(Beam leptonBeam, std::shared_ptr<Nucleus> nuc) 
-            : m_leptonBeam{std::move(leptonBeam)}, m_nuc{std::move(nuc)} {};
+        HardScattering(Beam leptonBeam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode) 
+            : m_leptonBeam{std::move(leptonBeam)}, m_nuc{std::move(nuc)}, m_mode{mode} {};
         HardScattering(const HardScattering&) = default;
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
@@ -48,7 +54,7 @@ class HardScattering {
 
         // Number of phase space variables
         int NVariables() const { return LeptonVariables() + HadronVariables(); }
-        virtual int LeptonVariables() const = 0;
+        virtual int LeptonVariables() const;
         virtual int HadronVariables() const = 0;
 
         // Generate phase space momentums
@@ -68,6 +74,9 @@ class HardScattering {
         // Beam information
         const Beam& GetBeam() const { return m_leptonBeam; }
 
+        // Special phase space routines
+        void SetScatteringAngle(double angle) { m_angle = angle; }
+
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
         const Histogram& GetHist() const { return hist; }
@@ -79,23 +88,26 @@ class HardScattering {
         Beam m_leptonBeam;
         std::shared_ptr<Nucleus> m_nuc;
 
+        // TODO: Move to the driver class
+        HardScatteringMode m_mode;
+        double m_angle{};
 };
 
 class Quasielastic : public HardScattering {
     public:
-        Quasielastic(Beam beam, std::shared_ptr<Nucleus> nuc) : HardScattering(beam, nuc) {}
+        Quasielastic(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+            : HardScattering(beam, nuc, mode) {}
         HardScatteringType ScatteringType() const override { 
             return HardScatteringType::Quasielastic;
         }
-
-        int LeptonVariables() const override { return 3 + GetBeam().NVariables(); }
 
         double CrossSection(const Particles&) const override = 0;
 };
 
 class QESpectral : public Quasielastic {
     public:
-        QESpectral(Beam beam, std::shared_ptr<Nucleus> nuc) : Quasielastic(beam, nuc) {}
+        QESpectral(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+            : Quasielastic(beam, nuc, mode) {}
         QESpectral(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 4; }
@@ -109,7 +121,7 @@ class QESpectral : public Quasielastic {
 
 class FQESpectral : public QESpectral {
     public:
-        FQESpectral(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
+        FQESpectral(const YAML::Node&, Beam, std::shared_ptr<Nucleus>, HardScatteringMode);
 
         double CrossSection(const Particles&) const override;
 };
