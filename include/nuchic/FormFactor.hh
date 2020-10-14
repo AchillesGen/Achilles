@@ -1,6 +1,7 @@
 #ifndef FORMFACTORY_HH
 #define FORMFACTORY_HH
 
+#include <array>
 #include <memory>
 
 #include "yaml-cpp/node/node.h"
