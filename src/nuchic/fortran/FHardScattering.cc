@@ -41,7 +41,7 @@ double nuchic::FQESpectral::CrossSection(const Particles &particles) const {
     auto pNucleonIn = particles[2].Momentum();
     auto pNucleonOut = particles[3].Momentum();
 
-    auto qVec = pLeptonOut - pLeptonIn;
+    auto qVec = pLeptonIn - pLeptonOut;
     auto rotMat = qVec.AlignZ();
     qVec = qVec.Rotate(rotMat);
     pLeptonIn = pLeptonIn.Rotate(rotMat);
