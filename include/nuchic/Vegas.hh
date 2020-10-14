@@ -54,8 +54,8 @@ class VegasResult {
     private:
         std::vector<double> sMean, sVar;
         double sum{}, sum2{}, sumVar{};
-        double mean{}, mean2{}, meanDivVar{}, mean2DivVar{};
-        double var{}, var2{}, OneDivVar{};
+        double mean{}, meanDivVar{}, mean2DivVar{};
+        double var{}, OneDivVar{};
         std::size_t n{};
         bool weighted;
         double chi2() const;
