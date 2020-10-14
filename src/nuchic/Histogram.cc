@@ -1,4 +1,5 @@
 #include "nuchic/Histogram.hh"
+#include "fmt/format.h"
 
 #include <fstream>
 #include <stdexcept>
@@ -10,8 +11,8 @@ namespace nuchic {
 Histogram::Histogram(const size_t& nbins, const double& lower, const double& upper,
                      std::string name_, std::string path_) :
                     name{std::move(name_)}, path{std::move(path_)} {
-    binvals = std::vector<double>();
-    binvals.resize(nbins,0);
+    binvals = std::vector<double>(nbins, 0);
+    errors = std::vector<double>(nbins, 0);
     double binsize = (upper-lower)/static_cast<double>(nbins);
     for(size_t i = 0; i <= nbins; ++i) {
         binedges.push_back(lower+static_cast<double>(i)*binsize);
@@ -21,8 +22,8 @@ Histogram::Histogram(const size_t& nbins, const double& lower, const double& upp
 Histogram::Histogram(std::vector<double> binedges_, std::string name_,
                      std::string path_) : 
                     name{std::move(name_)}, path{std::move(path_)}, binedges{std::move(binedges_)} {
-    binvals = std::vector<double>();
-    binvals.resize(binedges.size()-1,0);
+    binvals = std::vector<double>(binedges.size()-1, 0);
+    errors = std::vector<double>(binedges.size()-1, 0);
     for(size_t i = 0; i < binvals.size(); ++i) {
         if(binedges[i]>binedges[i+1]) throw std::runtime_error("Bin edges must be in increasing order!");
         if(binedges[i]==binedges[i+1]) throw std::runtime_error("Bin edges must not be identical!");
@@ -40,6 +41,7 @@ void Histogram::Fill(const double& x, const double& wgt) {
     const size_t loc = FindBin(x);
     if(loc != static_cast<size_t>(-1)) {
         binvals[loc-1] += wgt/(binedges[loc]-binedges[loc-1]);
+        errors[loc-1] += pow(wgt/(binedges[loc]-binedges[loc-1]), 2);
     }
 }
 
@@ -91,9 +93,11 @@ void Histogram::Save() const {
 void Histogram::Save(const std::string& filename) const {
     std::ofstream out(path+filename+".txt");
     out << name << std::endl;
-    out << "bin edges:\t\tbin value:" << std::endl;
+    out << fmt::format("{:^15} {:^15} {:^15} {:^15}\n",
+                       "lower edge", "upper edge", "value", "error");
     for(size_t i = 0; i < binvals.size(); ++i) {
-        out << binedges[i] << "-" << binedges[i+1] << "\t\t" << binvals[i] << std::endl;
+        out << fmt::format("{:< 15.6e} {:< 15.6e} {:< 15.6e} {:< 15.6e}\n",
+                           binedges[i], binedges[i+1], binvals[i], std::sqrt(errors[i]));
     }
 }
 

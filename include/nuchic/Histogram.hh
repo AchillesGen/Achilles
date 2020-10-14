@@ -66,6 +66,7 @@ class Histogram {
         std::string name, path; 
         std::vector<double> binedges;
         std::vector<double> binvals;
+        std::vector<double> errors;
         size_t FindBin(const double&) const;
 };
 
