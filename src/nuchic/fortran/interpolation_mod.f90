@@ -94,7 +94,7 @@ contains
         double precision, dimension(n2), intent(in) :: y
         double precision, dimension(n1,n2), intent(in) :: z
         type(interp2d) :: create_interp2d2
-        create_interp2d2%ptr = create_interp2d_c(x, y, z, n1, n2)
+        create_interp2d2%ptr = create_interp2d_c(x, y, transpose(z), n1, n2)
     end function
 
     subroutine delete_interp2d(this)

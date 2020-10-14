@@ -44,7 +44,7 @@
           enddo
           close(4)
           pke_p=pke_p*(xe_p(2)-xe_p(1))
-          pke_n_interp = interp2d(xe_p, p, pke_p, nep, np)
+          pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
 !
           open(unit=4,file=fname_pken,status='unknown',form='formatted')
           read(4,*) nen,np
@@ -57,7 +57,6 @@
           pke_n=pke_n*(xe_n(2)-xe_n(1))
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
 
-       
           !... change dimension to p[MeV] and [MeV**-4]
           !p=p*hbarc
           !Pke_p=Pke_p/hbarc**3

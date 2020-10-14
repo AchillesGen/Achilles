@@ -22,15 +22,18 @@ contains
     subroutine onebody_init(this, fname_p, fname_n, fg, nz, na, kf, iform)
         use quasi_el
         use libutilities
+        use dirac_matrices
         implicit none
 
         class(onebody_calc) :: this
         integer*4 :: fg, nz, na, iform
-        real*8 :: kf
+        real*8 :: kf, mqef
         character(len=*), intent(in) :: fname_p, fname_n
 
         call init(constants)
         call init_pke(fname_p, fname_n, fg, nz, na, kf, iform)
+        mqef=constants%mqe/constants%hbarc
+        call dirac_matrices_in(mqef)
     end subroutine
 
     function onebody_xsec(this, inucleon, pn_vec, pfn_vec, e, mom, w, qval, theta, ee)
