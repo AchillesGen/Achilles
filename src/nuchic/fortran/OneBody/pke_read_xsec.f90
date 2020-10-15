@@ -43,7 +43,19 @@
              read(4,'(4(f6.1,2x,e10.3))')(xe_p(i),pke_p(i,j),i=1,nep)
           enddo
           close(4)
-          !!pke_p=pke_p*(xe_p(2)-xe_p(1))
+          norm=0.0d0
+          hp=p(2)-p(1)
+          he_p=xe_p(2)-xe_p(1)
+          do j=1,np
+             dp_p(j)=sum(pke_p(:,j))*he_p
+          enddo
+    
+          norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
+          pke_p=pke_p/norm
+          write(6,*)'n(k) norm initial for protons=', norm
+
+          
+          
           pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
 !
           open(unit=4,file=fname_pken,status='unknown',form='formatted')
@@ -54,7 +66,16 @@
              read(4,'(4(f6.1,2x,e10.3))')(xe_n(i),pke_n(i,j),i=1,nen)
           enddo
           close(4)
-          !!pke_n=pke_n*(xe_n(2)-xe_n(1))
+          norm=0.0d0
+          he_n=xe_n(2)-xe_n(1)
+
+          do j=1,np
+             dp_n(j)=sum(pke_n(:,j))*he_n
+          enddo
+          norm=sum(p(:)**2*dp_n(:))*4.0d0*pi*hp
+          pke_n=pke_n/norm
+          write(6,*)'n(k) norm initial for neutrons=', norm
+          
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
 
           !... change dimension to p[MeV] and [MeV**-4]
@@ -62,27 +83,13 @@
           !Pke_p=Pke_p/hbarc**3
           !Pke_n=Pke_n/hbarc**3       
           pmax=p(np)
-          hp=p(2)-p(1)!pmax/dble(nbox)
+          !pmax/dble(nbox)
        else
           write(6,*) 'we did not code the FG case for the Asymmetric nuclei'
        endif
     
-       norm=0.0d0
-       do j=1,np
-          dp_p(j)=sum(pke_p(:,j))*he_p
-       enddo
     
-       norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
-       pke_p=pke_p/norm
-       write(6,*)'n(k) norm initial for protons=', norm
-    
-       norm=0.0d0
-       do j=1,np
-          dp_n(j)=sum(pke_n(:,j))!*he_n
-       enddo
-       norm=sum(p(:)**2*dp_n(:))*4.0d0*pi*hp
-       pke_n=pke_n/norm
-       write(6,*)'n(k) norm initial for neutrons=', norm
+
 
 end subroutine
 

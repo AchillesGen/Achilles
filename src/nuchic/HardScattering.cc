@@ -113,7 +113,9 @@ Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const Fou
 }
 
 double QESpectral::HadronWeight(const Particles &hadrons) const {
-    return GetNucleus() -> FermiMomentum(0)*hadrons[0].Momentum().P()*hadrons[0].E()*4*M_PI;
+    //return GetNucleus() -> FermiMomentum(0)*hadrons[0].Momentum().P()*hadrons[0].E()*4*M_PI;
+    return GetNucleus() -> FermiMomentum(0)*3*pow(hadrons[0].Momentum().P(),2)*4*M_PI;
+
 }
 
 double HardScattering::Test(const std::vector<double> &rans, const double &wgt) {
