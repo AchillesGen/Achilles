@@ -94,7 +94,7 @@ Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const Fou
     double cosT = 2*rans[0] - 1;
     double sinT = sqrt(1-cosT*cosT);
     double phi = 2*M_PI*rans[1];
-    double p = GetNucleus() -> FermiMomentum(0)*rans[2];
+    double p = GetNucleus() -> FermiMomentum(0)*rans[2]*3;
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
     tmp += Q.Vec3();

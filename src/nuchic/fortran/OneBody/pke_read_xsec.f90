@@ -43,7 +43,7 @@
              read(4,'(4(f6.1,2x,e10.3))')(xe_p(i),pke_p(i,j),i=1,nep)
           enddo
           close(4)
-          pke_p=pke_p*(xe_p(2)-xe_p(1))
+          !!pke_p=pke_p*(xe_p(2)-xe_p(1))
           pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
 !
           open(unit=4,file=fname_pken,status='unknown',form='formatted')
@@ -54,7 +54,7 @@
              read(4,'(4(f6.1,2x,e10.3))')(xe_n(i),pke_n(i,j),i=1,nen)
           enddo
           close(4)
-          pke_n=pke_n*(xe_n(2)-xe_n(1))
+          !!pke_n=pke_n*(xe_n(2)-xe_n(1))
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
 
           !... change dimension to p[MeV] and [MeV**-4]
@@ -69,7 +69,7 @@
     
        norm=0.0d0
        do j=1,np
-          dp_p(j)=sum(pke_p(:,j))!*he_p
+          dp_p(j)=sum(pke_p(:,j))*he_p
        enddo
     
        norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
@@ -107,6 +107,7 @@ end subroutine
     endif       
     xp=sqrt(sum(p_4(2:4)**2))
     xpf=sqrt(sum(pf_4(2:4)**2))
+    p_4(1)=sqrt(xp**2+mqe**2)
     wt=w-abs(e)+mqe-p_4(1)
     
 
