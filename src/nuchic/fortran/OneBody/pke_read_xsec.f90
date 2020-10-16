@@ -17,7 +17,6 @@
 
     contains
 
-
     subroutine init_pke(fname_pkep,fname_pken,fg_in,nZ_in,nA_in,kF_in,iform_in)
         implicit none
         integer*4 :: fg_in,i,j,nZ_in,nA_in,iform_in
@@ -52,12 +51,9 @@
     
           norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
           pke_p=pke_p/norm
+          pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
           write(6,*)'n(k) norm initial for protons=', norm
 
-          
-          
-          pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
-!
           open(unit=4,file=fname_pken,status='unknown',form='formatted')
           read(4,*) nen,np
           allocate(pke_n(nen,np),dp_n(np),xe_n(nen))
@@ -74,9 +70,8 @@
           enddo
           norm=sum(p(:)**2*dp_n(:))*4.0d0*pi*hp
           pke_n=pke_n/norm
-          write(6,*)'n(k) norm initial for neutrons=', norm
-          
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
+          write(6,*)'n(k) norm initial for neutrons=', norm
 
           !... change dimension to p[MeV] and [MeV**-4]
           !p=p*hbarc
@@ -87,47 +82,41 @@
        else
           write(6,*) 'we did not code the FG case for the Asymmetric nuclei'
        endif
-    
-    
+    end subroutine
 
+    subroutine f_eval(in,p_4,pf_4,e,mom,w,qval,thetalept,ee,f_o)
+        use mathtool
+        implicit none
+        real*8, parameter :: eps=5.0d0,small=1e-15
+        real*8 :: e, mom
+        
+        integer*4 :: in
+        real*8 :: p_4(4),pf_4(4)
+        real*8 :: w,wt,qval,thetalept,ee,f_o,pke,xp,xpf
+        real*8 :: sig,arg,delta_w
 
-end subroutine
-
-
-
-  subroutine f_eval(in,p_4,pf_4,e,mom,w,qval,thetalept,ee,f_o)
-    use mathtool
-    implicit none
-    real*8, parameter :: eps=5.0d0,small=1e-15
-    real*8 :: e, mom
-    
-    integer*4 :: in
-    real*8 :: p_4(4),pf_4(4)
-    real*8 :: w,wt,qval,thetalept,ee,f_o,pke,xp,xpf
-    real*8 :: sig,arg,delta_w
-
-    f_o=0.0d0
-    if(in.eq.1) then
-        pke = pke_p_interp%call(e, mom)
-    elseif(in.eq.2) then
-        pke = pke_n_interp%call(e, mom)
-    endif       
-    xp=sqrt(sum(p_4(2:4)**2))
-    xpf=sqrt(sum(pf_4(2:4)**2))
-    p_4(1)=sqrt(xp**2+mqe**2)
-    wt=w-abs(e)+mqe-p_4(1)
+        f_o=0.0d0
+        if(in.eq.1) then
+            pke = pke_p_interp%call(e, mom)
+        elseif(in.eq.2) then
+            pke = pke_n_interp%call(e, mom)
+        endif       
+        xp=sqrt(sum(p_4(2:4)**2))
+        xpf=sqrt(sum(pf_4(2:4)**2))
+        p_4(1)=sqrt(xp**2+mqe**2)
+        wt=w-abs(e)+mqe-p_4(1)
     
 
-    ! arg=wt+p_4(1)-pf_4(1)
-    ! delta_w=fdelta(arg,eps)
-    ! if (delta_w.gt.small)then
-         call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
-         ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
-         f_o=pke*(dble(nZ)*sig)
-    ! endif
+        ! arg=wt+p_4(1)-pf_4(1)
+        ! delta_w=fdelta(arg,eps)
+        ! if (delta_w.gt.small)then
+        call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
+        ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
+        f_o=pke*(dble(nZ)*sig)
+        ! endif
     
-    return
-  end subroutine f_eval
+        return
+    end subroutine f_eval
 
 
-  end module quasi_el
+end module quasi_el
