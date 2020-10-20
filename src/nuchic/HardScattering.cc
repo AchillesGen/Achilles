@@ -78,6 +78,7 @@ double HardScattering::PhaseSpaceWeight(const Particles &particles) const {
 
 double HardScattering::LeptonWeight(const Particles &leptons) const {
     double wgt = leptons[0].E()*leptons[1].E()*leptons[1].Momentum().P()*2*M_PI;
+    
     switch(m_mode) {
         case HardScatteringMode::FixedAngle:
             break;
@@ -90,12 +91,13 @@ double HardScattering::LeptonWeight(const Particles &leptons) const {
 
 Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const FourVector &Q) const {
     auto pid = 2*rans[0] < 1.0 ? PID::proton() : PID::neutron();
+
     Particles hadrons = { Particle(pid), Particle(pid) };
 
     double cosT = 2*rans[1] - 1;
     double sinT = sqrt(1-cosT*cosT);
     double phi = 2*M_PI*rans[2];
-    double p = 4*GetNucleus() -> FermiMomentum(0)*rans[3];
+    double p = 3*GetNucleus() -> FermiMomentum(0)*rans[3];
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
     tmp += Q.Vec3();
@@ -114,7 +116,7 @@ Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const Fou
 }
 
 double QESpectral::HadronWeight(const Particles &hadrons) const {
-    return 4*GetNucleus() -> FermiMomentum(0)*pow(hadrons[0].Momentum().P(), 2)*4*M_PI*2;
+    return 3*GetNucleus() -> FermiMomentum(0)*pow(hadrons[0].Momentum().P(), 2)*4*M_PI;
 }
 
 double HardScattering::Test(const std::vector<double> &rans, const double &wgt) {

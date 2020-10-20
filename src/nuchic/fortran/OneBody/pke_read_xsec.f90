@@ -112,7 +112,7 @@
         ! if (delta_w.gt.small)then
         call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
         ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
-        f_o=pke*(dble(nZ)*sig)
+        f_o=pke*sig
         ! endif
     
         return
