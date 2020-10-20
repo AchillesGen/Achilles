@@ -34,7 +34,7 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, Beam beam,
 }
 
 double nuchic::FQESpectral::CrossSection(const Particles &particles) const {
-    int inucleon = particles[0].ID() == nuchic::PID::proton() ? 1 : 2;
+    int inucleon = particles[2].ID() == nuchic::PID::proton() ? 1 : 2;
 
     auto pLeptonIn = particles[0].Momentum();
     auto pLeptonOut = particles[1].Momentum();

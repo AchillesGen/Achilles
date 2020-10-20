@@ -16,7 +16,7 @@ nuchic::Particles Density() {
     return particles;
 }
 
-nuchic::Histogram hist{200, 0, 1000, "EnergyTransfer"};
+nuchic::Histogram hist{100, 0, 800, "EnergyTransfer"};
 bool fillHist{false};
 
 int main() {
@@ -40,7 +40,7 @@ Vegas:
     YAML::Node node2 = YAML::Load(R"node(
 Vegas:
    iterations: 20
-   evaluations: 10000000
+   evaluations: 100000
     )node");
 
     YAML::Node config = YAML::Load(R"node(
@@ -86,5 +86,5 @@ QESettings:
     vegas(xsec);
 
     hardScattering.GetHist().Save("test");
-    hist.Save("cosTheta");
+    hist.Save("omega");
 }
