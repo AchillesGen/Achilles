@@ -56,9 +56,12 @@ QESettings:
             nuchic::Nucleus::MakeNucleus("12C", 0, 225, "c12.prova.txt",
                                          nuchic::Nucleus::FermiGasType::Global, Density));
 
-    auto mode = nuchic::HardScatteringMode::FixedAngle;
+    //auto mode = nuchic::HardScatteringMode::FixedAngle;
+    auto mode = nuchic::HardScatteringMode::FullPhaseSpace;
+
+
     nuchic::FQESpectral hardScattering(config["QESettings"], beam, nucleus, mode);
-    hardScattering.SetScatteringAngle(M_PI/180*15.0);
+    //hardScattering.SetScatteringAngle(M_PI/180*15.0);
 
     nuchic::AdaptiveMap map(static_cast<size_t>(hardScattering.NVariables()));
     nuchic::Vegas vegas(map, node["Vegas"]);
@@ -74,7 +77,7 @@ QESettings:
         //            std::acos(cosTheta)*180/M_PI, pswgt, xsecwgt);
         if(fillHist) {
             auto omega = (particles[0].Momentum() - particles[1].Momentum()).E();
-            hist.Fill(omega, pswgt*xsecwgt*wgt);
+            hist.Fill(omega, pswgt*xsecwgt*wgt/particles[1].Momentum().E()/particles[1].Momentum().P()*1.e6);
         }
         return pswgt*xsecwgt; 
     };
@@ -86,5 +89,5 @@ QESettings:
     vegas(xsec);
 
     hardScattering.GetHist().Save("test");
-    hist.Save("omega");
+    hist.Save("domega");
 }
