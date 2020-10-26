@@ -62,13 +62,14 @@
 
       tan2 = (1.0d0-cost)/(1.0d0+cost)   
 !.....compute sigma_mott [ fm^2 --> mb ]
-      if(cost.eq.1.0d0 .or.cost.eq.-1.0d0 )then
-      write(6,*)' >>>> warning: divergence of Mott cross section '
-      write(6,*)'      theta = ',acos(cost)*180./pi,' deg '
-      stop
-      else      
+      !if(cost.eq.1.0d0 .or.cost.eq.-1.0d0 )then
+      !write(6,*)' >>>> warning: divergence of Mott cross section '
+      !write(6,*)'      theta = ',acos(cost)*180./pi,' deg '
+      !stop
+      !else      
       sig_mott = alpha**2/2./(1.0d0-cost)/e**2/tan2   
-      end if
+      if(abs(cost).eq.1.0d0) sig_mott=  alpha**2/2./(1.0d0-cost)/e**2 
+      !end if
       sig_mott = 10.0d0*sig_mott
       qm2 = q2-wf**2
       al=(-qm2/q2)**2
@@ -99,4 +100,5 @@
 
 
   
+
 

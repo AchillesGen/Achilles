@@ -16,7 +16,7 @@ nuchic::Particles Density() {
     return particles;
 }
 
-nuchic::Histogram hist{100, 0, 800, "EnergyTransfer"};
+nuchic::Histogram hist{100, 0, 1000, "EnergyTransfer"};
 bool fillHist{false};
 
 int main() {
@@ -56,38 +56,40 @@ QESettings:
             nuchic::Nucleus::MakeNucleus("12C", 0, 225, "c12.prova.txt",
                                          nuchic::Nucleus::FermiGasType::Global, Density));
 
-    //auto mode = nuchic::HardScatteringMode::FixedAngle;
-    auto mode = nuchic::HardScatteringMode::FullPhaseSpace;
+    auto mode = nuchic::HardScatteringMode::FixedAngle;
+    //auto mode = nuchic::HardScatteringMode::FullPhaseSpace;
 
 
     nuchic::FQESpectral hardScattering(config["QESettings"], beam, nucleus, mode);
-    //hardScattering.SetScatteringAngle(M_PI/180*15.0);
+    hardScattering.SetScatteringAngle(M_PI/180*15.0);
 
     nuchic::AdaptiveMap map(static_cast<size_t>(hardScattering.NVariables()));
     nuchic::Vegas vegas(map, node["Vegas"]);
     auto xsec = [&](const std::vector<double> &x, const double &wgt) {
         auto particles = hardScattering.GeneratePhaseSpace(x);
-        if(particles[2].E() == 0) return 0.0;
+        if(particles[2].E() < 0) return 0.0;
         double cosTheta = particles[1].Momentum().CosAngle(particles[0].Momentum());
-        if(std::abs(cosTheta) > std::cos(M_PI/180)) return 0.0;
+        //if(std::abs(cosTheta) > std::cos(M_PI/180)) return 0.0;
         double pswgt = hardScattering.PhaseSpaceWeight(particles);
         if(pswgt == 0) return pswgt;
         double xsecwgt = hardScattering.CrossSection(particles);
         // fmt::print("theta = {:.5e}\tpswgt = {:.5e}\txsecwgt = {:.5e}\n",
         //            std::acos(cosTheta)*180/M_PI, pswgt, xsecwgt);
-        if(fillHist) {
+	if(fillHist) {
             auto omega = (particles[0].Momentum() - particles[1].Momentum()).E();
-            hist.Fill(omega, pswgt*xsecwgt*wgt/particles[1].Momentum().E()/particles[1].Momentum().P()*1.e6);
+	    double conv=1.e6; //conversion factor to obtain: nb/[MeV sr]
+            hist.Fill(omega, pswgt*xsecwgt*wgt/20/(2*M_PI)*conv);
         }
         return pswgt*xsecwgt; 
     };
+
     vegas(xsec);
     vegas.Clear();
     vegas.Set(node2["Vegas"]);
     hardScattering.SetHist(true);
     fillHist = true;
-    vegas(xsec);
-
+    vegas(xsec); 
     hardScattering.GetHist().Save("test");
-    hist.Save("domega");
+    hist.Save("domega15_v3");
+    std::cout << hist.Integral() << std::endl;
 }

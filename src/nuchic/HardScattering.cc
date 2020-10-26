@@ -2,6 +2,7 @@
 #include "nuchic/Constants.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
+#include <iostream>
 
 // Aliases for most common types
 using nuchic::Particles;
@@ -42,15 +43,20 @@ Particles HardScattering::GeneratePhaseSpace(const std::vector<double> &rans) co
     return particles;
 }
 
+
+
 Particles HardScattering::GenerateLeptons(const std::vector<double> &rans) const {
     Particles leptons = { Particle(PID::electron()), Particle(PID::electron()) };
 
     std::vector<double> beamRans(rans.begin(), rans.begin() + GetBeam().NVariables());
     std::vector<double> leptonRans(rans.begin()+GetBeam().NVariables(), rans.end());
+
     leptons[0].SetMomentum(GetBeam().Flux(leptons[0].ID(), beamRans));
+
 
     double phi = 2*M_PI*leptonRans[0];
     double Elepton = leptons[0].E()*leptonRans[1];
+
     double cosT{}, sinT{};
     switch(m_mode) {
         case HardScatteringMode::FixedAngle:
@@ -77,8 +83,7 @@ double HardScattering::PhaseSpaceWeight(const Particles &particles) const {
 }
 
 double HardScattering::LeptonWeight(const Particles &leptons) const {
-    double wgt = leptons[0].E()*leptons[1].E()*leptons[1].Momentum().P()*2*M_PI;
-    
+    double wgt = leptons[0].E()*2*M_PI;//leptons[1].E()*leptons[1].Momentum().P();
     switch(m_mode) {
         case HardScatteringMode::FixedAngle:
             break;
@@ -98,14 +103,27 @@ Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const Fou
     double sinT = sqrt(1-cosT*cosT);
     double phi = 2*M_PI*rans[2];
     double p = 3*GetNucleus() -> FermiMomentum(0)*rans[3];
+//    double Ep = 400*rans[2];
+//    double phi=45*M_PI/180;
+
+//    
+//    double arg1=pow(Q.E()-Ep+hadrons[0].Mass(),2);
+//    double arg2=pow(p,2)+pow(hadrons[0].Mass(),2)+pow(Q.P(),2);
+	    
+//    double cosT=(arg1-arg2)/(2*p*Q.P());
+//    if(std::abs(cosT) > 1.0) Ep=0;
+//    double sinT = sqrt(1-cosT*cosT);
+    
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
     tmp += Q.Vec3();
 
     double Epp = sqrt(pow(hadrons[1].Mass(), 2)+tmp.P2()); 
 
+    
     double Ep = hadrons[0].Mass()+Q.E()-Epp;
     Ep = Ep > 0 ? Ep : 0;
+
 
     hadrons[0].SetMomentum({p*sinT*cos(phi),
                             p*sinT*sin(phi),
@@ -116,7 +134,9 @@ Particles QESpectral::GenerateHadrons(const std::vector<double> &rans, const Fou
 }
 
 double QESpectral::HadronWeight(const Particles &hadrons) const {
-    return 3*GetNucleus() -> FermiMomentum(0)*pow(hadrons[0].Momentum().P(), 2)*4*M_PI;
+    return 3*GetNucleus() -> FermiMomentum(0)*pow(hadrons[0].Momentum().P(), 2)*4*M_PI*2;
+    //*2 in the above line is included to obtain p+n
+    
 }
 
 double HardScattering::Test(const std::vector<double> &rans, const double &wgt) {

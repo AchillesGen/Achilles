@@ -1,4 +1,6 @@
 #include <cstring>
+#include <iostream>
+
 
 #include "nuchic/HardScattering.hh"
 #include "nuchic/Particle.hh"

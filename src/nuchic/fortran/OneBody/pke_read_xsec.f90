@@ -50,7 +50,6 @@
           enddo
     
           norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
-          pke_p=pke_p/norm
           pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
           write(6,*)'n(k) norm initial for protons=', norm
 
@@ -69,7 +68,6 @@
              dp_n(j)=sum(pke_n(:,j))*he_n
           enddo
           norm=sum(p(:)**2*dp_n(:))*4.0d0*pi*hp
-          pke_n=pke_n/norm
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
           write(6,*)'n(k) norm initial for neutrons=', norm
 
@@ -108,12 +106,11 @@
     
 
         ! arg=wt+p_4(1)-pf_4(1)
-        ! delta_w=fdelta(arg,eps)
-        ! if (delta_w.gt.small)then
         call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
         ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
+        !sig=1.0d0
+        if(pke.lt.0.d0) pke=0.0d0                
         f_o=pke*sig
-        ! endif
     
         return
     end subroutine f_eval
