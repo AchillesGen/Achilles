@@ -8,6 +8,7 @@
 using nuchic::Particles;
 using nuchic::HardScattering;
 using nuchic::QESpectral;
+using nuchic::QEGlobalFermiGas;
 
 int HardScattering::LeptonVariables() const {
     int nvars = GetBeam().NVariables();
@@ -138,6 +139,51 @@ double QESpectral::HadronWeight(const Particles &hadrons) const {
     //*2 in the above line is included to obtain p+n
     
 }
+
+
+Particles QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans, const FourVector &Q) const {
+    auto pid = 2*rans[0] < 1.0 ? PID::proton() : PID::neutron();
+
+    Particles hadrons = { Particle(pid), Particle(pid) };
+
+    double phi = 2*M_PI*rans[1];
+    double p = GetNucleus() -> FermiMomentum(0)*rans[2];
+    double Ep = 20.0;
+    double Ef=sqrt(pow(p,2)+pow(hadrons[0].Mass(),2));
+
+    
+    double arg1=pow(Q.E()-Ep+Ef,2);
+    double arg2=pow(p,2)+pow(hadrons[0].Mass(),2)+pow(Q.P(),2);
+	    
+    double cosT=(arg1-arg2)/(2*p*Q.P());
+    if(std::abs(cosT) > 1.0) Ep=-10;
+    double sinT = sqrt(1-cosT*cosT);
+    
+
+    ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
+    tmp += Q.Vec3();
+
+    double Epp = sqrt(pow(hadrons[1].Mass(), 2)+tmp.P2()); 
+
+    
+
+
+    hadrons[0].SetMomentum({p*sinT*cos(phi),
+                            p*sinT*sin(phi),
+                            p*cosT, Ep});
+    hadrons[1].SetMomentum({tmp, Epp});
+
+    return hadrons;
+}
+
+double QEGlobalFermiGas::HadronWeight(const Particles &hadrons) const {
+    return GetNucleus() -> FermiMomentum(0)*pow(hadrons[0].Momentum().P(), 2)*2*M_PI*2;
+    //*2 in the above line is included to obtain p+n
+    
+}
+
+
+
 
 double HardScattering::Test(const std::vector<double> &rans, const double &wgt) {
     auto particles = GeneratePhaseSpace(rans);

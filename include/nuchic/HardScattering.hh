@@ -126,6 +126,32 @@ class FQESpectral : public QESpectral {
         double CrossSection(const Particles&) const override;
 };
 
+
+class QEGlobalFermiGas : public Quasielastic {
+    public:
+        QEGlobalFermiGas(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+            : Quasielastic(beam, nuc, mode) {}
+        QEGlobalFermiGas(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
+
+        int HadronVariables() const override { return 3; }
+        Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
+        double HadronWeight(const Particles&) const override;
+
+        double CrossSection(const Particles&) const override {
+            return 10;
+        }
+};
+
+class FQEGlobalFermiGas : public QEGlobalFermiGas {
+    public:
+        FQEGlobalFermiGas(const YAML::Node&, Beam, std::shared_ptr<Nucleus>, HardScatteringMode);
+
+        double CrossSection(const Particles&) const override;
+};
+
+
+
+
 class DIS : HardScattering {
     public:
         HardScatteringType ScatteringType() const override {

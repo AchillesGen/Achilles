@@ -47,7 +47,7 @@ Vegas:
 QESettings:
     SpectralP: pke12_tot.data
     SpectralN: pke12_tot.data
-    FermiGas: 0
+    FermiGas: 1
     iform: 2
     )node");
 
@@ -59,8 +59,9 @@ QESettings:
     auto mode = nuchic::HardScatteringMode::FixedAngle;
     //auto mode = nuchic::HardScatteringMode::FullPhaseSpace;
 
+    //nuchic::FQESpectral hardScattering(config["QESettings"], beam, nucleus, mode);
+    nuchic::FQEGlobalFermiGas hardScattering(config["QESettings"], beam, nucleus, mode);
 
-    nuchic::FQESpectral hardScattering(config["QESettings"], beam, nucleus, mode);
     hardScattering.SetScatteringAngle(M_PI/180*15.0);
 
     nuchic::AdaptiveMap map(static_cast<size_t>(hardScattering.NVariables()));

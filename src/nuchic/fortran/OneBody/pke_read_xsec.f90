@@ -22,6 +22,7 @@
         integer*4 :: fg_in,i,j,nZ_in,nA_in,iform_in
         real*8 :: he_p,he_n
         real*8 :: norm,pmax, hp,kF_in
+        real*8 :: dpe, ee, pp, pke
         character*50 :: fname_pkep,fname_pken
         call init(constants)
         mp = constants%mp
@@ -71,14 +72,29 @@
           pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
           write(6,*)'n(k) norm initial for neutrons=', norm
 
-          !... change dimension to p[MeV] and [MeV**-4]
-          !p=p*hbarc
-          !Pke_p=Pke_p/hbarc**3
-          !Pke_n=Pke_n/hbarc**3       
-          pmax=p(np)
-          !pmax/dble(nbox)
-       else
-          write(6,*) 'we did not code the FG case for the Asymmetric nuclei'
+     !     do i=1,nep
+     !         dpe=0.0d0
+     !         do j=1,np
+     !            dpe=dpe+pke_p(i,j)*p(j)**2*hp
+     !          enddo   
+     !          write(1001,*) xe_p(i), dpe
+     !     enddo  
+
+
+
+    !      he_p=(xe_p(nep)-xe_p(1))/(2.*nep)
+    !      hp=(p(np)-p(1))/(2.*np)
+    !      do i=1,2*nep
+    !          ee=(dble(i)-0.5d0)*he_p
+    !          dpe=0.0d0
+    !          do j=1,np*2
+    !             pp=(dble(j)-0.5d0)*hp
+    !             pke = pke_p_interp%call(ee, pp)
+    !             dpe=dpe+pke*pp**2*hp
+    !           enddo   
+    !           write(1000,*) ee, dpe
+    !      enddo     
+    !   stop
        endif
     end subroutine
 
@@ -91,26 +107,34 @@
         integer*4 :: in
         real*8 :: p_4(4),pf_4(4)
         real*8 :: w,wt,qval,thetalept,ee,f_o,pke,xp,xpf
-        real*8 :: sig,arg,delta_w
+        real*8 :: sig,arg,delta_w,norm
 
-        f_o=0.0d0
-        if(in.eq.1) then
-            pke = pke_p_interp%call(e, mom)
-        elseif(in.eq.2) then
-            pke = pke_n_interp%call(e, mom)
-        endif       
+        f_o=0.0d0      
         xp=sqrt(sum(p_4(2:4)**2))
         xpf=sqrt(sum(pf_4(2:4)**2))
-        p_4(1)=sqrt(xp**2+mqe**2)
-        wt=w-abs(e)+mqe-p_4(1)
-    
 
-        ! arg=wt+p_4(1)-pf_4(1)
-        call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
-        ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
-        !sig=1.0d0
-        if(pke.lt.0.d0) pke=0.0d0                
-        f_o=pke*sig
+        if(fg.ne.1) then
+            if(in.eq.1) then
+               pke = pke_p_interp%call(e, mom)
+            elseif(in.eq.2) then
+               pke = pke_n_interp%call(e, mom)
+           endif 
+           p_4(1)=sqrt(xp**2+mqe**2)
+           wt=w-abs(e)+mqe-p_4(1)
+           call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
+           ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
+           if(pke.lt.0.d0) pke=0.0d0                
+           f_o=pke*sig
+        else
+            if(xp.gt.kF) f_o=0.0d0   
+            norm=4.0d0*pi/3.0d0*kF**3  
+            pke=1.0/norm   
+            p_4(1)=sqrt(xp**2+mqe**2)
+            wt=w-abs(e)
+            call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
+            ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
+            f_o=pke*sig*pf_4(1)/xp/qval*dble(nZ)
+        endif
     
         return
     end subroutine f_eval
