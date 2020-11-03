@@ -193,8 +193,8 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
     sig.read(sigAngular.data(), PredType::NATIVE_DOUBLE, sigSpace, sigSpace);
 
     // Perform interpolation for angles
-    nuchic::Interp2D interp;
-    interp.BicubicSpline(pcmVec, m_theta, sigAngular);
+    nuchic::Interp2D interp(pcmVec, m_theta, sigAngular);
+    interp.BicubicSpline();
 
     std::vector<double> theta(pcmVec.size()*m_cdf.size());
     constexpr double accuracy = 1E-6;
@@ -218,13 +218,17 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
     if(samePID) {
         m_pcmPP = pcmVec;
         m_xsecPP = sigTotVec;
-        m_crossSectionPP.CubicSpline(pcmVec, sigTotVec);
-        m_thetaDistPP.BicubicSpline(pcmVec, m_cdf, theta);
+        m_crossSectionPP.SetData(pcmVec, sigTotVec);
+        m_crossSectionPP.CubicSpline();
+        m_thetaDistPP.SetData(pcmVec, m_cdf, theta);
+        m_thetaDistPP.BicubicSpline();
     } else {
         m_pcmNP = pcmVec;
         m_xsecNP = sigTotVec;
-        m_crossSectionNP.CubicSpline(pcmVec, sigTotVec);
-        m_thetaDistNP.BicubicSpline(pcmVec, m_cdf, theta);
+        m_crossSectionNP.SetData(pcmVec, sigTotVec);
+        m_crossSectionNP.CubicSpline();
+        m_thetaDistNP.SetData(pcmVec, m_cdf, theta);
+        m_thetaDistNP.BicubicSpline();
     }
 }
 

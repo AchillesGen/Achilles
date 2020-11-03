@@ -66,7 +66,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         vecDensity.push_back(std::move(density_));
     }
 
-    rhoInterp.CubicSpline(vecRadius, vecDensity);
+    rhoInterp.SetData(vecRadius, vecDensity);
+    rhoInterp.CubicSpline();
     
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
