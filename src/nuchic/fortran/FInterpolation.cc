@@ -5,13 +5,32 @@
 
 extern "C" {
     // Fortran 1D interpolation interface
-    nuchic::Interp1D *CreateInterp1D(const double *x, const double *y, int n) {
-        auto *interp = new nuchic::Interp1D(); 
-
+    nuchic::Interp1D *CreateInterp1D(const double *x, const double *y, int n, int mode) {
         std::vector<double> xVec(x, x+n);
         std::vector<double> yVec(y, y+n);
 
-        interp -> CubicSpline(xVec, yVec);
+        nuchic::Interp1D *interp = nullptr;
+        switch(mode) {
+            case 0:
+                interp = new nuchic::Interp1D(xVec, yVec,
+                        nuchic::InterpolationType::NearestNeighbor); 
+                break;
+            case 1:
+            case 2:
+            case 3:
+                interp = new nuchic::Interp1D(xVec, yVec,
+                        nuchic::InterpolationType::Polynomial); 
+                interp -> SetPolyOrder(mode);
+                break;
+            case 4:
+                interp = new nuchic::Interp1D(xVec, yVec,
+                        nuchic::InterpolationType::CubicSpline); 
+                interp -> CubicSpline();
+                break;
+            default:
+                throw std::runtime_error("Invalid interpolation mode");
+        }
+
         return interp;
     }
 
@@ -32,14 +51,33 @@ extern "C" {
     }
 
     // Fortran 2D interpolation interface
-    nuchic::Interp2D *CreateInterp2D(double *x, double *y, double *z, int n1, int n2) {
-        auto *interp = new nuchic::Interp2D(); 
-
+    nuchic::Interp2D *CreateInterp2D(double *x, double *y, double *z, int n1, int n2, int mode) {
         std::vector<double> xVec(x, x+n1);
         std::vector<double> yVec(y, y+n2);
         std::vector<double> zVec(z, z+n1*n2);
 
-        interp -> BicubicSpline(xVec, yVec, zVec);
+        nuchic::Interp2D *interp;
+        switch(mode) {
+            case 0:
+                interp = new nuchic::Interp2D(xVec, yVec, zVec,
+                        nuchic::InterpolationType::NearestNeighbor); 
+                break;
+            case 1:
+            case 2:
+            case 3:
+                interp = new nuchic::Interp2D(xVec, yVec, zVec,
+                        nuchic::InterpolationType::Polynomial); 
+                interp -> SetPolyOrder(mode, mode);
+                break;
+            case 4:
+                interp = new nuchic::Interp2D(xVec, yVec, zVec,
+                        nuchic::InterpolationType::CubicSpline); 
+                interp -> BicubicSpline();
+                break;
+            default:
+                throw std::runtime_error("Invalid interpolation mode");
+        }
+
         return interp;
     }
 

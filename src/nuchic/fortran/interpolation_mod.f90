@@ -41,12 +41,12 @@ module libinterpolate
 
 contains
 
-    function create_interp1d(x, y, n)
+    function create_interp1d(x, y, n, mode)
         implicit none
-        integer, intent(in) :: n
+        integer, intent(in) :: n, mode
         double precision, dimension(n), intent(in) :: x, y
         type(interp1d) :: create_interp1d
-        create_interp1d%ptr = create_interp1d_c(x, y, n)
+        create_interp1d%ptr = create_interp1d_c(x, y, n, mode)
     end function
 
     subroutine delete_interp1d(this)
@@ -77,14 +77,14 @@ contains
         interp1d_call = interpolate1d_c(this%ptr, x)
     end function
 
-    function create_interp2d(x, y, z, n1, n2)
+    function create_interp2d(x, y, z, n1, n2, mode)
         implicit none
-        integer, intent(in) :: n1, n2
+        integer, intent(in) :: n1, n2, mode
         double precision, dimension(n1), intent(in) :: x
         double precision, dimension(n2), intent(in) :: y
         double precision, dimension(n1*n2), intent(in) :: z
         type(interp2d) :: create_interp2d
-        create_interp2d%ptr = create_interp2d_c(x, y, z, n1, n2)
+        create_interp2d%ptr = create_interp2d_c(x, y, z, n1, n2, mode)
     end function
 
     function create_interp2d2(x, y, z, n1, n2)

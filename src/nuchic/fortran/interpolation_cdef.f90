@@ -1,10 +1,11 @@
 interface
     
-    function create_interp1d_c(x, y, n) bind(C, name="CreateInterp1D")
+    function create_interp1d_c(x, y, n, mode) bind(C, name="CreateInterp1D")
         use iso_c_binding
         implicit none
         type(c_ptr) :: create_interp1d_c
         integer(c_int), intent(in), value :: n 
+        integer(c_int), intent(in), value :: mode
         real(c_double), dimension(n), intent(in) :: x
         real(c_double), dimension(n), intent(in) :: y
     end function
@@ -37,11 +38,12 @@ interface
         real(c_double) :: interpolate1d_c
     end function
 
-    function create_interp2d_c(x, y, z, n1, n2) bind(C, name="CreateInterp2D")
+    function create_interp2d_c(x, y, z, n1, n2, mode) bind(C, name="CreateInterp2D")
         use iso_c_binding
         implicit none
         type(c_ptr) :: create_interp2d_c
         integer(c_int), intent(in), value :: n1, n2
+        integer(c_int), intent(in), value :: mode
         real(c_double), dimension(n1), intent(in) :: x
         real(c_double), dimension(n2), intent(in) :: y
         real(c_double), dimension(n1*n2), intent(in) :: z
