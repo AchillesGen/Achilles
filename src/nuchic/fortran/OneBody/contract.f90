@@ -75,7 +75,6 @@
       al=(-qm2/q2)**2
       at=(qm2/q2/2.0d0+tan2)
 
-      ig=4
       call nform(ig,qm2,ff1s,ff2s,ff1v,ff2v,ffa,ffp,ges,gms,gev,gmv)
       ff1p=0.5d0*(ff1v+ff1s)
       ff2p=0.5d0*(ff2v+ff2s)

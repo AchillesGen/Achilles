@@ -51,7 +51,7 @@
           enddo
     
           norm=sum(p(:)**2*dp_p(:))*4.0d0*pi*hp
-          pke_p_interp = interp2d(xe_p, p, pke_p, nep, np)
+          pke_p_interp = interp2d(xe_p, p, pke_p, nep, np, 1)
           write(6,*)'n(k) norm initial for protons=', norm
 
           open(unit=4,file=fname_pken,status='unknown',form='formatted')
@@ -69,7 +69,7 @@
              dp_n(j)=sum(pke_n(:,j))*he_n
           enddo
           norm=sum(p(:)**2*dp_n(:))*4.0d0*pi*hp
-          pke_n_interp = interp2d(xe_n, p, pke_n, nep, np)
+          pke_n_interp = interp2d(xe_n, p, pke_n, nep, np, 1)
           write(6,*)'n(k) norm initial for neutrons=', norm
 
      !     do i=1,nep
