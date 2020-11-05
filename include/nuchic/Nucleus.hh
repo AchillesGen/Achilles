@@ -11,7 +11,11 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
 
@@ -223,8 +227,8 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum, radius{}, potential{};
-        FermiGasType fermiGas;
+        double binding{}, fermiMomentum{}, radius{}, potential{};
+        FermiGasType fermiGas{FermiGasType::Local};
         std::function<Particles()> density;
         Interp1D rhoInterp;	
 

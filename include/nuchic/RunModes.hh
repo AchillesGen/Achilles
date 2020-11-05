@@ -1,7 +1,10 @@
 #ifndef RUNMODES_HH
 #define RUNMODES_HH
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
 
