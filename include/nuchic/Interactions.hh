@@ -84,7 +84,7 @@ class InteractionFactory {
         ///@param name: Name of the subclass object to be created
         ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
         ///     (**NOTE**: Returns nullptr if name is not registered)
-        static std::shared_ptr<Interactions> Create(const std::string&, const std::string&);
+        static std::unique_ptr<Interactions> Create(const std::string&, const std::string&);
 
         /// Produce a list of all the registered interactions
         static void ListInteractions();
