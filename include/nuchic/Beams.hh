@@ -150,8 +150,8 @@ struct convert<nuchic::Beam> {
 
         for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
             YAML::Node beamNode = *it;
-            auto pid = nuchic::PID(beamNode["Beam"][0]["PID"].as<int>());
-            auto beam = beamNode["Beam"][1]["Beam Params"].as<std::shared_ptr<nuchic::FluxType>>();
+            auto pid = nuchic::PID(beamNode["Beam"]["PID"].as<int>());
+            auto beam = beamNode["Beam"]["Beam Params"].as<std::shared_ptr<nuchic::FluxType>>();
             beams[pid] = beam;
         } 
 
