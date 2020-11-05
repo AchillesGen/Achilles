@@ -14,7 +14,7 @@ bool InteractionFactory::Register(const std::string& name,
     return false;
 }
 
-std::shared_ptr<Interactions> InteractionFactory::Create(const std::string& name,
+std::unique_ptr<Interactions> InteractionFactory::Create(const std::string& name,
                                                          const std::string& filename) {
     auto it = methods().find(name);
     if(it != methods().end())

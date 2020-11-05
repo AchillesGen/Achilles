@@ -1,8 +1,7 @@
 #include <cstring>
-#include <iostream>
-
 
 #include "nuchic/HardScattering.hh"
+#include "nuchic/HardScatteringFactory.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
 
@@ -12,16 +11,19 @@ extern "C" {
                                double, double, double, double, double, double);
 }
 
-nuchic::FQESpectral::FQESpectral(const YAML::Node &config, Beam beam,
-                                 std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+REGISTER_HARDSCATTERING(nuchic::FQESpectral);
+REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
+
+nuchic::FQESpectral::FQESpectral(const YAML::Node &config, std::shared_ptr<Beam> beam,
+                                 std::shared_ptr<Nucleus> nuc, RunMode mode)
     : nuchic::QESpectral(beam, nuc, mode) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
     auto fermiGas = config["FermiGas"].as<int>();
     auto iform = config["iform"].as<int>();
-    auto nZ = nuc -> NProtons();
-    auto nA = nuc -> NNeutrons();
+    auto nZ = static_cast<int>(nuc -> NProtons());
+    auto nA = static_cast<int>(nuc -> NNeutrons());
     auto fermiMom = nuc -> FermiMomentum(0);
 
     size_t lenP = spectralP.size();
@@ -59,18 +61,16 @@ double nuchic::FQESpectral::CrossSection(const Particles &particles) const {
     return CrossSectionOneBody(inucleon, &pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta, ee);
 }
 
-
-
-nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, Beam beam,
-                                 std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
+nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, std::shared_ptr<Beam> beam,
+                                 std::shared_ptr<Nucleus> nuc, RunMode mode)
     : nuchic::QEGlobalFermiGas(beam, nuc, mode) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
     auto fermiGas = config["FermiGas"].as<int>();
     auto iform = config["iform"].as<int>();
-    auto nZ = nuc -> NProtons();
-    auto nA = nuc -> NNeutrons();
+    auto nZ = static_cast<int>(nuc -> NProtons());
+    auto nA = static_cast<int>(nuc -> NNeutrons());
     auto fermiMom = nuc -> FermiMomentum(0);
 
     size_t lenP = spectralP.size();

@@ -10,7 +10,7 @@
 #pragma GCC diagnostic pop
 
 #include "nuchic/Beams.hh"
-
+#include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
 
 namespace nuchic {
@@ -30,16 +30,9 @@ enum class HardScatteringType {
     DeepInelastic
 };
 
-// TODO: Move and rename in the driver class
-enum class HardScatteringMode {
-    FixedAngle,
-    FullPhaseSpace
-};
-
 class HardScattering {
     public:
-        HardScattering(Beam leptonBeam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode) 
-            : m_leptonBeam{std::move(leptonBeam)}, m_nuc{std::move(nuc)}, m_mode{mode} {};
+        HardScattering(std::shared_ptr<Beam>, std::shared_ptr<Nucleus>, RunMode);
         HardScattering(const HardScattering&) = default;
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
@@ -72,7 +65,7 @@ class HardScattering {
         std::shared_ptr<Nucleus>& GetNucleus() { return m_nuc; }
 
         // Beam information
-        const Beam& GetBeam() const { return m_leptonBeam; }
+        const std::shared_ptr<Beam>& GetBeam() const { return m_leptonBeam; }
 
         // Special phase space routines
         void SetScatteringAngle(double angle) { m_angle = angle; }
@@ -82,21 +75,28 @@ class HardScattering {
         const Histogram& GetHist() const { return hist; }
         double Test(const std::vector<double>&, const double&);
 
+    protected:
+        // Phase space factors
+        double dp;
+        static constexpr int nNucleonTypes = 2;
+        static constexpr double dCos = 2;
+        static constexpr double dPhi = 2*M_PI;
+
     private:
         bool m_fill{false};
         Histogram hist{500, 0, 1000, "Test"};
-        Beam m_leptonBeam;
+        std::shared_ptr<Beam> m_leptonBeam;
         std::shared_ptr<Nucleus> m_nuc;
 
         // TODO: Move to the driver class
-        HardScatteringMode m_mode;
+        RunMode m_mode;
         double m_angle{};
 };
 
 class Quasielastic : public HardScattering {
     public:
-        Quasielastic(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
-            : HardScattering(beam, nuc, mode) {}
+        Quasielastic(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nuc,
+                RunMode mode) : HardScattering(beam, nuc, mode) {}
         HardScatteringType ScatteringType() const override { 
             return HardScatteringType::Quasielastic;
         }
@@ -106,9 +106,9 @@ class Quasielastic : public HardScattering {
 
 class QESpectral : public Quasielastic {
     public:
-        QESpectral(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
-            : Quasielastic(beam, nuc, mode) {}
-        QESpectral(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
+        QESpectral(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nuc,
+                RunMode mode) : Quasielastic(beam, nuc, mode) {}
+        QESpectral(const YAML::Node&, std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 4; }
         Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
@@ -121,17 +121,27 @@ class QESpectral : public Quasielastic {
 
 class FQESpectral : public QESpectral {
     public:
-        FQESpectral(const YAML::Node&, Beam, std::shared_ptr<Nucleus>, HardScatteringMode);
+        FQESpectral(const YAML::Node&, std::shared_ptr<Beam>,
+                    std::shared_ptr<Nucleus>, RunMode);
 
         double CrossSection(const Particles&) const override;
-};
+        static std::string GetName() { return "QESpectral"; }
+        static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
+                std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus,
+                RunMode mode) {
+            return std::make_unique<FQESpectral>(node, beam, nucleus, mode);
+        }
 
+    private:
+        static bool registered;
+};
 
 class QEGlobalFermiGas : public Quasielastic {
     public:
-        QEGlobalFermiGas(Beam beam, std::shared_ptr<Nucleus> nuc, HardScatteringMode mode)
-            : Quasielastic(beam, nuc, mode) {}
-        QEGlobalFermiGas(const YAML::Node&, Beam beam, std::shared_ptr<Nucleus> nuc);
+        QEGlobalFermiGas(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nuc,
+                RunMode mode) : Quasielastic(beam, nuc, mode) {}
+        QEGlobalFermiGas(const YAML::Node&, std::shared_ptr<Beam> beam,
+                         std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 3; }
         Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
@@ -144,13 +154,20 @@ class QEGlobalFermiGas : public Quasielastic {
 
 class FQEGlobalFermiGas : public QEGlobalFermiGas {
     public:
-        FQEGlobalFermiGas(const YAML::Node&, Beam, std::shared_ptr<Nucleus>, HardScatteringMode);
+        FQEGlobalFermiGas(const YAML::Node&, std::shared_ptr<Beam>,
+                          std::shared_ptr<Nucleus>, RunMode);
 
         double CrossSection(const Particles&) const override;
+        static std::string GetName() { return "QEGlobalFermiGas"; }
+        static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
+                std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus,
+                RunMode mode) {
+            return std::make_unique<FQEGlobalFermiGas>(node, beam, nucleus, mode);
+        }
+
+    private:
+        static bool registered;
 };
-
-
-
 
 class DIS : HardScattering {
     public:
