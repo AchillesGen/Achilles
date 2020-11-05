@@ -11,15 +11,15 @@ TEST_CASE("From YAML", "[Beams]") {
 
 Beams:
   - Beam:
-    - PID: 12
-    - Beam Params:
-        Type: Monochromatic
-        Energy: 100
+    PID: 12
+    Beam Params:
+      Type: Monochromatic
+      Energy: 100
   - Beam:
-    - PID: 13
-    - Beam Params:
-        Type: Monochromatic
-        Energy: 200)beam"
+    PID: 13
+    Beam Params:
+      Type: Monochromatic
+      Energy: 200)beam"
         );
     
         auto beam = beams["Beams"].as<nuchic::Beam>();
