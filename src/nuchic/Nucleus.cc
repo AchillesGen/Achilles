@@ -216,4 +216,12 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
     return result;
 }
 
+nuchic::Particles Density() {
+    nuchic::Particles particles;
+    for(size_t i = 0; i < 6; ++i) {
+        particles.emplace_back(nuchic::Particle(nuchic::PID::proton())); 
+        particles.emplace_back(nuchic::Particle(nuchic::PID::neutron())); 
+    } 
+    return particles;
+}
 
