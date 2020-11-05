@@ -64,6 +64,7 @@ class VegasResult {
 
 class Vegas {
     public:
+        Vegas() = default;
         Vegas(nuchic::AdaptiveMap, const YAML::Node&);
         Vegas(const Vegas&) = default;
         Vegas(Vegas&&) = default;
