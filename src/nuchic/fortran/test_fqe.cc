@@ -16,7 +16,7 @@ nuchic::Particles Density() {
     return particles;
 }
 
-nuchic::Histogram hist{100, 0, 1000, "EnergyTransfer"};
+nuchic::Histogram hist{50, 0, 400, "EnergyTransfer"};
 bool fillHist{false};
 
 int main() {
@@ -39,7 +39,7 @@ Vegas:
 
     YAML::Node node2 = YAML::Load(R"node(
 Vegas:
-   iterations: 20
+   iterations: 30
    evaluations: 100000
     )node");
 
@@ -66,11 +66,12 @@ QESettings:
 
     nuchic::AdaptiveMap map(static_cast<size_t>(hardScattering.NVariables()));
     nuchic::Vegas vegas(map, node["Vegas"]);
+    static constexpr double conv = 1e6; //conversion factor to obtain: nb/[MeV sr]
     auto xsec = [&](const std::vector<double> &x, const double &wgt) {
         auto particles = hardScattering.GeneratePhaseSpace(x);
-        if(particles[2].E() < 0) return 0.0;
+        if(particles[2].E() <= 0) return 0.0;
         double cosTheta = particles[1].Momentum().CosAngle(particles[0].Momentum());
-        //if(std::abs(cosTheta) > std::cos(M_PI/180)) return 0.0;
+        // if(std::abs(cosTheta) > std::cos(M_PI/180/4)) return 0.0;
         double pswgt = hardScattering.PhaseSpaceWeight(particles);
         if(pswgt == 0) return pswgt;
         double xsecwgt = hardScattering.CrossSection(particles);
@@ -78,10 +79,10 @@ QESettings:
         //            std::acos(cosTheta)*180/M_PI, pswgt, xsecwgt);
 	if(fillHist) {
             auto omega = (particles[0].Momentum() - particles[1].Momentum()).E();
-	    double conv=1.e6; //conversion factor to obtain: nb/[MeV sr]
-            hist.Fill(omega, pswgt*xsecwgt*wgt/20/(2*M_PI)*conv);
+            auto niterations = node2["Vegas"]["iterations"].as<double>();
+            hist.Fill(omega, pswgt*xsecwgt*wgt/niterations/(2*M_PI)*conv);
         }
-        return pswgt*xsecwgt; 
+        return pswgt*xsecwgt*conv; 
     };
 
     vegas(xsec);
