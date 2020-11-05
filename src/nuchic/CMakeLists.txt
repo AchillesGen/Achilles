@@ -22,12 +22,20 @@ add_library(physics SHARED
     FormFactor.cc
     Beams.cc
     HardScattering.cc
+    HardScatteringFactory.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_LIBRARIES})
 
 add_subdirectory(fortran)
+
+add_library(event_gen SHARED
+    EventGen.cc
+    EventWriter.cc
+)
+target_link_libraries(event_gen PRIVATE project_options project_warnings
+                                PUBLIC physics fortran_interface)
 
 pybind11_add_module(_nuchic MODULE
     # Main file
@@ -50,3 +58,8 @@ pybind11_add_module(_nuchic MODULE
 )
 target_link_libraries(_nuchic PRIVATE project_options project_warnings
                               PUBLIC spdlog::spdlog utilities physics)
+
+add_executable(nuchic 
+    main.cc)
+target_link_libraries(nuchic PRIVATE project_options project_warnings
+                             PUBLIC event_gen physics utilities)
