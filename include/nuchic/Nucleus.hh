@@ -11,6 +11,7 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
+#include "yaml-cpp/yaml.h"
 
 namespace nuchic {
 
@@ -42,6 +43,7 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
+        Nucleus() = default;
         Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
                 const std::string&, const FermiGasType&, std::function<Particles()>);
         Nucleus(const Nucleus&) = default;
@@ -234,6 +236,31 @@ class Nucleus {
         FourVector m_recoil{};
 };
 
+}
+
+nuchic::Particles Density();
+
+namespace YAML {
+template<>
+struct convert<nuchic::Nucleus> {
+    static bool decode(const Node &node, nuchic::Nucleus &nuc) {
+        std::string name = node["Name"].as<std::string>();
+        auto binding = node["Binding"].as<double>();
+        auto kf = node["Fermi Momentum"].as<double>();
+
+        nuchic::Nucleus::FermiGasType type = nuchic::Nucleus::FermiGasType::Local;
+        if(node["FermiGas"].as<std::string>() == "Local")
+            type = nuchic::Nucleus::FermiGasType::Local;
+        else if(node["FermiGas"].as<std::string>() == "Global")
+            type = nuchic::Nucleus::FermiGasType::Global;
+        else return false;
+
+        auto densityFile = node["Density"]["File"].as<std::string>();
+        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, Density);
+
+        return true;
+    }
+};
 }
 
 #endif // end of include guard: NUCLEUS_HH
