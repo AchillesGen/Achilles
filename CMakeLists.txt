@@ -52,6 +52,11 @@ find_package(HDF5 REQUIRED COMPONENTS CXX)
 include(CMake/CPM.cmake)
 add_subdirectory(external)
 
+# Configure system specific variables for loading shared libraries
+set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
+set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/nuchic/System.hh)
+
 # Main code
 add_subdirectory(src/nuchic)
 

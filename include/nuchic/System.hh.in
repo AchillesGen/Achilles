@@ -1,0 +1,15 @@
+#ifndef SYSTEM_HH
+#define SYSTEM_HH
+
+#include <string>
+
+namespace nuchic {
+
+namespace SystemVariables {
+    const std::string libPrefix = "@LIBPREFIX@";
+    const std::string libSuffix = "@LIBSUFFIX@";
+}
+
+}
+
+#endif
