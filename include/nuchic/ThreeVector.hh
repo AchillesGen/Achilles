@@ -171,6 +171,11 @@ class ThreeVector {
         /// Return the angle between the x and y components
         ///@return double: containing the angle between the x and y components
         double Phi() const noexcept;
+
+        /// Rotate the three vector to the frame given by the 3 angles
+        ///@param angles: The rotation angles
+        ///@return FourVector: The vector in the corresponding frame
+        ThreeVector Rotate(const std::array<double, 3>&) const noexcept;
         ///@}
 
         /// @name Functions

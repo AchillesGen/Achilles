@@ -28,6 +28,16 @@ ThreeVector ThreeVector::Unit() const noexcept {
     return {vec[0]/norm, vec[1]/norm, vec[2]/norm};
 }
 
+ThreeVector ThreeVector::Rotate(const std::array<double, 3> &angles) const noexcept {
+    const double c1 = cos(angles[0]), s1 = sin(angles[0]);
+    const double c2 = cos(angles[1]), s2 = sin(angles[1]);
+    const double c3 = cos(angles[2]), s3 = sin(angles[2]);
+
+    return {(c1*c3-c2*s1*s3)*vec[0]+(-c1*s3-c2*c3*s1)*vec[1]+s1*s2*vec[2],
+            (c3*s1+c1*c2*s3)*vec[0]+(c1*c2*c3-s1*s3)*vec[1]-c1*s2*vec[2],
+            s2*s3*vec[0]+c3*s2*vec[1]+c2*vec[2]}; 
+}
+
 ThreeVector& ThreeVector::operator+=(const ThreeVector& other) noexcept {
     vec[0] += other.vec[0];
     vec[1] += other.vec[1];
