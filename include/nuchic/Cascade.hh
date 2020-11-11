@@ -120,4 +120,32 @@ class Cascade {
 
 }
 
+namespace YAML {
+template<>
+struct convert<nuchic::Cascade> {
+    static bool decode(const Node &node, nuchic::Cascade &cascade) {
+        auto interaction = nuchic::InteractionFactory::Create(node["Interaction"]);
+        auto probType = node["Probability"].as<nuchic::Cascade::ProbabilityType>();
+        auto distance = node["Step"].as<double>();
+        cascade = nuchic::Cascade(std::move(interaction), probType, distance);
+        return true;
+    } 
+};
+
+template<>
+struct convert<nuchic::Cascade::ProbabilityType> {
+    static bool decode(const Node &node, nuchic::Cascade::ProbabilityType &type) {
+        if(node.as<std::string>() == "Gaussian")
+            type = nuchic::Cascade::ProbabilityType::Gaussian;
+        else if(node.as<std::string>() == "Pion")
+            type = nuchic::Cascade::ProbabilityType::Pion;
+        else if(node.as<std::string>() == "Cylinder")
+            type = nuchic::Cascade::ProbabilityType::Cylinder;
+        else
+            return false;
+        return true;
+    }
+};
+}
+
 #endif // end of include guard: CASCADE_HH
