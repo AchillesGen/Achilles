@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Configuration.hh"
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
@@ -49,10 +50,10 @@ class Nucleus {
         ///                to the density profile
         Nucleus() = default;
         Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
-                const std::string&, const FermiGasType&, std::function<Particles()>);
-        Nucleus(const Nucleus&) = default;
+                const std::string&, const FermiGasType&, std::unique_ptr<Density>);
+        Nucleus(const Nucleus&) = delete;
         Nucleus(Nucleus&&) = default;
-        Nucleus& operator=(const Nucleus&) = default;
+        Nucleus& operator=(const Nucleus&) = delete;
         Nucleus& operator=(Nucleus&&) = default;
 
         /// Default destructor
@@ -84,7 +85,9 @@ class Nucleus {
 
         /// Set the density function to use for configuration generation
         ///@param density: The function to be use for generating nucleons
-        void SetDensity(const std::function<Particles()>& _density) noexcept { density = _density; }
+        void SetDensity(std::unique_ptr<Density> _density) noexcept {
+            density = std::move(_density);
+        }
         ///@}
 
         /// Set the radius of the nucleus in fm
@@ -215,7 +218,7 @@ class Nucleus {
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&, const double&,
                                    const std::string&, const FermiGasType&,
-                                   const std::function<Particles()>&);
+                                   std::unique_ptr<Density>);
 
         /// @name Stream Operators
         /// @{
@@ -229,7 +232,7 @@ class Nucleus {
         Particles nucleons, protons, neutrons;
         double binding{}, fermiMomentum{}, radius{}, potential{};
         FermiGasType fermiGas{FermiGasType::Local};
-        std::function<Particles()> density;
+        std::unique_ptr<Density> density;
         Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
@@ -241,8 +244,6 @@ class Nucleus {
 };
 
 }
-
-nuchic::Particles Density();
 
 namespace YAML {
 template<>
@@ -260,7 +261,8 @@ struct convert<nuchic::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, Density);
+        auto configs = std::make_unique<nuchic::DensityConfiguration>("../src/nuchic/configurations/QMC_configs.out.gz", std::make_shared<randutils::mt19937_rng>());
+        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;
     }
