@@ -51,15 +51,15 @@ class HardScattering {
         virtual int LeptonVariables() const;
         virtual int HadronVariables() const = 0;
 
-        // Generate phase space momentums
-        virtual Particles GeneratePhaseSpace(const std::vector<double>&) const;
-        virtual Particles GenerateLeptons(const std::vector<double>&) const;
-        virtual Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const = 0;
+        // Generate phase space momentums and return weights
+        virtual double GeneratePhaseSpace(Particles&, const std::vector<double>&) const;
+        virtual double GenerateLeptons(Particles&, const std::vector<double>&) const;
+        virtual double GenerateHadrons(Particles&, const std::vector<double>&, const FourVector&) const = 0;
 
         // Phase space weight
-        virtual double PhaseSpaceWeight(const Particles&) const;
-        virtual double LeptonWeight(const Particles&) const;
-        virtual double HadronWeight(const Particles&) const = 0;
+        // virtual double PhaseSpaceWeight(const Particles&) const;
+        // virtual double LeptonWeight(const Particles&) const;
+        // virtual double HadronWeight(const Particles&) const = 0;
 
         // Nucleus information
         const std::shared_ptr<Nucleus>& GetNucleus() const { return m_nuc; }
@@ -113,8 +113,8 @@ class QESpectral : public Quasielastic {
         QESpectral(const YAML::Node&, std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 4; }
-        Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
-        double HadronWeight(const Particles&) const override;
+        double GenerateHadrons(Particles&, const std::vector<double>&, const FourVector&) const override;
+        // double HadronWeight(const Particles&) const override;
 
         double CrossSection(const Particles&) const override {
             return 10;
@@ -146,8 +146,8 @@ class QEGlobalFermiGas : public Quasielastic {
                          std::shared_ptr<Nucleus> nuc);
 
         int HadronVariables() const override { return 3; }
-        Particles GenerateHadrons(const std::vector<double>&, const FourVector&) const override;
-        double HadronWeight(const Particles&) const override;
+        double GenerateHadrons(Particles&, const std::vector<double>&, const FourVector&) const override;
+        // double HadronWeight(const Particles&) const override;
 
         double CrossSection(const Particles&) const override {
             return 10;
