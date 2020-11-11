@@ -139,7 +139,9 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
     }
 }
 
-GeantInteractions::GeantInteractions(const std::string& filename) {
+GeantInteractions::GeantInteractions(const YAML::Node& node) {
+    auto filename = node["GeantData"].as<std::string>();
+
     // Initialize theta vector
     constexpr double thetaMin = 0.5;
     constexpr double thetaMax = 179.5;

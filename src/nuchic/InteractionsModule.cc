@@ -19,7 +19,7 @@ public:
 
     static bool IsRegistered() noexcept { return registered; }
     static std::string GetName() { return "PyInteraction"; }
-    static std::unique_ptr<Interactions> Create(const std::string&) {
+    static std::unique_ptr<Interactions> Create(const YAML::Node&) {
         return std::make_unique<PyInteraction>(); 
     }
 
@@ -59,8 +59,8 @@ void InteractionsModule(py::module &m) {
     py::class_<Interactions, PyInteraction,
                std::shared_ptr<Interactions>>(m, "Interactions")
         .def(py::init<>())
-        .def_static("create", [](const std::string& name, const std::string& data){
-                return InteractionFactory::Create(name, data);})
+        .def_static("create", [](const YAML::Node& data){
+                return InteractionFactory::Create(data);})
         .def("cross_section", &Interactions::CrossSection)
         .def("make_momentum", &Interactions::MakeMomentum);
 

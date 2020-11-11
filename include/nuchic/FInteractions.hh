@@ -16,14 +16,15 @@ namespace nuchic {
 
 class FortranInteraction : public Interactions {
     public:
-        FortranInteraction(const std::string &name) {
+        FortranInteraction(const YAML::Node &node) {
+            auto name = node["Name"].as<std::string>();
             size_t len = name.size();
             auto cname = std::unique_ptr<char>(new char[len]);
             strcpy(cname.get(), name.c_str());
             InitializeInteraction(cname.get());
         };
 
-        static std::unique_ptr<Interactions> Create(const std::string &data) {
+        static std::unique_ptr<Interactions> Create(const YAML::Node &data) {
             return std::make_unique<FortranInteraction>(data);
         }
 

@@ -14,11 +14,11 @@ bool InteractionFactory::Register(const std::string& name,
     return false;
 }
 
-std::unique_ptr<Interactions> InteractionFactory::Create(const std::string& name,
-                                                         const std::string& filename) {
+std::unique_ptr<Interactions> InteractionFactory::Create(const YAML::Node& node) {
+    auto name = node["Name"].as<std::string>();
     auto it = methods().find(name);
     if(it != methods().end())
-        return it -> second(filename);
+        return it -> second(node);
 
     return nullptr;
 }

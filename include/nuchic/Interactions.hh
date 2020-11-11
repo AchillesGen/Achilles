@@ -11,6 +11,11 @@
 #include "nuchic/Interpolation.hh"
 #include "nuchic/ThreeVector.hh"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
+
 namespace nuchic {
 
 class Particle;
@@ -69,7 +74,7 @@ class Interactions {
 class InteractionFactory {
     public:
         /// Typedef for easier coding
-        using TCreateMethod = std::unique_ptr<Interactions>(*)(const std::string&);
+        using TCreateMethod = std::unique_ptr<Interactions>(*)(const YAML::Node&);
 
         InteractionFactory() = delete;
 
@@ -84,7 +89,7 @@ class InteractionFactory {
         ///@param name: Name of the subclass object to be created
         ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
         ///     (**NOTE**: Returns nullptr if name is not registered)
-        static std::unique_ptr<Interactions> Create(const std::string&, const std::string&);
+        static std::unique_ptr<Interactions> Create(const YAML::Node&);
 
         /// Produce a list of all the registered interactions
         static void ListInteractions();
@@ -100,12 +105,11 @@ class InteractionFactory {
     bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
                                                                 interaction::Create)
 
-
 class NasaInteractions : public Interactions {
     public:
-        NasaInteractions(const std::string&) {};
+        NasaInteractions(const YAML::Node&) {};
 
-        static std::unique_ptr<Interactions> Create(const std::string& data) {
+        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
             return std::make_unique<NasaInteractions>(data);
         }
 
@@ -130,7 +134,7 @@ class GeantInteractions : public Interactions {
 
         /// Initialize GeantInteractions class. This loads data from an input file
         ///@param filename: The location of the Geant4 hdf5 data file
-        GeantInteractions(const std::string&);
+        GeantInteractions(const YAML::Node&);
         GeantInteractions(const GeantInteractions&) = default;
         GeantInteractions(GeantInteractions&&) = default;
         GeantInteractions& operator=(const GeantInteractions&) = default;
@@ -138,7 +142,7 @@ class GeantInteractions : public Interactions {
 
         /// Generate a GeantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const std::string& data) {
+        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
             return std::make_unique<GeantInteractions>(data);
         }
 
@@ -179,7 +183,7 @@ class ConstantInteractions : public Interactions {
 
         /// Initialize ConstantInteractions class. This loads data from an input file
         ///@param filename: The location of the Geant4 hdf5 data file
-        ConstantInteractions(const std::string& xsec) : m_xsec(std::stod(xsec)) {}
+        ConstantInteractions(const YAML::Node& xsec) : m_xsec(xsec["CrossSection"].as<double>()) {}
         ConstantInteractions(const ConstantInteractions&) = default;
         ConstantInteractions(ConstantInteractions&&) = default;
         ConstantInteractions& operator=(const ConstantInteractions&) = default;
@@ -187,7 +191,7 @@ class ConstantInteractions : public Interactions {
 
         /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const std::string& data) {
+        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
             return std::make_unique<ConstantInteractions>(data);
         }
 
