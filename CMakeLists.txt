@@ -48,6 +48,9 @@ find_package(Python REQUIRED COMPONENTS Development)
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
+# Find ZLIB to read gzip files
+find_package(ZLIB REQUIRED)
+
 # Add dependencies
 include(CMake/CPM.cmake)
 add_subdirectory(external)
@@ -58,7 +61,7 @@ set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/nuchic/System.hh)
 
 # Main code
-add_subdirectory(src/nuchic)
+add_subdirectory(src)
 
 # Testing
 if(ENABLE_TESTING)
