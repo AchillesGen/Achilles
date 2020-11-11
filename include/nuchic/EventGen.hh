@@ -1,6 +1,7 @@
 #ifndef EVENTGEN_HH
 #define EVENTGEN_HH
 
+#include "nuchic/Histogram.hh"
 #include "nuchic/Vegas.hh"
 
 #include <memory>
@@ -43,6 +44,8 @@ class EventGen {
         // std::vector<Vegas> integrators;
         
         std::shared_ptr<EventWriter> writer;
+
+        Histogram hist;
 };
 
 }
