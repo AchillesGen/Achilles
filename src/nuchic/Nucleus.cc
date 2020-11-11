@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 
+#include <cmath>
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/basic_file_sink.h"
 
@@ -30,7 +31,7 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
                  const double& kf, const std::string& densityFilename, const FermiGasType& fgType,
-                 std::function<Particles()> _density) 
+                 std::unique_ptr<Density> _density) 
                         : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType),
                           density(std::move(_density)) {
 
@@ -57,7 +58,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         std::getline(densityFile, lineContent);
     }
 
-    double radius_, density_, densityErr;
+    double radius_{}, density_{}, densityErr{};
     std::vector<double> vecRadius, vecDensity;
     constexpr double minDensity = 1E-6;
     while(densityFile >> radius_ >> density_ >> densityErr) {
@@ -72,7 +73,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
     // not necessarily be caught 
-    auto particles = density();
+    auto particles = density -> GetConfiguration();
     if(particles.size() != nucleons.size())
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
 
@@ -135,7 +136,7 @@ bool Nucleus::Escape(Particle& particle) noexcept {
 
 void Nucleus::GenerateConfig() {
     // Get a configuration from the density function
-    Particles particles = density();
+    Particles particles = density -> GetConfiguration();
 
     for(Particle& particle : particles) {
         // Set momentum for each nucleon
@@ -167,9 +168,10 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
     return ToCartesian(momentum);
 }
 
-Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy, const double& fermiMomentum,
+Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
+                             const double& fermiMomentum,
                              const std::string& densityFilename, const FermiGasType& fg_type,
-                             const std::function<Particles()>& density) {
+                             std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -180,7 +182,8 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy, con
             "Nucleus: parsing nuclear name '{0}', expecting a density "
             "with A={1} total nucleons and Z={2} protons.", 
             name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg_type, density);
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename,
+                       fg_type, std::move(density));
     }
 
     throw std::runtime_error("Invalid nucleus " + name);
@@ -215,13 +218,3 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
 
     return result;
 }
-
-nuchic::Particles Density() {
-    nuchic::Particles particles;
-    for(size_t i = 0; i < 6; ++i) {
-        particles.emplace_back(nuchic::Particle(nuchic::PID::proton())); 
-        particles.emplace_back(nuchic::Particle(nuchic::PID::neutron())); 
-    } 
-    return particles;
-}
-

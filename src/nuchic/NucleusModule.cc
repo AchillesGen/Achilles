@@ -4,22 +4,17 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
+// TODO: Deal with creating Nucleus in python since pybind11 does not like unique_ptr as arguments
 void NucleusModule(py::module &m) {
     py::class_<nuchic::Nucleus, std::shared_ptr<nuchic::Nucleus>> nucleus(m, "Nucleus", py::module_local());
     // Constructors
-    nucleus.def(py::init<const std::size_t&, const std::size_t&, const double&, const double&,
-                const std::string&, const nuchic::Nucleus::FermiGasType&,
-                const std::function<nuchic::Particles()>&>(),
-                py::arg("Z"), py::arg("A"), py::arg("binding"), py::arg("kf"),
-                py::arg("density_file"),
-                py::arg("fg_type"),
-                py::arg("density") = std::function<nuchic::Particles()>())
+    nucleus
         // Setters
         .def("set_nucleons", &nuchic::Nucleus::SetNucleons)
         .def("set_binding_energy", &nuchic::Nucleus::SetBindingEnergy)
         .def("set_fermi_momentum", &nuchic::Nucleus::SetFermiMomentum)
         .def("set_potential", &nuchic::Nucleus::SetPotential)
-        .def("set_density", &nuchic::Nucleus::SetDensity)
+        // .def("set_density", &nuchic::Nucleus::SetDensity)
         .def("set_radius", &nuchic::Nucleus::SetRadius)
         // Getters
         .def("nucleons", &nuchic::Nucleus::Nucleons)
@@ -40,9 +35,9 @@ void NucleusModule(py::module &m) {
              py::arg("position") = 0.0)
         // String Methods
         .def("__str__", &nuchic::Nucleus::ToString)
-        .def("__repr__", &nuchic::Nucleus::ToString)
+        .def("__repr__", &nuchic::Nucleus::ToString);
         // Static Methods
-        .def_static("make_nucleus", &nuchic::Nucleus::MakeNucleus);
+        // .def_static("make_nucleus", &nuchic::Nucleus::MakeNucleus);
 
     py::enum_<nuchic::Nucleus::FermiGasType>(nucleus, "FermiGas", py::module_local())
         .value("Local", nuchic::Nucleus::FermiGasType::Local)
