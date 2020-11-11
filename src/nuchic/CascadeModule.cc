@@ -14,10 +14,11 @@ void CascadeModule(py::module &m) {
 
     py::class_<Cascade, std::shared_ptr<Cascade>> cascade(m, "Cascade");
 
+        // TODO: Handle issues with unique_ptr
         // Constructors
-        cascade.def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, 
-                    const double&>(),
-                    py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.03)
+        cascade// .def(py::init<const std::shared_ptr<Interactions>, const Cascade::ProbabilityType&, 
+               //      const double&>(),
+               //      py::arg("interactions"), py::arg("prob"), py::arg("distance") = 0.03)
         // Functions
         .def("kick", &Cascade::Kick)
         .def("reset", &Cascade::Reset)

@@ -16,10 +16,10 @@
 
 using namespace nuchic;
 
-Cascade::Cascade(const std::shared_ptr<Interactions> interactions,
+Cascade::Cascade(std::unique_ptr<Interactions> interactions,
                  const ProbabilityType& prob,
                  const double& dist = 0.03)
-        : distance(dist), m_interactions(interactions) {
+        : distance(dist), m_interactions(std::move(interactions)) {
 
     switch(prob) {
         case ProbabilityType::Gaussian:
@@ -126,7 +126,7 @@ void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 100000) {
+void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -184,7 +184,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000000) {
+void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -240,7 +240,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
     nucleus -> Nucleons() = particles;
 }
 
-void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps = 10000) {
+void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -290,7 +290,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 }
 
 void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
-                                 const std::size_t& maxSteps = 10000) {
+                                 const std::size_t& maxSteps) {
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
@@ -403,7 +403,7 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
     for(std::size_t i = 0; i < particles.size(); ++i) {
         // TODO: Should particles propagating be able to interact with
         //       other propagating particles?
-        if (particles[i].Status() < ParticleStatus::background) continue;
+        if (particles[i].Status() != ParticleStatus::background) continue;
         //if(i == idx) continue;
         // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
