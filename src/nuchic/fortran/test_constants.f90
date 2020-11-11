@@ -45,13 +45,13 @@ program test_constants
     vec1 = part1%momentum()
     call vec1%print()
 
-    interp = interp1d(x, y, 10)
+    interp = interp1d(x, y, 10, 1)
 
     print*, interp%min()
     print*, interp%max()
     print*, interp%call(3.3d0)
 
-    interp2 = interp2d(x, y, z, 3, 3)
+    interp2 = interp2d(x, y, z, 3, 3, 1)
 
     print*, interp2%call(2.3d0, 2.3d0)
 

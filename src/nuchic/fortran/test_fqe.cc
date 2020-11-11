@@ -6,15 +6,20 @@
 
 #include "yaml-cpp/yaml.h"
 
-constexpr size_t Z = 6;
-nuchic::Particles Density() {
-    nuchic::Particles particles;
-    for(size_t i = 0; i < Z; ++i) {
-        particles.emplace_back(nuchic::Particle(nuchic::PID::proton())); 
-        particles.emplace_back(nuchic::Particle(nuchic::PID::neutron())); 
-    } 
-    return particles;
-}
+
+class DummyDensity : public nuchic::Density {
+    public:
+        DummyDensity() = default;
+        std::vector<nuchic::Particle> GetConfiguration() override {
+            constexpr size_t Z = 6;
+            nuchic::Particles particles;
+            for(size_t i = 0; i < Z; ++i) {
+                particles.emplace_back(nuchic::Particle(nuchic::PID::proton())); 
+                particles.emplace_back(nuchic::Particle(nuchic::PID::neutron())); 
+            } 
+            return particles;
+        }
+};
 
 nuchic::Histogram hist{50, 0, 400, "EnergyTransfer"};
 bool fillHist{false};
@@ -51,12 +56,13 @@ QESettings:
     iform: 2
     )node");
 
-    auto beam = beams["Beams"].as<nuchic::Beam>();
+    auto beam = std::make_shared<nuchic::Beam>(beams["Beams"].as<nuchic::Beam>());
     auto nucleus = std::make_shared<nuchic::Nucleus>(
             nuchic::Nucleus::MakeNucleus("12C", 0, 225, "c12.prova.txt",
-                                         nuchic::Nucleus::FermiGasType::Global, Density));
+                                         nuchic::Nucleus::FermiGasType::Global,
+                                         std::make_unique<DummyDensity>()));
 
-    auto mode = nuchic::HardScatteringMode::FixedAngle;
+    auto mode = nuchic::RunMode::FixedAngle;
     //auto mode = nuchic::HardScatteringMode::FullPhaseSpace;
 
     //nuchic::FQESpectral hardScattering(config["QESettings"], beam, nucleus, mode);
@@ -68,13 +74,13 @@ QESettings:
     nuchic::Vegas vegas(map, node["Vegas"]);
     static constexpr double conv = 1e6; //conversion factor to obtain: nb/[MeV sr]
     auto xsec = [&](const std::vector<double> &x, const double &wgt) {
-        auto particles = hardScattering.GeneratePhaseSpace(x);
-        if(particles[2].E() <= 0) return 0.0;
-        double cosTheta = particles[1].Momentum().CosAngle(particles[0].Momentum());
-        // if(std::abs(cosTheta) > std::cos(M_PI/180/4)) return 0.0;
-        double pswgt = hardScattering.PhaseSpaceWeight(particles);
+        // Generate the initial state nucleus
+        nucleus -> GenerateConfig(); 
+        auto particles = nucleus -> Nucleons();
+
+        auto pswgt = hardScattering.GeneratePhaseSpace(particles, x);
         if(pswgt == 0) return pswgt;
-        double xsecwgt = hardScattering.CrossSection(particles);
+        auto xsecwgt = hardScattering.CrossSection(particles);
         // fmt::print("theta = {:.5e}\tpswgt = {:.5e}\txsecwgt = {:.5e}\n",
         //            std::acos(cosTheta)*180/M_PI, pswgt, xsecwgt);
 	if(fillHist) {
@@ -85,13 +91,13 @@ QESettings:
         return pswgt*xsecwgt*conv; 
     };
 
-    vegas(xsec);
-    vegas.Clear();
-    vegas.Set(node2["Vegas"]);
-    hardScattering.SetHist(true);
-    fillHist = true;
-    vegas(xsec); 
-    hardScattering.GetHist().Save("test");
-    hist.Save("domega15_v3");
-    std::cout << hist.Integral() << std::endl;
+    // vegas(xsec);
+    // vegas.Clear();
+    // vegas.Set(node2["Vegas"]);
+    // hardScattering.SetHist(true);
+    // fillHist = true;
+    // vegas(xsec); 
+    // hardScattering.GetHist().Save("test");
+    // hist.Save("domega15_v3");
+    // std::cout << hist.Integral() << std::endl;
 }

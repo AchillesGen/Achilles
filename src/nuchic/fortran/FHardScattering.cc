@@ -38,12 +38,23 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, std::shared_ptr<Beam>
 }
 
 double nuchic::FQESpectral::CrossSection(const Particles &particles) const {
-    int inucleon = particles[2].ID() == nuchic::PID::proton() ? 1 : 2;
+    Particle leptonIn, leptonOut, nucleonIn, nucleonOut;
+    for(const auto &part : particles) {
+        if(part.Status() == ParticleStatus::initial_state) {
+            if(part.Info().IsBaryon()) nucleonIn = part;
+            else leptonIn = part;
+        } else if(part.Status() != ParticleStatus::background) {
+            if(part.Info().IsBaryon()) nucleonOut = part;
+            else leptonOut = part;
+        }
+    }
 
-    auto pLeptonIn = particles[0].Momentum();
-    auto pLeptonOut = particles[1].Momentum();
-    auto pNucleonIn = particles[2].Momentum();
-    auto pNucleonOut = particles[3].Momentum();
+    int inucleon = nucleonIn.ID() == nuchic::PID::proton() ? 1 : 2;
+
+    auto pLeptonIn = leptonIn.Momentum();
+    auto pLeptonOut = leptonOut.Momentum();
+    auto pNucleonIn = nucleonIn.Momentum();
+    auto pNucleonOut = nucleonOut.Momentum();
 
     auto qVec = pLeptonIn - pLeptonOut;
     auto rotMat = qVec.AlignZ();

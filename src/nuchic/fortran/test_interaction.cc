@@ -6,8 +6,8 @@
 
 int main() {
 
-    const std::string name = "Constant";
-    nuchic::FortranInteraction interaction(name.c_str());
+    const YAML::Node name = YAML::Load("Name: Constant");
+    nuchic::FortranInteraction interaction(name);
     nuchic::Particle part1{};
     nuchic::Particle part2{};
 
