@@ -67,7 +67,9 @@ class Particle {
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
             info(pid), momentum(mom), position(std::move(pos)), status(static_cast<ParticleStatus>(_status)),
             mothers(std::move(_mothers)), daughters(std::move(_daughters)) {formationZone = 0;}
-        Particle(const Particle&) = default;
+        Particle(const Particle &other) : info{other.info}, momentum{other.momentum},
+            position{other.position}, status{other.status}, mothers{other.mothers},
+            formationZone{other.formationZone} {}
         Particle(Particle&&) = default;
         Particle& operator=(const Particle&) = default;
         Particle& operator=(Particle&&) = default;
