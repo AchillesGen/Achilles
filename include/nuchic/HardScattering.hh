@@ -12,6 +12,7 @@
 #include "nuchic/Beams.hh"
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
+#include "nuchic/Random.hh"
 
 namespace nuchic {
 
@@ -70,14 +71,14 @@ class HardScattering {
         // Special phase space routines
         void SetScatteringAngle(double angle) { m_angle = angle; }
 
+        std::shared_ptr<randutils::mt19937_rng> GetRNG() const { return m_rng; }
+
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
         const Histogram& GetHist() const { return hist; }
-        double Test(const std::vector<double>&, const double&);
 
     protected:
         // Phase space factors
-        double dp;
         static constexpr int nNucleonTypes = 2;
         static constexpr double dCos = 2;
         static constexpr double dPhi = 2*M_PI;
@@ -87,6 +88,7 @@ class HardScattering {
         Histogram hist{500, 0, 1000, "Test"};
         std::shared_ptr<Beam> m_leptonBeam;
         std::shared_ptr<Nucleus> m_nuc;
+        std::shared_ptr<randutils::mt19937_rng> m_rng;
 
         // TODO: Move to the driver class
         RunMode m_mode;

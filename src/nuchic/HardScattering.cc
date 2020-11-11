@@ -15,7 +15,7 @@ nuchic::HardScattering::HardScattering(std::shared_ptr<Beam> leptonBeam,
                                        std::shared_ptr<Nucleus> nuc,
                                        RunMode mode)
         : m_leptonBeam{std::move(leptonBeam)}, m_nuc{std::move(nuc)}, m_mode{mode} {
-    dp = 4*m_nuc -> FermiMomentum(0);
+    m_rng = std::make_shared<randutils::mt19937_rng>();
 }
 
 int HardScattering::LeptonVariables() const {
