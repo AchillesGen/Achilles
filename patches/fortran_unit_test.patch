@@ -1,0 +1,17 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ae4efec..6e07922 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -29,6 +29,12 @@ endif ()
+ add_library(fortran_unit_test SHARED ${sources})
+ set_property(TARGET fortran_unit_test PROPERTY VERSION ${version})
+ set_property(TARGET fortran_unit_test PROPERTY SOVERSION 1)
++set_property(TARGET fortran_unit_test PROPERTY Fortran_MODULE_DIRECTORY
++    "${CMAKE_CURRENT_BINARY_DIR}/modules")
++target_include_directories(fortran_unit_test
++    PUBLIC
++       $<INSTALL_INTERFACE:include>
++       $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/modules>)
+ 
+ if (NOT has_parent)
+   add_executable(assert_test.exe src/assert_test.F90)

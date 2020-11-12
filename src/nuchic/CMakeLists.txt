@@ -12,7 +12,7 @@ add_library(utilities SHARED
 )
 target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
-                                PUBLIC spdlog::spdlog pybind11::pybind11 yaml-cpp)
+                                PUBLIC spdlog::spdlog pybind11::pybind11 yaml::cpp)
 
 add_library(physics SHARED
     Cascade.cc
@@ -64,3 +64,8 @@ add_executable(nuchic
     main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen physics utilities)
+
+install(TARGETS nuchic event_gen fortran_interface physics utilities
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

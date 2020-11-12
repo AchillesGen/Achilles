@@ -18,13 +18,16 @@ add_executable(nuchic-testsuite
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)
 
-add_executable(test_delta delta_test.cc)
-target_link_libraries(test_delta PRIVATE project_options project_warnings
-                                 PUBLIC physics)
+enable_language(Fortran)
+add_executable(nuchic-fortran-yaml test_yaml_fortran.f90)
+target_link_libraries(nuchic-fortran-yaml PUBLIC yaml::fortran)
 
-add_executable(test_scattering test_hard_scattering.cc)
-target_link_libraries(test_scattering PRIVATE project_options project_warnings
-                                      PUBLIC physics)
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
+add_executable(nuchic-testsuite-fortran
+    test_fortran.f90
+)
+target_link_libraries(nuchic-testsuite-fortran PRIVATE project_options
+    PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
 catch_discover_tests(nuchic-testsuite)
