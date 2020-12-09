@@ -9,6 +9,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
+#include "nuchic/HardScatteringEnum.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
@@ -19,21 +20,15 @@ namespace nuchic {
 class FourVector;
 class Particle;
 class Nucleus;
+class Event;
+
+struct InitialState;
 
 using Particles = std::vector<Particle>;
 
-enum class HardScatteringType {
-    Quasielastic,
-    MesonExchangeCurrent,
-    Interference_QE_MEC,
-    Resonance,
-    ShallowInelastic,
-    DeepInelastic
-};
-
 class HardScattering {
     public:
-        HardScattering(std::shared_ptr<Beam>, std::shared_ptr<Nucleus>, RunMode);
+        HardScattering(RunMode);
         HardScattering(const HardScattering&) = default;
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
