@@ -23,11 +23,13 @@ add_executable(nuchic-fortran-yaml test_yaml_fortran.f90)
 target_link_libraries(nuchic-fortran-yaml PUBLIC yaml::fortran)
 
 set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
-add_executable(nuchic-testsuite-fortran
+add_executable(nuchic-fortran-testsuite
     test_fortran.f90
 )
-target_link_libraries(nuchic-testsuite-fortran PRIVATE project_options
+target_link_libraries(nuchic-fortran-testsuite PRIVATE project_options
     PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
+add_test(NAME fortran-testsuite
+         COMMAND nuchic-fortran-testsuite)
 catch_discover_tests(nuchic-testsuite)

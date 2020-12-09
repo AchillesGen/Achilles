@@ -1,19 +1,21 @@
-program good_test
+program fortran_test
   use unit_test
 
   implicit none
 
-  type(test_suite_type) :: specific_suite
+  type(test_suite_type) :: test_suite
 
   ! example with specific suite
-  call test_suite_init('my specific test suite', specific_suite)
-  call test_case_create('Specific Test 1', specific_suite)
+  call test_suite_init('Nuchic Fortran Test Suite', test_suite)
+  call test_case_create('Dummy Test', test_suite)
   ! suite = SUITE need in this case (cause optional argument eps, file_name, line_number is missing)
-  call assert_approximate(1.0, 2.0, __FILE__, __LINE__, suite=specific_suite)
+  call assert_approximate(1.0, 1.0, __FILE__, __LINE__, suite=test_suite)
+
+  call test_case_create('Fortran YAML', test_suite)
 
   ! report the complete suite
-  call test_suite_report(specific_suite)
+  call test_suite_report(test_suite)
   ! finalize
-  call test_suite_final(specific_suite)
+  call test_suite_final(test_suite)
 
-end program good_test
+end program fortran_test
