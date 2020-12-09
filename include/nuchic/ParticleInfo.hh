@@ -135,7 +135,7 @@ namespace nuchic {
                 if(anti && info -> majorana == 0) anti = anti_;
             }
 
-            ParticleInfo(const long int &id) : info(nullptr), anti(false) {
+            explicit ParticleInfo(const long int &id) : info(nullptr), anti(false) {
                 InitDatabase("data/Particles.yml");
                 auto it(particleDB.find(static_cast<PID>(std::abs(id))));
                 if(it != particleDB.end()) 

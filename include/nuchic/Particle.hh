@@ -55,21 +55,33 @@ class Particle {
         ///@param status: The status code of the particle (default = 0)
         ///@param mothers: The mother particles of the particle (default = Empty)
         ///@param daughters: The daughter particles of the particle (default = Empty)
-        Particle(const PID& pid = PID{0}, const FourVector& mom = FourVector(),
+        Particle(const PID& pid = PID{0}, FourVector mom = FourVector(),
                  ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = static_cast<ParticleStatus>(0),
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
-            info(pid), momentum(mom), position(std::move(pos)), status(_status),
+            info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
             mothers(std::move(_mothers)), daughters(std::move(_daughters)) { formationZone = 0;}
+
         Particle(const long int& pid, const FourVector& mom = FourVector(),
                  ThreeVector  pos = ThreeVector(), const int& _status = 0,
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
             info(pid), momentum(mom), position(std::move(pos)), status(static_cast<ParticleStatus>(_status)),
             mothers(std::move(_mothers)), daughters(std::move(_daughters)) {formationZone = 0;}
-        Particle(const Particle &other) : info{other.info}, momentum{other.momentum},
+
+        Particle(ParticleInfo _info, const FourVector &mom=FourVector(),
+                 ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
+                 std::vector<int> _mothers = std::vector<int>(),
+                 std::vector<int> _daughters = std::vector<int>()) noexcept
+                    : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
+                      status(std::move(_status)), mothers(std::move(_mothers)),
+                      daughters(std::move(_daughters)) { formationZone = 0;}
+
+        Particle(const Particle &other) : info{ParticleInfo(other.info.ID())},
+            momentum{other.momentum},
             position{other.position}, status{other.status}, mothers{other.mothers},
             formationZone{other.formationZone} {}
+
         Particle(Particle&&) = default;
         Particle& operator=(const Particle&) = default;
         Particle& operator=(Particle&&) = default;
