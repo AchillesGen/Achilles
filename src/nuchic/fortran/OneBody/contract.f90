@@ -8,12 +8,13 @@
 
 
 
-  subroutine cc1(id,xq,w,wt,xk,xp,p_4,pp_4,ee0,theta,ig,sig)
+  subroutine cc1(xq,w,wt,xk,xp,p_4,pp_4,ee0,theta,ig,sig_p, sig_n)
     use xsec_fact
     use dirac_matrices
     implicit none
-    integer*4 :: ig,i,id
-    real*8 :: xq, w,wt, xk, xp, ee0, theta,sig
+    integer*4 :: ig,i
+    real*8 :: xq, w,wt, xk, xp, ee0, theta
+    real*8, intent(out) :: sig_p, sig_n
     real*8 :: ek,epf,xmf
     real*8 :: p_4(4),pp_4(4),q_4(4),cosa
 !     ee0      incident electron energy in MeV
@@ -45,7 +46,8 @@
 
       call current_init(p_4,pp_4,q_4)
       call define_spinors()
-      call sigccc(id,sig,ig)
+      call sigccc(1,sig_p,ig)
+      call sigccc(2,sig_n,ig)
       
       return
     end subroutine cc1

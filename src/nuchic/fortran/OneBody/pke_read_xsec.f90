@@ -9,19 +9,18 @@
     real*8, allocatable, save ::pke_n(:,:),xe_n(:),dp_n(:)
     real*8, allocatable, save :: p(:)
     
-    integer*4, save, private :: fg,nZ,nA,iform
+    integer*4, save, private :: fg,iform
     integer*4, save :: np,nen,nep
-    real*8, save, private :: kF
 
     type(interp2d) :: pke_p_interp, pke_n_interp
 
     contains
 
-    subroutine init_pke(fname_pkep,fname_pken,fg_in,nZ_in,nA_in,kF_in,iform_in)
+    subroutine init_pke(fname_pkep,fname_pken,fg_in,iform_in)
         implicit none
-        integer*4 :: fg_in,i,j,nZ_in,nA_in,iform_in
+        integer*4 :: fg_in,i,j,iform_in
         real*8 :: he_p,he_n
-        real*8 :: norm,pmax, hp,kF_in
+        real*8 :: norm,pmax, hp
         real*8 :: dpe, ee, pp, pke
         character*50 :: fname_pkep,fname_pken
         call init(constants)
@@ -29,11 +28,8 @@
         mn = constants%mn
         mqe = constants%mqe
         hbarc = constants%hbarc
-        fg=fg_in
-        nZ=nZ_in
-        nA=nA_in
-        kF=kF_in
         iform= iform_in
+        fg = fg_in
         if(fg.ne.1)then
           open(unit=4,file=fname_pkep,status='unknown',form='formatted')
           read(4,*) nep,np
@@ -98,42 +94,48 @@
        endif
     end subroutine
 
-    subroutine f_eval(in,p_4,pf_4,e,mom,w,qval,thetalept,ee,f_o)
+    subroutine f_eval(p_4,pf_4,e,mom,w,qval,thetalept,ee,nZ,nA,kF,fp_o, fn_o)
         use mathtool
         implicit none
         real*8, parameter :: eps=5.0d0,small=1e-15
-        real*8 :: e, mom
-        
-        integer*4 :: in
-        real*8 :: p_4(4),pf_4(4)
-        real*8 :: w,wt,qval,thetalept,ee,f_o,pke,xp,xpf
-        real*8 :: sig,arg,delta_w,norm
+        real*8, intent(in) :: e, mom
+        integer, intent(in) :: nZ, nA 
+        real*8, intent(in) :: kF
+        real*8 :: p_4(4)
+        real*8, intent(in) :: pf_4(4)
+        real*8, intent(in) :: w, qval, thetalept, ee
+        real*8 :: wt, pkep, pken, xp, xpf, pke
+        real*8, intent(out) :: fp_o, fn_o
+        real*8 :: sig_p, sig_n, arg, delta_w, norm
 
-        f_o=0.0d0      
+        fp_o=0.0d0      
+        fn_o=0.0d0      
         xp=sqrt(sum(p_4(2:4)**2))
         xpf=sqrt(sum(pf_4(2:4)**2))
 
         if(fg.ne.1) then
-            if(in.eq.1) then
-               pke = pke_p_interp%call(e, mom)
-            elseif(in.eq.2) then
-               pke = pke_n_interp%call(e, mom)
-           endif 
+           pkep = pke_p_interp%call(e, mom)
+           pken = pke_n_interp%call(e, mom)
            p_4(1)=sqrt(xp**2+mqe**2)
            wt=w-abs(e)+mqe-p_4(1)
-           call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
+           call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig_p,sig_n)
            ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
-           if(pke.lt.0.d0) pke=0.0d0                
-           f_o=pke*sig
+           fp_o=pkep*sig_p/dble(nZ)
+           fn_o=pken*sig_n/dble(nA-nZ)
         else
-            if(xp.gt.kF) f_o=0.0d0   
+            if(xp.gt.kF) then
+                fp_o=0.0d0   
+                fn_o=0.0d0
+                return
+            endif
             norm=4.0d0*pi/3.0d0*kF**3  
             pke=1.0/norm   
             p_4(1)=sqrt(xp**2+mqe**2)
             wt=w-abs(e)
-            call cc1(in,qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig)
+            call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig_p, sig_n)
             ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
-            f_o=pke*sig*pf_4(1)/xp/qval*dble(nZ)
+            fp_o=pke*sig_p*pf_4(1)/xp/qval
+            fn_o=pke*sig_n*pf_4(1)/xp/qval
         endif
     
         return
