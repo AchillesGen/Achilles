@@ -102,6 +102,14 @@ class Nucleus {
         ///@return Particles: The current nucleons generated for the nucleus
         Particles& Nucleons() noexcept { return nucleons; }
 
+        /// Return a vector of the ids of the protons in the nucleus
+        ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
+        std::vector<size_t> ProtonsIDs() noexcept { return protonLoc; }
+
+        /// Return a vector of the ids of the neutrons in the nucleus
+        ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector 
+        std::vector<size_t> NeutronsIDs() noexcept { return neutronLoc; }
+
         /// Return a vector of the current protons
         ///@return Particles: The current protons generated for the nucleus
         Particles& Protons() noexcept { return protons; }
@@ -230,6 +238,7 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
+        std::vector<size_t> protonLoc, neutronLoc;
         double binding{}, fermiMomentum{}, radius{}, potential{};
         FermiGasType fermiGas{FermiGasType::Local};
         std::unique_ptr<Density> density;

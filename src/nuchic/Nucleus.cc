@@ -89,6 +89,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
 
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     nucleons = _nucleons;
+    std::size_t idx = 0;
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
     for(auto particle : nucleons) {
@@ -97,12 +98,14 @@ void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
                 protons.push_back(particle);
                 proton_idx++;
             } else protons[proton_idx++] = particle;
+            protonLoc.push_back(idx++);
         }
         else if(particle.ID() == PID::neutron()) {
             if(neutron_idx >= neutrons.size()) {
                 neutrons.push_back(particle);
                 neutron_idx++;
             } else neutrons[neutron_idx++] = particle;
+            neutronLoc.push_back(idx++);
         }
     }
 }
