@@ -20,6 +20,7 @@ namespace nuchic {
 
 class Nucleus;
 class Particle;
+class Event;
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -78,6 +79,12 @@ class Cascade {
         ///@param nucleus: The nucleus to evolve
         ///@param maxSteps: The maximum steps to take in the cascade
         void Evolve(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
+
+        /// Simulate the cascade on an event until all particles either escape,
+        /// are recaptured, or are in the background.
+        ///@param event: The event to run the cascade evolution on
+        ///@param maxSteps: The maximum steps to take in the cascade
+        void Evolve(nuchic::Event&, const std::size_t& maxSteps = cMaxSteps);
 
         /// Simulate evolution of a kicked particle until it interacts for the 
         /// first time with another particle, accumulating the total distance
