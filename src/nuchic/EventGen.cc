@@ -20,12 +20,12 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
     scattering = HardScatteringFactory::Create(scatteringNode["Model"].as<std::string>(),
-            scatteringNode, beam, nucleus, runMode);
+            scatteringNode, runMode);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>());
 
     // Setup Vegas
-    nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables()));
+    nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables() + beam->NVariables()));
     integrator = Vegas(map, config["Initialize"]);
 
     auto output = config["Main"]["Output"];
@@ -34,7 +34,8 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     }
     writer -> WriteHeader(configFile);
 
-    hist = Histogram(13, -0.5, 12.5, "Multiplicity");
+    hist = Histogram(2, -0.5, 1.5, "xsec");
+    rng = std::make_shared<randutils::mt19937_rng>();
 }
 
 void nuchic::EventGen::Initialize() {
@@ -60,42 +61,73 @@ void nuchic::EventGen::GenerateEvents() {
 }
 
 double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt) {
-    static constexpr double conv = 1e6;
+    // Initialize the event, which generates the nuclear configuration
+    // and initializes the beam particle for the event
+    std::vector<double> beamRans(rans.begin(), rans.begin() + beam -> NVariables());
+    Event event(nucleus, beam, beamRans, wgt);
 
-    // Generate the initial state nucleus
-    nucleus -> GenerateConfig(); 
-    auto particles = nucleus -> Nucleons();
+    // Generate phase space
+    scattering -> GeneratePhaseSpace(rans, event);
+    if(event.PhaseSpace().weight == 0) return 0;
 
-    // Generate phase space and calculate the hard cross section
-    auto pswgt = scattering -> GeneratePhaseSpace(particles, rans);
-    if(pswgt == 0) return pswgt;
-    double xsecwgt = scattering -> CrossSection(particles);
+    // Calculate the hard cross sections and select one for initial state
+    scattering -> CrossSection(event);
+    if(!scattering -> InitializeEvent(event))
+        return 0;
 
     // Run the cascade if needed
     if(runCascade) {
-        // Set all propagating particles as kicked for the cascade
-        // TODO: Maybe move within startup of the cascade code?
-        for(size_t idx = 0; idx < particles.size(); ++idx) {
-            if(particles[idx].Status() == ParticleStatus::propagating)
-                cascade -> SetKicked(idx);
+        cascade -> Evolve(event);
+    } else {
+        for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
+            if(nucleon.Status() == ParticleStatus::propagating) {
+                nucleon.SetStatus(ParticleStatus::escaped);
+            }
         }
-
-        nucleus -> Nucleons() = particles;
-        cascade -> Evolve(nucleus);
-        particles = nucleus -> Nucleons();
     }
 
     // Write out events
     if(outputEvents) {
-        double multiplicity = 0;
-        for(const auto &part : particles) {
-            if(part.Status() == ParticleStatus::escaped)
-                multiplicity += 1;
-        }
-        hist.Fill(multiplicity, pswgt*xsecwgt*conv*wgt);
-        Event event(std::move(particles), pswgt*xsecwgt*conv*wgt);
         writer -> Write(event);
     }
 
-    return pswgt*xsecwgt*conv;
+    return event.Weight()/wgt;
 }
+
+// Move this to hardscattering starting here:
+//    double totalXSec = std::accumulate(xsecwgt.begin(), xsecwgt.end(), 0.0);
+//
+//    for particle in particles:
+//        if momentum[2] (initial state nucleon) < nucleus.kf(particle.position):
+//            if proton:
+//                add proton to list of allowed proton initial states
+//            if neutron:
+//                add neutron to list of allowed neutron initial states
+//
+//    totalXSec = (n_protons_allowed*rho*xsecwgt[0] + n_neutrons_allowed*xsecwgt[1]);
+//    // two body
+//    totalXSec = (n_protons_allowed*(n_protons_allowed-1)*xsecwgt[0]
+//                 + n_protons_allowed*n_neutrons_allowed*xsecwgt[1]
+//                 + n_neutrons_allowed*(n_neutrons_allowed-1)*xsecwgt[2]);
+//    // Select struck nucleon(s)
+//    bool proton = rng -> uniform(0.0, totalXSec) < xsecwgt[0];
+//    if(proton) {
+//        select from list of allowed initial states
+//
+//        auto idx = rng -> pick(nucleus -> ProtonsIDs());
+//        particles[idx].SetStatus(ParticleStatus::initial_state);
+//        particles[idx].SetMomentum(psPoint.momentum[2]);
+//        Particle outNucl(particles[idx]);
+//        outNucl.SetStatus(ParticleStatus::propagating);
+//        outNucl.SetMomentum(psPoint.momentum[3]);
+//        particles.push_back(outNucl);
+//    } else {
+//        auto idx = rng -> pick(nucleus -> NeutronsIDs());
+//        particles[idx].SetStatus(ParticleStatus::initial_state);
+//        particles[idx].SetMomentum(psPoint.momentum[2]);
+//        Particle outNucl(particles[idx]);
+//        outNucl.SetStatus(ParticleStatus::propagating);
+//        outNucl.SetMomentum(psPoint.momentum[3]);
+//        particles.push_back(outNucl);
+//    }
+// To here

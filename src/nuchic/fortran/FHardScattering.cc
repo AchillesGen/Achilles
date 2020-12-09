@@ -4,27 +4,24 @@
 #include "nuchic/HardScatteringFactory.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
+#include "nuchic/Event.hh"
 
 extern "C" {
-    void InitializeOneBody(const char*, const char*, int, int, int, double, int);
-    double CrossSectionOneBody(int, nuchic::FourVector*, nuchic::FourVector*,
-                               double, double, double, double, double, double);
+    void InitializeOneBody(const char*, const char*, int, int);
+    void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
+                             double, double, double, double, double, double,
+                             int, int, double, double**, int*);
 }
 
 REGISTER_HARDSCATTERING(nuchic::FQESpectral);
 REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
 
-nuchic::FQESpectral::FQESpectral(const YAML::Node &config, std::shared_ptr<Beam> beam,
-                                 std::shared_ptr<Nucleus> nuc, RunMode mode)
-    : nuchic::QESpectral(beam, nuc, mode) {
+nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
+        : nuchic::QESpectral(mode) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
-    auto fermiGas = config["FermiGas"].as<int>();
     auto iform = config["iform"].as<int>();
-    auto nZ = static_cast<int>(nuc -> NProtons());
-    auto nA = static_cast<int>(nuc -> NNeutrons());
-    auto fermiMom = nuc -> FermiMomentum(0);
 
     size_t lenP = spectralP.size();
     size_t lenN = spectralN.size();
@@ -34,55 +31,54 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, std::shared_ptr<Beam>
     strcpy(cnameP.get(), spectralP.c_str());
     strcpy(cnameN.get(), spectralN.c_str());
 
-    InitializeOneBody(cnameP.get(), cnameN.get(), fermiGas, nZ, nA, fermiMom, iform);
+    InitializeOneBody(cnameP.get(), cnameN.get(), 0, iform);
 }
 
-double nuchic::FQESpectral::CrossSection(const Particles &particles) const {
-    Particle leptonIn, leptonOut, nucleonIn, nucleonOut;
-    for(const auto &part : particles) {
-        if(part.Status() == ParticleStatus::initial_state) {
-            if(part.Info().IsBaryon()) nucleonIn = part;
-            else leptonIn = part;
-        } else if(part.Status() != ParticleStatus::background) {
-            if(part.Info().IsBaryon()) nucleonOut = part;
-            else leptonOut = part;
+void nuchic::FQESpectral::CrossSection(Event &event) const {
+    auto pLeptonIn = event.PhaseSpace().momentum[0];
+    auto pLeptonOut = event.PhaseSpace().momentum[1];
+    auto pNucleonIn = event.PhaseSpace().momentum[2];
+    auto pNucleonOut = event.PhaseSpace().momentum[3];
+
+    auto qVec = pLeptonIn - pLeptonOut;
+    auto rotMat = qVec.AlignZ();
+    qVec = qVec.Rotate(rotMat);
+    pLeptonIn = pLeptonIn.Rotate(rotMat);
+    pLeptonOut = pLeptonOut.Rotate(rotMat);
+    pNucleonIn = pNucleonIn.Rotate(rotMat);
+    pNucleonOut = pNucleonOut.Rotate(rotMat);
+
+    double ee = pLeptonIn.E();
+    double theta = pLeptonIn.Angle(pLeptonOut);
+    double w = qVec.E();
+    double qval = qVec.P();
+
+    double *result = nullptr;
+    int size{};
+
+    CrossSectionOneBody(&pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
+            ee, event.CurrentNucleus() -> NProtons(), event.CurrentNucleus() -> NNucleons(),
+            event.CurrentNucleus() -> FermiMomentum(0), &result, &size);
+
+    for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
+        if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
+            event.MatrixElement(i).inital_state.push_back(PID::proton());
+            event.MatrixElement(i).final_state.push_back(PID::proton());
+            event.MatrixElement(i).weight = result[0];
+        } else {
+            event.MatrixElement(i).inital_state.push_back(PID::neutron());
+            event.MatrixElement(i).final_state.push_back(PID::neutron());
+            event.MatrixElement(i).weight = result[1];
         }
     }
-
-    int inucleon = nucleonIn.ID() == nuchic::PID::proton() ? 1 : 2;
-
-    auto pLeptonIn = leptonIn.Momentum();
-    auto pLeptonOut = leptonOut.Momentum();
-    auto pNucleonIn = nucleonIn.Momentum();
-    auto pNucleonOut = nucleonOut.Momentum();
-
-    auto qVec = pLeptonIn - pLeptonOut;
-    auto rotMat = qVec.AlignZ();
-    qVec = qVec.Rotate(rotMat);
-    pLeptonIn = pLeptonIn.Rotate(rotMat);
-    pLeptonOut = pLeptonOut.Rotate(rotMat);
-    pNucleonIn = pNucleonIn.Rotate(rotMat);
-    pNucleonOut = pNucleonOut.Rotate(rotMat);
-
-    double ee = pLeptonIn.E();
-    double theta = pLeptonIn.Angle(pLeptonOut);
-    double w = qVec.E();
-    double qval = qVec.P();
-
-    return CrossSectionOneBody(inucleon, &pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta, ee);
 }
 
-nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, std::shared_ptr<Beam> beam,
-                                 std::shared_ptr<Nucleus> nuc, RunMode mode)
-    : nuchic::QEGlobalFermiGas(beam, nuc, mode) {
+nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode)
+        : nuchic::QEGlobalFermiGas(mode) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
-    auto fermiGas = config["FermiGas"].as<int>();
     auto iform = config["iform"].as<int>();
-    auto nZ = static_cast<int>(nuc -> NProtons());
-    auto nA = static_cast<int>(nuc -> NNeutrons());
-    auto fermiMom = nuc -> FermiMomentum(0);
 
     size_t lenP = spectralP.size();
     size_t lenN = spectralN.size();
@@ -92,16 +88,14 @@ nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, std::shar
     strcpy(cnameP.get(), spectralP.c_str());
     strcpy(cnameN.get(), spectralN.c_str());
 
-    InitializeOneBody(cnameP.get(), cnameN.get(), fermiGas, nZ, nA, fermiMom, iform);
+    InitializeOneBody(cnameP.get(), cnameN.get(), 1, iform);
 }
 
-double nuchic::FQEGlobalFermiGas::CrossSection(const Particles &particles) const {
-    int inucleon = particles[2].ID() == nuchic::PID::proton() ? 1 : 2;
-
-    auto pLeptonIn = particles[0].Momentum();
-    auto pLeptonOut = particles[1].Momentum();
-    auto pNucleonIn = particles[2].Momentum();
-    auto pNucleonOut = particles[3].Momentum();
+void nuchic::FQEGlobalFermiGas::CrossSection(Event &event) const {
+    auto pLeptonIn = event.PhaseSpace().momentum[0];
+    auto pLeptonOut = event.PhaseSpace().momentum[1];
+    auto pNucleonIn = event.PhaseSpace().momentum[2];
+    auto pNucleonOut = event.PhaseSpace().momentum[3];
 
     auto qVec = pLeptonIn - pLeptonOut;
     auto rotMat = qVec.AlignZ();
@@ -116,6 +110,23 @@ double nuchic::FQEGlobalFermiGas::CrossSection(const Particles &particles) const
     double w = qVec.E();
     double qval = qVec.P();
 
-    return CrossSectionOneBody(inucleon, &pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta, ee);
+    double *result = nullptr;
+    int size{};
+
+    CrossSectionOneBody(&pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
+            ee, event.CurrentNucleus() -> NProtons(), event.CurrentNucleus() -> NNucleons(),
+            event.CurrentNucleus() -> FermiMomentum(0), &result, &size);
+
+    for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
+        if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
+            event.MatrixElement(i).inital_state.push_back(PID::proton());
+            event.MatrixElement(i).final_state.push_back(PID::proton());
+            event.MatrixElement(i).weight = result[0];
+        } else {
+            event.MatrixElement(i).inital_state.push_back(PID::neutron());
+            event.MatrixElement(i).final_state.push_back(PID::neutron());
+            event.MatrixElement(i).weight = result[1];
+        }
+    }
 }
 

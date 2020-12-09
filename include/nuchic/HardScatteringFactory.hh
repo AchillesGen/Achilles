@@ -19,15 +19,13 @@ class Nucleus;
 
 class HardScatteringFactory {
     public:
-        using TCreateMethod = std::unique_ptr<HardScattering>(*)(const YAML::Node&,
-                std::shared_ptr<Beam>, std::shared_ptr<Nucleus>, RunMode);
+        using TCreateMethod = std::unique_ptr<HardScattering>(*)(const YAML::Node&, RunMode);
 
         HardScatteringFactory() = delete;
 
         static bool Register(const std::string&, TCreateMethod);
         static std::unique_ptr<HardScattering> Create(const std::string&,
-                const YAML::Node&, std::shared_ptr<Beam>, std::shared_ptr<Nucleus>,
-                RunMode);
+                const YAML::Node&, RunMode);
         static void ListHardScattering();
 
     private:

@@ -18,12 +18,10 @@ bool HardScatteringFactory::Register(const std::string &name,
 
 std::unique_ptr<HardScattering> HardScatteringFactory::Create(const std::string &name,
                                                               const YAML::Node &config,
-                                                              std::shared_ptr<Beam> beam,
-                                                              std::shared_ptr<Nucleus> nucleus,
                                                               nuchic::RunMode mode) {
     auto it = methods().find(name);
     if(it != methods().end())
-        return it -> second(config, beam, nucleus, mode);
+        return it -> second(config, mode);
     return nullptr;
 }
 
