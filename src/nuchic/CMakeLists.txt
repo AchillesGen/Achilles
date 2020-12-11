@@ -9,7 +9,6 @@ add_library(utilities SHARED
     Vegas.cc
     AdaptiveMap.cc
     Histogram.cc
-    Event.cc
 )
 target_include_directories(utilities PUBLIC ${yaml-cpp_INCLUDE_DIRS})
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -25,6 +24,7 @@ add_library(physics SHARED
     HardScattering.cc
     HardScatteringFactory.cc
     Configuration.cc
+    Event.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
