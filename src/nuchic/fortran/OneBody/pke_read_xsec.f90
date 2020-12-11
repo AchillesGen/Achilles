@@ -31,7 +31,7 @@
         iform= iform_in
         fg = fg_in
         if(fg.ne.1)then
-          open(unit=4,file=fname_pkep,status='unknown',form='formatted')
+          open(unit=4,file=fname_pkep,status='unknown',form='formatted', action='read')
           read(4,*) nep,np
           allocate(p(np),pke_p(nep,np),dp_p(np),xe_p(nep))
           do j=1,np
