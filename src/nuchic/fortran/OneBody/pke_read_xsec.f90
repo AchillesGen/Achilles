@@ -50,7 +50,7 @@
           pke_p_interp = interp2d(xe_p, p, pke_p, nep, np, 1)
           write(6,*)'n(k) norm initial for protons=', norm
 
-          open(unit=4,file=fname_pken,status='unknown',form='formatted')
+          open(unit=4,file=fname_pken,status='unknown',form='formatted', action='read')
           read(4,*) nen,np
           allocate(pke_n(nen,np),dp_n(np),xe_n(nen))
           do j=1,np
