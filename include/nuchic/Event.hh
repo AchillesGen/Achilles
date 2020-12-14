@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "nuchic/HardScatteringEnum.hh"
+#include "nuchic/NuclearRemnant.hh"
 
 namespace nuchic {
 
@@ -45,6 +46,9 @@ class Event {
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
         void InitializeLeptons(size_t);
         void InitializeHadrons(const std::vector<std::array<size_t, 3>>&);
+        void Finalize();
+
+        const NuclearRemnant &Remnant() const { return m_remnant; }
 
         const PhaseSpaceStruct &PhaseSpace() const { return m_ps; }
         PhaseSpaceStruct &PhaseSpace() { return m_ps; }
@@ -79,6 +83,7 @@ class Event {
 
         HardScatteringType m_type{HardScatteringType::None};
         std::shared_ptr<Nucleus> m_nuc;
+        NuclearRemnant m_remnant{};
         std::shared_ptr<Beam> m_beam;
         PhaseSpaceStruct m_ps{};
         MatrixElementVec m_me;

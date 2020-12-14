@@ -25,5 +25,6 @@ void nuchic::NuchicWriter::Write(const Event &event) {
     for(const auto &part : event.Particles()) {
         *m_out << fmt::format("  - {}\n", part);
     }
+    *m_out << fmt::format("  - {}\n", event.Remnant());
     *m_out << fmt::format("  Weight: {}\n\n", event.Weight());
 }

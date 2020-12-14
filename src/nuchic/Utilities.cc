@@ -1,4 +1,5 @@
 #include "nuchic/Utilities.hh"
+#include <stdexcept>
 
 const std::array<double, 3> nuchic::ToCartesian(const std::array<double, 3>& vec) {
     const double x = vec[0] * std::sin(vec[1]) * std::cos(vec[2]);

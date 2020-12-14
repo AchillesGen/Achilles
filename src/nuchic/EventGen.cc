@@ -88,6 +88,7 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Write out events
     if(outputEvents) {
+        event.Finalize();
         writer -> Write(event);
     }
 

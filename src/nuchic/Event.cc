@@ -50,6 +50,21 @@ void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
     }
 }
 
+void Event::Finalize() {
+    size_t nA = 0, nZ = 0;
+    for(auto it = m_nuc -> Nucleons().begin(); it != m_nuc -> Nucleons().end(); ) {
+        if(it -> Status() == ParticleStatus::background) {
+            if(it -> ID() == PID::proton()) nZ++;
+            nA++;
+            it = m_nuc -> Nucleons().erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    m_remnant = NuclearRemnant(nA, nZ);
+}
+
 void Event::AddParticle(const Particle &part) {
     if(part.Info().IsHadron()) {
         m_nuc -> Nucleons().push_back(part);
