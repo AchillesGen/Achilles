@@ -6,14 +6,17 @@ if(POLICY CMP0053)
 endif()
 
 # Set the project name and basic settings
-project(NUCHIC CXX)
+project(NUCHIC LANGUAGES CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 # Link this 'library' to set the c++ standard / compile-time options requested
 # Additionally, link to get include and external dependencies
 add_library(project_options INTERFACE)
 target_compile_features(project_options INTERFACE cxx_std_14)
-target_include_directories(project_options INTERFACE include external)
+target_include_directories(project_options INTERFACE
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+    "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
 
 
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
@@ -80,3 +83,25 @@ if(ENABLE_FUZZING)
     )
     add_subdirectory(fuzz_test)
 endif()
+
+# Install CMake find_package files
+include(CMakePackageConfigHelpers)
+
+configure_package_config_file(
+    ${CMAKE_SOURCE_DIR}/CMake/nuchic-config.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/nuchic-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nuchic
+)
+
+write_basic_package_version_file(
+    ${CMAKE_BINARY_DIR}/CMake/nuchic-config-version.cmake
+    VERSION ${NUCHIC_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+install(
+    FILES
+        ${CMAKE_BINARY_DIR}/CMake/nuchic-config.cmake
+        ${CMAKE_BINARY_DIR}/CMake/nuchic-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nuchic
+)

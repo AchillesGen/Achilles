@@ -27,21 +27,21 @@ target_link_libraries(fortran_interface PRIVATE project_options
                                         PUBLIC physics
 )
 
-add_executable(constant_test 
-    test_constants.f90
-)
-target_link_libraries(constant_test PRIVATE project_options
-                                    PUBLIC fortran_interface
-)
-
-add_executable(interaction_test
-    test_interaction.cc
-)
-target_link_libraries(interaction_test PRIVATE project_options
-                                       PUBLIC fortran_interface
-)
-
-add_executable(fqe_test test_fqe.cc)
-target_link_libraries(fqe_test PRIVATE project_options
-                               PUBLIC fortran_interface
-)
+# add_executable(constant_test 
+#     test_constants.f90
+# )
+# target_link_libraries(constant_test PRIVATE project_options
+#                                     PUBLIC fortran_interface
+# )
+# 
+# add_executable(interaction_test
+#     test_interaction.cc
+# )
+# target_link_libraries(interaction_test PRIVATE project_options
+#                                        PUBLIC fortran_interface
+# )
+# 
+# add_executable(fqe_test test_fqe.cc)
+# target_link_libraries(fqe_test PRIVATE project_options
+#                                PUBLIC fortran_interface
+# )
