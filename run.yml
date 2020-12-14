@@ -1,0 +1,46 @@
+Main:
+  Run Mode: FixedAngle
+  Hard Scattering:
+    Model: QESpectral
+    SpectralP: data/pke12_tot.data
+    SpectralN: data/pke12_tot.data
+    FermiGas: 1
+    iform: 2
+  Angle: 15
+  Output:
+      Format: Nuchic
+      Name: test.out
+
+Initialize:
+  seed: 123456789
+  iterations: 20
+  evaluations: 100000
+
+EventGen:
+  iterations: 30
+  evaluations: 100000
+
+Beams:
+  - Beam:
+      PID: 11
+      Beam Params:
+        Type: Monochromatic
+        Energy: 1000
+
+Cascade:
+  Run: False
+  Interaction: 
+    Name: GeantInteractions
+    GeantData: data/GeantData.hdf5
+  Step: 0.04
+  Probability: Gaussian
+
+Nucleus:
+  Name: 12C
+  Binding: 8.6
+  Fermi Momentum: 225
+  Density:
+    File: data/c12.prova.txt
+    Function: configuration
+    Config Type: QMC
+  FermiGas: Local
