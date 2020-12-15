@@ -18,7 +18,7 @@ add_library(fmt::fmt ALIAS fmt)
 
 CPMFindPackage(
     NAME spdlog
-    GIT_TAG "v1.5.0"
+    GIT_TAG "v1.8.2"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS 
         "SPDLOG_FMT_EXTERNAL ON"
