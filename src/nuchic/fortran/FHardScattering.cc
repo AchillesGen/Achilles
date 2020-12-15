@@ -23,8 +23,8 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
     auto spectralN = config["SpectralN"].as<std::string>();
     auto iform = config["iform"].as<int>();
 
-    size_t lenP = spectralP.size();
-    size_t lenN = spectralN.size();
+    size_t lenP = spectralP.size()+1;
+    size_t lenN = spectralN.size()+1;
 
     auto cnameP = std::unique_ptr<char>(new char[lenP]);
     auto cnameN = std::unique_ptr<char>(new char[lenN]);

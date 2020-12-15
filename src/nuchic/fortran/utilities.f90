@@ -45,7 +45,7 @@ contains
             block
                 ! Convert the C string to a Fortran string
                 character(kind=c_char, len=n+1), pointer :: s
-                call c_f_pointer(cptr=cstr,fptr=s)
+                call c_f_pointer(cptr=cstr, fptr=s)
                 fstr = s(1:n)
                 nullify(s)
             end block
@@ -66,7 +66,7 @@ contains
         else
             cstr = malloc(length+1)
             if(c_associated(cstr)) then
-                call c_f_pointer(cstr, cptr,[length+1])
+                call c_f_pointer(cstr, cptr, [length+1])
                 forall(i=1:length)
                     cptr(i) = fstr(i:i)
                 end forall
