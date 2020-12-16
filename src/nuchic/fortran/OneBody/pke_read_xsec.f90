@@ -22,7 +22,7 @@
         real*8 :: he_p,he_n
         real*8 :: norm,pmax, hp
         real*8 :: dpe, ee, pp, pke
-        character*50 :: fname_pkep,fname_pken
+        character(len=*) :: fname_pkep,fname_pken
         call init(constants)
         mp = constants%mp
         mn = constants%mn
