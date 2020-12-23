@@ -3,11 +3,11 @@
 
 #include <vector>
 
-#include "pybind11/numpy.h"
+// #include "pybind11/numpy.h"
 
-namespace py = pybind11;
+// namespace py = pybind11;
 
-using pyArray = py::array_t<double, py::array::c_style | py::array::forcecast>;
+// using pyArray = py::array_t<double, py::array::c_style | py::array::forcecast>;
 
 namespace nuchic {
 
@@ -87,9 +87,9 @@ class Interp2D {
         Interp2D(const std::vector<double>&, const std::vector<double>&,
                  const std::vector<double>&,
                  InterpolationType=InterpolationType::CubicSpline);
-        Interp2D(const std::vector<double>&, const std::vector<double>&,
-                 const pyArray&,
-                 InterpolationType=InterpolationType::CubicSpline);
+        // Interp2D(const std::vector<double>&, const std::vector<double>&,
+        //          const pyArray&,
+        //          InterpolationType=InterpolationType::CubicSpline);
         Interp2D(const Interp2D&) = default;
         Interp2D(Interp2D&&) = default;
         Interp2D& operator=(const Interp2D&) = default;

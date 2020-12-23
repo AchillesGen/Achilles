@@ -1,11 +1,11 @@
 #pybind11
-CPMAddPackage(
-    NAME pybind11
-    GITHUB_REPOSITORY pybind/pybind11
-    GIT_TAG v2.4.3
-    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch"
-)
-add_library(pybind11::pybind11 ALIAS pybind11)
+# CPMAddPackage(
+#     NAME pybind11
+#     GITHUB_REPOSITORY pybind/pybind11
+#     GIT_TAG v2.4.3
+#     PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch"
+# )
+# add_library(pybind11::pybind11 ALIAS pybind11)
 
 CPMFindPackage(
     NAME fmt

@@ -5,11 +5,11 @@
 #include "nuchic/Utilities.hh"
 
 double TestFunc(const double &x, size_t power) {
-    return pow(x, power);
+    return pow(x, static_cast<double>(power));
 }
 
 double TestFunc(const double &x, const double &y, size_t power) {
-    return pow(x+y, power);
+    return pow(x+y, static_cast<double>(power));
 }
 
 constexpr double acc = 1e-4;

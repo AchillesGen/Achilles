@@ -45,7 +45,7 @@ if(ENABLE_PCH)
 endif()
 
 # Check for python development environment
-find_package(Python REQUIRED COMPONENTS Development)
+# find_package(Python REQUIRED COMPONENTS Development)
 
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)

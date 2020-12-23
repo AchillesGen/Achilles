@@ -12,7 +12,7 @@ add_library(utilities SHARED
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
-                                PUBLIC spdlog::spdlog pybind11::pybind11 yaml::cpp)
+                                PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
 
 add_library(physics SHARED
     Cascade.cc
@@ -73,7 +73,7 @@ set_target_properties(nuchic event_gen fortran_interface_f fortran_interface phy
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen fortran_interface_f fortran_interface physics utilities gzstream spdlog pybind11 yaml-cpp fmt
+install(TARGETS nuchic event_gen fortran_interface_f fortran_interface physics utilities gzstream spdlog yaml-cpp fmt #pybind11 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
