@@ -10,21 +10,21 @@ extern "C" {
     void InitializeOneBody(const char*, const char*, int, int);
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
-                             int, int, double, double**, int*);
+                             unsigned long, unsigned long, double, double**, int*);
 }
 
 REGISTER_HARDSCATTERING(nuchic::FQESpectral);
 REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
 
-nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
-        : nuchic::QESpectral(mode) {
+nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode, RNG rng)
+        : nuchic::QESpectral(mode, rng) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
     auto iform = config["iform"].as<int>();
 
-    size_t lenP = spectralP.size()+1;
-    size_t lenN = spectralN.size()+1;
+    size_t lenP = spectralP.size();
+    size_t lenN = spectralN.size();
 
     auto cnameP = std::unique_ptr<char>(new char[lenP]);
     auto cnameN = std::unique_ptr<char>(new char[lenN]);
@@ -73,8 +73,8 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
     }
 }
 
-nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode)
-        : nuchic::QEGlobalFermiGas(mode) {
+nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode, RNG rng)
+        : nuchic::QEGlobalFermiGas(mode, rng) {
 
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();

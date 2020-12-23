@@ -20,7 +20,7 @@ extern "C" {
             case 3:
                 interp = new nuchic::Interp1D(xVec, yVec,
                         nuchic::InterpolationType::Polynomial); 
-                interp -> SetPolyOrder(mode);
+                interp -> SetPolyOrder(static_cast<size_t>(mode));
                 break;
             case 4:
                 interp = new nuchic::Interp1D(xVec, yVec,
@@ -67,7 +67,7 @@ extern "C" {
             case 3:
                 interp = new nuchic::Interp2D(xVec, yVec, zVec,
                         nuchic::InterpolationType::Polynomial); 
-                interp -> SetPolyOrder(mode, mode);
+                interp -> SetPolyOrder(static_cast<size_t>(mode), static_cast<size_t>(mode));
                 break;
             case 4:
                 interp = new nuchic::Interp2D(xVec, yVec, zVec,
