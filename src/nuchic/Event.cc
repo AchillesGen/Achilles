@@ -26,16 +26,16 @@ void Event::InitializeLeptons(size_t imatrix) {
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_ps.momentum[idx]);
             m_leptons.back().SetStatus(ParticleStatus::initial_state);
+            ++idx;
         }
-        ++idx;
     }
     for(auto pid : m_me[imatrix].final_state) {
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_ps.momentum[idx]);
             m_leptons.back().SetStatus(ParticleStatus::final_state);
+            ++idx;
         }
-        ++idx;
     }
 }
 
