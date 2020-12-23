@@ -21,16 +21,16 @@ class FourVector {
         ///@{
 
         /// Create an empty FourVector object
-        FourVector() noexcept : vec({0, 0, 0, 0}) {}
+        constexpr FourVector() noexcept : vec({0, 0, 0, 0}) {}
         /// Create a ThreeVector object with values given by p
         ///@param p: A std::array<double, 4> containing the values for the vector
-        FourVector(std::array<double, 4> p) noexcept : vec(p) {}
+        constexpr FourVector(std::array<double, 4> p) noexcept : vec(p) {}
         /// Create a FourVector object with values pX, pY, pZ, and E
         ///@param pX: The px value of the vector
         ///@param pY: The py value of the vector
         ///@param pZ: The pz value of the vector
         ///@param E: The E value of the vector
-        FourVector(double pX, double pY, double pZ, double E) noexcept 
+        constexpr FourVector(double pX, double pY, double pZ, double E) noexcept 
             : vec({pX, pY, pZ, E}) {}
         /// Create a FourVector object from a ThreeVector and an energy
         ///@param other: ThreeVector object containing 3-momentum information
