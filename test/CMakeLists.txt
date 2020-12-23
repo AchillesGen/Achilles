@@ -14,6 +14,7 @@ add_executable(nuchic-testsuite
     # test_nucleus.cc
     # test_form_factor.cc
     test_beams.cc
+    test_event.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)
