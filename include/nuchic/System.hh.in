@@ -10,6 +10,15 @@ namespace SystemVariables {
     const std::string libSuffix = "@LIBSUFFIX@";
 }
 
+namespace PathVariables {
+    const std::string buildPath = "@BUILDPATH@/";
+    const std::string installPath = "@INSTALLPATH@/";
+    const std::string buildLibs = buildPath + "lib/";
+    const std::string installLibs = installPath + "lib/";
+    const std::string buildData = buildPath + "data/";
+    const std::string installData = installPath + "share/nuchic/data/";
+}
+
 }
 
 #endif
