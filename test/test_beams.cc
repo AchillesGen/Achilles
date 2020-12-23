@@ -23,7 +23,7 @@ Beams:
         );
     
         auto beam = beams["Beams"].as<nuchic::Beam>();
-    
+
         CHECK(beam.NBeams() == 2); 
         CHECK(beam.BeamIDs() == std::set<nuchic::PID>{12, 13});
         CHECK(beam.at(nuchic::PID(12)) == beam[nuchic::PID(12)]);
