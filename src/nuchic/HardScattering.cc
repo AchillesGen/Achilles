@@ -13,9 +13,8 @@ using nuchic::HardScattering;
 using nuchic::QESpectral;
 using nuchic::QEGlobalFermiGas;
 
-nuchic::HardScattering::HardScattering(RunMode mode) : m_mode{mode} {
-    m_rng = std::make_shared<randutils::mt19937_rng>();
-}
+nuchic::HardScattering::HardScattering(RunMode mode, RNG rng) 
+    : m_rng{rng}, m_mode{mode} {}
 
 int HardScattering::LeptonVariables() const {
     switch(m_mode) {
