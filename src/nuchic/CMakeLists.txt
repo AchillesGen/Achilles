@@ -61,12 +61,11 @@ target_link_libraries(event_gen PRIVATE project_options project_warnings
                             # target_link_libraries(_nuchic PRIVATE project_options project_warnings
                             #                               PUBLIC spdlog::spdlog utilities physics)
 
-add_executable(nuchic 
-    main.cc)
+add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
-                             PUBLIC event_gen physics utilities)
+                             PUBLIC event_gen docopt::docopt)
 
-set_target_properties(nuchic PROPERTIES
+set_target_properties(nuchic event_gen fortran_interface_f fortran_interface physics utilities gzstream PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -74,7 +73,7 @@ set_target_properties(nuchic PROPERTIES
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen fortran_interface physics utilities gzstream spdlog pybind11 yaml-cpp fmt
+install(TARGETS nuchic event_gen fortran_interface_f fortran_interface physics utilities gzstream spdlog pybind11 yaml-cpp fmt
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

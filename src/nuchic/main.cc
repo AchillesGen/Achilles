@@ -3,9 +3,12 @@
 #include "nuchic/System.hh"
 #include "nuchic/Logging.hh"
 
+#include "docopt.h"
+
 #include <dlfcn.h>
 
 using namespace nuchic::SystemVariables;
+using namespace nuchic::PathVariables;
 
 void Splash() {
 
@@ -29,20 +32,45 @@ void Splash() {
 )splash", NUCHIC_VERSION);
 }
 
-int main() {
+static const std::string USAGE =
+R"(
+    Usage:
+      nuchic [<input>] [-v | -vv]
+      nuchic (-h | --help)
+      nuchic --version
+
+    Options:
+      -v[v]            Increase verbosity level.
+      -h --help        Show this screen.
+      --version        Show version.
+)";
+
+int main(int argc, char *argv[]) {
 
     Splash();
-    CreateLogger(2, 5);
+    std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
+                                                    { argv + 1, argv + argc },
+                                                    true, // show help if requested
+                                                    fmt::format("Nuchic {}", NUCHIC_VERSION)); //version string
 
-    const std::string path = "src/nuchic/fortran/";
+    std::string runcard = "run.yml";
+    if(args["<input>"].isString()) runcard = args["<input>"].asString();
+    
+    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
+    CreateLogger(verbosity, 5);
+
     const std::string lib = libPrefix + "fortran_interface" + libSuffix;
-    const std::string name = path + lib;
+    std::string name = installLibs + lib;
     void *handle = dlopen(name.c_str(), RTLD_NOW);
     if(!handle) {
-        spdlog::warn("Cannot open HardScattering: {}", dlerror());
+        name = buildLibs + lib;
+        handle = dlopen(name.c_str(), RTLD_NOW);
+        if(!handle) {
+            spdlog::warn("Cannot open HardScattering: {}", dlerror());
+        }
     }
 
-    nuchic::EventGen generator("run.yml");
+    nuchic::EventGen generator(runcard);
     generator.Initialize();
     generator.GenerateEvents();
 

@@ -27,6 +27,13 @@ CPMFindPackage(
 add_library(spdlog::spdlog ALIAS spdlog)
 
 CPMAddPackage(
+    NAME docopt
+    GIT_TAG v0.6.3
+    GITHUB_REPOSITORY docopt/docopt.cpp
+)
+add_library(docopt::docopt ALIAS docopt)
+
+CPMAddPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
     GIT_TAG 4edff1fa5dbfca16fc72d89870841bee89f8ef89

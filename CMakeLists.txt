@@ -18,7 +18,6 @@ target_include_directories(project_options INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
 add_library(project_warnings INTERFACE)
 
@@ -61,6 +60,8 @@ add_subdirectory(external)
 # Configure system specific variables for loading shared libraries
 set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
+set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
 configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/nuchic/System.hh)
 
 # Copy over data files
