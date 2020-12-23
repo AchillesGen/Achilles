@@ -17,6 +17,7 @@
 #include <ctime>
 #include <iomanip>
 #include <stdexcept>
+#include <utility>
 
 #include "nuchic/AdaptiveMap.hh"
 #include "nuchic/Random.hh"
@@ -71,20 +72,14 @@ std::string VegasResult::Summary() const {
 }
 
 Vegas::Vegas(nuchic::AdaptiveMap map_, 
-             const YAML::Node &args) : map(std::move(map_)) {
+             const YAML::Node &args,
+             RNG rng) : map(std::move(map_)), rand(std::move(rng)) {
     nstrats = 0;
     sumSigF = lim::max();
     lastNEval = 0;
    
     SetDefaults();
     Set(args);
-    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(args["seed"])
-        seed = args["seed"].as<unsigned int>();
-#if USING_MPI
-    // seed += nuchic::mpi -> Rank();
-#endif
-    rand = randutils::mt19937_rng(seed);
 }
 
 void Vegas::SetDefaults() {
@@ -191,7 +186,7 @@ nuchic::Batch2D Vegas::GenerateRandom(const std::size_t &dim1, const std::size_t
     nuchic::Batch2D batchResult(dim1);
     for(std::size_t i = 0; i < dim1; ++i) {
         std::vector<double> tmp(dim2);
-        rand.generate<std::uniform_real_distribution>(tmp);
+        rand->generate<std::uniform_real_distribution>(tmp);
         batchResult[i] = tmp;
     }
     return batchResult;

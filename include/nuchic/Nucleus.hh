@@ -57,7 +57,7 @@ class Nucleus {
         Nucleus& operator=(Nucleus&&) = default;
 
         /// Default destructor
-        ~Nucleus() = default;
+        virtual ~Nucleus() = default;
         ///@}
 
         /// @name Setters
@@ -100,7 +100,7 @@ class Nucleus {
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
-        Particles& Nucleons() noexcept { return nucleons; }
+        virtual Particles& Nucleons() noexcept { return nucleons; }
 
         /// Return a vector of the ids of the protons in the nucleus
         ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
@@ -176,7 +176,7 @@ class Nucleus {
         bool Escape(Particle&) noexcept;
 
         /// Generate a configuration of the nucleus based on the density function
-        void GenerateConfig();
+        virtual void GenerateConfig();
 
         /// Generate a random momentum for a nucleon in the nucleus
         ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
@@ -247,7 +247,7 @@ class Nucleus {
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
 
-        randutils::mt19937_rng rng;
+        std::shared_ptr<randutils::mt19937_rng> rng;
 
         FourVector m_recoil{};
 };

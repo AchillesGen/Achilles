@@ -34,7 +34,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
                  std::unique_ptr<Density> _density) 
                         : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType),
                           density(std::move(_density)) {
-
+    
+    rng = std::make_shared<randutils::mt19937_rng>();
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
         errorMsg += " number of nucleons. Got " + std::to_string(Z);
@@ -164,9 +165,9 @@ double Nucleus::Potential(const double &position) const noexcept{
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = rng.uniform(0.0,FermiMomentum(position));
-    momentum[1] = std::acos(rng.uniform(-1.0, 1.0));
-    momentum[2] = rng.uniform(0.0, 2*M_PI);
+    momentum[0] = rng -> uniform(0.0,FermiMomentum(position));
+    momentum[1] = std::acos(rng -> uniform(-1.0, 1.0));
+    momentum[2] = rng -> uniform(0.0, 2*M_PI);
 
     return ToCartesian(momentum);
 }
