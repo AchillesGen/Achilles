@@ -82,9 +82,15 @@ class Beam {
         using BeamMap = std::map<nuchic::PID, std::shared_ptr<FluxType>>;
 
         Beam(BeamMap beams);
+        Beam(const Beam&) = delete;
+        Beam(Beam&&) = default;
+        Beam& operator=(const Beam&) = delete;
+        Beam& operator=(Beam&&) = default;
+        virtual ~Beam() = default;
+
         Beam() { n_vars = 0; }
         int NVariables() const { return  n_vars; }
-        FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
+        virtual FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
             return m_beams.at(pid) -> Flux(rans); 
         }
         double Weight(const PID pid, const std::vector<double> &rans) const { 
