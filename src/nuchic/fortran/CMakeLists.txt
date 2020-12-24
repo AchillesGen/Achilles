@@ -15,6 +15,8 @@ add_library(fortran_interface_f SHARED
     OneBody/nform.f90
     OneBody/mathtool.f90
 )
+target_link_libraries(fortran_interface_f PRIVATE project_options
+                                          PUBLIC physics)
 
 add_library(fortran_interface SHARED
     FConstants.cc
@@ -27,7 +29,7 @@ add_library(fortran_interface SHARED
     FHardScattering.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options $<BUILD_INTERFACE:project_warnings>
-                                        PUBLIC physics fortran_interface_f)
+                                        PUBLIC fortran_interface_f)
 
 
 # add_executable(constant_test 
