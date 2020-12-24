@@ -1,6 +1,6 @@
 enable_language(Fortran)
 
-add_library(fortran_interface_f SHARED
+add_library(fortran_interface SHARED
     utilities.f90
     vectors_mod.f90
     particle_mod.f90
@@ -14,11 +14,11 @@ add_library(fortran_interface_f SHARED
     OneBody/currents.f90
     OneBody/nform.f90
     OneBody/mathtool.f90
-)
-target_link_libraries(fortran_interface_f PRIVATE project_options
-                                          PUBLIC physics)
-
-add_library(fortran_interface SHARED
+    # )
+    # target_link_libraries(fortran_interface_f PRIVATE project_options
+    #                                           PUBLIC physics)
+    # 
+    # add_library(fortran_interface SHARED
     FConstants.cc
     FVectors.cc
     FParticle.cc
@@ -28,8 +28,8 @@ add_library(fortran_interface SHARED
     FInterpolation.cc
     FHardScattering.cc
 )
-target_link_libraries(fortran_interface PRIVATE project_options $<BUILD_INTERFACE:project_warnings>
-                                        PUBLIC fortran_interface_f)
+target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
+                                        PUBLIC physics)
 
 
 # add_executable(constant_test 
