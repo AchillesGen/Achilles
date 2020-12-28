@@ -54,6 +54,13 @@ addons: &gcc9
             - gfortran-9
             - g++-9
 
+# clang
+addons: &clang
+    apt:
+        packages:
+            - libhdf5-serial-dev
+            - gfortran
+
 matrix:
     include:
         # Currently gcc5 and gcc6 do not work with travis and focal
@@ -86,6 +93,7 @@ matrix:
           os: linux
           env: CLANG_VERSION=10
           compiler: clang
+          addons: *clang
 
         - name: "macOS xcode10.2"
           os: osx
