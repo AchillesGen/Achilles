@@ -8,7 +8,7 @@ dist: focal
 addons: &gcc5
     apt:
         sources:
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test' 
         packages:
             - libhdf5-serial-dev
             - gfortran-5
@@ -18,7 +18,7 @@ addons: &gcc5
 addons: &gcc6
     apt:
         sources:
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test' 
         packages:
             - libhdf5-serial-dev
             - gfortran-6
@@ -28,7 +28,7 @@ addons: &gcc6
 addons: &gcc7
     apt:
         sources:
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test' 
         packages:
             - libhdf5-serial-dev
             - gfortran-7
@@ -38,7 +38,7 @@ addons: &gcc7
 addons: &gcc8
     apt:
         sources:
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test' 
         packages:
             - libhdf5-serial-dev
             - gfortran-8
@@ -48,7 +48,7 @@ addons: &gcc8
 addons: &gcc9
     apt:
         sources:
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test' 
         packages:
             - libhdf5-serial-dev
             - gfortran-9
@@ -118,7 +118,7 @@ before_install:
     - DEPS_DIR="${HOME}/deps"
     - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
 
-    - if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}"; fi
+    - if [ -n "$GCC_VERSION" ]; then export CXX="g++-${GCC_VERSION}" CC="gcc-${GCC_VERSION}" FC="gfortran-${GCC_VERSION}"; fi
     - if [ -n "$CLANG_VERSION" ]; then export CXX="g++-${CLANG_VERSION}" CC="gcc-${CLANG_VERSION}"; fi
     
     ############################################################################
