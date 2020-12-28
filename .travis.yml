@@ -7,52 +7,52 @@ dist: focal
 # gcc 5
 addons: &gcc5
     apt:
-        packages:
-            - libhdf5-serial-dev
-            - gfortran
-            - g++-5
         sources:
             - ubuntu-toolchain-r-test
+        packages:
+            - libhdf5-serial-dev
+            - gfortran-5
+            - g++-5
 
 # gcc 6
 addons: &gcc6
     apt:
-        packages:
-            - libhdf5-serial-dev
-            - gfortran
-            - g++-6
         sources:
             - ubuntu-toolchain-r-test
+        packages:
+            - libhdf5-serial-dev
+            - gfortran-6
+            - g++-6
 
 # gcc 7
 addons: &gcc7
     apt:
-        packages:
-            - libhdf5-serial-dev
-            - gfortran
-            - g++-7
         sources:
             - ubuntu-toolchain-r-test
+        packages:
+            - libhdf5-serial-dev
+            - gfortran-7
+            - g++-7
 
 # gcc 8
 addons: &gcc8
     apt:
-        packages:
-            - libhdf5-serial-dev
-            - gfortran
-            - g++-8
         sources:
             - ubuntu-toolchain-r-test
+        packages:
+            - libhdf5-serial-dev
+            - gfortran-8
+            - g++-8
 
 # gcc 9
 addons: &gcc9
     apt:
-        packages:
-            - libhdf5-serial-dev
-            - gfortran
-            - g++-9
         sources:
             - ubuntu-toolchain-r-test
+        packages:
+            - libhdf5-serial-dev
+            - gfortran-9
+            - g++-9
 
 # clang 10
 addons: &clang10
