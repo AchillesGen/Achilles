@@ -1,4 +1,6 @@
 #include <stdexcept>
+#include <string>
+#include <cctype>
 
 #include "nuchic/Utilities.hh"
 
