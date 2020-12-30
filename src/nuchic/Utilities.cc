@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "nuchic/Utilities.hh"
 
 const std::array<double, 3> nuchic::ToCartesian(const std::array<double, 3>& vec) {
