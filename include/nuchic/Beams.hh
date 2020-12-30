@@ -61,7 +61,7 @@ class Monochromatic : public FluxType {
 class Spectrum : public FluxType {
     public:
         Spectrum(const std::string&) {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
+            spdlog::error("Spectrum Fluxes are not implemented");
         }
 
         int NVariables() const override {
@@ -137,7 +137,7 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
             // TODO: Fill out details of building the spectrum from a YAML file
             std::string filename = node["Filename"].as<std::string>();
             rhs = std::make_shared<nuchic::Spectrum>(filename);
-
+            return true;
         }
 
         return false;
