@@ -16,6 +16,8 @@ class ThreeVector;
 /// The FourVector class provides an easy to use container to handle four
 /// component vectors, such as four-position and four-momentum
 class FourVector {
+    using RotMat = std::array<double, 9>;
+
     public:
         /// @name Constructors and Destructors
         ///@{
@@ -115,18 +117,22 @@ class FourVector {
         /// Return the momentum in the x-direction
         ///@return double: the momentum in the x-direction
         const double& Px() const noexcept {return vec[0];}
+        double& Px() noexcept {return vec[0];}
 
         /// Return the momentum in the y-direction
         ///@return double: the momentum in the y-direction
         const double& Py() const noexcept {return vec[1];}
+        double& Py() noexcept {return vec[1];}
 
         /// Return the momentum in the z-direction
         ///@return double: the momentum in the z-direction
         const double& Pz() const noexcept {return vec[2];}
+        double& Pz() noexcept {return vec[2];}
 
         /// Return the energy
         ///@return double: the energy
         const double& E() const noexcept {return vec[3];}
+        double& E() noexcept {return vec[3];}
 
         /// Return the transverse momentum squared
         ///@return double: Transverse momentum squared
@@ -199,17 +205,17 @@ class FourVector {
         /// Rotate the four vector to the frame given by the 3 angles
         ///@param mat: The rotation matrix
         ///@return FourVector: The vector in the corresponding frame
-        FourVector Rotate(const std::array<double, 9>&) const noexcept;
+        FourVector Rotate(const RotMat&) const noexcept;
 
         /// Obtain the rotation matrix to align the vector with a given axis
         ///@param axis: The axis to rotate to align with
         ///@return std::array<double, 9>: The rotation matrix to align the vector
         ///                               with the given axis
-        std::array<double, 9> Align(const ThreeVector&) const noexcept;
+        RotMat Align(const ThreeVector&) const noexcept;
 
         /// Get the rotation matrix to align the vector with the z-axis
         ///@return std::array<double, 9>: The matrix needed to define the rotation
-        std::array<double, 9> AlignZ() const noexcept;
+        RotMat AlignZ() const noexcept;
 
         /// Calculate the cross product between two four vectors
         ///@param other: The vector to take the cross product with respect to

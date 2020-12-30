@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "catch2/catch.hpp"
 
 #include "nuchic/FourVector.hh"
@@ -45,6 +47,17 @@ TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
         nuchic::FourVector p4 = p3;
         nuchic::FourVector p5 = std::move(p2);
         CHECK(p4 == p5);
+    }
+
+    SECTION("Setters and Getters") {
+        nuchic::FourVector p1;
+        p1.SetVectM(nuchic::ThreeVector(1, 2, 3), 0);
+
+        CHECK(p1.Px() == 1);
+        CHECK(p1.Py() == 2);
+        CHECK(p1.Pz() == 3);
+        CHECK(p1.E() == sqrt(1+4+9));
+        CHECK(p1.M() == 0);
     }
 }
 
@@ -231,10 +244,15 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     SECTION("Boost") {
         nuchic::FourVector p1(3, 2, 1, 4), p2(12, 2, -3, 25);
         auto beta = p2.BoostVector();
+        auto partway = p1.Boost(beta);
         auto p3 = p1.Boost(beta).Boost(-beta);
+        auto p4 = p1.Boost(beta).Boost(-beta.Px(), -beta.Py(), -beta.Pz());
 
+        CHECK(partway != p1);
         CHECK((p3[0] == Approx(p1[0]) && p3[1] == Approx(p1[1])
                && p3[2] == Approx(p1[2]) && p3[3] == Approx(p1[3])));
+        CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1])
+               && p4[2] == Approx(p1[2]) && p4[3] == Approx(p1[3])));
     }
 
     SECTION("Rapidity") {
@@ -242,6 +260,14 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         constexpr double rapidity = 0.9729550745276566;
 
         CHECK(p1.Rapidity() == Approx(rapidity));
+    }
+
+    SECTION("Angle between vectors") {
+        nuchic::FourVector p1(1, 0, 3, 4), p2(3, 0, 1, 4); 
+        double t1 = p1.Theta(), t2 = p2.Theta();
+
+        CHECK(std::cos(t1-t2) == Approx(p1.CosAngle(p2)));
+        CHECK(std::abs(t1-t2) == Approx(p1.Angle(p2)));
     }
     
     SECTION("DeltaR") {
@@ -267,7 +293,22 @@ TEST_CASE("Rotations", "[Vectors]") {
         CHECK(result[2] == Approx(p.P()).margin(eps));
         CHECK(result[3] == p[3]);
     }
+
     SECTION("Three Vectors") {
 
+    }
+}
+
+TEST_CASE("I/O and String", "[Vectors]") {
+    SECTION("ToString and from string") {
+        nuchic::FourVector p(1, 2, 3, 4);
+        nuchic::FourVector p2;
+        CHECK(p.ToString() == "FourVector(1.000000, 2.000000, 3.000000, 4.000000)");
+
+        std::stringstream ss;
+        ss << p;
+        ss >> p2;
+
+        CHECK(p == p2);
     }
 }
