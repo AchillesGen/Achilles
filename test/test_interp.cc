@@ -14,6 +14,59 @@ double TestFunc(const double &x, const double &y, size_t power) {
 
 constexpr double acc = 1e-4;
 
+TEST_CASE("Errors 1D", "[Interp]") {
+    SECTION("Valid Input") {
+        const std::vector<double> x = {1, 0, 2, -2};
+        const std::vector<double> x2 = {1, 1};
+        const std::vector<double> x3 = {0, 1};
+        const std::vector<double> y = {0, 1, 2};
+
+        CHECK_THROWS_WITH(nuchic::Interp1D(x, y), "Inputs must be increasing.");
+        CHECK_THROWS_WITH(nuchic::Interp1D(x2, y), "Inputs must all be unique");
+        CHECK_THROWS_WITH(nuchic::Interp1D(x3, y), "Input and output arrays must be the same size.");
+    }
+
+    SECTION("No extrapolation allowed") {
+        const std::vector<double> x = {0, 1, 2}; 
+        const std::vector<double> y = {0, 1, 2};
+
+        nuchic::Interp1D interp(x, y, nuchic::InterpolationType::Polynomial);
+        interp.SetPolyOrder(2);
+
+        CHECK_THROWS_WITH(interp(-1), "Input (-1.0) less than minimum value (0.0)");
+        CHECK_THROWS_WITH(interp(3), "Input (3.0) greater than maximum value (2.0)");
+    }
+}
+
+TEST_CASE("Errors 2D", "[Interp]") {
+    SECTION("Valid Input") {
+        const std::vector<double> x = {1, 0};
+        const std::vector<double> x2 = {0, 0};
+        const std::vector<double> x3 = {0, 1};
+        const std::vector<double> y = {0, 1, 2};
+        const std::vector<double> y2 = {0, 1, 0};
+        const std::vector<double> y3 = {0, 0};
+        const std::vector<double> z = {0, 1, 2};
+
+        CHECK_THROWS_WITH(nuchic::Interp2D(x, y, z), "Inputs must be increasing.");
+        CHECK_THROWS_WITH(nuchic::Interp2D(x2, y, z), "Inputs must all be unique.");
+        CHECK_THROWS_WITH(nuchic::Interp2D(x3, y2, z), "Inputs must be increasing.");
+        CHECK_THROWS_WITH(nuchic::Interp2D(x3, y3, z), "Inputs must all be unique.");
+        CHECK_THROWS_WITH(nuchic::Interp2D(x3, y, z), "Input and output arrays must be the same size.");
+    }
+
+    SECTION("No extrapolation allowed") {
+        const std::vector<double> x = {0, 1, 2}; 
+        const std::vector<double> y = {0, 1, 2};
+
+        nuchic::Interp1D interp(x, y, nuchic::InterpolationType::Polynomial);
+        interp.SetPolyOrder(2);
+
+        CHECK_THROWS_WITH(interp(-1), "Input (-1.0) less than minimum value (0.0)");
+        CHECK_THROWS_WITH(interp(3), "Input (3.0) greater than maximum value (2.0)");
+    }
+}
+
 TEST_CASE("One Dimensional", "[Interp]") {
     const std::vector<double> x = nuchic::Linspace(0, 10, 97);
     const std::vector<double> x_ = nuchic::Linspace(0, 10, 101);
@@ -69,6 +122,7 @@ TEST_CASE("One Dimensional", "[Interp]") {
         std::vector<double> y;
         for(const auto &xi : x) y.emplace_back(TestFunc(xi, 3));
         nuchic::Interp1D interp(x, y, nuchic::InterpolationType::CubicSpline);
+        CHECK_THROWS_WITH(interp(1), "Interpolation is not initialized!");
         interp.CubicSpline();
 
         for(const auto &xi : x_) {

@@ -53,6 +53,7 @@ constexpr double Interp1D::maxDeriv;
 
 Interp1D::Interp1D(const std::vector<double> &x, const std::vector<double> &y,
                    InterpolationType mode) : kMode{mode}  {
+
     if(!std::is_sorted(x.begin(), x.end()))
         std::runtime_error("Inputs must be increasing.");
     if(std::adjacent_find(x.begin(), x.end()) != x.end())
