@@ -68,11 +68,12 @@ configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/n
 file(COPY ${NUCHIC_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${NUCHIC_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-# Main code
-add_subdirectory(src)
-
 # Testing
 if(ENABLE_TESTING)
+    if(COVERAGE) 
+        target_compile_options(project_options INTERFACE --coverage) 
+        target_link_libraries(project_options INTERFACE gcov)
+    endif()
     enable_testing()
     message(STATUS "Building Tests.")
     add_subdirectory(test)
@@ -84,6 +85,9 @@ if(ENABLE_FUZZING)
     )
     add_subdirectory(fuzz_test)
 endif()
+
+# Main code
+add_subdirectory(src)
 
 # Install CMake find_package files
 include(CMakePackageConfigHelpers)
