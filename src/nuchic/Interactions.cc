@@ -257,8 +257,8 @@ std::vector<Particle> GeantInteractions::GenerateFinalState(randutils::mt19937_r
 
     // Boost to center of mass frame
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM);
+    // FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    // FourVector p1CM = p1Lab.Boost(-boostCM);
 
     std::vector<Particle> results = {particle1, particle2};
     std::array<double, 2> rans{};
