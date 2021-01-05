@@ -22,7 +22,7 @@ TEST_CASE("Errors 1D", "[Interp]") {
         const std::vector<double> y = {0, 1, 2};
 
         CHECK_THROWS_WITH(nuchic::Interp1D(x, y), "Inputs must be increasing.");
-        CHECK_THROWS_WITH(nuchic::Interp1D(x2, y), "Inputs must all be unique");
+        CHECK_THROWS_WITH(nuchic::Interp1D(x2, y), "Inputs must all be unique.");
         CHECK_THROWS_WITH(nuchic::Interp1D(x3, y), "Input and output arrays must be the same size.");
     }
 

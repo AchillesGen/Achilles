@@ -4,6 +4,7 @@
 
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
+#include "spdlog/spdlog.h"
 
 TEST_CASE("Three Vector is constructed properly", "[Vectors]") {
     SECTION("Direct Constructors") {
@@ -295,15 +296,41 @@ TEST_CASE("Rotations", "[Vectors]") {
     }
 
     SECTION("Three Vectors") {
+        nuchic::ThreeVector x(1, 0, 0), y(0, 1, 0), z(0, 0, 1);
 
+        auto mat = x.Align(y);
+        auto rotX = x.Rotate(mat);
+        CHECK(rotX == y);
+
+        rotX = x.Rotate(x.AlignZ());
+        CHECK(rotX == z);
+
+        constexpr std::array<double, 3> angles{0, 0, M_PI/4};
+        rotX = x.Rotate(angles);
+        spdlog::info("rotX: {}", rotX);
+        CHECK(rotX[0] == Approx(1.0/sqrt(2.0)).margin(eps));
+        CHECK(rotX[1] == Approx(1.0/sqrt(2.0)).margin(eps));
+        CHECK(rotX[2] == Approx(0.0).margin(eps));
     }
 }
 
 TEST_CASE("I/O and String", "[Vectors]") {
-    SECTION("ToString and from string") {
+    SECTION("FourVector ToString and from string") {
         nuchic::FourVector p(1, 2, 3, 4);
         nuchic::FourVector p2;
         CHECK(p.ToString() == "FourVector(1.000000, 2.000000, 3.000000, 4.000000)");
+
+        std::stringstream ss;
+        ss << p;
+        ss >> p2;
+
+        CHECK(p == p2);
+    }
+
+    SECTION("ThreeVector ToString and from string") {
+        nuchic::ThreeVector p(1, 2, 3);
+        nuchic::ThreeVector p2;
+        CHECK(p.ToString() == "ThreeVector(1.000000, 2.000000, 3.000000)");
 
         std::stringstream ss;
         ss << p;
