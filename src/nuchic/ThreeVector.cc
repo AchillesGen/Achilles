@@ -38,6 +38,29 @@ ThreeVector ThreeVector::Rotate(const std::array<double, 3> &angles) const noexc
             s2*s3*vec[0]+c3*s2*vec[1]+c2*vec[2]}; 
 }
 
+ThreeVector ThreeVector::Rotate(const RotMat &mat) const noexcept {
+    return {mat[0]*vec[0]+mat[1]*vec[1]+mat[2]*vec[2],
+            mat[3]*vec[0]+mat[4]*vec[1]+mat[5]*vec[2],
+            mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2]};
+}
+
+nuchic::ThreeVector::RotMat ThreeVector::Align(const ThreeVector &axis) const noexcept {
+
+    ThreeVector a = Unit();
+
+    auto v = a.Cross(axis);
+    double c = a.Dot(axis);
+
+    return {1-v[1]*v[1]/(1+c)-v[2]*v[2]/(1+c), -v[2]+v[0]*v[1]/(1+c), v[1]+v[0]*v[2]/(1+c),
+            v[2]+v[0]*v[1]/(1+c), 1-v[0]*v[0]/(1+c)-v[2]*v[2]/(1+c), -v[0]+v[1]*v[2]/(1+c),
+            -v[1]+v[0]*v[2]/(1+c), v[0]+v[1]*v[2]/(1+c), 1-v[0]*v[0]/(1+c)-v[1]*v[1]/(1+c)};
+}
+
+nuchic::ThreeVector::RotMat ThreeVector::AlignZ() const noexcept {
+    ThreeVector z{0, 0, 1};
+    return Align(z);
+}
+
 ThreeVector& ThreeVector::operator+=(const ThreeVector& other) noexcept {
     vec[0] += other.vec[0];
     vec[1] += other.vec[1];

@@ -14,6 +14,8 @@ namespace nuchic {
 /// The ThreeVector class provides an easy to use container to handle three
 /// component vectors, such as position and three-momentums
 class ThreeVector {
+    using RotMat = std::array<double, 9>;
+
     public:
         /// @name Constructors and Destructors
         ///@{
@@ -176,6 +178,21 @@ class ThreeVector {
         ///@param angles: The rotation angles
         ///@return FourVector: The vector in the corresponding frame
         ThreeVector Rotate(const std::array<double, 3>&) const noexcept;
+
+        /// Rotate the three vector to the frame given by the 3 angles
+        ///@param angles: The rotation matrix
+        ///@return FourVector: The vector in the corresponding frame
+        ThreeVector Rotate(const RotMat&) const noexcept;
+
+        /// Obtain the rotation matrix to align the vector with a given axis
+        ///@param axis: The axis to rotate to align with
+        ///@return std::array<double, 9>: The rotation matrix to align the vector
+        ///                               with the given axis
+        RotMat Align(const ThreeVector&) const noexcept;
+
+        /// Get the rotation matrix to align the vector with the z-axis
+        ///@return std::array<double, 9>: The matrix needed to define the rotation
+        RotMat AlignZ() const noexcept;
         ///@}
 
         /// @name Functions
