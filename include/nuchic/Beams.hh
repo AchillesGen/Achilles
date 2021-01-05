@@ -158,6 +158,8 @@ struct convert<nuchic::Beam> {
             YAML::Node beamNode = *it;
             auto pid = nuchic::PID(beamNode["Beam"]["PID"].as<int>());
             auto beam = beamNode["Beam"]["Beam Params"].as<std::shared_ptr<nuchic::FluxType>>();
+            if(beams.find(pid) != beams.end())
+                throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(pid)));
             beams[pid] = beam;
         } 
 
