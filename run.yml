@@ -1,7 +1,7 @@
 Main:
   Run Mode: FixedAngle
   Hard Scattering:
-    Model: QESpectral
+    Model: QEGlobalFermiGas
     SpectralP: data/pke12_tot.data
     SpectralN: data/pke12_tot.data
     FermiGas: 1
