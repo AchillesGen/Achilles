@@ -25,7 +25,7 @@ void Event::InitializeLeptons(size_t imatrix) {
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_ps.momentum[idx]);
-            m_leptons.back().SetStatus(ParticleStatus::initial_state);
+            m_leptons.back().Status() = ParticleStatus::initial_state;
             ++idx;
         }
     }
@@ -33,7 +33,7 @@ void Event::InitializeLeptons(size_t imatrix) {
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_ps.momentum[idx]);
-            m_leptons.back().SetStatus(ParticleStatus::final_state);
+            m_leptons.back().Status() = ParticleStatus::final_state;
             ++idx;
         }
     }
@@ -41,10 +41,10 @@ void Event::InitializeLeptons(size_t imatrix) {
 
 void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
     for(const auto &idx : idxs) {
-        m_nuc -> Nucleons()[idx[0]].SetStatus(ParticleStatus::initial_state);
+        m_nuc -> Nucleons()[idx[0]].Status() = ParticleStatus::initial_state;
         m_nuc -> Nucleons()[idx[0]].SetMomentum(m_ps.momentum[idx[1]]);
         Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
-        outNucleon.SetStatus(ParticleStatus::propagating);
+        outNucleon.Status() = ParticleStatus::propagating;
         outNucleon.SetMomentum(m_ps.momentum[idx[2]]);
         m_nuc -> Nucleons().push_back(outNucleon);
     }

@@ -58,7 +58,7 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTra
 
     kickedIdxs.push_back(rng.pick(indices));
     auto kicked = &nucleus -> Nucleons()[kickedIdxs.back()];
-    kicked -> SetStatus(ParticleStatus::propagating);
+    kicked -> Status() = ParticleStatus::propagating;
     kicked -> SetMomentum(kicked -> Momentum() + energyTransfer);
 }
 
@@ -174,7 +174,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
             if(hit) {
                 newKicked.push_back(hitIdx);
-                hitNuc -> SetStatus(ParticleStatus::propagating);
+                hitNuc -> Status() = ParticleStatus::propagating;
             }
         }
 
@@ -232,7 +232,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
 
             if(hit) {
                 newKicked.push_back(hitIdx);
-                hitNuc -> SetStatus(ParticleStatus::propagating);
+                hitNuc -> Status() = ParticleStatus::propagating;
             }
         }
 
@@ -280,7 +280,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 
         // Are we already outside nucleus?
         if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
-            kickNuc -> SetStatus(ParticleStatus::escaped);
+            kickNuc -> Status() = ParticleStatus::escaped;
             break;
         }
         AdaptiveStep(particles, distance);
@@ -322,7 +322,7 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Are we already outside nucleus?
         if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
-            kickNuc -> SetStatus(ParticleStatus::escaped);
+            kickNuc -> Status() = ParticleStatus::escaped;
             break;
         }
         //AdaptiveStep(particles, distance);
@@ -344,7 +344,7 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
 
 // TODO: Rewrite to have the logic built into the Nucleus class 
 void Cascade::Escaped(Particles &particles) {
-    // std::cout << "CURRENT STEP: " << step << std::endl;
+    const auto radius = localNucleus -> Radius();
     for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
         // Nucleon outside nucleus (will check if captured or escaped after cascade)
         auto particle = &particles[*it];
@@ -358,11 +358,10 @@ void Cascade::Escaped(Particles &particles) {
         //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
         const double energy = particle -> Momentum().E() - Constant::mN - potential;
-        auto radius = localNucleus -> Radius();
         if(particle -> Position().Magnitude2() > pow(radius, 2)
            && particle -> Status() != ParticleStatus::external_test) {
-            if(energy > 0) particle -> SetStatus(ParticleStatus::escaped);
-            else particle -> SetStatus(ParticleStatus::background);
+            if(energy > 0) particle -> Status() = ParticleStatus::escaped;
+            else particle -> Status() = ParticleStatus::background;
             it = kickedIdxs.erase(it);
         } else if(particle -> Status() == ParticleStatus::external_test
                   && particle -> Position().Pz() > radius) {
