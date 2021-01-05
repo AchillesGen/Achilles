@@ -105,11 +105,11 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Run the cascade if needed
     if(runCascade) {
-        cascade -> Evolve(event);
+        cascade -> Evolve(&event);
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.SetStatus(ParticleStatus::escaped);
+                nucleon.Status() = ParticleStatus::escaped;
             }
         }
     }

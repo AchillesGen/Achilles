@@ -127,15 +127,15 @@ void Cascade::Reset() {
     kickedIdxs.resize(0);
 }
 
-void Cascade::Evolve(nuchic::Event &event, const std::size_t &maxSteps) {
+void Cascade::Evolve(nuchic::Event *event, const std::size_t &maxSteps) {
     // Set all propagating particles as kicked for the cascade
-    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
-        if(event.Hadrons()[idx].Status() == ParticleStatus::propagating)
+    for(size_t idx = 0; idx < event -> Hadrons().size(); ++idx) {
+        if(event->Hadrons()[idx].Status() == ParticleStatus::propagating)
             SetKicked(idx);
     }
-
+    
     // Run the normal cascade
-    Evolve(event.CurrentNucleus(), maxSteps);
+    Evolve(event->CurrentNucleus(), maxSteps);
 }
 
 void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
