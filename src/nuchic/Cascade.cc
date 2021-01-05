@@ -41,6 +41,8 @@ Cascade::Cascade(std::unique_ptr<Interactions> interactions,
                 return b2 < sigma/M_PI ? 1 : 0;
             };
     }
+
+    kickedIdxs.resize(0);
 }
 
 void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTransfer,
@@ -256,14 +258,15 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
     localNucleus = nucleus;
     Particles particles = nucleus -> Nucleons();
 
+    if (kickedIdxs.size() != 1) {
+        throw std::runtime_error("MeanFreePath: only one particle should be kicked.");
+    }
+
     auto idx = kickedIdxs[0];
     Particle* kickNuc = &particles[idx];
 
-    if (kickedIdxs.size() != 1) {
-        std::runtime_error("MeanFreePath: only one particle should be kicked.");
-    }
     if (kickNuc -> Status() != ParticleStatus::internal_test) {
-        std::runtime_error(
+        throw std::runtime_error(
             "MeanFreePath: kickNuc must have status -3 "
             "in order to accumulate DistanceTraveled."
             );
