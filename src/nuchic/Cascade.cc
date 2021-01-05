@@ -19,7 +19,7 @@ using namespace nuchic;
 
 Cascade::Cascade(std::unique_ptr<Interactions> interactions,
                  const ProbabilityType& prob,
-                 const double& dist = 0.03)
+                 const double& dist)
         : distance(dist), m_interactions(std::move(interactions)) {
 
     switch(prob) {

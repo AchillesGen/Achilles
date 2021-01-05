@@ -48,7 +48,7 @@ class Cascade {
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
         Cascade() = default;
-        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double&);
+        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double& dist=0.03);
         Cascade(Cascade&&) = default;
         Cascade& operator=(Cascade&&) = default;
 
