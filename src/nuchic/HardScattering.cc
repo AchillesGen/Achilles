@@ -160,5 +160,5 @@ void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
                                              p*sinT*sin(phi),
                                              p*cosT, Ep);
     event.PhaseSpace().momentum.emplace_back(tmp, Epp);
-    event.PhaseSpace().weight *= dp*p*p*dCos*dPhi;
+    event.PhaseSpace().weight *= dp*p*p*dPhi;
 }
