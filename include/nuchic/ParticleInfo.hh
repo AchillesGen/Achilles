@@ -103,7 +103,7 @@ namespace nuchic {
             }
 
             std::string ToString() const noexcept {
-             return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
+                return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
                                 static_cast<int>(id), idname,
                                 antiname, mass, width);
             }
@@ -130,8 +130,10 @@ namespace nuchic {
 
         public:
             ParticleInfo(std::shared_ptr<ParticleInfoEntry> info_, const bool &anti_=false)
-                : info(std::move(info_)), anti(false) {
+                : info(std::move(info_)), anti(anti_) {
                 InitDatabase("data/Particles.yml");
+                if(particleDB.find(info -> id) == particleDB.end())
+                    particleDB[info -> id] = info;
                 if(anti && info -> majorana == 0) anti = anti_;
             }
 
@@ -145,9 +147,11 @@ namespace nuchic {
                 if(id < 0 && info -> majorana == 0) anti = true;
             }
 
-            ParticleInfo(const PID &id, const bool &anti_) : info(nullptr), anti(false) {
+            ParticleInfo(const PID &id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
                 auto it(particleDB.find(id));
+                if(it == particleDB.end())
+                    throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
                 info = it -> second;
                 if(anti_ && info -> majorana == 0) anti = anti_;
             }
@@ -157,6 +161,8 @@ namespace nuchic {
             ~ParticleInfo() = default;
             ParticleInfo& operator=(const ParticleInfo &other) = default;
             ParticleInfo& operator=(ParticleInfo &&other) = default;
+
+            ParticleInfo Anti() { return ParticleInfo(-IntID()); }
 
             // Property functions
             std::string Name() const noexcept { return anti ? info -> antiname : info -> idname; }

@@ -55,11 +55,11 @@ Interp1D::Interp1D(const std::vector<double> &x, const std::vector<double> &y,
                    InterpolationType mode) : kMode{mode}  {
 
     if(!std::is_sorted(x.begin(), x.end()))
-        std::runtime_error("Inputs must be increasing.");
+        throw std::runtime_error("Inputs must be increasing.");
     if(std::adjacent_find(x.begin(), x.end()) != x.end())
-        std::runtime_error("Inputs must all be unique.");
+        throw std::runtime_error("Inputs must all be unique.");
     if(x.size() != y.size())
-        std::runtime_error("Input and output arrays must be the same size.");
+        throw std::runtime_error("Input and output arrays must be the same size.");
 
     knotX = x;
     knotY = y;
@@ -156,15 +156,15 @@ Interp2D::Interp2D(const std::vector<double>& x, const std::vector<double>& y,
                    const std::vector<double>& z,
                    InterpolationType mode) : kMode{mode} {
     if(!std::is_sorted(x.begin(), x.end()))
-        std::runtime_error("Inputs must be increasing.");
+        throw std::runtime_error("Inputs must be increasing.");
     if(std::adjacent_find(x.begin(), x.end()) != x.end())
-        std::runtime_error("Inputs must all be unique.");
+        throw std::runtime_error("Inputs must all be unique.");
     if(!std::is_sorted(y.begin(), y.end()))
-        std::runtime_error("Inputs must be increasing.");
+        throw std::runtime_error("Inputs must be increasing.");
     if(std::adjacent_find(y.begin(), y.end()) != y.end())
-        std::runtime_error("Inputs must all be unique.");
+        throw std::runtime_error("Inputs must all be unique.");
     if(x.size()*y.size() != z.size())
-        std::runtime_error("Input and output arrays must be the same size.");
+        throw std::runtime_error("Input and output arrays must be the same size.");
 
     knotX = x;
     knotY = y;

@@ -48,7 +48,7 @@ class Cascade {
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
         Cascade() = default;
-        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double&);
+        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double& dist=0.03);
         Cascade(Cascade&&) = default;
         Cascade& operator=(Cascade&&) = default;
 
@@ -84,7 +84,7 @@ class Cascade {
         /// are recaptured, or are in the background.
         ///@param event: The event to run the cascade evolution on
         ///@param maxSteps: The maximum steps to take in the cascade
-        void Evolve(nuchic::Event&, const std::size_t& maxSteps = cMaxSteps);
+        void Evolve(nuchic::Event*, const std::size_t& maxSteps = cMaxSteps);
 
         /// Simulate evolution of a kicked particle until it interacts for the 
         /// first time with another particle, accumulating the total distance

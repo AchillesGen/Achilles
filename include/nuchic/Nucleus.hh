@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Nuchic.hh"
 #include "nuchic/Configuration.hh"
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
@@ -57,7 +58,7 @@ class Nucleus {
         Nucleus& operator=(Nucleus&&) = default;
 
         /// Default destructor
-        virtual ~Nucleus() = default;
+        MOCK ~Nucleus() = default;
         ///@}
 
         /// @name Setters
@@ -100,7 +101,7 @@ class Nucleus {
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
-        virtual Particles& Nucleons() noexcept { return nucleons; }
+        MOCK Particles& Nucleons() noexcept { return nucleons; }
 
         /// Return a vector of the ids of the protons in the nucleus
         ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
@@ -148,7 +149,7 @@ class Nucleus {
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
-        const double& Radius() const noexcept { return radius; }
+        MOCK const double& Radius() const noexcept { return radius; }
 
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
@@ -176,7 +177,7 @@ class Nucleus {
         bool Escape(Particle&) noexcept;
 
         /// Generate a configuration of the nucleus based on the density function
-        virtual void GenerateConfig();
+        MOCK void GenerateConfig();
 
         /// Generate a random momentum for a nucleon in the nucleus
         ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum

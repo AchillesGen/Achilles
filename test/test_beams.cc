@@ -53,23 +53,10 @@ Beams:
     }
 
     SECTION("Spectrum Beams") {
-        YAML::Node beams = YAML::Load(R"beam(
+        nuchic::Spectrum spectrum("dummy.txt");
 
-Beams:
-  - Beam:
-      PID: 12
-      Beam Params:
-        Type: Spectrum
-        Filename: dummy.txt)beam"
-        );
-
-        auto beam = beams["Beams"].as<nuchic::Beam>();
-        auto spectrum = beam.at(nuchic::PID(12));
-
-        CHECK_THROWS_WITH(spectrum -> NVariables(), "Spectrum Fluxes are not implemented");
-        spdlog::info("Here");
-        CHECK_THROWS_WITH(spectrum -> Flux({}), "Spectrum Fluxes are not implemented");
-        spdlog::info("Here");
-        CHECK_THROWS_WITH(spectrum -> Weight({}), "Spectrum Fluxes are not implemented");
+        CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
+        CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
+        CHECK_THROWS_WITH(spectrum.Weight({}), "Spectrum Fluxes are not implemented");
     }
 }

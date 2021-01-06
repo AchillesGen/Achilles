@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+#include "nuchic/Nuchic.hh"
 #include "nuchic/HardScatteringEnum.hh"
 #include "nuchic/NuclearRemnant.hh"
 
@@ -42,6 +43,7 @@ class Event {
         Event() = default;
         Event(std::shared_ptr<Nucleus>, std::shared_ptr<Beam>,
               const std::vector<double>&, double);
+        MOCK ~Event() = default;
 
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
         void InitializeLeptons(size_t);
@@ -64,14 +66,14 @@ class Event {
         static bool MatrixCompare(const MatrixElementStruct&, double);
 
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
-        std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
+        MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
         const std::shared_ptr<Beam>& CurrentBeam() const { return m_beam; }
         std::shared_ptr<Beam>& CurrentBeam() { return m_beam; }
 
         void AddParticle(const Particle&);
         vParticles Particles() const;
         const vParticles& Hadrons() const;
-        vParticles& Hadrons();
+        MOCK vParticles& Hadrons();
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
         double Weight() const;

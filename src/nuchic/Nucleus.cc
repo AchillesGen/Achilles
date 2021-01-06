@@ -122,7 +122,7 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     const double totalEnergy = sqrt(particle.Momentum().P2() + particle.Momentum().M2());
     const double kineticEnergy = totalEnergy - particle.Mass();
     if(kineticEnergy < Potential(particle.Position().Magnitude())) {
-        particle.SetStatus(ParticleStatus::captured);
+        particle.Status() = ParticleStatus::captured;
         return false;
     }
 
@@ -134,7 +134,7 @@ bool Nucleus::Escape(Particle& particle) noexcept {
     const double py = particle.Momentum().Py() - Potential(particle.Position().Magnitude()) * std::sin(theta) * std::sin(phi);
     const double pz = particle.Momentum().Pz() - Potential(particle.Position().Magnitude()) * std::cos(theta);
     particle.SetMomentum(FourVector(px, py, pz, particle.Momentum().E()));
-    particle.SetStatus(ParticleStatus::escaped);
+    particle.Status() = ParticleStatus::escaped;
     return true;
 }
 
@@ -150,7 +150,7 @@ void Nucleus::GenerateConfig() {
         particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
 
         // Ensure status is set to background
-        particle.SetStatus(ParticleStatus::background);
+        particle.Status() = ParticleStatus::background;
     }
 
     // Update the nucleons in the nucleus

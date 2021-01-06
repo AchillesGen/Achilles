@@ -102,10 +102,6 @@ class Particle {
         ///@param FourVector: The momentum to be set
         void SetMomentum(const FourVector& mom) noexcept {momentum = mom;}
 
-        /// Set the status of the particle (See Particle description for details)
-        ///@param int: The status to be set
-        void SetStatus(const ParticleStatus& _status) noexcept {status = _status;}
-
         /// Set the mother particles of the given particle
         ///@param std::vector<int>: A vector containing information about the mother particles
         void SetMothers(const std::vector<int>& _mothers) noexcept {mothers = _mothers;}
@@ -155,11 +151,11 @@ class Particle {
 
         /// Returns the position of the particle
         ///@return ThreeVector: The position of the particle
-        const ThreeVector& Position() const noexcept {return position;}
+        const ThreeVector& Position() const noexcept { return position; }
 
         /// Returns the momentum of the particle
         ///@return FourVector: The momentum of the particle
-        const FourVector& Momentum() const noexcept {return momentum;}
+        const FourVector& Momentum() const noexcept { return momentum; }
 
         /// Gets the velocity / boost vector of a given particle
         ///@return ThreeVector: Velocity of the particle in units of c
@@ -167,7 +163,11 @@ class Particle {
 
         /// Gets the current particle status
         ///@return int: The status of the particle
-        const ParticleStatus& Status() const noexcept {return status;}
+        const ParticleStatus& Status() const noexcept { return status; }
+
+        /// Set the status of the particle (See Particle description for details)
+        ///@param int: The status to be set
+        ParticleStatus& Status() noexcept { return status; }
 
         /// Return a vector of the mother particle indices
         ///@return std::vector<int>: A vector of indices referring to the mother particle

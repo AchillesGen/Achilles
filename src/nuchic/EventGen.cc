@@ -107,11 +107,11 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Run the cascade if needed
     if(runCascade) {
-        cascade -> Evolve(event);
+        cascade -> Evolve(&event);
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.SetStatus(ParticleStatus::escaped);
+                nucleon.Status() = ParticleStatus::escaped;
             }
         }
     }
@@ -149,18 +149,18 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 //        select from list of allowed initial states
 //
 //        auto idx = rng -> pick(nucleus -> ProtonsIDs());
-//        particles[idx].SetStatus(ParticleStatus::initial_state);
+//        particles[idx].Status() = ParticleStatus::initial_state;
 //        particles[idx].SetMomentum(psPoint.momentum[2]);
 //        Particle outNucl(particles[idx]);
-//        outNucl.SetStatus(ParticleStatus::propagating);
+//        outNucl.Status() = ParticleStatus::propagating;
 //        outNucl.SetMomentum(psPoint.momentum[3]);
 //        particles.push_back(outNucl);
 //    } else {
 //        auto idx = rng -> pick(nucleus -> NeutronsIDs());
-//        particles[idx].SetStatus(ParticleStatus::initial_state);
+//        particles[idx].Status() = ParticleStatus::initial_state;
 //        particles[idx].SetMomentum(psPoint.momentum[2]);
 //        Particle outNucl(particles[idx]);
-//        outNucl.SetStatus(ParticleStatus::propagating);
+//        outNucl.Status() = ParticleStatus::propagating;
 //        outNucl.SetMomentum(psPoint.momentum[3]);
 //        particles.push_back(outNucl);
 //    }

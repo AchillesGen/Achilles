@@ -10,9 +10,11 @@ add_executable(nuchic-testsuite
     # Files with tests 
     test_interp.cc
     test_vectors.cc
-    # test_utils.cc
+    test_utils.cc
+    test_particle_info.cc
     # test_nucleus.cc
     # test_form_factor.cc
+    test_cascade.cc
     test_beams.cc
     test_event.cc
 )
