@@ -51,8 +51,8 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
     event.PhaseSpace().weight = event.PhaseSpace().momentum[0].E()*dPhi;//leptons[1].E()*leptons[1].Momentum().P();
     switch(m_mode) {
         case RunMode::FixedAngle:
-            cosT = std::cos(m_angle*M_PI/180.0);
-            sinT = std::sin(m_angle*M_PI/180.0); 
+            cosT = std::cos(m_angle);
+            sinT = std::sin(m_angle); 
             break;
         case RunMode::FullPhaseSpace:
             cosT = dCos*leptonRans[2] - 1;
