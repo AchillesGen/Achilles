@@ -2,6 +2,7 @@
 
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
+#include "spdlog/spdlog.h"
 
 using namespace nuchic;
 

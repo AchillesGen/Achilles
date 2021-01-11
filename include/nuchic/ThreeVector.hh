@@ -107,6 +107,8 @@ class ThreeVector {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the ThreeVector object
+        
+        constexpr size_t Size() const noexcept { return 3; }
 
         /// Return the position as an array
         ///@return std::array<double, 3>: containing the position

@@ -93,6 +93,8 @@ class FourVector {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the FourVector object
+        
+        constexpr size_t Size() const noexcept { return 4; }
 
         /// Return the momentum as an array
         ///@return std::array<double, 4>: An array containing the four momentum
