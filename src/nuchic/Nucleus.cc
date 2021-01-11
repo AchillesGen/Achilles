@@ -52,6 +52,8 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     // radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
     std::ifstream densityFile(densityFilename);
+    if(!densityFile.is_open())
+        throw std::runtime_error(fmt::format("Nucleus: Density file {} does not exist.", densityFilename));
     std::string lineContent;
    
     constexpr size_t HeaderLength = 16;
@@ -85,7 +87,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     }
 
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
-        throw std::runtime_error("Invalid density function! Incorrect number of protons and neutrons.");
+        throw std::runtime_error("Invalid density function! Incorrect number of protons or neutrons.");
 }
 
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
@@ -190,7 +192,7 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
                        fg_type, std::move(density));
     }
 
-    throw std::runtime_error("Invalid nucleus " + name);
+    throw std::runtime_error(fmt::format("Invalid nucleus {}.", name));
 }
 
 std::size_t Nucleus::NameToZ(const std::string& name) {
@@ -199,7 +201,7 @@ std::size_t Nucleus::NameToZ(const std::string& name) {
                                return p.second == name;
                           });
     if(it == ZToName.end()) 
-        throw std::runtime_error("Invalid nucleus: " + name + " does not exist.");
+        throw std::runtime_error(fmt::format("Invalid nucleus: {} does not exist.", name));
     return it -> first;
 }
 
