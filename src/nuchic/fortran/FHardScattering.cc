@@ -19,6 +19,7 @@ REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
 nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode, RNG rng)
         : nuchic::QESpectral(mode, rng) {
 
+    spdlog::trace("Initializing quasielastic spectral function model");
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
     auto iform = config["iform"].as<int>();
@@ -32,6 +33,7 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode, RNG rng
     strcpy(cnameN.get(), spectralN.c_str());
 
     InitializeOneBody(cnameP.get(), cnameN.get(), 0, iform);
+    spdlog::trace("Finished initializing quasielastic spectral function model");
 }
 
 void nuchic::FQESpectral::CrossSection(Event &event) const {
@@ -76,6 +78,7 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
 nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode, RNG rng)
         : nuchic::QEGlobalFermiGas(mode, rng) {
 
+    spdlog::trace("Initializing quasielastic global Fermi Gas model");
     auto spectralP = config["SpectralP"].as<std::string>();
     auto spectralN = config["SpectralN"].as<std::string>();
     auto iform = config["iform"].as<int>();
@@ -89,6 +92,7 @@ nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode m
     strcpy(cnameN.get(), spectralN.c_str());
 
     InitializeOneBody(cnameP.get(), cnameN.get(), 1, iform);
+    spdlog::trace("Finished initializing quasielastic global Fermi Gas model");
 }
 
 void nuchic::FQEGlobalFermiGas::CrossSection(Event &event) const {
