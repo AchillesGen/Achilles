@@ -220,7 +220,8 @@ class Particle {
 
         /// Check to see if the particle is a final state particle
         ///@return bool: True if a final state particle, False otherwise
-        bool IsFinal() const noexcept {return status == ParticleStatus::escaped;}
+        bool IsFinal() const noexcept {return (status == ParticleStatus::escaped)
+                                           || (status == ParticleStatus::final_state); }
 
         /// Propagate the particle according to its momentum by a given time step
         ///@param timeStep: The amount of time to propagate the particle for
