@@ -1,7 +1,9 @@
 #ifndef EVENTGEN_HH
 #define EVENTGEN_HH
 
+#include "nuchic/Cuts.hh"
 #include "nuchic/Histogram.hh"
+#include "nuchic/ParticleInfo.hh"
 #include "nuchic/Vegas.hh"
 
 #include <memory>
@@ -23,6 +25,8 @@ class Cascade;
 class HardScattering;
 class EventWriter;
 
+using Cuts = std::map<PID, Cut>;
+
 class EventGen {
     public:
         EventGen(const std::string&);
@@ -30,13 +34,15 @@ class EventGen {
         void GenerateEvents();
 
     private:
-        bool runCascade, outputEvents;
+        bool runCascade, outputEvents, doCuts;
         double Calculate(const std::vector<double>&, const double&);
+        bool MakeCuts(Event&);
 
         std::shared_ptr<Beam> beam;
         std::shared_ptr<Nucleus> nucleus;
         std::shared_ptr<Cascade> cascade;
         std::shared_ptr<HardScattering> scattering;
+        Cuts cuts{};
         Vegas integrator;
         YAML::Node config;
         // std::vector<std::unique_ptr<HardScattering>> scatterings;
