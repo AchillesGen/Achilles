@@ -33,8 +33,10 @@ TEST_CASE("Errors 1D", "[Interp]") {
         nuchic::Interp1D interp(x, y, nuchic::InterpolationType::Polynomial);
         interp.SetPolyOrder(2);
 
-        CHECK_THROWS_WITH(interp(-1), "Input (-1.0) less than minimum value (0.0)");
-        CHECK_THROWS_WITH(interp(3), "Input (3.0) greater than maximum value (2.0)");
+        CHECK_THROWS_WITH(interp(-1),
+                          fmt::format("Input ({}) less than minimum value ({})", -1, 0));
+        CHECK_THROWS_WITH(interp(3),
+                          fmt::format("Input ({}) greater than maximum value ({})", 3, 2));
     }
 }
 
@@ -62,8 +64,10 @@ TEST_CASE("Errors 2D", "[Interp]") {
         nuchic::Interp1D interp(x, y, nuchic::InterpolationType::Polynomial);
         interp.SetPolyOrder(2);
 
-        CHECK_THROWS_WITH(interp(-1), "Input (-1.0) less than minimum value (0.0)");
-        CHECK_THROWS_WITH(interp(3), "Input (3.0) greater than maximum value (2.0)");
+        CHECK_THROWS_WITH(interp(-1),
+                          fmt::format("Input ({}) less than minimum value ({})", -1, 0));
+        CHECK_THROWS_WITH(interp(3),
+                          fmt::format("Input ({}) greater than maximum value ({})", 3, 2));
     }
 }
 

@@ -12,11 +12,13 @@ add_executable(nuchic-testsuite
     test_vectors.cc
     test_utils.cc
     test_particle_info.cc
-    # test_nucleus.cc
+    test_particle.cc
+    test_nucleus.cc
     # test_form_factor.cc
     test_cascade.cc
     test_beams.cc
     test_event.cc
+    test_cuts.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)
