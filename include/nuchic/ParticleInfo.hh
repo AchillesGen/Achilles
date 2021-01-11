@@ -126,6 +126,7 @@ namespace nuchic {
         private:
             using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
             static ParticleDB particleDB;
+            static std::map<std::string, PID> nameToPID; 
             static void BuildDatabase(const std::string&);
 
         public:
@@ -205,7 +206,7 @@ namespace nuchic {
             }
             bool operator!=(const ParticleInfo &other) const noexcept { return !(*this == other); }
 
-            static ParticleDB Database() { return particleDB; }
+            static ParticleDB& Database() { return particleDB; }
             static void InitDatabase(const std::string &filename) {
                 if(particleDB.size() == 0) {
                     particleDB[PID::undefined()] =  std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
@@ -213,6 +214,7 @@ namespace nuchic {
                 }
             }
             static void PrintDatabase();
+            static const std::map<std::string, PID>& NameToPID() { return nameToPID; }
 
         private:
             std::shared_ptr<ParticleInfoEntry> info;
