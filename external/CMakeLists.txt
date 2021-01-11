@@ -10,7 +10,7 @@
 CPMFindPackage(
     NAME fmt
     # Use this commit which eliminates variable shadowing but is a stable point
-    GIT_TAG 63479c8519c7fa3571707ec7f40b87438b9b9c51
+    GIT_TAG 7.1.3
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
