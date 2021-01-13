@@ -14,6 +14,13 @@
 nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, outputEvents{false} {
     config = YAML::LoadFile(configFile);
 
+    // Setup random number generator
+    auto seed = static_cast<unsigned long int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    if(config["Initialize"]["seed"])
+        seed = config["Initialize"]["seed"].as<unsigned long int>();
+    spdlog::trace("Seeding generator with: {}", seed);
+    Random::Instance().Seed(seed);
+
     // Load initial states
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
@@ -26,26 +33,21 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
         cascade = nullptr;
     }
 
-    // Setup random number generator
-    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config["Initialize"]["Seed"])
-        seed = config["Initialize"]["Seed"].as<unsigned int>();
-    rng = std::make_shared<randutils::mt19937_rng>(seed);
-
     // Initialize hard cross-sections
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
     scattering = HardScatteringFactory::Create(scatteringNode["Model"].as<std::string>(),
-            scatteringNode, runMode, rng);
+            scatteringNode, runMode);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
 
     // Setup Vegas
     nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables() + beam->NVariables()));
-    integrator = Vegas(map, config["Initialize"], rng);
+    integrator = Vegas(map, config["Initialize"]);
 
     // Setup Cuts
-    doCuts = config["Main"]["DoCuts"].as<bool>();
+    if(config["Main"]["DoCuts"])
+        doCuts = config["Main"]["DoCuts"].as<bool>();
     cuts = config["Cuts"].as<nuchic::Cuts>();
 
     // Setup outputs

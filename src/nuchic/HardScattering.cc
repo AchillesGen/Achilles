@@ -1,4 +1,5 @@
 #include <iostream>
+#include <utility>
 
 #include "nuchic/HardScattering.hh"
 #include "nuchic/Constants.hh"
@@ -6,6 +7,7 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/HardScatteringFactory.hh"
 #include "nuchic/Event.hh"
+#include "nuchic/Random.hh"
 
 // Aliases for most common types
 using nuchic::Particles;
@@ -13,8 +15,8 @@ using nuchic::HardScattering;
 using nuchic::QESpectral;
 using nuchic::QEGlobalFermiGas;
 
-nuchic::HardScattering::HardScattering(RunMode mode, RNG rng) 
-    : m_rng{rng}, m_mode{mode} {}
+nuchic::HardScattering::HardScattering(RunMode mode) 
+    : m_mode{mode} {}
 
 int HardScattering::LeptonVariables() const {
     switch(m_mode) {
@@ -100,7 +102,7 @@ bool nuchic::Quasielastic::InitializeEvent(nuchic::Event &event) {
 
 size_t HardScattering::SelectMatrixElement(nuchic::Event &event) const {
     std::vector<double> probs = event.EventProbs();
-    double rand = GetRNG() -> uniform(0.0, 1.0);
+    double rand = Random::Instance().Uniform(0.0, 1.0);
     return static_cast<size_t>(std::distance(probs.begin(),
                    std::lower_bound(probs.begin(), probs.end(), rand)))-1;
 }

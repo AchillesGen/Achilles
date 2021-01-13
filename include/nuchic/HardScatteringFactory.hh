@@ -2,7 +2,6 @@
 #define HARDSCATTERING_FACTORY_HH
 
 #include "nuchic/RunModes.hh"
-#include "nuchic/Random.hh"
 
 #include <string> 
 #include <memory>
@@ -18,17 +17,15 @@ class HardScattering;
 class Beam;
 class Nucleus;
 
-using RNG = std::shared_ptr<randutils::mt19937_rng>;
-
 class HardScatteringFactory {
     public:
-        using TCreateMethod = std::unique_ptr<HardScattering>(*)(const YAML::Node&, RunMode, RNG);
+        using TCreateMethod = std::unique_ptr<HardScattering>(*)(const YAML::Node&, RunMode);
 
         HardScatteringFactory() = delete;
 
         static bool Register(const std::string&, TCreateMethod);
         static std::unique_ptr<HardScattering> Create(const std::string&,
-                const YAML::Node&, RunMode, RNG);
+                const YAML::Node&, RunMode);
         static void ListHardScattering();
 
     private:

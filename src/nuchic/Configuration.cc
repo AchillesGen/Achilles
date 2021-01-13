@@ -3,6 +3,7 @@
 #include "nuchic/Configuration.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
+#include "nuchic/Random.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -29,8 +30,7 @@ void tokenize(const std::string& str, ContainerT& tokens,
     }
 }
 
-nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename,
-                std::shared_ptr<randutils::mt19937_rng> rng) : m_rng(std::move(rng)) {
+nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename) {
     // Load configuration
     igzstream configs(filename.c_str());
     std::string line;
@@ -63,14 +63,14 @@ nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename,
 std::vector<nuchic::Particle> nuchic::DensityConfiguration::GetConfiguration() {
     Configuration config;
     while(true) {
-        config = m_rng -> pick(m_configurations);
+        config = Random::Instance().Pick(m_configurations);
 
-        if(config.wgt/m_maxWgt > m_rng -> uniform(0.0, 1.0))
+        if(config.wgt/m_maxWgt > Random::Instance().Uniform(0.0, 1.0))
             break;
     }
 
     std::array<double, 3> angles{};
-    m_rng -> generate(angles, 0.0, 2*M_PI);
+    Random::Instance().Generate(angles, 0.0, 2*M_PI);
     angles[1] /= 2;
 
     for(auto& part : config.nucleons) {

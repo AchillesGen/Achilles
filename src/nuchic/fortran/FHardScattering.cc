@@ -16,8 +16,8 @@ extern "C" {
 REGISTER_HARDSCATTERING(nuchic::FQESpectral);
 REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
 
-nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode, RNG rng)
-        : nuchic::QESpectral(mode, rng) {
+nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
+        : nuchic::QESpectral(mode) {
 
     spdlog::trace("Initializing quasielastic spectral function model");
     auto spectralP = config["SpectralP"].as<std::string>();
@@ -75,8 +75,8 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
     }
 }
 
-nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode, RNG rng)
-        : nuchic::QEGlobalFermiGas(mode, rng) {
+nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode)
+        : nuchic::QEGlobalFermiGas(mode) {
 
     spdlog::trace("Initializing quasielastic global Fermi Gas model");
     auto spectralP = config["SpectralP"].as<std::string>();

@@ -72,8 +72,7 @@ std::string VegasResult::Summary() const {
 }
 
 Vegas::Vegas(nuchic::AdaptiveMap map_, 
-             const YAML::Node &args,
-             RNG rng) : map(std::move(map_)), rand(std::move(rng)) {
+             const YAML::Node &args) : map(std::move(map_)) {
     nstrats = 0;
     sumSigF = lim::max();
     lastNEval = 0;
@@ -186,7 +185,7 @@ nuchic::Batch2D Vegas::GenerateRandom(const std::size_t &dim1, const std::size_t
     nuchic::Batch2D batchResult(dim1);
     for(std::size_t i = 0; i < dim1; ++i) {
         std::vector<double> tmp(dim2);
-        rand->generate<std::uniform_real_distribution>(tmp);
+        Random::Instance().Generate(tmp);
         batchResult[i] = tmp;
     }
     return batchResult;

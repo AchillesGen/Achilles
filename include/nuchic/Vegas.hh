@@ -26,7 +26,6 @@
 namespace nuchic {
 
 using lim = std::numeric_limits<double>;
-using RNG = std::shared_ptr<randutils::mt19937_rng>;
 
 class KBNSummation{
     public:
@@ -66,7 +65,7 @@ class VegasResult {
 class Vegas {
     public:
         Vegas() = default;
-        Vegas(nuchic::AdaptiveMap, const YAML::Node&, RNG);
+        Vegas(nuchic::AdaptiveMap, const YAML::Node&);
         Vegas(const Vegas&) = default;
         Vegas(Vegas&&) = default;
         Vegas &operator=(const Vegas&) = default;
@@ -100,7 +99,6 @@ class Vegas {
         double alpha{}, beta{}, rtol{}, atol{};
         bool adapt{}, adaptErrors{}, sync{};
         VegasResult result;
-        RNG rand;
 
         // Default parameters
         static constexpr size_t nitn_default = 10;

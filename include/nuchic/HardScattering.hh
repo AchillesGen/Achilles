@@ -13,7 +13,6 @@
 #include "nuchic/Beams.hh"
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
-#include "nuchic/Random.hh"
 
 namespace nuchic {
 
@@ -25,11 +24,10 @@ class Event;
 struct InitialState;
 
 using Particles = std::vector<Particle>;
-using RNG = std::shared_ptr<randutils::mt19937_rng>;
 
 class HardScattering {
     public:
-        HardScattering(RunMode, RNG);
+        HardScattering(RunMode);
         HardScattering(const HardScattering&) = default;
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
@@ -60,8 +58,6 @@ class HardScattering {
         // Special phase space routines
         void SetScatteringAngle(double angle) { m_angle = angle; }
 
-        RNG GetRNG() const { return m_rng; }
-
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
         const Histogram& GetHist() const { return hist; }
@@ -75,7 +71,6 @@ class HardScattering {
     private:
         bool m_fill{false};
         Histogram hist{500, 0, 1000, "Test"};
-        RNG m_rng;
 
         // TODO: Move to the driver class?
         RunMode m_mode;
@@ -84,7 +79,7 @@ class HardScattering {
 
 class Quasielastic : public HardScattering {
     public:
-        Quasielastic(RunMode mode, RNG rng) : HardScattering(mode, rng) {}
+        Quasielastic(RunMode mode) : HardScattering(mode) {}
         HardScatteringType ScatteringType() const override { 
             return HardScatteringType::Quasielastic;
         }
@@ -97,8 +92,8 @@ class Quasielastic : public HardScattering {
 
 class QESpectral : public Quasielastic {
     public:
-        QESpectral(RunMode mode, RNG rng) : Quasielastic(mode, rng) {}
-        QESpectral(const YAML::Node&, RNG);
+        QESpectral(RunMode mode) : Quasielastic(mode) {}
+        QESpectral(const YAML::Node&);
 
         int HadronVariables() const override { return 4; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
@@ -108,13 +103,13 @@ class QESpectral : public Quasielastic {
 
 class FQESpectral : public QESpectral {
     public:
-        FQESpectral(const YAML::Node&, RunMode, RNG);
+        FQESpectral(const YAML::Node&, RunMode);
 
         void CrossSection(Event&) const override;
         static std::string GetName() { return "QESpectral"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
-                RunMode mode, RNG rng) {
-            return std::make_unique<FQESpectral>(node, mode, rng);
+                RunMode mode) {
+            return std::make_unique<FQESpectral>(node, mode);
         }
 
     private:
@@ -123,8 +118,8 @@ class FQESpectral : public QESpectral {
 
 class QEGlobalFermiGas : public Quasielastic {
     public:
-        QEGlobalFermiGas(RunMode mode, RNG rng) : Quasielastic(mode, rng) {}
-        QEGlobalFermiGas(const YAML::Node&, RNG);
+        QEGlobalFermiGas(RunMode mode) : Quasielastic(mode) {}
+        QEGlobalFermiGas(const YAML::Node&);
 
         int HadronVariables() const override { return 3; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
@@ -134,13 +129,13 @@ class QEGlobalFermiGas : public Quasielastic {
 
 class FQEGlobalFermiGas : public QEGlobalFermiGas {
     public:
-        FQEGlobalFermiGas(const YAML::Node&, RunMode, RNG);
+        FQEGlobalFermiGas(const YAML::Node&, RunMode);
 
         void CrossSection(Event&) const override;
         static std::string GetName() { return "QEGlobalFermiGas"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
-                RunMode mode, RNG rng) {
-            return std::make_unique<FQEGlobalFermiGas>(node, mode, rng);
+                RunMode mode) {
+            return std::make_unique<FQEGlobalFermiGas>(node, mode);
         }
 
     private:

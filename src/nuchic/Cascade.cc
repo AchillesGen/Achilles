@@ -50,7 +50,7 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTra
     std::vector<std::size_t> indices;
 
     auto ddSigma = {sigma[0], sigma[1]};
-    auto index = rng.variate<std::size_t, std::discrete_distribution>(ddSigma);
+    auto index = Random::Instance().SelectIndex(ddSigma);
 
     auto interactPID = index == 0 ? PID::proton() : PID::neutron();
 
@@ -58,7 +58,7 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTra
         if(nucleus -> Nucleons()[i].ID() == interactPID) indices.push_back(i);
     }
 
-    kickedIdxs.push_back(rng.pick(indices));
+    kickedIdxs.push_back(Random::Instance().Pick(indices));
     auto kicked = &nucleus -> Nucleons()[kickedIdxs.back()];
     kicked -> Status() = ParticleStatus::propagating;
     kicked -> SetMomentum(kicked -> Momentum() + energyTransfer);
@@ -84,7 +84,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     std::size_t idxSame = SIZE_MAX;
     double xsecSame = 0;
     if(index_same.size() != 0) {
-        idxSame = rng.pick(index_same);
+        idxSame = Random::Instance().Pick(index_same);
         particles[idxSame].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
         xsecSame = GetXSec(kickedPart, particles[idxSame]);
@@ -96,7 +96,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     std::size_t idxDiff = SIZE_MAX;
     double xsecDiff = 0;
     if(index_diff.size() != 0) {
-        idxDiff = rng.pick(index_diff);
+        idxDiff = Random::Instance().Pick(index_diff);
         particles[idxDiff].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
         xsecDiff = GetXSec(kickedPart, particles[idxDiff]);
@@ -110,12 +110,12 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     }
     if(rhoSame <= 0.0 && rhoDiff <=0.0) return SIZE_MAX;
     double lambda_tilde = 1.0 / (xsecSame / 10 * rhoSame + xsecDiff / 10 * rhoDiff);
-    double lambda = -log(rng.uniform(0.0, 1.0))*lambda_tilde;
+    double lambda = -log(Random::Instance().Uniform(0.0, 1.0))*lambda_tilde;
 
     if(lambda > stepDistance) return SIZE_MAX;
 
     stepDistance = lambda;
-    double ichoice = rng.uniform(0.0, 1.0);
+    double ichoice = Random::Instance().Uniform(0.0, 1.0);
     if(ichoice < xsecSame / (xsecSame + xsecDiff)) {
         particles[idxSame].SetPosition(kickedPart.Position());
         return idxSame;
@@ -442,7 +442,7 @@ std::size_t Cascade::Interacted(const Particles& particles, const Particle& kick
     for(auto dist : dists) {
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
         const double prob = probability(dist.second, xsec/10);
-        if(rng.uniform(0.0, 1.0) < prob) return dist.first;
+        if(Random::Instance().Uniform(0.0, 1.0) < prob) return dist.first;
     }
 
     return SIZE_MAX;
@@ -458,7 +458,7 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
     bool samePID = particle1.ID() == particle2.ID();
     const double pcm = p1CM.Vec3().Magnitude();
     std::array<double, 2> rans{};
-    rng.generate(rans, 0.0, 1.0);
+    Random::Instance().Generate(rans, 0.0, 1.0);
     ThreeVector momentum = m_interactions -> MakeMomentum(samePID,
                                                           pcm,
                                                           rans);

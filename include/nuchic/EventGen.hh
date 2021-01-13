@@ -34,7 +34,7 @@ class EventGen {
         void GenerateEvents();
 
     private:
-        bool runCascade, outputEvents, doCuts;
+        bool runCascade, outputEvents, doCuts{false};
         double Calculate(const std::vector<double>&, const double&);
         bool MakeCuts(Event&);
 
@@ -50,7 +50,6 @@ class EventGen {
         // std::vector<Vegas> integrators;
         
         std::shared_ptr<EventWriter> writer;
-        std::shared_ptr<randutils::mt19937_rng> rng;
 
         Histogram hist;
 };

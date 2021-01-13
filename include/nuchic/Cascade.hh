@@ -125,7 +125,6 @@ class Cascade {
         double distance{}, timeStep{};
         std::unique_ptr<Interactions> m_interactions;
         std::function<double(double, double)> probability;
-        randutils::mt19937_rng rng;
         std::shared_ptr<Nucleus> localNucleus;
 };
 

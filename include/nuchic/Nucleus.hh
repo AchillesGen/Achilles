@@ -248,8 +248,6 @@ class Nucleus {
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
 
-        std::shared_ptr<randutils::mt19937_rng> rng;
-
         FourVector m_recoil{};
 };
 
@@ -271,7 +269,7 @@ struct convert<nuchic::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-        auto configs = std::make_unique<nuchic::DensityConfiguration>("../src/nuchic/configurations/QMC_configs.out.gz", std::make_shared<randutils::mt19937_rng>());
+        auto configs = std::make_unique<nuchic::DensityConfiguration>("../src/nuchic/configurations/QMC_configs.out.gz");
         nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;
