@@ -109,7 +109,7 @@ size_t HardScattering::SelectMatrixElement(nuchic::Event &event) const {
 
 void QESpectral::GenerateHadrons(const std::vector<double> &rans,
                                  const FourVector &Q, Event &event) const {
-    static const double dp = 4*event.CurrentNucleus() -> FermiMomentum(0); 
+    static const double dp = 1000; 
 
     // Generate phase space
     double cosT = dCos*rans[1] - 1;
@@ -133,7 +133,7 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
 
 void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
                                        const FourVector &Q, Event &event) const {
-    static const double dp = event.CurrentNucleus() -> FermiMomentum(0);
+    static const double dp = 1000;
     static constexpr double Ep = 20.0;
 
     // Generate phase space
