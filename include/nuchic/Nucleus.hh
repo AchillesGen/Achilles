@@ -47,7 +47,7 @@ class Nucleus {
         ///@param densityFile: The file containing density information for Pauli Blocking
         ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
         ///      passed in as an object
-        ///@param density: A function that generates nucleon configurations according 
+        ///@param density: A function that generates nucleon configurations according
         ///                to the density profile
         Nucleus() = default;
         Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
@@ -104,11 +104,11 @@ class Nucleus {
         MOCK Particles& Nucleons() noexcept { return nucleons; }
 
         /// Return a vector of the ids of the protons in the nucleus
-        ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
+        ///@return std::vector<size_t>: The current ids of protons in nucleon vector
         std::vector<size_t> ProtonsIDs() noexcept { return protonLoc; }
 
         /// Return a vector of the ids of the neutrons in the nucleus
-        ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector 
+        ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector
         std::vector<size_t> NeutronsIDs() noexcept { return neutronLoc; }
 
         /// Return a vector of the current protons
@@ -135,12 +135,12 @@ class Nucleus {
         ///@return double: The binding energy in MeV
         const double& BindingEnergy() const noexcept { return binding; }
 
-	/// Return the current Fermi Momentum of the nucleus
+        /// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
         //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
-	///@return double: The potential in MeV	
+        ///@return double: The potential in MeV
         double Potential(const double&) const noexcept;
 
         /// Return the current potential energy of the nucleus
@@ -154,19 +154,19 @@ class Nucleus {
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
-        double Rho(const double &position) const noexcept { 
+        double Rho(const double &position) const noexcept {
             return position > rhoInterp.max() ? 0 : rhoInterp(position);
         }
         ///@}
-	
+
         /// Return the Fermi momentum according to a given FG model
-	///@param position: The radius to calculate the density
-        double FermiMomentum(const double&) const noexcept;	//
+        ///@param position: The radius to calculate the density
+        double FermiMomentum(const double&) const noexcept; //
 
         void SetRecoil(const FourVector recoil) {
             m_recoil = recoil;
         }
-	///@}
+        ///@}
 
         /// @name Functions
         /// @{
@@ -191,11 +191,11 @@ class Nucleus {
         // Nucleus maker
         /// Generate a nucleus based on an input string, a binding energy, a Fermi Momentum,
         /// and a density function. The format of the string has to be of the form, AX, where
-        /// A represents the number of nucleons, and X represents the chemical symbol for the 
+        /// A represents the number of nucleons, and X represents the chemical symbol for the
         /// element. Currently, the following elements are available in the code:
         ///
         /// @rst
-        /// 
+        ///
         /// +-----+-----+
         /// |  Z  |  X  |
         /// +=====+=====+
@@ -243,7 +243,7 @@ class Nucleus {
         double binding{}, fermiMomentum{}, radius{}, potential{};
         FermiGasType fermiGas{FermiGasType::Local};
         std::unique_ptr<Density> density;
-        Interp1D rhoInterp;	
+        Interp1D rhoInterp;
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);

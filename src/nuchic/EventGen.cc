@@ -57,7 +57,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     }
     writer -> WriteHeader(configFile);
 
-    hist = Histogram(1000, 0.0, 1000.0, "xsec");
+    hist = Histogram(200, 0.0, 1000.0, "xsec");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -142,7 +142,7 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         writer -> Write(event);
         const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
         hist.Fill(omega, event.Weight()/(2*M_PI));
-	
+
     }
 
     return event.Weight()/wgt;
