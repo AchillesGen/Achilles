@@ -47,7 +47,8 @@ class Event {
 
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
         void InitializeLeptons(size_t);
-        void InitializeHadrons(const std::vector<std::array<size_t, 3>>&);
+        void InitializeHadrons(const std::vector<std::array<size_t, 4>>&);
+        void InitializeMesons(const size_t&, const size_t&, const size_t&);
         void Finalize();
 
         const NuclearRemnant &Remnant() const { return m_remnant; }

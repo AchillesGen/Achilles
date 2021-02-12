@@ -39,14 +39,29 @@ void Event::InitializeLeptons(size_t imatrix) {
     }
 }
 
-void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
+void Event::InitializeHadrons(const std::vector<std::array<size_t, 4>> &idxs) {
     for(const auto &idx : idxs) {
-        m_nuc -> Nucleons()[idx[0]].Status() = ParticleStatus::initial_state;
-        m_nuc -> Nucleons()[idx[0]].SetMomentum(m_ps.momentum[idx[1]]);
-        Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
-        outNucleon.Status() = ParticleStatus::propagating;
-        outNucleon.SetMomentum(m_ps.momentum[idx[2]]);
+        auto inucleon = idx[0]/idx[1];
+        spdlog::trace("Selecting nucleon {}", inucleon);
+        m_nuc -> Nucleons()[inucleon].Status() = ParticleStatus::initial_state;
+        m_nuc -> Nucleons()[inucleon].SetMomentum(m_ps.momentum[idx[2]]);
+        auto id = m_me[idx[0]].final_state[idx[3]-m_me[idx[0]].initial_state.size()];
+        auto momentum = m_ps.momentum[idx[3]];
+        auto position = m_nuc -> Nucleons()[inucleon].Position();
+        Particle outNucleon(id, momentum, position, ParticleStatus::propagating);
         m_nuc -> Nucleons().push_back(outNucleon);
+    }
+
+    InitializeMesons(idxs[0][0], idxs[0][1], 4);
+}
+
+void Event::InitializeMesons(const size_t &idx, const size_t &nchannels, const size_t &momStart) {
+    const auto position = m_nuc -> Nucleons()[idx/nchannels].Position();
+    for(size_t i = momStart; i < m_ps.momentum.size(); ++i) {
+        auto pid = m_me[idx].final_state[i-m_me[idx].initial_state.size()];
+        auto momentum = m_ps.momentum[i];
+        Particle outMeson(pid, momentum, position, ParticleStatus::propagating);
+        m_nuc -> Nucleons().push_back(outMeson);
     }
 }
 
@@ -93,11 +108,15 @@ double Event::Weight() const {
 
     if(!ValidateEvent(0))
         throw std::runtime_error("Phase space and Matrix element have different number of particles");
+
+    spdlog::debug("PS Weight: {}", m_ps.weight);
+    spdlog::debug("ME Weight: {}", m_meWgt);
     return m_ps.weight*m_vWgt*m_meWgt*conv;
 }
 
 bool Event::TotalCrossSection() {
     m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, AddEvents);
+    spdlog::debug("Total Cross Section: {}", m_meWgt);
     return m_meWgt > 0 ? true : false;
 }
 
@@ -109,6 +128,7 @@ std::vector<double> Event::EventProbs() const {
         cumulative += m.weight;
         probs.emplace_back(cumulative / m_meWgt);
     }
+    spdlog::trace("Cross Section Probabilites: ({})", fmt::join(probs, ","));
     return probs;
 }
 
