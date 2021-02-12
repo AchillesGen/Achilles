@@ -53,8 +53,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
         event.PhaseSpace().momentum.push_back(hadron1);
 
         event.MatrixElements().resize(1);
-        event.MatrixElement(0).inital_state.emplace_back(nuchic::PID::electron());
-        event.MatrixElement(0).inital_state.emplace_back(nuchic::PID::proton());
+        event.MatrixElement(0).initial_state.emplace_back(nuchic::PID::electron());
+        event.MatrixElement(0).initial_state.emplace_back(nuchic::PID::proton());
         event.MatrixElement(0).final_state.emplace_back(nuchic::PID::electron());
         event.MatrixElement(0).final_state.emplace_back(nuchic::PID::proton());
 
@@ -85,7 +85,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
         event.MatrixElements().resize(10);
         for(size_t i = 0; i < 10; ++i) {
             event.MatrixElement(i).weight = 10;
-            event.MatrixElement(i).inital_state.emplace_back(nuchic::PID::proton());
+            event.MatrixElement(i).initial_state.emplace_back(nuchic::PID::proton());
         }
 
         event.TotalCrossSection();
