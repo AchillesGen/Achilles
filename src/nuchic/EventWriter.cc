@@ -3,8 +3,14 @@
 #include "nuchic/Particle.hh"
 #include "fmt/format.h"
 
-nuchic::NuchicWriter::NuchicWriter(const std::string &filename) : toFile{true} {
-    m_out = new std::ofstream(filename);
+nuchic::NuchicWriter::NuchicWriter(const std::string &filename, bool zip) : toFile{true}, zipped{zip} {
+    if(zipped) {
+        std::string zipname = filename;
+        if(filename.substr(filename.size() - 3) != ".gz")
+            zipname += std::string(".gz");
+        m_out = new ogzstream(zipname.c_str());
+    } else
+        m_out = new std::ofstream(filename);
 }
 
 void nuchic::NuchicWriter::WriteHeader(const std::string &filename) {
