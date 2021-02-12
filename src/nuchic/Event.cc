@@ -13,7 +13,7 @@ Event::Event(std::shared_ptr<Nucleus> nuc, std::shared_ptr<Beam> beam,
 }
 
 bool Event::ValidateEvent(size_t imatrix) const {
-    return m_ps.momentum.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
+    return m_ps.momentum.size() == m_me[imatrix].initial_state.size() + m_me[imatrix].final_state.size();
 }
 
 void Event::InitializeLeptons(size_t imatrix) {
@@ -21,7 +21,7 @@ void Event::InitializeLeptons(size_t imatrix) {
         throw std::runtime_error("Phase space and Matrix element have different number of particles");
 
     size_t idx = 0;
-    for(auto pid : m_me[imatrix].inital_state) {
+    for(auto pid : m_me[imatrix].initial_state) {
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_ps.momentum[idx]);

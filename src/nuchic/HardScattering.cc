@@ -69,7 +69,7 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
     // TODO: Move to a better location?
     event.MatrixElements().resize(12);
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
-        event.MatrixElement(i).inital_state.push_back(PID::electron());
+        event.MatrixElement(i).initial_state.push_back(PID::electron());
         event.MatrixElement(i).final_state.push_back(PID::electron());
     }
 }
@@ -88,7 +88,7 @@ bool nuchic::Quasielastic::InitializeEvent(nuchic::Event &event) {
     // TODO: This is super slow
     // Select the kicked nucleon
     // For the base quasielastic case, we will use global Fermi momentum
-    // i.e. we will take MatrixElement(0) is a proton 
+    // i.e. we will take MatrixElement(0) is a proton
     // and MatrixElement(1) is a neutron
     // auto tmp = GetRNG() -> uniform<size_t>(0, event.CurrentNucleus() -> NProtons());
     // size_t idx = ime == 0 ? event.CurrentNucleus() -> ProtonsIDs()[tmp]

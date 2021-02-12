@@ -32,7 +32,7 @@ class Event {
     };
 
     struct MatrixElementStruct {
-        std::vector<PID> inital_state;
+        std::vector<PID> initial_state;
         std::vector<PID> final_state;
         double weight{};
     };
