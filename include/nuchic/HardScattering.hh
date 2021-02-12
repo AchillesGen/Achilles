@@ -39,6 +39,7 @@ class HardScattering {
 
         // Calculation details
         virtual void CrossSection(Event&) const = 0;
+        virtual size_t NChannels() const = 0;
 
         // Number of phase space variables
         int NVariables() const { return LeptonVariables() + HadronVariables(); }
@@ -80,11 +81,12 @@ class HardScattering {
 class Quasielastic : public HardScattering {
     public:
         Quasielastic(RunMode mode) : HardScattering(mode) {}
-        HardScatteringType ScatteringType() const override { 
+        HardScatteringType ScatteringType() const override {
             return HardScatteringType::Quasielastic;
         }
 
         void CrossSection(Event&) const override = 0;
+        size_t NChannels() const override { return 1; }
 
         // Select initial state
         bool InitializeEvent(Event&) override;
@@ -95,7 +97,7 @@ class QESpectral : public Quasielastic {
         QESpectral(RunMode mode) : Quasielastic(mode) {}
         QESpectral(const YAML::Node&);
 
-        int HadronVariables() const override { return 4; }
+        int HadronVariables() const override { return 3; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
         void CrossSection(Event&) const override {}
@@ -121,7 +123,7 @@ class QEGlobalFermiGas : public Quasielastic {
         QEGlobalFermiGas(RunMode mode) : Quasielastic(mode) {}
         QEGlobalFermiGas(const YAML::Node&);
 
-        int HadronVariables() const override { return 3; }
+        int HadronVariables() const override { return 2; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
         void CrossSection(Event&) const override {}
@@ -136,6 +138,49 @@ class FQEGlobalFermiGas : public QEGlobalFermiGas {
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
                 RunMode mode) {
             return std::make_unique<FQEGlobalFermiGas>(node, mode);
+        }
+
+    private:
+        static bool registered;
+};
+
+class ResonanceScattering : public HardScattering {
+    public:
+        ResonanceScattering(RunMode mode) : HardScattering(mode) {}
+        HardScatteringType ScatteringType() const override {
+            return HardScatteringType::Quasielastic;
+        }
+
+        void CrossSection(Event&) const override = 0;
+        size_t NChannels() const override { return nChannels; }
+
+        // Select initial state
+        bool InitializeEvent(Event&) override;
+
+    private:
+        static constexpr size_t nChannels = 6;
+};
+
+class RSSpectral : public ResonanceScattering {
+    public:
+        RSSpectral(RunMode mode) : ResonanceScattering(mode) {}
+        RSSpectral(const YAML::Node&);
+
+        int HadronVariables() const override { return 6; }
+        void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
+
+        void CrossSection(Event&) const override {}
+};
+
+class FRSSpectral : public RSSpectral {
+    public:
+        FRSSpectral(const YAML::Node&, RunMode);
+
+        void CrossSection(Event&) const override;
+        static std::string GetName() { return "RSSpectral"; }
+        static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
+                RunMode mode) {
+            return std::make_unique<FRSSpectral>(node, mode);
         }
 
     private:

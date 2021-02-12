@@ -14,8 +14,9 @@ using nuchic::Particles;
 using nuchic::HardScattering;
 using nuchic::QESpectral;
 using nuchic::QEGlobalFermiGas;
+using nuchic::RSSpectral;
 
-nuchic::HardScattering::HardScattering(RunMode mode) 
+nuchic::HardScattering::HardScattering(RunMode mode)
     : m_mode{mode} {}
 
 int HardScattering::LeptonVariables() const {
@@ -54,7 +55,7 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
     switch(m_mode) {
         case RunMode::FixedAngle:
             cosT = std::cos(m_angle);
-            sinT = std::sin(m_angle); 
+            sinT = std::sin(m_angle);
             break;
         case RunMode::FullPhaseSpace:
             cosT = dCos*leptonRans[2] - 1;
@@ -67,7 +68,7 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
                                              Elepton*cosT, Elepton);
 
     // TODO: Move to a better location?
-    event.MatrixElements().resize(12);
+    event.MatrixElements().resize(NChannels()*event.CurrentNucleus()->NNucleons());
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         event.MatrixElement(i).initial_state.push_back(PID::electron());
         event.MatrixElement(i).final_state.push_back(PID::electron());
@@ -94,8 +95,8 @@ bool nuchic::Quasielastic::InitializeEvent(nuchic::Event &event) {
     // size_t idx = ime == 0 ? event.CurrentNucleus() -> ProtonsIDs()[tmp]
     //     : event.CurrentNucleus() -> NeutronsIDs()[tmp];
     // event.InitializeHadrons({{idx, 2, 3}});
-    
-    event.InitializeHadrons({{ime, 2, 3}});
+
+    event.InitializeHadrons({{ime, NChannels(), 2, 3}});
 
     return true;
 }
@@ -109,20 +110,18 @@ size_t HardScattering::SelectMatrixElement(nuchic::Event &event) const {
 
 void QESpectral::GenerateHadrons(const std::vector<double> &rans,
                                  const FourVector &Q, Event &event) const {
-    static const double dp = 1000; // Hard code the maximum allowed momentum
+    static constexpr double dp = 1000; // Hard code the maximum allowed momentum
 
     // Generate phase space
-    double cosT = dCos*rans[1] - 1;
+    double cosT = dCos*rans[0] - 1;
     double sinT = sqrt(1-cosT*cosT);
-    double phi = dPhi*rans[2];
-    double p = dp*rans[3];
+    double phi = dPhi*rans[1];
+    double p = dp*rans[2];
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
-    tmp += Q.Vec3(); 
-    
-    // Pauli Blocking
+    tmp += Q.Vec3();
 
-    double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
+    double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2());
     double Ep = Constant::mN+Q.E()-Epp;
     event.PhaseSpace().momentum.emplace_back(p*sinT*cos(phi),
                                              p*sinT*sin(phi),
@@ -133,34 +132,100 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
 
 void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
                                        const FourVector &Q, Event &event) const {
-    static const double dp = 1000; // Hard code the maximum allowed momentum
+    static constexpr double dp = 1000; // Hard code the maximum allowed momentum
     static constexpr double Ep = 20.0;
 
     // Generate phase space
-    double phi = 2*M_PI*rans[1];
-    double p = dp*rans[2];
+    double phi = 2*M_PI*rans[0];
+    double p = dp*rans[1];
     double Ef = sqrt(pow(p, 2)+pow(Constant::mN, 2));
-    
+
     double arg1 = pow(Q.E()-Ep+Ef,2);
     double arg2 = pow(p, 2)+pow(Constant::mN, 2)+pow(Q.P(), 2);
-	    
+
     double cosT = (arg1-arg2)/(2*p*Q.P());
     double sinT = sqrt(1-cosT*cosT);
     if(std::abs(cosT) > 1) {
         event.PhaseSpace().weight = 0;
         return;
-    } 
+    }
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
     tmp += Q.Vec3();
-    
+
     // Pauli Blocking
-    
-    double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
-    
+
+    double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2());
+
     event.PhaseSpace().momentum.emplace_back(p*sinT*cos(phi),
                                              p*sinT*sin(phi),
                                              p*cosT, Ep);
     event.PhaseSpace().momentum.emplace_back(tmp, Epp);
     event.PhaseSpace().weight *= dp*p*p*dPhi;
+}
+
+void RSSpectral::GenerateHadrons(const std::vector<double> &rans,
+                                 const FourVector &Q, Event &event) const {
+    static constexpr double dp = 1000; // Hard code the maximum nucleon momentum
+    static constexpr double dk = 1000; // Hard code maximum pion momentum
+
+    // Generate phase space for incoming nucleon
+    double cosTN = dCos*rans[0] - 1;
+    double sinTN = sqrt(1-cosTN*cosTN);
+    double phiN = dPhi*rans[1];
+    double p = dp*rans[2];
+
+    // Generate phase space for outgoing pion
+    double cosTPi = dCos*rans[3] - 1;
+    double sinTPi = sqrt(1-cosTPi*cosTPi);
+    double phiPi = dPhi*rans[4];
+    double k = dk*rans[5];
+    ThreeVector momPi = { k*sinTPi*cos(phiPi), k*sinTPi*sin(phiPi), k*cosTPi };
+    double massPi = ParticleInfo(PID::pionp()).Mass();
+    double Epi = sqrt(k*k+massPi*massPi);
+
+    ThreeVector tmp = { p*sinTN*cos(phiN), p*sinTN*sin(phiN), p*cosTN };
+    tmp += Q.Vec3();
+    tmp -= momPi;
+
+    // Pauli Blocking
+
+    double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2());
+    double Ep = Constant::mN+Q.E()-Epp-Epi;
+    event.PhaseSpace().momentum.emplace_back(p*sinTN*cos(phiN),
+                                             p*sinTN*sin(phiN),
+                                             p*cosTN, Ep);
+    event.PhaseSpace().momentum.emplace_back(tmp, Epp);
+    event.PhaseSpace().momentum.emplace_back(momPi, Epi);
+    event.PhaseSpace().weight *= Ep > 0 ? dp*p*p*dCos*dPhi*dk*k*k*dCos*dPhi : 0;
+}
+
+bool nuchic::ResonanceScattering::InitializeEvent(nuchic::Event &event) {
+    // Calculate and store total cross section
+    if(!event.TotalCrossSection())
+        return false;
+
+    // Select a matrix element to use
+    auto ime = SelectMatrixElement(event);
+    spdlog::trace("Selected Matrix Element {}", ime);
+
+    // Initialize the leptons for the event
+    event.InitializeLeptons(ime);
+    spdlog::trace("Leptons initialized");
+
+
+    // TODO: This is super slow
+    // Select the kicked nucleon
+    // For the base quasielastic case, we will use global Fermi momentum
+    // i.e. we will take MatrixElement(0) is a proton
+    // and MatrixElement(1) is a neutron
+    // auto tmp = GetRNG() -> uniform<size_t>(0, event.CurrentNucleus() -> NProtons());
+    // size_t idx = ime == 0 ? event.CurrentNucleus() -> ProtonsIDs()[tmp]
+    //     : event.CurrentNucleus() -> NeutronsIDs()[tmp];
+    // event.InitializeHadrons({{idx, 2, 3}});
+
+    event.InitializeHadrons({{ime, NChannels(), 2, 3}});
+    spdlog::trace("Hadrons initialized");
+
+    return true;
 }
