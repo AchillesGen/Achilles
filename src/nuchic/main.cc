@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
 
-    const std::string lib = libPrefix + "fortran_interface" + libSuffix;
+    const std::string lib = libPrefix + "fortran_hardscattering" + libSuffix;
     std::string name = installLibs + lib;
     void *handle = dlopen(name.c_str(), RTLD_NOW);
     if(!handle) {
