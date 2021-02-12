@@ -61,6 +61,7 @@ namespace nuchic {
             static constexpr PID Wboson() { return PID{ 24 }; }
             static constexpr PID Higgs() { return PID{ 25 }; }
             // Mesons
+            static constexpr PID pionm() { return PID{ -211 }; }
             static constexpr PID pion0() { return PID{ 111 }; }
             static constexpr PID pionp() { return PID{ 211 }; }
             // Baryons
@@ -150,7 +151,12 @@ namespace nuchic {
 
             ParticleInfo(const PID &id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
-                auto it(particleDB.find(id));
+                auto search_id = id;
+                if(id < PID::undefined()) {
+                    anti=true;
+                    search_id = id.Anti();
+                }
+                auto it(particleDB.find(search_id));
                 if(it == particleDB.end())
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
                 info = it -> second;
@@ -167,7 +173,7 @@ namespace nuchic {
 
             // Property functions
             std::string Name() const noexcept { return anti ? info -> antiname : info -> idname; }
-            PID ID() const noexcept { return info -> id; }
+            PID ID() const noexcept { return anti ? info -> id.Anti() : info -> id; }
             int IntID() const noexcept { return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id); }
             bool IsBaryon() const noexcept;
             bool IsHadron() const noexcept { return info -> hadron; }
