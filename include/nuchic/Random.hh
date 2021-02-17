@@ -12,7 +12,7 @@ class Random {
             return rand;
         }
 
-        void Seed(unsigned long int seed) {
+        void Seed(unsigned int seed) {
             m_rng -> seed(seed);
         }
 
