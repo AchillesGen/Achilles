@@ -32,17 +32,23 @@ class EventGen {
         EventGen(const std::string&);
         void Initialize();
         void GenerateEvents();
-
+        size_t nevents;
+        size_t total_events;
+        
     private:
-        bool runCascade, outputEvents, doCuts{false};
-        double Calculate(const std::vector<double>&, const double&);
+        bool runCascade, outputEvents, doHardCuts{false}, doEventCuts{false};
+        bool doRotate{false};
+        double Calculate(const std::vector<double>&, const double&, const int&);
         bool MakeCuts(Event&);
+        bool MakeEventCuts(Event&);
+        void Rotate(Event&);
 
         std::shared_ptr<Beam> beam;
         std::shared_ptr<Nucleus> nucleus;
         std::shared_ptr<Cascade> cascade;
         std::shared_ptr<HardScattering> scattering;
-        Cuts cuts{};
+        Cuts hard_cuts{};
+        Cuts event_cuts{};
         Vegas integrator;
         YAML::Node config;
         // std::vector<std::unique_ptr<HardScattering>> scatterings;

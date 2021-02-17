@@ -2,6 +2,9 @@
 #include "nuchic/FourVector.hh"
 
 bool nuchic::Cut::operator()(const FourVector &vec) const {
+    // Returns false if a particle's 4-vectors fails at least one cut.
+    // The logic is designed to short-circuit after the first failed cut.
+    // Returns true if the particle satisfies all the cuts.
     for(const auto &cut : m_cuts) {
         switch(cut.first) {
             case CutType::Q2:
@@ -35,7 +38,10 @@ bool nuchic::Cut::operator()(const FourVector &vec) const {
 
 bool nuchic::Cut::MakeCut(double val, const cut_range &cutRange) const {
     bool result = false;
-
+    // Run through possible cut ranges, keeping the event if a single cut range
+    // is satisfied. Note that these cut ranges are all for a single variable,
+    // e.g., theta in [0,1] OR [2,3] OR ...
+    // Return true if any single cut range is satisfied.
     for(const auto &cut : cutRange) {
         result |= (val > cut.first && val < cut.second);
     }

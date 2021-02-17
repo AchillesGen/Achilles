@@ -26,5 +26,6 @@ void nuchic::NuchicWriter::Write(const Event &event) {
         *m_out << fmt::format("  - {}\n", part);
     }
     *m_out << fmt::format("  - {}\n", event.Remnant());
-    *m_out << fmt::format("  Weight: {}\n\n", event.Weight());
+    *m_out << fmt::format("  Weight: {}\n", event.Weight());
+    *m_out << fmt::format("  Batch: {}\n\n", event.Batch());
 }

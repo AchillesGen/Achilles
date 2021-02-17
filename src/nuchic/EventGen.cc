@@ -13,17 +13,20 @@
 
 nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, outputEvents{false} {
     config = YAML::LoadFile(configFile);
-
     // Setup random number generator
-    auto seed = static_cast<unsigned long int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config["Initialize"]["seed"])
-        seed = config["Initialize"]["seed"].as<unsigned long int>();
+        seed = config["Initialize"]["seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
     // Load initial states
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
+
+    // Event counts
+    total_events = config["EventGen"]["TotalEvents"].as<size_t>();
+    nevents = 0; // Initialize to zero
 
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
@@ -45,10 +48,20 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables() + beam->NVariables()));
     integrator = Vegas(map, config["Initialize"]);
 
+    // Decide whether to rotate events to be measured w.r.t. the lepton plane
+    if(config["Main"]["DoRotate"])
+        doRotate = config["Main"]["DoRotate"].as<bool>();
+
     // Setup Cuts
-    if(config["Main"]["DoCuts"])
-        doCuts = config["Main"]["DoCuts"].as<bool>();
-    cuts = config["Cuts"].as<nuchic::Cuts>();
+    if(config["Main"]["HardCuts"])
+        doHardCuts = config["Main"]["HardCuts"].as<bool>();
+    spdlog::info("Apply hard cuts? {}", doHardCuts);
+    hard_cuts = config["HardCuts"].as<nuchic::Cuts>();
+    
+    if(config["Main"]["EventCuts"])
+        doEventCuts = config["Main"]["EventCuts"].as<bool>();
+    spdlog::info("Apply event cuts? {}", doEventCuts);
+    event_cuts = config["EventCuts"].as<nuchic::Cuts>();
 
     // Setup outputs
     auto output = config["Main"]["Output"];
@@ -61,32 +74,43 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
 }
 
 void nuchic::EventGen::Initialize() {
+    spdlog::info("Initializing vegas integrator.");
+    int batch_count = 0;
     auto func = [&](const std::vector<double> &x, const double &wgt) {
-        return Calculate(x, wgt);
+        return Calculate(x, wgt, batch_count);
     };
     integrator(func);
 }
 
 void nuchic::EventGen::GenerateEvents() {
-    integrator.Clear();
+    // integrator.Clear();
     integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-
-    auto func = [&](const std::vector<double> &x, const double &wgt) {
-        auto niterations = config["EventGen"]["iterations"].as<double>();
-        return Calculate(x, wgt/niterations);
-    };
-    integrator(func);
+    spdlog::info("Starting generating of n >= {} total events", total_events);
+    // Run integrator in batches until the desired number of events are found
+    int batch_count = 1;
+    while (nevents < total_events){
+        integrator.Clear();  // Reset integrator for each batch
+        auto func = [&](const std::vector<double> &x, const double &wgt) {
+            auto niterations = config["EventGen"]["iterations"].as<double>();
+            return Calculate(x, wgt/niterations, batch_count);
+        };
+        spdlog::info("Running vegas batch number {}", batch_count);
+        integrator(func);
+        spdlog::info("Total events so far: {}/{}", nevents, total_events);
+        batch_count += 1;
+    }
 
     hist.Save("multi");
 }
 
-double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt) {
+double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const int &batch) {
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     std::vector<double> beamRans(rans.begin(), rans.begin() + beam -> NVariables());
     Event event(nucleus, beam, beamRans, wgt);
+    event.SetBatch(batch);
 
     // Generate phase space
     spdlog::debug("Generating phase space");
@@ -117,6 +141,13 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
 
+    // Perform hard cuts
+    if(doHardCuts) {
+        spdlog::debug("Making hard cuts");
+        if(!MakeCuts(event))
+            return 0;
+    }
+
     // Run the cascade if needed
     if(runCascade) {
         spdlog::debug("Runnning cascade");
@@ -129,15 +160,22 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         }
     }
 
-    // Preform cuts
-    if(doCuts) {
+    // Rotate cuts into plane of outgoing electron
+    if(doRotate){
+        Rotate(event);
+    }
+
+    // Preform event-level final cuts
+    if(doEventCuts) {
         spdlog::debug("Making cuts");
-        if(!MakeCuts(event))
+        if(!MakeEventCuts(event))
             return 0;
     }
 
     // Write out events
     if(outputEvents) {
+        nevents += 1;  // Keep a running total of the number of events
+        spdlog::debug("Found event: {}/{}", nevents, total_events);
         event.Finalize();
         writer -> Write(event);
         const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
@@ -149,10 +187,57 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 }
 
 bool nuchic::EventGen::MakeCuts(Event &event) {
+    // Run through all particles in the event
     for(const auto &particle : event.Particles())
+        // Only apply cuts to final-state particles
         if(particle.IsFinal())
-            if(cuts.find(particle.ID()) != cuts.end())
-                if(!cuts[particle.ID()](particle.Momentum()))
+            if(hard_cuts.find(particle.ID()) != hard_cuts.end()){
+                // Reject the event if a single particle fails a cut
+                if(!hard_cuts[particle.ID()](particle.Momentum())){
                     return false;
+                }
+            }
     return true;
+}
+
+bool nuchic::EventGen::MakeEventCuts(Event &event) {
+    // Run through all particles in the event
+    for (const auto& pair : event_cuts) {
+        auto pid = pair.first;
+        auto cut = pair.second;
+        bool pid_passed = false;
+        for (const auto& particle : event.Particles()){
+            // Restrict to matching final-state particles
+            if(particle.IsFinal() & (particle.ID() == pid))
+                // Keep: at least one particle (of a given PID) survives the cut
+                if(cut(particle.Momentum())){
+                    pid_passed = true;
+                    break;
+                }
+        }
+        // Reject: no particles (of a given PID) satisfy the cut
+        if(!pid_passed)
+            return false;
+    }
+    return true;
+}
+
+
+
+
+void nuchic::EventGen::Rotate(Event &event) {
+    // Isolate the azimuthal angle of the outgoing electron
+    double phi = 0.0;
+    for(const auto & particle : event.Particles()){
+        if((int(particle.ID()) == 11) & particle.IsFinal()){
+            phi = particle.Momentum().Phi();
+        }
+    }    
+    // Rotate the coordiantes of particles so that all azimuthal angles phi are 
+    // measured with respect to the leptonic plane
+    std::array<double, 9> rotation = {
+        cos(phi),  sin(phi), 0, 
+        -sin(phi), cos(phi), 0,
+        0,         0,        1};
+    event.Rotate(rotation);
 }
