@@ -26,3 +26,4 @@ tags
 lib*.so*
 include/nuchic/System.hh
 plots/
+*dylib
