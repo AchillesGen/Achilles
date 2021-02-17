@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <map>
 
 #include "spdlog/spdlog.h"
@@ -17,6 +18,7 @@ using namespace nuchic;
 REGISTER_INTERACTION(GeantInteractions);
 REGISTER_INTERACTION(NasaInteractions);
 REGISTER_INTERACTION(ConstantInteractions);
+REGISTER_INTERACTION(PionNucleon);
 
 const std::map<std::string, double> HZETRN = {
     {"a", 5.0_MeV},
@@ -295,4 +297,53 @@ ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
     double pPhi = 2*M_PI*rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+}
+
+PionNucleon::PionNucleon(const YAML::Node &config) {
+    auto foldername = config["PionData"].as<std::string>();
+
+    spdlog::info("Loading pion-nucleon cross sections from {}", foldername);
+    pi0_n = LoadData(foldername+filenames[0],
+                     {{PID::pion0(), PID::neutron()}, {PID::pionm(), PID::proton()}});
+    pi0_p = LoadData(foldername+filenames[1],
+                     {{PID::pion0(), PID::proton()}, {PID::pionp(), PID::neutron()}});
+    pim_n = LoadData(foldername+filenames[2],
+                     {{PID::pionm(), PID::neutron()}});
+    pim_p = LoadData(foldername+filenames[3],
+                     {{PID::pionm(), PID::proton()}, {PID::pion0(), PID::neutron()}});
+    pip_n = LoadData(foldername+filenames[4],
+                     {{PID::pionp(), PID::neutron()}, {PID::pion0(), PID::proton()}});
+    pim_p = LoadData(foldername+filenames[5],
+                     {{PID::pionp(), PID::proton()}});
+}
+
+PionNucleon::cross_section PionNucleon::LoadData(const std::string &filename,
+                                                 const std::vector<std::pair<PID, PID>> &pids) const {
+    // Initialize the cross_section struct 
+    cross_section results;
+    results.m_pids = pids;
+
+    // Load the data from file
+    std::set<double> ecm, theta;
+    std::vector<double> xsec1, xsec2;
+    std::string line;
+    std::ifstream data(filename); 
+    while(std::getline(data, line)) {
+        auto tokens = tokenize(line);
+        ecm.insert(std::stod(tokens[0]));
+        theta.insert(std::stod(tokens[1]));
+        xsec1.emplace_back(std::stod(tokens[2]));
+        if(tokens.size() == 4)
+            xsec2.emplace_back(std::stod(tokens[3]));
+    }
+    data.close();
+
+    // Create the interpolation functions and store in the cross_section struct
+    std::vector<double> ecmVec{ecm.begin(), ecm.end()};
+    std::vector<double> thetaVec{theta.begin(), theta.end()};
+    results.m_cross_sections.emplace_back(ecmVec, thetaVec, xsec1); 
+    if(xsec2.size() != 0)
+        results.m_cross_sections.emplace_back(ecmVec, thetaVec, xsec2); 
+
+    return results;
 }

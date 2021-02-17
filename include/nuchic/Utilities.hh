@@ -8,6 +8,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <string>
+#include <sstream>
 
 namespace nuchic {
 
@@ -137,6 +139,16 @@ constexpr T ipow(const T &x, const size_t &pow) {
 template<typename T>
 constexpr T factorial(const T &x) {
     return x == 0 ? 1 : x * factorial(x-1);
+}
+
+inline std::vector<std::string> tokenize(const std::string &str, char delimiter=' ') {
+    std::vector<std::string> tokens;
+    std::string token;
+    std::istringstream tokenStream(str);
+    while(std::getline(tokenStream, token, delimiter)) {
+        tokens.push_back(token);
+    }
+    return tokens;
 }
 
 }

@@ -38,6 +38,8 @@ class FortranInteraction : public Interactions {
             return {*MakeMomentumFortran(samePID, pcm, rans.data())};
         }
 
+        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonNucleon; }
+
     private:
         static bool registered;
 };
