@@ -77,6 +77,10 @@ class Event {
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
         double Weight() const;
+        void Rotate(const std::array<double,9>&);
+
+        void SetBatch(const int&);
+        int Batch() const { return m_batch; }
 
     private:
         static double AddEvents(double, const MatrixElementStruct&);
@@ -91,6 +95,7 @@ class Event {
         MatrixElementVec m_me;
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
+        int m_batch;
 };
 
 }

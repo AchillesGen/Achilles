@@ -2,6 +2,7 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Beams.hh"
+#include <iostream>
 
 using nuchic::Event;
 
@@ -15,6 +16,8 @@ Event::Event(std::shared_ptr<Nucleus> nuc, std::shared_ptr<Beam> beam,
 bool Event::ValidateEvent(size_t imatrix) const {
     return m_ps.momentum.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
 }
+
+void Event::SetBatch(const int &batch){ m_batch = batch; }
 
 void Event::InitializeLeptons(size_t imatrix) {
     if(!ValidateEvent(imatrix))
@@ -118,4 +121,9 @@ bool Event::MatrixCompare(const MatrixElementStruct &m, double value) {
 
 double Event::AddEvents(double value, const MatrixElementStruct &m) {
     return value + m.weight;
+}
+
+void Event::Rotate(const std::array<double,9>& rot_mat) {
+    for (auto& particle: m_nuc -> Nucleons()){ particle.Rotate(rot_mat); }
+    for (auto& particle: m_leptons){ particle.Rotate(rot_mat); }
 }
