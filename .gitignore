@@ -26,3 +26,6 @@ tags
 lib*.so*
 include/nuchic/System.hh
 plots/
+.clangd
+.vim
+.vimspector.json
