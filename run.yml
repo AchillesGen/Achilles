@@ -10,6 +10,7 @@ Main:
   Output:
       Format: Nuchic
       Name: test.out
+      Zipped: True
 
 Initialize:
   seed: 123456789

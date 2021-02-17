@@ -66,7 +66,10 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     // Setup outputs
     auto output = config["Main"]["Output"];
     if(output["Format"].as<std::string>() == "Nuchic") {
-        writer = std::make_unique<NuchicWriter>(output["Name"].as<std::string>());
+        bool zipped = true;
+        if(output["Zipped"])
+            zipped = output["Zipped"].as<bool>();
+        writer = std::make_unique<NuchicWriter>(output["Name"].as<std::string>(), zipped);
     }
     writer -> WriteHeader(configFile);
 
