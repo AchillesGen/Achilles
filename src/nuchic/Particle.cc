@@ -55,6 +55,10 @@ void Particle::BackPropagate(const double& time) noexcept {
     position -= propDist;
 }
 
+void Particle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
+    momentum = momentum.Rotate(rot_mat);
+}
+
 bool Particle::operator==(const Particle& other) const noexcept {
     if(info != other.info) return false;
     if(status != other.status) return false;

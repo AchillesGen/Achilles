@@ -227,7 +227,7 @@ class Particle {
         ///@param timeStep: The amount of time to propagate the particle for
         void Propagate(const double&) noexcept;
 
-	void SpacePropagate(const double&) noexcept; 
+	    void SpacePropagate(const double&) noexcept; 
 
         /// Returns the distance travelled by the particle
         /// @return double: the distance travelled by the particle
@@ -236,6 +236,10 @@ class Particle {
         /// Propagate a particle back in time. Useful for testing purposes
         ///@param timeStep: The amount of time to propagate a particle back in time for
         void BackPropagate(const double&) noexcept;
+
+        /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
+        ///@param rot_mat: the 3x3 rotation matrix
+        void Rotate(const std::array<double, 9>&) noexcept;
 
         /// Return a string representation of the particle
         ///@return std::string: a string representation of the particle
