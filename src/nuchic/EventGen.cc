@@ -148,6 +148,9 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     if(doHardCuts) {
         spdlog::debug("Making hard cuts");
         if(!MakeCuts(event))
+            // Short-circuit the evaluation
+            // We want Vegas to adapt to avoid these points, i.e.,
+            // the integrand should be interpreted as zero in this region
             return 0;
     }
 
@@ -163,29 +166,29 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         }
     }
 
-    // Rotate cuts into plane of outgoing electron
-    if(doRotate){
-        Rotate(event);
-    }
-
-    // Preform event-level final cuts
-    if(doEventCuts) {
-        spdlog::debug("Making cuts");
-        if(!MakeEventCuts(event))
-            return 0;
-    }
-
     // Write out events
     if(outputEvents) {
-        nevents += 1;  // Keep a running total of the number of events
-        spdlog::debug("Found event: {}/{}", nevents, total_events);
-        event.Finalize();
-        writer -> Write(event);
-        const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
-        hist.Fill(omega, event.Weight()/(2*M_PI));
-	
+        // Rotate cuts into plane of outgoing electron before writing
+        if (doRotate)
+            Rotate(event);
+        // Perform event-level final cuts before writing
+        if(doEventCuts){
+            spdlog::debug("Making event cuts");
+            if(MakeEventCuts(event)){
+                // Keep a running total of the number of surviving events
+                nevents += 1;  
+                spdlog::debug("Found event: {}/{}", nevents, total_events);
+                event.Finalize();
+                writer -> Write(event);
+                const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
+                hist.Fill(omega, event.Weight()/(2*M_PI));
+            }
+        }        	
     }
 
+    // Always return the weight when the event passes the initial hard cut.
+    // Even if events do not survive the final event-level cuts, Vegas should 
+    // still interpret the integrand as nonzero in this region.
     return event.Weight()/wgt;
 }
 
