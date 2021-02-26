@@ -34,11 +34,12 @@ class EventGen {
         void GenerateEvents();
         size_t nevents;
         size_t total_events;
-        
+        size_t max_batch;
+
     private:
         bool runCascade, outputEvents, doHardCuts{false}, doEventCuts{false};
         bool doRotate{false};
-        double Calculate(const std::vector<double>&, const double&, const int&);
+        double Calculate(const std::vector<double>&, const double&, const size_t&);
         bool MakeCuts(Event&);
         bool MakeEventCuts(Event&);
         void Rotate(Event&);
@@ -54,7 +55,7 @@ class EventGen {
         // std::vector<std::unique_ptr<HardScattering>> scatterings;
         // std::vector<Histogram> xsecsVsE;
         // std::vector<Vegas> integrators;
-        
+
         std::shared_ptr<EventWriter> writer;
 
         Histogram hist;

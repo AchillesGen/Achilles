@@ -27,6 +27,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     // Event counts
     total_events = config["EventGen"]["TotalEvents"].as<size_t>();
     nevents = 0; // Initialize to zero
+    max_batch = config["EventGen"]["MaxBatch"].as<size_t>();
 
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
@@ -57,7 +58,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
         doHardCuts = config["Main"]["HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<nuchic::Cuts>();
-    
+
     if(config["Main"]["EventCuts"])
         doEventCuts = config["Main"]["EventCuts"].as<bool>();
     spdlog::info("Apply event cuts? {}", doEventCuts);
@@ -78,7 +79,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
 
 void nuchic::EventGen::Initialize() {
     spdlog::info("Initializing vegas integrator.");
-    int batch_count = 0;
+    size_t batch_count = 0;
     auto func = [&](const std::vector<double> &x, const double &wgt) {
         return Calculate(x, wgt, batch_count);
     };
@@ -91,9 +92,10 @@ void nuchic::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
     spdlog::info("Starting generating of n >= {} total events", total_events);
+    spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
     // Run integrator in batches until the desired number of events are found
-    int batch_count = 1;
-    while (nevents < total_events){
+    size_t batch_count = 1;
+    while ((nevents < total_events) & (batch_count <= max_batch)){
         integrator.Clear();  // Reset integrator for each batch
         auto func = [&](const std::vector<double> &x, const double &wgt) {
             auto niterations = config["EventGen"]["iterations"].as<double>();
@@ -104,11 +106,14 @@ void nuchic::EventGen::GenerateEvents() {
         spdlog::info("Total events so far: {}/{}", nevents, total_events);
         batch_count += 1;
     }
+    if (batch_count >= max_batch){
+        spdlog::info("Stopping after reaching max batch threshold.");
+    }
 
     hist.Save("multi");
 }
 
-double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const int &batch) {
+double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const size_t &batch) {
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     std::vector<double> beamRans(rans.begin(), rans.begin() + beam -> NVariables());
@@ -176,18 +181,18 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
             spdlog::debug("Making event cuts");
             if(MakeEventCuts(event)){
                 // Keep a running total of the number of surviving events
-                nevents += 1;  
+                nevents += 1;
                 spdlog::debug("Found event: {}/{}", nevents, total_events);
                 event.Finalize();
                 writer -> Write(event);
                 const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
                 hist.Fill(omega, event.Weight()/(2*M_PI));
             }
-        }        	
+        }
     }
 
     // Always return the weight when the event passes the initial hard cut.
-    // Even if events do not survive the final event-level cuts, Vegas should 
+    // Even if events do not survive the final event-level cuts, Vegas should
     // still interpret the integrand as nonzero in this region.
     return event.Weight()/wgt;
 }
@@ -238,11 +243,11 @@ void nuchic::EventGen::Rotate(Event &event) {
         if((int(particle.ID()) == 11) & particle.IsFinal()){
             phi = particle.Momentum().Phi();
         }
-    }    
-    // Rotate the coordiantes of particles so that all azimuthal angles phi are 
+    }
+    // Rotate the coordiantes of particles so that all azimuthal angles phi are
     // measured with respect to the leptonic plane
     std::array<double, 9> rotation = {
-        cos(phi),  sin(phi), 0, 
+        cos(phi),  sin(phi), 0,
         -sin(phi), cos(phi), 0,
         0,         0,        1};
     event.Rotate(rotation);

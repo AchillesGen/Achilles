@@ -7,7 +7,7 @@
 using nuchic::Event;
 
 Event::Event(std::shared_ptr<Nucleus> nuc, std::shared_ptr<Beam> beam,
-             const std::vector<double> &rans, double vwgt) 
+             const std::vector<double> &rans, double vwgt)
         : m_nuc{std::move(nuc)}, m_beam{std::move(beam)}, m_vWgt{std::move(vwgt)} {
     m_nuc -> GenerateConfig();
     m_ps.momentum.push_back(m_beam -> Flux(PID::electron(), rans));
@@ -17,7 +17,7 @@ bool Event::ValidateEvent(size_t imatrix) const {
     return m_ps.momentum.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
 }
 
-void Event::SetBatch(const int &batch){ m_batch = batch; }
+void Event::SetBatch(const size_t &batch){ m_batch = batch; }
 
 void Event::InitializeLeptons(size_t imatrix) {
     if(!ValidateEvent(imatrix))
