@@ -177,6 +177,11 @@ namespace nuchic {
             int IntID() const noexcept { return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id); }
             bool IsBaryon() const noexcept;
             bool IsHadron() const noexcept { return info -> hadron; }
+            bool IsPion() const noexcept { return ID() == PID::pion0() 
+                                                  || ID() == PID::pionm() 
+                                                  || ID() == PID::pionp(); }
+            bool IsNucleon() const noexcept { return ID() == PID::proton() 
+                                                     || ID() == PID::neutron(); }
             bool IsBHadron() const noexcept;
             bool IsCHadron() const noexcept;
             bool IsAnti() const noexcept { return anti; }

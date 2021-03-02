@@ -11,6 +11,7 @@
 #include "H5Cpp.h"
 
 #include "nuchic/Interpolation.hh"
+#include "nuchic/Random.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/ParticleInfo.hh"
 
@@ -58,11 +59,25 @@ class Interactions {
         virtual ~Interactions() = default;
         ///@}
 
-        /// Function to determine the cross-section between two particles
+        /// Function to determine the total cross-section between two particles
         ///@param part1: The first particle involved with the interaction
         ///@param part2: The second particle involved with the interaction
         ///@return double: The cross-section
         virtual double CrossSection(const Particle&, const Particle&) const = 0;
+
+        /// Function to calculate all possible cross-sections between two particles
+        /// as a vector for each unique final state.
+        ///@param part1: The first particle involved in the interaction in CM frame
+        ///@param part2: The second particle involved in the interaction in CM frame
+        ///@return std::vector<double>: Vector of all allowed cross-sections
+        virtual std::vector<double> CrossSections(const Particle&, const Particle&) const = 0;
+
+        /// Function to determine the final state of the calculation given the cross-sections
+        /// and a random number.
+        ///@param part1: The first particle involved in the interaction in CM frame
+        ///@param part2: The second particle involved in the interaction in CM frame
+        ///@return std::vector<Particle>: Vector of generated final state particles
+        virtual std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const = 0;
 
         /// Function to generate momentum for the particles after an interaction
         ///@param samePID: Used to determine if the two particles are the same type
@@ -131,6 +146,11 @@ class NasaInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
+        std::vector<double> CrossSections(const Particle &part1,
+                                          const Particle &part2) const override {
+            return { CrossSection(part1, part2) };
+        }
+        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override;
 
@@ -173,6 +193,11 @@ class GeantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override;
+        std::vector<double> CrossSections(const Particle &part1,
+                                          const Particle &part2) const override {
+            return { CrossSection(part1, part2) };
+        }
+        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override;
 
@@ -225,6 +250,10 @@ class ConstantInteractions : public Interactions {
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
+        std::vector<double> CrossSections(const Particle&, const Particle&) const override {
+            return { m_xsec };
+        }
+        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
         ThreeVector MakeMomentum(bool, const double& pcm,
                                  const std::array<double, 2>& rans) const override {
             double ctheta = 2*rans[0]-1;
@@ -277,6 +306,8 @@ class PionNucleon : public Interactions {
         double CrossSection(const Particle&, const Particle&) const override { return 0; }
         ThreeVector MakeMomentum(bool, const double&,
                                  const std::array<double, 2>&) const override { return {0, 0, 0}; }
+        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
+        std::vector<double> CrossSections(const Particle&, const Particle&) const override;
 
         /// Function that returns the interactions calculated in the class
         FSInteractionType InteractionType() const override { return FSInteractionType::NucleonPion; }
@@ -292,7 +323,6 @@ class PionNucleon : public Interactions {
         cross_section LoadData(const std::string&, const std::vector<std::pair<PID, PID>>&) const;
         
         // Variables
-        double m_xsec;
         static bool registered;
         std::array<std::string, 6> filenames{"pi0-n.out", "pi0-p.out",
                                              "pim-n.out", "pim-p.out",

@@ -110,6 +110,10 @@ class Particle {
         ///@param std::vector<int>: A vector containing information about the daughter particles
         void SetDaughters(const std::vector<int>& _daughters) noexcept {daughters = _daughters;}
 
+        /// Set the PID of the particle to allow for charge exchange
+        ///@param PID: The new pid of the particle
+        void SetPID(const PID &pid) noexcept { info = ParticleInfo(pid); }
+
         /// Add a new mother particle to an existing particle
         ///@param idx: The index of the mother particle to be set
         void AddMother(const int& idx) noexcept {mothers.push_back(idx);}
@@ -142,12 +146,14 @@ class Particle {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the Particle object
+        
+        /// Return the information object for the particle
+        ///@return ParticleInfo: Particle information
+        ParticleInfo Info() const noexcept { return info; }
 
         /// Return the pid of the particle
         ///@return int: PID of the particle
         PID ID() const noexcept { return info.ID(); }
-
-        ParticleInfo Info() const noexcept { return info; }
 
         /// Returns the position of the particle
         ///@return ThreeVector: The position of the particle

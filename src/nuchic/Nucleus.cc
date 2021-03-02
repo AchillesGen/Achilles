@@ -41,7 +41,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         errorMsg += " protons and " + std::to_string(A) + " nucleons";
         throw std::runtime_error(errorMsg);
     }
-    
+  
     nucleons.resize(A);
     protons.resize(Z);
     neutrons.resize(A-Z);
@@ -216,8 +216,8 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
             result = std::cbrt(rho*3*M_PI*M_PI)*Constant::HBARC;
             break;
         case FermiGasType::Global:
-            static constexpr double small = 1E-2;
-            result = rho < small ? small : fermiMomentum;
+            static constexpr double minDensity = 1E-6;
+            result = rho < minDensity ? minDensity : fermiMomentum;
             break;
     }
 

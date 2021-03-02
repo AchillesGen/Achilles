@@ -1,3 +1,7 @@
+#include <stdexcept>
+#include <string>
+#include <cctype>
+
 #include "nuchic/Utilities.hh"
 #include <stdexcept>
 
@@ -17,12 +21,12 @@ bool nuchic::sortPairSecond(const std::pair<std::size_t, double>& a,
 
 // Use the Brent algorithm to calculate the root of a given function
 double nuchic::Brent::CalcRoot(double a, double b) const {
-    double fa = m_func(a), fb = m_func(b), fc;
+    double fa = m_func(a), fb = m_func(b), fc = 0;
     if(fa*fb >= 0) throw std::domain_error("No root in given range");
     swap(fa, fb, a, b);
     double c = a;
     bool m_flag = true;
-    double s, d = 0;
+    double s{}, d = 0;
     while(fb != 0 && std::abs(b - a) > m_tol) {
         fc = m_func(c);
         if(fa != fc && fb != fc) {
@@ -55,3 +59,10 @@ double nuchic::Brent::CalcRoot(double a, double b) const {
     }
     return b;
 }
+
+std::string nuchic::tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); }); 
+    return s;
+}
+

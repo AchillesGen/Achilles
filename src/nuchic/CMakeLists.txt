@@ -10,6 +10,7 @@ add_library(utilities SHARED
     AdaptiveMap.cc
     Histogram.cc
     Cuts.cc
+    Rambo.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -19,6 +20,7 @@ add_library(physics SHARED
     Cascade.cc
     Interactions.cc
     InteractionsFactory.cc
+    Metropolis.cc
     Nucleus.cc
     FormFactor.cc
     Beams.cc

@@ -42,6 +42,10 @@ double FourVector::Angle(const FourVector &other) const noexcept {
     return std::acos(CosAngle(other));
 }
 
+double FourVector::Tk() const noexcept {
+    return E()-M();
+}
+
 ThreeVector FourVector::Vec3() const noexcept {
     return {vec[0], vec[1], vec[2]};
 }

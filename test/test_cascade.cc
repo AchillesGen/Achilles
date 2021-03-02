@@ -17,6 +17,8 @@ class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
 class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK2(CrossSection);
+    IMPLEMENT_CONST_MOCK2(CrossSections);
+    IMPLEMENT_CONST_MOCK2(GenerateFinalState);
     IMPLEMENT_CONST_MOCK3(MakeMomentum);
     IMPLEMENT_CONST_MOCK0(InteractionType);
 };

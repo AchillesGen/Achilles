@@ -151,6 +151,21 @@ inline std::vector<std::string> tokenize(const std::string &str, char delimiter=
     return tokens;
 }
 
+template<size_t N>
+constexpr double Lerp(double x, const std::array<double, N> &xdata, const std::array<double, N> &ydata) {
+    if(x < xdata[0]) return 0;
+    else if(x > xdata.back()) return ydata.back();
+
+    auto idx = static_cast<size_t>(
+            std::distance(xdata.begin(),
+                std::lower_bound(xdata.begin(), xdata.end(), x)));
+
+    auto t = x/xdata[idx];
+    return ydata[idx] + t*(ydata[idx+1] - ydata[idx]);
+}
+
+std::string tolower(std::string s);
+
 }
 
 #endif // end of include guard: UTILITIES_HH

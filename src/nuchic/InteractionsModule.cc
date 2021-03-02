@@ -33,6 +33,28 @@ public:
         );
     }
 
+    // Trampoline for CrossSections
+    std::vector<double> CrossSections(const Particle &part1, const Particle &part2) const override {
+        PYBIND11_OVERLOAD_PURE(
+            std::vector<double>,            // Return type
+            Interactions,                   // Parent class
+            CrossSections,                  // Name of function in C++ (must match Python name)
+            part1, part2                    // Argument(s)
+        );
+    }
+
+    // Trampoline for CrossSections
+    std::vector<Particle> GenerateFinalState(randutils::mt19937_rng &rng,
+                                             const Particle &part1,
+                                             const Particle &part2) const override {
+        PYBIND11_OVERLOAD_PURE(
+            std::vector<Particle>,            // Return type
+            Interactions,                     // Parent class
+            GenerateFinalState,               // Name of function in C++ (must match Python name)
+            rng, part1, part2                 // Argument(s)
+        );
+    }
+
     // Trampoline for MakeMomentum
     ThreeVector MakeMomentum(bool samePID,
             const double& pcm, const std::array<double, 2>& rans) const override {

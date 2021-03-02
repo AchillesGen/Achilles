@@ -2,6 +2,8 @@
 
 #include "catch2/catch.hpp"
 
+#include <sstream>
+
 #include "nuchic/Particle.hh"
 #include "Approx.hh"
 
