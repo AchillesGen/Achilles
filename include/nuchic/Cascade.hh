@@ -9,7 +9,7 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
 #include "nuchic/Interpolation.hh"
-#include "nuchic/Interactions.hh"
+#include "nuchic/CascadeInteraction.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -48,7 +48,7 @@ class Cascade {
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
         Cascade() = default;
-        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double& dist=0.03);
+        Cascade(CascadeInteraction,  const ProbabilityType&, const double& dist=0.03);
         Cascade(Cascade&&) = default;
         Cascade& operator=(Cascade&&) = default;
 
@@ -123,7 +123,7 @@ class Cascade {
         // Variables
         std::vector<std::size_t> kickedIdxs;
         double distance{}, timeStep{};
-        std::unique_ptr<Interactions> m_interactions;
+        CascadeInteraction m_interactions;
         std::function<double(double, double)> probability;
         std::shared_ptr<Nucleus> localNucleus;
 };
@@ -134,7 +134,7 @@ namespace YAML {
 template<>
 struct convert<nuchic::Cascade> {
     static bool decode(const Node &node, nuchic::Cascade &cascade) {
-        auto interaction = nuchic::InteractionFactory::Create(node["Interaction"]);
+        auto interaction = node["Interactions"].as<nuchic::CascadeInteraction>();
         auto probType = node["Probability"].as<nuchic::Cascade::ProbabilityType>();
         auto distance = node["Step"].as<double>();
         cascade = nuchic::Cascade(std::move(interaction), probType, distance);

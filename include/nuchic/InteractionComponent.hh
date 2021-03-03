@@ -1,5 +1,5 @@
-#ifndef INTERACTIONS_HH
-#define INTERACTIONS_HH
+#ifndef INTERACTION_COMPONENT_HH
+#define INTERACTION_COMPONENT_HH
 
 #include <array>
 #include <map>
@@ -10,6 +10,7 @@
 
 #include "H5Cpp.h"
 
+#include "nuchic/InteractionComponentEnums.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
 #include "nuchic/ThreeVector.hh"
@@ -29,34 +30,24 @@ double CrossSectionAngle(bool, const double&, const double&);
 double CrossSectionLab(bool, const double&) noexcept;
 ThreeVector MakeMomentumAngular(bool, const double&, const double&, const std::array<double, 2>&);
 
-enum class FSInteractionType {
-    NucleonNucleon,
-    NucleonPion,
-    NucleonDelta,
-    DeltaProduction
-};
-
 /// Base class for implementing interaction models. These interaction models focus on the
 /// interactions that occur between hadrons during the intranuclear cascade. This base class
 /// is **not** to be used to inherit from for modeling the hard interactions between leptons
 /// and the nucleus.
-class Interactions {
+class InteractionComponent {
     public:
         /// @name Constructors and Destructors
         ///@{
 
         /// Base class constructor
-        Interactions() = default;
-        Interactions(const Interactions&) = default;
-        Interactions(Interactions&&) = default;
-        Interactions& operator=(const Interactions&) = default;
-        Interactions& operator=(Interactions&&) = default;
-
-        /// Base class constructor for classes that need data files
-        // Interactions(const std::string& data) {}
+        InteractionComponent() = default;
+        InteractionComponent(const InteractionComponent&) = default;
+        InteractionComponent(InteractionComponent&&) = default;
+        InteractionComponent& operator=(const InteractionComponent&) = default;
+        InteractionComponent& operator=(InteractionComponent&&) = default;
 
         /// Default destructor
-        virtual ~Interactions() = default;
+        virtual ~InteractionComponent() = default;
         ///@}
 
         /// Function to determine the total cross-section between two particles
@@ -79,32 +70,24 @@ class Interactions {
         ///@return std::vector<Particle>: Vector of generated final state particles
         virtual std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const = 0;
 
-        /// Function to generate momentum for the particles after an interaction
-        ///@param samePID: Used to determine if the two particles are the same type
-        ///@param p1CM: The momentum of the first particle in the center of mass frame
-        ///@param pcm: The center of mass momentum
-        ///@param rans: An array containing two random numbers used to generate phase space
-        virtual ThreeVector MakeMomentum(bool, const double&,
-                                         const std::array<double, 2>&) const = 0;
-
         /// Function that returns the interactions calculated in the class
-        virtual FSInteractionType InteractionType() const = 0;
+        virtual InteractionComponentType InteractionType() const = 0;
 
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;
 };
 
 
-/// The InteractionFactory creates a method of generating an interaction model for the 
+/// The InteractionComponentFactory creates a method of generating an interaction component for the 
 /// intranuclear cascade at runtime by a string in the run card. This allows the user to 
 /// test how different interaction models may effect results without having to recompile any
 /// code.
-class InteractionFactory {
+class InteractionComponentFactory {
     public:
         /// Typedef for easier coding
-        using TCreateMethod = std::unique_ptr<Interactions>(*)(const YAML::Node&);
+        using TCreateMethod = std::unique_ptr<InteractionComponent>(*)(const YAML::Node&);
 
-        InteractionFactory() = delete;
+        InteractionComponentFactory() = delete;
 
         /// Register a new Interactions subclass to the factory
         ///@param name: The name of the subclass
@@ -117,7 +100,7 @@ class InteractionFactory {
         ///@param name: Name of the subclass object to be created
         ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
         ///     (**NOTE**: Returns nullptr if name is not registered)
-        static std::unique_ptr<Interactions> Create(const YAML::Node&);
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node&);
 
         /// Produce a list of all the registered interactions
         static void ListInteractions();
@@ -129,15 +112,15 @@ class InteractionFactory {
         }
 };
 
-#define REGISTER_INTERACTION(interaction) \
-    bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
-                                                                interaction::Create)
+#define REGISTER_INTERACTION_COMPONENT(interaction) \
+    bool interaction::registered = InteractionComponentFactory::Register(interaction::GetName(), \
+                                                                         interaction::Create)
 
-class NasaInteractions : public Interactions {
+class NasaInteractions : public InteractionComponent {
     public:
         NasaInteractions(const YAML::Node&) {};
 
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node& data) {
             return std::make_unique<NasaInteractions>(data);
         }
 
@@ -151,11 +134,9 @@ class NasaInteractions : public Interactions {
             return { CrossSection(part1, part2) };
         }
         std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override;
 
         /// Function that returns the interactions calculated in the class
-        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonNucleon; }
+        InteractionComponentType InteractionType() const override { return InteractionComponentType::NucleonNucleon; }
     private:
         static bool registered;
 };
@@ -163,7 +144,7 @@ class NasaInteractions : public Interactions {
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
-class GeantInteractions : public Interactions {
+class GeantInteractions : public InteractionComponent {
     public:
         ///@name Constructors and Destructors
         ///@{
@@ -178,7 +159,7 @@ class GeantInteractions : public Interactions {
 
         /// Generate a GeantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node& data) {
             return std::make_unique<GeantInteractions>(data);
         }
 
@@ -198,11 +179,9 @@ class GeantInteractions : public Interactions {
             return { CrossSection(part1, part2) };
         }
         std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override;
 
         /// Function that returns the interactions calculated in the class
-        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonNucleon; }
+        InteractionComponentType InteractionType() const override { return InteractionComponentType::NucleonNucleon; }
     private:
         // Functions
         double CrossSectionAngle(bool, const double&, const double&) const;
@@ -220,7 +199,7 @@ class GeantInteractions : public Interactions {
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
-class ConstantInteractions : public Interactions {
+class ConstantInteractions : public InteractionComponent {
     public:
         ///@name Constructors and Destructors
         ///@{
@@ -235,7 +214,7 @@ class ConstantInteractions : public Interactions {
 
         /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node& data) {
             return std::make_unique<ConstantInteractions>(data);
         }
 
@@ -254,16 +233,9 @@ class ConstantInteractions : public Interactions {
             return { m_xsec };
         }
         std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double& pcm,
-                                 const std::array<double, 2>& rans) const override {
-            double ctheta = 2*rans[0]-1;
-            double stheta = sqrt(1-ctheta*ctheta);
-            double phi = 2*M_PI*rans[1];
-            return pcm*ThreeVector(stheta*cos(phi), stheta*sin(phi), ctheta);
-        }
 
         /// Function that returns the interactions calculated in the class
-        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonNucleon; }
+        InteractionComponentType InteractionType() const override { return InteractionComponentType::NucleonNucleon; }
 
     private:
         // Variables
@@ -274,7 +246,7 @@ class ConstantInteractions : public Interactions {
 /// Class for implementing an interaction model based on the pion-nucleus cross-section calculations. This
 /// interaction model contains information about the angular distribution of Npi
 /// interactions that occur during the intranuclear cascade.
-class PionNucleon : public Interactions {
+class PionNucleon : public InteractionComponent {
     public:
         ///@name Constructors and Destructors
         ///@{
@@ -289,7 +261,7 @@ class PionNucleon : public Interactions {
 
         /// Generate a PionNucleon object. This is used in the InteractionFactory.
         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node& data) {
             return std::make_unique<PionNucleon>(data);
         }
 
@@ -303,32 +275,39 @@ class PionNucleon : public Interactions {
 
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override { return 0; }
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override { return {0, 0, 0}; }
-        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
+        double CrossSection(const Particle&, const Particle&) const override;
         std::vector<double> CrossSections(const Particle&, const Particle&) const override;
+        std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
 
         /// Function that returns the interactions calculated in the class
-        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonPion; }
+        InteractionComponentType InteractionType() const override { return InteractionComponentType::NucleonPion; }
 
     private:
         // Structure to hold the cross-section data
         struct cross_section {
             std::vector<std::pair<PID, PID>> m_pids;
-            std::vector<Interp2D> m_cross_sections;
+            std::vector<Interp1D> m_cross_sections;
+            std::vector<Interp2D> m_theta_dist;
+            std::vector<double> m_energies, m_angles;
+            std::vector<double> m_sigma1, m_sigma2;
+            std::vector<double> m_theta, m_cdf;
+
+            void CalcCDF(const std::vector<double>&, const std::vector<double>&);
         };
 
-        // Helper function to load data
+        // Helper functions
         cross_section LoadData(const std::string&, const std::vector<std::pair<PID, PID>>&) const;
+        size_t SelectFinalState(const std::pair<PID, PID>&, const double&, const double&) const;
+        double GenerateAngle(const std::pair<PID, PID>&, const size_t&, const double&, const double&) const;
         
         // Variables
         static bool registered;
-        std::array<std::string, 6> filenames{"pi0-n.out", "pi0-p.out",
-                                             "pim-n.out", "pim-p.out",
-                                             "pip-n.out", "pip-p.out"}; 
+        static constexpr size_t nfiles = 6;
+        std::array<std::string, nfiles> filenames{"/pi0-n.out", "/pi0-p.out",
+                                                  "/pim-n.out", "/pim-p.out",
+                                                  "/pip-n.out", "/pip-p.out"}; 
 
-        cross_section pi0_n, pi0_p, pim_n, pim_p, pip_n, pip_p;
+        std::map<std::pair<PID, PID>, cross_section> m_cross_sections;
 };
 
 }

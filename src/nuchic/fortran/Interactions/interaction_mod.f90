@@ -19,7 +19,8 @@ module libinteraction
     type, abstract :: interaction
         contains
             procedure(gen_cross_section), deferred :: cross_section
-            procedure(gen_make_momentum), deferred :: make_momentum
+            procedure(gen_cross_sections), deferred :: cross_sections
+            procedure(gen_final_state), deferred :: final_state
     end type interaction
 
     abstract interface
@@ -33,23 +34,34 @@ module libinteraction
             real(c_double) :: gen_cross_section
         end function
 
-        function gen_make_momentum(self, sameid, pcm, rans)
+        subroutine gen_cross_sections(self, part1, part2, results, length)
             use iso_c_binding
-            use libvectors
+            use libparticle
             import :: interaction
             implicit none
             class(interaction), intent(in) :: self
-            logical, intent(in) :: sameid
-            real(c_double), intent(in) :: pcm
-            real(c_double), dimension(2), intent(in) :: rans
-            type(threevector) :: gen_make_momentum
-        end function
+            type(particle), intent(in), value :: part1, part2
+            integer(c_int), intent(out) :: length
+            real(c_double), intent(out), dimension(:), pointer :: results
+        end subroutine
+
+        subroutine gen_final_state(self, part1, part2, results, length)
+            use iso_c_binding
+            use libparticle
+            import :: interaction
+            implicit none
+            class(interaction), intent(in) :: self
+            type(particle), intent(in), value :: part1, part2
+            integer(c_int), intent(out) :: length
+            type(particle), intent(out), dimension(:), pointer :: results
+        end subroutine
     end interface
 
     type, extends(interaction) :: ConstantInteraction
         contains
             procedure :: cross_section => constant_xsec
-            procedure :: make_momentum => constant_momentum
+            procedure :: cross_sections => constant_xsecs
+            procedure :: final_state => constant_final_state
     end type ConstantInteraction
 
     class(interaction), pointer :: model
@@ -89,21 +101,31 @@ contains
         constant_xsec = 10
     end function
 
-    function constant_momentum(self, sameid, pcm, rans)
-        use iso_c_binding
-        use libvectors
+    subroutine constant_xsecs(self, part1, part2, results, length)
+        use libparticle
         class(ConstantInteraction), intent(in) :: self
-        logical, intent(in) :: sameid
-        real(c_double), intent(in) :: pcm
-        real(c_double), dimension(2), intent(in) :: rans
-        real(c_double) :: ctheta, stheta, phi
-        type(threevector) :: constant_momentum
+        type(particle), intent(in), value :: part1, part2
+        integer(c_int), intent(out) :: length
+        real(c_double), intent(out), dimension(:), pointer :: results
 
-        ctheta = 2*rans(1)-1
-        stheta = dsqrt(1-ctheta*ctheta)
-        phi = 2*pi*rans(2)
-        constant_momentum = threevector(pcm*stheta*dcos(phi), pcm*stheta*dsin(phi), pcm*ctheta)
-    end function
+        length = 1
+        allocate(results(length))
+
+        results(1) = 10
+    end subroutine
+
+    subroutine constant_final_state(self, part1, part2, results, length)
+        use libparticle
+        class(ConstantInteraction), intent(in) :: self
+        type(particle), intent(in), value :: part1, part2
+        integer(c_int), intent(out) :: length
+        type(particle), intent(out), dimension(:), pointer :: results
+
+        length = 2
+        allocate(results(length))
+        results(1) = particle(part1%self())
+        results(2) = particle(part2%self())
+    end subroutine
 
     subroutine init_interaction(name) bind(C, name="InitializeInteraction")
         use iso_c_binding
@@ -134,19 +156,38 @@ contains
         cross_section = model%cross_section(fpart1, fpart2)
     end function
 
-    function make_momentum(sameid, pcm, rans) bind(C, name="MakeMomentumFortran")
+    subroutine cross_sections(part1, part2, results, length) bind(C, name="CrossSectionsFortran")
         use iso_c_binding
-        use liblogging
-        use libvectors
+        use libparticle
         implicit none
-        logical, intent(in), value :: sameid
-        real(c_double), intent(in), value :: pcm
-        real(c_double), intent(in), dimension(2) :: rans
-        type(threevector) :: mom
-        type(c_ptr) :: make_momentum
+        type(c_ptr), intent(in), value :: part1, part2
+        type(particle) :: fpart1, fpart2
+        type(c_ptr), intent(out) :: results
+        integer(c_int), intent(out) :: length
+        double precision, dimension(:), pointer :: tmp_results
 
-        mom = model%make_momentum(sameid, pcm, rans)
-        make_momentum = mom%copy()
-    end function
+        fpart1 = particle(part1)
+        fpart2 = particle(part2)
+
+        call model%cross_sections(fpart1, fpart2, tmp_results, length)
+        results = c_loc(tmp_results(1))
+    end subroutine
+
+    subroutine final_state(part1, part2, results, length) bind(C, name="GenerateFinalStateFortran")
+        use iso_c_binding
+        use libparticle
+        implicit none
+        type(c_ptr), intent(in), value :: part1, part2
+        type(particle) :: fpart1, fpart2
+        type(c_ptr), intent(out) :: results
+        integer(c_int), intent(out) :: length
+        type(particle), dimension(:), pointer :: tmp_results
+
+        fpart1 = particle(part1)
+        fpart2 = particle(part2)
+
+        call model%final_state(fpart1, fpart2, tmp_results, length)
+        results = c_loc(tmp_results(1))
+    end subroutine
 
 end module

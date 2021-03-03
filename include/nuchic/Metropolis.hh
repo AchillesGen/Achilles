@@ -5,7 +5,7 @@
 #include <vector>
 #include <limits>
 
-#include "nuchic/Interactions.hh"
+#include "nuchic/InteractionComponent.hh"
 #include "nuchic/ParticleInfo.hh"
 #include "nuchic/Rambo.hh"
 
@@ -179,11 +179,11 @@ class PionData : public MetropolisData {
         static constexpr std::array<double, 2> f2pi0 = {0.1875, 0.0625};
 };
 
-class Metropolis : public Interactions {
+class Metropolis : public InteractionComponent {
     public:
         Metropolis(const YAML::Node&);
 
-        static std::unique_ptr<Interactions> Create(const YAML::Node &data) {
+        static std::unique_ptr<InteractionComponent> Create(const YAML::Node &data) {
             return std::make_unique<Metropolis>(data);
         }
 
@@ -195,13 +195,8 @@ class Metropolis : public Interactions {
         std::vector<double> CrossSections(const Particle&, const Particle&) const override;
         std::vector<Particle> GenerateFinalState(const Particle&, const Particle&) const override;
 
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2> &) const override {
-            return {};
-        }
-
         /// Function that returns the interactions calculated in the class
-        FSInteractionType InteractionType() const override { return FSInteractionType::NucleonNucleon; }
+        InteractionComponentType InteractionType() const override { return InteractionComponentType::NucleonNucleon; }
     private:
         // Functions
         nuchic::InteractionType  GetMode(const Particle&, const Particle&) const;

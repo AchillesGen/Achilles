@@ -18,8 +18,9 @@ target_link_libraries(utilities PRIVATE project_options project_warnings
 
 add_library(physics SHARED
     Cascade.cc
-    Interactions.cc
-    InteractionsFactory.cc
+    CascadeInteraction.cc
+    InteractionComponent.cc
+    InteractionComponentFactory.cc
     Metropolis.cc
     Nucleus.cc
     FormFactor.cc

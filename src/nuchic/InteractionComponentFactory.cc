@@ -1,10 +1,10 @@
-#include "nuchic/Interactions.hh"
+#include "nuchic/InteractionComponent.hh"
 #include "spdlog/spdlog.h"
 
 using namespace nuchic;
 
-bool InteractionFactory::Register(const std::string& name,
-                                  InteractionFactory::TCreateMethod funcCreate) {
+bool InteractionComponentFactory::Register(const std::string& name,
+                                  InteractionComponentFactory::TCreateMethod funcCreate) {
     auto it = methods().find(name);
     if(it == methods().end()) {
         methods()[name] = funcCreate;
@@ -14,7 +14,7 @@ bool InteractionFactory::Register(const std::string& name,
     return false;
 }
 
-std::unique_ptr<Interactions> InteractionFactory::Create(const YAML::Node& node) {
+std::unique_ptr<InteractionComponent> InteractionComponentFactory::Create(const YAML::Node& node) {
     auto name = node["Name"].as<std::string>();
     auto it = methods().find(name);
     if(it != methods().end())
@@ -23,7 +23,7 @@ std::unique_ptr<Interactions> InteractionFactory::Create(const YAML::Node& node)
     return nullptr;
 }
 
-void InteractionFactory::ListInteractions() {
+void InteractionComponentFactory::ListInteractions() {
     fmt::print("+{:-^30s}+\n|{:^30s}|\n+{:-^30s}+\n", "", "Interactions", "");
     for(auto method : methods()) {
         fmt::print(" - {:30s}\n", method.first);

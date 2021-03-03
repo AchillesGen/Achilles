@@ -1,11 +1,11 @@
 #include "nuchic/PyBindings.hh"
-#include "nuchic/Interactions.hh"
+#include "nuchic/InteractionComponent.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
 
 using namespace nuchic;
 
-class PyInteraction : public Interactions {
+class PyInteraction : public InteractionComponent {
 public:
     // Inherit the constructors 
     // using Interactions::Interactions;
@@ -19,7 +19,7 @@ public:
 
     static bool IsRegistered() noexcept { return registered; }
     static std::string GetName() { return "PyInteraction"; }
-    static std::unique_ptr<Interactions> Create(const YAML::Node&) {
+    static std::unique_ptr<InteractionComponent> Create(const YAML::Node&) {
         return std::make_unique<PyInteraction>(); 
     }
 
@@ -78,16 +78,16 @@ void InteractionsModule(py::module &m) {
     m.def("cross_section_angle", &CrossSectionAngle);
     m.def("make_momentum_angular", &MakeMomentumAngular);
 
-    py::class_<Interactions, PyInteraction,
-               std::shared_ptr<Interactions>>(m, "Interactions")
+    py::class_<InteractionComponent, PyInteraction,
+               std::shared_ptr<InteractionComponent>>(m, "Interactions")
         .def(py::init<>())
         .def_static("create", [](const YAML::Node& data){
-                return InteractionFactory::Create(data);})
-        .def("cross_section", &Interactions::CrossSection)
-        .def("make_momentum", &Interactions::MakeMomentum);
+                return InteractionComponentFactory::Create(data);})
+        .def("cross_section", &InteractionComponent::CrossSection)
+        .def("make_momentum", &InteractionComponent::MakeMomentum);
 
-    py::class_<InteractionFactory>(m, "InteractionFactory")
-        .def("register", &InteractionFactory::Register)
-        .def("create", &InteractionFactory::Create)
-        .def("list", &InteractionFactory::ListInteractions);
+    py::class_<InteractionComponentFactory>(m, "InteractionFactory")
+        .def("register", &InteractionComponentFactory::Register)
+        .def("create", &InteractionComponentFactory::Create)
+        .def("list", &InteractionComponentFactory::ListInteractions);
 }

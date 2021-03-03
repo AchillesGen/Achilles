@@ -4,7 +4,7 @@
 #include "nuchic/Cascade.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
-#include "nuchic/Interactions.hh"
+#include "nuchic/InteractionComponent.hh"
 #include "nuchic/Event.hh"
 
 class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
@@ -14,12 +14,11 @@ class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
     MAKE_CONST_MOCK0(Radius, const double&(), noexcept override);
 };
 
-class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions> {
+class MockInteraction : public trompeloeil::mock_interface<nuchic::InteractionComponent> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK2(CrossSection);
     IMPLEMENT_CONST_MOCK2(CrossSections);
     IMPLEMENT_CONST_MOCK2(GenerateFinalState);
-    IMPLEMENT_CONST_MOCK3(MakeMomentum);
     IMPLEMENT_CONST_MOCK0(InteractionType);
 };
 
@@ -33,13 +32,19 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
     nuchic::Particles particles = {{nuchic::PID::proton()}, {nuchic::PID::neutron()}};
 
     SECTION("Kick Nucleon") {
-        auto interaction = std::make_unique<MockInteraction>();
+        nuchic::CascadeInteraction interaction;
         auto nucleus = std::make_shared<MockNucleus>(); 
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .LR_RETURN((particles))
             .TIMES(AT_LEAST(3));
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian);
         cascade.Kick(nucleus, {100, 0, 0, 0}, {10, 0});
         CHECK(particles[0].Status() == nuchic::ParticleStatus::propagating);
@@ -64,9 +69,14 @@ TEST_CASE("Evolve States", "[Cascade]") {
 
     SECTION("Evolve Event") {
         MockEvent event;
-        auto interaction = std::make_unique<MockInteraction>();
+        nuchic::CascadeInteraction interaction;
         auto nucleus = std::make_shared<MockNucleus>();
         std::shared_ptr<nuchic::Nucleus> tmp = nucleus;
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
 
         REQUIRE_CALL(event, Hadrons())
             .TIMES(AT_LEAST(2))
@@ -83,6 +93,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         cascade.Evolve(&event);
 
@@ -91,8 +102,13 @@ TEST_CASE("Evolve States", "[Cascade]") {
     }
 
     SECTION("Evolve Nucleus") {
-        auto interaction = std::make_unique<MockInteraction>();
+        nuchic::CascadeInteraction interaction;
         auto nucleus = std::make_shared<MockNucleus>();
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
@@ -102,6 +118,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
@@ -111,8 +128,13 @@ TEST_CASE("Evolve States", "[Cascade]") {
     }
 
     SECTION("NuWro Evolve") {
-        auto interaction = std::make_unique<MockInteraction>();
+        nuchic::CascadeInteraction interaction;
         auto nucleus = std::make_shared<MockNucleus>();
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
@@ -122,6 +144,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         cascade.SetKicked(0);
         cascade.NuWro(nucleus);
@@ -143,15 +166,22 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
                          nuchic::Cascade::ProbabilityType::Pion,
                          nuchic::Cascade::ProbabilityType::Cylinder);
 
-    auto interaction = std::make_unique<MockInteraction>();
+    nuchic::CascadeInteraction interaction;
     auto nucleus = std::make_shared<MockNucleus>();
     spdlog::info("Mode: {}", mode);
 
     SECTION("Must have exactly one kicked") {
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
+
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus), "MeanFreePath: only one particle should be kicked.");
 
@@ -161,10 +191,17 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
     }
 
     SECTION("Must have internal test particle") {
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
+
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(1)
             .LR_RETURN((hadrons));
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         cascade.SetKicked(1);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus),
@@ -172,6 +209,12 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
     }
 
     SECTION("Particle escapes marked correctly") {
+        auto interaction_component = std::make_unique<MockInteraction>();
+
+        REQUIRE_CALL(*interaction_component, InteractionType())
+            .LR_RETURN((InteractionComponentType::NucleonNucleon))
+            .TIMES(1);
+
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
@@ -179,6 +222,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
+        interaction.AddComponent(std::move(interaction_component));
         nuchic::Cascade cascade(std::move(interaction), mode);
         cascade.SetKicked(0);
         CHECK_NOTHROW(cascade.MeanFreePath(nucleus));

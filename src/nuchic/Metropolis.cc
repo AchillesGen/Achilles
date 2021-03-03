@@ -43,7 +43,7 @@ constexpr std::array<double, 2> nuchic::PionData::f2pi0;
 
 // Suppress global variable warning since this is required to register to the factory
 // NOLINTNEXTLINE(cppcoreguidelines-avoid-non-const-global-variables)
-REGISTER_INTERACTION(nuchic::Metropolis);
+REGISTER_INTERACTION_COMPONENT(nuchic::Metropolis);
 using Particles = std::vector<nuchic::Particle>;
 
 nuchic::ThreeVector nuchic::MetropolisData::GetPosition(ProductionMethod mode,
