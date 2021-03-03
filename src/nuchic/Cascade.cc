@@ -11,13 +11,14 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Utilities.hh"
-#include "nuchic/Interactions.hh"
+#include "nuchic/CascadeInteraction.hh"
+#include "nuchic/InteractionComponent.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Event.hh"
 
 using namespace nuchic;
 
-Cascade::Cascade(std::unique_ptr<Interactions> interactions,
+Cascade::Cascade(CascadeInteraction interactions,
                  const ProbabilityType& prob,
                  const double& dist)
         : distance(dist), m_interactions(std::move(interactions)) {
@@ -343,6 +344,7 @@ void Cascade::Escaped(Particles &particles) {
     for(auto it = kickedIdxs.begin() ; it != kickedIdxs.end(); ) {
         // Nucleon outside nucleus (will check if captured or escaped after cascade)
         auto particle = &particles[*it];
+
         if(particle -> Status() == ParticleStatus::background)
             throw std::domain_error("Invalid Particle in kicked list");
         // if(particle -> Status() == -2) {
@@ -352,7 +354,8 @@ void Cascade::Escaped(Particles &particles) {
         // TODO: Use the code from src/nuchic/Nucleus.cc:108 to properly handle 
         //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
-        const double energy = particle -> Momentum().E() - Constant::mN - potential;
+        double energy = particle -> Momentum().E();
+        if(particle -> Info().IsNucleon()) energy -= (Constant::mN + potential);
         if(particle -> Position().Magnitude2() > pow(radius, 2)
            && particle -> Status() != ParticleStatus::external_test) {
             if(energy > 0) particle -> Status() = ParticleStatus::escaped;
@@ -426,7 +429,8 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
 }
 
 double Cascade::GetXSec(const Particle& particle1, const Particle& particle2) const {
-    return m_interactions -> CrossSection(particle1, particle2);
+    spdlog::debug("Calculating XSec for {}, {}", particle1, particle2);
+    return m_interactions.GetComponent(particle1.Info())->CrossSection(particle1, particle2);
 }
 
 std::size_t Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
@@ -450,7 +454,7 @@ std::vector<size_t> Cascade::FinalizeMomentum(Particles &particles, size_t kickI
     // outgoing[0] = particle1
     // outgoing[1] = particle2
     // outgoing[i] = new particle for i > 1
-    auto outgoing = m_interactions -> GenerateFinalState(particle1, particle2);
+    auto outgoing = m_interactions.GetComponent(particle1.Info()) -> GenerateFinalState(particle1, particle2);
 
     // Loop over outgoing momentum
     bool blocked = false;

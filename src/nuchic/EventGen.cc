@@ -9,6 +9,9 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/Units.hh"
 
+// TODO: Figure out why this is needed to be here
+#include "nuchic/InteractionComponent.hh"
+
 #include "yaml-cpp/yaml.h"
 
 nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, outputEvents{false} {
