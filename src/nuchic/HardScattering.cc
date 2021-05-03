@@ -20,6 +20,8 @@ nuchic::HardScattering::HardScattering(RunMode mode)
 
 int HardScattering::LeptonVariables() const {
     switch(m_mode) {
+        case RunMode::FixedAngleEnergy:
+            return 1;
         case RunMode::FixedAngle:
             return 2;
         case RunMode::FullPhaseSpace:
@@ -47,19 +49,28 @@ void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &
 
 void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Event &event) const {
     double phi = dPhi*leptonRans[0];
-    double Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
 
-    double cosT{}, sinT{};
-    event.PhaseSpace().weight = event.PhaseSpace().momentum[0].E()*dPhi;//leptons[1].E()*leptons[1].Momentum().P();
+    double cosT{}, sinT{}, Elepton{};
+    event.PhaseSpace().weight = dPhi;
+    // The following is included in the matrix element
+    // leptons[1].E()*leptons[1].Momentum().P();
     switch(m_mode) {
-        case RunMode::FixedAngle:
+        case RunMode::FixedAngleEnergy:
+            Elepton = m_lepton_energy;
             cosT = std::cos(m_angle);
-            sinT = std::sin(m_angle); 
+            sinT = std::sin(m_angle);
+            break;
+        case RunMode::FixedAngle:
+            Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
+            cosT = std::cos(m_angle);
+            sinT = std::sin(m_angle);
+            event.PhaseSpace().weight *= event.PhaseSpace().momentum[0].E();
             break;
         case RunMode::FullPhaseSpace:
+            Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
             cosT = dCos*leptonRans[2] - 1;
             sinT = sqrt(1-cosT*cosT);
-            event.PhaseSpace().weight *= dCos;
+            event.PhaseSpace().weight *= dCos*event.PhaseSpace().momentum[0].E();
             break;
     }
     event.PhaseSpace().momentum.emplace_back(Elepton*sinT*cos(phi),
@@ -112,15 +123,18 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
     static const double dp = 1000; // Hard code the maximum allowed momentum
 
     // Generate phase space
-    double cosT = dCos*rans[1] - 1;
+    double cosT = dCos*rans[0] - 1;
     double sinT = sqrt(1-cosT*cosT);
-    double phi = dPhi*rans[2];
-    double p = dp*rans[3];
+    double phi = dPhi*rans[1];
+    double p = dp*rans[2];
 
     ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
     tmp += Q.Vec3(); 
     
     // Pauli Blocking
+    // TODO: Is this correct? This would assume a global Fermi gas,
+    //       but this is then inconsistent with a local Fermi gas for the cascade
+    // event.PhaseSpace().weight *= tmp.Magnitude() > 225 ? 1 : 0;
 
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
     double Ep = Constant::mN+Q.E()-Epp;
@@ -137,8 +151,8 @@ void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
     static constexpr double Ep = 20.0;
 
     // Generate phase space
-    double phi = 2*M_PI*rans[1];
-    double p = dp*rans[2];
+    double phi = 2*M_PI*rans[0];
+    double p = dp*rans[1];
     double Ef = sqrt(pow(p, 2)+pow(Constant::mN, 2));
     
     double arg1 = pow(Q.E()-Ep+Ef,2);

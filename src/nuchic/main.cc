@@ -45,6 +45,12 @@ R"(
       --version        Show version.
 )";
 
+void GenerateEvents(const std::string &runcard) {
+    nuchic::EventGen generator(runcard);
+    generator.Initialize();
+    generator.GenerateEvents();
+}
+
 int main(int argc, char *argv[]) {
 
     Splash();
@@ -70,9 +76,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    nuchic::EventGen generator(runcard);
-    generator.Initialize();
-    generator.GenerateEvents();
+    GenerateEvents(runcard);
 
+    // Close dynamic libraries
+    dlclose(handle);
     return 0;
 }

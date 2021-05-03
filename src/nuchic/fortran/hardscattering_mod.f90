@@ -1,7 +1,7 @@
 module libhardscattering
 
     private
-    public :: onebody
+    public :: onebody, delete_onebody
 
 !    type, abstract hardscattering
 !        contains
@@ -18,6 +18,12 @@ module libhardscattering
     type(onebody_calc) :: onebody
 
 contains
+
+    subroutine delete_onebody() bind(C, name="Delete")
+        use quasi_el
+        implicit none
+        call delete_pke()
+    end subroutine
 
     subroutine onebody_init(this, fname_p, fname_n, fg, iform)
         use quasi_el
@@ -97,4 +103,15 @@ contains
         results = c_loc(tmp_results(1))
     end subroutine
 
+    subroutine clean_up(results, length) bind(C, name="CleanUp")
+        use iso_c_binding
+        implicit none
+
+        type(c_ptr), intent(in) :: results
+        integer(c_int), intent(in) :: length
+        double precision, dimension(:), pointer :: tmp_results
+
+        call c_f_pointer(results, tmp_results, [length])
+        deallocate(tmp_results)
+    end subroutine
 end module

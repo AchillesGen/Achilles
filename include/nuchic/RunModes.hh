@@ -10,7 +10,8 @@ namespace nuchic {
 
 enum class RunMode {
     FullPhaseSpace,
-    FixedAngle
+    FixedAngle,
+    FixedAngleEnergy
 };
 
 }
@@ -25,6 +26,9 @@ struct convert<nuchic::RunMode> {
             return true;
         } else if(node.as<std::string>() == "FixedAngle") {
             rhs = nuchic::RunMode::FixedAngle;
+            return true;
+        } else if(node.as<std::string>() == "FixedAngleEnergy") {
+            rhs = nuchic::RunMode::FixedAngleEnergy;
             return true;
         }
 

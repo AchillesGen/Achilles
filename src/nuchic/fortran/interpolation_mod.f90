@@ -2,7 +2,7 @@ module libinterpolate
     use iso_c_binding
 
     private
-    public :: interp1d, interp2d
+    public :: interp1d, interp2d, delete
 
     include "interpolation_cdef.f90"
 
@@ -48,6 +48,12 @@ contains
         type(interp1d) :: create_interp1d
         create_interp1d%ptr = create_interp1d_c(x, y, n, mode)
     end function
+
+    subroutine delete(this)
+        implicit none
+        class(interp2d) :: this
+        call delete_interp2d_c(this%ptr)
+    end subroutine
 
     subroutine delete_interp1d(this)
         implicit none

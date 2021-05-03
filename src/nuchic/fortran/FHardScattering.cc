@@ -11,6 +11,7 @@ extern "C" {
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
+    void CleanUp(double**, int*);
 }
 
 REGISTER_HARDSCATTERING(nuchic::FQESpectral);
@@ -27,8 +28,8 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
     size_t lenP = spectralP.size();
     size_t lenN = spectralN.size();
 
-    auto cnameP = std::unique_ptr<char>(new char[lenP]);
-    auto cnameN = std::unique_ptr<char>(new char[lenN]);
+    auto cnameP = std::make_unique<char[]>(lenP+1);
+    auto cnameN = std::make_unique<char[]>(lenN+1);
     strcpy(cnameP.get(), spectralP.c_str());
     strcpy(cnameN.get(), spectralN.c_str());
 
@@ -73,6 +74,9 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
             event.MatrixElement(i).weight = result[1];
         }
     }
+
+    CleanUp(&result, &size);
+    result = nullptr;
 }
 
 nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode mode)
@@ -132,5 +136,8 @@ void nuchic::FQEGlobalFermiGas::CrossSection(Event &event) const {
             event.MatrixElement(i).weight = result[1];
         }
     }
+
+    CleanUp(&result, &size);
+    result = nullptr;
 }
 

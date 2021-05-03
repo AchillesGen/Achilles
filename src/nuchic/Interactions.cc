@@ -164,6 +164,12 @@ GeantInteractions::GeantInteractions(const YAML::Node& node) {
 
     // Get the datasets for pp and load into local variables
     LoadData(true, dataPP);
+
+    // Clean-up
+    dataNP.close();
+    dataPP.close();
+    file.close();
+    H5Library::close();
 }
 
 void GeantInteractions::LoadData(bool samePID, const Group& group) {
@@ -232,6 +238,14 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
         m_thetaDistNP.SetData(pcmVec, m_cdf, theta);
         m_thetaDistNP.BicubicSpline();
     }
+
+    // Clean-up
+    pcmSpace.close();
+    sigTotSpace.close();
+    sigSpace.close();
+    pcm.close();
+    sigTot.close();
+    sig.close();
 }
 
 double GeantInteractions::CrossSection(const Particle& particle1,

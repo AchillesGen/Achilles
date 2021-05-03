@@ -44,6 +44,10 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
             scatteringNode, runMode);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
+    if(runMode == RunMode::FixedAngleEnergy) {
+        scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
+        scattering -> SetFinalLeptonEnergy(config["Main"]["ELepFinal"].as<double>());
+    }
 
     // Setup Vegas
     nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables() + beam->NVariables()));

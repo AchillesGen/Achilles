@@ -16,6 +16,16 @@
 
     contains
 
+    subroutine delete_pke()
+        implicit none
+        if(fg.ne.1) then
+            call delete(pke_p_interp)
+            call delete(pke_n_interp)
+            deallocate(pke_p,dp_p,xe_p)
+            deallocate(p,pke_n,dp_n,xe_n)
+        endif
+    end subroutine
+
     subroutine init_pke(fname_pkep,fname_pken,fg_in,iform_in)
         implicit none
         integer*4 :: fg_in,i,j,iform_in
@@ -140,6 +150,5 @@
     
         return
     end subroutine f_eval
-
 
 end module quasi_el

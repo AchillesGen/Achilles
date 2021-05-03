@@ -14,6 +14,10 @@
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
 
+extern "C" {
+    void Delete();
+}
+
 namespace nuchic {
 
 class FourVector;
@@ -57,6 +61,7 @@ class HardScattering {
 
         // Special phase space routines
         void SetScatteringAngle(double angle) { m_angle = angle; }
+        void SetFinalLeptonEnergy(double energy) { m_lepton_energy = energy; }
 
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
@@ -74,7 +79,7 @@ class HardScattering {
 
         // TODO: Move to the driver class?
         RunMode m_mode;
-        double m_angle{};
+        double m_angle{}, m_lepton_energy{};
 };
 
 class Quasielastic : public HardScattering {
@@ -104,6 +109,7 @@ class QESpectral : public Quasielastic {
 class FQESpectral : public QESpectral {
     public:
         FQESpectral(const YAML::Node&, RunMode);
+        ~FQESpectral() override { Delete(); }
 
         void CrossSection(Event&) const override;
         static std::string GetName() { return "QESpectral"; }
