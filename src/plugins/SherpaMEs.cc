@@ -21,12 +21,18 @@ using namespace PHASIC;
 using namespace ATOOLS;
 using namespace nuchic;
 
+PHASIC::NLOTypeStringProcessMap_Map m_pmap;
+PHASIC::Process_Vector m_procs;
+
 SherpaMEs::~SherpaMEs()
 {
   if (p_sherpa) delete p_sherpa;
+  for (size_t i(0);i<m_procs.size();++i) delete m_procs[i];
+  if (m_pmap.find(nlo_type::lo)!=m_pmap.end()) m_pmap[nlo_type::lo];
 }
 
-void SherpaMEs::addParameter(std::vector<char*>& argv,const std::string& val) const
+void SherpaMEs::addParameter
+(std::vector<char*>& argv,const std::string& val) const
 {
   spdlog::info("ShowerMEsSherpa::init: Setting parameter '{}'",val);
   argv.push_back(new char[val.length()+1]);
@@ -67,18 +73,16 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
+  m_pmap[nlo_type::lo] = new StringProcess_Map();
   return true;
 }
 
 Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
-  // Initialise process map.
   std::string megen = "Comix";
-  // StringProcess_Map* pm(m_pmap[nlo_type::lo]);
+  StringProcess_Map* pm(m_pmap[nlo_type::lo]);
   My_In_File::OpenDB(rpa->gen.Variable("SHERPA_CPP_PATH")+"/Process/Sherpa/");
   My_In_File::OpenDB(rpa->gen.Variable("SHERPA_CPP_PATH")
     +"/Process/"+megen+"/");
-
-  // Initialise process info and create label.
   PHASIC::Process_Info pi;
   pi.m_maxcpl[0]   = pi.m_mincpl[0] = ampl->OrderQCD();
   pi.m_maxcpl[1]   = pi.m_mincpl[1] = ampl->OrderEW();
@@ -93,10 +97,10 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
     if (Flavour(kf_jet).Includes(fl)) fl=Flavour(kf_jet);
     pi.m_fi.m_ps.push_back(Subprocess_Info(fl,"",""));
   }
-
-  // Create and initialise process.
+  msg_Info()<<"SherpaMEs::getProcess: Initializing process ";
   Process_Base* proc = p_sherpa->GetInitHandler()->
     GetMatrixElementHandler()->Generators()->InitializeProcess(pi,false);
+  msg_Info()<<" done."<<std::endl;
   if (proc == nullptr) {
     My_In_File::CloseDB(rpa->gen.Variable("SHERPA_CPP_PATH")
       +"/Process/"+megen+"/");
@@ -104,21 +108,21 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
       +"/Process/Sherpa/");
     return nullptr;
   }
-  // m_procs.push_back(proc);
+  m_procs.push_back(proc);
   proc->SetSelector(Selector_Key(nullptr,new Data_Reader(),true));
   proc->SetScale(Scale_Setter_Arguments(MODEL::s_model,
     "VAR{100}{100}", "Alpha_QCD 1"));
-  proc->SetKFactor(KFactor_Setter_Arguments("NO"));
-  if (proc->Get<COMIX::Process_Base>()) {
+  proc->SetKFactor(KFactor_Setter_Arguments("None"));
+  msg_Info()<<"SherpaMEs::getProcess: Performing tests ";
+  if (proc->Get<COMIX::Process_Base>())
     proc->Get<COMIX::Process_Base>()->Tests();
-  }
-  // proc->FillProcessMap(&m_pmap);
+  msg_Info()<<" done."<<std::endl;
+  proc->FillProcessMap(&m_pmap);
   proc->ConstructColorMatrix();
   My_In_File::CloseDB(rpa->gen.Variable("SHERPA_CPP_PATH")
     +"/Process/"+megen+"/");
   My_In_File::CloseDB(rpa->gen.Variable("SHERPA_CPP_PATH")
     +"/Process/Sherpa/");
-
   return proc;
 }
 
@@ -127,22 +131,46 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   Cluster_Amplitude* ampl = Cluster_Amplitude::New();
   int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
   for (size_t i(0);i<info.m_ids.size();++i) {
-    ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]):Flavour(info.m_ids[i]).Bar());
+    ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]):
+		    Flavour(info.m_ids[i]).Bar());
   }
   ampl->SetNIn(2);
   ampl->SetOrderQCD(0);
   ampl->SetOrderEW(info.m_ids.size()-2);
   Process_Base::SortFlavours(ampl);
-  // StringProcess_Map* pm = m_pmap[nlo_type::lo];
-  std::string name = Process_Base::GenerateName(ampl);
-  // if (pm->find(name) == pm->end()) {
-  //   // infoPtr->errorMsg("Could not find process "+name);
-  //   getProcess(ampl);
-  // }
-  // Process_Base* proc = pm->find(name)->second;
-  // if (proc == nullptr) {
-  //   // infoPtr->errorMsg("Error in ShowerMEsSherpa: process not found.");
-  //   return false;
-  // }
+  StringProcess_Map *pm(m_pmap[nlo_type::lo]);
+  std::string name(Process_Base::GenerateName(ampl));
+  if (pm->find(name)==pm->end()) getProcess(ampl);
+  Process_Base* proc(pm->find(name)->second);
+  if (proc==nullptr) return false;
   return true;
+}
+
+std::vector<double> SherpaMEs::Calc
+(const std::vector<nuchic::PID> fl,
+ const std::vector<std::vector<double> > &p,
+ const double &mu2) const
+{
+  Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+  for (size_t i(0);i<fl.size();++i) {
+    Vec4D cp(p[i][0],p[i][1],p[i][2],p[i][3]);
+    Flavour fl(Flavour((long int)(fl[i])));
+    ampl->CreateLeg(i<2?-cp:cp,i<2?fl.Bar():fl,ColorID(0,0));
+  }
+  ampl->SetNIn(2);
+  ampl->SetOrderQCD(0);
+  ampl->SetOrderEW(ampl->Legs().size()-2);
+  ampl->SetMuQ2(mu2);
+  ampl->SetMuF2(mu2);
+  ampl->SetMuR2(mu2);
+  Process_Base::SortFlavours(ampl);
+  StringProcess_Map *pm(m_pmap[nlo_type::lo]);
+  std::string name(Process_Base::GenerateName(ampl));
+  if (pm->find(name)==pm->end())
+    THROW(fatal_error,"Process not found: "+name);
+  Process_Base *proc(pm->find(name)->second);
+  // return differntial xs for now
+  double res(proc->Differential(*ampl,1|2|4));
+  ampl->Delete();
+  return std::vector<double>(1,res);
 }

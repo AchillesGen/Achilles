@@ -14,6 +14,12 @@
 
 nuchic::EventGen::EventGen(const std::string &configFile,SherpaMEs *const _sherpa) :
   runCascade{false}, outputEvents{false}, sherpa(_sherpa) {
+    nuchic::Process_Info info;
+    info.m_ids={11,22,11,22};
+    if (!sherpa->InitializeProcess(info)) {
+      spdlog::error("Cannot initialize hard process");
+      exit(1);
+    }
     config = YAML::LoadFile(configFile);
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -81,13 +87,6 @@ nuchic::EventGen::EventGen(const std::string &configFile,SherpaMEs *const _sherp
     writer -> WriteHeader(configFile);
 
     hist = Histogram(1000, 0.0, 1000.0, "xsec");
-
-    nuchic::Process_Info info;
-    info.m_ids={11,22,11,22};
-    if (!sherpa->InitializeProcess(info)) {
-      spdlog::error("Cannot initialize hard process");
-      exit(1);
-    }
 }
 
 void nuchic::EventGen::Initialize() {

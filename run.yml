@@ -1,40 +1,44 @@
 Main:
   Run Mode: FixedAngle
   Hard Scattering:
-    Model: QEGlobalFermiGas
+    Model: QESpectral
     SpectralP: data/pke12_tot.data
     SpectralN: data/pke12_tot.data
     FermiGas: 1
     iform: 2
-  Angle: 15
+  Angle: 78.6
+  HardCuts: true
+  EventCuts: false
+  DoRotate: true
   Output:
       Format: Nuchic
       Name: test.out
-      Zipped: True
 
 Initialize:
-  seed: 123456789
+  seed: 12345678
   iterations: 20
   evaluations: 100000
 
 EventGen:
   iterations: 30
   evaluations: 100000
+  TotalEvents: 100000
+  MaxBatch: 1
 
 Beams:
   - Beam:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1000
+        Energy: 845
 
 Cascade:
   Run: False
-  Interaction: 
+  Interaction:
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
   Step: 0.04
-  Probability: Gaussian
+  Probability: Cylinder
 
 Nucleus:
   Name: 12C
@@ -45,3 +49,10 @@ Nucleus:
     Function: configuration
     Config Type: QMC
   FermiGas: Local
+
+HardCuts:
+  e-:
+    # Note: outgoing electron angle already specified in Main block
+    - cut:
+        type: Energy
+        range: [465, 485]

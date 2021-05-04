@@ -39,6 +39,11 @@ public:
 
   bool InitializeProcess(const Process_Info &info);
 
+  std::vector<double> Calc
+  (const std::vector<nuchic::PID> fl,
+   const std::vector<std::vector<double> > &p,
+   const double &mu2) const;
+
 };// end of class SherpaMEs
 
 }// end namespace nuchic
