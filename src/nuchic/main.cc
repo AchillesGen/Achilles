@@ -2,6 +2,7 @@
 #include "nuchic/Version.hh"
 #include "nuchic/System.hh"
 #include "nuchic/Logging.hh"
+#include "plugins/SherpaMEs.hh"
 
 #include "docopt.h"
 
@@ -35,7 +36,7 @@ void Splash() {
 static const std::string USAGE =
 R"(
     Usage:
-      nuchic [<input>] [-v | -vv]
+      nuchic [<input>] [-v | -vv] [-s | --sherpa = <sherpaargs> ...]
       nuchic (-h | --help)
       nuchic --version
 
@@ -43,10 +44,11 @@ R"(
       -v[v]            Increase verbosity level.
       -h --help        Show this screen.
       --version        Show version.
+      -s --sherpa      Define Sherpa option.
 )";
 
-void GenerateEvents(const std::string &runcard) {
-    nuchic::EventGen generator(runcard);
+void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
+  nuchic::EventGen generator(runcard,sherpa);
     generator.Initialize();
     generator.GenerateEvents();
 }
@@ -75,8 +77,14 @@ int main(int argc, char *argv[]) {
             spdlog::warn("Cannot open HardScattering: {}", dlerror());
         }
     }
+    nuchic::SherpaMEs sherpa;
+    std::vector<std::string> shargs;
+    if (args["-s"].isStringList()) shargs=args["-s"].asStringList();
+    else if (args["-s"].isString()) shargs.push_back(args["-s"].asString());
+    for (auto arg: shargs) std::cout<<arg<<std::endl;
+    sherpa.Initialize(shargs);
 
-    GenerateEvents(runcard);
+    GenerateEvents(runcard,&sherpa);
 
     // Close dynamic libraries
     dlclose(handle);

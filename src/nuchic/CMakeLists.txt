@@ -64,7 +64,7 @@ target_link_libraries(event_gen PRIVATE project_options project_warnings
 
 add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
-                             PUBLIC event_gen docopt::docopt)
+                             PUBLIC event_gen sherpa docopt::docopt)
 
 set_target_properties(nuchic event_gen fortran_interface physics utilities gzstream PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib

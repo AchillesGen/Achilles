@@ -27,9 +27,11 @@ class EventWriter;
 
 using Cuts = std::map<PID, Cut>;
 
+class SherpaMEs;
+
 class EventGen {
     public:
-        EventGen(const std::string&);
+        EventGen(const std::string&,SherpaMEs *const);
         void Initialize();
         void GenerateEvents();
         size_t nevents;
@@ -51,6 +53,7 @@ class EventGen {
         Cuts hard_cuts{};
         Cuts event_cuts{};
         Vegas integrator;
+        SherpaMEs *sherpa;
         YAML::Node config;
         // std::vector<std::unique_ptr<HardScattering>> scatterings;
         // std::vector<Histogram> xsecsVsE;

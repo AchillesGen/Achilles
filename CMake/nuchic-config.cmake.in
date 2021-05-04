@@ -1,6 +1,7 @@
 @PACKAGE_INIT@
 
 find_package(HDF5 REQUIRED COMPONENTS CXX)
+find_package(SHERPA REQUIRED COMPONENTS CXX)
 find_package(ZLIB REQUIRED)
 
 if(NOT TARGET nuchic::nuchic)
