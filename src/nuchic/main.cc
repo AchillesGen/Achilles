@@ -37,14 +37,15 @@ static const std::string USAGE =
 R"(
     Usage:
       nuchic [<input>] [-v | -vv] [-s | --sherpa = <sherpaargs> ...]
+      nuchic [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
       nuchic (-h | --help)
       nuchic --version
 
     Options:
-      -v[v]            Increase verbosity level.
-      -h --help        Show this screen.
-      --version        Show version.
-      -s --sherpa      Define Sherpa option.
+      -v[v]                                 Increase verbosity level.
+      -h --help                             Show this screen.
+      --version                             Show version.
+      -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
 )";
 
 void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
@@ -79,8 +80,7 @@ int main(int argc, char *argv[]) {
     }
     nuchic::SherpaMEs sherpa;
     std::vector<std::string> shargs;
-    if (args["-s"].isStringList()) shargs=args["-s"].asStringList();
-    else if (args["-s"].isString()) shargs.push_back(args["-s"].asString());
+    if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
     for (auto arg: shargs) std::cout<<arg<<std::endl;
     sherpa.Initialize(shargs);
 
