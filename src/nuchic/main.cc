@@ -36,7 +36,6 @@ void Splash() {
 static const std::string USAGE =
 R"(
     Usage:
-      nuchic [<input>] [-v | -vv] [-s | --sherpa = <sherpaargs> ...]
       nuchic [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
       nuchic (-h | --help)
       nuchic --version
