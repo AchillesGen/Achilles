@@ -1,6 +1,7 @@
 #ifndef HARD_SCATTERING_HH
 #define HARD_SCATTERING_HH
 
+#include "plugins/SherpaMEs.hh"
 #include <utility>
 #include <vector>
 
@@ -36,7 +37,7 @@ class HardScattering {
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
         HardScattering& operator=(HardScattering&&) = default;
-        virtual ~HardScattering() = default;
+        virtual ~HardScattering() { if(p_sherpa) delete p_sherpa; }
 
         // Validation information
         virtual HardScatteringType ScatteringType() const = 0;
@@ -63,6 +64,14 @@ class HardScattering {
         void SetScatteringAngle(double angle) { m_angle = angle; }
         void SetFinalLeptonEnergy(double energy) { m_lepton_energy = energy; }
 
+        // Sherpa pointer operations
+        void SetSherpa(SherpaMEs *const _sherpa, const std::vector<PID> &pids) { 
+            p_sherpa = _sherpa;
+            m_pids = pids;
+        }
+        std::vector<double> LeptonicTensor(const std::vector<FourVector>&,
+                                           const double&) const;
+
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
         const Histogram& GetHist() const { return hist; }
@@ -74,6 +83,8 @@ class HardScattering {
         static constexpr double dPhi = 2*M_PI;
 
     private:
+        SherpaMEs *p_sherpa{nullptr};
+        std::vector<PID> m_pids;
         bool m_fill{false};
         Histogram hist{500, 0, 1000, "Test"};
 

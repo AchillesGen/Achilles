@@ -131,8 +131,8 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   Cluster_Amplitude* ampl = Cluster_Amplitude::New();
   int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
   for (size_t i(0);i<info.m_ids.size();++i) {
-    ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]):
-		    Flavour(info.m_ids[i]).Bar());
+    ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]).Bar():
+		    Flavour(info.m_ids[i]));
   }
   ampl->SetNIn(2);
   ampl->SetOrderQCD(0);
@@ -147,14 +147,14 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
 }
 
 std::vector<double> SherpaMEs::Calc
-(const std::vector<nuchic::PID> fl,
- const std::vector<std::vector<double> > &p,
+(const std::vector<nuchic::PID> _fl,
+ const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
 {
   Cluster_Amplitude *ampl(Cluster_Amplitude::New());
-  for (size_t i(0);i<fl.size();++i) {
+  for (size_t i(0);i<_fl.size();++i) {
     Vec4D cp(p[i][0],p[i][1],p[i][2],p[i][3]);
-    Flavour fl(Flavour((long int)(fl[i])));
+    Flavour fl(Flavour((long int)(_fl[i])));
     ampl->CreateLeg(i<2?-cp:cp,i<2?fl.Bar():fl,ColorID(0,0));
   }
   ampl->SetNIn(2);

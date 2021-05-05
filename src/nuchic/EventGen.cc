@@ -12,15 +12,10 @@
 
 #include "yaml-cpp/yaml.h"
 
-nuchic::EventGen::EventGen(const std::string &configFile,SherpaMEs *const _sherpa) :
+nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sherpa) :
   runCascade{false}, outputEvents{false}, sherpa(_sherpa) {
-    nuchic::Process_Info info;
-    info.m_ids={11,22,11,22};
-    if (!sherpa->InitializeProcess(info)) {
-      spdlog::error("Cannot initialize hard process");
-      exit(1);
-    }
     config = YAML::LoadFile(configFile);
+
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config["Initialize"]["seed"])
@@ -45,11 +40,25 @@ nuchic::EventGen::EventGen(const std::string &configFile,SherpaMEs *const _sherp
         cascade = nullptr;
     }
 
+    // Initialize the leptonic process
+    auto incoming = config["Leptonic Tensor"]["incoming"].as<std::vector<int>>();
+    auto outgoing = config["Leptonic Tensor"]["outgoing"].as<std::vector<int>>();
+    std::vector<PID> particles;
+    for(const auto &in : incoming) particles.emplace_back(in);
+    for(const auto &out : outgoing) particles.emplace_back(out);
+    nuchic::Process_Info info;
+    info.m_ids=particles;
+    if (!sherpa->InitializeProcess(info)) {
+      spdlog::error("Cannot initialize hard process");
+      exit(1);
+    }
+
     // Initialize hard cross-sections
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
     scattering = HardScatteringFactory::Create(scatteringNode["Model"].as<std::string>(),
             scatteringNode, runMode);
+    scattering -> SetSherpa(sherpa, particles);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
     if(runMode == RunMode::FixedAngleEnergy) {
@@ -139,6 +148,14 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
+    // Obtain the leptonic tensor
+    spdlog::info("Momentum:");
+    for(size_t i = 0; i < event.PhaseSpace().momentum.size(); ++i) {
+        spdlog::info("P({}) = {}", i, event.PhaseSpace().momentum[i]);
+    }
+    spdlog::info("Cross sections from Sherpa: {}",
+                 scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
+    // Obtain the hadronic tensor
     scattering -> CrossSection(event);
     if(!scattering -> InitializeEvent(event))
         return 0;

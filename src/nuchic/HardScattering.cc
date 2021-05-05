@@ -30,6 +30,13 @@ int HardScattering::LeptonVariables() const {
     return -1;
 }
 
+std::vector<double> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
+                                                   const double &mu2) const {
+    std::vector<std::array<double, 4>> mom;
+    for(const auto &pi : p) mom.emplace_back(pi.Momentum());
+    return p_sherpa -> Calc(m_pids, mom, mu2);
+}
+
 void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &event) const {
     // Separate the random variables
     std::vector<double> leptonRans(rans.begin(), rans.begin() + LeptonVariables());

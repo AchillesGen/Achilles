@@ -29,7 +29,7 @@ add_library(physics SHARED
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
+                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream sherpa)
 
 add_subdirectory(fortran)
 
@@ -66,7 +66,7 @@ add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen sherpa docopt::docopt)
 
-set_target_properties(nuchic event_gen fortran_interface physics utilities gzstream PROPERTIES # fortran_interface_f
+set_target_properties(nuchic event_gen fortran_interface physics utilities gzstream sherpa PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -74,7 +74,7 @@ set_target_properties(nuchic event_gen fortran_interface physics utilities gzstr
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen fortran_interface physics utilities gzstream spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
+install(TARGETS nuchic event_gen fortran_interface physics utilities gzstream spdlog yaml-cpp fmt sherpa #pybind11 fortran_interface_f 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

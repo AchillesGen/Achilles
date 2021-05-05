@@ -3,6 +3,7 @@
 
 #include "nuchic/ParticleInfo.hh"
 
+#include <array>
 #include <vector>
 #include <string>
 
@@ -23,6 +24,7 @@ class SherpaMEs {
 private:
 
   SHERPA::Sherpa *p_sherpa;
+  Process_Info m_info;
 
   void addParameter(std::vector<char*>& argv,const std::string& val) const;
   int SherpaVerbosity(int loglevel) const;
@@ -41,7 +43,7 @@ public:
 
   std::vector<double> Calc
   (const std::vector<nuchic::PID> fl,
-   const std::vector<std::vector<double> > &p,
+   const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;
 
 };// end of class SherpaMEs
