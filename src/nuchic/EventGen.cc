@@ -150,10 +150,10 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     spdlog::debug("Calculating cross section");
     // Obtain the leptonic tensor
     spdlog::info("Momentum:");
-    spdlog::info("P({}) = {}, M = {}", 0, event.PhaseSpace().momentum[0], event.PhaseSpace().momentum[0].M2());
-    spdlog::info("P({}) = {}, M = {}", 1, event.PhaseSpace().momentum[2], event.PhaseSpace().momentum[2].M2());
-    spdlog::info("P({}) = {}, M = {}", 2, event.PhaseSpace().momentum[1], event.PhaseSpace().momentum[1].M2());
-    spdlog::info("P({}) = {}, M = {}", 3, event.PhaseSpace().momentum[3], event.PhaseSpace().momentum[3].M2());
+    spdlog::info("P({}) = {}, M2 = {}", 0, event.PhaseSpace().momentum[0]/1_GeV, event.PhaseSpace().momentum[0].M2()/1_GeV/1_GeV);
+    spdlog::info("P({}) = {}, M2 = {}", 1, event.PhaseSpace().momentum[2]/1_GeV, event.PhaseSpace().momentum[2].M2()/1_GeV/1_GeV);
+    spdlog::info("P({}) = {}, M2 = {}", 2, event.PhaseSpace().momentum[1]/1_GeV, event.PhaseSpace().momentum[1].M2()/1_GeV/1_GeV);
+    spdlog::info("P({}) = {}, M2 = {}", 3, event.PhaseSpace().momentum[3]/1_GeV, event.PhaseSpace().momentum[3].M2()/1_GeV/1_GeV);
     std::vector<double> leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
     spdlog::info("Cross sections from Sherpa: {}",
                  scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
