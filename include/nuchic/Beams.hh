@@ -37,7 +37,7 @@ class Monochromatic : public FluxType {
         }
 
         FourVector Flux(const std::vector<double>&) override {
-            return {0, 0, m_energy, m_energy};
+            return {m_energy, 0, 0, m_energy};
         }
 
         double Weight(const std::vector<double>&) override {

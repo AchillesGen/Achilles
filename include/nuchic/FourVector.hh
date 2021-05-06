@@ -32,8 +32,8 @@ class FourVector {
         ///@param pY: The py value of the vector
         ///@param pZ: The pz value of the vector
         ///@param E: The E value of the vector
-        constexpr FourVector(double pX, double pY, double pZ, double E) noexcept 
-            : vec({pX, pY, pZ, E}) {}
+        constexpr FourVector(double E, double pX, double pY, double pZ) noexcept 
+            : vec({E, pX, pY, pZ}) {}
         /// Create a FourVector object from a ThreeVector and an energy
         ///@param other: ThreeVector object containing 3-momentum information
         ///@param E: Energy for the given vector
@@ -65,7 +65,7 @@ class FourVector {
         ///@param pZ: momentum in the z-direction to be stored
         ///@param E: energy to be stored
         void SetPxPyPzE(const double& pX, const double& pY, const double& pZ, const double& E) noexcept {
-            vec = std::array<double, 4>{pX, pY, pZ, E};
+            vec = std::array<double, 4>{E, pX, pY, pZ};
         }
 
         /// Set the four momentum variable given a three momentum and a mass
@@ -75,19 +75,19 @@ class FourVector {
 
         /// Set only the x momentum
         ///@param pX: momentum in the x-direction to be stored
-        void SetPx(const double& pX) noexcept {vec[0] = pX;}
+        void SetPx(const double& pX) noexcept {vec[1] = pX;}
 
         /// Set only the y momentum
         ///@param pY: momentum in the y-direction to be stored
-        void SetPy(const double& pY) noexcept {vec[1] = pY;}
+        void SetPy(const double& pY) noexcept {vec[2] = pY;}
 
         /// Set only the z momentum
         ///@param pZ: momentum in the z-direction to be stored
-        void SetPz(const double& pZ) noexcept {vec[2] = pZ;}
+        void SetPz(const double& pZ) noexcept {vec[3] = pZ;}
 
         /// Set only the energy
         ///@param E: the energy
-        void SetE(const double& E) noexcept {vec[3] = E;}
+        void SetE(const double& E) noexcept {vec[0] = E;}
         ///@}
 
         /// @name Getters
@@ -102,43 +102,43 @@ class FourVector {
 
         /// Return the x-coordinate
         ///@return double: the x-coordinate
-        const double& X() const noexcept {return vec[0];}
+        const double& X() const noexcept {return vec[1];}
 
         /// Return the y-coordinate
         ///@return double: the y-coordinate
-        const double& Y() const noexcept {return vec[1];}
+        const double& Y() const noexcept {return vec[2];}
 
         /// Return the z-coordinate
         ///@return double: the z-coordinate
-        const double& Z() const noexcept {return vec[2];}
+        const double& Z() const noexcept {return vec[3];}
 
         /// Return the time
         ///@return double: the time
-        const double& T() const noexcept {return vec[3];}
+        const double& T() const noexcept {return vec[0];}
 
         /// Return the momentum in the x-direction
         ///@return double: the momentum in the x-direction
-        const double& Px() const noexcept {return vec[0];}
-        double& Px() noexcept {return vec[0];}
+        const double& Px() const noexcept {return vec[1];}
+        double& Px() noexcept {return vec[1];}
 
         /// Return the momentum in the y-direction
         ///@return double: the momentum in the y-direction
-        const double& Py() const noexcept {return vec[1];}
-        double& Py() noexcept {return vec[1];}
+        const double& Py() const noexcept {return vec[2];}
+        double& Py() noexcept {return vec[2];}
 
         /// Return the momentum in the z-direction
         ///@return double: the momentum in the z-direction
-        const double& Pz() const noexcept {return vec[2];}
-        double& Pz() noexcept {return vec[2];}
+        const double& Pz() const noexcept {return vec[3];}
+        double& Pz() noexcept {return vec[3];}
 
         /// Return the energy
         ///@return double: the energy
-        const double& E() const noexcept {return vec[3];}
-        double& E() noexcept {return vec[3];}
+        const double& E() const noexcept {return vec[0];}
+        double& E() noexcept {return vec[0];}
 
         /// Return the transverse momentum squared
         ///@return double: Transverse momentum squared
-        double Pt2() const noexcept {return pow(vec[0], 2) + pow(vec[1], 2);}
+        double Pt2() const noexcept {return pow(Px(), 2) + pow(Py(), 2);}
 
         /// Return the transverse momentum
         ///@return double: Transverse momentum
@@ -146,7 +146,7 @@ class FourVector {
 
         /// Return the three momentum squared
         ///@return double: Three momentum squared
-        double P2() const noexcept {return Pt2() + pow(vec[2], 2);}
+        double P2() const noexcept {return Pt2() + pow(Pz(), 2);}
 
         /// Return the three momentum
         ///@return double: Three momentum
@@ -354,7 +354,7 @@ class FourVector {
         ///@param vec: The four vector to be written out
         template<typename OStream>
         friend OStream& operator<<(OStream &os, const FourVector &vec4) {
-            os << "FourVector(" << vec4.Px() << ", " << vec4.Py() << ", " << vec4.Pz() << ", " << vec4.E() << ")";
+            os << "FourVector(" << vec4.E() << ", " << vec4.Px() << ", " << vec4.Py() << ", " << vec4.Pz() << ")";
             return os;
         }
 

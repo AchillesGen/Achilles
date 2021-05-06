@@ -60,7 +60,7 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::Fou
             double py = m_dist(m_rand);
             double pz = m_dist(m_rand);
             double e = m_dist(m_rand);
-            current_momentum = nuchic::FourVector(px, py, pz, e);
+            current_momentum = nuchic::FourVector(e, px, py, pz);
             return true;
         }
 };

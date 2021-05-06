@@ -81,9 +81,10 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
             event.PhaseSpace().weight *= dCos*event.PhaseSpace().momentum[0].E();
             break;
     }
-    event.PhaseSpace().momentum.emplace_back(Elepton*sinT*cos(phi),
+    event.PhaseSpace().momentum.emplace_back(Elepton,
+                                             Elepton*sinT*cos(phi),
                                              Elepton*sinT*sin(phi),
-                                             Elepton*cosT, Elepton);
+                                             Elepton*cosT);
 
     // TODO: Move to a better location?
     event.MatrixElements().resize(12);
@@ -146,9 +147,9 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
 
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
     double Ep = Constant::mN+Q.E()-Epp;
-    event.PhaseSpace().momentum.emplace_back(p*sinT*cos(phi),
+    event.PhaseSpace().momentum.emplace_back(Ep, p*sinT*cos(phi),
                                              p*sinT*sin(phi),
-                                             p*cosT, Ep);
+                                             p*cosT);
     event.PhaseSpace().momentum.emplace_back(tmp, Epp);
     event.PhaseSpace().weight *= Ep > 0 ? dp*p*p*dCos*dPhi : 0;
 }
@@ -180,9 +181,9 @@ void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
     
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
     
-    event.PhaseSpace().momentum.emplace_back(p*sinT*cos(phi),
+    event.PhaseSpace().momentum.emplace_back(Ep, p*sinT*cos(phi),
                                              p*sinT*sin(phi),
-                                             p*cosT, Ep);
+                                             p*cosT);
     event.PhaseSpace().momentum.emplace_back(tmp, Epp);
     event.PhaseSpace().weight *= dp*p*p*dPhi;
 }

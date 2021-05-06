@@ -30,9 +30,9 @@ TEST_CASE("Three Vector is constructed properly", "[Vectors]") {
 TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
     SECTION("Direct Constructors") {
         nuchic::ThreeVector p0(1, 2, 3);
-        nuchic::FourVector p1, p2(1, 2, 3, 4), p3(std::array<double, 4>{1, 2, 3, 4});
+        nuchic::FourVector p1, p2(4, 1, 2, 3), p3(std::array<double, 4>{4, 1, 2, 3});
         nuchic::FourVector p4(p0, 4);
-        CHECK((p1[0] == 0 && p1[1] == 0 && p1[2] == 0 && p1[3] == 0));
+        CHECK((p1[1] == 0 && p1[2] == 0 && p1[3] == 0 && p1[0] == 0));
         CHECK(p2 == p3);
         CHECK(p2 == p4);
     }
@@ -181,7 +181,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Multiplication") {
-        nuchic::FourVector p1(1, 2, 3, 4), p2(3, 6, 9, 12);
+        nuchic::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
         constexpr double scalar1 = 3, scalar2 = 16-9-4-1;
 
         CHECK(p1*p1 == scalar2);
@@ -194,7 +194,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Division") {
-        nuchic::FourVector p1(1, 2, 3, 4), p2(3, 6, 9, 12);
+        nuchic::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
         constexpr double scalar = 3.0;
 
         CHECK(p2 / scalar == p1);
@@ -206,7 +206,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
 
 TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     SECTION("Magnitude and Mass") {
-        nuchic::FourVector p(1, 2, 3, 4);
+        nuchic::FourVector p(4, 1, 2, 3);
         constexpr double mass = 2;
 
         CHECK(p.Magnitude2() == mass);
@@ -216,7 +216,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Momentum and Transverse Momentum") {
-        nuchic::FourVector p(1, 2, 3, 4);
+        nuchic::FourVector p(4, 1, 2, 3);
         constexpr double pvec2 = 14;
         constexpr double pt2 = 5;
 
@@ -227,7 +227,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Angles") {
-        nuchic::FourVector p1(0, 0, 4, 4), p2(1, 1, 1, 4), p3(1, -1, 1, 4);
+        nuchic::FourVector p1(4, 0, 0, 4), p2(4, 1, 1, 1), p3(4, 1, -1, 1);
 
         CHECK(p1.Theta() == 0);
         CHECK(p1.Phi() == 0);
@@ -236,14 +236,14 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Cross Product") {
-        nuchic::FourVector p1(3, 2, 1, 4), p2(1, 2, 3, 4), p3(4, -8, 4, 0);
+        nuchic::FourVector p1(4, 3, 2, 1), p2(4, 1, 2, 3), p3(0, 4, -8, 4);
 
         CHECK(p1.Cross(p2) == p3);
         CHECK(p1.Cross(p2) == -p2.Cross(p1));
     }
 
     SECTION("Boost") {
-        nuchic::FourVector p1(3, 2, 1, 4), p2(12, 2, -3, 25);
+        nuchic::FourVector p1(4, 3, 2, 1), p2(25, 12, 2, -3);
         auto beta = p2.BoostVector();
         auto partway = p1.Boost(beta);
         auto p3 = p1.Boost(beta).Boost(-beta);
@@ -257,14 +257,14 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Rapidity") {
-        nuchic::FourVector p1(1, 2, 3, 4);
+        nuchic::FourVector p1(4, 1, 2, 3);
         constexpr double rapidity = 0.9729550745276566;
 
         CHECK(p1.Rapidity() == Approx(rapidity));
     }
 
     SECTION("Angle between vectors") {
-        nuchic::FourVector p1(1, 0, 3, 4), p2(3, 0, 1, 4); 
+        nuchic::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1); 
         double t1 = p1.Theta(), t2 = p2.Theta();
 
         CHECK(std::cos(t1-t2) == Approx(p1.CosAngle(p2)));
@@ -272,7 +272,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
     
     SECTION("DeltaR") {
-        nuchic::FourVector p1(1, 2, 3, 4), p2(3, 2, 1, 4);
+        nuchic::FourVector p1(4, 1, 2, 3), p2(4, 3, 2, 1);
         double DEta = p1.Rapidity() - p2.Rapidity();
         double DPhi = p1.Phi() - p2.Phi();
         double DR = sqrt(DEta*DEta + DPhi*DPhi);
@@ -285,14 +285,14 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
 TEST_CASE("Rotations", "[Vectors]") {
     constexpr double eps = 1e-12;
     SECTION("Four Vectors") {
-        nuchic::FourVector p(1, 2, 3, 4);
+        nuchic::FourVector p(4, 1, 2, 3);
         auto rotMat = p.AlignZ();
         auto result = p.Rotate(rotMat);
 
-        CHECK(result[0] == Approx(0).margin(eps));
+        CHECK(result[0] == p[0]);
         CHECK(result[1] == Approx(0).margin(eps));
-        CHECK(result[2] == Approx(p.P()).margin(eps));
-        CHECK(result[3] == p[3]);
+        CHECK(result[2] == Approx(0).margin(eps));
+        CHECK(result[3] == Approx(p.P()).margin(eps));
     }
 
     SECTION("Three Vectors") {

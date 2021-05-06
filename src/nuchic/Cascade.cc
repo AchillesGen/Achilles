@@ -86,7 +86,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     if(index_same.size() != 0) {
         idxSame = Random::Instance().Pick(index_same);
         particles[idxSame].SetMomentum(
-            FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+            FourVector(sqrt(energy), mom[0], mom[1], mom[2]));
         xsecSame = GetXSec(kickedPart, particles[idxSame]);
     }
 
@@ -98,7 +98,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     if(index_diff.size() != 0) {
         idxDiff = Random::Instance().Pick(index_diff);
         particles[idxDiff].SetMomentum(
-            FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+            FourVector(sqrt(energy), mom[0], mom[1], mom[2]));
         xsecDiff = GetXSec(kickedPart, particles[idxDiff]);
     }
 
@@ -463,8 +463,8 @@ bool Cascade::FinalizeMomentum(Particle& particle1, Particle& particle2) noexcep
                                                           pcm,
                                                           rans);
 
-    FourVector p1Out = FourVector(momentum[0], momentum[1], momentum[2], p1CM.E());
-    FourVector p2Out = FourVector(-momentum[0], -momentum[1], -momentum[2], p1CM.E());
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
 
     // Boost back to lab frame
     p1Out = p1Out.Boost(boostCM);
