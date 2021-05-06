@@ -33,7 +33,8 @@ int HardScattering::LeptonVariables() const {
 std::vector<double> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                                    const double &mu2) const {
     std::vector<std::array<double, 4>> mom;
-    for(const auto &pi : p) mom.emplace_back(pi.Momentum());
+    for(const auto &pi : p) mom.emplace_back((pi/1_GeV).Momentum());
+    std::swap(mom[1], mom[2]);
     return p_sherpa -> Calc(m_pids, mom, mu2);
 }
 

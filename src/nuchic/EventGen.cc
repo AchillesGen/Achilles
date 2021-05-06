@@ -150,9 +150,11 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     spdlog::debug("Calculating cross section");
     // Obtain the leptonic tensor
     spdlog::info("Momentum:");
-    for(size_t i = 0; i < event.PhaseSpace().momentum.size(); ++i) {
-        spdlog::info("P({}) = {}", i, event.PhaseSpace().momentum[i]);
-    }
+    spdlog::info("P({}) = {}, M = {}", 0, event.PhaseSpace().momentum[0], event.PhaseSpace().momentum[0].M2());
+    spdlog::info("P({}) = {}, M = {}", 1, event.PhaseSpace().momentum[2], event.PhaseSpace().momentum[2].M2());
+    spdlog::info("P({}) = {}, M = {}", 2, event.PhaseSpace().momentum[1], event.PhaseSpace().momentum[1].M2());
+    spdlog::info("P({}) = {}, M = {}", 3, event.PhaseSpace().momentum[3], event.PhaseSpace().momentum[3].M2());
+    std::vector<double> leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
     spdlog::info("Cross sections from Sherpa: {}",
                  scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
     // Obtain the hadronic tensor
@@ -248,7 +250,7 @@ bool nuchic::EventGen::MakeEventCuts(Event &event) {
         bool pid_passed = false;
         for (const auto& particle : event.Particles()){
             // Restrict to matching final-state particles
-            if(particle.IsFinal() & (particle.ID() == pid))
+            if(particle.IsFinal() && particle.ID() == pid)
                 // Keep: at least one particle (of a given PID) survives the cut
                 if(cut(particle.Momentum())){
                     pid_passed = true;
@@ -262,14 +264,11 @@ bool nuchic::EventGen::MakeEventCuts(Event &event) {
     return true;
 }
 
-
-
-
 void nuchic::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron
     double phi = 0.0;
     for(const auto & particle : event.Particles()){
-        if((int(particle.ID()) == 11) & particle.IsFinal()){
+        if(particle.ID() == PID::electron() && particle.IsFinal()){
             phi = particle.Momentum().Phi();
         }
     }
