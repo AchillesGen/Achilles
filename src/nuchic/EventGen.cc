@@ -8,6 +8,7 @@
 #include "nuchic/Cascade.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Units.hh"
+#include "nuchic/ProcessInfo.hh"
 #include "plugins/SherpaMEs.hh"
 
 #include "yaml-cpp/yaml.h"
@@ -41,24 +42,27 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
 
     // Initialize the leptonic process
-    auto incoming = config["Leptonic Tensor"]["incoming"].as<std::vector<int>>();
-    auto outgoing = config["Leptonic Tensor"]["outgoing"].as<std::vector<int>>();
-    std::vector<PID> particles;
-    for(const auto &in : incoming) particles.emplace_back(in);
-    for(const auto &out : outgoing) particles.emplace_back(out);
-    nuchic::Process_Info info;
-    info.m_ids=particles;
-    if (!sherpa->InitializeProcess(info)) {
-      spdlog::error("Cannot initialize hard process");
-      exit(1);
+    auto processes = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
+    for(const auto &beam_id : beam -> BeamIDs()) {
+        std::cout << int(beam_id) << std::endl;
+        std::vector<PID> incoming = {beam_id, nuchic::PID::dummyHadron()};
+        for(auto info : processes) {
+            info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
+            spdlog::info("{}", info);
+            if(!sherpa->InitializeProcess(info)) {
+                spdlog::error("Cannot initialize hard process");
+                exit(1);
+            }
+        }
     }
+    exit(1);
 
     // Initialize hard cross-sections
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
     scattering = HardScatteringFactory::Create(scatteringNode["Model"].as<std::string>(),
             scatteringNode, runMode);
-    scattering -> SetSherpa(sherpa, particles);
+    scattering -> SetSherpa(sherpa);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
     if(runMode == RunMode::FixedAngleEnergy) {

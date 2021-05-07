@@ -110,7 +110,6 @@ class Beam {
         BeamMap m_beams;
 };
 
-
 }
 
 namespace YAML {

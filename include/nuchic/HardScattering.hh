@@ -65,10 +65,7 @@ class HardScattering {
         void SetFinalLeptonEnergy(double energy) { m_lepton_energy = energy; }
 
         // Sherpa pointer operations
-        void SetSherpa(SherpaMEs *const _sherpa, const std::vector<PID> &pids) { 
-            p_sherpa = _sherpa;
-            m_pids = pids;
-        }
+        void SetSherpa(SherpaMEs *const _sherpa) { p_sherpa = _sherpa; }
         std::vector<double> LeptonicTensor(const std::vector<FourVector>&,
                                            const double&) const;
 
