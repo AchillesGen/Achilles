@@ -35,7 +35,11 @@ std::vector<double> HardScattering::LeptonicTensor(const std::vector<FourVector>
     std::vector<std::array<double, 4>> mom;
     for(const auto &pi : p) mom.emplace_back((pi/1_GeV).Momentum());
     std::swap(mom[1], mom[2]);
-    return p_sherpa -> Calc(m_pids, mom, mu2);
+    std::vector<int> pids;
+    for(const auto &pid : m_pids) {
+        pids.emplace_back(pid);
+    }
+    return p_sherpa -> Calc(pids, mom, mu2);
 }
 
 void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &event) const {

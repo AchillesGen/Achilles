@@ -13,18 +13,12 @@ namespace SHERPA { class Sherpa; }
 
 namespace nuchic {
 
-struct Process_Info {
-  std::vector<nuchic::PID> m_ids;
-  inline Process_Info(const std::vector<nuchic::PID> &ids=
-		      std::vector<nuchic::PID>()):
-    m_ids(ids) {}
-};// end of struct Process_Info 
+struct Process_Info;
 
 class SherpaMEs {
 private:
 
-  SHERPA::Sherpa *p_sherpa;
-  Process_Info m_info;
+  SHERPA::Sherpa *p_sherpa{};
 
   void addParameter(std::vector<char*>& argv,const std::string& val) const;
   int SherpaVerbosity(int loglevel) const;
@@ -33,7 +27,7 @@ private:
 
 public:
 
-  SherpaMEs(): p_sherpa(NULL) {}
+  SherpaMEs() = default;
 
   ~SherpaMEs();
 
@@ -42,7 +36,7 @@ public:
   bool InitializeProcess(const Process_Info &info);
 
   std::vector<double> Calc
-  (const std::vector<nuchic::PID> fl,
+  (const std::vector<int> fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;
 

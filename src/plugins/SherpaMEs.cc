@@ -15,6 +15,7 @@
 #include "ATOOLS/Org/MyStrStream.H"
 #include "ATOOLS/Org/Run_Parameter.H"
 #include "nuchic/Logging.hh"
+#include "nuchic/ProcessInfo.hh"
 
 using namespace SHERPA;
 using namespace PHASIC;
@@ -90,12 +91,12 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
   for (size_t i(0); i<ampl->NIn(); ++i) {
     Flavour fl(ampl->Leg(i)->Flav().Bar());
     if (Flavour(kf_jet).Includes(fl)) fl=Flavour(kf_jet);
-    pi.m_ii.m_ps.push_back(Subprocess_Info(fl,"",""));
+    pi.m_ii.m_ps.emplace_back(fl,"","");
   }
   for (size_t i(ampl->NIn()); i<ampl->Legs().size(); ++i) {
     Flavour fl(ampl->Leg(i)->Flav());
     if (Flavour(kf_jet).Includes(fl)) fl=Flavour(kf_jet);
-    pi.m_fi.m_ps.push_back(Subprocess_Info(fl,"",""));
+    pi.m_fi.m_ps.emplace_back(fl,"","");
   }
   msg_Info()<<"SherpaMEs::getProcess: Initializing process ";
   Process_Base* proc = p_sherpa->GetInitHandler()->
@@ -147,7 +148,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
 }
 
 std::vector<double> SherpaMEs::Calc
-(const std::vector<nuchic::PID> _fl,
+(const std::vector<int> _fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
 {
