@@ -10,10 +10,10 @@
 #include <utility>
 #include <functional>
 
-namespace YAML {
-    template<typename T>
-    struct convert;
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
     class ParticleInfoEntry;
@@ -66,6 +66,8 @@ namespace nuchic {
             // Baryons
             static constexpr PID proton() { return PID{ 2212 }; }
             static constexpr PID neutron() { return PID{ 2112 }; }
+            // Dummy hadron
+            static constexpr PID dummyHadron() { return PID{ 22 }; }
 
         private:
             // Ensure id matches the numbering scheme defined at:
@@ -226,6 +228,21 @@ namespace nuchic {
         static constexpr auto InitParticle = ParticleInfo::InitDatabase;
         static constexpr auto PrintParticle = ParticleInfo::PrintDatabase;
     }
+
+}
+
+namespace YAML {
+
+template<>
+struct convert<nuchic::PID> {
+    static bool decode(const Node &node, nuchic::PID &pid) {
+        if(node.IsScalar()) {
+            pid = nuchic::PID(node.as<int>());
+            return true;
+        }
+        return false;
+    }
+};
 
 }
 
