@@ -30,14 +30,29 @@ int HardScattering::LeptonVariables() const {
     return -1;
 }
 
+void HardScattering::AddProcess(const nuchic::Process_Info &process) {
+    spdlog::debug("Adding Process: {}", process);
+    m_leptonicProcesses.push_back(process);
+}
+
 std::vector<double> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                                    const double &mu2) const {
-    std::vector<std::array<double, 4>> mom;
-    for(const auto &pi : p) mom.emplace_back((pi/1_GeV).Momentum());
-    std::swap(mom[1], mom[2]);
+    const auto nLeptons = m_leptonicProcesses[0].m_ids.size()-2;
+    std::vector<std::array<double, 4>> mom(nLeptons+2);
+    FourVector Q(-p[0]);
+    mom[0] = (p[0]/1_GeV).Momentum();
+    for(size_t i = 1; i < nLeptons; ++i) {
+        Q += p[i];
+        mom[i+1] = (p[i]/1_GeV).Momentum();
+    }
+    mom[1] = (Q/1_GeV).Momentum();
+    mom[nLeptons+2] = std::array<double, 4>();
     std::vector<int> pids;
-    for(const auto &pid : m_pids) {
+    for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);
+    }
+    for(size_t i = 0; i < m_leptonicProcesses[0].m_ids.size(); ++i) {
+        spdlog::trace("PID: {}, Momentum: ({}, {}, {}, {})", pids[i], mom[i][0], mom[i][1], mom[i][2], mom[i][3]); 
     }
     return p_sherpa -> Calc(pids, mom, mu2);
 }

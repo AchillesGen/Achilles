@@ -41,22 +41,6 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         cascade = nullptr;
     }
 
-    // Initialize the leptonic process
-    auto processes = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
-    for(const auto &beam_id : beam -> BeamIDs()) {
-        std::cout << int(beam_id) << std::endl;
-        std::vector<PID> incoming = {beam_id, nuchic::PID::dummyHadron()};
-        for(auto info : processes) {
-            info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
-            spdlog::info("{}", info);
-            if(!sherpa->InitializeProcess(info)) {
-                spdlog::error("Cannot initialize hard process");
-                exit(1);
-            }
-        }
-    }
-    exit(1);
-
     // Initialize hard cross-sections
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
@@ -65,9 +49,24 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     scattering -> SetSherpa(sherpa);
     if(runMode == RunMode::FixedAngle)
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
-    if(runMode == RunMode::FixedAngleEnergy) {
+    else if(runMode == RunMode::FixedAngleEnergy) {
         scattering -> SetScatteringAngle(config["Main"]["Angle"].as<double>()*1.0_deg);
         scattering -> SetFinalLeptonEnergy(config["Main"]["ELepFinal"].as<double>());
+    }
+
+    // Initialize the leptonic process
+    auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
+    for(const auto &beam_id : beam -> BeamIDs()) {
+        std::cout << int(beam_id) << std::endl;
+        std::vector<PID> incoming = {beam_id, nuchic::PID::dummyHadron()};
+        for(auto info : leptonicProcesses) {
+            info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
+            if(!sherpa->InitializeProcess(info)) {
+                spdlog::error("Cannot initialize hard process");
+                exit(1);
+            }
+            scattering -> AddProcess(info);
+        }
     }
 
     // Setup Vegas
@@ -152,15 +151,11 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
+
     // Obtain the leptonic tensor
-    spdlog::info("Momentum:");
-    spdlog::info("P({}) = {}, M2 = {}", 0, event.PhaseSpace().momentum[0]/1_GeV, event.PhaseSpace().momentum[0].M2()/1_GeV/1_GeV);
-    spdlog::info("P({}) = {}, M2 = {}", 1, event.PhaseSpace().momentum[2]/1_GeV, event.PhaseSpace().momentum[2].M2()/1_GeV/1_GeV);
-    spdlog::info("P({}) = {}, M2 = {}", 2, event.PhaseSpace().momentum[1]/1_GeV, event.PhaseSpace().momentum[1].M2()/1_GeV/1_GeV);
-    spdlog::info("P({}) = {}, M2 = {}", 3, event.PhaseSpace().momentum[3]/1_GeV, event.PhaseSpace().momentum[3].M2()/1_GeV/1_GeV);
     std::vector<double> leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
-    spdlog::info("Cross sections from Sherpa: {}",
-                 scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
+    spdlog::debug("Cross sections from Sherpa: {}",
+                  scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
     // Obtain the hadronic tensor
     scattering -> CrossSection(event);
     if(!scattering -> InitializeEvent(event))

@@ -15,10 +15,10 @@ class Beam;
 
 struct Process_Info {
     std::string m_model{};
-    std::vector<nuchic::PID> m_ids;
+    std::vector<nuchic::PID> m_ids{};
+    Process_Info() = default;
     Process_Info(std::string model, std::vector<nuchic::PID> ids={}) 
         : m_model(std::move(model)), m_ids(std::move(ids)) {}
-    // void AddBeam(const nuchic::Beam&);
 
     template<typename OStream>
     friend OStream& operator<<(OStream &os, const Process_Info &info) {

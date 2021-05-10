@@ -1,7 +1,6 @@
 #ifndef HARD_SCATTERING_HH
 #define HARD_SCATTERING_HH
 
-#include "plugins/SherpaMEs.hh"
 #include <utility>
 #include <vector>
 
@@ -14,6 +13,8 @@
 #include "nuchic/Beams.hh"
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
+#include "nuchic/ProcessInfo.hh"
+#include "plugins/SherpaMEs.hh"
 
 extern "C" {
     void Delete();
@@ -64,6 +65,9 @@ class HardScattering {
         void SetScatteringAngle(double angle) { m_angle = angle; }
         void SetFinalLeptonEnergy(double energy) { m_lepton_energy = energy; }
 
+        // Set leptonic processes
+        void AddProcess(const nuchic::Process_Info&);
+
         // Sherpa pointer operations
         void SetSherpa(SherpaMEs *const _sherpa) { p_sherpa = _sherpa; }
         std::vector<double> LeptonicTensor(const std::vector<FourVector>&,
@@ -81,7 +85,7 @@ class HardScattering {
 
     private:
         SherpaMEs *p_sherpa{nullptr};
-        std::vector<PID> m_pids;
+        std::vector<nuchic::Process_Info> m_leptonicProcesses{};
         bool m_fill{false};
         Histogram hist{500, 0, 1000, "Test"};
 
