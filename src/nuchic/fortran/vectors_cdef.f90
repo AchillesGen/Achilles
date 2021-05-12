@@ -1,14 +1,14 @@
 interface
 
-    function create_fourvector_c(x, y, z, e) bind(C, name="CreateFourVector")
+    function create_fourvector_c(e, x, y, z) bind(C, name="CreateFourVector")
         use iso_c_binding
         implicit none
 
         type(c_ptr) :: create_fourvector_c
+        real(c_double), value :: e 
         real(c_double), value :: x
         real(c_double), value :: y 
         real(c_double), value :: z
-        real(c_double), value :: e 
     end function
 
     function copy_fourvector_c(ptr) bind(C, name="CopyFourVector")

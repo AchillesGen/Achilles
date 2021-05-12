@@ -7,8 +7,8 @@ extern "C" {
     using Vec3 = nuchic::ThreeVector;
 
     // FourVector Constructor and Destructor
-    Vec4* CreateFourVector(const double x, const double y, const double z, const double E) {
-        return new Vec4(x, y, z, E);
+    Vec4* CreateFourVector(const double E, const double x, const double y, const double z) {
+        return new Vec4(E, x, y, z);
     }
     Vec4* CopyFourVector(const Vec4 *self) {
         return new Vec4(*self);
