@@ -13,16 +13,6 @@
 
 #include <iostream>
 
-nuchic::FourVector const& RandomMomentumGenerator::get() const {
-    return current_momentum;
-}
-// This helper function provides a nicer UX when instantiating the generator
-// Notice that it returns an instance of GeneratorWrapper<std::string>, which
-// is a value-wrapper around std::unique_ptr<IGenerator<std::string>>.
-Catch::Generators::GeneratorWrapper<nuchic::FourVector> randomMomentum(double max) {
-    return Catch::Generators::GeneratorWrapper<nuchic::FourVector>(std::unique_ptr<Catch::Generators::IGenerator<nuchic::FourVector>>(new RandomMomentumGenerator(max)));
-}
-
 TEST_CASE("Single particle cuts", "[Cuts]") {
     SECTION("Cuts must have a valid type") {
         auto type = GENERATE(values({

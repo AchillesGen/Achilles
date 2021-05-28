@@ -41,13 +41,14 @@ class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string>
 
 class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::FourVector> {
     double m_maxVal;
+    double m_mass;
     std::mt19937 m_rand{std::random_device{}()};
     std::uniform_real_distribution<double> m_dist;
     nuchic::FourVector current_momentum{};
 
     public:
-        RandomMomentumGenerator(double maxVal):
-            m_maxVal{maxVal},
+        RandomMomentumGenerator(double maxVal, double mass = 0):
+            m_maxVal{maxVal}, m_mass(mass),
             m_rand(std::random_device{}()),
             m_dist(0, m_maxVal) {
 
@@ -56,13 +57,27 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::Fou
 
         nuchic::FourVector const& get() const override;
         bool next() override {
-            double px = m_dist(m_rand);
-            double py = m_dist(m_rand);
-            double pz = m_dist(m_rand);
-            double e = m_dist(m_rand);
+            double pmag = m_dist(m_rand);
+            double cost = 2*m_dist(m_rand)/m_maxVal - 1;
+            double sint = sqrt(1-cost*cost);
+            double phi = 2*M_PI*m_dist(m_rand)/m_maxVal;
+            double e = sqrt(pmag*pmag+m_mass*m_mass);
+            double px = pmag*sint*cos(phi);
+            double py = pmag*sint*sin(phi);
+            double pz = pmag*cost;
             current_momentum = nuchic::FourVector(px, py, pz, e);
             return true;
         }
 };
+
+inline nuchic::FourVector const& RandomMomentumGenerator::get() const {
+    return current_momentum;
+}
+// This helper function provides a nicer UX when instantiating the generator
+// Notice that it returns an instance of GeneratorWrapper<std::string>, which
+// is a value-wrapper around std::unique_ptr<IGenerator<std::string>>.
+inline Catch::Generators::GeneratorWrapper<nuchic::FourVector> randomMomentum(double max, double mass = 0) {
+    return Catch::Generators::GeneratorWrapper<nuchic::FourVector>(std::unique_ptr<Catch::Generators::IGenerator<nuchic::FourVector>>(new RandomMomentumGenerator(max, mass)));
+}
 
 #endif
