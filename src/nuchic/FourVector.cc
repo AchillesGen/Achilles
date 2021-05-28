@@ -78,6 +78,12 @@ FourVector FourVector::Rotate(const RotMat &mat) const noexcept {
             mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2], vec[3]};
 }
 
+FourVector FourVector::RotateBack(const RotMat &mat) const noexcept {
+    return {mat[0]*vec[0]+mat[3]*vec[1]+mat[6]*vec[2],
+            mat[1]*vec[0]+mat[4]*vec[1]+mat[7]*vec[2],
+            mat[2]*vec[0]+mat[5]*vec[1]+mat[8]*vec[2], vec[3]};
+}
+
 nuchic::FourVector::RotMat FourVector::Align(const ThreeVector &axis) const noexcept {
 
     ThreeVector a = Vec3().Unit();
