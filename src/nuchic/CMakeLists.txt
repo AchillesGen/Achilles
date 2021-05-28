@@ -10,6 +10,7 @@ add_library(utilities SHARED
     AdaptiveMap.cc
     Histogram.cc
     Cuts.cc
+    MomSolver.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
