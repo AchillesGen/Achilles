@@ -17,12 +17,14 @@ bool nuchic::sortPairSecond(const std::pair<std::size_t, double>& a,
 
 // Use the Brent algorithm to calculate the root of a given function
 double nuchic::Brent::CalcRoot(double a, double b) const {
-    double fa = m_func(a), fb = m_func(b), fc;
+    double fa = m_func(a), fb = m_func(b), fc{};
+    if(std::abs(fa) < m_tol) return a;
+    if(std::abs(fb) < m_tol) return b;
     if(fa*fb >= 0) throw std::domain_error("No root in given range");
     swap(fa, fb, a, b);
     double c = a;
     bool m_flag = true;
-    double s, d = 0;
+    double s{}, d = 0;
     while(fb != 0 && std::abs(b - a) > m_tol) {
         fc = m_func(c);
         if(fa != fc && fb != fc) {

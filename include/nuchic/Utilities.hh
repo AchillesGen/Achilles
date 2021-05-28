@@ -32,7 +32,6 @@ class Brent {
         ///@param b: The upper bound to search for the root
         ///@return double: The root that was found within the given tolerance
         double CalcRoot(double, double) const;
-
     private:
         // Functions
         inline void swap(double &fa, double &fb, double &a, double &b) const {
