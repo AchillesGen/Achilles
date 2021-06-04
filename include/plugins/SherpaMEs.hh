@@ -3,6 +3,7 @@
 
 #include "nuchic/ParticleInfo.hh"
 
+#include <complex>
 #include <array>
 #include <vector>
 #include <string>
@@ -35,7 +36,7 @@ public:
 
   bool InitializeProcess(const Process_Info &info);
 
-  std::vector<double> Calc
+  std::vector<std::complex<double>> Calc
   (const std::vector<int> fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;

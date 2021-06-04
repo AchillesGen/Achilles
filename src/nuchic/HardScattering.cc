@@ -35,18 +35,17 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
     m_leptonicProcesses.push_back(process);
 }
 
-std::vector<double> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
+std::vector<std::complex<double>> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                                    const double &mu2) const {
-    const auto nLeptons = m_leptonicProcesses[0].m_ids.size()-2;
-    std::vector<std::array<double, 4>> mom(nLeptons+2);
+    std::vector<std::array<double, 4>> mom(NLeptons()+2);
     FourVector Q(-p[0]);
-    mom[0] = (p[0]/1_GeV).Momentum();
-    for(size_t i = 1; i < nLeptons; ++i) {
+    mom[1] = (p[0]/1_GeV).Momentum();
+    for(size_t i = 1; i < NLeptons(); ++i) {
         Q += p[i];
         mom[i+1] = (p[i]/1_GeV).Momentum();
     }
-    mom[1] = (Q/1_GeV).Momentum();
-    mom[nLeptons+2] = std::array<double, 4>();
+    mom[0] = (Q/1_GeV).Momentum();
+    mom[NLeptons()+1] = std::array<double, 4>();
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);

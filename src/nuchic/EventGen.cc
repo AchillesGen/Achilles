@@ -58,9 +58,11 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
     for(const auto &beam_id : beam -> BeamIDs()) {
         std::cout << int(beam_id) << std::endl;
-        std::vector<PID> incoming = {beam_id, nuchic::PID::dummyHadron()};
+        std::vector<PID> incoming = {nuchic::PID::dummyHadron(), beam_id};
         for(auto info : leptonicProcesses) {
             info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
+            for(const auto id : info.m_ids)
+                spdlog::info("{}", int(id));
             if(!sherpa->InitializeProcess(info)) {
                 spdlog::error("Cannot initialize hard process");
                 exit(1);
@@ -153,11 +155,20 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     spdlog::debug("Calculating cross section");
 
     // Obtain the leptonic tensor
-    std::vector<double> leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
-    spdlog::debug("Cross sections from Sherpa: {}",
-                  scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100));
+    auto leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
+    spdlog::debug("Currents from Sherpa: {}", leptonCurrent);
+
     // Obtain the hadronic tensor
+    auto hadronCurrent = scattering -> HadronicCurrent(event);
+    spdlog::debug("Currents from Noemi: {}", hadronCurrent);
     scattering -> CrossSection(event);
+    spdlog::info("Default xsec = {}", event.MatrixElement(0).weight);
+    std::complex<double> amp = 0;
+    for(size_t i = 0; i < hadronCurrent.size(); ++i) {
+        amp += hadronCurrent[i]*leptonCurrent[i]; 
+    }
+    double xsec = pow(std::abs(amp), 2);
+    spdlog::info("Sherpa + Noemi xsec = {}", xsec);
     if(!scattering -> InitializeEvent(event))
         return 0;
 

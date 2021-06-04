@@ -123,6 +123,20 @@ subroutine det_Ja(f1v,f2v)
   
 end subroutine det_Ja
 
+subroutine det_current(j1)
+    implicit none
+    complex*16, intent(out) :: j1(4)
+    integer*4 :: mu, i, j
+
+    do mu=1,4
+        do i=1,2
+            do j=1,2
+                j1(mu) = j1(mu) + sum(ubarpp1(i,:)*matmul(J_1(:,:,mu),up1(j,:)))
+            enddo
+        enddo
+    enddo
+end subroutine
+
 
 subroutine det_res1b(rl,rt)
    implicit none

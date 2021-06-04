@@ -11,6 +11,8 @@ extern "C" {
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
+    void HadronicCurrentOneBody(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*,
+                                std::complex<double>**, int*);
     void CleanUp(double**, int*);
 }
 
@@ -35,6 +37,27 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
 
     InitializeOneBody(cnameP.get(), cnameN.get(), 0, iform);
     spdlog::trace("Finished initializing quasielastic spectral function model");
+}
+
+nuchic::Current nuchic::FQESpectral::HadronicCurrent(Event &event) const {
+    auto pNucleonIn = event.PhaseSpace().momentum[NLeptons()];
+    auto pNucleonOut = event.PhaseSpace().momentum[NLeptons()+1];
+    auto qVec = event.PhaseSpace().momentum[0];
+    for(size_t i = 1; i < NLeptons(); ++i) {
+        qVec -= event.PhaseSpace().momentum[i];
+    }
+    // auto rotMat = qVec.AlignZ();
+    // qVec = qVec.Rotate(rotMat);
+    // pNucleonIn = pNucleonIn.Rotate(rotMat);
+    // pNucleonOut = pNucleonOut.Rotate(rotMat);
+
+    std::complex<double> *tmp = nullptr;
+    int size{};
+
+    HadronicCurrentOneBody(&qVec, &pNucleonIn, &pNucleonOut, &tmp, &size);
+    Current result{tmp, tmp+size};
+    delete tmp;
+    return result;
 }
 
 void nuchic::FQESpectral::CrossSection(Event &event) const {

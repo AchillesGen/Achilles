@@ -13,6 +13,7 @@ module libhardscattering
         contains
             procedure :: init => onebody_init
             procedure :: xsec => onebody_xsec
+            procedure :: current => onebody_current
     end type
 
     type(onebody_calc) :: onebody
@@ -65,6 +66,49 @@ contains
         call f_eval(pn, pfn, e, mom, w, qval, theta, ee, nZ, nA, kf, results(1), results(2))
     end subroutine
 
+    subroutine onebody_current(this, qvec, pin, pout, results, length)
+        use dirac_matrices
+        use libvectors
+        use libutilities
+        implicit none
+
+        class(onebody_calc) :: this
+        type(fourvector), intent(in) :: qvec, pin, pout
+        double precision, dimension(4) :: q, p, pp
+        double precision :: f1v, f2v
+        integer, intent(out) :: length
+        complex*16, intent(out), dimension(:), pointer :: results
+        double precision :: ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv
+        double precision :: xp, wt, e, w, qm2
+
+        q = qvec%to_array()
+        p = pin%to_array()
+        pp = pout%to_array()
+        xp = sqrt(sum(p(2:4)**2))
+        e = p(1)
+        w = q(1)
+        p(1) = sqrt(xp**2+constants%mqe**2)
+        wt = w-abs(e)+constants%mqe-p(1)
+        q(1) = wt
+
+        q = q/constants%hbarc
+        p = p/constants%hbarc
+        pp = pp/constants%hbarc
+
+        qm2 = sum(q(2:4)**2) - (w/constants%hbarc)**2
+
+        call current_init(p, pp, q)
+        call define_spinors()
+        call nform(2, qm2, ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv)
+        f1v = 0.5*(ff1v+ff1s)
+        f2v = 0.5*(ff2v+ff2s)
+
+        call det_Ja(f1v, f2v)
+        length = 4
+        allocate(results(length))
+        call det_current(results)
+    end subroutine
+
     subroutine initialize(name_p, name_n, fg, iform) bind(C, name="InitializeOneBody")
         use iso_c_binding
         use libutilities
@@ -100,6 +144,25 @@ contains
 
         call onebody%xsec(pn, pfn, e, mom, w, qval, theta, ee, &
                           nZ, nA, kf, tmp_results, length)
+        results = c_loc(tmp_results(1))
+    end subroutine
+
+    subroutine hadronic_current(q_vec, pin_vec, pout_vec, results, length) &
+            bind(C, name="HadronicCurrentOneBody")
+        use iso_c_binding
+        use libvectors
+        implicit none
+
+        type(c_ptr), intent(in) :: q_vec, pin_vec, pout_vec
+        type(fourvector) :: q, pin, pout
+        complex(c_double_complex), dimension(:), pointer :: tmp_results
+        type(c_ptr), intent(out) :: results
+        integer(c_int), intent(out) :: length
+
+        q = fourvector(q_vec)
+        pin = fourvector(pin_vec)
+        pout = fourvector(pout_vec)
+        call onebody%current(q, pin, pout, tmp_results, length)
         results = c_loc(tmp_results(1))
     end subroutine
 

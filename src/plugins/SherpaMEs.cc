@@ -63,13 +63,14 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   int level(SherpaVerbosity(spdlog::get("nuchic")->level()));
   addParameter(argv,"OUTPUT="+ToString(level));
   // Set beams and PDFs.
-  addParameter(argv,"BEAM_1=90");
-  addParameter(argv,"BEAM_2=90");
+  addParameter(argv,"BEAM_1=2212");
+  addParameter(argv,"BEAM_2=11");
   addParameter(argv,"BEAM_ENERGY_1=100");
   addParameter(argv,"BEAM_ENERGY_2=100");
-  addParameter(argv,"PDF_SET=None");
-  addParameter(argv,"PDF_LIBRARY=None");
+  // addParameter(argv,"PDF_SET=None");
+  // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
+  addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
@@ -85,8 +86,8 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
   My_In_File::OpenDB(rpa->gen.Variable("SHERPA_CPP_PATH")
     +"/Process/"+megen+"/");
   PHASIC::Process_Info pi;
-  pi.m_maxcpl[0]   = pi.m_mincpl[0] = ampl->OrderQCD();
-  pi.m_maxcpl[1]   = pi.m_mincpl[1] = ampl->OrderEW();
+  // pi.m_maxcpl[0]   = pi.m_mincpl[0] = ampl->OrderQCD();
+  // pi.m_maxcpl[1]   = pi.m_mincpl[1] = ampl->OrderEW();
   pi.m_megenerator = megen;
   for (size_t i(0); i<ampl->NIn(); ++i) {
     Flavour fl(ampl->Leg(i)->Flav().Bar());
@@ -134,11 +135,12 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   for (size_t i(0);i<info.m_ids.size();++i) {
     ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]).Bar():
 		    Flavour(info.m_ids[i]));
-  }
+  } 
   ampl->SetNIn(2);
   ampl->SetOrderQCD(0);
   ampl->SetOrderEW(info.m_ids.size()-2);
-  Process_Base::SortFlavours(ampl);
+  // TODO: Need to fix this later
+  // Process_Base::SortFlavours(ampl);
   StringProcess_Map *pm(m_pmap[nlo_type::lo]);
   std::string name(Process_Base::GenerateName(ampl));
   if (pm->find(name)==pm->end()) getProcess(ampl);
@@ -147,7 +149,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   return true;
 }
 
-std::vector<double> SherpaMEs::Calc
+std::vector<std::complex<double>> SherpaMEs::Calc
 (const std::vector<int> _fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
@@ -173,5 +175,7 @@ std::vector<double> SherpaMEs::Calc
   // return differntial xs for now
   double res(proc->Differential(*ampl,1|2|4));
   ampl->Delete();
-  return std::vector<double>(1,res);
+
+  COMIX::Single_Process *singleProcess = proc->Get<COMIX::Single_Process>();
+  return singleProcess -> LeptonicCurrent();
 }
