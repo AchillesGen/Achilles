@@ -11,6 +11,7 @@
   subroutine cc1(xq,w,wt,xk,xp,p_4,pp_4,ee0,theta,ig,sig_p, sig_n)
     use xsec_fact
     use dirac_matrices
+    use libutilities
     implicit none
     integer*4 :: ig,i
     real*8 :: xq, w,wt, xk, xp, ee0, theta
@@ -23,9 +24,9 @@
 !     thetae   electron scattering angle
 !     xk, xp   initital and final nucleon three-momenta in inverse fm
 !     sina2    sin(alpha)**2, alpha being the angle between the 
-      e = ee0/hbarc
-      wf = w/hbarc
-      wtf=wt/hbarc
+      e = ee0/constants%hbarc
+      wf = w/constants%hbarc
+      wtf=wt/constants%hbarc
       ef = e-wf            
       q2 = xq**2
       p2 = xk**2           
@@ -43,7 +44,6 @@
       q_4(2:3)=0.0d0
       q_4(4)=xq
       !
-
       call current_init(p_4,pp_4,q_4)
       call define_spinors()
       call sigccc(1,sig_p,ig)

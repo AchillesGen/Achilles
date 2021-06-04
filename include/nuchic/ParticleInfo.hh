@@ -67,7 +67,7 @@ namespace nuchic {
             static constexpr PID proton() { return PID{ 2212 }; }
             static constexpr PID neutron() { return PID{ 2112 }; }
             // Dummy hadron
-            static constexpr PID dummyHadron() { return PID{ 22 }; }
+            static constexpr PID dummyHadron() { return PID{ 2212 }; }
 
         private:
             // Ensure id matches the numbering scheme defined at:
