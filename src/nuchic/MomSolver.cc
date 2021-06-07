@@ -88,13 +88,11 @@ nuchic::FourVector nuchic::SolveDeltaWithPotential(const nuchic::FourVector &q,
         FourVector p3 = {p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy};
         auto p4 = q - p3;
         p4.E() = sqrt(p4.P2() + m4*m4) + Potential(p4.P(), rho4);
-        spdlog::info("p3 = {}, delta = {}", p3, q.E() - p3.E() - p4.E());
         return q.E() - p3.E() - p4.E();
     };
 
     Brent brent(_func);
     double cosTheta = brent.CalcRoot(-1, 1);
     double sinTheta = sqrt(1-cosTheta*cosTheta);
-    spdlog::info("cosTheta = {}", cosTheta);
     return {p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy};
 }
