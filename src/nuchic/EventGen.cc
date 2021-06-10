@@ -156,15 +156,17 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Obtain the leptonic tensor
     auto leptonTensor = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
-    spdlog::info("Tensor from Sherpa: {}", leptonTensor);
+    spdlog::trace("Tensor from Sherpa: {}", leptonTensor);
 
     // Obtain the hadronic tensor
     auto hadronTensor = scattering -> HadronicTensor(event);
     spdlog::info("Tensor from Noemi: {}", hadronTensor);
     scattering -> CrossSection(event);
+    double defaultxsec{};
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
-            spdlog::info("Default xsec = {}", event.MatrixElement(0).weight);
+            spdlog::info("Default xsec = {}", event.MatrixElement(i).weight);
+            defaultxsec = event.MatrixElement(i).weight;
             break;
         }
     }
@@ -185,6 +187,7 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     constexpr double alpha = 1.0/137;
     double xsec = amp.real()*Constant::HBARC2*flux*alpha;
     spdlog::info("Sherpa + Noemi xsec = {}", xsec);
+    spdlog::info("Ratio = {}", xsec/defaultxsec);
     if(!scattering -> InitializeEvent(event))
         return 0;
 

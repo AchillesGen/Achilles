@@ -104,9 +104,6 @@ subroutine current_init(p1_in,pp1_in,q_in)
     return
 end subroutine
 
-
-
-
 subroutine det_Ja(f1v,f2v)
   implicit none
   integer*4 :: mu,nu
@@ -120,7 +117,6 @@ subroutine det_Ja(f1v,f2v)
      enddo
      J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)
   enddo
-  
 end subroutine det_Ja
 
 subroutine det_current(hmunu)
@@ -147,7 +143,6 @@ subroutine det_current(hmunu)
         enddo
     enddo
 end subroutine
-
 
 subroutine det_res1b(rl,rt)
    implicit none

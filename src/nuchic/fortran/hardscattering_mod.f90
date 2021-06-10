@@ -13,7 +13,7 @@ module libhardscattering
         contains
             procedure :: init => onebody_init
             procedure :: xsec => onebody_xsec
-            procedure :: current => onebody_current
+            procedure :: tensor => onebody_tensor
     end type
 
     type(onebody_calc) :: onebody
@@ -66,7 +66,7 @@ contains
         call f_eval(pn, pfn, e, mom, w, qval, theta, ee, nZ, nA, kf, results(1), results(2))
     end subroutine
 
-    subroutine onebody_current(this, qvec, pin, pout, results)
+    subroutine onebody_tensor(this, qvec, pin, pout, results)
         use dirac_matrices
         use libvectors
         use libutilities
@@ -149,7 +149,7 @@ contains
     end subroutine
 
     subroutine hadronic_current(q_vec, pin_vec, pout_vec, results) &
-            bind(C, name="HadronicCurrentOneBody")
+            bind(C, name="HadronicTensorOneBody")
         use iso_c_binding
         use libvectors
         implicit none
@@ -162,7 +162,7 @@ contains
         q = fourvector(q_vec)
         pin = fourvector(pin_vec)
         pout = fourvector(pout_vec)
-        call onebody%current(q, pin, pout, results)
+        call onebody%tensor(q, pin, pout, results)
     end subroutine
 
     subroutine clean_up(results, length) bind(C, name="CleanUp")

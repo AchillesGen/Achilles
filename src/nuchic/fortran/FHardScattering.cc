@@ -11,7 +11,7 @@ extern "C" {
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
-    void HadronicCurrentOneBody(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*,
+    void HadronicTensorOneBody(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*,
                                 std::complex<double>*);
     void CleanUp(double**, int*);
 }
@@ -47,16 +47,13 @@ nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
         qVec -= event.PhaseSpace().momentum[i];
     }
 
-    Tensor result{1, 0, 0, 0,
-                  0, 2, 0, 0,
-                  0, 0, 3, 0,
-                  0, 0, 0, 4};
-    HadronicCurrentOneBody(&qVec, &pNucleonIn, &pNucleonOut, result.data());
+    Tensor result{};
+    HadronicTensorOneBody(&qVec, &pNucleonIn, &pNucleonOut, result.data());
 
-    // Convert back to MeV instead of 1/fm
-    // for(auto &val : result) {
-    //     val *= nuchic::Constant::HBARC*nuchic::Constant::HBARC;
-    // }
+    // Convert back to MeV^2 instead of 1/fm^2
+    for(auto &val : result) {
+        val *= nuchic::Constant::HBARC*nuchic::Constant::HBARC/(4*pNucleonIn.E()*pNucleonOut.E());
+    }
     return result;
 }
 
