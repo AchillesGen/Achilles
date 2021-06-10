@@ -12,7 +12,7 @@ extern "C" {
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
     void HadronicCurrentOneBody(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*,
-                                std::complex<double>**, int*);
+                                std::complex<double>*);
     void CleanUp(double**, int*);
 }
 
@@ -39,24 +39,24 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
     spdlog::trace("Finished initializing quasielastic spectral function model");
 }
 
-nuchic::Current nuchic::FQESpectral::HadronicCurrent(Event &event) const {
+nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
     auto pNucleonIn = event.PhaseSpace().momentum[NLeptons()];
     auto pNucleonOut = event.PhaseSpace().momentum[NLeptons()+1];
     auto qVec = event.PhaseSpace().momentum[0];
     for(size_t i = 1; i < NLeptons(); ++i) {
         qVec -= event.PhaseSpace().momentum[i];
     }
-    // auto rotMat = qVec.AlignZ();
-    // qVec = qVec.Rotate(rotMat);
-    // pNucleonIn = pNucleonIn.Rotate(rotMat);
-    // pNucleonOut = pNucleonOut.Rotate(rotMat);
 
-    std::complex<double> *tmp = nullptr;
-    int size{};
+    Tensor result{1, 0, 0, 0,
+                  0, 2, 0, 0,
+                  0, 0, 3, 0,
+                  0, 0, 0, 4};
+    HadronicCurrentOneBody(&qVec, &pNucleonIn, &pNucleonOut, result.data());
 
-    HadronicCurrentOneBody(&qVec, &pNucleonIn, &pNucleonOut, &tmp, &size);
-    Current result{tmp, tmp+size};
-    delete tmp;
+    // Convert back to MeV instead of 1/fm
+    // for(auto &val : result) {
+    //     val *= nuchic::Constant::HBARC*nuchic::Constant::HBARC;
+    // }
     return result;
 }
 

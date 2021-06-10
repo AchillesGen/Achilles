@@ -66,47 +66,48 @@ contains
         call f_eval(pn, pfn, e, mom, w, qval, theta, ee, nZ, nA, kf, results(1), results(2))
     end subroutine
 
-    subroutine onebody_current(this, qvec, pin, pout, results, length)
+    subroutine onebody_current(this, qvec, pin, pout, results)
         use dirac_matrices
         use libvectors
         use libutilities
+        use quasi_el
         implicit none
 
         class(onebody_calc) :: this
         type(fourvector), intent(in) :: qvec, pin, pout
-        double precision, dimension(4) :: q, p, pp
+        double precision, dimension(4) :: q, p4, pp4
         double precision :: f1v, f2v
-        integer, intent(out) :: length
-        complex*16, intent(out), dimension(:), pointer :: results
+        complex*16, intent(inout), dimension(16) :: results
         double precision :: ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv
         double precision :: xp, wt, e, w, qm2
+        double precision :: sf
 
         q = qvec%to_array()
-        p = pin%to_array()
-        pp = pout%to_array()
-        xp = sqrt(sum(p(2:4)**2))
-        e = p(1)
+        p4 = pin%to_array()
+        pp4 = pout%to_array()
+        xp = sqrt(sum(p4(2:4)**2))
+        e = p4(1)
+        sf = pke_p_interp%call(e, xp) 
         w = q(1)
-        p(1) = sqrt(xp**2+constants%mqe**2)
-        wt = w-abs(e)+constants%mqe-p(1)
+        p4(1) = sqrt(xp**2+constants%mqe**2)
+        wt = w-abs(e)+constants%mqe-p4(1)
         q(1) = wt
 
         q = q/constants%hbarc
-        p = p/constants%hbarc
-        pp = pp/constants%hbarc
+        p4 = p4/constants%hbarc
+        pp4 = pp4/constants%hbarc
 
         qm2 = sum(q(2:4)**2) - (w/constants%hbarc)**2
 
-        call current_init(p, pp, q)
+        call current_init(p4, pp4, q)
         call define_spinors()
         call nform(2, qm2, ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv)
         f1v = 0.5*(ff1v+ff1s)
         f2v = 0.5*(ff2v+ff2s)
 
         call det_Ja(f1v, f2v)
-        length = 4
-        allocate(results(length))
         call det_current(results)
+        results = results*sf/6
     end subroutine
 
     subroutine initialize(name_p, name_n, fg, iform) bind(C, name="InitializeOneBody")
@@ -147,7 +148,7 @@ contains
         results = c_loc(tmp_results(1))
     end subroutine
 
-    subroutine hadronic_current(q_vec, pin_vec, pout_vec, results, length) &
+    subroutine hadronic_current(q_vec, pin_vec, pout_vec, results) &
             bind(C, name="HadronicCurrentOneBody")
         use iso_c_binding
         use libvectors
@@ -155,15 +156,13 @@ contains
 
         type(c_ptr), intent(in) :: q_vec, pin_vec, pout_vec
         type(fourvector) :: q, pin, pout
-        complex(c_double_complex), dimension(:), pointer :: tmp_results
-        type(c_ptr), intent(out) :: results
-        integer(c_int), intent(out) :: length
+        complex(c_double_complex), intent(inout), dimension(16) :: results
+        integer(c_int) :: length
 
         q = fourvector(q_vec)
         pin = fourvector(pin_vec)
         pout = fourvector(pout_vec)
-        call onebody%current(q, pin, pout, tmp_results, length)
-        results = c_loc(tmp_results(1))
+        call onebody%current(q, pin, pout, results)
     end subroutine
 
     subroutine clean_up(results, length) bind(C, name="CleanUp")

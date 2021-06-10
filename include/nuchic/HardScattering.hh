@@ -31,7 +31,7 @@ class Event;
 struct InitialState;
 
 using Particles = std::vector<Particle>;
-using Current = std::vector<std::complex<double>>;
+using Tensor = std::array<std::complex<double>, 16>;
 
 class HardScattering {
     public:
@@ -48,7 +48,7 @@ class HardScattering {
 
         // Calculation details
         virtual void CrossSection(Event&) const = 0;
-        virtual Current HadronicCurrent(Event&) const = 0;
+        virtual Tensor HadronicTensor(Event&) const = 0;
 
         // Number of phase space variables
         int NVariables() const { return LeptonVariables() + HadronVariables(); }
@@ -74,8 +74,8 @@ class HardScattering {
 
         // Sherpa pointer operations
         void SetSherpa(SherpaMEs *const _sherpa) { p_sherpa = _sherpa; }
-        std::vector<std::complex<double>> LeptonicTensor(const std::vector<FourVector>&,
-                                                         const double&) const;
+        Tensor LeptonicTensor(const std::vector<FourVector>&,
+                              const double&) const;
 
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
@@ -109,7 +109,7 @@ class Quasielastic : public HardScattering {
         }
 
         void CrossSection(Event&) const override = 0;
-        Current HadronicCurrent(Event&) const override = 0;
+        Tensor HadronicTensor(Event&) const override = 0;
 
         // Select initial state
         bool InitializeEvent(Event&) override;
@@ -124,7 +124,7 @@ class QESpectral : public Quasielastic {
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
         void CrossSection(Event&) const override {}
-        Current HadronicCurrent(Event&) const override { return {}; }
+        Tensor HadronicTensor(Event&) const override { return {}; }
 };
 
 class FQESpectral : public QESpectral {
@@ -133,7 +133,7 @@ class FQESpectral : public QESpectral {
         ~FQESpectral() override { Delete(); }
 
         void CrossSection(Event&) const override;
-        Current HadronicCurrent(Event&) const override;
+        Tensor HadronicTensor(Event&) const override;
 
         static std::string GetName() { return "QESpectral"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
@@ -153,7 +153,7 @@ class QEGlobalFermiGas : public Quasielastic {
         int HadronVariables() const override { return 3; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
-        Current HadronicCurrent(Event&) const override { return {}; }
+        Tensor HadronicTensor(Event&) const override { return {}; }
         void CrossSection(Event&) const override {}
 };
 
@@ -162,7 +162,7 @@ class FQEGlobalFermiGas : public QEGlobalFermiGas {
         FQEGlobalFermiGas(const YAML::Node&, RunMode);
 
         void CrossSection(Event&) const override;
-        Current HadronicCurrent(Event&) const override { return {}; }
+        Tensor HadronicTensor(Event&) const override { return {}; }
         static std::string GetName() { return "QEGlobalFermiGas"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
                 RunMode mode) {

@@ -123,15 +123,26 @@ subroutine det_Ja(f1v,f2v)
   
 end subroutine det_Ja
 
-subroutine det_current(j1)
+subroutine det_current(hmunu)
     implicit none
-    complex*16, intent(out) :: j1(4)
-    integer*4 :: mu, i, j
+    complex*16, intent(out) :: hmunu(16)
+    complex*16 :: jmu(2,2,4)
+    integer*4 :: mu, nu, i, j
 
     do mu=1,4
         do i=1,2
             do j=1,2
-                j1(mu) = j1(mu) + sum(ubarpp1(i,:)*matmul(J_1(:,:,mu),up1(j,:)))
+                jmu(i, j, mu) = sum(ubarpp1(i,:)*matmul(J_1(:,:,mu),up1(j,:)))
+            enddo
+        enddo
+    enddo
+
+    do mu=1,4
+        do nu=1,4
+            do i=1,2
+                do j=1,2
+                    hmunu(4*(mu-1)+nu) = hmunu(4*(mu-1)+nu) + jmu(i, j, mu)*conjg(jmu(i, j, nu))
+                enddo
             enddo
         enddo
     enddo
@@ -169,8 +180,3 @@ subroutine det_res1b(rl,rt)
   return
 end subroutine det_res1b
 end module dirac_matrices
-
-
-
-
-

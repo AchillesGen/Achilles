@@ -36,7 +36,7 @@ public:
 
   bool InitializeProcess(const Process_Info &info);
 
-  std::vector<std::complex<double>> Calc
+  std::vector<std::vector<std::complex<double>>> Calc
   (const std::vector<int> fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;

@@ -71,6 +71,9 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
+  addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
+  addParameter(argv,"1/ALPHAQED(MZ)=137");
+  addParameter(argv,"ACTIVE[23]=0");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
@@ -149,7 +152,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   return true;
 }
 
-std::vector<std::complex<double>> SherpaMEs::Calc
+std::vector<std::vector<std::complex<double>>> SherpaMEs::Calc
 (const std::vector<int> _fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const

@@ -35,8 +35,8 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
     m_leptonicProcesses.push_back(process);
 }
 
-std::vector<std::complex<double>> HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
-                                                   const double &mu2) const {
+nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
+                                              const double &mu2) const {
     std::vector<std::array<double, 4>> mom(NLeptons()+2);
     FourVector Q(-p[0]);
     mom[1] = (p[0]/1_GeV).Momentum();
@@ -53,7 +53,18 @@ std::vector<std::complex<double>> HardScattering::LeptonicTensor(const std::vect
     for(size_t i = 0; i < m_leptonicProcesses[0].m_ids.size(); ++i) {
         spdlog::trace("PID: {}, Momentum: ({}, {}, {}, {})", pids[i], mom[i][0], mom[i][1], mom[i][2], mom[i][3]); 
     }
-    return p_sherpa -> Calc(pids, mom, mu2);
+    auto currents = p_sherpa -> Calc(pids, mom, mu2);
+
+    Tensor tensor;
+    for(const auto &current : currents) { 
+        for(size_t i = 0; i < 4; ++i) {
+            for(size_t j = 0; j < 4; ++j) {
+                tensor[4*i+j] += current[i]*std::conj(current[j])/1_GeV/1_GeV;
+            }
+        }
+    }
+
+    return tensor;
 }
 
 void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &event) const {

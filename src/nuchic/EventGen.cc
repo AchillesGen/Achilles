@@ -155,19 +155,35 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     spdlog::debug("Calculating cross section");
 
     // Obtain the leptonic tensor
-    auto leptonCurrent = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
-    spdlog::debug("Currents from Sherpa: {}", leptonCurrent);
+    auto leptonTensor = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
+    spdlog::info("Tensor from Sherpa: {}", leptonTensor);
 
     // Obtain the hadronic tensor
-    auto hadronCurrent = scattering -> HadronicCurrent(event);
-    spdlog::debug("Currents from Noemi: {}", hadronCurrent);
+    auto hadronTensor = scattering -> HadronicTensor(event);
+    spdlog::info("Tensor from Noemi: {}", hadronTensor);
     scattering -> CrossSection(event);
-    spdlog::info("Default xsec = {}", event.MatrixElement(0).weight);
-    std::complex<double> amp = 0;
-    for(size_t i = 0; i < hadronCurrent.size(); ++i) {
-        amp += hadronCurrent[i]*leptonCurrent[i]; 
+    for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
+        if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
+            spdlog::info("Default xsec = {}", event.MatrixElement(0).weight);
+            break;
+        }
     }
-    double xsec = pow(std::abs(amp), 2);
+    std::complex<double> amp{};
+    for(size_t mu = 0; mu < 4; ++mu) {
+        for(size_t nu = 0; nu < 4; ++nu) {
+            const size_t idx = 4*mu + nu;
+            if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
+                amp -= hadronTensor[idx]*leptonTensor[idx];
+            } else {
+                amp += hadronTensor[idx]*leptonTensor[idx];
+            }
+        }
+    }
+    // double spinAvg = 2*2;
+    // double ecm = (event.PhaseSpace().momentum[0]+event.PhaseSpace().momentum[2]).M2()/2; 
+    double flux = event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E(); // 2*ecm*ecm;
+    constexpr double alpha = 1.0/137;
+    double xsec = amp.real()*Constant::HBARC2*flux*alpha;
     spdlog::info("Sherpa + Noemi xsec = {}", xsec);
     if(!scattering -> InitializeEvent(event))
         return 0;
