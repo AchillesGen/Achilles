@@ -47,13 +47,18 @@ nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
         qVec -= event.PhaseSpace().momentum[i];
     }
 
+    auto rotMat = qVec.AlignZ();
+    qVec = qVec.Rotate(rotMat);
+    pNucleonIn = pNucleonIn.Rotate(rotMat);
+    pNucleonOut = pNucleonOut.Rotate(rotMat);
+
     Tensor result{};
     HadronicTensorOneBody(&qVec, &pNucleonIn, &pNucleonOut, result.data());
 
     // Convert back to MeV^2 instead of 1/fm^2
-    for(auto &val : result) {
-        val *= nuchic::Constant::HBARC*nuchic::Constant::HBARC/(4*pNucleonIn.E()*pNucleonOut.E());
-    }
+    // for(auto &val : result) {
+    //     val *= nuchic::Constant::HBARC*nuchic::Constant::HBARC;
+    // }
     return result;
 }
 

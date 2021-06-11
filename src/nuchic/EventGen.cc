@@ -160,34 +160,56 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Obtain the hadronic tensor
     auto hadronTensor = scattering -> HadronicTensor(event);
-    spdlog::info("Tensor from Noemi: {}", hadronTensor);
+    spdlog::trace("Tensor from Noemi: {}", hadronTensor);
     scattering -> CrossSection(event);
     double defaultxsec{};
+    static double minRatio = 100000;
+    static double maxRatio = 0;
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
-            spdlog::info("Default xsec = {}", event.MatrixElement(i).weight);
-            defaultxsec = event.MatrixElement(i).weight;
+            if(event.MatrixElement(i).weight != 0) {
+                spdlog::info("Default xsec = {}", event.MatrixElement(i).weight);
+                defaultxsec = event.MatrixElement(i).weight;
+            }
             break;
         }
     }
-    std::complex<double> amp{};
-    for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            const size_t idx = 4*mu + nu;
-            if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
-                amp -= hadronTensor[idx]*leptonTensor[idx];
-            } else {
-                amp += hadronTensor[idx]*leptonTensor[idx];
-            }
-        }
-    }
+    std::complex<double> amp = hadronTensor[0]*leptonTensor[0] + hadronTensor[5]*leptonTensor[5] + hadronTensor[10]*leptonTensor[10];
+    // for(size_t mu = 0; mu < 4; ++mu) {
+    //     for(size_t nu = 0; nu < 4; ++nu) {
+    //         const size_t idx = 4*mu + nu;
+    //         if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
+    //             amp -= hadronTensor[idx]*leptonTensor[idx];
+    //         } else {
+    //             amp += hadronTensor[idx]*leptonTensor[idx];
+    //         }
+    //     }
+    // }
     // double spinAvg = 2*2;
     // double ecm = (event.PhaseSpace().momentum[0]+event.PhaseSpace().momentum[2]).M2()/2; 
     double flux = event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E(); // 2*ecm*ecm;
     constexpr double alpha = 1.0/137;
     double xsec = amp.real()*Constant::HBARC2*flux*alpha;
-    spdlog::info("Sherpa + Noemi xsec = {}", xsec);
-    spdlog::info("Ratio = {}", xsec/defaultxsec);
+    if(defaultxsec != 0) {
+        auto ke = event.PhaseSpace().momentum[0];
+        auto kep = event.PhaseSpace().momentum[1];
+        auto q = ke - kep;
+        auto rotMat = q.AlignZ();
+        ke = ke.Rotate(rotMat);
+        kep = kep.Rotate(rotMat);
+
+        double l00 = 2*(2*ke[0]*kep[0]-ke*kep)/pow(q.M2(), 2)*alpha*4*M_PI;
+        double l11 = 2*(2*ke[1]*kep[1]+ke*kep)/pow(q.M2(), 2)*alpha*4*M_PI;
+        double l22 = 2*(2*ke[2]*kep[2]+ke*kep)/pow(q.M2(), 2)*alpha*4*M_PI;
+
+        double ratio = xsec/defaultxsec;
+        if(ratio < minRatio) minRatio = ratio;
+        if(ratio > maxRatio) maxRatio = ratio;
+        spdlog::info("Sherpa / Analytic (00, 11, 22) = {}, {}, {}",
+                     leptonTensor[0]/l00, leptonTensor[5]/l11, leptonTensor[10]/l22);
+        spdlog::info("Sherpa + Noemi xsec = {}", xsec);
+        spdlog::info("Ratio = {}, Range = [{}, {}]", ratio, minRatio, maxRatio);
+    }
     if(!scattering -> InitializeEvent(event))
         return 0;
 

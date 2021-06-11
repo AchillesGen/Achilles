@@ -38,13 +38,21 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
 nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                               const double &mu2) const {
     std::vector<std::array<double, 4>> mom(NLeptons()+2);
-    FourVector Q(-p[0]);
-    mom[1] = (p[0]/1_GeV).Momentum();
+    FourVector Q(p[0]);
     for(size_t i = 1; i < NLeptons(); ++i) {
-        Q += p[i];
-        mom[i+1] = (p[i]/1_GeV).Momentum();
+        Q -= p[i];
     }
-    mom[0] = (Q/1_GeV).Momentum();
+    auto rotMat = Q.AlignZ();
+    Q = Q.Rotate(rotMat);
+    for(size_t i = 0; i < NLeptons(); ++i) {
+        mom[i+1] = (p[i].Rotate(rotMat)/1_GeV).Momentum();
+    }
+    // mom[1] = (p[0]/1_GeV).Momentum();
+    // for(size_t i = 1; i < NLeptons(); ++i) {
+    //     Q += p[i];
+    //     mom[i+1] = (p[i]/1_GeV).Momentum();
+    // }
+    mom[0] = (-Q/1_GeV).Momentum();
     mom[NLeptons()+1] = std::array<double, 4>();
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
