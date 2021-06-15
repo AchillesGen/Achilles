@@ -16,7 +16,7 @@ Main:
 
 Leptonic Tensor:
   Model: SM
-  Leptons: [[11], [12], [13]]
+  Leptons: [[11]]
 
 Initialize:
   seed: 12345678
@@ -32,11 +32,6 @@ EventGen:
 Beams:
   - Beam:
       PID: 11
-      Beam Params:
-        Type: Monochromatic
-        Energy: 845
-  - Beam:
-      PID: 13
       Beam Params:
         Type: Monochromatic
         Energy: 845
