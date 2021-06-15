@@ -52,8 +52,8 @@ nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
     //     Q += p[i];
     //     mom[i+1] = (p[i]/1_GeV).Momentum();
     // }
-    mom[0] = (-Q/1_GeV).Momentum();
-    mom[NLeptons()+1] = std::array<double, 4>();
+    mom[0] = (-p[NLeptons()]/1_GeV).Momentum(); // (-Q/1_GeV).Momentum();
+    mom[NLeptons()+1] = (p[NLeptons()]/1_GeV).Momentum(); // std::array<double, 4>{};
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);
@@ -109,6 +109,8 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
             Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
             cosT = std::cos(m_angle);
             sinT = std::sin(m_angle);
+            // TEST: Fixed energy
+            Elepton = event.PhaseSpace().momentum[0].E()*Constant::mN/(event.PhaseSpace().momentum[0].E()*(1-cosT)+Constant::mN);
             event.PhaseSpace().weight *= event.PhaseSpace().momentum[0].E();
             break;
         case RunMode::FullPhaseSpace:
@@ -166,7 +168,13 @@ size_t HardScattering::SelectMatrixElement(nuchic::Event &event) const {
 
 void QESpectral::GenerateHadrons(const std::vector<double> &rans,
                                  const FourVector &Q, Event &event) const {
-    static const double dp = 1000; // Hard code the maximum allowed momentum
+    // TEST: phase space
+    event.PhaseSpace().momentum.emplace_back(Constant::mN, 0, 0, 0);
+    auto pout = event.PhaseSpace().momentum[0] + event.PhaseSpace().momentum[2] - event.PhaseSpace().momentum[1];
+    event.PhaseSpace().momentum.push_back(pout);
+    return;
+
+    static constexpr double dp = 1000; // Hard code the maximum allowed momentum
 
     // Generate phase space
     double cosT = dCos*rans[0] - 1;
