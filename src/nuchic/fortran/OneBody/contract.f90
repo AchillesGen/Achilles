@@ -1,12 +1,10 @@
     module xsec_fact
     implicit none
-    real*8, parameter :: xmp=938.272046d0,xmn=939.56563d0,xm=0.5d0*(xmn+xmp)
-    real*8, parameter :: hbarc=197.327053d0,G_F = 1.14e-5*0.1973d0**2
+    real*8, parameter :: xmp=938.27208816d0,xmn=939.56542052d0,xm=0.5d0*(xmn+xmp)
+    real*8, parameter :: hbarc=197.3269804,G_F = 1.14e-5*0.1973d0**2
     real*8, parameter :: pi= 4.0d0*atan(1.0d0),c0=1.0d0/16.0d0/pi/pi
     real*8, save :: e,ef,cost,q2,p2,pf2,sint,sina2,wf,wtf
   end module xsec_fact
-
-
 
   subroutine cc1(xq,w,wt,xk,xp,p_4,pp_4,ee0,theta,ig,sig_p, sig_n)
     use xsec_fact
@@ -84,6 +82,8 @@
       ff2n=0.5d0*(-ff2v+ff2s)
 
       if(id.eq.1) then
+         ff1p=1
+         ff2p=0
          call det_Ja(ff1p,ff2p)
          call det_res1b(rlp,rtp)
          sig=sig_mott*0.5d0*(al*(rlp)+at*(rtp)) 
