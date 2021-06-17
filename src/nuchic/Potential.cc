@@ -1,0 +1,2 @@
+#include "nuchic/Potential.hh"
+
