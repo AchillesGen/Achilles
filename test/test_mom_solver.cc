@@ -62,7 +62,7 @@ TEST_CASE("Delta function solver", "[Cascade]") {
         const double detM = sqrt((q_free.M2()-4*pow(nuchic::Constant::mN, 2))*(q_free.M2() + q_free.P2())/q_free.M2());
         range.first = q_free.M2() > 2*nuchic::Constant::mN*q_free.E() ? (detM-q_free.P())/2 : (q_free.P()-detM)/2;
         range.second = (q_free.P()+detM)/2;
-        constexpr double rangeExtend = 1.10;
+        constexpr double rangeExtend = 1.05;
         range.first /= rangeExtend;
         range.second *= rangeExtend;
         const double dp3 = range.second - range.first;
