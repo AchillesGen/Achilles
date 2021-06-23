@@ -153,39 +153,28 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
-    event.PhaseSpace().momentum[2].E() = sqrt(pow(nuchic::Constant::mN, 2) + event.PhaseSpace().momentum[2].P2());
-    auto boostVec = event.PhaseSpace().momentum[2].BoostVector();
-    for(auto &part : event.PhaseSpace().momentum) {
-        part = part.Boost(-boostVec);
-    }
 
     // Obtain the leptonic tensor
     auto leptonTensor = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
-    spdlog::trace("Tensor from Sherpa: {}", leptonTensor);
+    spdlog::trace("Leptonic Tensor: {}", leptonTensor);
 
     // Obtain the hadronic tensor
     auto hadronTensor = scattering -> HadronicTensor(event);
-    spdlog::trace("Tensor from Noemi: {}", hadronTensor);
+    spdlog::trace("Hadronic Tensor: {}", hadronTensor);
     scattering -> CrossSection(event);
-    double defaultxsec{};
-    static double minRatio = std::numeric_limits<double>::infinity();
-    static double maxRatio = 0;
-    for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
-        if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
-            if(event.MatrixElement(i).weight != 0) {
-                defaultxsec = event.MatrixElement(i).weight;
-            }
-            break;
-        }
-    }
     constexpr double alpha = 1.0/137;
     std::array<std::complex<double>, 16> hTensor, lTensor;
     auto ke = event.PhaseSpace().momentum[0];
     auto kep = event.PhaseSpace().momentum[1];
     auto pp = event.PhaseSpace().momentum[2];
     auto ppp = event.PhaseSpace().momentum[3];
+    auto e = pp.E();
+    pp.E() = sqrt(pp.P2() + pow(Constant::mN, 2));
     auto q = ke - kep;
     auto rotMat = q.AlignZ();
+    q = q.Rotate(rotMat);
+    auto q2 = q;
+    q2.E() = q.E() - e + Constant::mN - pp.E();
     ke = ke.Rotate(rotMat);
     kep = kep.Rotate(rotMat);
     pp = pp.Rotate(rotMat);
@@ -195,6 +184,9 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     auto ppmn2 = pp*ppp-pow(Constant::mN, 2);
     for(size_t mu = 0; mu < 4; ++mu) {
         for(size_t nu = 0; nu < 4; ++nu) {
+            // if(mu == 0 || nu == 0) hadronTensor[4*mu+nu] = 0;
+            // if(mu == 3 || nu == 3) hadronTensor[4*mu+nu] = 0;
+            // if((mu == 2 && nu == 1) || (mu == 1 && nu == 2)) hadronTensor[4*mu+nu] = 0;
             hTensor[4*mu+nu] = 2*(pp[mu]*ppp[nu] + pp[nu]*ppp[mu])*prefactor2;
             lTensor[4*mu+nu] = 2*(ke[mu]*kep[nu] + ke[nu]*kep[mu])*prefactor;
         }
@@ -202,10 +194,19 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         lTensor[4*mu+mu] += mu == 0 ? -2*ke*kep*prefactor : 2*ke*kep*prefactor;
     }
 
-    // std::complex<double> amp = hadronTensor[0]*leptonTensor[0] + hadronTensor[5]*leptonTensor[5] + hadronTensor[10]*leptonTensor[10];
-    std::complex<double> amp{}; // = hadronTensor[5]*leptonTensor[5] + hadronTensor[10]*leptonTensor[10];
-    const double factor = Constant::mN*event.PhaseSpace().momentum[3].E()*8*M_PI*alpha;
+    std::complex<double> amp{};
+    std::complex<double> rl{}, rt{};
+    double ward = 0;
+    double ward2 = 0;
+    double ward3 = 0;
+    const double factor = alpha;
     for(size_t mu = 0; mu < 4; ++mu) {
+        if(mu == 0) ward += (q2[mu]*hadronTensor[4*mu]).real();
+        else ward -= (q2[mu]*hadronTensor[4*mu]).real();
+        if(mu == 0) ward2 += (q[mu]*leptonTensor[4*mu]).real();
+        else ward2 -= (q[mu]*leptonTensor[4*mu]).real();
+        if(mu == 0) ward3 += (q2[mu]*hTensor[4*mu]).real();
+        else ward3 -= (q2[mu]*hTensor[4*mu]).real();
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
             if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
@@ -213,39 +214,34 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
             } else {
                 amp += hadronTensor[idx]*leptonTensor[idx]*factor;
             }
-            spdlog::info("HL({}) = {}", idx, hadronTensor[idx]*leptonTensor[idx]*factor);
+            // spdlog::info("idx: {}, {}, H = {}, L = {}, {}", mu, nu, hadronTensor[idx], leptonTensor[idx], lTensor[idx]);
         }
     }
-    double flux = pow(event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E()/Constant::mN, 2);
+    rl = hadronTensor[0]*leptonTensor[0]*factor;
+    rt = (hadronTensor[5]*leptonTensor[5]+hadronTensor[10]*leptonTensor[10])*factor;
+    // spdlog::info("amp, rl, rt = {}, {}, {}", amp.real(), rl.real(), rt.real());
     double flux2 = event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E();
-    double xsec = amp.real()*Constant::HBARC2*flux/64/M_PI/M_PI;
+    double xsec = amp.real()*Constant::HBARC2*flux2/8/M_PI;
+    double defaultxsec{};
+    static double minRatio = std::numeric_limits<double>::infinity();
+    static double maxRatio = 0;
+    for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
+        if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
+            if(event.MatrixElement(i).weight != 0) {
+                defaultxsec = event.MatrixElement(i).weight;
+            }
+            // break;
+            event.MatrixElement(i).weight = xsec;
+        }
+    }
     if(defaultxsec != 0) {
-        double tmp = 128*alpha*alpha*M_PI*M_PI/pow(q.M2(), 2);
-        tmp *= ((ke*pp)*(kep*ppp)+(ke*ppp)*(kep*pp)-(ke*kep)*pow(Constant::mN, 2));
-
-        double theta = kep.Angle(ke);
-        double mott = pow(alpha*cos(theta/2)/(2*ke.E()*pow(sin(theta/2), 2)), 2);
-        mott *= nuchic::Constant::HBARC2;
-
-        double mott2 = pow(alpha/(2*ke.E()*pow(sin(theta/2), 2)), 2);
-        mott2 *= flux2*(pow(cos(theta/2), 2)-q.M2()/(2*pow(Constant::mN, 2)) * pow(sin(theta/2), 2));
-        mott2 *= nuchic::Constant::HBARC2;
-
-        double amp3 = pow(Constant::mN, 2)*pow(alpha*4*M_PI, 2)/ke.E()/kep.E()/pow(sin(theta/2), 4)*(pow(cos(theta/2), 2) - q.M2()/(2*pow(Constant::mN, 2))*pow(sin(theta/2),2));
-
         double ratio = xsec/defaultxsec;
         if(ratio < minRatio) minRatio = ratio;
         if(ratio > maxRatio) maxRatio = ratio;
-        spdlog::info("Angle = {}", theta*180/M_PI);
-        spdlog::info("Default xsec = {}", defaultxsec);
-        spdlog::info("Sherpa + Noemi xsec = {}", xsec);
-        spdlog::trace("Mott = {}", mott);
-        spdlog::info("Sherpa / Mott = {}", xsec/mott);
-        spdlog::info("Sherpa / Mott_recoil = {}", xsec/mott2);
-        spdlog::info("mat2_sherpa / mat2_analytic = {}", amp.real()/amp3);
-        spdlog::trace("|1 - Noemi / Mott| = {}", std::abs(1 - defaultxsec/mott));
-        spdlog::trace("|1 - Noemi / Mott2| = {}", std::abs(1 - defaultxsec/mott2));
-        spdlog::info("Ratio = {}, Range = [{}, {}]", ratio, minRatio, maxRatio);
+        // spdlog::info("ward = {}, {}, {}", ward/defaultxsec, ward2/defaultxsec, ward3/defaultxsec);
+        // spdlog::info("Default xsec = {}", defaultxsec);
+        // spdlog::info("Sherpa + Noemi xsec = {}", xsec);
+        // spdlog::info("Ratio = {}, Range = [{}, {}]", ratio, minRatio, maxRatio);
     }
     if(!scattering -> InitializeEvent(event))
         return 0;

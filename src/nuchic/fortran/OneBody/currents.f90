@@ -133,6 +133,7 @@ subroutine det_current(hmunu)
         enddo
     enddo
 
+    ! print*, "josh: "
     do mu=1,4
         do nu=1,4
             do i=1,2
@@ -140,6 +141,7 @@ subroutine det_current(hmunu)
                     hmunu(4*(mu-1)+nu) = hmunu(4*(mu-1)+nu) + jmu(i, j, mu)*conjg(jmu(i, j, nu))
                 enddo
             enddo
+            ! print*, mu, nu, real(hmunu(4*(mu-1)+nu))
         enddo
     enddo
 end subroutine
@@ -161,13 +163,22 @@ subroutine det_res1b(rl,rt)
    enddo
    
    res=0.0d0
+   ! print*, "noemi: "
    do i1=1,2
       do f1=1,2
          do i=1,4
-            res(i,i)=res(i,i)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,i)
+            do j=1,4
+                res(i,j)=res(i,j)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,j)
+            enddo
          enddo
       enddo
    enddo
+
+   ! do i=1,4
+   ! do j=1,4
+   !  print*, i, j, res(i, j)
+   ! enddo
+   ! enddo
    
    rl=res(1,1)
    rt=res(2,2)+res(3,3)

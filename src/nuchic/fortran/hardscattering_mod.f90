@@ -102,12 +102,12 @@ contains
         call current_init(p4, pp4, q)
         call define_spinors()
         call nform(2, qm2, ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv)
-        f1v = 1.0 !0.5*(ff1v+ff1s)
-        f2v = 0.0 !0.5*(ff2v+ff2s)
+        f1v = 0.5*(ff1v+ff1s)
+        f2v = 0.5*(ff2v+ff2s)
 
         call det_Ja(f1v, f2v)
         call det_current(results)
-        ! results = results*sf/6
+        results = results*sf/6
     end subroutine
 
     subroutine initialize(name_p, name_n, fg, iform) bind(C, name="InitializeOneBody")

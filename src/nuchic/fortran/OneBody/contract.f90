@@ -82,8 +82,6 @@
       ff2n=0.5d0*(-ff2v+ff2s)
 
       if(id.eq.1) then
-         ff1p=1
-         ff2p=0
          call det_Ja(ff1p,ff2p)
          call det_res1b(rlp,rtp)
          sig=sig_mott*0.5d0*(al*(rlp)+at*(rtp)) 

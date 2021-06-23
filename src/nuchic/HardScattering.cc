@@ -38,22 +38,12 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
 nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                               const double &mu2) const {
     std::vector<std::array<double, 4>> mom(NLeptons()+2);
-    FourVector Q(p[0]);
-    for(size_t i = 1; i < NLeptons(); ++i) {
-        Q -= p[i];
-    }
-    auto rotMat = Q.AlignZ();
-    Q = Q.Rotate(rotMat);
+    auto rotMat = (p[0] - p[1]).AlignZ();
     for(size_t i = 0; i < NLeptons(); ++i) {
-        mom[i+1] = (p[i].Rotate(rotMat)/1_GeV).Momentum();
+        mom[i+1] = (p[i]/1_GeV).Rotate(rotMat).Momentum();
     }
-    // mom[1] = (p[0]/1_GeV).Momentum();
-    // for(size_t i = 1; i < NLeptons(); ++i) {
-    //     Q += p[i];
-    //     mom[i+1] = (p[i]/1_GeV).Momentum();
-    // }
-    mom[0] = (-p[NLeptons()]/1_GeV).Momentum(); // (-Q/1_GeV).Momentum();
-    mom[NLeptons()+1] = (p[NLeptons()]/1_GeV).Momentum(); // std::array<double, 4>{};
+    mom[0] = (-p[NLeptons()]/1_GeV).Rotate(rotMat).Momentum();
+    mom[NLeptons()+1] = (p[NLeptons()+1]/1_GeV).Rotate(rotMat).Momentum();
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);
@@ -109,8 +99,8 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
             Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
             cosT = std::cos(m_angle);
             sinT = std::sin(m_angle);
-            // TEST: Fixed energy
-            Elepton = event.PhaseSpace().momentum[0].E()*Constant::mN/(event.PhaseSpace().momentum[0].E()*(1-cosT)+Constant::mN);
+            // TEST: fixed energy
+            // Elepton = event.PhaseSpace().momentum[0].E()*Constant::mN/(event.PhaseSpace().momentum[0].E()*(1-cosT)+Constant::mN);
             event.PhaseSpace().weight *= event.PhaseSpace().momentum[0].E();
             break;
         case RunMode::FullPhaseSpace:
@@ -168,11 +158,11 @@ size_t HardScattering::SelectMatrixElement(nuchic::Event &event) const {
 
 void QESpectral::GenerateHadrons(const std::vector<double> &rans,
                                  const FourVector &Q, Event &event) const {
-    // TEST: phase space
-    event.PhaseSpace().momentum.emplace_back(Constant::mN, 0, 0, 0);
-    auto pout = event.PhaseSpace().momentum[0] + event.PhaseSpace().momentum[2] - event.PhaseSpace().momentum[1];
-    event.PhaseSpace().momentum.push_back(pout);
-    return;
+    // TEST: proton at rest
+    // event.PhaseSpace().momentum.emplace_back(Constant::mN, 0, 0, 0);
+    // auto pout = event.PhaseSpace().momentum[0] + event.PhaseSpace().momentum[2] - event.PhaseSpace().momentum[1];
+    // event.PhaseSpace().momentum.push_back(pout);
+    // return;
 
     static constexpr double dp = 1000; // Hard code the maximum allowed momentum
 
