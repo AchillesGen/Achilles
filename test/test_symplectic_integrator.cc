@@ -124,14 +124,22 @@ TEST_CASE("Symplectic Integrator", "[Symplectic]") {
     }
 
     SECTION("Order 6") {
+        std::ofstream out("symplectic6.txt");
         const double E0 = Hamiltonian(q, p);
         spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p));
+        out << "X,Y,Z,Px,Py,Pz,E\n";
+        out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
+        out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<6>(step_size);
+            const double Ei = Hamiltonian(si.Q(), si.P());
+            out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
+            out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
         const double Ef = Hamiltonian(si.Q(), si.P());
         spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P()), std::abs(Ef-E0)/E0);
         spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
         spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
+        out.close();
     }
 }
