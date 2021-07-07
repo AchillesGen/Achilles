@@ -29,7 +29,7 @@ SherpaMEs::~SherpaMEs()
 {
   if (p_sherpa) delete p_sherpa;
   for (size_t i(0);i<m_procs.size();++i) delete m_procs[i];
-  if (m_pmap.find(nlo_type::lo)!=m_pmap.end()) m_pmap[nlo_type::lo];
+  if (m_pmap.find(nlo_type::lo)!=m_pmap.end()) delete m_pmap[nlo_type::lo];
 }
 
 void SherpaMEs::addParameter

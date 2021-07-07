@@ -196,27 +196,31 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 
     std::complex<double> amp{};
     std::complex<double> rl{}, rt{};
-    double ward = 0;
-    double ward2 = 0;
-    double ward3 = 0;
+    // std::vector<double> ward(8);
     const double factor = alpha;
     for(size_t mu = 0; mu < 4; ++mu) {
-        if(mu == 0) ward += (q2[mu]*hadronTensor[4*mu]).real();
-        else ward -= (q2[mu]*hadronTensor[4*mu]).real();
-        if(mu == 0) ward2 += (q[mu]*leptonTensor[4*mu]).real();
-        else ward2 -= (q[mu]*leptonTensor[4*mu]).real();
-        if(mu == 0) ward3 += (q2[mu]*hTensor[4*mu]).real();
-        else ward3 -= (q2[mu]*hTensor[4*mu]).real();
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
+            // if(mu == 0) {
+            //     ward[nu] += (q2[mu]*hadronTensor[4*mu+nu]).real();
+            // } else {
+            //     ward[nu] -= (q2[mu]*hadronTensor[4*mu+nu]).real();
+            // }
+            // if(nu == 0) {
+            //     ward[4+mu] += (q2[nu]*hadronTensor[4*mu+nu]).real();
+            // } else {
+            //     ward[4+mu] -= (q2[nu]*hadronTensor[4*mu+nu]).real();
+            // }
             if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
                 amp -= hadronTensor[idx]*leptonTensor[idx]*factor;
             } else {
                 amp += hadronTensor[idx]*leptonTensor[idx]*factor;
             }
-            // spdlog::info("idx: {}, {}, H = {}, L = {}, {}", mu, nu, hadronTensor[idx], leptonTensor[idx], lTensor[idx]);
+            // spdlog::info("idx: {}, {}, qmuH = {:.3e}, qnuH = {:.3e}, ward = {}", mu, nu, q2[mu]*hadronTensor[idx].real(), q2[nu]*hadronTensor[idx].real(), ward);
         }
     }
+    // for(auto &w : ward) w /= amp.real();
+    // spdlog::info("Ward Identities: {}", ward);
     rl = hadronTensor[0]*leptonTensor[0]*factor;
     rt = (hadronTensor[5]*leptonTensor[5]+hadronTensor[10]*leptonTensor[10])*factor;
     // spdlog::info("amp, rl, rt = {}, {}, {}", amp.real(), rl.real(), rt.real());

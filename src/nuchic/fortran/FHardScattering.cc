@@ -50,7 +50,6 @@ nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
     qVec = qVec.Rotate(rotMat);
     pNucleonIn = pNucleonIn.Rotate(rotMat);
     pNucleonOut = pNucleonOut.Rotate(rotMat);
-    // spdlog::info("qvec = {}", qVec);
 
     Tensor result{};
     HadronicTensorOneBody(&qVec, &pNucleonIn, &pNucleonOut, result.data());
