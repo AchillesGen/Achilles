@@ -82,11 +82,11 @@
       ff2n=0.5d0*(-ff2v+ff2s)
 
       if(id.eq.1) then
-         call det_Ja(ff1p,ff2p)
+         call det_Ja(ff1p,ff2p,0d0)
          call det_res1b(rlp,rtp)
          sig=sig_mott*0.5d0*(al*(rlp)+at*(rtp)) 
       elseif(id.eq.2) then
-         call det_Ja(ff1n,ff2n)
+         call det_Ja(ff1n,ff2n,0d0)
          call det_res1b(rln,rtn)
          sig=sig_mott*0.5d0*(al*(rln)+at*(rtn)) 
       endif

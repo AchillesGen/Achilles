@@ -105,7 +105,7 @@ contains
         f1v = 0.5*(ff1v+ff1s)
         f2v = 0.5*(ff2v+ff2s)
 
-        call det_Ja(f1v, f2v)
+        call det_Ja(f1v, f2v, 0d0)
         call det_current(results)
         results = results*sf/6
     end subroutine

@@ -9,7 +9,7 @@ module dirac_matrices
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, private, save :: up1(2,4),upp1(2,4), &
             &   ubarp1(2,4),ubarpp1(2,4)
-    complex*16, private, save :: gamma_mu(4,4,5),g_munu(4,4),sigma_munu(4,4,4,4)
+    complex*16, private, save :: gamma_mu(4,4,5),g_munu(4,4),sigma_munu(4,4,4,4), gamma_5(4, 4)
     complex*16, private, save :: q_sl(4,4)
     real*8, private, save ::  p1(4),pp1(4),q(4)
     complex*16, private, save :: J_1(4,4,4)
@@ -104,10 +104,10 @@ subroutine current_init(p1_in,pp1_in,q_in)
     return
 end subroutine
 
-subroutine det_Ja(f1v,f2v)
+subroutine det_Ja(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu
-  real*8 :: f1v,f2v  
+  real*8 :: f1v,f2v, fa  
   
   do mu=1,4
      J_1(:,:,mu)=czero
@@ -115,7 +115,7 @@ subroutine det_Ja(f1v,f2v)
         J_1(:,:,mu)=J_1(:,:,mu)+ci*f2v*sigma_munu(:,:,mu,nu)&
              &     *g_munu(nu,nu)*q(nu)/2.0d0/xmn
      enddo
-     J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)
+     J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)+fa*gamma_mu(:,:,mu)*gamma_mu(:,:,5)
   enddo
 end subroutine det_Ja
 
@@ -133,7 +133,6 @@ subroutine det_current(hmunu)
         enddo
     enddo
 
-    ! print*, "josh: "
     do mu=1,4
         do nu=1,4
             do i=1,2
@@ -141,7 +140,6 @@ subroutine det_current(hmunu)
                     hmunu(4*(mu-1)+nu) = hmunu(4*(mu-1)+nu) + jmu(i, j, mu)*conjg(jmu(i, j, nu))
                 enddo
             enddo
-            ! print*, mu, nu, real(hmunu(4*(mu-1)+nu))
         enddo
     enddo
 end subroutine
@@ -151,7 +149,6 @@ subroutine det_res1b(rl,rt)
    integer*4 :: i1,f1,i,j
    complex*16 :: J_mu(2,2,4),J_mu_dag(2,2,4)
    real*8 :: res(4,4),rt,rl
-   
 
    do i1=1,2
       do f1=1,2
@@ -163,7 +160,6 @@ subroutine det_res1b(rl,rt)
    enddo
    
    res=0.0d0
-   ! print*, "noemi: "
    do i1=1,2
       do f1=1,2
          do i=1,4
@@ -173,12 +169,6 @@ subroutine det_res1b(rl,rt)
          enddo
       enddo
    enddo
-
-   ! do i=1,4
-   ! do j=1,4
-   !  print*, i, j, res(i, j)
-   ! enddo
-   ! enddo
    
    rl=res(1,1)
    rt=res(2,2)+res(3,3)
