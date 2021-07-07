@@ -35,13 +35,15 @@ using Tensor = std::array<std::complex<double>, 16>;
 
 class HardScattering {
     public:
-
         HardScattering(RunMode);
         HardScattering(const HardScattering&) = default;
         HardScattering(HardScattering&&) = default;
         HardScattering& operator=(const HardScattering&) = default;
         HardScattering& operator=(HardScattering&&) = default;
-        virtual ~HardScattering() { if(p_sherpa) delete p_sherpa; }
+        virtual ~HardScattering() = default; 
+            // This causes a segfault for some reason
+            // TODO: Figure out why
+            // { if(p_sherpa) delete p_sherpa; }
 
         // Validation information
         virtual HardScatteringType ScatteringType() const = 0;
