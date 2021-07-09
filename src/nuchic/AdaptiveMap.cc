@@ -6,12 +6,15 @@
 
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 
 #include "nuchic/AdaptiveMap.hh"
 #include "nuchic/Random.hh"
 #include "nuchic/Utilities.hh"
 
 using nuchic::AdaptiveMap;
+using nuchic::AdaptiveMap2;
 
 AdaptiveMap::AdaptiveMap(const size_t& ndims_) {
     Vector2D grid_;
@@ -270,4 +273,126 @@ void AdaptiveMap::Adapt(const double& alpha, const size_t& nbins_) {
     InitGrid(newGrid);
     sumF = Vector2D(grid.size(),std::vector<double>(grid[0].size(),0));
     nF = Vector2D(grid.size(),std::vector<double>(grid[0].size(),0));
+}
+
+void AdaptiveMap2::Deserialize(std::istream &in) {
+    in >> m_bins >> m_dims;
+    m_hist.resize((m_bins + 1) * m_dims);
+
+    for(auto &x : m_hist) in >> x;
+}
+
+void AdaptiveMap2::Serialize(std::ostream &out) const {
+    out << m_bins << ' ' << m_dims;
+
+    for(const auto &x : m_hist) {
+        out << ' ' << std::scientific
+            << std::setprecision(std::numeric_limits<double>::max_digits10 - 1) << x;
+    }
+}
+
+double AdaptiveMap2::operator()(std::vector<double> &rans) const {
+    double jacobian = 1.0;
+    for(std::size_t i = 0; i < m_dims; ++i) {
+        const auto position = rans[i] * static_cast<double>(m_bins);
+        const auto index = static_cast<size_t>(position);
+        const auto loc = position - static_cast<double>(index);
+        const double left = lower_edge(i, index);
+        const double size = width(i, index);
+
+        // Calculate inverse CDF
+        rans[i] = left + loc * size;
+
+        jacobian *= size * static_cast<double>(m_bins);
+    }
+
+    return jacobian;
+}
+
+void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
+    std::vector<double> tmp(m_bins);
+
+    for(size_t i = 0; i < m_dims; ++i) {
+        // Load data into tmp
+        tmp.assign(data.begin() + static_cast<int>(i * m_bins),
+                   data.begin() + static_cast<int>((i + 1) * m_bins));
+
+        // Smooth data by averaging over neighbors
+        double previous = tmp[0];
+        double current = tmp[1];
+        tmp[0] = 0.5 * (previous + current);
+        double norm = tmp[0];
+
+        for(size_t bin = 1; bin < m_bins - 1; ++bin) {
+            const double sum = previous + current;
+            previous = current;
+            current = tmp[bin + 1];
+            tmp[bin] = (sum + current) / 3.0;
+            norm += tmp[bin];
+        }
+        tmp.back() = 0.5 * (previous + current);
+        norm += tmp.back();
+
+        // If norm is zero, then there is no data to adjust
+        if(norm == 0) continue;
+
+        // Compute the importance factor
+        double average_bin = 0;
+        for(size_t bin = 0; bin < m_bins; ++bin) {
+            if(tmp[bin] != 0) {
+                const double r = tmp[bin] / norm;
+                const double fac = pow((r - 1.0) / log(r), alpha);
+                average_bin += fac;
+                tmp[bin] = fac;
+            }
+        }
+        average_bin /= static_cast<double>(m_bins);
+
+        double cbin = 0;
+        size_t ibin = 0;
+
+        // Adjust boundaries
+        for(size_t nbin = 1; nbin < m_bins; ++ nbin) {
+            for(; cbin < average_bin; ++ibin) cbin += tmp[ibin]; 
+
+            const double prev = lower_edge(i, ibin-1);
+            const double curr = lower_edge(i, ibin);
+
+            cbin -= average_bin;
+            const double delta = (curr - prev) * cbin;
+            m_hist[i * (m_bins + 1) + ibin] = current - delta / tmp[ibin - 1];
+        }
+    }
+}
+
+void AdaptiveMap2::Split(nuchic::AdaptiveMapSplit split) {
+    size_t nsplit{};
+    if(split == AdaptiveMapSplit::half) {
+        nsplit = 2;
+    } else if(split == AdaptiveMapSplit::third) {
+        nsplit = 3;
+    } else if(split == AdaptiveMapSplit::quarter) {
+        nsplit = 4; 
+    } else {
+        throw std::logic_error("Invalid histogram splitting");
+    }
+
+    // Create temporary histogram to store new histogram
+    std::vector<double> hist(m_dims*(nsplit*m_bins + 1));
+
+    // Split the histogram into new binnings
+    for(size_t d = 0; d < m_dims; ++d) {
+        for(size_t bin = 0; bin < m_bins; ++bin) {
+            const double curr = lower_edge(d, bin);
+            const double size = width(d, bin);
+
+            for(size_t i = 0; i < nsplit; ++i) {
+                hist[d*(nsplit*m_bins+1) + bin*nsplit + nsplit] = curr + size/static_cast<double>(nsplit);
+            }
+        }
+    }
+
+    // Store the new histogram information
+    m_bins = nsplit*m_bins;
+    m_hist = hist;
 }
