@@ -195,35 +195,49 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     }
 
     std::complex<double> amp{};
-    std::complex<double> rl{}, rt{};
-    // std::vector<double> ward(8);
     const double factor = alpha;
     for(size_t mu = 0; mu < 4; ++mu) {
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
-            // if(mu == 0) {
-            //     ward[nu] += (q2[mu]*hadronTensor[4*mu+nu]).real();
-            // } else {
-            //     ward[nu] -= (q2[mu]*hadronTensor[4*mu+nu]).real();
-            // }
-            // if(nu == 0) {
-            //     ward[4+mu] += (q2[nu]*hadronTensor[4*mu+nu]).real();
-            // } else {
-            //     ward[4+mu] -= (q2[nu]*hadronTensor[4*mu+nu]).real();
-            // }
+            if(nu == 3) {
+                hadronTensor[idx] = q.E()/q.P()*hadronTensor[4*mu];
+            } else if(mu == 3) {
+                hadronTensor[idx] = q.E()/q.P()*hadronTensor[nu];
+            }
+        }
+    }
+    for(size_t mu = 0; mu < 4; ++mu) {
+        for(size_t nu = 0; nu < 4; ++nu) {
+            const size_t idx = 4*mu + nu;
             if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
                 amp -= hadronTensor[idx]*leptonTensor[idx]*factor;
             } else {
                 amp += hadronTensor[idx]*leptonTensor[idx]*factor;
             }
-            // spdlog::info("idx: {}, {}, qmuH = {:.3e}, qnuH = {:.3e}, ward = {}", mu, nu, q2[mu]*hadronTensor[idx].real(), q2[nu]*hadronTensor[idx].real(), ward);
         }
     }
-    // for(auto &w : ward) w /= amp.real();
-    // spdlog::info("Ward Identities: {}", ward);
-    rl = hadronTensor[0]*leptonTensor[0]*factor;
-    rt = (hadronTensor[5]*leptonTensor[5]+hadronTensor[10]*leptonTensor[10])*factor;
-    // spdlog::info("amp, rl, rt = {}, {}, {}", amp.real(), rl.real(), rt.real());
+
+#ifdef CHECK_WARD_ID
+    std::vector<double> ward(8);
+    for(size_t mu = 0; mu < 4; ++mu) {
+        for(size_t nu = 0; nu < 4; ++nu) {
+            const size_t idx = 4*mu + nu;
+            if(mu == 0) {
+                ward[nu] += (q[mu]*hadronTensor[idx]).real();
+            } else {
+                ward[nu] -= (q[mu]*hadronTensor[idx]).real();
+            }
+            if(nu == 0) {
+                ward[4+mu] += (q[nu]*hadronTensor[idx]).real();
+            } else {
+                ward[4+mu] -= (q[nu]*hadronTensor[idx]).real();
+            }
+        }
+    }
+    for(auto &w : ward) w /= amp.real();
+    if(amp.real() != 0) spdlog::info("Ward Identities: {}", ward);
+#endif
+
     double flux2 = event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E();
     double xsec = amp.real()*Constant::HBARC2*flux2/8/M_PI;
     double defaultxsec{};
