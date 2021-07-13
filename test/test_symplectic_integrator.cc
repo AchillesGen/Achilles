@@ -55,27 +55,24 @@ double dPotential_dr(double p, double r, double rho0) {
 }
 
 double Hamiltonian(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
-    const double Tp = sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) - nuchic::Constant::mN;
-    return sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) + Potential(Tp, q.P(), 0.16);
+    return sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) + Potential(p.P(), q.P(), 0.16);
 }
 
 nuchic::ThreeVector dHamiltonian_dp(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
     const double E = sqrt(p.P2() + pow(nuchic::Constant::mN, 2));
-    const double Tp = sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) - nuchic::Constant::mN;
-    return p/E + dPotential_dp(Tp, q.P(), 0.16)*p/p.P();
+    return p/E + dPotential_dp(p.P(), q.P(), 0.16)*p/p.P();
 }
 
 nuchic::ThreeVector dHamiltonian_dr(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
-    const double Tp = sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) - nuchic::Constant::mN;
-    return dPotential_dr(Tp, q.P(), 0.16)*q/q.P();
+    return dPotential_dr(p.P(), q.P(), 0.16)*q/q.P();
 }
 
 TEST_CASE("Symplectic Integrator", "[Symplectic]") {
     constexpr double r0 = -1;
-    constexpr double pmag = 300;
+    constexpr double pmag = 250;
     nuchic::ThreeVector q{r0, 0, 0};
     nuchic::ThreeVector p{0, pmag, 0};
-    constexpr size_t nsteps = 40000;
+    constexpr size_t nsteps = 500;
     constexpr double step_size = 0.01;
     constexpr double omega = 20;
 
