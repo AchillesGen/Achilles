@@ -79,11 +79,18 @@ class AdaptiveMap2 {
         double lower_edge(size_t dim, size_t bin) const { return m_hist[dim*(m_bins+1) + bin]; }
         double upper_edge(size_t dim, size_t bin) const { return m_hist[dim*(m_bins+1) + bin + 1]; }
         double width(size_t dim, size_t bin) const { return upper_edge(dim, bin) - lower_edge(dim, bin); }
+        size_t FindBin(size_t, double) const;
 
         // Map information
-        std::vector<double> Edges() const { return m_hist; }
+        std::vector<double> Edges(size_t dim) const { 
+            return std::vector<double>(m_hist.begin() + static_cast<int>(dim*(m_bins+1)),
+                                       m_hist.begin() + static_cast<int>((dim+1)*(m_bins+1)));
+        }
         size_t Bins() const { return m_bins; }
         size_t Dims() const { return m_dims; }
+        // Used for testing purposes
+        std::vector<double> Hist() const { return m_hist; }
+        std::vector<double>& Hist() { return m_hist; }
 
         // Generate random numbers
         double operator()(std::vector<double>&) const;

@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "nuchic/AdaptiveMap.hh"
+#include "nuchic/Statistics.hh"
 #include "nuchic/Random.hh"
 
 #include "spdlog/spdlog.h"
@@ -30,9 +31,9 @@ using lim = std::numeric_limits<double>;
 class KBNSummation{
     public:
         KBNSummation() = default;
-        inline double GetSum() noexcept {return sum + correction;};
+        inline double GetSum() noexcept { return sum + correction; }
         void AddTerm(double value) noexcept;
-        inline void Reset() noexcept {sum = 0; correction = 0;} ;
+        inline void Reset() noexcept { sum = 0; correction = 0; }
     private:
         double sum{}, correction{};
 };
@@ -50,10 +51,15 @@ class VegasResult {
         VegasPt GetResult() const {return {mean, std::sqrt(var)};}
         bool Converged(const double&, const double&) const;
         std::string Summary() const;
+        size_t Calls() const { return calls; }
+        size_t FiniteCalls() const { return finiteCalls; }
+        size_t NonZeroCalls() const { return nonZeroCalls; }
+        double Max() const { return max; }
 
     private:
+        size_t calls{}, nonZeroCalls{}, finiteCalls{};
         std::vector<double> sMean, sVar;
-        double sum{}, sum2{}, sumVar{};
+        double sum{}, sum2{}, sumVar{}, max{};
         double mean{}, meanDivVar{}, mean2DivVar{};
         double var{}, OneDivVar{};
         std::size_t n{};
@@ -119,6 +125,47 @@ class Vegas {
 //         int GetMPIRank();
 //         int mpiRank{};
 // #endif
+};
+
+struct VegasParams {
+    size_t ncalls{ncalls_default}, nrefine{nrefine_default};
+    double rtol{rtol_default}, atol{atol_default}, alpha{alpha_default};
+    size_t ninterations{nitn_default};
+
+    static constexpr size_t nitn_default = 10, ncalls_default = 10000, nrefine_default = 5;
+    static constexpr double alpha_default = 1.5, rtol_default = 1e-4, atol_default = 1e-4;
+};
+
+struct VegasSummary {
+    std::vector<StatsData> results;
+    StatsData sum_results;
+
+    StatsData Result() const { return sum_results; }
+};
+
+class Vegas2 {
+    public:
+        enum class Verbosity {
+            silent,
+            normal,
+            verbose,
+            very_verbose
+        };
+
+        Vegas2() = default;
+        Vegas2(AdaptiveMap2 map, VegasParams _params) : grid{std::move(map)}, params{std::move(_params)} {}
+
+        void operator()(const Func&);
+        void Optimize(const Func&);
+        VegasSummary Summary() const; 
+
+    private:
+        void Refine();
+        void PrintIteration() const;
+
+        AdaptiveMap2 grid;
+        VegasSummary summary;
+        VegasParams params{};
 };
 
 }

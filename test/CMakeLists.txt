@@ -19,6 +19,9 @@ add_executable(nuchic-testsuite
     test_beams.cc
     test_event.cc
     test_cuts.cc
+    test_adaptive_map.cc
+    test_stats.cc
+    test_vegas.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

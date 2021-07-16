@@ -65,4 +65,39 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::Fou
         }
 };
 
+class RandomVectorGenerator : public Catch::Generators::IGenerator<std::vector<double>> {
+    double m_minVal, m_maxVal;
+    size_t m_size;
+
+    std::mt19937 m_rand{std::random_device{}()};
+    std::uniform_real_distribution<double> m_dist;
+    std::vector<double> current_vector{};
+
+    public:
+        RandomVectorGenerator(size_t size, double minVal=0.0, double maxVal=1.0):
+            m_minVal{minVal}, m_maxVal{maxVal}, m_size{size},
+            m_rand(std::random_device{}()),
+            m_dist(m_minVal, m_maxVal) {
+
+            current_vector.resize(m_size);
+            static_cast<void>(next());
+        };
+
+        std::vector<double> const& get() const override;
+        bool next() override {
+            for(size_t i = 0; i < m_size; ++i) current_vector[i] = m_dist(m_rand);
+
+            return true;
+        }
+};
+
+inline std::vector<double> const & RandomVectorGenerator::get() const {
+    return current_vector;
+}
+
+inline Catch::Generators::GeneratorWrapper<std::vector<double>> randomVector(size_t size, double min=0, double max=1) {
+    return Catch::Generators::GeneratorWrapper<std::vector<double>>(std::unique_ptr<Catch::Generators::IGenerator<std::vector<double>>>(new RandomVectorGenerator(size, min, max)));
+}
+
+
 #endif

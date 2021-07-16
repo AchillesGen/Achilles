@@ -291,6 +291,12 @@ void AdaptiveMap2::Serialize(std::ostream &out) const {
     }
 }
 
+size_t AdaptiveMap2::FindBin(size_t dim, double x) const {
+    const auto edges = Edges(dim);
+    auto it = std::lower_bound(edges.begin(), edges.end(), x);
+    return static_cast<size_t>(std::distance(edges.begin(), it))-1;
+}
+
 double AdaptiveMap2::operator()(std::vector<double> &rans) const {
     double jacobian = 1.0;
     for(std::size_t i = 0; i < m_dims; ++i) {
@@ -320,17 +326,17 @@ void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
         // Smooth data by averaging over neighbors
         double previous = tmp[0];
         double current = tmp[1];
-        tmp[0] = 0.5 * (previous + current);
+        tmp[0] = (previous + current) / 2;
         double norm = tmp[0];
 
         for(size_t bin = 1; bin < m_bins - 1; ++bin) {
             const double sum = previous + current;
             previous = current;
             current = tmp[bin + 1];
-            tmp[bin] = (sum + current) / 3.0;
+            tmp[bin] = (sum + current) / 3;
             norm += tmp[bin];
         }
-        tmp.back() = 0.5 * (previous + current);
+        tmp.back() = (previous + current) / 2;
         norm += tmp.back();
 
         // If norm is zero, then there is no data to adjust
@@ -352,7 +358,7 @@ void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
         size_t ibin = 0;
 
         // Adjust boundaries
-        for(size_t nbin = 1; nbin < m_bins; ++ nbin) {
+        for(size_t nbin = 1; nbin < m_bins; ++nbin) {
             for(; cbin < average_bin; ++ibin) cbin += tmp[ibin]; 
 
             const double prev = lower_edge(i, ibin-1);
@@ -360,7 +366,7 @@ void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
 
             cbin -= average_bin;
             const double delta = (curr - prev) * cbin;
-            m_hist[i * (m_bins + 1) + ibin] = current - delta / tmp[ibin - 1];
+            m_hist[i * (m_bins + 1) + nbin] = curr - delta / tmp[ibin - 1];
         }
     }
 }
@@ -387,9 +393,12 @@ void AdaptiveMap2::Split(nuchic::AdaptiveMapSplit split) {
             const double size = width(d, bin);
 
             for(size_t i = 0; i < nsplit; ++i) {
-                hist[d*(nsplit*m_bins+1) + bin*nsplit + nsplit] = curr + size/static_cast<double>(nsplit);
+                const size_t idx = d*(nsplit*m_bins+1) + bin*nsplit + i;
+                hist[idx] = curr + static_cast<double>(i)*size/static_cast<double>(nsplit);
             }
         }
+        // Add the endpoint
+        hist[(d+1)*(nsplit*m_bins)+d] = 1.0;
     }
 
     // Store the new histogram information
