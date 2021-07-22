@@ -275,20 +275,24 @@ void AdaptiveMap::Adapt(const double& alpha, const size_t& nbins_) {
     nF = Vector2D(grid.size(),std::vector<double>(grid[0].size(),0));
 }
 
-void AdaptiveMap2::Deserialize(std::istream &in) {
+bool AdaptiveMap2::Deserialize(std::istream &in) {
     in >> m_bins >> m_dims;
     m_hist.resize((m_bins + 1) * m_dims);
 
     for(auto &x : m_hist) in >> x;
+
+    return true;
 }
 
-void AdaptiveMap2::Serialize(std::ostream &out) const {
+bool AdaptiveMap2::Serialize(std::ostream &out) const {
     out << m_bins << ' ' << m_dims;
 
     for(const auto &x : m_hist) {
         out << ' ' << std::scientific
             << std::setprecision(std::numeric_limits<double>::max_digits10 - 1) << x;
     }
+
+    return true;
 }
 
 size_t AdaptiveMap2::FindBin(size_t dim, double x) const {
@@ -297,7 +301,7 @@ size_t AdaptiveMap2::FindBin(size_t dim, double x) const {
     return static_cast<size_t>(std::distance(edges.begin(), it))-1;
 }
 
-double AdaptiveMap2::operator()(std::vector<double> &rans) const {
+double AdaptiveMap2::operator()(std::vector<double> &rans) {
     double jacobian = 1.0;
     for(std::size_t i = 0; i < m_dims; ++i) {
         const auto position = rans[i] * static_cast<double>(m_bins);
@@ -315,8 +319,18 @@ double AdaptiveMap2::operator()(std::vector<double> &rans) const {
     return jacobian;
 }
 
+double AdaptiveMap2::GenerateWeight(const std::vector<double> &rans) const {
+    double jacobian = 1.0;
+    for(std::size_t i = 0; i < m_dims; ++i) {
+        const auto index = FindBin(i, rans[i]);
+        jacobian *= width(i, index) * static_cast<double>(m_bins);
+    }
+    return jacobian;
+}
+
 void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
     std::vector<double> tmp(m_bins);
+    std::vector<double> new_hist(m_hist.size());
 
     for(size_t i = 0; i < m_dims; ++i) {
         // Load data into tmp
@@ -366,9 +380,12 @@ void AdaptiveMap2::Adapt(const double &alpha, const std::vector<double> &data) {
 
             cbin -= average_bin;
             const double delta = (curr - prev) * cbin;
-            m_hist[i * (m_bins + 1) + nbin] = curr - delta / tmp[ibin - 1];
+            new_hist[i * (m_bins + 1) + nbin] = curr - delta / tmp[ibin - 1];
         }
+        new_hist[i * (m_bins + 1) + m_bins] = 1.0;
     }
+
+    m_hist = new_hist;
 }
 
 void AdaptiveMap2::Split(nuchic::AdaptiveMapSplit split) {

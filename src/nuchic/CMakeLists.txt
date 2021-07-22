@@ -8,6 +8,7 @@ add_library(utilities SHARED
     ParticleInfo.cc
     Vegas.cc
     AdaptiveMap.cc
+    Multichannel.cc
     Histogram.cc
     Cuts.cc
 )

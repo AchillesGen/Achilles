@@ -126,3 +126,18 @@ TEST_CASE("Serializing / Deserializing Adaptive Map", "[vegas]") {
     for(size_t i = 0; i < map.Dims(); ++i)
         CHECK_THAT(map.Edges(i), Catch::Matchers::Approx(map2.Edges(i)));
 }
+
+TEST_CASE("YAML encoding / decoding Adaptive Map", "[vegas]") {
+    nuchic::AdaptiveMap2 map(4, 4);
+
+    YAML::Node config;
+    config["AdaptiveMap"] = map;
+
+    nuchic::AdaptiveMap2 map2 = config["AdaptiveMap"].as<nuchic::AdaptiveMap2>();
+
+    CHECK(map.Dims() == map2.Dims());
+    CHECK(map.Bins() == map2.Bins());
+
+    for(size_t i = 0; i < map.Dims(); ++i)
+        CHECK_THAT(map.Edges(i), Catch::Matchers::Approx(map2.Edges(i)));
+}

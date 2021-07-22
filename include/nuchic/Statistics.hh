@@ -7,6 +7,11 @@
 #include <iostream>
 #include <cmath>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
+
 namespace nuchic {
 
 using lim = std::numeric_limits<double>;
@@ -58,8 +63,50 @@ class StatsData {
         double Max() const { return max; }
         double Error() const { return sqrt(Variance()); }
 
+        bool operator==(const StatsData &other) const {
+            static constexpr double tol = 1e-6;
+            bool equal = n == other.n && n_finite == other.n_finite;
+            equal = equal && (std::abs(min - other.min) < tol);
+            equal = equal && (std::abs(max - other.max) < tol);
+            equal = equal && (std::abs(sum - other.sum) < tol);
+            equal = equal && (std::abs(sum2 - other.sum2) < tol);
+            return equal;
+        }
+        bool operator!=(const StatsData &other) const { return !(*this == other); }
+
+        friend YAML::convert<nuchic::StatsData>;
+
     private:
         double n{}, min{lim::max()}, max{lim::min()}, sum{}, sum2{}, n_finite{};
+};
+
+}
+
+namespace YAML {
+
+template<>
+struct convert<nuchic::StatsData> {
+    static Node encode(const nuchic::StatsData &rhs) {
+        Node node;
+        node = std::vector<double>{rhs.n, rhs.min, rhs.max, rhs.sum, rhs.sum2, rhs.n_finite};
+        node.SetStyle(YAML::EmitterStyle::Flow);
+        return node;
+    }
+
+    static bool decode(const Node &node, nuchic::StatsData &rhs) {
+        // Ensure the node has 6 entries
+        if(node.size() != 6 || !node.IsSequence()) return false;
+
+        // Load the entries
+        rhs.n = node[0].as<double>();
+        rhs.min = node[1].as<double>();
+        rhs.max = node[2].as<double>();
+        rhs.sum = node[3].as<double>();
+        rhs.sum2 = node[4].as<double>();
+        rhs.n_finite = node[5].as<double>();
+
+        return true;
+    }
 };
 
 }

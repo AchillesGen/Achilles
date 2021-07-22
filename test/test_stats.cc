@@ -53,3 +53,22 @@ TEST_CASE("Statistics class", "[vegas]") {
         CHECK(data.Variance() == Approx((mean2 - mean*mean)/static_cast<double>(vals.size()-1)));
     }
 }
+
+TEST_CASE("YAML encoding / decoding StatsData", "[vegas]") {
+    nuchic::StatsData data1, data2;
+    auto vals = GENERATE(take(100, randomVector(100)));
+    for(const auto &val : vals) {
+        data1 += val;
+    }
+
+    YAML::Node node;
+    node["Stats"] = data1;
+    data2 = node["Stats"].as<nuchic::StatsData>();
+
+    CHECK(data1.Calls() == data2.Calls());
+    CHECK(data1.Min() == data2.Min());
+    CHECK(data1.Max() == data2.Max());
+    CHECK(data1.Mean() == data2.Mean());
+    CHECK(data1.Error() == data2.Error());
+    CHECK(data1.FiniteCalls() == data2.FiniteCalls());
+}

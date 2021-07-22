@@ -8,6 +8,11 @@
 #include <vector>
 #include <iosfwd>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
+
 namespace nuchic {
 
 using Vector2D = std::vector<std::vector<double>>;
@@ -72,8 +77,8 @@ class AdaptiveMap2 {
             }
 
         // Serialization
-        void Deserialize(std::istream &in);
-        void Serialize(std::ostream &out) const;
+        bool Deserialize(std::istream &in);
+        bool Serialize(std::ostream &out) const;
 
         // Bin locations
         double lower_edge(size_t dim, size_t bin) const { return m_hist[dim*(m_bins+1) + bin]; }
@@ -93,7 +98,8 @@ class AdaptiveMap2 {
         std::vector<double>& Hist() { return m_hist; }
 
         // Generate random numbers
-        double operator()(std::vector<double>&) const;
+        double operator()(std::vector<double>&);
+        double GenerateWeight(const std::vector<double>&) const;
 
         // Update histograms
         void Adapt(const double&, const std::vector<double>&);
@@ -103,6 +109,50 @@ class AdaptiveMap2 {
     private:
         std::vector<double> m_hist;
         size_t m_dims{}, m_bins{};
+};
+
+}
+
+namespace YAML {
+
+template<>
+struct convert<nuchic::AdaptiveMap2> {
+    static Node encode(const nuchic::AdaptiveMap2 &rhs) {
+        Node node;
+        node["ndims"] = rhs.Dims();
+        node["nbins"] = rhs.Bins();
+        for(size_t i = 0; i < rhs.Dims(); ++i) {
+            node["hists"].push_back(rhs.Edges(i));
+            node["hists"][i].SetStyle(YAML::EmitterStyle::Flow);
+        }
+        return node;
+    }
+
+    static bool decode(const Node &node, nuchic::AdaptiveMap2 &rhs) {
+        // Ensure node has entries for ndims, nbins, and edges
+        if(node.size() != 3) return false;
+
+        // Load dimensions and bins and initialize map
+        auto ndims = node["ndims"].as<size_t>();
+        auto nbins = node["nbins"].as<size_t>();
+        rhs = nuchic::AdaptiveMap2(ndims, nbins);
+        std::vector<double> hist(ndims*(nbins+1));
+
+        // Ensure that the number of histograms matches the number of dims 
+        if(node["hists"].size() != ndims) return false;
+        for(size_t i = 0; i < ndims; ++i) {
+            // Check that the histogram has the correct number of bins
+            if(node["hists"][i].size() != nbins+1) return false; 
+            for(size_t j = 0; j <= nbins; ++j) {
+                hist[i*(nbins+1) + j] = node["hists"][i][j].as<double>();
+            }
+        }
+
+        // Load histogram into map
+        rhs.Hist() = hist;
+        
+        return true;
+    }
 };
 
 }

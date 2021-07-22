@@ -260,13 +260,13 @@ void Vegas::RandomBatch(size_t cubeBase, size_t nCubeBatch_,
     }
 }
 
-nuchic::Batch Vegas::MakeBatch(const Func& fcn, Batch2D x_, Batch wgt) {
+nuchic::Batch Vegas::MakeBatch(const Func<double>& fcn, Batch2D x_, Batch wgt) {
     Batch res;
     for(size_t i = 0; i < x_.size(); ++i) res.push_back(fcn(x_[i],wgt[i]));
     return res;
 }
 
-nuchic::VegasPt Vegas::operator() (const Func& fcn) {
+nuchic::VegasPt Vegas::operator() (const Func<double>& fcn) {
     static const std::string header = fmt::format("{:^3s}   {:^23s}    {:^23s}   {:^8s}\n",
                                                   "itn","integral",
                                                   "wgt average","chi2/dof");
@@ -371,7 +371,7 @@ nuchic::VegasPt Vegas::operator() (const Func& fcn) {
     return result.GetResult();
 }
 
-void nuchic::Vegas2::operator()(const Func &func) {
+void nuchic::Vegas2::operator()(const Func<double> &func) {
     std::vector<double> rans(grid.Dims());
     std::vector<double> train_data(grid.Dims()*grid.Bins());
 
@@ -381,7 +381,7 @@ void nuchic::Vegas2::operator()(const Func &func) {
         Random::Instance().Generate(rans);
 
         double wgt = grid(rans);
-        double val = func(rans, wgt)*wgt;
+        double val = func(rans, wgt);
         double val2 = val * val;
 
         results += val;
@@ -396,7 +396,7 @@ void nuchic::Vegas2::operator()(const Func &func) {
     summary.sum_results += results;
 }
 
-void nuchic::Vegas2::Optimize(const Func &func) {
+void nuchic::Vegas2::Optimize(const Func<double> &func) {
     double abs_err = lim::max(), rel_err = lim::max();
     size_t irefine = 0;
     while ((abs_err > params.atol && rel_err > params.rtol) || summary.results.size() < params.ninterations) {
@@ -411,6 +411,14 @@ void nuchic::Vegas2::Optimize(const Func &func) {
             irefine = 0;
         }
     }
+}
+
+double nuchic::Vegas2::GenerateWeight(const std::vector<double> &rans) const {
+    return grid.GenerateWeight(rans); 
+}
+
+void nuchic::Vegas2::Adapt(const std::vector<double> &train_data) {
+    grid.Adapt(params.alpha, train_data);
 }
 
 void nuchic::Vegas2::Refine() {
