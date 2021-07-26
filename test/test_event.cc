@@ -1,21 +1,10 @@
 #include "catch2/catch.hpp"
-#include "catch2/trompeloeil.hpp"
+#include "mock_classes.hh"
 
 #include "nuchic/Beams.hh"
 #include "nuchic/Event.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
-
-class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
-
-    static constexpr bool trompeloeil_movable_mock = true;
-    MAKE_MOCK0(Nucleons, nuchic::Particles&(), noexcept override);
-    IMPLEMENT_MOCK0(GenerateConfig);
-};
-
-class MockBeam : public trompeloeil::mock_interface<nuchic::Beam> {
-    IMPLEMENT_CONST_MOCK2(Flux); 
-};
 
 TEST_CASE("Initialize Event Parameters", "[Event]") {
     auto nuc = std::make_shared<MockNucleus>();

@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include "catch2/catch.hpp"
-#include "catch2/trompeloeil.hpp"
+#include "mock_classes.hh"
 
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
@@ -18,11 +18,6 @@ std::string const& RandomNucleusGenerator::get() const {
 Catch::Generators::GeneratorWrapper<std::string> randomNucleus(size_t length) {
     return Catch::Generators::GeneratorWrapper<std::string>(std::unique_ptr<Catch::Generators::IGenerator<std::string>>(new RandomNucleusGenerator(length)));
 }
-
-class MockDensity : public trompeloeil::mock_interface<nuchic::Density> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK0(GetConfiguration);
-};
 
 const std::string dFile = "data/c12.prova.txt";
 

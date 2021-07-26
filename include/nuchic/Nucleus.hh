@@ -121,7 +121,7 @@ class Nucleus {
 
         /// Return the number of nucleons in the nucleus
         ///@return int: The number of nucleons in the nucleus
-        std::size_t NNucleons() const noexcept { return nucleons.size(); }
+        MOCK std::size_t NNucleons() const noexcept { return nucleons.size(); }
 
         /// Return the number of protons in the nucleus
         ///@return int: The number of protons in the nucleus
@@ -135,12 +135,12 @@ class Nucleus {
         ///@return double: The binding energy in MeV
         const double& BindingEnergy() const noexcept { return binding; }
 
-	/// Return the current Fermi Momentum of the nucleus
+	    /// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
         //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
-	///@return double: The potential in MeV	
+	    ///@return double: The potential in MeV	
         double Potential(const double&) const noexcept;
 
         /// Return the current potential energy of the nucleus
@@ -154,19 +154,19 @@ class Nucleus {
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
-        double Rho(const double &position) const noexcept { 
+        MOCK double Rho(const double &position) const noexcept { 
             return position > rhoInterp.max() ? 0 : rhoInterp(position);
         }
         ///@}
 	
         /// Return the Fermi momentum according to a given FG model
-	///@param position: The radius to calculate the density
+	    ///@param position: The radius to calculate the density
         double FermiMomentum(const double&) const noexcept;	//
 
         void SetRecoil(const FourVector recoil) {
             m_recoil = recoil;
         }
-	///@}
+	    ///@}
 
         /// @name Functions
         /// @{

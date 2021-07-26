@@ -1,30 +1,11 @@
 #include "catch2/catch.hpp"
-#include "catch2/trompeloeil.hpp"
+#include "mock_classes.hh"
 
 #include "nuchic/Cascade.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Interactions.hh"
 #include "nuchic/Event.hh"
-
-class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    MAKE_MOCK0(Nucleons, nuchic::Particles&(), noexcept override);
-    IMPLEMENT_MOCK0(GenerateConfig);
-    MAKE_CONST_MOCK0(Radius, const double&(), noexcept override);
-};
-
-class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK2(CrossSection);
-    IMPLEMENT_CONST_MOCK3(MakeMomentum);
-};
-
-class MockEvent : public trompeloeil::mock_interface<nuchic::Event> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK0(CurrentNucleus);
-    IMPLEMENT_MOCK0(Hadrons);
-};
 
 TEST_CASE("Initialize Cascade", "[Cascade]") {
     nuchic::Particles particles = {{nuchic::PID::proton()}, {nuchic::PID::neutron()}};
