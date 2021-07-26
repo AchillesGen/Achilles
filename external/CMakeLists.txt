@@ -15,7 +15,6 @@ CPMFindPackage(
 )
 add_library(fmt::fmt ALIAS fmt)
 
-
 CPMFindPackage(
     NAME spdlog
     GIT_TAG "v1.8.2"
@@ -25,6 +24,26 @@ CPMFindPackage(
         "SPDLOG_BUILD_SHARED ON"
 )
 add_library(spdlog::spdlog ALIAS spdlog)
+
+CPMFindPackage(
+    NAME eigen3
+    GIT_TAG "3.4"
+    GIT_REPOSITORY "https://gitlab.com/libeigen/eigen"
+    OPTIONS
+        "BUILD_TESTING OFF"
+)
+
+CPMFindPackage(
+    NAME autodiff
+    GIT_TAG "v0.6.1"
+    GITHUB_REPOSITORY autodiff/autodiff
+    OPTIONS
+        "AUTODIFF_BUILD_TESTS OFF"
+        "AUTODIFF_BUILD_PYTHON OFF"
+        "AUTODIFF_BUILD_EXAMPLES OFF"
+        "AUTODIFF_BUILD_DOCS OFF"
+)
+add_library(autodiff::autodiff ALIAS autodiff)
 
 CPMAddPackage(
     NAME docopt
@@ -58,7 +77,9 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME catch2
         GITHUB_REPOSITORY catchorg/Catch2
-        GIT_TAG cfb695669830ceb73b0875a20af4241944eb48e0
+        GIT_TAG v2.13.6
+        OPTIONS
+            "CATCH_ENABLE_COVERAGE"
     )
     add_library(Catch2::Catch2 ALIAS Catch2)
 

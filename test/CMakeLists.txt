@@ -5,6 +5,7 @@ include(${catch2_SOURCE_DIR}/contrib/Catch.cmake)
 
 add_library(catch_main STATIC catch_main.cpp)
 target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
+target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 add_executable(nuchic-testsuite 
     # Files with tests 
@@ -22,6 +23,7 @@ add_executable(nuchic-testsuite
     test_mom_solver.cc
     test_autodiff.cc
     test_symplectic_integrator.cc
+    test_potential.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

@@ -2,18 +2,33 @@
 #define POTENTIAL_HH
 
 #include <complex>
+#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
 
 #include "nuchic/Nucleus.hh"
+#include "nuchic/Particle.hh"
 #include "nuchic/References.hh"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wuninitialized"
+#include "autodiff/forward/dual.hpp"
+#pragma GCC diagnostic pop
+// #include "autodiff/reverse/var.hpp"
 
 namespace nuchic {
 
+template<typename T>
+T sech(T x) {
+    return 1.0/cosh(x);
+}
+
+template<typename T>
 struct PotentialVals {
-    double rvector, rscalar;
-    double ivector, iscalar;
+    T rvector, rscalar;
+    T ivector, iscalar;
 };
 
 class Potential {
@@ -26,7 +41,7 @@ class Potential {
 
         virtual ~Potential() = default;
         virtual std::string GetReference() const = 0;
-        virtual PotentialVals operator()(const double&, const double&) = 0;
+        virtual PotentialVals<autodiff::dual> operator()(const autodiff::dual&, const autodiff::dual&) const = 0;
 };
 
 class WiringaPotential : public Potential {
@@ -50,14 +65,14 @@ class WiringaPotential : public Potential {
 
         std::string GetReference() const override { return m_ref.GetReference(); }
 
-        PotentialVals operator()(const double &plab, const double &radius) override {
-            const double rho = m_nucleus -> Rho(radius);
-            const double rho_ratio = rho/m_rho0;
-            const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
-            const double beta = -116*rho_ratio;
-            const double lambda = 3.29 - 0.373*rho_ratio;
+        PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
+            const autodiff::dual rho = m_nucleus -> Rho(static_cast<double>(radius));
+            const autodiff::dual rho_ratio = rho/m_rho0;
+            const autodiff::dual alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
+            const autodiff::dual beta = -116*rho_ratio;
+            const autodiff::dual lambda = 3.29 - 0.373*rho_ratio;
 
-            PotentialVals results{};
+            PotentialVals<autodiff::dual> results{};
             results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
             return results;
         }
@@ -87,8 +102,8 @@ class CooperPotential : public Potential {
 
             for(size_t i = 0; i < 8; ++i) {
                 for(size_t j = 0; j < 8; ++j) {
-                    data[8*j+i] = pt1[i*8+j];
-                    data[8*(j+8)+i] = pt2[i*8+j];
+                    data[8*j+i] = pt1[j*8+i];
+                    data[8*(j+8)+i] = pt2[j*8+i];
                     if(j < 6) data[8*(j+16)+i] = pt3[i*6+j];
                 }
             }
@@ -96,16 +111,113 @@ class CooperPotential : public Potential {
 
         std::string GetReference() const override { return m_ref.GetReference(); }
 
-        PotentialVals operator()(const double&, const double&) override;
+        PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
+            return evaluate<autodiff::dual>(plab, radius);
+        }
+
+        template<typename T>
+        PotentialVals<T> evaluate(const T &plab, const T &radius) const {
+            const auto tplab = sqrt(plab*plab + pow(nuchic::Constant::mN, 2)) - nuchic::Constant::mN;
+            const auto aa = static_cast<double>(m_nucleus -> NNucleons());
+            const auto wt = aa * nuchic::Constant::AMU; 
+            const auto ee = tplab;
+            const auto acb = cbrt(aa);
+            const auto caa = aa / (aa + 20);
+            const auto y = caa, y2 = y*y, y3 = y*y2, y4 = y2*y2;
+            constexpr auto wp = 1.0072545*nuchic::Constant::AMU;
+            const auto el = ee+wp;
+            const auto wp2 = wp*wp;
+            const auto wt2 = wt*wt;
+            const auto pcm = sqrt(wt2*(el*el-wp2)/(wp2+wt2+2.0*wt*el));
+            const auto epcm = sqrt(wp2+pcm*pcm);
+            const auto etcm = sqrt(wt2+pcm*pcm);
+            const auto sr = epcm + etcm;
+            const auto e = 1000.0/epcm;
+            const auto x = e;
+            const auto x2 = x*x;
+            const auto x3 = x*x2;
+            const auto x4 = x2*x2;
+            const auto recv = (etcm / sr);
+            const auto recs = (wt / sr);
+            constexpr double cv1b = 1.0, cv2b = 1.0, cs1b = 1.0, cs2b = 1.0;
+            constexpr double av1b = 0.7, av2b = 0.7, as1b = 0.7, as2b = 0.7;
+            const auto sumr = -100. * (Data(1, 1)+Data(1, 2)*x+Data(1, 3)*x2+Data(1, 4)*x3+Data(1, 5)*x4
+                                                 +Data(1, 6)*y+Data(1, 7)*y2+Data(1, 8)*y3+Data(20,1)*y4);
+            const auto rv1 =   cv1b * (Data(2, 1)+Data(2, 2)*x+Data(2, 3)*x2+Data(2, 4)*x3+Data(2, 5)*x4
+                                                 +Data(2, 6)*y+Data(2, 7)*y2+Data(2, 8)*y3+Data(21,1)*y4);
+            const auto av1 =   av1b * (Data(3, 1)+Data(3, 2)*x+Data(3, 3)*x2+Data(3, 4)*x3+Data(3, 5)*x4
+                                                 +Data(3, 6)*y+Data(3, 7)*y2+Data(3, 8)*y3);
+            const auto sumi = -15.0 * (Data(4, 1)+Data(4, 2)*x+Data(4, 3)*x2+Data(4, 4)*x3+Data(4, 5)*x4
+                                                 +Data(4, 6)*y+Data(4, 7)*y2+Data(4, 8)*y3+Data(20,2)*y4);
+            const auto rv2 =   cv2b * (Data(5, 1)+Data(5, 2)*x+Data(5, 3)*x2+Data(5, 4)*x3+Data(5, 5)*x4
+                                                 +Data(5, 6)*y+Data(5, 7)*y2+Data(5, 8)*y3+Data(21,2)*y4);
+            const auto av2 =   av2b * (Data(6, 1)+Data(6, 2)*x+Data(6, 3)*x2+Data(6, 4)*x3+Data(6, 5)*x4
+                                                 +Data(6, 6)*y+Data(6, 7)*y2+Data(6, 8)*y3);
+            const auto diffr = 700. * (Data(7, 1)+Data(7, 2)*x+Data(7, 3)*x2+Data(7, 4)*x3+Data(7, 5)*x4
+                                                 +Data(7, 6)*y+Data(7, 7)*y2+Data(7, 8)*y3+Data(20,3)*y4);
+            const auto rs1 =   cs1b * (Data(8, 1)+Data(8, 2)*x+Data(8, 3)*x2+Data(8, 4)*x3+Data(8, 5)*x4
+                                                 +Data(8, 6)*y+Data(8, 7)*y2+Data(8, 8)*y3+Data(21,3)*y4);
+            const auto as1 =   as1b * (Data(9, 1)+Data(9, 2)*x+Data(9, 3)*x2+Data(9, 4)*x3+Data(9, 5)*x4
+                                                 +Data(9, 6)*y+Data(9, 7)*y2+Data(9, 8)*y3);
+            const auto diffi = -150 * (Data(10, 1)+Data(10, 2)*x+Data(10, 3)*x2+Data(10, 4)*x3+Data(10, 5)*x4
+                                                  +Data(10, 6)*y+Data(10, 7)*y2+Data(10, 8)*y3+Data(20,4)*y4);
+            const auto rs2 =   cs2b * (Data(11, 1)+Data(11, 2)*x+Data(11, 3)*x2+Data(11, 4)*x3+Data(11, 5)*x4
+                                                  +Data(11, 6)*y+Data(11, 7)*y2+Data(11, 8)*y3+Data(21,4)*y4);
+            const auto as2 =   as2b * (Data(12, 1)+Data(12, 2)*x+Data(12, 3)*x2+Data(12, 4)*x3+Data(12, 5)*x4
+                                                  +Data(12, 6)*y+Data(12, 7)*y2+Data(12, 8)*y3);
+
+            const auto vv = 0.5*(sumr+diffr);
+            const auto vs = 0.5*(sumr-diffr);
+            const auto wv = 0.5*(sumi+diffi);
+            const auto ws = 0.5*(sumi-diffi);
+
+            const auto wv2 = -100.0*(Data(13, 1)+Data(13, 2)*x+Data(13, 3)*x2+Data(13, 4)*x3+Data(13, 5)*x4
+                                                +Data(13, 6)*y+Data(13, 7)*y2+Data(13, 8)*y3+Data(20, 5)*y4);
+            // const auto rv22 =       (Data(14, 1)+Data(14, 2)*x+Data(14, 3)*x2+Data(14, 4)*x3+Data(14, 5)*x4);
+            // const auto av22 =   0.7*(Data(15, 1)+Data(15, 2)*x+Data(15, 3)*x2+Data(15, 4)*x3+Data(15, 5)*x4);
+
+            const auto ws2 =  100.0*(Data(16, 1)+Data(16, 2)*x+Data(16, 3)*x2+Data(16, 4)*x3+Data(16, 5)*x4
+                                                +Data(16, 6)*y+Data(16, 7)*y2+Data(16, 8)*y3+Data(20, 6)*y4);
+            // const auto rs22 =       (Data(17, 1)+Data(17, 2)*x+Data(17, 3)*x2+Data(17, 4)*x3+Data(17, 5)*x4);
+            // const auto as22 =   0.7*(Data(18, 1)+Data(18, 2)*x+Data(18, 3)*x2+Data(18, 4)*x3+Data(18, 5)*x4);
+
+            const auto rv22=rv2;
+            const auto av22=av2;
+            const auto rs22=rs2;
+            const auto as22=as2;
+
+            const T rva1 = CalcTerm<T>(recv*vv, rv1, acb, av1, radius);
+            const T rva2 = CalcTerm<T>(recv*wv, rv2, acb, av2, radius) + CalcTermSurf<T>(recv*wv2, rv22, acb, av22, radius);
+            const T rsa1 = CalcTerm<T>(recs*vs, rs1, acb, as1, radius);
+            const T rsa2 = CalcTerm<T>(recs*ws, rs2, acb, as2, radius) + CalcTermSurf<T>(recs*ws2, rs22, acb, as22, radius);
+
+            return {rva1, rsa1, rva2, rsa2};
+        }
 
     private:
         std::shared_ptr<Nucleus> m_nucleus;
         Reference m_ref;
-        std::array<double, 22*8> data;
+        std::array<double, 22*8> data{};
 
         double Data(size_t i, size_t j) const { return data[8*(i-1) + j-1]; }
-        double CalcTerm(double, double, double, double, double) const;
-        double CalcTermSurf(double, double, double, double, double) const;
+        template<typename T>
+        T CalcTerm(T prefact, T real, T acb, T imag, T radius) const {
+            const auto s1 = sech<T>(real*acb/imag);
+            const auto s2 = sech<T>(radius/imag);
+            const auto prod = s1*s2;
+            const auto a = s1 - prod;
+            const auto b = s2 - prod;
+            return prefact*b/(a+b);
+        }
+        template<typename T>
+        T CalcTermSurf(T prefact, T real, T acb, T imag, T radius) const {
+            const auto s1 = sech<T>(real*acb/imag);
+            const auto s2 = sech<T>(radius/imag);
+            const auto prod = s1*s2;
+            const auto a = s1 - prod;
+            const auto b = s2 - prod;
+            return prefact*a*b/(a+b)/(a+b);
+        }
 
         static constexpr std::array<double, 8*8> pt1{
                      2.313828E+01, -1.233380E+02,  2.432987E+02, -2.092616E+02,
