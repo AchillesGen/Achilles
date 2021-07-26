@@ -11,6 +11,7 @@ add_library(utilities SHARED
     Multichannel.cc
     Histogram.cc
     Cuts.cc
+    Channels3.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
