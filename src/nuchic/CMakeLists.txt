@@ -11,7 +11,6 @@ add_library(utilities SHARED
     Multichannel.cc
     Histogram.cc
     Cuts.cc
-    Channels3.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -28,6 +27,8 @@ add_library(physics SHARED
     HardScatteringFactory.cc
     Configuration.cc
     Event.cc
+    PhaseSpaceMapper.cc
+    LeptonicMapper.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings

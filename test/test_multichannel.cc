@@ -24,6 +24,7 @@ class DoubleMapper : public nuchic::Mapper<double> {
         double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) const override {
             const double sms0 = point[0] - s0;
             const double sms1 = point[0] - s1;
+            rans.resize(1);
             if(m_channel == 1) {
                 rans[0] = std::atan(sms1)/std::acos(-1.0) + 0.5;
                 return 1.0 / (1.0 + sms1 * sms1) / std::acos(-1.0);
@@ -31,6 +32,7 @@ class DoubleMapper : public nuchic::Mapper<double> {
             rans[0] = std::atan(sms0)/std::acos(-1.0) + 0.5;
             return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
         }
+        size_t NDims() const override { return 1; }
     private:
         size_t m_channel;
 };
@@ -84,9 +86,9 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
     nuchic::Integrand<double> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
         nuchic::Channel<double> channel;
-        nuchic::AdaptiveMap2 map(1, 50);
-        channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
         channel.mapping = std::make_unique<DoubleMapper>(i);
+        nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 50);
+        channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
 

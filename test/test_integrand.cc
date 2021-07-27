@@ -14,6 +14,7 @@ class DummyMapper : public nuchic::Mapper<double> {
             std::copy(point.begin(), point.end(), rans.begin());
             return 1.0;
         }
+        size_t NDims() const override { return 1; }
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {

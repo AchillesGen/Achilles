@@ -62,7 +62,7 @@ class Integrand {
         double GenerateWeight(const std::vector<double> &wgts, const std::vector<T> &point,
                               std::vector<double> &densities) {
             double weight{};
-            std::vector<double> rans(point.size());
+            std::vector<double> rans;
             for(size_t i = 0; i < NChannels(); ++i) {
                 const auto grid = channels[i].integrator.Grid();
                 densities[i] = channels[i].mapping -> GenerateWeight(point, rans);

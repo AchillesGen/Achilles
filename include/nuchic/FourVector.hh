@@ -172,6 +172,10 @@ class FourVector {
         ///@return double: Angle between z-axis and transverse plane
         double Theta() const noexcept;
 
+        /// Return cosine of the angle between the z-axis and the transverse plane
+        ///@return double: Angle between z-axis and transverse plane
+        double CosTheta() const noexcept { return cos(Theta()); }
+
         /// Return the angle in the transverse plane
         ///@return double: The angle in the transverse plane
         double Phi() const noexcept;
