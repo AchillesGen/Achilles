@@ -14,9 +14,11 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wunused-value"
 #include "autodiff/forward/dual.hpp"
+#include "autodiff/forward/real.hpp"
 #pragma GCC diagnostic pop
-// #include "autodiff/reverse/var.hpp"
 
 namespace nuchic {
 
@@ -41,7 +43,8 @@ class Potential {
 
         virtual ~Potential() = default;
         virtual std::string GetReference() const = 0;
-        virtual PotentialVals<autodiff::dual> operator()(const autodiff::dual&, const autodiff::dual&) const = 0;
+        PotentialVals<float> operator()(const double&, const double&) const { return {0, 0, 0, 0}; }
+        // virtual PotentialVals<autodiff::dual> operator()(const autodiff::dual&, const autodiff::dual&) const = 0;
 };
 
 class WiringaPotential : public Potential {
@@ -64,18 +67,19 @@ class WiringaPotential : public Potential {
         }
 
         std::string GetReference() const override { return m_ref.GetReference(); }
+        double Rho0() const { return m_rho0; }
 
-        PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
-            const autodiff::dual rho = m_nucleus -> Rho(static_cast<double>(radius));
-            const autodiff::dual rho_ratio = rho/m_rho0;
-            const autodiff::dual alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
-            const autodiff::dual beta = -116*rho_ratio;
-            const autodiff::dual lambda = 3.29 - 0.373*rho_ratio;
+        // PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
+        //     const autodiff::dual rho = m_nucleus -> Rho(static_cast<double>(radius));
+        //     const autodiff::dual rho_ratio = rho/m_rho0;
+        //     const autodiff::dual alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
+        //     const autodiff::dual beta = -116*rho_ratio;
+        //     const autodiff::dual lambda = 3.29 - 0.373*rho_ratio;
 
-            PotentialVals<autodiff::dual> results{};
-            results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
-            return results;
-        }
+        //     PotentialVals<autodiff::dual> results{};
+        //     results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
+        //     return results;
+        // }
 
     private:
         std::shared_ptr<Nucleus> m_nucleus;
@@ -111,9 +115,9 @@ class CooperPotential : public Potential {
 
         std::string GetReference() const override { return m_ref.GetReference(); }
 
-        PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
-            return evaluate<autodiff::dual>(plab, radius);
-        }
+        // PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
+        //     return evaluate<autodiff::dual>(plab, radius);
+        // }
 
         template<typename T>
         PotentialVals<T> evaluate(const T &plab, const T &radius) const {
