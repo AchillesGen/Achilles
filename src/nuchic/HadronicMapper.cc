@@ -6,30 +6,21 @@
 using nuchic::QESpectralMapper;
 
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
-    // Generate phase space
-    double cosT = dCos*rans[0] - 1;
-    double sinT = sqrt(1 - cosT * cosT);
-    double phi = dPhi*rans[1];
-    double p = dp*rans[2];
+    // Generate inital nucleon state
+    const double mom = dp*rans[0];
+    const double cosT = dCos*rans[1] - 1;
+    const double sinT = sqrt(1 - cosT*cosT);
+    const double phi = dPhi*rans[2];
+    const double energy = dE*rans[3];  
 
-    ThreeVector tmp = { p*sinT*cos(phi), p*sinT*sin(phi), p*cosT };
-    tmp += point[0].Vec3();
-    
-    double Epp = sqrt(pow(Constant::mN, 2) + tmp.P2());
-    double Ep = Constant::mN + point[0].E() - Epp;
-    point[point.size()-2] = {Ep, p*sinT*cos(phi), p*sinT*sin(phi), p*cosT};
-    point[point.size()-1] = {tmp, Epp};
+    point[HadronIdx()] = {Constant::mN - energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
 }
 
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) const {
-    rans[0] = point[point.size()-2].P()/dp;
-    rans[1] = point[point.size()-2].CosTheta()/dCos;
-    rans[2] = point[point.size()-2].Phi()/dPhi;
+    rans[0] = point[HadronIdx()].P()/dp;
+    rans[1] = (point[HadronIdx()].CosTheta()+1)/dCos;
+    rans[2] = point[HadronIdx()].Phi()/dPhi;
+    rans[3] = -(point[HadronIdx()].E() - Constant::mN)/dE;
 
-    // Pauli Blocking
-    // TODO: Is this correct? This would assume a global Fermi gas,
-    //       but this is then inconsistent with a local Fermi gas for the cascade
-    // wt *= point.back().P() > 225 ? 1 : 0;
-
-    return point[point.size()-2].E() > 0 ? dp*point[point.size()-2].P2()*dCos*dPhi : 0;
+    return 1.0/point[HadronIdx()].P2()/dp/dCos/dPhi/dE;
 }

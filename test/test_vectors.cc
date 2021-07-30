@@ -254,6 +254,10 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
                && p3[2] == Approx(p1[2]) && p3[3] == Approx(p1[3])));
         CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1])
                && p4[2] == Approx(p1[2]) && p4[3] == Approx(p1[3])));
+
+        nuchic::FourVector pMass(sqrt(100 + 4), 0, 0, 2);
+        beta = pMass.BoostVector();
+        CHECK(pMass.Boost(-beta).M() == Approx(10));
     }
 
     SECTION("Rapidity") {

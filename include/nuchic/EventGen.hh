@@ -5,6 +5,7 @@
 #include "nuchic/Histogram.hh"
 #include "nuchic/ParticleInfo.hh"
 #include "nuchic/Vegas.hh"
+#include "nuchic/MultiChannel.hh"
 
 #include <memory>
 #include <vector>
@@ -41,7 +42,7 @@ class EventGen {
     private:
         bool runCascade, outputEvents, doHardCuts{false}, doEventCuts{false};
         bool doRotate{false};
-        double Calculate(const std::vector<double>&, const double&, const size_t&);
+        double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
         bool MakeEventCuts(Event&);
         void Rotate(Event&);
@@ -52,7 +53,8 @@ class EventGen {
         std::shared_ptr<HardScattering> scattering;
         Cuts hard_cuts{};
         Cuts event_cuts{};
-        Vegas integrator;
+        MultiChannel integrator;
+        Integrand<FourVector> integrand;
         SherpaMEs *sherpa;
         YAML::Node config;
         // std::vector<std::unique_ptr<HardScattering>> scatterings;

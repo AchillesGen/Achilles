@@ -26,31 +26,24 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     static constexpr nuchic::FourVector hadron0{26.8702, -30.5306, -10.9449, 65.4247};
     static constexpr nuchic::FourVector hadron1{-78.4858, -204.738, 1226.89, 1560.42};
 
+    std::vector<nuchic::FourVector> moms = {hadron0, lepton0, lepton1, hadron1};
     nuchic::Particles particles = {{nuchic::PID::proton(), hadron0}};
 
+    REQUIRE_CALL(*nuc, GenerateConfig())
+        .TIMES(1);
+    nuchic::Event event(nuc, moms, 10);
+
     SECTION("Nucleus and Beam set correctly") {
-        REQUIRE_CALL(*nuc, GenerateConfig());
-        REQUIRE_CALL(*beam, Flux(nuchic::PID::electron(), rans))
-            .RETURN(lepton0);
-
-        nuchic::Event event(nuc, beam, rans, 10);
-
-        CHECK(event.PhaseSpace().momentum[0] == lepton0);
+        CHECK(event.Momentum()[0] == hadron0);
+        CHECK(event.Momentum()[1] == lepton0);
+        CHECK(event.Momentum()[2] == lepton1);
+        CHECK(event.Momentum()[3] == hadron1);
     }
 
     SECTION("Initialize Particles") {
-        REQUIRE_CALL(*nuc, GenerateConfig());
-        REQUIRE_CALL(*beam, Flux(nuchic::PID::electron(), rans))
-            .RETURN(lepton0);
         REQUIRE_CALL(*nuc, Nucleons())
             .LR_RETURN((particles))
             .TIMES(5);
-
-        nuchic::Event event(nuc, beam, rans, 10); 
-
-        event.PhaseSpace().momentum.push_back(lepton1);
-        event.PhaseSpace().momentum.push_back(hadron0);
-        event.PhaseSpace().momentum.push_back(hadron1);
 
         event.MatrixElements().resize(1);
         event.MatrixElement(0).inital_state.emplace_back(nuchic::PID::electron());
@@ -75,13 +68,6 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     }
 
     SECTION("Weight is correct") {
-        REQUIRE_CALL(*nuc, GenerateConfig());
-        REQUIRE_CALL(*beam, Flux(nuchic::PID::electron(), rans))
-            .RETURN(lepton0);
-
-        nuchic::Event event(nuc, beam, rans, 10); 
-        
-        event.PhaseSpace().weight = 10;
         event.MatrixElements().resize(10);
         for(size_t i = 0; i < 10; ++i) {
             event.MatrixElement(i).weight = 10;
@@ -90,7 +76,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
 
         event.TotalCrossSection();
 
-        CHECK(event.Weight() == 10e6*10*100);
+        CHECK(event.Weight() == 10e6*100);
         
         auto probs = event.EventProbs();
         CHECK(probs.size() == 11);

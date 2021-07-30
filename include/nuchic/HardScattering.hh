@@ -73,6 +73,7 @@ class HardScattering {
 
         // Set leptonic processes
         void AddProcess(const nuchic::Process_Info&);
+        std::vector<nuchic::Process_Info> Processes() const { return m_leptonicProcesses; }
 
         // Sherpa pointer operations
         void SetSherpa(SherpaMEs *const _sherpa) { p_sherpa = _sherpa; }

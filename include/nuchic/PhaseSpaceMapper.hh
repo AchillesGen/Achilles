@@ -10,23 +10,23 @@ class FourVector;
 class PSMapper : public Mapper<FourVector> {
     public:
         PSMapper(size_t _nleptons, size_t _nhadrons,
-                 Mapper_sptr<FourVector> _initial, Mapper_ptr<FourVector> _leptonic,
-                 Mapper_sptr<FourVector> _hadronic)
+                 Mapper_sptr<FourVector> _lbeam, Mapper_sptr<FourVector> _hbeam,
+                 Mapper_ptr<FourVector> _main)
             : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
-              initial{std::move(_initial)}, leptonic{std::move(_leptonic)},
-              hadronic{std::move(_hadronic)} {}
+              lbeam{std::move(_lbeam)},
+              hbeam{std::move(_hbeam)},
+              main{std::move(_main)} {}
 
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
         size_t NDims() const override { 
-            return initial -> NDims() + leptonic -> NDims() + hadronic -> NDims();
+            return lbeam -> NDims() + hbeam -> NDims() + main -> NDims();
         }
 
     private:
         size_t nleptons, nhadrons;
-        Mapper_sptr<FourVector> initial;
-        Mapper_ptr<FourVector> leptonic; 
-        Mapper_sptr<FourVector> hadronic;
+        Mapper_sptr<FourVector> lbeam, hbeam;
+        Mapper_ptr<FourVector> main; 
 };
 
 }

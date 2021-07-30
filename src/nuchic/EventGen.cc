@@ -9,9 +9,45 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/Units.hh"
 #include "nuchic/ProcessInfo.hh"
+
+// TODO: Turn this into a factory to reduce the number of includes
+#include "nuchic/BeamMapper.hh"
+#include "nuchic/HadronicMapper.hh"
+#include "nuchic/FinalStateMapper.hh"
+#include "nuchic/PhaseSpaceMapper.hh"
+#include "plugins/Channels3.hh"
+
 #include "plugins/SherpaMEs.hh"
 
 #include "yaml-cpp/yaml.h"
+
+template<typename T, typename ...Args>
+nuchic::Channel<nuchic::FourVector> BuildChannel(size_t nlep, size_t nhad,
+                                                 std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> beam,
+                                                 std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> hadron,
+                                                 Args... args) {
+    nuchic::Channel<nuchic::FourVector> channel;
+    auto finalStateMapper = std::make_unique<T>(std::forward<Args>(args)...);
+    channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
+    spdlog::info("NDims = {}", channel.mapping -> NDims());
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 100);
+    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    return channel;
+}
+
+template<typename T, typename ...Args>
+nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(size_t nlep, size_t nhad,
+                                                       std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> beam,
+                                                       std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> hadron,
+                                                       Args... args) {
+    nuchic::Channel<nuchic::FourVector> channel;
+    auto sherpaMap = std::make_unique<T>(std::forward<Args>(args)...);
+    auto finalStateMapper = std::make_unique<nuchic::SherpaMapper>(nlep+nhad-2, std::move(sherpaMap));
+    channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 100);
+    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    return channel;
+}
 
 nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sherpa) :
   runCascade{false}, outputEvents{false}, sherpa(_sherpa) {
@@ -57,7 +93,6 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     // Initialize the leptonic process
     auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
     for(const auto &beam_id : beam -> BeamIDs()) {
-        std::cout << int(beam_id) << std::endl;
         std::vector<PID> incoming = {nuchic::PID::dummyHadron(), beam_id};
         for(auto info : leptonicProcesses) {
             info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
@@ -71,9 +106,49 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         }
     }
 
-    // Setup Vegas
-    nuchic::AdaptiveMap map(static_cast<size_t>(scattering->NVariables() + beam->NVariables()));
-    integrator = Vegas(map, config["Initialize"]);
+    // Setup channels
+    auto beamMapper = std::make_shared<BeamMapper>(1, beam);
+    auto hadronMapper = std::make_shared<QESpectralMapper>(0);
+    if(scattering -> Processes()[0].m_ids.size() == 4) {
+        Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
+                                                                  0, pow(Constant::mN, 2));
+        integrand.AddChannel(std::move(channel));
+    } else if(scattering -> Processes()[0].m_ids.size() == 6) {
+        spdlog::info("Initializing 2->4");
+        constexpr double s5 = pow(Constant::mN/1_GeV, 2);
+        Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(4, 2, beamMapper, hadronMapper,
+                                                                        0, 0, 0, s5);
+        integrand.AddChannel(std::move(channel0));
+        integrand.AddChannel(std::move(channel1));
+        integrand.AddChannel(std::move(channel2));
+        integrand.AddChannel(std::move(channel3));
+        integrand.AddChannel(std::move(channel4));
+        integrand.AddChannel(std::move(channel5));
+        integrand.AddChannel(std::move(channel6));
+        integrand.AddChannel(std::move(channel7));
+    } else {
+        const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 and 2->4 processes. "
+                                              "Got a 2->{} process", leptonicProcesses[0].m_ids.size()-2);
+        throw std::runtime_error(error);
+    }
+
+    // Setup Multichannel integrator
+    // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -104,58 +179,61 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 }
 
 void nuchic::EventGen::Initialize() {
-    spdlog::info("Initializing vegas integrator.");
-    size_t batch_count = 0;
-    auto func = [&](const std::vector<double> &x, const double &wgt) {
-        return Calculate(x, wgt, batch_count);
+    spdlog::info("Initializing integrator.");
+    auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
+        return GenerateEvent(mom, wgt);
     };
-    integrator(func);
+    integrand.Function() = func;
+    integrator.Optimize(integrand);
 }
 
 void nuchic::EventGen::GenerateEvents() {
     // integrator.Clear();
-    integrator.Set(config["EventGen"]);
+    // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    spdlog::info("Starting generating of n >= {} total events", total_events);
-    spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
+    integrator(integrand);
+    // spdlog::info("Starting generating of n >= {} total events", total_events);
+    // spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
     // Run integrator in batches until the desired number of events are found
-    size_t batch_count = 1;
-    while ((nevents < total_events) & (batch_count <= max_batch)){
-        integrator.Clear();  // Reset integrator for each batch
-        auto func = [&](const std::vector<double> &x, const double &wgt) {
-            auto niterations = config["EventGen"]["iterations"].as<double>();
-            return Calculate(x, wgt/niterations, batch_count);
-        };
-        spdlog::info("Running vegas batch number {}", batch_count);
-        integrator(func);
-        spdlog::info("Total events so far: {}/{}", nevents, total_events);
-        batch_count += 1;
-    }
-    if (batch_count >= max_batch){
-        spdlog::info("Stopping after reaching max batch threshold.");
-    }
+    // size_t batch_count = 1;
+    // while ((nevents < total_events) & (batch_count <= max_batch)){
+    //     integrator.Clear();  // Reset integrator for each batch
+    //     auto func = [&](const std::vector<double> &x, const double &wgt) {
+    //         auto niterations = config["EventGen"]["iterations"].as<double>();
+    //         return Calculate(x, wgt/niterations, batch_count);
+    //     };
+    //     spdlog::info("Running vegas batch number {}", batch_count);
+    //     integrator(func);
+    //     spdlog::info("Total events so far: {}/{}", nevents, total_events);
+    //     batch_count += 1;
+    // }
+    // if (batch_count >= max_batch){
+    //     spdlog::info("Stopping after reaching max batch threshold.");
+    // }
 
     hist.Save("multi");
 }
 
-double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const size_t &batch) {
+double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
-    std::vector<double> beamRans(rans.begin(), rans.begin() + beam -> NVariables());
-    Event event(nucleus, beam, beamRans, wgt);
-    event.SetBatch(batch);
+    Event event(nucleus, mom, wgt);
 
-    // Generate phase space
-    spdlog::debug("Generating phase space");
-    scattering -> GeneratePhaseSpace(rans, event);
-    if(event.PhaseSpace().weight == 0) return 0;
+    // Initialize the particle ids for the processes
+    const auto pids = scattering -> Processes()[0].m_ids;
+    for(auto &me : event.MatrixElements()) {
+        me.inital_state.resize(2);
+        me.inital_state[1] = pids[1];
+        for(size_t idx = 2; idx < pids.size() - 1; ++idx)
+            me.final_state.push_back(pids[idx]);
+    }
 
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
 
     // Obtain the leptonic tensor
-    auto leptonTensor = scattering -> LeptonicTensor(event.PhaseSpace().momentum, 100);
+    auto leptonTensor = scattering -> LeptonicTensor(event.Momentum(), 100);
     spdlog::trace("Leptonic Tensor: {}", leptonTensor);
 
     // Obtain the hadronic tensor
@@ -164,10 +242,10 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     scattering -> CrossSection(event);
     constexpr double alpha = 1.0/137;
     std::array<std::complex<double>, 16> hTensor, lTensor;
-    auto ke = event.PhaseSpace().momentum[0];
-    auto kep = event.PhaseSpace().momentum[1];
-    auto pp = event.PhaseSpace().momentum[2];
-    auto ppp = event.PhaseSpace().momentum[3];
+    auto ke = event.Momentum()[1];
+    auto kep = event.Momentum()[2];
+    auto pp = event.Momentum()[0];
+    auto ppp = event.Momentum()[3];
     auto e = pp.E();
     pp.E() = sqrt(pp.P2() + pow(Constant::mN, 2));
     auto q = ke - kep;
@@ -238,7 +316,7 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     if(amp.real() != 0) spdlog::info("Ward Identities: {}", ward);
 #endif
 
-    double flux2 = event.PhaseSpace().momentum[1].E()/event.PhaseSpace().momentum[0].E();
+    double flux2 = event.Momentum()[2].E()/event.Momentum()[1].E();
     double xsec = amp.real()*Constant::HBARC2*flux2/8/M_PI;
     double defaultxsec{};
     static double minRatio = std::numeric_limits<double>::infinity();
@@ -256,18 +334,18 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         double ratio = xsec/defaultxsec;
         if(ratio < minRatio) minRatio = ratio;
         if(ratio > maxRatio) maxRatio = ratio;
-        // spdlog::info("ward = {}, {}, {}", ward/defaultxsec, ward2/defaultxsec, ward3/defaultxsec);
         // spdlog::info("Default xsec = {}", defaultxsec);
         // spdlog::info("Sherpa + Noemi xsec = {}", xsec);
         // spdlog::info("Ratio = {}, Range = [{}, {}]", ratio, minRatio, maxRatio);
     }
-    if(!scattering -> InitializeEvent(event))
+    if(!scattering -> InitializeEvent(event)) {
         return 0;
+    }
 
     spdlog::trace("Event Phase Space:");
     size_t idx = 0;
-    for(const auto &mom : event.PhaseSpace().momentum) {
-        spdlog::trace("\t{}: {}", ++idx, mom);
+    for(const auto &momentum : event.Momentum()) {
+        spdlog::trace("\t{}: {}", ++idx, momentum);
     }
 
     spdlog::trace("Leptons:");
@@ -285,11 +363,12 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
     // Perform hard cuts
     if(doHardCuts) {
         spdlog::debug("Making hard cuts");
-        if(!MakeCuts(event))
+        if(!MakeCuts(event)) {
             // Short-circuit the evaluation
             // We want Vegas to adapt to avoid these points, i.e.,
             // the integrand should be interpreted as zero in this region
             return 0;
+        }
     }
 
     // Run the cascade if needed
@@ -310,24 +389,27 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
         if (doRotate)
             Rotate(event);
         // Perform event-level final cuts before writing
+        bool outputCurrentEvent = true;
         if(doEventCuts){
             spdlog::debug("Making event cuts");
-            if(MakeEventCuts(event)){
-                // Keep a running total of the number of surviving events
-                nevents += 1;
-                spdlog::debug("Found event: {}/{}", nevents, total_events);
-                event.Finalize();
-                writer -> Write(event);
-                const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
-                hist.Fill(omega, event.Weight()/(2*M_PI));
-            }
+            outputCurrentEvent = MakeEventCuts(event);
+        }
+
+        if(outputCurrentEvent) {
+            // Keep a running total of the number of surviving events
+            nevents += 1;
+            spdlog::debug("Found event: {}/{}", nevents, total_events);
+            event.Finalize();
+            writer -> Write(event);
+            const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
+            hist.Fill(omega, event.Weight()/(2*M_PI));
         }
     }
 
     // Always return the weight when the event passes the initial hard cut.
     // Even if events do not survive the final event-level cuts, Vegas should
     // still interpret the integrand as nonzero in this region.
-    return event.Weight()/wgt;
+    return event.Weight();
 }
 
 bool nuchic::EventGen::MakeCuts(Event &event) {

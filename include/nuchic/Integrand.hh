@@ -13,6 +13,8 @@ struct Channel {
     double weight{};
     std::vector<double> train_data;
     std::vector<double> rans;
+
+    size_t NDims() const { return mapping -> NDims(); }
 };
 
 template<typename T>
@@ -27,13 +29,19 @@ class Integrand {
         Func<T> &Function() { return m_func; }
 
         // Channel Utilities
-        void AddChannel(Channel<T> channel) { channels.push_back(std::move(channel)); }
+        void AddChannel(Channel<T> channel) { 
+            if(channels.size() != 0)
+                if(channels[0].NDims() != channel.NDims())
+                    throw std::runtime_error("Integrand: Channels have different dimensions");
+            channels.push_back(std::move(channel)); 
+        }
         void RemoveChannel(int idx) { channels.erase(channels.begin() + idx); }
         std::vector<Channel<T>> Channels() const { return channels; }
         std::vector<Channel<T>> &Channels() { return channels; }
         Channel<T> GetChannel(size_t idx) const { return channels[idx]; }
         Channel<T> &GetChannel(size_t idx) { return channels[idx]; }
         size_t NChannels() const { return channels.size(); }
+        size_t NDims() const { return channels[0].NDims(); }
 
         // Train integrator
         void InitializeTrain() {

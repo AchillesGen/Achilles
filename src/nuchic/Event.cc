@@ -6,18 +6,16 @@
 
 using nuchic::Event;
 
-Event::Event(std::shared_ptr<Nucleus> nuc, std::shared_ptr<Beam> beam,
-             const std::vector<double> &rans, double vwgt)
-        : m_nuc{std::move(nuc)}, m_beam{std::move(beam)}, m_vWgt{std::move(vwgt)} {
+Event::Event(std::shared_ptr<Nucleus> nuc,
+             std::vector<FourVector> mom, double vwgt)
+        : m_nuc{std::move(nuc)}, m_mom{std::move(mom)}, m_vWgt{std::move(vwgt)} {
     m_nuc -> GenerateConfig();
-    m_ps.momentum.push_back(m_beam -> Flux(PID::electron(), rans));
+    m_me.resize(m_nuc -> NNucleons());
 }
 
 bool Event::ValidateEvent(size_t imatrix) const {
-    return m_ps.momentum.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
+    return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
 }
-
-void Event::SetBatch(const size_t &batch){ m_batch = batch; }
 
 void Event::InitializeLeptons(size_t imatrix) {
     if(!ValidateEvent(imatrix))
@@ -25,30 +23,32 @@ void Event::InitializeLeptons(size_t imatrix) {
 
     size_t idx = 0;
     for(auto pid : m_me[imatrix].inital_state) {
+        std::cout << int(pid) << "\n";
         ParticleInfo info(pid);
         if(info.IsLepton()) {
-            m_leptons.emplace_back(info, m_ps.momentum[idx]);
+            m_leptons.emplace_back(info, m_mom[idx]);
             m_leptons.back().Status() = ParticleStatus::initial_state;
-            ++idx;
         }
+        ++idx;
     }
     for(auto pid : m_me[imatrix].final_state) {
+        std::cout << int(pid) << "\n";
         ParticleInfo info(pid);
         if(info.IsLepton()) {
-            m_leptons.emplace_back(info, m_ps.momentum[idx]);
+            m_leptons.emplace_back(info, m_mom[idx]);
             m_leptons.back().Status() = ParticleStatus::final_state;
-            ++idx;
         }
+        ++idx;
     }
 }
 
 void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
     for(const auto &idx : idxs) {
         m_nuc -> Nucleons()[idx[0]].Status() = ParticleStatus::initial_state;
-        m_nuc -> Nucleons()[idx[0]].SetMomentum(m_ps.momentum[idx[1]]);
+        m_nuc -> Nucleons()[idx[0]].SetMomentum(m_mom[idx[1]]);
         Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
         outNucleon.Status() = ParticleStatus::propagating;
-        outNucleon.SetMomentum(m_ps.momentum[idx[2]]);
+        outNucleon.SetMomentum(m_mom[idx[2]]);
         m_nuc -> Nucleons().push_back(outNucleon);
     }
 }
@@ -96,7 +96,7 @@ double Event::Weight() const {
 
     if(!ValidateEvent(0))
         throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    return m_ps.weight*m_vWgt*m_meWgt*conv;
+    return m_vWgt*m_meWgt*conv;
 }
 
 bool Event::TotalCrossSection() {

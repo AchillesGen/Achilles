@@ -1,57 +1,53 @@
 #include "nuchic/PhaseSpaceMapper.hh"
 #include "nuchic/FourVector.hh"
 
-void nuchic::PSMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
+void nuchic::PSMapper::GeneratePoint(std::vector<FourVector> &momentum, const std::vector<double> &rans) const {
     // Get the dimensions for each component of the PSMapper
-    const int initialVars = static_cast<int>(initial -> NDims());
-    const int leptonVars = static_cast<int>(leptonic -> NDims());
+    const int hbeamVars = static_cast<int>(hbeam -> NDims());
+    const int lbeamVars = static_cast<int>(lbeam -> NDims());
+    const int mainVars = static_cast<int>(main -> NDims());
 
     // Separate the random numbers into the appropriate components
-    const std::vector<double> initialRans(rans.begin(), rans.begin() + initialVars);
-    const std::vector<double> leptonRans(rans.begin() + initialVars, rans.begin() + initialVars + leptonVars);
-    const std::vector<double> hadronRans(rans.begin() + initialVars + leptonVars, rans.end());
+    const std::vector<double> hbeamRans(rans.begin(), rans.begin() + hbeamVars);
+    const std::vector<double> lbeamRans(rans.begin() + hbeamVars, rans.begin() + hbeamVars + lbeamVars);
+    const std::vector<double> mainRans(rans.end() - mainVars, rans.end());
 
     // Generate the phase space
     // The momentum are given in the following order:
-    // 1. Momentum of the probe
-    // 2. Momentum of all the leptons (with incoming lepton first)
-    // 3. Momentum of all the hadrons (with incoming hadrons first)
-    std::vector<FourVector> momentum(nleptons+nhadrons+1);
-    initial -> GeneratePoint(momentum, initialRans);
-    leptonic -> GeneratePoint(momentum, leptonRans);
-    hadronic -> GeneratePoint(momentum, hadronRans);
-    swap(point, momentum);
+    // 1. Momentum of the initial hadron
+    // 2. Momentum of the initial lepton
+    // 3. Momentum of all outgoing parts of the leptonic tensor
+    // 4. Momentum of all outgoing hadrons
+    momentum.resize(nleptons + nhadrons);
+    hbeam -> GeneratePoint(momentum, hbeamRans);
+    lbeam -> GeneratePoint(momentum, lbeamRans);
+    main -> GeneratePoint(momentum, mainRans);
 }
 
-double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) const {
+double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
+                                        std::vector<double> &rans) const {
     // Get the dimensions for each component of the PSMapper and create temporary rans vector for each
-    const size_t initialVars = initial -> NDims();
-    const size_t leptonVars = leptonic -> NDims();
-    const size_t hadronVars = hadronic -> NDims();
-    std::vector<double> initialRans(initialVars), leptonRans(leptonVars), hadronRans(hadronVars);
-
-    // Separate the momentum into the appropriate components
-    const std::vector<FourVector> initialMom(point.begin(), point.begin() + 2);
-    const std::vector<FourVector> leptonMom(point.begin(), point.begin() + 1 + static_cast<int>(nleptons));
-    std::vector<FourVector> hadronMom(point.end() - static_cast<int>(nhadrons), point.end());
-    hadronMom.push_back(point.front());
+    const auto hbeamVars = hbeam -> NDims();
+    const auto lbeamVars = lbeam -> NDims();
+    const auto mainVars = main -> NDims();
+    std::vector<double> hbeamRans(hbeamVars), lbeamRans(lbeamVars), mainRans(mainVars);
     
     // Calculate the weights
     double wgt = 1.0;
-    wgt = initial -> GenerateWeight(initialMom, initialRans);
-    wgt = leptonic -> GenerateWeight(leptonMom, leptonRans);
-    wgt = hadronic -> GenerateWeight(hadronMom, hadronRans);
+    wgt /= hbeam -> GenerateWeight(momentum, hbeamRans);
+    wgt /= lbeam -> GenerateWeight(momentum, lbeamRans);
+    wgt /= main -> GenerateWeight(momentum, mainRans);
 
     // Merge the random numbers
-    initialRans.insert(
-            initialRans.end(),
-            std::make_move_iterator(leptonRans.begin()),
-            std::make_move_iterator(leptonRans.end()));
-    initialRans.insert(
-            initialRans.end(),
-            std::make_move_iterator(hadronRans.begin()),
-            std::make_move_iterator(hadronRans.end()));
-    swap(rans, initialRans);
+    hbeamRans.insert(
+            hbeamRans.end(),
+            std::make_move_iterator(lbeamRans.begin()),
+            std::make_move_iterator(lbeamRans.end()));
+    hbeamRans.insert(
+            hbeamRans.end(),
+            std::make_move_iterator(mainRans.begin()),
+            std::make_move_iterator(mainRans.end()));
+    swap(rans, hbeamRans);
 
-    return wgt;
+    return 1.0/wgt;
 }

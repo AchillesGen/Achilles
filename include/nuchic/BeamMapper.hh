@@ -1,5 +1,5 @@
-#ifndef INITIALSTATE_MAPPER_HH
-#define INITIALSTATE_MAPPER_HH
+#ifndef BEAM_MAPPER_HH
+#define BEAM_MAPPER_HH
 
 #include "nuchic/Mapper.hh"
 
@@ -8,15 +8,16 @@ namespace nuchic {
 class FourVector;
 class Beam;
 
-class InitialMapper : public Mapper<FourVector> {
+class BeamMapper : public Mapper<FourVector> {
     public:
-        InitialMapper(std::shared_ptr<Beam> beam) : m_beam{std::move(beam)} {}
+        BeamMapper(size_t idx, std::shared_ptr<Beam> beam) : m_idx{std::move(idx)}, m_beam{std::move(beam)} {}
 
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
         size_t NDims() const override;
 
     private:
+        size_t m_idx;
         std::shared_ptr<Beam> m_beam;
 };
 

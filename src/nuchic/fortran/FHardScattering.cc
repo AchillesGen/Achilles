@@ -40,11 +40,12 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
 }
 
 nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
-    auto pNucleonIn = event.PhaseSpace().momentum[NLeptons()];
-    auto pNucleonOut = event.PhaseSpace().momentum[NLeptons()+1];
-    auto qVec = event.PhaseSpace().momentum[0];
-    for(size_t i = 1; i < NLeptons(); ++i) {
-        qVec -= event.PhaseSpace().momentum[i];
+    auto pNucleonIn = event.Momentum().front();
+    pNucleonIn.E() = Constant::mN - pNucleonIn.E();
+    auto pNucleonOut = event.Momentum().back();
+    auto qVec = event.Momentum()[1];
+    for(size_t i = 2; i < event.Momentum().size()-1; ++i) {
+        qVec -= event.Momentum()[i];
     }
     auto rotMat = qVec.AlignZ();
     qVec = qVec.Rotate(rotMat);
@@ -58,10 +59,10 @@ nuchic::Tensor nuchic::FQESpectral::HadronicTensor(Event &event) const {
 }
 
 void nuchic::FQESpectral::CrossSection(Event &event) const {
-    auto pLeptonIn = event.PhaseSpace().momentum[0];
-    auto pLeptonOut = event.PhaseSpace().momentum[1];
-    auto pNucleonIn = event.PhaseSpace().momentum[2];
-    auto pNucleonOut = event.PhaseSpace().momentum[3];
+    auto pLeptonIn = event.Momentum()[1];
+    auto pLeptonOut = event.Momentum()[2];
+    auto pNucleonIn = event.Momentum()[0];
+    auto pNucleonOut = event.Momentum()[3];
 
     auto qVec = pLeptonIn - pLeptonOut;
     auto rotMat = qVec.AlignZ();
@@ -70,6 +71,8 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
     pLeptonOut = pLeptonOut.Rotate(rotMat);
     pNucleonIn = pNucleonIn.Rotate(rotMat);
     pNucleonOut = pNucleonOut.Rotate(rotMat);
+
+    pNucleonIn.E() = Constant::mN - pNucleonIn.E();
 
     double ee = pLeptonIn.E();
     double theta = pLeptonIn.Angle(pLeptonOut);
@@ -85,11 +88,11 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
 
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
-            event.MatrixElement(i).inital_state.push_back(PID::proton());
+            event.MatrixElement(i).inital_state[0] = PID::proton();
             event.MatrixElement(i).final_state.push_back(PID::proton());
             event.MatrixElement(i).weight = result[0];
         } else {
-            event.MatrixElement(i).inital_state.push_back(PID::neutron());
+            event.MatrixElement(i).inital_state[0] = PID::neutron();
             event.MatrixElement(i).final_state.push_back(PID::neutron());
             event.MatrixElement(i).weight = result[1];
         }
@@ -119,11 +122,12 @@ nuchic::FQEGlobalFermiGas::FQEGlobalFermiGas(const YAML::Node &config, RunMode m
     spdlog::trace("Finished initializing quasielastic global Fermi Gas model");
 }
 
+// TODO: Fix the labels to match the new ordering
 void nuchic::FQEGlobalFermiGas::CrossSection(Event &event) const {
-    auto pLeptonIn = event.PhaseSpace().momentum[0];
-    auto pLeptonOut = event.PhaseSpace().momentum[1];
-    auto pNucleonIn = event.PhaseSpace().momentum[2];
-    auto pNucleonOut = event.PhaseSpace().momentum[3];
+    auto pLeptonIn = event.Momentum()[0];
+    auto pLeptonOut = event.Momentum()[1];
+    auto pNucleonIn = event.Momentum()[2];
+    auto pNucleonOut = event.Momentum()[3];
 
     auto qVec = pLeptonIn - pLeptonOut;
     auto rotMat = qVec.AlignZ();

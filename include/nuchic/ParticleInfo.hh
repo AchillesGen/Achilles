@@ -34,6 +34,7 @@ namespace nuchic {
             constexpr bool operator!=(const PID &other) const { return id != other.id; }
             constexpr bool operator<(const PID &other) const { return id < other.id; }
             constexpr bool operator>(const PID &other) const { return id > other.id; }
+            constexpr PID operator-() const { return PID{ -id }; }
             constexpr operator long int() const { return id; }
             constexpr operator int() const { return static_cast<int>(id); }
 
@@ -150,8 +151,12 @@ namespace nuchic {
                 if(id < 0 && info -> majorana == 0) anti = true;
             }
 
-            ParticleInfo(const PID &id, const bool &anti_=false) : info(nullptr), anti(anti_) {
+            ParticleInfo(PID id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
+                if(id < PID::undefined()) {
+                    id = -id;
+                    anti = true;
+                }
                 auto it(particleDB.find(id));
                 if(it == particleDB.end())
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));

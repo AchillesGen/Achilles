@@ -25,7 +25,7 @@ class FluxType {
 
         virtual int NVariables() const = 0;
         virtual FourVector Flux(const std::vector<double>&) = 0;
-        virtual double Weight(const std::vector<double>&) = 0;
+        virtual double GenerateWeight(const FourVector&, std::vector<double>&) = 0;
 };
 
 class Monochromatic : public FluxType {
@@ -40,7 +40,7 @@ class Monochromatic : public FluxType {
             return {m_energy, 0, 0, m_energy};
         }
 
-        double Weight(const std::vector<double>&) override {
+        double GenerateWeight(const FourVector&, std::vector<double>&) override {
             return 1;
         }
 
@@ -72,7 +72,7 @@ class Spectrum : public FluxType {
             throw std::runtime_error("Spectrum Fluxes are not implemented");
         }
 
-        double Weight(const std::vector<double>&) override {
+        double GenerateWeight(const FourVector&, std::vector<double>&) override {
             throw std::runtime_error("Spectrum Fluxes are not implemented");
         }
 };
@@ -93,8 +93,8 @@ class Beam {
         virtual FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
             return m_beams.at(pid) -> Flux(rans); 
         }
-        double Weight(const PID pid, const std::vector<double> &rans) const { 
-            return m_beams.at(pid) -> Weight(rans); 
+        double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans) const { 
+            return m_beams.at(pid) -> GenerateWeight(p, rans); 
         }
         size_t NBeams() const { return m_beams.size(); }
         std::set<PID> BeamIDs() const { return m_pids; }

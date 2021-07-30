@@ -29,8 +29,9 @@ Beams:
         CHECK(beam.at(nuchic::PID(12)) == beam[nuchic::PID(12)]);
         CHECK(beam.Flux(nuchic::PID(12), {}) == nuchic::FourVector(0, 0, 100, 100));
         CHECK(beam.Flux(nuchic::PID(13), {}) == nuchic::FourVector(0, 0, 200, 200));
-        CHECK(beam.Weight(nuchic::PID(12), {0}) == 1.0);
-        CHECK(beam.Weight(nuchic::PID(13), {0}) == 1.0);
+        std::vector<double> rans;
+        CHECK(beam.GenerateWeight(nuchic::PID(12), {}, rans) == 1.0);
+        CHECK(beam.GenerateWeight(nuchic::PID(13), {}, rans) == 1.0);
     }
 
     SECTION("Throw on Identical Beams") {
@@ -57,6 +58,7 @@ Beams:
 
         CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
         CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
-        CHECK_THROWS_WITH(spectrum.Weight({}), "Spectrum Fluxes are not implemented");
+        std::vector<double> rans;
+        CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
     }
 }

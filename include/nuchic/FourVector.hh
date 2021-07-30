@@ -213,6 +213,11 @@ class FourVector {
         ///@return FourVector: The vector in the corresponding frame
         FourVector Rotate(const RotMat&) const noexcept;
 
+        /// Rotate the four vector to the frame given by the 3 angles
+        ///@param mat: The rotation matrix
+        ///@return FourVector: The vector in the corresponding frame
+        FourVector RotateBack(const RotMat&) const noexcept;
+
         /// Obtain the rotation matrix to align the vector with a given axis
         ///@param axis: The axis to rotate to align with
         ///@return std::array<double, 9>: The rotation matrix to align the vector

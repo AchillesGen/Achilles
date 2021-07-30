@@ -37,19 +37,26 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
 
 nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
                                               const double &mu2) const {
-    std::vector<std::array<double, 4>> mom(NLeptons()+2);
-    auto rotMat = (p[0] - p[1]).AlignZ();
-    for(size_t i = 0; i < NLeptons(); ++i) {
-        mom[i+1] = (p[i]/1_GeV).Rotate(rotMat).Momentum();
+    std::vector<std::array<double, 4>> mom(p.size());
+    auto qVec = p[1];
+    for(size_t i = 2; i < p.size()-1; ++i) {
+        qVec -= p[i];
     }
-    mom[0] = (-p[NLeptons()]/1_GeV).Rotate(rotMat).Momentum();
-    mom[NLeptons()+1] = (p[NLeptons()+1]/1_GeV).Rotate(rotMat).Momentum();
+    auto rotMat = qVec.AlignZ();
+    mom[0] = (-qVec/1_GeV).Rotate(rotMat).Momentum();
+    mom[1] = (-p[1]/1_GeV).Rotate(rotMat).Momentum();
+    for(size_t i = 2; i < p.size()-1; ++i) {
+        mom[i] = (p[i]/1_GeV).Rotate(rotMat).Momentum();
+    }
+    mom.back() = {};
+
+    size_t idx = 0;
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);
-    }
-    for(size_t i = 0; i < m_leptonicProcesses[0].m_ids.size(); ++i) {
-        spdlog::trace("PID: {}, Momentum: ({}, {}, {}, {})", pids[i], mom[i][0], mom[i][1], mom[i][2], mom[i][3]); 
+        spdlog::trace("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
+                      mom[idx][0], mom[idx][1], mom[idx][2], mom[idx][3]); 
+        ++idx;
     }
     auto currents = p_sherpa -> Calc(pids, mom, mu2);
 
@@ -74,9 +81,9 @@ void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &
     GenerateLeptons(leptonRans, event);
 
     // Generate hadonic phase space point
-    FourVector Q = event.PhaseSpace().momentum[0];
-    for(const auto &lepton : event.PhaseSpace().momentum) {
-        if(lepton == event.PhaseSpace().momentum[0]) continue;
+    FourVector Q = event.Momentum()[0];
+    for(const auto &lepton : event.Momentum()) {
+        if(lepton == event.Momentum()[0]) continue;
         Q -= lepton;
     }
     GenerateHadrons(hadronRans, Q, event);
@@ -86,7 +93,7 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
     double phi = dPhi*leptonRans[0];
 
     double cosT{}, sinT{}, Elepton{};
-    event.PhaseSpace().weight = dPhi;
+    // event.PhaseSpace().weight = dPhi;
     // The following is included in the matrix element
     // leptons[1].E()*leptons[1].Momentum().P();
     switch(m_mode) {
@@ -96,24 +103,24 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
             sinT = std::sin(m_angle);
             break;
         case RunMode::FixedAngle:
-            Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
+            Elepton = event.Momentum()[0].E()*leptonRans[1];
             cosT = std::cos(m_angle);
             sinT = std::sin(m_angle);
             // TEST: fixed energy
             // Elepton = event.PhaseSpace().momentum[0].E()*Constant::mN/(event.PhaseSpace().momentum[0].E()*(1-cosT)+Constant::mN);
-            event.PhaseSpace().weight *= event.PhaseSpace().momentum[0].E();
+            // event.PhaseSpace().weight *= event.PhaseSpace().momentum[0].E();
             break;
         case RunMode::FullPhaseSpace:
-            Elepton = event.PhaseSpace().momentum[0].E()*leptonRans[1];
+            Elepton = event.Momentum()[0].E()*leptonRans[1];
             cosT = dCos*leptonRans[2] - 1;
             sinT = sqrt(1-cosT*cosT);
-            event.PhaseSpace().weight *= dCos*event.PhaseSpace().momentum[0].E();
+            // event.PhaseSpace().weight *= dCos*event.PhaseSpace().momentum[0].E();
             break;
     }
-    event.PhaseSpace().momentum.emplace_back(Elepton,
-                                             Elepton*sinT*cos(phi),
-                                             Elepton*sinT*sin(phi),
-                                             Elepton*cosT);
+    event.Momentum().emplace_back(Elepton,
+                                  Elepton*sinT*cos(phi),
+                                  Elepton*sinT*sin(phi),
+                                  Elepton*cosT);
 
     // TODO: Move to a better location?
     event.MatrixElements().resize(12);
@@ -142,9 +149,9 @@ bool nuchic::Quasielastic::InitializeEvent(nuchic::Event &event) {
     // auto tmp = GetRNG() -> uniform<size_t>(0, event.CurrentNucleus() -> NProtons());
     // size_t idx = ime == 0 ? event.CurrentNucleus() -> ProtonsIDs()[tmp]
     //     : event.CurrentNucleus() -> NeutronsIDs()[tmp];
-    // event.InitializeHadrons({{idx, 2, 3}});
+    // event.InitializeHadrons({{idx, 0, 3}});
     
-    event.InitializeHadrons({{ime, 2, 3}});
+    event.InitializeHadrons({{ime, 0, Processes()[0].m_ids.size()-1}});
 
     return true;
 }
@@ -182,11 +189,11 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
 
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
     double Ep = Constant::mN+Q.E()-Epp;
-    event.PhaseSpace().momentum.emplace_back(Ep, p*sinT*cos(phi),
-                                             p*sinT*sin(phi),
-                                             p*cosT);
-    event.PhaseSpace().momentum.emplace_back(tmp, Epp);
-    event.PhaseSpace().weight *= Ep > 0 ? dp*p*p*dCos*dPhi : 0;
+    event.Momentum().emplace_back(Ep, p*sinT*cos(phi),
+                                  p*sinT*sin(phi),
+                                  p*cosT);
+    event.Momentum().emplace_back(tmp, Epp);
+    // event.PhaseSpace().weight *= Ep > 0 ? dp*p*p*dCos*dPhi : 0;
 }
 
 void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
@@ -205,7 +212,7 @@ void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
     double cosT = (arg1-arg2)/(2*p*Q.P());
     double sinT = sqrt(1-cosT*cosT);
     if(std::abs(cosT) > 1) {
-        event.PhaseSpace().weight = 0;
+        // event.PhaseSpace().weight = 0;
         return;
     } 
 
@@ -216,9 +223,9 @@ void QEGlobalFermiGas::GenerateHadrons(const std::vector<double> &rans,
     
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
     
-    event.PhaseSpace().momentum.emplace_back(Ep, p*sinT*cos(phi),
+    event.Momentum().emplace_back(Ep, p*sinT*cos(phi),
                                              p*sinT*sin(phi),
                                              p*cosT);
-    event.PhaseSpace().momentum.emplace_back(tmp, Epp);
-    event.PhaseSpace().weight *= dp*p*p*dPhi;
+    event.Momentum().emplace_back(tmp, Epp);
+    // event.PhaseSpace().weight *= dp*p*p*dPhi;
 }
