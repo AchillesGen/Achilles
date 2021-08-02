@@ -34,12 +34,12 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 
     SECTION("Values and Derivatives are consistent") {
         autodiff::real r = 0.15;
-    
+
         // Results from the fortran code for tplab = 100, r = 0.15, A = 12
         constexpr double rvector = 301.65297587389080, ivector = -84.374377568119442;
         constexpr double rscalar = -384.29852972736001, iscalar = 89.69329129030613;
 
-        auto nucleus = std::make_shared<MockNucleus>(); 
+        auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons())
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
@@ -90,7 +90,6 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         CHECK(drsdr == Approx(stencilr.rscalar));
         CHECK(disdp == Approx(stencilp.iscalar));
         CHECK(disdr == Approx(stencilr.iscalar));
-
     }
 
 #if defined(CATCH_CONFIG_ENABLE_BENCHMARKING)
@@ -100,8 +99,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         autodiff::dual y = 2.0;
         autodiff::dual z = 3.0;
 
+        autodiff::dual u = test_derivative(x, y, z);
         meter.measure([&]() {
-                autodiff::dual u = test_derivative(x, y, z);
                 double dudx = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(x), autodiff::at(x, y, z));
                 double dudy = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(y), autodiff::at(x, y, z));
                 double dudz = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(z), autodiff::at(x, y, z));
@@ -127,21 +126,21 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
     };
 
     BENCHMARK_ADVANCED("Autodiff")(Catch::Benchmark::Chronometer meter) {
-        autodiff::real r = 0.15;
-        auto nucleus = std::make_shared<MockNucleus>(); 
+        autodiff::dual r = 0.15;
+        auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons())
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
         nuchic::CooperPotential potential(nucleus);
-        autodiff::real plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        autodiff::dual plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
 
-        auto func_rv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).rvector; };
-        auto func_iv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).ivector; };
-        auto func_rs = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).rscalar; };
-        auto func_is = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).iscalar; };
+        auto func_rv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).rvector; };
+        auto func_iv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).ivector; };
+        auto func_rs = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).rscalar; };
+        auto func_is = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).iscalar; };
 
         meter.measure([&]() {
-                // potential.evaluate<autodiff::real>(plab, r);
+                // potential.evaluate<autodiff::dual>(plab, r);
                 autodiff::derivative(func_rv, autodiff::wrt(plab), autodiff::at(plab, r));
                 autodiff::derivative(func_rv, autodiff::wrt(r), autodiff::at(plab, r));
                 autodiff::derivative(func_iv, autodiff::wrt(plab), autodiff::at(plab, r));
@@ -156,7 +155,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
     BENCHMARK_ADVANCED("Stencil")(Catch::Benchmark::Chronometer meter) {
         double r = 0.15;
         double plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
-        auto nucleus = std::make_shared<MockNucleus>(); 
+        auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons())
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
