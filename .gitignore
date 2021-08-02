@@ -28,3 +28,4 @@ include/nuchic/System.hh
 plots/
 *dylib
 .clangd
+figs/
