@@ -30,3 +30,4 @@ plots/
 .clangd
 figs/
 tmp/
+.vimspector.json
