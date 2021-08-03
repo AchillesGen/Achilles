@@ -187,7 +187,7 @@ namespace nuchic {
             bool IsVector() const noexcept { return IntSpin() == 2; }
             bool IsTensor() const noexcept { return IntSpin() == 4; }
             bool IsPhoton() const noexcept { return info -> id == PID::photon(); }
-            bool IsLepton() const noexcept { return IntID() > 10 && IntID() < 19; }
+            bool IsLepton() const noexcept { return std::abs(IntID()) > 10 && std::abs(IntID()) < 19; }
             bool IsQuark() const noexcept { return IntID() < 10; }
             bool IsGluon() const noexcept { return info -> id == PID::gluon(); }
 

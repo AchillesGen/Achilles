@@ -1,5 +1,6 @@
 #include "nuchic/PhaseSpaceMapper.hh"
 #include "nuchic/FourVector.hh"
+#include "spdlog/spdlog.h"
 
 void nuchic::PSMapper::GeneratePoint(std::vector<FourVector> &momentum, const std::vector<double> &rans) const {
     // Get the dimensions for each component of the PSMapper
@@ -19,9 +20,16 @@ void nuchic::PSMapper::GeneratePoint(std::vector<FourVector> &momentum, const st
     // 3. Momentum of all outgoing parts of the leptonic tensor
     // 4. Momentum of all outgoing hadrons
     momentum.resize(nleptons + nhadrons);
-    hbeam -> GeneratePoint(momentum, hbeamRans);
     lbeam -> GeneratePoint(momentum, lbeamRans);
+    hbeam -> GeneratePoint(momentum, hbeamRans);
     main -> GeneratePoint(momentum, mainRans);
+
+    // Debugging
+    spdlog::trace("PSMapper::GeneratePoint");
+    size_t idx = 0;
+    for(const auto &mom : momentum) {
+        spdlog::trace(" - {}: {}", idx++, mom);
+    }
 }
 
 double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
@@ -34,9 +42,14 @@ double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
     
     // Calculate the weights
     double wgt = 1.0;
-    wgt /= hbeam -> GenerateWeight(momentum, hbeamRans);
     wgt /= lbeam -> GenerateWeight(momentum, lbeamRans);
+    wgt /= hbeam -> GenerateWeight(momentum, hbeamRans);
     wgt /= main -> GenerateWeight(momentum, mainRans);
+
+    spdlog::trace("PSMapper::GenerateWeight:");
+    spdlog::trace("  lbeam wgt = {}", lbeam -> GenerateWeight(momentum, lbeamRans));
+    spdlog::trace("  hbeam wgt = {}", hbeam -> GenerateWeight(momentum, hbeamRans));
+    spdlog::trace("  main wgt = {}", main -> GenerateWeight(momentum, mainRans));
 
     // Merge the random numbers
     hbeamRans.insert(

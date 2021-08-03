@@ -23,7 +23,7 @@ struct MultiChannelParams {
 
     static constexpr size_t ncalls_default{10000}, nint_default{10};
     static constexpr double atol_default{1e-4}, rtol_default{1e-4};
-    static constexpr size_t nrefine_default{5};
+    static constexpr size_t nrefine_default{10};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
     static constexpr size_t nparams = 8;
 };
@@ -58,6 +58,7 @@ class MultiChannel {
         void RefineChannels(Integrand<T> &func) {
             params.iteration = 0;
             params.nrefine *= 2;
+            params.ncalls *= 2;
             for(auto &channel : func.Channels())
                 channel.integrator.Refine();
         }
@@ -99,8 +100,10 @@ void nuchic::MultiChannel::operator()(Integrand<T> &func) {
         func.AddTrainData(ichannel, val2);
         results += val;
 
-        for(size_t j = 0; j < nchannels; ++j) {
-            train_data[j] += densities[j] * val2 * wgt;
+        if(val2 != 0) {
+            for(size_t j = 0; j < nchannels; ++j) {
+                train_data[j] += densities[j] * val2 * wgt;
+            }
         }
     }
 
@@ -114,7 +117,7 @@ void nuchic::MultiChannel::operator()(Integrand<T> &func) {
 template<typename T>
 void nuchic::MultiChannel::Optimize(Integrand<T> &func) {
     double abs_err = lim::max(), rel_err = lim::max();
-    while((abs_err > params.atol && rel_err > params.rtol) || summary.results.size() < params.niterations) {
+    while((abs_err > params.atol || rel_err > params.rtol) || summary.results.size() < params.niterations) {
         (*this)(func);
         StatsData current = summary.Result();
         abs_err = current.Error();

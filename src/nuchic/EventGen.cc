@@ -15,6 +15,7 @@
 #include "nuchic/HadronicMapper.hh"
 #include "nuchic/FinalStateMapper.hh"
 #include "nuchic/PhaseSpaceMapper.hh"
+#include "plugins/Channels1.hh"
 #include "plugins/Channels3.hh"
 
 #include "plugins/SherpaMEs.hh"
@@ -113,9 +114,15 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
                                                                   0, pow(Constant::mN, 2));
         integrand.AddChannel(std::move(channel));
+        // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
+        //                                                                 0, pow(Constant::mN, 2));
+        // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
+        //                                                                 0, pow(Constant::mN, 2));
+        // integrand.AddChannel(std::move(channel0));
+        // integrand.AddChannel(std::move(channel1));
     } else if(scattering -> Processes()[0].m_ids.size() == 6) {
         spdlog::info("Initializing 2->4");
-        constexpr double s5 = pow(Constant::mN/1_GeV, 2);
+        constexpr double s5 = (Constant::mN/1_GeV)*(Constant::mN/1_GeV);
         Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
                                                                         0, 0, 0, s5);
         Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
@@ -148,7 +155,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {10000, 10, 1e5, 5e-3});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -175,7 +182,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
     writer -> WriteHeader(configFile);
 
-    hist = Histogram(1000, 0.0, 1000.0, "xsec");
+    hist = Histogram(100, -1.0, 1.0, "xsec");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -185,6 +192,7 @@ void nuchic::EventGen::Initialize() {
     };
     integrand.Function() = func;
     integrator.Optimize(integrand);
+    integrator.Summary();
 }
 
 void nuchic::EventGen::GenerateEvents() {
@@ -192,6 +200,7 @@ void nuchic::EventGen::GenerateEvents() {
     // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
+    integrator.Parameters().ncalls = 100000;
     integrator(integrand);
     // spdlog::info("Starting generating of n >= {} total events", total_events);
     // spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
@@ -401,8 +410,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             spdlog::debug("Found event: {}/{}", nevents, total_events);
             event.Finalize();
             writer -> Write(event);
-            const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
-            hist.Fill(omega, event.Weight()/(2*M_PI));
+            const auto omega = event.Momentum()[2].CosTheta();
+            hist.Fill(omega, event.Weight());
+            hist.Save("multi");
         }
     }
 

@@ -12,6 +12,7 @@
 #include "nuchic/AdaptiveMap.hh"
 #include "nuchic/Random.hh"
 #include "nuchic/Utilities.hh"
+#include "spdlog/spdlog.h"
 
 using nuchic::AdaptiveMap;
 using nuchic::AdaptiveMap2;

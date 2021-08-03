@@ -10,6 +10,7 @@ nuchic::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelPa
 void nuchic::MultiChannel::Adapt(const std::vector<double> &train) {
     std::vector<double> new_weights(channel_weights.size());
 
+    spdlog::debug("MultiChannel::Adapt:");
     double sum_wgts = 0;
     for(size_t i = 0; i < new_weights.size(); ++i) {
         new_weights[i] = channel_weights[i] * pow(train[i], params.beta);
@@ -24,8 +25,10 @@ void nuchic::MultiChannel::Adapt(const std::vector<double> &train) {
         new_sum += wgt;
     }
 
+    size_t idx = 0;
     for(auto &wgt : new_weights) {
         wgt /= new_sum;
+        spdlog::debug("  Channel {}: {}", idx++, wgt);
     }
 
     channel_weights = new_weights;

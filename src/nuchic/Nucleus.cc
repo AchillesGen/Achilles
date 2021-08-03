@@ -148,7 +148,7 @@ void Nucleus::GenerateConfig() {
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
-        particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
+        particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
 
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;

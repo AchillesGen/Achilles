@@ -88,6 +88,7 @@ contains
         xp = sqrt(sum(p4(2:4)**2))
         e = p4(1)
         sf = pke_p_interp%call(e, xp) 
+        ! print*, 'Spectral: ', e, xp, sf
         w = q(1)
         p4(1) = sqrt(xp**2+constants%mqe**2)
         wt = w-abs(e)+constants%mqe-p4(1)

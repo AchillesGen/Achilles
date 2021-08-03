@@ -35,8 +35,7 @@ class QESpectralMapper : public HadronicBeamMapper {
     private:
         static constexpr double dCos = 2;
         static constexpr double dPhi = 2*M_PI;
-        static constexpr double dp = 1000;
-        static constexpr double dE = 400;
+        // static constexpr double dp = 800;
 };
 
 }

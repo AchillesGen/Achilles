@@ -2,7 +2,6 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Beams.hh"
-#include <iostream>
 
 using nuchic::Event;
 
@@ -23,7 +22,6 @@ void Event::InitializeLeptons(size_t imatrix) {
 
     size_t idx = 0;
     for(auto pid : m_me[imatrix].inital_state) {
-        std::cout << int(pid) << "\n";
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_mom[idx]);
@@ -32,7 +30,6 @@ void Event::InitializeLeptons(size_t imatrix) {
         ++idx;
     }
     for(auto pid : m_me[imatrix].final_state) {
-        std::cout << int(pid) << "\n";
         ParticleInfo info(pid);
         if(info.IsLepton()) {
             m_leptons.emplace_back(info, m_mom[idx]);
