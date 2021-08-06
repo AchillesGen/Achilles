@@ -57,10 +57,11 @@ class MultiChannel {
         template<typename T>
         void RefineChannels(Integrand<T> &func) {
             params.iteration = 0;
-            params.nrefine *= 2;
             params.ncalls *= 2;
-            for(auto &channel : func.Channels())
-                channel.integrator.Refine();
+            for(auto &channel : func.Channels()) {
+                if(channel.integrator.Grid().Bins() < 200)
+                    channel.integrator.Refine();
+            }
         }
         void PrintIteration() const;
         void MaxDifference(const std::vector<double>&);
@@ -119,12 +120,12 @@ void nuchic::MultiChannel::Optimize(Integrand<T> &func) {
     double abs_err = lim::max(), rel_err = lim::max();
     while((abs_err > params.atol || rel_err > params.rtol) || summary.results.size() < params.niterations) {
         (*this)(func);
-        StatsData current = summary.Result();
+        StatsData current = summary.sum_results;
         abs_err = current.Error();
         rel_err = abs_err / std::abs(current.Mean());
 
         PrintIteration();
-        if(params.iteration++ == params.nrefine) RefineChannels(func);
+        if(++params.iteration == params.nrefine) RefineChannels(func);
     }
 }
 

@@ -15,12 +15,21 @@
 #include "nuchic/HadronicMapper.hh"
 #include "nuchic/FinalStateMapper.hh"
 #include "nuchic/PhaseSpaceMapper.hh"
+#include "nuchic/QuasielasticTestMapper.hh"
 #include "plugins/Channels1.hh"
 #include "plugins/Channels3.hh"
 
 #include "plugins/SherpaMEs.hh"
 
 #include "yaml-cpp/yaml.h"
+
+nuchic::Channel<nuchic::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<nuchic::Beam> beam) {
+    nuchic::Channel<nuchic::FourVector> channel;
+    channel.mapping = std::make_unique<nuchic::QuasielasticTestMapper>(node, beam);
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas2(map, {});
+    return channel;
+}
 
 template<typename T, typename ...Args>
 nuchic::Channel<nuchic::FourVector> BuildChannel(size_t nlep, size_t nhad,
@@ -30,8 +39,7 @@ nuchic::Channel<nuchic::FourVector> BuildChannel(size_t nlep, size_t nhad,
     nuchic::Channel<nuchic::FourVector> channel;
     auto finalStateMapper = std::make_unique<T>(std::forward<Args>(args)...);
     channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
-    spdlog::info("NDims = {}", channel.mapping -> NDims());
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 100);
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
     return channel;
 }
@@ -45,7 +53,7 @@ nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(size_t nlep, size_t nhad,
     auto sherpaMap = std::make_unique<T>(std::forward<Args>(args)...);
     auto finalStateMapper = std::make_unique<nuchic::SherpaMapper>(nlep+nhad-2, std::move(sherpaMap));
     channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 100);
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
     return channel;
 }
@@ -108,54 +116,59 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
 
     // Setup channels
-    auto beamMapper = std::make_shared<BeamMapper>(1, beam);
-    auto hadronMapper = std::make_shared<QESpectralMapper>(0);
-    if(scattering -> Processes()[0].m_ids.size() == 4) {
-        Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
-                                                                  0, pow(Constant::mN, 2));
+    if(config["TestingPS"]) {
+        Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
-        // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
-        //                                                                 0, pow(Constant::mN, 2));
-        // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
-        //                                                                 0, pow(Constant::mN, 2));
-        // integrand.AddChannel(std::move(channel0));
-        // integrand.AddChannel(std::move(channel1));
-    } else if(scattering -> Processes()[0].m_ids.size() == 6) {
-        spdlog::info("Initializing 2->4");
-        constexpr double s5 = (Constant::mN/1_GeV)*(Constant::mN/1_GeV);
-        Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(4, 2, beamMapper, hadronMapper,
-                                                                        0, 0, 0, s5);
-        integrand.AddChannel(std::move(channel0));
-        integrand.AddChannel(std::move(channel1));
-        integrand.AddChannel(std::move(channel2));
-        integrand.AddChannel(std::move(channel3));
-        integrand.AddChannel(std::move(channel4));
-        integrand.AddChannel(std::move(channel5));
-        integrand.AddChannel(std::move(channel6));
-        integrand.AddChannel(std::move(channel7));
     } else {
-        const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 and 2->4 processes. "
-                                              "Got a 2->{} process", leptonicProcesses[0].m_ids.size()-2);
-        throw std::runtime_error(error);
+        auto beamMapper = std::make_shared<BeamMapper>(1, beam);
+        auto hadronMapper = std::make_shared<QESpectralMapper>(0);
+        if(scattering -> Processes()[0].m_ids.size() == 4) {
+            Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
+                                                                      0, pow(Constant::mN, 2));
+            integrand.AddChannel(std::move(channel));
+            // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
+            //                                                                 0, pow(Constant::mN, 2));
+            // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
+            //                                                                 0, pow(Constant::mN, 2));
+            // integrand.AddChannel(std::move(channel0));
+            // integrand.AddChannel(std::move(channel1));
+        } else if(scattering -> Processes()[0].m_ids.size() == 6) {
+            spdlog::info("Initializing 2->4");
+            constexpr double s5 = (Constant::mN/1_GeV)*(Constant::mN/1_GeV);
+            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(4, 2, beamMapper, hadronMapper,
+                                                                            0, 0, 0, s5);
+            integrand.AddChannel(std::move(channel0));
+            integrand.AddChannel(std::move(channel1));
+            integrand.AddChannel(std::move(channel2));
+            integrand.AddChannel(std::move(channel3));
+            integrand.AddChannel(std::move(channel4));
+            integrand.AddChannel(std::move(channel5));
+            integrand.AddChannel(std::move(channel6));
+            integrand.AddChannel(std::move(channel7));
+        } else {
+            const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 and 2->4 processes. "
+                                                  "Got a 2->{} process", leptonicProcesses[0].m_ids.size()-2);
+            throw std::runtime_error(error);
+        }
     }
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {10000, 10, 1e5, 5e-3});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e8, 1e8, 1});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -182,7 +195,9 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
     writer -> WriteHeader(configFile);
 
-    hist = Histogram(100, -1.0, 1.0, "xsec");
+    hist = Histogram(200, 0.0, 400.0, "energy");
+    hist2 = Histogram(100, 0.0, 800.0, "momentum");
+    hist3 = Histogram(50, -1.0, 1.0, "angle");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -200,8 +215,13 @@ void nuchic::EventGen::GenerateEvents() {
     // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = 100000;
+    integrator.Parameters().ncalls = 1000000;
     integrator(integrand);
+    auto result = integrator.Summary();
+    std::cout << "Integral = "
+        << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
+                       result.results.back().Mean(), result.results.back().Error(),
+                       result.results.back().Error() / result.results.back().Mean()*100) << std::endl;
     // spdlog::info("Starting generating of n >= {} total events", total_events);
     // spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
     // Run integrator in batches until the desired number of events are found
@@ -221,10 +241,13 @@ void nuchic::EventGen::GenerateEvents() {
     //     spdlog::info("Stopping after reaching max batch threshold.");
     // }
 
-    hist.Save("multi");
+    hist.Save(config["HistTest1"].as<std::string>());
+    hist2.Save(config["HistTest2"].as<std::string>());
+    hist3.Save(config["HistTest3"].as<std::string>());
 }
 
 double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
+    return wgt;
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     Event event(nucleus, mom, wgt);
@@ -246,20 +269,23 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     spdlog::trace("Leptonic Tensor: {}", leptonTensor);
 
     // Obtain the hadronic tensor
-    auto hadronTensor = scattering -> HadronicTensor(event);
-    spdlog::trace("Hadronic Tensor: {}", hadronTensor);
+    auto hadronTensors = scattering -> HadronicTensor(event);
+    spdlog::trace("Hadronic Tensor(proton): {}", hadronTensors.first);
+    spdlog::trace("Hadronic Tensor(neutron): {}", hadronTensors.second);
     scattering -> CrossSection(event);
     constexpr double alpha = 1.0/137;
     std::array<std::complex<double>, 16> hTensor, lTensor;
     auto ke = event.Momentum()[1];
     auto kep = event.Momentum()[2];
+    auto q = ke - kep;
+    auto rotMat = q.AlignZ();
+    q = q.Rotate(rotMat);
+
+#if DEBUG_TENSORS
     auto pp = event.Momentum()[0];
     auto ppp = event.Momentum()[3];
     auto e = pp.E();
     pp.E() = sqrt(pp.P2() + pow(Constant::mN, 2));
-    auto q = ke - kep;
-    auto rotMat = q.AlignZ();
-    q = q.Rotate(rotMat);
     auto q2 = q;
     q2.E() = q.E() - e + Constant::mN - pp.E();
     ke = ke.Rotate(rotMat);
@@ -280,16 +306,19 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         hTensor[4*mu+mu] += mu == 0 ? -2*ppmn2*prefactor2 : 2*ppmn2*prefactor2;
         lTensor[4*mu+mu] += mu == 0 ? -2*ke*kep*prefactor : 2*ke*kep*prefactor;
     }
+#endif
 
-    std::complex<double> amp{};
+    std::complex<double> amp_p{}, amp_n{};
     const double factor = alpha;
     for(size_t mu = 0; mu < 4; ++mu) {
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
             if(nu == 3) {
-                hadronTensor[idx] = q.E()/q.P()*hadronTensor[4*mu];
+                hadronTensors.first[idx] = q.E()/q.P()*hadronTensors.first[4*mu];
+                hadronTensors.second[idx] = q.E()/q.P()*hadronTensors.second[4*mu];
             } else if(mu == 3) {
-                hadronTensor[idx] = q.E()/q.P()*hadronTensor[nu];
+                hadronTensors.first[idx] = q.E()/q.P()*hadronTensors.first[nu];
+                hadronTensors.second[idx] = q.E()/q.P()*hadronTensors.second[nu];
             }
         }
     }
@@ -297,9 +326,11 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
             if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
-                amp -= hadronTensor[idx]*leptonTensor[idx]*factor;
+                amp_p -= hadronTensors.first[idx]*leptonTensor[idx]*factor;
+                amp_n -= hadronTensors.second[idx]*leptonTensor[idx]*factor;
             } else {
-                amp += hadronTensor[idx]*leptonTensor[idx]*factor;
+                amp_p += hadronTensors.first[idx]*leptonTensor[idx]*factor;
+                amp_n += hadronTensors.second[idx]*leptonTensor[idx]*factor;
             }
         }
     }
@@ -310,23 +341,24 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         for(size_t nu = 0; nu < 4; ++nu) {
             const size_t idx = 4*mu + nu;
             if(mu == 0) {
-                ward[nu] += (q[mu]*hadronTensor[idx]).real();
+                ward[nu] += (q[mu]*hadronTensors.first[idx]).real();
             } else {
-                ward[nu] -= (q[mu]*hadronTensor[idx]).real();
+                ward[nu] -= (q[mu]*hadronTensors.first[idx]).real();
             }
             if(nu == 0) {
-                ward[4+mu] += (q[nu]*hadronTensor[idx]).real();
+                ward[4+mu] += (q[nu]*hadronTensors.first[idx]).real();
             } else {
-                ward[4+mu] -= (q[nu]*hadronTensor[idx]).real();
+                ward[4+mu] -= (q[nu]*hadronTensors.first[idx]).real();
             }
         }
     }
-    for(auto &w : ward) w /= amp.real();
+    for(auto &w : ward) w /= amp_p.real();
     if(amp.real() != 0) spdlog::info("Ward Identities: {}", ward);
 #endif
 
-    double flux2 = event.Momentum()[2].E()/event.Momentum()[1].E();
-    double xsec = amp.real()*Constant::HBARC2*flux2/8/M_PI;
+    // double flux2 = event.Momentum()[2].E()/event.Momentum()[1].E();
+    double xsec_p = amp_p.real()*Constant::HBARC2/8/M_PI;
+    double xsec_n = amp_n.real()*Constant::HBARC2/8/M_PI;
     double defaultxsec{};
     static double minRatio = std::numeric_limits<double>::infinity();
     static double maxRatio = 0;
@@ -336,11 +368,13 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
                 defaultxsec = event.MatrixElement(i).weight;
             }
             // break;
-            event.MatrixElement(i).weight = xsec;
+            event.MatrixElement(i).weight = xsec_p;
+        } else {
+            event.MatrixElement(i).weight = xsec_n;
         }
     }
     if(defaultxsec != 0) {
-        double ratio = xsec/defaultxsec;
+        double ratio = xsec_p/defaultxsec;
         if(ratio < minRatio) minRatio = ratio;
         if(ratio > maxRatio) maxRatio = ratio;
         // spdlog::info("Default xsec = {}", defaultxsec);
@@ -410,9 +444,12 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             spdlog::debug("Found event: {}/{}", nevents, total_events);
             event.Finalize();
             writer -> Write(event);
-            const auto omega = event.Momentum()[2].CosTheta();
-            hist.Fill(omega, event.Weight());
-            hist.Save("multi");
+            const auto energy = (Constant::mN - event.Momentum()[0].E());
+            hist.Fill(energy, event.Weight());
+            const auto momentum = event.Momentum()[0].P();
+            hist2.Fill(momentum, event.Weight());
+            const auto cosTheta = event.Momentum()[2].CosTheta();
+            hist3.Fill(cosTheta, event.Weight());
         }
     }
 

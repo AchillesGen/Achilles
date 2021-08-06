@@ -37,6 +37,7 @@ add_library(mappers SHARED
     FinalStateMapper.cc
     BeamMapper.cc
     HadronicMapper.cc
+    QuasielasticTestMapper.cc
 )
 target_link_libraries(mappers PRIVATE project_options project_warnings
                               PUBLIC physics)
