@@ -35,8 +35,14 @@ add_library(physics SHARED
     Event.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+if(ENABLE_GZIP)
+target_compile_definitions(physics PUBLIC GZIP) 
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
+else()
+target_link_libraries(physics PRIVATE project_options project_warnings
+                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
+endif()
 
 add_subdirectory(fortran)
 

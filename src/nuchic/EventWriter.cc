@@ -4,12 +4,14 @@
 #include "fmt/format.h"
 
 nuchic::NuchicWriter::NuchicWriter(const std::string &filename, bool zip) : toFile{true}, zipped{zip} {
+#ifdef GZIP
     if(zipped) {
         std::string zipname = filename;
         if(filename.substr(filename.size() - 3) != ".gz")
             zipname += std::string(".gz");
         m_out = new ogzstream(zipname.c_str());
     } else
+#endif
         m_out = new std::ofstream(filename);
 }
 
