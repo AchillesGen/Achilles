@@ -50,7 +50,7 @@ class HardScattering {
 
         // Calculation details
         virtual void CrossSection(Event&) const = 0;
-        virtual Tensor HadronicTensor(Event&) const = 0;
+        virtual std::pair<Tensor, Tensor> HadronicTensor(Event&) const = 0;
 
         // Number of phase space variables
         int NVariables() const { return LeptonVariables() + HadronVariables(); }
@@ -112,7 +112,7 @@ class Quasielastic : public HardScattering {
         }
 
         void CrossSection(Event&) const override = 0;
-        Tensor HadronicTensor(Event&) const override = 0;
+        std::pair<Tensor, Tensor> HadronicTensor(Event&) const override = 0;
 
         // Select initial state
         bool InitializeEvent(Event&) override;
@@ -127,7 +127,7 @@ class QESpectral : public Quasielastic {
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
         void CrossSection(Event&) const override {}
-        Tensor HadronicTensor(Event&) const override { return {}; }
+        std::pair<Tensor, Tensor> HadronicTensor(Event&) const override { return {}; }
 };
 
 class FQESpectral : public QESpectral {
@@ -136,7 +136,7 @@ class FQESpectral : public QESpectral {
         ~FQESpectral() override { Delete(); }
 
         void CrossSection(Event&) const override;
-        Tensor HadronicTensor(Event&) const override;
+        std::pair<Tensor, Tensor> HadronicTensor(Event&) const override;
 
         static std::string GetName() { return "QESpectral"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
@@ -156,7 +156,7 @@ class QEGlobalFermiGas : public Quasielastic {
         int HadronVariables() const override { return 3; }
         void GenerateHadrons(const std::vector<double>&, const FourVector&, Event&) const override;
 
-        Tensor HadronicTensor(Event&) const override { return {}; }
+        std::pair<Tensor, Tensor> HadronicTensor(Event&) const override { return {}; }
         void CrossSection(Event&) const override {}
 };
 
@@ -165,7 +165,7 @@ class FQEGlobalFermiGas : public QEGlobalFermiGas {
         FQEGlobalFermiGas(const YAML::Node&, RunMode);
 
         void CrossSection(Event&) const override;
-        Tensor HadronicTensor(Event&) const override { return {}; }
+        std::pair<Tensor, Tensor> HadronicTensor(Event&) const override { return {}; }
         static std::string GetName() { return "QEGlobalFermiGas"; }
         static std::unique_ptr<HardScattering> Create(const YAML::Node &node,
                 RunMode mode) {

@@ -66,7 +66,7 @@ contains
         call f_eval(pn, pfn, e, mom, w, qval, theta, ee, nZ, nA, kf, results(1), results(2))
     end subroutine
 
-    subroutine onebody_tensor(this, qvec, pin, pout, results)
+    subroutine onebody_tensor(this, qvec, pin, pout, results_p, results_n)
         use dirac_matrices
         use libvectors
         use libutilities
@@ -76,18 +76,19 @@ contains
         class(onebody_calc) :: this
         type(fourvector), intent(in) :: qvec, pin, pout
         double precision, dimension(4) :: q, p4, pp4
-        double precision :: f1v, f2v
-        complex*16, intent(inout), dimension(16) :: results
+        double precision :: f1p, f2p, f1n, f2n
+        complex*16, intent(inout), dimension(16) :: results_p, results_n
         double precision :: ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv
         double precision :: xp, wt, e, w, qm2
-        double precision :: sf
+        double precision :: sf_p, sf_n
 
         q = qvec%to_array()
         p4 = pin%to_array()
         pp4 = pout%to_array()
         xp = sqrt(sum(p4(2:4)**2))
         e = p4(1)
-        sf = pke_p_interp%call(e, xp) 
+        sf_p = pke_p_interp%call(e, xp) 
+        sf_n = pke_n_interp%call(e, xp) 
         ! print*, 'Spectral: ', e, xp, sf
         w = q(1)
         p4(1) = sqrt(xp**2+constants%mqe**2)
@@ -103,12 +104,17 @@ contains
         call current_init(p4, pp4, q)
         call define_spinors()
         call nform(2, qm2, ff1s, ff2s, ff1v, ff2v, ffa, ffp, ges, gms, gev, gmv)
-        f1v = 0.5*(ff1v+ff1s)
-        f2v = 0.5*(ff2v+ff2s)
+        f1p = 0.5*(ff1v+ff1s)
+        f2p = 0.5*(ff2v+ff2s)
+        f1n = 0.5*(-ff1v+ff1s)
+        f2n = 0.5*(-ff2v+ff2s)
 
-        call det_Ja(f1v, f2v, 0d0)
-        call det_current(results)
-        results = results*sf/6
+        call det_Ja(f1p, f2p, 0d0)
+        call det_current(results_p)
+        results_p = results_p*sf_p/6
+        call det_Ja(f1n, f2n, 0d0)
+        call det_current(results_n)
+        results_n = results_n*sf_n/6
     end subroutine
 
     subroutine initialize(name_p, name_n, fg, iform) bind(C, name="InitializeOneBody")
@@ -149,7 +155,7 @@ contains
         results = c_loc(tmp_results(1))
     end subroutine
 
-    subroutine hadronic_current(q_vec, pin_vec, pout_vec, results) &
+    subroutine hadronic_current(q_vec, pin_vec, pout_vec, results_p, results_n) &
             bind(C, name="HadronicTensorOneBody")
         use iso_c_binding
         use libvectors
@@ -157,13 +163,13 @@ contains
 
         type(c_ptr), intent(in) :: q_vec, pin_vec, pout_vec
         type(fourvector) :: q, pin, pout
-        complex(c_double_complex), intent(inout), dimension(16) :: results
+        complex(c_double_complex), intent(inout), dimension(16) :: results_p, results_n
         integer(c_int) :: length
 
         q = fourvector(q_vec)
         pin = fourvector(pin_vec)
         pout = fourvector(pout_vec)
-        call onebody%tensor(q, pin, pout, results)
+        call onebody%tensor(q, pin, pout, results_p, results_n)
     end subroutine
 
     subroutine clean_up(results, length) bind(C, name="CleanUp")
