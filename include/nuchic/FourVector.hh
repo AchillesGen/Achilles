@@ -6,6 +6,7 @@
 #include <iosfwd>
 
 #include "spdlog/fmt/ostr.h"
+#include "fmt/format.h"
 
 namespace nuchic {
 
@@ -380,5 +381,31 @@ class FourVector {
 FourVector operator*(const double&, const FourVector&) noexcept;
 
 }
+
+template<> struct fmt::formatter<nuchic::FourVector> {
+    char presentation = 'e';
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+        // Parse the presentation format and store it in the formatter:
+        auto it = ctx.begin(), end = ctx.end();
+        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+        // Check if reached the end of the range:
+        if(it != end && *it != '}')
+            throw format_error("Invalid format");
+
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    template<typename FormatContext>
+    auto format(const nuchic::FourVector& p, FormatContext& ctx) -> decltype(ctx.out()) {
+        // ctx.out() is an output iterator to write to
+        return format_to(
+                ctx.out(),
+                presentation == 'f' ? "FourVector({:.3f}, {:.3f}, {:.3f}, {:.3f})"
+                                    : "FourVector({:.3e}, {:.3e}, {:.3e}, {:.3e})",
+                p.E(), p.Px(), p.Py(), p.Pz());
+    }
+};
 
 #endif /* end of include guard: FOURVECTOR_HH */
