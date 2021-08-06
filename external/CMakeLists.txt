@@ -25,6 +25,7 @@ CPMFindPackage(
 )
 add_library(spdlog::spdlog ALIAS spdlog)
 
+if(AUTODIFF)
 CPMFindPackage(
     NAME eigen3
     GIT_TAG "3.4"
@@ -44,6 +45,7 @@ CPMFindPackage(
         "AUTODIFF_BUILD_DOCS OFF"
 )
 add_library(autodiff::autodiff ALIAS autodiff)
+endif()
 
 CPMAddPackage(
     NAME docopt
