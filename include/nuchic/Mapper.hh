@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include "spdlog/spdlog.h"
+
 namespace nuchic {
 
 template<typename T>
@@ -27,6 +29,17 @@ class Mapper {
         virtual void GeneratePoint(std::vector<T>&, const std::vector<double> &) const = 0;
         virtual double GenerateWeight(const std::vector<T>&, std::vector<double> &) const = 0;
         virtual size_t NDims() const = 0;
+
+        // Printers
+        static void Print(const char* func, const std::vector<T> &point, const std::vector<double> &rans) {
+            spdlog::trace("{}", func);
+            size_t idx = 0;
+            spdlog::trace("  Point:");
+            for(const auto &p : point) spdlog::trace("    - {}: {}", idx++, p);
+            idx = 0;
+            spdlog::trace("  Rans:");
+            for(const auto &r : rans) spdlog::trace("    - {}: {}", idx++, r);
+        }
 
     private:
         std::string mapping_name{};

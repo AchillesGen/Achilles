@@ -41,15 +41,15 @@ double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
     std::vector<double> hbeamRans(hbeamVars), lbeamRans(lbeamVars), mainRans(mainVars);
     
     // Calculate the weights
-    double wgt = 1.0;
-    wgt /= lbeam -> GenerateWeight(momentum, lbeamRans);
-    wgt /= hbeam -> GenerateWeight(momentum, hbeamRans);
-    wgt /= main -> GenerateWeight(momentum, mainRans);
+    double lwgt = lbeam -> GenerateWeight(momentum, lbeamRans);
+    double hwgt = hbeam -> GenerateWeight(momentum, hbeamRans);
+    double mwgt = main -> GenerateWeight(momentum, mainRans);
+    double wgt = 1.0/lwgt/hwgt/mwgt;
 
     spdlog::trace("PSMapper::GenerateWeight:");
-    spdlog::trace("  lbeam wgt = {}", lbeam -> GenerateWeight(momentum, lbeamRans));
-    spdlog::trace("  hbeam wgt = {}", hbeam -> GenerateWeight(momentum, hbeamRans));
-    spdlog::trace("  main wgt = {}", main -> GenerateWeight(momentum, mainRans));
+    spdlog::trace("  lbeam wgt = {}", lwgt);
+    spdlog::trace("  hbeam wgt = {}", hwgt);
+    spdlog::trace("  main wgt = {}", mwgt);
 
     // Merge the random numbers
     hbeamRans.insert(

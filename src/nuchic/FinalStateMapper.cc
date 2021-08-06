@@ -26,13 +26,15 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     auto E1 = sqrts/2*(1 + s2/s - s3/s);
     auto E2 = sqrts/2*(1 + s3/s - s2/s);
     auto beta = sqrt(1- 2*(s2+s3)/s + pow(s2 - s3, 2)/s/s);
-    auto pCM = p01.M()/2*beta;
+    auto pCM = sqrts/2*beta;
 
     mom[2] = {E1, pCM*sinT*cos(phi), pCM*sinT*sin(phi), pCM*cosT};
     mom[3] = {E2, -pCM*sinT*cos(phi), -pCM*sinT*sin(phi), -pCM*cosT};
 
     mom[2] = mom[2].RotateBack(rotMat).Boost(boostVec);
     mom[3] = mom[3].RotateBack(rotMat).Boost(boostVec);
+
+    Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
 double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
@@ -43,7 +45,14 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     rans[0] = (p2.CosTheta() + 1)/dCos;
     rans[1] = p2.Phi()/dPhi;
 
-    return 1.0/dCos/dPhi;
+    auto pcm = mom0.P();
+    auto ecm = (mom[0] + mom[1]).E();
+
+    auto factor = pcm/ecm*mom[3].E()/mom[1].E();
+    Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    spdlog::trace("  Factor: {}", factor);
+
+    return 1.0/dCos/dPhi/factor;
 }
 
 void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {

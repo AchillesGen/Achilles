@@ -44,10 +44,9 @@ double C3_0::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> & r
   // TODO: set minimum from cuts
   // double s34_min = cuts->GetscutAmegic(std::string("34"));
   double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
-  Vec4D p2 = p[2], p3 = p[3], p34 = p[3] + p[4], p4 = p[4];
   wt *= CE.MasslessPropWeight(m_salpha,s34_min,s34_max,dabs((p[3]+p[4]).Abs2()),rans[0]);
-  wt *= CE.Isotropic2Weight(p2,p34,rans[1],rans[2]);
-  wt *= CE.Isotropic2Weight(p3,p4,rans[3],rans[4]);
+  wt *= CE.Isotropic2Weight(p[2],p[3]+p[4],rans[1],rans[2]);
+  wt *= CE.Isotropic2Weight(p[3],p[4],rans[3],rans[4]);
   if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,3*4.-4.);
   return wt;
 }
@@ -74,10 +73,9 @@ double C3_1::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> & r
   // double s34_min = cuts->GetscutAmegic(std::string("34"));
   double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
   Flavour fl34 = Flavour((kf_code)(23));
-  Vec4D p2 = p[2], p3 = p[3], p34 = p[3] + p[4], p4 = p[4];
   wt *= CE.MassivePropWeight(fl34.Mass(),fl34.Width(),1,s34_min,s34_max,dabs((p[3]+p[4]).Abs2()),rans[0]);
-  wt *= CE.Isotropic2Weight(p2,p34,rans[1],rans[2]);
-  wt *= CE.Isotropic2Weight(p3,p4,rans[3],rans[4]);
+  wt *= CE.Isotropic2Weight(p[2],p[3]+p[4],rans[1],rans[2]);
+  wt *= CE.Isotropic2Weight(p[3],p[4],rans[3],rans[4]);
   if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,3*4.-4.);
   return wt;
 }
@@ -214,10 +212,9 @@ double C3_6::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> & r
   // TODO: set minimum from cuts
   // double s34_min = cuts->GetscutAmegic(std::string("34"));
   double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
-  Vec4D p2 = p[2], p3 = p[3], p34 = p[3] + p[4], p4 = p[4];
   wt *= CE.MasslessPropWeight(m_salpha,s34_min,s34_max,dabs((p[3]+p[4]).Abs2()),rans[0]);
   wt *= CE.TChannelWeight(p[0]-p[5],p[1],p[3]+p[4],p[2],0.,m_alpha,m_ctmax,m_ctmin,m_amct,0,rans[1],rans[2]);
-  wt *= CE.Isotropic2Weight(p3,p4,rans[3],rans[4]);
+  wt *= CE.Isotropic2Weight(p[3],p[4],rans[3],rans[4]);
   if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,3*4.-4.);
   return wt;
 }
@@ -244,10 +241,9 @@ double C3_7::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
   // double s34_min = cuts->GetscutAmegic(std::string("34"));
   double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
   Flavour fl34 = Flavour((kf_code)(23));
-  Vec4D p2 = p[2], p3 = p[3], p34 = p[3] + p[4], p4 = p[4];
   wt *= CE.MassivePropWeight(fl34.Mass(),fl34.Width(),1,s34_min,s34_max,dabs((p[3]+p[4]).Abs2()),rans[0]);
   wt *= CE.TChannelWeight(p[0]-p[5],p[1],p[3]+p[4],p[2],0.,m_alpha,m_ctmax,m_ctmin,m_amct,0,rans[1],rans[2]);
-  wt *= CE.Isotropic2Weight(p3,p4,rans[3],rans[4]);
+  wt *= CE.Isotropic2Weight(p[3],p[4],rans[3],rans[4]);
   if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,3*4.-4.);
   return wt;
 }
