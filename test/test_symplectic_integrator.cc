@@ -3,6 +3,7 @@
 #include "nuchic/Constants.hh"
 #include "nuchic/SymplecticIntegrator.hh"
 #include "spdlog/spdlog.h"
+#include "nuchic/Potential.hh"
 
 #include <fstream>
 
@@ -54,16 +55,26 @@ double dPotential_dr(double p, double r, double rho0) {
     return (term1+term2+term3-term4)*dRho(r);
 }
 
-double Hamiltonian(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
-    return sqrt(p.P2() + pow(nuchic::Constant::mN, 2)) + Potential(p.P(), q.P(), 0.16);
+double Hamiltonian(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
+                   const nuchic::Potential &potential) {
+    auto vals = potential(p.P(), q.P());
+    return sqrt(p.P2() + pow(nuchic::Constant::mN + vals.rscalar, 2)) + vals.rvector;
 }
 
-nuchic::ThreeVector dHamiltonian_dp(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
-    const double E = sqrt(p.P2() + pow(nuchic::Constant::mN, 2));
-    return p/E + dPotential_dp(p.P(), q.P(), 0.16)*p/p.P();
+nuchic::ThreeVector dHamiltonian_dp(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
+                                    const nuchic::Potential &potential) {
+    auto vals = potential(p.P(), q.P());
+    auto dpot_dp = potential.derivative_p(p.P(), q.P());
+
+    double numerator = 2*(vals.rscalar + nuchic::Constant::mN)*dpot_dp.rscalar + 2 * p.P();
+    double denominator = 2*sqrt(pow(vals.rscalar + nuchic::Constant::mN, 2) + p.P2());
+    return numerator/denominator * p/p.P() + dpot_dp.rvector * p/p.P();
 }
 
-nuchic::ThreeVector dHamiltonian_dr(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p) {
+nuchic::ThreeVector dHamiltonian_dr(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
+                                    const nuchic::Potential &potential) {
+    auto vals = potential(p.P(), q.P());
+    auto dpot_dr = potential.derivative_r(p.P(), q.P());
     return dPotential_dr(p.P(), q.P(), 0.16)*q/q.P();
 }
 

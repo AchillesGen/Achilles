@@ -63,8 +63,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
         auto potential1 = potential(p1.P(), r1);
         auto potential2 = potential(p2.P(), r2);
-        p1.E() = sqrt(p1.P2() + pow(p1.M() + static_cast<double>(potential1.rscalar), 2)) + static_cast<double>(potential1.rvector);
-        p2.E() = sqrt(p2.P2() + pow(p2.M() + static_cast<double>(potential2.rscalar), 2)) + static_cast<double>(potential2.rvector);
+        p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
+        p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1+p2;
 
         // Rotate so (p1+p2) to be along z-axis
@@ -109,8 +109,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
         auto potential1 = potential(p1.P(), 1);
         auto potential2 = potential(p2.P(), 1);
-        p1.E() = sqrt(p1.P2() + pow(p1.M() + static_cast<double>(potential1.rscalar), 2)) + static_cast<double>(potential1.rvector);
-        p2.E() = sqrt(p2.P2() + pow(p2.M() + static_cast<double>(potential2.rscalar), 2)) + static_cast<double>(potential2.rvector);
+        p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
+        p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1+p2;
 
         // Rotate so (p1+p2) to be along z-axis

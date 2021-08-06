@@ -43,13 +43,13 @@ nuchic::FourVector nuchic::SolveDeltaWithPotential(const nuchic::FourVector &q,
                                                    double p3Mag, double phi,
                                                    double radius3, double radius4) {
     auto potential3 = potential(p3Mag, radius3);
-    const double energy = sqrt(p3Mag*p3Mag + pow(m3 + static_cast<double>(potential3.rscalar), 2)) + static_cast<double>(potential3.rvector);
+    const double energy = sqrt(p3Mag*p3Mag + pow(m3 + potential3.rscalar, 2)) + potential3.rvector;
     auto _func = [&](double cosTheta) {
         double sinTheta = sqrt(1-cosTheta*cosTheta);
         FourVector p3 = {p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy};
         auto p4 = q - p3;
         auto potential4 = potential(p4.P(), radius4);
-        p4.E() = sqrt(p4.P2() + pow(m4 + static_cast<double>(potential4.rscalar), 2)) + static_cast<double>(potential4.rvector);
+        p4.E() = sqrt(p4.P2() + pow(m4 + potential4.rscalar, 2)) + potential4.rvector;
         return q.E() - p3.E() - p4.E();
     };
 
