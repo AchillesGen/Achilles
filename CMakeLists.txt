@@ -35,6 +35,7 @@ include(CMake/StaticAnalyzers.cmake)
 option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" ON)
 option(ENABLE_TESTING "Enable Test Builds" OFF)
 option(AUTODIFF "Enable Autodiff" OFF)
+option(ENABLE_GZIP "Enable compression of event files" ON)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
