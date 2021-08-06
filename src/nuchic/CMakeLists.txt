@@ -17,7 +17,10 @@ add_library(utilities SHARED
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
-                                PUBLIC spdlog::spdlog yaml::cpp autodiff::autodiff) #pybind11::pybind11 
+                                PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+if(AUTODIFF)
+target_link_libraries(utilities PUBLIC autodiff::autodiff)
+endif()
 
 add_library(physics SHARED
     Cascade.cc
