@@ -2,7 +2,9 @@
 #define SYMPLECTIC_INTEGRATORS_HH
 
 #include <functional>
+#include <utility>
 
+#include "nuchic/Potential.hh"
 #include "nuchic/ThreeVector.hh"
 
 namespace nuchic {
@@ -26,15 +28,17 @@ struct is_even {
 
 class SymplecticIntegrator {
     public:
-        using dHamiltonian = std::function<ThreeVector(const ThreeVector&, const ThreeVector&)>;
+        using dHamiltonian = std::function<ThreeVector(const ThreeVector&, const ThreeVector&,
+                                                       std::shared_ptr<nuchic::Potential>)>;
         using PhaseSpace = std::pair<ThreeVector, ThreeVector>;
         SymplecticIntegrator() = default;
-        SymplecticIntegrator(PSState state, dHamiltonian dHdr, dHamiltonian dHdp, double omega) 
-            : m_omega{std::move(omega)}, m_state{std::move(state)},
-              m_dHdr{std::move(dHdr)}, m_dHdp{std::move(dHdp)} {}
-        SymplecticIntegrator(ThreeVector q, ThreeVector p,
+        SymplecticIntegrator(PSState state, std::shared_ptr<nuchic::Potential> pot,
                              dHamiltonian dHdr, dHamiltonian dHdp, double omega) 
-            : m_omega{std::move(omega)}, m_dHdr{std::move(dHdr)}, m_dHdp{std::move(dHdp)} {
+            : m_omega{std::move(omega)}, m_state{std::move(state)},
+              m_dHdr{std::move(dHdr)}, m_dHdp{std::move(dHdp)}, m_pot{std::move(pot)} {}
+        SymplecticIntegrator(ThreeVector q, ThreeVector p, std::shared_ptr<nuchic::Potential> pot,
+                             dHamiltonian dHdr, dHamiltonian dHdp, double omega) 
+            : m_omega{std::move(omega)}, m_dHdr{std::move(dHdr)}, m_dHdp{std::move(dHdp)}, m_pot{std::move(pot)} {
                 m_state = PSState(q, p);
             }
 
@@ -61,6 +65,7 @@ class SymplecticIntegrator {
         double m_omega{1};
         PSState m_state;
         dHamiltonian m_dHdr, m_dHdp;
+        std::shared_ptr<Potential> m_pot;
 };
 
 template<>

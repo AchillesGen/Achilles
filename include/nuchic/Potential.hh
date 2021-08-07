@@ -31,8 +31,8 @@ T sech(T x) {
 
 template<typename T>
 struct PotentialVals {
-    T rvector, rscalar;
-    T ivector, iscalar;
+    T rvector{}, rscalar{};
+    T ivector{}, iscalar{};
 };
 
 class Potential {
@@ -45,6 +45,7 @@ class Potential {
 
         virtual ~Potential() = default;
         virtual std::string GetReference() const = 0;
+        virtual std::string Name() const = 0;
 #ifdef AUTODIFF
         virtual PotentialVals<autodiff::dual> operator()(const autodiff::dual&, const autodiff::dual&) const = 0;
 #else
@@ -82,7 +83,7 @@ class Potential {
 class WiringaPotential : public Potential {
     public:
         WiringaPotential(std::shared_ptr<Nucleus> nucleus,
-                         const double &rho0) 
+                         const double &rho0=0.16) 
                          : m_nucleus{std::move(nucleus)}, m_rho0{rho0}, m_ref{"article", "PhysRevC.38.2967"} {
             m_ref.AddField("title", "{Single-particle potential in dense nuclear matter}");
             m_ref.AddField("author", "{Wiringa, R. B.}");
@@ -99,6 +100,7 @@ class WiringaPotential : public Potential {
         }
 
         std::string GetReference() const override { return m_ref.GetReference(); }
+        std::string Name() const override { return "Wiringa"; }
         double Rho0() const { return m_rho0; }
 
 #ifdef AUTODIFF
@@ -119,7 +121,7 @@ class WiringaPotential : public Potential {
             const double rho_ratio = rho/m_rho0;
             const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
             const double beta = -116*rho_ratio;
-            const double lambda = 3.29 - 0.373*rho_ratio;
+            const double lambda = (3.29 - 0.373*rho_ratio)*nuchic::Constant::HBARC;
 
             PotentialVals<double> results{};
             results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
@@ -160,6 +162,7 @@ class CooperPotential : public Potential {
         }
 
         std::string GetReference() const override { return m_ref.GetReference(); }
+        std::string Name() const override { return "Cooper"; }
 
 #ifdef AUTODIFF
         PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {

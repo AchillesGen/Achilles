@@ -1,11 +1,13 @@
 #include "catch2/catch.hpp"
 
+#include "mock_classes.hh"
 #include "nuchic/Constants.hh"
 #include "nuchic/SymplecticIntegrator.hh"
 #include "spdlog/spdlog.h"
 #include "nuchic/Potential.hh"
 
 #include <fstream>
+#include <complex>
 
 constexpr double a = 0.09320982;
 constexpr double b = 0.10665348;
@@ -56,96 +58,115 @@ double dPotential_dr(double p, double r, double rho0) {
 }
 
 double Hamiltonian(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
-                   const nuchic::Potential &potential) {
-    auto vals = potential(p.P(), q.P());
-    return sqrt(p.P2() + pow(nuchic::Constant::mN + vals.rscalar, 2)) + vals.rvector;
+                   std::shared_ptr<nuchic::Potential> potential) {
+    auto vals = potential -> operator()(p.P(), q.P());
+    auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
+    return sqrt(p.P2() + pow(mass_eff, 2)).real() + vals.rvector;
 }
 
 nuchic::ThreeVector dHamiltonian_dp(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
-                                    const nuchic::Potential &potential) {
-    auto vals = potential(p.P(), q.P());
-    auto dpot_dp = potential.derivative_p(p.P(), q.P());
+                                    std::shared_ptr<nuchic::Potential> potential) {
+    auto vals = potential -> operator()(p.P(), q.P());
+    auto dpot_dp = potential -> derivative_p(p.P(), q.P());
 
-    double numerator = 2*(vals.rscalar + nuchic::Constant::mN)*dpot_dp.rscalar + 2 * p.P();
-    double denominator = 2*sqrt(pow(vals.rscalar + nuchic::Constant::mN, 2) + p.P2());
+    auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
+    double numerator = (vals.rscalar + nuchic::Constant::mN)*dpot_dp.rscalar + p.P();
+    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
     return numerator/denominator * p/p.P() + dpot_dp.rvector * p/p.P();
 }
 
 nuchic::ThreeVector dHamiltonian_dr(const nuchic::ThreeVector &q, const nuchic::ThreeVector &p,
-                                    const nuchic::Potential &potential) {
-    auto vals = potential(p.P(), q.P());
-    auto dpot_dr = potential.derivative_r(p.P(), q.P());
-    return dPotential_dr(p.P(), q.P(), 0.16)*q/q.P();
+                                    std::shared_ptr<nuchic::Potential> potential) {
+    auto vals = potential -> operator()(p.P(), q.P());
+    auto dpot_dr = potential -> derivative_r(p.P(), q.P());
+
+    auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
+    double numerator = (vals.rscalar + nuchic::Constant::mN)*dpot_dr.rscalar;
+    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
+    return numerator/denominator * q/q.P() + dpot_dr.rvector * q/q.P();
 }
 
-TEST_CASE("Symplectic Integrator", "[Symplectic]") {
+template<typename T>
+std::shared_ptr<T> MakePotential(std::shared_ptr<nuchic::Nucleus> nuc) {
+    return std::make_shared<T>(nuc);
+}
+
+TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", nuchic::CooperPotential, nuchic::WiringaPotential) {
     constexpr double r0 = -1;
-    constexpr double pmag = 250;
+    constexpr double pmag = 275;
     nuchic::ThreeVector q{r0, 0, 0};
     nuchic::ThreeVector p{0, pmag, 0};
-    constexpr size_t nsteps = 500;
+    constexpr size_t nsteps = 10000;
     constexpr double step_size = 0.01;
     constexpr double omega = 20;
+    constexpr size_t AA = 12;
 
-    nuchic::SymplecticIntegrator si(q, p, dHamiltonian_dr, dHamiltonian_dp, omega);
+    auto nucleus = std::make_shared<MockNucleus>();
+    ALLOW_CALL(*nucleus, NNucleons())
+        .LR_RETURN((AA));
+    ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(0)))
+        .LR_RETURN((Rho(_1)));
+    auto potential = MakePotential<TestType>(nucleus);
+
+    nuchic::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr, dHamiltonian_dp, omega);
 
     SECTION("Order 2") {
-        std::ofstream out("symplectic2.txt");
-        const double E0 = Hamiltonian(q, p);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p));
+        std::ofstream out("symplectic2_" + potential -> Name() + ".txt");
+        const double E0 = Hamiltonian(q, p, potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<2>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P());
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P());
-        const double Ef2 = Hamiltonian(si.State().x, si.State().y);
+        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
+        const double Ef2 = Hamiltonian(si.State().x, si.State().y, potential);
         spdlog::info("Final Hamiltonian Value: {}, {}, {}, {}",
-                Hamiltonian(si.Q(), si.P()), std::abs(Ef-E0)/E0, Ef2, std::abs(Ef2-E0)/E0);
+                Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0, Ef2, std::abs(Ef2-E0)/E0);
         spdlog::info("Final Position: {}, {}, {}", si.Q(), si.State().x, (si.Q() - si.State().x).P()/si.Q().P());
         spdlog::info("Final Momentum: {}, {}, {}", si.P(), si.State().y, (si.P() - si.State().y).P()/si.P().P());
         out.close();
     }
 
     SECTION("Order 4") {
-        std::ofstream out("symplectic4.txt");
-        const double E0 = Hamiltonian(q, p);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p));
+        std::ofstream out("symplectic4_" + potential -> Name() + ".txt");
+        const double E0 = Hamiltonian(q, p, potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<4>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P());
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P());
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P()), std::abs(Ef-E0)/E0);
+        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
+        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0);
         spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
         spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
         out.close();
     }
 
     SECTION("Order 6") {
-        std::ofstream out("symplectic6.txt");
-        const double E0 = Hamiltonian(q, p);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p));
+        std::ofstream out("symplectic6_" + potential -> Name() + ".txt");
+        const double E0 = Hamiltonian(q, p, potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<6>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P());
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P());
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P()), std::abs(Ef-E0)/E0);
+        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
+        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0);
         spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
         spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
         out.close();
