@@ -4,6 +4,7 @@
 #include "nuchic/Cuts.hh"
 #include "nuchic/Histogram.hh"
 #include "nuchic/ParticleInfo.hh"
+#include "nuchic/QuasielasticTestMapper.hh"
 #include "nuchic/Vegas.hh"
 #include "nuchic/MultiChannel.hh"
 
@@ -63,7 +64,9 @@ class EventGen {
 
         std::shared_ptr<EventWriter> writer;
 
-        Histogram hist, hist2, hist3;
+        Histogram hist, hist2, hist3, hist4, hist5, hist6;
+
+        std::unique_ptr<QuasielasticTestMapper> testMap;
 };
 
 }

@@ -120,6 +120,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
+        testMap = std::make_unique<nuchic::QuasielasticTestMapper>(config["PS"], beam);
         auto beamMapper = std::make_shared<BeamMapper>(1, beam);
         auto hadronMapper = std::make_shared<QESpectralMapper>(0);
         if(scattering -> Processes()[0].m_ids.size() == 4) {
@@ -168,7 +169,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e8, 1e8, 1});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e3, 2e-3, 1});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -198,6 +199,9 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     hist = Histogram(200, 0.0, 400.0, "energy");
     hist2 = Histogram(100, 0.0, 800.0, "momentum");
     hist3 = Histogram(50, -1.0, 1.0, "angle");
+    hist4 = Histogram(200, 0.0, 1000.0, "energy");
+    hist5 = Histogram(200, 0.0, 1000.0, "momentum");
+    hist6 = Histogram(50, -1.0, 1.0, "angle");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -244,13 +248,32 @@ void nuchic::EventGen::GenerateEvents() {
     hist.Save(config["HistTest1"].as<std::string>());
     hist2.Save(config["HistTest2"].as<std::string>());
     hist3.Save(config["HistTest3"].as<std::string>());
+    hist4.Save(config["HistTest4"].as<std::string>());
+    hist5.Save(config["HistTest5"].as<std::string>());
+    hist6.Save(config["HistTest6"].as<std::string>());
 }
 
 double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
-    return wgt;
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     Event event(nucleus, mom, wgt);
+
+    std::vector<double> rans;
+    // testMap -> GenerateWeight(mom, rans);
+
+    // // Write out events
+    // if(outputEvents) {
+    //     // Keep a running total of the number of surviving events
+    //     nevents += 1;
+    //     spdlog::debug("Found event: {}/{}", nevents, total_events);
+    //     const auto energy = (Constant::mN - event.Momentum()[0].E());
+    //     hist.Fill(energy, wgt);
+    //     const auto momentum = event.Momentum()[0].P();
+    //     hist2.Fill(momentum, wgt);
+    //     const auto cosTheta = event.Momentum()[2].CosTheta();
+    //     hist3.Fill(cosTheta, wgt);
+    // }
+    // return wgt;
 
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Processes()[0].m_ids;
@@ -445,11 +468,18 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             event.Finalize();
             writer -> Write(event);
             const auto energy = (Constant::mN - event.Momentum()[0].E());
-            hist.Fill(energy, event.Weight());
+            const auto calls = static_cast<double>(integrator.Parameters().ncalls);
+            hist.Fill(energy, event.Weight()/calls);
             const auto momentum = event.Momentum()[0].P();
-            hist2.Fill(momentum, event.Weight());
+            hist2.Fill(momentum, event.Weight()/calls);
             const auto cosTheta = event.Momentum()[2].CosTheta();
-            hist3.Fill(cosTheta, event.Weight());
+            hist3.Fill(cosTheta, event.Weight()/calls);
+            const auto energy_lepton = event.Momentum()[2].E();
+            hist4.Fill(energy_lepton, event.Weight()/calls);
+            const auto energy_hadron = event.Momentum()[3].P();
+            hist5.Fill(energy_hadron, event.Weight()/calls);
+            const auto cosTheta_hadron = event.Momentum()[3].CosTheta();
+            hist6.Fill(cosTheta_hadron, event.Weight()/calls);
         }
     }
 
