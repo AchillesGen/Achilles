@@ -80,15 +80,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
     mom[0] = FourVector(tmp, Constant::mN-Ep);
     mom[3] = FourVector(tmp2, Epp);
 
-    spdlog::trace("QuasielasticTestMapper::GeneratePoint:");
-    size_t idx = 0;
-    spdlog::trace("  Momentum:");
-    for(const auto &p : mom)
-        spdlog::trace("    - {}: {}", idx++, p);
-    idx = 0;
-    spdlog::trace("  Rans:");
-    for(const auto &p : rans)
-        spdlog::trace("    - {}: {}", idx++, p);
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
 double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
@@ -128,15 +120,7 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
             std::make_move_iterator(momRans.end()));
     swap(rans, beamRans);
 
-    spdlog::trace("QuasielasticTestMapper::GenerateWeight:");
-    size_t idx = 0;
-    spdlog::trace("  Momentum:");
-    for(const auto &p : mom)
-        spdlog::trace("    - {}: {}", idx++, p);
-    idx = 0;
-    spdlog::trace("  Rans:");
-    for(const auto &p : rans)
-        spdlog::trace("    - {}: {}", idx++, p);
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight: {}", wgt);
 
     return wgt;
