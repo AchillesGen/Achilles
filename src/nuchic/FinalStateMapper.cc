@@ -49,7 +49,7 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     rans[1] = p2.Phi()/dPhi;
 
     auto pcm = mom0.P();
-    auto ecm = (mom[0] + mom[1]).E();
+    auto ecm = (mom[0] + mom[1]).Boost(-boostVec).E();
 
     auto factor = pcm/ecm*mom[3].E()/mom[1].E();
     auto wgt = 1.0/dCos/dPhi/factor;
