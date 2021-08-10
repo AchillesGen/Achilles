@@ -39,6 +39,7 @@ size_t Histogram::FindBin(const double& x) const {
 
 void Histogram::Fill(const double& x, const double& wgt) {
     const size_t loc = FindBin(x);
+    nentries++;
     if(loc != static_cast<size_t>(-1)) {
         binvals[loc-1] += wgt/(binedges[loc]-binedges[loc-1]);
         errors[loc-1] += pow(wgt/(binedges[loc]-binedges[loc-1]), 2);
@@ -56,12 +57,7 @@ void Histogram::Normalize(const double& norm) {
 }
 
 double Histogram::Integral() const {
-    double result = 0;
-    for(size_t i = 0; i < binvals.size(); ++i) {
-        result += binvals[i]*(binedges[i+1]-binedges[i]);
-    }
-
-    return result;
+    return Integral(0, binedges.size());
 }
 
 double Histogram::Integral(const size_t& lower, const size_t& upper) const {
@@ -76,22 +72,14 @@ double Histogram::Integral(const size_t& lower, const size_t& upper) const {
         throw std::runtime_error("Invalid range for histogram integration");
 
     for(size_t i = lower; i < upper; ++i) {
-        result += binvals[i]*(binedges[i+1]-binedges[i]);
+        const auto mean = binvals[i];///static_cast<double>(nentries);
+        result += mean*(binedges[i+1]-binedges[i]);
     }
 
     return sign*result;
 }
 
-void Histogram::Save() const {
-    std::cout << name << std::endl;
-    std::cout << "bin edges:\t\tbin value:" << std::endl;
-    for(size_t i = 0; i < binvals.size(); ++i) {
-        std::cout << binedges[i] << "-" << binedges[i+1] << "\t\t" << binvals[i] << std::endl;
-    }
-}
-
-void Histogram::Save(const std::string& filename) const {
-    std::ofstream out(path+filename+".txt");
+void Histogram::Save(std::ostream &out) const {
     out << name << std::endl;
     out << fmt::format("{:^15} {:^15} {:^15} {:^15}\n",
                        "lower edge", "upper edge", "value", "error");
@@ -99,6 +87,15 @@ void Histogram::Save(const std::string& filename) const {
         out << fmt::format("{:< 15.6e} {:< 15.6e} {:< 15.6e} {:< 15.6e}\n",
                            binedges[i], binedges[i+1], binvals[i], std::sqrt(errors[i]));
     }
+}
+
+void Histogram::Save() const {
+    Save(std::cout);
+}
+
+void Histogram::Save(const std::string& filename) const {
+    std::ofstream out(path+filename+".txt");
+    Save(out);
 }
 
 #ifdef HAVE_YODA

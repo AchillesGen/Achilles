@@ -67,7 +67,11 @@ class Histogram {
         std::vector<double> binedges;
         std::vector<double> binvals;
         std::vector<double> errors;
+        size_t nentries{};
         size_t FindBin(const double&) const;
+
+    private:
+        void Save(std::ostream &) const;
 };
 
 #ifdef HAVE_YODA
