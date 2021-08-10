@@ -11,6 +11,10 @@
 
 namespace nuchic {
 
+class FourVector;
+
+bool CheckMasses(const std::vector<nuchic::FourVector>&, const std::vector<double>&, double=1e-8);
+
 const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
 bool sortPairSecond(const std::pair<std::size_t, double>& a,
                     const std::pair<std::size_t, double>& b);
