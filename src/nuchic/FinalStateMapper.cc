@@ -2,6 +2,7 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Units.hh"
+#include "nuchic/Utilities.hh"
 
 using ATOOLS::Vec4D;
 using nuchic::TwoBodyMapper;
@@ -34,7 +35,9 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     mom[2] = mom[2].RotateBack(rotMat).Boost(boostVec);
     mom[3] = mom[3].RotateBack(rotMat).Boost(boostVec);
 
+
     Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
 }
 
 double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
@@ -49,10 +52,11 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     auto ecm = (mom[0] + mom[1]).E();
 
     auto factor = pcm/ecm*mom[3].E()/mom[1].E();
+    auto wgt = 1.0/dCos/dPhi/factor;
     Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  Factor: {}", factor);
+    spdlog::trace("  Weight: {}", wgt);
 
-    return 1.0/dCos/dPhi/factor;
+    return wgt;
 }
 
 void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
