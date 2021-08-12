@@ -169,7 +169,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e3, 2e-3, 1});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e3, 1e-3, 1});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -219,7 +219,7 @@ void nuchic::EventGen::GenerateEvents() {
     // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = 1000000;
+    integrator.Parameters().ncalls = 10000000;
     integrator(integrand);
     auto result = integrator.Summary();
     std::cout << "Integral = "

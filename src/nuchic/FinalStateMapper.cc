@@ -26,8 +26,8 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     auto phi = dPhi*rans[1];
     auto E1 = sqrts/2*(1 + s2/s - s3/s);
     auto E2 = sqrts/2*(1 + s3/s - s2/s);
-    auto beta = sqrt(1- 2*(s2+s3)/s + pow(s2 - s3, 2)/s/s);
-    auto pCM = sqrts/2*beta;
+    auto lambda = sqrt(pow(s-s2-s3, 2) - 4*s2*s3);
+    auto pCM = lambda/(2*sqrts);
 
     mom[2] = {E1, pCM*sinT*cos(phi), pCM*sinT*sin(phi), pCM*cosT};
     mom[3] = {E2, -pCM*sinT*cos(phi), -pCM*sinT*sin(phi), -pCM*cosT};
@@ -38,6 +38,7 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
 
     Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
+    spdlog::trace("  s = {}, lambda = {}", s, lambda);
 }
 
 double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
@@ -49,11 +50,12 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     rans[1] = p2.Phi()/dPhi;
 
     auto pcm = mom0.P();
-    auto ecm = (mom[0] + mom[1]).Boost(-boostVec).E();
+    auto ecm = (mom[0] + mom[1]).M();
 
     auto factor = pcm/ecm*mom[3].E()/mom[1].E();
     auto wgt = 1.0/dCos/dPhi/factor;
     Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    spdlog::trace("  P_CM: {}", (mom[0] + mom[1]).Boost(-boostVec));
     spdlog::trace("  Weight: {}", wgt);
 
     return wgt;
