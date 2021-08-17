@@ -72,6 +72,16 @@ configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/n
 file(COPY ${NUCHIC_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${NUCHIC_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
+# Unzip if GZIP not turned on
+if(NOT ENABLE_GZIP)
+    file(GLOB zipfiles "${CMAKE_CURRENT_BINARY_DIR}/data/configurations/*.gz")
+    MESSAGE(STATUS "Extracting configurations from zip files")
+    foreach(file ${zipfiles})
+        execute_process(COMMAND gunzip "${file}"
+                        WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/data/configurations/")
+    endforeach()
+endif()
+
 # Testing
 if(ENABLE_TESTING)
     if(COVERAGE) 
