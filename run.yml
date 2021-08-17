@@ -20,6 +20,8 @@ Initialize:
 EventGen:
   iterations: 30
   evaluations: 100000
+  TotalEvents: 100000
+  MaxBatch: 1
 
 Beams:
   - Beam:
