@@ -117,7 +117,7 @@ class WiringaPotential : public Potential {
         }
 #else
         PotentialVals<double> operator()(const double &plab, const double &radius) const override {
-            const double rho = m_nucleus -> Rho(static_cast<double>(radius));
+            const double rho = m_nucleus -> Rho(radius);
             const double rho_ratio = rho/m_rho0;
             const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
             const double beta = -116*rho_ratio;
