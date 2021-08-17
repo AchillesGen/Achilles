@@ -5,10 +5,14 @@
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Random.hh"
 
+#ifdef GZIP
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
+#else
+#include <fstream>
+#endif
 
 template<class ContainerT>
 void tokenize(const std::string& str, ContainerT& tokens,
@@ -32,7 +36,11 @@ void tokenize(const std::string& str, ContainerT& tokens,
 
 nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename) {
     // Load configuration
+#ifdef GZIP
     igzstream configs(filename.c_str());
+#else
+    std::ifstream configs(filename.c_str());
+#endif
     std::string line;
     std::getline(configs, line);
     std::vector<std::string> tokens;
@@ -58,6 +66,8 @@ nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename) 
         std::getline(configs, line);
         m_configurations.push_back(config);
     }
+
+    configs.close();
 }
 
 std::vector<nuchic::Particle> nuchic::DensityConfiguration::GetConfiguration() {

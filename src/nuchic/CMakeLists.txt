@@ -41,7 +41,7 @@ target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
 else()
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
+                              PUBLIC utilities ${HDF5_CXX_LIBRARIES})
 endif()
 
 add_subdirectory(fortran)

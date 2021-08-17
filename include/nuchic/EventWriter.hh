@@ -6,10 +6,12 @@
 #include <string>
 #include <vector>
 
+#if GZIP
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
+#endif
 
 namespace nuchic {
 
@@ -38,11 +40,15 @@ class NuchicWriter : public EventWriter {
         NuchicWriter& operator=(NuchicWriter&&) = default;
         ~NuchicWriter() override {
             if(toFile) {
+#ifdef GZIP
                 if(zipped) {
                     dynamic_cast<ogzstream*>(m_out) -> close();
                 } else {
                     dynamic_cast<std::ofstream*>(m_out) -> close();
                 }
+#else
+                dynamic_cast<std::ofstream*>(m_out) -> close();
+#endif
                 delete m_out;
             }
             m_out = nullptr;

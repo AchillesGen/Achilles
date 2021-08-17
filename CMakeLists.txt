@@ -53,7 +53,9 @@ endif()
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 # Find ZLIB to read gzip files
+if(ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
+endif()
 
 # Add dependencies
 include(CMake/CPM.cmake)
