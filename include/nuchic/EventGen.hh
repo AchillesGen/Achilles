@@ -1,7 +1,7 @@
 #ifndef EVENTGEN_HH
 #define EVENTGEN_HH
 
-#include "nuchic/Cuts.hh"
+#include "nuchic/CombinedCuts.hh"
 #include "nuchic/Histogram.hh"
 #include "nuchic/ParticleInfo.hh"
 #include "nuchic/QuasielasticTestMapper.hh"
@@ -27,8 +27,6 @@ class Cascade;
 class HardScattering;
 class EventWriter;
 
-using Cuts = std::map<PID, Cut>;
-
 class SherpaMEs;
 
 class EventGen {
@@ -45,15 +43,15 @@ class EventGen {
         bool doRotate{false};
         double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
-        bool MakeEventCuts(Event&);
+        // bool MakeEventCuts(Event&);
         void Rotate(Event&);
 
         std::shared_ptr<Beam> beam;
         std::shared_ptr<Nucleus> nucleus;
         std::shared_ptr<Cascade> cascade;
         std::shared_ptr<HardScattering> scattering;
-        Cuts hard_cuts{};
-        Cuts event_cuts{};
+        CutCollection hard_cuts{};
+        // CutCollection event_cuts{};
         MultiChannel integrator;
         Integrand<FourVector> integrand;
         SherpaMEs *sherpa;
@@ -65,8 +63,6 @@ class EventGen {
         std::shared_ptr<EventWriter> writer;
 
         Histogram hist, hist2, hist3, hist4, hist5, hist6;
-
-        std::unique_ptr<QuasielasticTestMapper> testMap;
 };
 
 }

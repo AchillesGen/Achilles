@@ -10,11 +10,19 @@ add_library(utilities SHARED
     AdaptiveMap.cc
     Multichannel.cc
     Histogram.cc
-    Cuts.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+
+add_library(cuts SHARED
+    Cuts.cc
+    OneParticleCuts.cc
+    TwoParticleCuts.cc
+    CombinedCuts.cc
+)
+target_link_libraries(cuts PRIVATE project_options project_warnings
+                           PUBLIC utilities) #pybind11::pybind11 
 
 add_library(physics SHARED
     Cascade.cc
@@ -30,7 +38,7 @@ add_library(physics SHARED
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream sherpa)
+                              PUBLIC cuts ${HDF5_CXX_LIBRARIES} gzstream sherpa)
 
 add_library(mappers SHARED
     PhaseSpaceMapper.cc
@@ -77,7 +85,7 @@ add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen sherpa docopt::docopt)
 
-set_target_properties(nuchic event_gen fortran_interface physics utilities gzstream sherpa mappers PROPERTIES # fortran_interface_f
+set_target_properties(nuchic event_gen fortran_interface physics cuts utilities gzstream sherpa mappers PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -85,7 +93,7 @@ set_target_properties(nuchic event_gen fortran_interface physics utilities gzstr
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen fortran_interface physics utilities gzstream spdlog yaml-cpp fmt sherpa mappers #pybind11 fortran_interface_f 
+install(TARGETS nuchic event_gen fortran_interface physics cuts utilities gzstream spdlog yaml-cpp fmt sherpa mappers #pybind11 fortran_interface_f 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
