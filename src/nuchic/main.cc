@@ -2,7 +2,7 @@
 #include "nuchic/Version.hh"
 #include "nuchic/System.hh"
 #include "nuchic/Logging.hh"
-#include "plugins/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 
 #include "docopt.h"
 

@@ -16,10 +16,10 @@
 #include "nuchic/FinalStateMapper.hh"
 #include "nuchic/PhaseSpaceMapper.hh"
 #include "nuchic/QuasielasticTestMapper.hh"
-#include "plugins/Channels1.hh"
-#include "plugins/Channels3.hh"
+#include "plugins/Sherpa/Channels1.hh"
+#include "plugins/Sherpa/Channels3.hh"
 
-#include "plugins/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 
 #include "yaml-cpp/yaml.h"
 

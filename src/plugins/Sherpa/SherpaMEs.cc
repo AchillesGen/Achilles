@@ -1,4 +1,4 @@
-#include "plugins/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/Initialization/Initialization_Handler.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"

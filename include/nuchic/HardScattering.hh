@@ -15,7 +15,7 @@
 #include "nuchic/RunModes.hh"
 #include "nuchic/Histogram.hh"
 #include "nuchic/ProcessInfo.hh"
-#include "plugins/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 
 extern "C" {
     void Delete();
