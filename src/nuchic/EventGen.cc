@@ -120,22 +120,24 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
-        testMap = std::make_unique<nuchic::QuasielasticTestMapper>(config["PS"], beam);
         auto beamMapper = std::make_shared<BeamMapper>(1, beam);
         auto hadronMapper = std::make_shared<QESpectralMapper>(0);
         if(scattering -> Processes()[0].m_ids.size() == 4) {
-            Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
-                                                                      0, pow(Constant::mN, 2));
-            integrand.AddChannel(std::move(channel));
-            // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
-            //                                                                 0, pow(Constant::mN, 2));
-            // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
-            //                                                                 0, pow(Constant::mN, 2));
-            // integrand.AddChannel(std::move(channel0));
-            // integrand.AddChannel(std::move(channel1));
+            // Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
+            //                                                            0, pow(Constant::mN, 2));
+            // integrand.AddChannel(std::move(channel));
+            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
+                                                                            0, pow(Constant::mN, 2));
+            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
+                                                                            0, pow(Constant::mN, 2));
+            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(2, 2, beamMapper, hadronMapper,
+                                                                            0, pow(Constant::mN, 2));
+            integrand.AddChannel(std::move(channel0));
+            integrand.AddChannel(std::move(channel1));
+            integrand.AddChannel(std::move(channel2));
         } else if(scattering -> Processes()[0].m_ids.size() == 6) {
             spdlog::info("Initializing 2->4");
-            constexpr double s5 = (Constant::mN/1_GeV)*(Constant::mN/1_GeV);
+            constexpr double s5 = (Constant::mN)*(Constant::mN);
             Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
                                                                             0, 0, 0, s5);
             Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
@@ -169,7 +171,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {100, 10, 1e3, 1e-3, 1});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 10, 1e8, 5e-2, 1});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
@@ -179,12 +181,12 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     if(config["Main"]["HardCuts"])
         doHardCuts = config["Main"]["HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
-    hard_cuts = config["HardCuts"].as<nuchic::Cuts>();
+    hard_cuts = config["HardCuts"].as<nuchic::CutCollection>();
 
-    if(config["Main"]["EventCuts"])
-        doEventCuts = config["Main"]["EventCuts"].as<bool>();
-    spdlog::info("Apply event cuts? {}", doEventCuts);
-    event_cuts = config["EventCuts"].as<nuchic::Cuts>();
+    // if(config["Main"]["EventCuts"])
+    //     doEventCuts = config["Main"]["EventCuts"].as<bool>();
+    // spdlog::info("Apply event cuts? {}", doEventCuts);
+    // event_cuts = config["EventCuts"].as<nuchic::CutCollection>();
 
     // Setup outputs
     auto output = config["Main"]["Output"];
@@ -219,7 +221,7 @@ void nuchic::EventGen::GenerateEvents() {
     // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = 10000000;
+    integrator.Parameters().ncalls = 100000;
     integrator(integrand);
     auto result = integrator.Summary();
     std::cout << "Integral = "
@@ -257,23 +259,6 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     Event event(nucleus, mom, wgt);
-
-    std::vector<double> rans;
-    // testMap -> GenerateWeight(mom, rans);
-
-    // // Write out events
-    // if(outputEvents) {
-    //     // Keep a running total of the number of surviving events
-    //     nevents += 1;
-    //     spdlog::debug("Found event: {}/{}", nevents, total_events);
-    //     const auto energy = (Constant::mN - event.Momentum()[0].E());
-    //     hist.Fill(energy, wgt);
-    //     const auto momentum = event.Momentum()[0].P();
-    //     hist2.Fill(momentum, wgt);
-    //     const auto cosTheta = event.Momentum()[2].CosTheta();
-    //     hist3.Fill(cosTheta, wgt);
-    // }
-    // return wgt;
 
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Processes()[0].m_ids;
@@ -379,9 +364,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     if(amp.real() != 0) spdlog::info("Ward Identities: {}", ward);
 #endif
 
-    // double flux2 = event.Momentum()[2].E()/event.Momentum()[1].E();
-    double xsec_p = amp_p.real()*Constant::HBARC2/8/M_PI;
-    double xsec_n = amp_n.real()*Constant::HBARC2/8/M_PI;
+    double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
+    double xsec_p = amp_p.real()*Constant::HBARC2*2*M_PI*flux;
+    double xsec_n = amp_n.real()*Constant::HBARC2*2*M_PI*flux;
     double defaultxsec{};
     static double minRatio = std::numeric_limits<double>::infinity();
     static double maxRatio = 0;
@@ -456,10 +441,10 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             Rotate(event);
         // Perform event-level final cuts before writing
         bool outputCurrentEvent = true;
-        if(doEventCuts){
-            spdlog::debug("Making event cuts");
-            outputCurrentEvent = MakeEventCuts(event);
-        }
+        // if(doEventCuts){
+        //     spdlog::debug("Making event cuts");
+        //     outputCurrentEvent = MakeEventCuts(event);
+        // }
 
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
@@ -490,19 +475,11 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
 }
 
 bool nuchic::EventGen::MakeCuts(Event &event) {
-    // Run through all particles in the event
-    for(const auto &particle : event.Particles())
-        // Only apply cuts to final-state particles
-        if(particle.IsFinal())
-            if(hard_cuts.find(particle.ID()) != hard_cuts.end()){
-                // Reject the event if a single particle fails a cut
-                if(!hard_cuts[particle.ID()](particle.Momentum())){
-                    return false;
-                }
-            }
-    return true;
+    return hard_cuts.EvaluateCuts(event.Particles());
 }
 
+// TODO: Create Analysis level cuts
+/*
 bool nuchic::EventGen::MakeEventCuts(Event &event) {
     // Run through all particles in the event
     for (const auto& pair : event_cuts) {
@@ -523,7 +500,7 @@ bool nuchic::EventGen::MakeEventCuts(Event &event) {
             return false;
     }
     return true;
-}
+}*/
 
 void nuchic::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron

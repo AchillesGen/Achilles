@@ -57,6 +57,8 @@ class Integrand {
         }
         void Train() {
             for(auto &channel : channels) {
+                if(std::all_of(channel.train_data.begin(), channel.train_data.end(),
+                               [](double i) { return i == 0; })) continue;
                 channel.integrator.Adapt(channel.train_data);
                 std::fill(channel.train_data.begin(), channel.train_data.end(), 0);
             }
