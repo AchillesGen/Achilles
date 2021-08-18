@@ -110,7 +110,8 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     momRans[iRan++] = (mom[0].CosTheta()+1)/dCos;
     momRans[iRan++] = mom[0].Phi()/dPhi;
     momRans[iRan++] = mom[0].P()/dp;
-    wgt /= (dCos*dPhi*dp*mom[0].P2()*mom[2].E()/mom[1].E());
+    wgt /= (dCos*dPhi*dp*mom[0].P2()*mom[2].E()/(mom[3].E()));
+    wgt *= 16*M_PI*M_PI;
 
     if(mom[0].E() > Constant::mN) wgt = std::numeric_limits<double>::infinity();
 

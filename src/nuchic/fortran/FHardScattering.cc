@@ -55,6 +55,12 @@ std::pair<nuchic::Tensor, nuchic::Tensor> nuchic::FQESpectral::HadronicTensor(Ev
     Tensor result_p{}, result_n{};
     HadronicTensorOneBody(&qVec, &pNucleonIn, &pNucleonOut, result_p.data(), result_n.data());
 
+    // Convert from fm^2 to MeV^-2
+    for(size_t i = 0; i < result_p.size(); ++i) {
+        result_p[i] *= pow(Constant::HBARC, 2);
+        result_n[i] *= pow(Constant::HBARC, 2);
+    }
+
     return {result_p, result_n};
 }
 

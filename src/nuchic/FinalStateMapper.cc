@@ -1,4 +1,5 @@
 #include "nuchic/FinalStateMapper.hh"
+#include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Units.hh"
@@ -49,13 +50,15 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     rans[0] = (p2.CosTheta() + 1)/dCos;
     rans[1] = p2.Phi()/dPhi;
 
-    auto pcm = mom0.P();
+    auto pcm = p2.P();
     auto ecm = (mom[0] + mom[1]).M();
 
-    auto factor = pcm/ecm*mom[3].E()/mom[1].E();
+    auto factor = pcm/ecm/(16*M_PI*M_PI);
     auto wgt = 1.0/dCos/dPhi/factor;
     Mapper<nuchic::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  P_CM: {}", (mom[0] + mom[1]).Boost(-boostVec));
+    spdlog::trace("  ct: {}", p2.CosTheta());
+    spdlog::trace("  pcm: {}", pcm);
+    spdlog::trace("  ecm: {}", ecm);
     spdlog::trace("  Weight: {}", wgt);
 
     return wgt;
@@ -63,17 +66,17 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
 
 void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
     std::vector<Vec4D> mom(point.size());
-    mom[0] = Vec4D(point[0][0]/1_GeV, point[0][1]/1_GeV, point[0][2]/1_GeV, point[0][3]/1_GeV);
-    mom[1] = Vec4D(point[1][0]/1_GeV, point[1][1]/1_GeV, point[1][2]/1_GeV, point[1][3]/1_GeV);
+    mom[0] = Vec4D(point[0][0], point[0][1], point[0][2], point[0][3]);
+    mom[1] = Vec4D(point[1][0], point[1][1], point[1][2], point[1][3]);
     sherpa_mapper -> GeneratePoint(mom, rans);
     for(size_t i = 2; i < point.size(); ++i) {
-        point[i] = FourVector(mom[i][0]*1_GeV, mom[i][1]*1_GeV, mom[i][2]*1_GeV, mom[i][3]*1_GeV);
+        point[i] = FourVector(mom[i][0], mom[i][1], mom[i][2], mom[i][3]);
     }
 }
 
 double SherpaMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) const {
     std::vector<Vec4D> mom{};
     for(const auto &pt : point)
-        mom.emplace_back(pt[0]/1_GeV, pt[1]/1_GeV, pt[2]/1_GeV, pt[3]/1_GeV);
+        mom.emplace_back(pt[0], pt[1], pt[2], pt[3]);
     return sherpa_mapper -> GenerateWeight(mom, rans);
 }

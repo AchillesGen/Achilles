@@ -61,8 +61,8 @@ subroutine define_spinors()
     up1=czero
     upp1=czero
 !.......initialize normalization factors
-    cp1=sqrt((p1(1)+xmn)/(2.0d0*p1(1)))
-    cpp1=sqrt((pp1(1)+xmn)/(2.0d0*pp1(1)))
+    cp1=sqrt((p1(1)+xmn))!/(2.0d0*p1(1)))
+    cpp1=sqrt((pp1(1)+xmn))!/(2.0d0*pp1(1)))
 !.....define sigma*p
     do i=1,3
       sigp1=sigp1+sig(i,:,:)*p1(i+1)
