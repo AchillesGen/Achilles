@@ -21,50 +21,6 @@ using nuchic::ParticleInfo;
 //     }
 // }
 
-namespace YAML {
-template<>
-struct convert<ParticleInfoEntry> {
-    static Node encode(const ParticleInfoEntry &partInfo) {
-        Node node;
-        node.push_back(static_cast<int>(partInfo.id));
-        node.push_back(partInfo.mass);
-        node.push_back(partInfo.width);
-        node.push_back(partInfo.icharge);
-        node.push_back(partInfo.strong);
-        node.push_back(partInfo.spin);
-        node.push_back(partInfo.stable);
-        node.push_back(partInfo.majorana);
-        node.push_back(partInfo.massive);
-        node.push_back(partInfo.hadron);
-        node.push_back(partInfo.idname);
-        node.push_back(partInfo.antiname);
-
-        return node;
-    }
-
-    static bool decode(const Node &node, ParticleInfoEntry &partInfo) {
-        if(!node.IsSequence() || node.size() != 12) {
-            return false;
-        } 
-
-        partInfo.id = static_cast<nuchic::PID>(node[0].as<int>());
-        partInfo.mass = node[1].as<double>();
-        partInfo.width = node[2].as<double>();
-        partInfo.icharge = node[3].as<int>();
-        partInfo.strong = node[4].as<int>();
-        partInfo.spin = node[5].as<int>();
-        partInfo.stable = node[6].as<int>();
-        partInfo.majorana = node[7].as<int>();
-        partInfo.massive = node[8].as<bool>();
-        partInfo.hadron = node[9].as<bool>();
-        partInfo.idname = node[10].as<std::string>();
-        partInfo.antiname = node[11].as<std::string>();
-
-        return true;
-    }
-};
-}
-
 void nuchic::ParticleInfo::BuildDatabase(const std::string &datafile) {
     YAML::Node particleYAML = YAML::LoadFile(datafile);
     auto particles = particleYAML["Particles"];

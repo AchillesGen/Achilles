@@ -70,6 +70,13 @@ namespace nuchic {
             // Dummy hadron
             static constexpr PID dummyHadron() { return PID{ 2212 }; }
 
+            // Stream Operator
+            template<typename OStream>
+            friend OStream& operator<<(OStream &os, const PID &pid) {
+                os << pid.id;
+                return os;
+            }
+
         private:
             // Ensure id matches the numbering scheme defined at:
             // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
@@ -246,6 +253,63 @@ struct convert<nuchic::PID> {
             return true;
         }
         return false;
+    }
+};
+
+template<>
+struct convert<std::set<nuchic::PID>> {
+    static bool decode(const Node &node, std::set<nuchic::PID> &pids) {
+        if(node.IsScalar()) {
+            pids.insert(node.as<nuchic::PID>());
+            return true;
+        }
+
+        for(const auto &subnode : node) {
+            pids.insert(subnode.as<nuchic::PID>());
+        }
+        return true;
+    }
+};
+
+template<>
+struct convert<nuchic::ParticleInfoEntry> {
+    static Node encode(const nuchic::ParticleInfoEntry &partInfo) {
+        Node node;
+        node.push_back(static_cast<int>(partInfo.id));
+        node.push_back(partInfo.mass);
+        node.push_back(partInfo.width);
+        node.push_back(partInfo.icharge);
+        node.push_back(partInfo.strong);
+        node.push_back(partInfo.spin);
+        node.push_back(partInfo.stable);
+        node.push_back(partInfo.majorana);
+        node.push_back(partInfo.massive);
+        node.push_back(partInfo.hadron);
+        node.push_back(partInfo.idname);
+        node.push_back(partInfo.antiname);
+
+        return node;
+    }
+
+    static bool decode(const Node &node, nuchic::ParticleInfoEntry &partInfo) {
+        if(!node.IsSequence() || node.size() != 12) {
+            return false;
+        } 
+
+        partInfo.id = static_cast<nuchic::PID>(node[0].as<int>());
+        partInfo.mass = node[1].as<double>();
+        partInfo.width = node[2].as<double>();
+        partInfo.icharge = node[3].as<int>();
+        partInfo.strong = node[4].as<int>();
+        partInfo.spin = node[5].as<int>();
+        partInfo.stable = node[6].as<int>();
+        partInfo.majorana = node[7].as<int>();
+        partInfo.massive = node[8].as<bool>();
+        partInfo.hadron = node[9].as<bool>();
+        partInfo.idname = node[10].as<std::string>();
+        partInfo.antiname = node[11].as<std::string>();
+
+        return true;
     }
 };
 
