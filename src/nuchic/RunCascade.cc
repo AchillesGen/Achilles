@@ -75,7 +75,8 @@ class CalcCrossSection : public RunMode {
             // Add test particle from the beam coming in on the z-axis
             // The test particle starts outside the nucleus by 5%
             ThreeVector position{beam_spot[0], beam_spot[1], -1.05*m_nuc->Radius()};
-            FourVector momentum{0, 0, mom, sqrt(mom*mom + Constant::mN*Constant::mN)}; 
+            auto mass = nuchic::ParticleInfo(m_pid).Mass();
+            FourVector momentum{0, 0, mom, sqrt(mom*mom + mass*mass)}; 
             Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
 
             // Cascade
@@ -129,7 +130,8 @@ class CalcCrossSectionMFP : public RunMode {
             // Add test particle from the beam coming in on the z-axis
             // The test particle starts outside the nucleus by 5%
             ThreeVector position{beam_spot[0], beam_spot[1], -1.05*m_nuc->Radius()};
-            FourVector momentum{0, 0, mom, sqrt(mom*mom + Constant::mN*Constant::mN)}; 
+            auto mass = nuchic::ParticleInfo(m_pid).Mass();
+            FourVector momentum{0, 0, mom, sqrt(mom*mom + mass*mass)}; 
             Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
 
             // Cascade
@@ -214,10 +216,11 @@ class CalcTransparency : public RunMode {
             size_t idx = Random::Instance().Uniform(0ul, particles.size()-1);
             m_cascade.SetKicked(idx);
             auto kicked_particle = &particles[idx];
+            auto mass = kicked_particle -> Info().Mass(); 
             FourVector kick{kick_mom*sintheta*cos(phi),
                             kick_mom*sintheta*sin(phi),
                             kick_mom*costheta,
-                            sqrt(kick_mom*kick_mom + Constant::mN*Constant::mN)};
+                            sqrt(kick_mom*kick_mom + mass*mass)};
             kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
             kicked_particle->Status() = ParticleStatus::internal_test;
             kicked_particle->SetMomentum(kick);
@@ -267,10 +270,11 @@ class CalcTransparencyMFP : public RunMode {
             size_t idx = Random::Instance().Uniform(0ul, particles.size()-1);
             m_cascade.SetKicked(idx);
             auto kicked_particle = &particles[idx];
+            auto mass = kicked_particle -> Info().Mass(); 
             FourVector kick{kick_mom*sintheta*cos(phi),
                             kick_mom*sintheta*sin(phi),
                             kick_mom*costheta,
-                            sqrt(kick_mom*kick_mom + Constant::mN*Constant::mN)};
+                            sqrt(kick_mom*kick_mom + mass*mass)};
             kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
             kicked_particle->Status() = ParticleStatus::internal_test;
             kicked_particle->SetMomentum(kick);
