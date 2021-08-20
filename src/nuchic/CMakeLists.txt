@@ -18,7 +18,8 @@ add_library(utilities SHARED
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
-if(AUTODIFF)
+if(ENABLE_AUTODIFF)
+target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
 endif()
 
@@ -78,8 +79,15 @@ target_link_libraries(event_gen PRIVATE project_options project_warnings
 add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen docopt::docopt)
-
 set(nuchic_targets nuchic event_gen fortran_interface physics utilities)
+
+if(ENABLE_CASCADE_TEST)
+    add_executable(nuchic-cascade CascadeMain.cc RunCascade.cc)
+    target_link_libraries(nuchic-cascade PRIVATE project_options project_warnings
+                                         PUBLIC physics docopt::docopt)
+    list(APPEND nuchic_targets nuchic-cascade)
+endif()
+
 if(ENABLE_GZIP)
 list(APPEND nuchic_targets gzstream)
 endif()
