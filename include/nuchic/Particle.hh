@@ -231,7 +231,7 @@ class Particle {
 
         /// Returns the distance travelled by the particle
         /// @return double: the distance travelled by the particle
-        double GetDistanceTraveled() {return distanceTraveled;}
+        double GetDistanceTraveled() const {return distanceTraveled;}
 
         /// Propagate a particle back in time. Useful for testing purposes
         ///@param timeStep: The amount of time to propagate a particle back in time for

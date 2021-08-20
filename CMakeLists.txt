@@ -72,6 +72,7 @@ configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/n
 # Copy over data files
 file(COPY ${NUCHIC_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${NUCHIC_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${NUCHIC_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Unzip if GZIP not turned on
 if(NOT ENABLE_GZIP)

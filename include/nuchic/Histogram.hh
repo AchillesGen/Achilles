@@ -6,6 +6,7 @@
 #include <mutex>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -54,7 +55,7 @@ class Histogram {
         virtual void Normalize(const double& norm=1.0);
         virtual double Integral() const;
         virtual double Integral(const size_t&, const size_t&) const;
-        virtual void Save() const;
+        virtual void Save(std::ostream* out=&std::cout) const;
         virtual void Save(const std::string&) const;
 
         virtual void SetName(const std::string& name_) { name = name_; }

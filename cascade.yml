@@ -1,0 +1,25 @@
+Initialize:
+  seed: 123456789
+
+Nucleus:
+  Name: 12C
+  Binding: 8.6
+  Fermi Momentum: 225
+  Density:
+    File: data/c12.prova.txt
+    Function: configuration
+    Config Type: QMC
+  FermiGas: Local
+
+Cascade:
+  Mode: CrossSection
+  Interaction: 
+    Name: GeantInteractions
+    GeantData: data/GeantData.hdf5
+  Step: 0.04
+  Probability: Gaussian
+
+KickMomentum: [100, 1000, 20]
+NEvents: 100
+SaveAs: pC_xsec
+PID: 2212

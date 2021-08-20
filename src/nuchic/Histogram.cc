@@ -82,23 +82,19 @@ double Histogram::Integral(const size_t& lower, const size_t& upper) const {
     return sign*result;
 }
 
-void Histogram::Save() const {
-    std::cout << name << std::endl;
-    std::cout << "bin edges:\t\tbin value:" << std::endl;
+void Histogram::Save(std::ostream *out) const {
+    *out << name << std::endl;
+    *out << fmt::format("{:^15} {:^15} {:^15} {:^15}\n",
+                       "lower edge", "upper edge", "value", "error");
     for(size_t i = 0; i < binvals.size(); ++i) {
-        std::cout << binedges[i] << "-" << binedges[i+1] << "\t\t" << binvals[i] << std::endl;
+        *out << fmt::format("{:< 15.6e} {:< 15.6e} {:< 15.6e} {:< 15.6e}\n",
+                           binedges[i], binedges[i+1], binvals[i], std::sqrt(errors[i]));
     }
 }
 
 void Histogram::Save(const std::string& filename) const {
     std::ofstream out(path+filename+".txt");
-    out << name << std::endl;
-    out << fmt::format("{:^15} {:^15} {:^15} {:^15}\n",
-                       "lower edge", "upper edge", "value", "error");
-    for(size_t i = 0; i < binvals.size(); ++i) {
-        out << fmt::format("{:< 15.6e} {:< 15.6e} {:< 15.6e} {:< 15.6e}\n",
-                           binedges[i], binedges[i+1], binvals[i], std::sqrt(errors[i]));
-    }
+    Save(&out);
 }
 
 #ifdef HAVE_YODA
