@@ -17,6 +17,8 @@ enum class CascadeMode {
     CrossSection,
     MeanFreePath,
     Transparency,
+    CrossSectionMFP,
+    TransparencyMFP,
 };
 
 }
@@ -30,6 +32,8 @@ struct convert<nuchic::CascadeMode> {
         if(name == "CrossSection") mode = nuchic::CascadeMode::CrossSection;
         else if(name == "MeanFreePath") mode = nuchic::CascadeMode::MeanFreePath;
         else if(name == "Transparency") mode = nuchic::CascadeMode::Transparency;
+        else if(name == "CrossSectionMFP") mode = nuchic::CascadeMode::CrossSectionMFP;
+        else if(name == "TransparencyMFP") mode = nuchic::CascadeMode::TransparencyMFP;
         else return false;
 
         return true;
@@ -79,6 +83,60 @@ class CalcCrossSection : public RunMode {
             particles.push_back(testPart);
             m_nuc->SetNucleons(particles);
             m_cascade.Evolve(m_nuc);
+
+            // Analyze output
+            spdlog::debug("Final Nucleons:");
+            for(const auto &part : m_nuc -> Nucleons()) {
+                spdlog::debug("  - {}", part);
+            }
+
+            nevents++;
+            for(const auto &part : m_nuc->Nucleons()) {
+                if(part.Status() == ParticleStatus::escaped) {
+                    nhits++; 
+                    break;
+                }
+            }
+        }
+        void PrintResults(std::ofstream &out) const override {
+            double xsec = nhits*M_PI*m_radius*m_radius/nevents*10;
+            double error = sqrt(nhits)*M_PI*m_radius*m_radius/nevents*10;
+            fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
+            out << fmt::format("{},{}\n",xsec,error);
+        }
+    private:
+        double m_radius;
+        int m_pid;
+        double nhits{}, nevents{};
+};
+
+class CalcCrossSectionMFP : public RunMode {
+    public:
+        CalcCrossSectionMFP(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade, double radius=10)
+            : RunMode(nuc, std::move(cascade)), m_radius{std::move(radius)}, m_pid{pid} {}
+        void GenerateEvent(double mom) override {
+            auto particles = m_nuc -> Nucleons();
+           
+            // Generate a point in the beam of a given radius
+            std::array<double, 2> beam_spot;
+            while(true) {
+                beam_spot[0] = m_radius*Random::Instance().Uniform(-1.0, 1.0);
+                beam_spot[1] = m_radius*Random::Instance().Uniform(-1.0, 1.0);
+                if(beam_spot[0]*beam_spot[0] + beam_spot[1]*beam_spot[1] < m_radius*m_radius)
+                    break;
+            }
+
+            // Add test particle from the beam coming in on the z-axis
+            // The test particle starts outside the nucleus by 5%
+            ThreeVector position{beam_spot[0], beam_spot[1], -1.05*m_nuc->Radius()};
+            FourVector momentum{0, 0, mom, sqrt(mom*mom + Constant::mN*Constant::mN)}; 
+            Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
+
+            // Cascade
+            m_cascade.SetKicked(particles.size());
+            particles.push_back(testPart);
+            m_nuc->SetNucleons(particles);
+            m_cascade.NuWro(m_nuc);
 
             // Analyze output
             spdlog::debug("Final Nucleons:");
@@ -197,6 +255,59 @@ class CalcTransparency : public RunMode {
         double ninteract{};
 };
 
+class CalcTransparencyMFP : public RunMode {
+    public:
+        CalcTransparencyMFP(std::shared_ptr<Nucleus> nuc, Cascade cascade) 
+            : RunMode(nuc, std::move(cascade)) {}
+        void GenerateEvent(double kick_mom) override {
+            double costheta = Random::Instance().Uniform(-1.0, 1.0); 
+            double sintheta = sqrt(1-costheta*costheta);
+            double phi = Random::Instance().Uniform(0.0, 2*M_PI);
+            auto particles = m_nuc->Nucleons();
+            size_t idx = Random::Instance().Uniform(0ul, particles.size()-1);
+            m_cascade.SetKicked(idx);
+            auto kicked_particle = &particles[idx];
+            FourVector kick{kick_mom*sintheta*cos(phi),
+                            kick_mom*sintheta*sin(phi),
+                            kick_mom*costheta,
+                            sqrt(kick_mom*kick_mom + Constant::mN*Constant::mN)};
+            kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
+            kicked_particle->Status() = ParticleStatus::internal_test;
+            kicked_particle->SetMomentum(kick);
+            m_nuc -> SetNucleons(particles);
+
+            spdlog::debug("Initial Nucleons:");
+            for(const auto &part : m_nuc -> Nucleons()) {
+                spdlog::debug("  - {}", part);
+            }
+
+            m_cascade.MeanFreePath_NuWro(m_nuc);
+            nevents++;
+
+            spdlog::debug("Final Nucleons:");
+            for(const auto &part : m_nuc -> Nucleons()) {
+                spdlog::debug("  - {}", part);
+            }
+
+            for(const auto &part : m_nuc -> Nucleons()) {
+                if(part.Status() == ParticleStatus::internal_test) {
+                    ninteract++;
+                    break;
+                }
+            }
+        }
+        void PrintResults(std::ofstream &out) const override {
+            double transparency = 1-ninteract/nevents;
+            double error = sqrt(ninteract/nevents/nevents);
+            fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+            out << fmt::format("{},{}\n", transparency, error);
+        }
+
+    private:
+        double nevents{};
+        double ninteract{};
+};
+
 }
 
 void nuchic::RunCascade(const std::string &runcard) {
@@ -222,12 +333,19 @@ void nuchic::RunCascade(const std::string &runcard) {
             generator = std::make_unique<CalcCrossSection>(config["PID"].as<int>(),
                                                            nucleus, std::move(cascade)); 
             break;
+        case CascadeMode::CrossSectionMFP:
+            generator = std::make_unique<CalcCrossSectionMFP>(config["PID"].as<int>(),
+                                                           nucleus, std::move(cascade)); 
+            break;
         case CascadeMode::MeanFreePath:
             generator = std::make_unique<CalcMeanFreePath>(config["PID"].as<int>(),
                                                            nucleus, std::move(cascade)); 
             break;
         case CascadeMode::Transparency:
             generator = std::make_unique<CalcTransparency>(nucleus, std::move(cascade)); 
+            break;
+        case CascadeMode::TransparencyMFP:
+            generator = std::make_unique<CalcTransparencyMFP>(nucleus, std::move(cascade)); 
             break;
     }
 
