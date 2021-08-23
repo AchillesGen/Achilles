@@ -4,7 +4,11 @@
 
 #include "docopt.h"
 #include "fmt/color.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 void Splash() {
 
