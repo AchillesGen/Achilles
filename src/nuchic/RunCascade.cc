@@ -51,6 +51,7 @@ class RunMode {
         virtual ~RunMode() = default;
         virtual void GenerateEvent(double) = 0;
         virtual void PrintResults(std::ofstream&) const = 0;
+        virtual void Reset() = 0;
     protected:
         std::shared_ptr<Nucleus> m_nuc;
         Cascade m_cascade;
@@ -104,6 +105,10 @@ class CalcCrossSection : public RunMode {
             double error = sqrt(nhits)*M_PI*m_radius*m_radius/nevents*10;
             fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
             out << fmt::format("{},{}\n",xsec,error);
+        }
+        void Reset() override {
+            nevents = 0;
+            nhits = 0;
         }
     private:
         double m_radius;
@@ -160,6 +165,10 @@ class CalcCrossSectionMFP : public RunMode {
             fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
             out << fmt::format("{},{}\n",xsec,error);
         }
+        void Reset() override {
+            nevents = 0;
+            nhits = 0;
+        }
     private:
         double m_radius;
         int m_pid;
@@ -198,6 +207,9 @@ class CalcMeanFreePath : public RunMode {
             m_hist.Save(&out);
             fmt::print("  Histogram saved\n");
         }
+
+        // TODO: Implement this!
+        void Reset() override { }
 
     private:
         int m_pid;
@@ -251,6 +263,10 @@ class CalcTransparency : public RunMode {
             double error = sqrt(ninteract/nevents/nevents);
             fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
             out << fmt::format("{},{}\n", transparency, error);
+        }
+        void Reset() override {
+            nevents = 0;
+            ninteract = 0;
         }
 
     private:
@@ -307,6 +323,11 @@ class CalcTransparencyMFP : public RunMode {
             fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
             out << fmt::format("{},{}\n", transparency, error);
         }
+        void Reset() override {
+            nevents = 0;
+            ninteract = 0;
+        }
+
 
     private:
         double nevents{};
@@ -363,6 +384,7 @@ void nuchic::RunCascade(const std::string &runcard) {
     fmt::print("  Generating {} events per momentum point\n", nevents);
     double current_mom = kick_mom[0];
     while(current_mom <= kick_mom[1]) {
+        generator -> Reset();
         for(size_t i = 0; i < nevents; ++i) {
             nucleus -> GenerateConfig();
             generator -> GenerateEvent(current_mom);
