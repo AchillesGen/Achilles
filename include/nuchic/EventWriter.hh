@@ -58,7 +58,10 @@ class NuchicWriter : public EventWriter {
         void Write(const Event&) override;
 
     private:
-        bool toFile{false}, zipped{true};
+        bool toFile{false};
+#ifdef GZIP
+        bool zipped{true};
+#endif
         size_t nEvents{0};
         std::ostream *m_out; 
 };
