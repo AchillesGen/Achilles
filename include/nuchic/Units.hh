@@ -48,6 +48,9 @@ namespace nuchic {
     constexpr double operator"" _GeV(unsigned long long int x) {
         return static_cast<double>(x)*1000;
     }
+    constexpr double operator"" _J(long double x) {
+        return static_cast<double>(x)/1.602176634e-13;
+    }
 
     // Angle literals
     constexpr double operator"" _rad(long double x) {
