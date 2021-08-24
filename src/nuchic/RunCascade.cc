@@ -270,7 +270,8 @@ class CalcTransparencyMFP : public RunMode {
             size_t idx = Random::Instance().Uniform(0ul, particles.size()-1);
             m_cascade.SetKicked(idx);
             auto kicked_particle = &particles[idx];
-            auto mass = kicked_particle -> Info().Mass(); 
+            auto mass = kicked_particle -> Info().Mass();
+            // auto mass = Constant::mN;
             FourVector kick{kick_mom*sintheta*cos(phi),
                             kick_mom*sintheta*sin(phi),
                             kick_mom*costheta,

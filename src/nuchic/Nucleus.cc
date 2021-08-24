@@ -146,7 +146,7 @@ void Nucleus::GenerateConfig() {
     for(Particle& particle : particles) {
         // Set momentum for each nucleon
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
-        double energy2 = Constant::mN*Constant::mN;
+        double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
         particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
 

@@ -79,7 +79,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     double position = kickedPart.Position().Magnitude();
 
     auto mom = localNucleus -> GenerateMomentum(position);
-    double energy = Constant::mN*Constant::mN;
+    double energy = pow(ParticleInfo(kickedPart.ID()).Mass(), 2); // Constant::mN*Constant::mN;
     for(auto p : mom) energy += p*p;
     std::size_t idxSame = SIZE_MAX;
     double xsecSame = 0;
@@ -90,8 +90,10 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         xsecSame = GetXSec(kickedPart, particles[idxSame]);
     }
 
-    mom = localNucleus -> GenerateMomentum(position);
-    energy = Constant::mN*Constant::mN;
+    // mom = localNucleus -> GenerateMomentum(position);
+    auto otherMass = kickedPart.ID() == PID::proton() ? ParticleInfo(PID::neutron()).Mass()
+                                                      : ParticleInfo(PID::proton()).Mass();
+    energy = otherMass*otherMass; // Constant::mN*Constant::mN;
     for(auto p : mom) energy += p*p;
     std::size_t idxDiff = SIZE_MAX;
     double xsecDiff = 0;

@@ -252,7 +252,7 @@ double GeantInteractions::CrossSection(const Particle& particle1,
                                        const Particle& particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    FourVector p1Lab = particle1.Momentum(); //, p2Lab = particle2.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
     // Generate outgoing momentum
     const double pcm = p1CM.Vec3().Magnitude();
@@ -265,8 +265,10 @@ double GeantInteractions::CrossSection(const Particle& particle1,
         }
     } catch (std::domain_error &e) {
         spdlog::debug("Using Nasa Interaction");
-        double s = (p1Lab+p2Lab).M2();
-        double plab = sqrt(pow(s, 2)/(4*pow(Constant::mN, 2)) - s);
+        // double s = (p1Lab+p2Lab).M2();
+        double s = (particle1.Momentum()+particle2.Momentum()).M2();
+        double smin = pow(particle1.Mass() + particle2.Mass(), 2);
+        double plab = sqrt(pow(s, 2)/smin - s);
         return Interactions::CrossSectionLab(samePID, plab);
     }
 }
@@ -298,7 +300,8 @@ double NasaInteractions::CrossSection(const Particle& particle1,
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
     double s = (p1Lab+p2Lab).M2();
-    double plab = sqrt(pow(s,2)/(4.0*pow(Constant::mN, 2))-s);
+    double smin = pow(particle1.Mass() + particle2.Mass(), 2);
+    double plab = sqrt(pow(s,2)/smin-s);
     return CrossSectionLab(samePID,plab); 
 }
 
