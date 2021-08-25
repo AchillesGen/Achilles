@@ -14,6 +14,8 @@
 #include "nuchic/Interactions.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Event.hh"
+#include "nuchic/Potential.hh"
+
 
 using namespace nuchic;
 
@@ -87,7 +89,27 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         idxSame = Random::Instance().Pick(index_same);
         particles[idxSame].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+	double k1=kickedPart.Momentum().Vec3().Magnitude();
+        double k2=particles[idxSame].Momentum().Vec3().Magnitude();
+//        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k1, position).rvector;
+        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->operator()(k1, position).rvector;
+	std::cout << "k1" << k1 << "info"<< kickedPart.Info().Mass() << std::endl;
+	
+	std::cout << "arg1" << arg1 << std::endl;
+	
+//        auto arg2=k2/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k2, position).rvector;
+        auto arg2=k2/ParticleInfo(kickedPart.ID()).Mass() + localPotential->operator()(k2, position).rvector;
+
+	double k12=sqrt(1/2*(pow(k1,2)+pow(k2,2)));
+//	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->derivative_p(k12, position).rvector;
+	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->operator()(k12, position).rvector;
+	double m1st= k1/arg1;
+	double m2st= k2/arg2;
+	double m12st= k12/arg12;
+	double fact= abs(k1-k2)/ParticleInfo(kickedPart.ID()).Mass()/abs(k1/m1st-k2/m2st)*m12st/ParticleInfo(kickedPart.ID()).Mass();	
+
         xsecSame = GetXSec(kickedPart, particles[idxSame]);
+	xsecSame = xsecSame * fact; 
     }
 
     // mom = localNucleus -> GenerateMomentum(position);
@@ -101,8 +123,30 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         idxDiff = Random::Instance().Pick(index_diff);
         particles[idxDiff].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+
+	double k1=kickedPart.Momentum().Vec3().Magnitude();
+        double k2=particles[idxDiff].Momentum().Vec3().Magnitude();
+//        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k1, position).rvector;
+        //auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + 
+	auto arg1= localPotential->operator()(k1, position).rvector;
+	//std::cout << "arg1" << arg1 << std::endl;
+	std::cout << "k1" << k1 << "info"<< kickedPart.Info().Mass() << std::endl;
+	
+//        auto arg2=k2/otherMass + localPotential->derivative_p(k2, position).rvector;
+        auto arg2=k2/otherMass + localPotential-> operator()(k2, position).rvector;
+
+	double k12=sqrt(1/2*(pow(k1,2)+pow(k2,2)));
+//	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->derivative_p(k12, position).rvector;
+	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->operator()(k12, position).rvector;
+	double m1st= k1/arg1;
+	double m2st= k2/arg2;
+	double m12st= k12/arg12;
+	double fact= abs(k1-k2)/ParticleInfo(kickedPart.ID()).Mass()/abs(k1/m1st-k2/m2st)*m12st/ParticleInfo(kickedPart.ID()).Mass();	
         xsecDiff = GetXSec(kickedPart, particles[idxDiff]);
+	xsecDiff = xsecDiff * fact;
+	
     }
+    //throw;
 
     double rhoSame=0.0;
     double rhoDiff=0.0;
@@ -202,6 +246,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
 
 void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
+    localPotential= std::make_shared<nuchic::WiringaPotential>(nucleus);    
     Particles particles = nucleus -> Nucleons();
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
@@ -309,6 +354,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
                                  const std::size_t& maxSteps) {
     localNucleus = nucleus;
+    localPotential= std::make_shared<nuchic::WiringaPotential>(nucleus);    
     Particles particles = nucleus -> Nucleons();
 
     auto idx = kickedIdxs[0];

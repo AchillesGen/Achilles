@@ -107,24 +107,27 @@ class WiringaPotential : public Potential {
         PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
             const autodiff::dual rho = m_nucleus -> Rho(static_cast<double>(radius));
             const autodiff::dual rho_ratio = rho/m_rho0;
-            const autodiff::dual alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
-            const autodiff::dual beta = -116*rho_ratio;
-            const autodiff::dual lambda = 3.29 - 0.373*rho_ratio;
+            //const autodiff::dual alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
+            const autodiff::dual beta = -116*rho_ratio /plab;
+            //const autodiff::dual lambda = (3.29 - 0.373*rho_ratio)*nuchic::Constant::HBARC;
 
             PotentialVals<autodiff::dual> results{};
-            results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
+            //results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
+	    results.rvector = -2 * beta * plab;// * pow(lambda,2) / pow(pow(lambda,2) + pow(plab,2),2);
             return results;
         }
 #else
         PotentialVals<double> operator()(const double &plab, const double &radius) const override {
             const double rho = m_nucleus -> Rho(radius);
             const double rho_ratio = rho/m_rho0;
-            const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
-            const double beta = -116*rho_ratio;
-            const double lambda = (3.29 - 0.373*rho_ratio)*nuchic::Constant::HBARC;
+            //const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
+            const double beta = -116*rho_ratio /plab;
+	    std::cout << "rho" << rho << " "<< radius << std::endl;
+            //const double lambda = (3.29 - 0.373*rho_ratio)*nuchic::Constant::HBARC;
 
             PotentialVals<double> results{};
-            results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
+            //results.rvector = alpha + beta/(1+pow(plab/lambda, 2));
+	    results.rvector = -2 * beta * plab;// * pow(lambda,2) / pow(pow(lambda,2) + pow(plab,2),2);
             return results;
         }
 #endif
