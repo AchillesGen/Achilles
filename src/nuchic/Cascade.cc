@@ -16,7 +16,6 @@
 #include "nuchic/Event.hh"
 #include "nuchic/Potential.hh"
 
-
 using namespace nuchic;
 
 Cascade::Cascade(std::unique_ptr<Interactions> interactions,
@@ -79,9 +78,11 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     if(index_diff.size()==0 && index_same.size()==0) return SIZE_MAX;
 
     double position = kickedPart.Position().Magnitude();
+    auto p1 = kickedPart.Momentum();
+    double mass = kickedPart.Info().Mass();
 
     auto mom = localNucleus -> GenerateMomentum(position);
-    double energy = pow(ParticleInfo(kickedPart.ID()).Mass(), 2); // Constant::mN*Constant::mN;
+    double energy = pow(kickedPart.Info().Mass(), 2);
     for(auto p : mom) energy += p*p;
     std::size_t idxSame = SIZE_MAX;
     double xsecSame = 0;
@@ -89,33 +90,16 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         idxSame = Random::Instance().Pick(index_same);
         particles[idxSame].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
-	double k1=kickedPart.Momentum().Vec3().Magnitude();
-        double k2=particles[idxSame].Momentum().Vec3().Magnitude();
-//        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k1, position).rvector;
-        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->operator()(k1, position).rvector;
-	std::cout << "k1" << k1 << "info"<< kickedPart.Info().Mass() << std::endl;
-	
-	std::cout << "arg1" << arg1 << std::endl;
-	
-//        auto arg2=k2/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k2, position).rvector;
-        auto arg2=k2/ParticleInfo(kickedPart.ID()).Mass() + localPotential->operator()(k2, position).rvector;
 
-	double k12=sqrt(1/2*(pow(k1,2)+pow(k2,2)));
-//	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->derivative_p(k12, position).rvector;
-	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->operator()(k12, position).rvector;
-	double m1st= k1/arg1;
-	double m2st= k2/arg2;
-	double m12st= k12/arg12;
-	double fact= abs(k1-k2)/ParticleInfo(kickedPart.ID()).Mass()/abs(k1/m1st-k2/m2st)*m12st/ParticleInfo(kickedPart.ID()).Mass();	
+        auto p2 = particles[idxSame].Momentum();
+        double fact = localPotential -> InMediumCorrectionNonRel(p1, p2, mass, position);
 
-        xsecSame = GetXSec(kickedPart, particles[idxSame]);
-	xsecSame = xsecSame * fact; 
+        xsecSame = GetXSec(kickedPart, particles[idxSame])*fact;
     }
 
-    // mom = localNucleus -> GenerateMomentum(position);
     auto otherMass = kickedPart.ID() == PID::proton() ? ParticleInfo(PID::neutron()).Mass()
                                                       : ParticleInfo(PID::proton()).Mass();
-    energy = otherMass*otherMass; // Constant::mN*Constant::mN;
+    energy = otherMass*otherMass;
     for(auto p : mom) energy += p*p;
     std::size_t idxDiff = SIZE_MAX;
     double xsecDiff = 0;
@@ -124,35 +108,18 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         particles[idxDiff].SetMomentum(
             FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
 
-	double k1=kickedPart.Momentum().Vec3().Magnitude();
-        double k2=particles[idxDiff].Momentum().Vec3().Magnitude();
-//        auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + localPotential->derivative_p(k1, position).rvector;
-        //auto arg1=k1/ParticleInfo(kickedPart.ID()).Mass() + 
-	auto arg1= localPotential->operator()(k1, position).rvector;
-	//std::cout << "arg1" << arg1 << std::endl;
-	std::cout << "k1" << k1 << "info"<< kickedPart.Info().Mass() << std::endl;
-	
-//        auto arg2=k2/otherMass + localPotential->derivative_p(k2, position).rvector;
-        auto arg2=k2/otherMass + localPotential-> operator()(k2, position).rvector;
+        auto p2 = particles[idxSame].Momentum();
+        double fact = localPotential -> InMediumCorrectionNonRel(p1, p2, mass, position);
 
-	double k12=sqrt(1/2*(pow(k1,2)+pow(k2,2)));
-//	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->derivative_p(k12, position).rvector;
-	double arg12=k12/ParticleInfo(kickedPart.ID()).Mass()+localPotential->operator()(k12, position).rvector;
-	double m1st= k1/arg1;
-	double m2st= k2/arg2;
-	double m12st= k12/arg12;
-	double fact= abs(k1-k2)/ParticleInfo(kickedPart.ID()).Mass()/abs(k1/m1st-k2/m2st)*m12st/ParticleInfo(kickedPart.ID()).Mass();	
-        xsecDiff = GetXSec(kickedPart, particles[idxDiff]);
-	xsecDiff = xsecDiff * fact;
-	
+        xsecDiff = GetXSec(kickedPart, particles[idxDiff])*fact;
     }
-    //throw;
 
     double rhoSame=0.0;
     double rhoDiff=0.0;
     if(position < localNucleus -> Radius()) {
-         rhoSame = localNucleus -> Rho(position)*2*static_cast<double>(index_same.size())/static_cast<double>(particles.size());
-         rhoDiff = localNucleus -> Rho(position)*2*static_cast<double>(index_diff.size())/static_cast<double>(particles.size());
+        //TODO: Adjust below to handle non-isosymmetric nuclei
+        rhoSame = localNucleus -> Rho(position)*2*static_cast<double>(index_same.size())/static_cast<double>(particles.size());
+        rhoDiff = localNucleus -> Rho(position)*2*static_cast<double>(index_diff.size())/static_cast<double>(particles.size());
     }
     if(rhoSame <= 0.0 && rhoDiff <=0.0) return SIZE_MAX;
     double lambda_tilde = 1.0 / (xsecSame / 10 * rhoSame + xsecDiff / 10 * rhoDiff);
@@ -246,7 +213,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
 
 void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
-    localPotential= std::make_shared<nuchic::WiringaPotential>(nucleus);    
+    localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
     Particles particles = nucleus -> Nucleons();
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
@@ -354,7 +321,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
                                  const std::size_t& maxSteps) {
     localNucleus = nucleus;
-    localPotential= std::make_shared<nuchic::WiringaPotential>(nucleus);    
+    localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
     Particles particles = nucleus -> Nucleons();
 
     auto idx = kickedIdxs[0];
