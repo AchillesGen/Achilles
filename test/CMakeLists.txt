@@ -20,6 +20,7 @@ add_executable(nuchic-testsuite
     test_event.cc
     test_cuts.cc
     test_mom_solver.cc
+    test_polylog.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

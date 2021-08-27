@@ -16,6 +16,8 @@ target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
 
+add_subdirectory(Integrators)
+
 add_library(physics SHARED
     Cascade.cc
     Interactions.cc
@@ -67,7 +69,14 @@ add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen docopt::docopt)
 
-set_target_properties(nuchic event_gen fortran_interface physics utilities gzstream PROPERTIES # fortran_interface_f
+add_executable(dis RunDIS.cc DeuteronDIS.cc NucleonPDF.cc SpectralFunction.cc)
+target_include_directories(dis PUBLIC ${LHAPDF_INCLUDE_DIR})
+target_link_libraries(dis PRIVATE project_options project_warnings
+                          PUBLIC physics docopt::docopt ${LHAPDF_LIBRARY}
+                                 nuchic_integrators)
+
+set_target_properties(nuchic event_gen fortran_interface physics
+                      utilities gzstream dis nuchic_integrators PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
