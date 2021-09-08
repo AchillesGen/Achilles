@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/SymplecticIntegrator.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
@@ -40,6 +41,13 @@ class Cascade {
             Cylinder
         };
 
+        // In-Medium Effects Enums
+        enum InMedium {
+            None,
+            NonRelativistic,
+            Relativistic
+        };
+
         /// @name Constructor and Destructor
         ///@{
 
@@ -49,7 +57,8 @@ class Cascade {
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
         Cascade() = default;
-        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&, const double& dist=0.03);
+        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&,
+                const InMedium&, bool potential_prob=false, const double& dist=0.03);
         Cascade(Cascade&&) = default;
         Cascade& operator=(Cascade&&) = default;
 
@@ -120,6 +129,9 @@ class Cascade {
         void Escaped(Particles&);
         bool FinalizeMomentum(Particle&, Particle&) noexcept;
         bool PauliBlocking(const Particle&) const noexcept;
+        void AddIntegrator(size_t, const Particle&);
+        void Propagate(size_t, Particle*, double);
+        void UpdateIntegrator(size_t, Particle*);
 
         // Variables
         std::vector<std::size_t> kickedIdxs;
@@ -128,6 +140,9 @@ class Cascade {
         std::function<double(double, double)> probability;
         std::shared_ptr<Nucleus> localNucleus;
         std::shared_ptr<WiringaPotential> localPotential;
+        InMedium m_medium;
+        bool m_potential_prop;
+        std::map<size_t, SymplecticIntegrator> integrators;
 };
 
 }
@@ -138,8 +153,10 @@ struct convert<nuchic::Cascade> {
     static bool decode(const Node &node, nuchic::Cascade &cascade) {
         auto interaction = nuchic::InteractionFactory::Create(node["Interaction"]);
         auto probType = node["Probability"].as<nuchic::Cascade::ProbabilityType>();
+        auto mediumType = node["InMedium"].as<nuchic::Cascade::InMedium>();
+        auto potentialProp = node["PotentialProp"].as<bool>();
         auto distance = node["Step"].as<double>();
-        cascade = nuchic::Cascade(std::move(interaction), probType, distance);
+        cascade = nuchic::Cascade(std::move(interaction), probType, mediumType, potentialProp, distance);
         return true;
     } 
 };
@@ -153,6 +170,21 @@ struct convert<nuchic::Cascade::ProbabilityType> {
             type = nuchic::Cascade::ProbabilityType::Pion;
         else if(node.as<std::string>() == "Cylinder")
             type = nuchic::Cascade::ProbabilityType::Cylinder;
+        else
+            return false;
+        return true;
+    }
+};
+
+template<>
+struct convert<nuchic::Cascade::InMedium> {
+    static bool decode(const Node &node, nuchic::Cascade::InMedium &type) {
+        if(node.as<std::string>() == "None")
+            type = nuchic::Cascade::InMedium::None;
+        else if(node.as<std::string>() == "NonRelativistic")
+            type = nuchic::Cascade::InMedium::NonRelativistic;
+        else if(node.as<std::string>() == "Relativistic")
+            type = nuchic::Cascade::InMedium::Relativistic;
         else
             return false;
         return true;

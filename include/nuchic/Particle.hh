@@ -229,6 +229,8 @@ class Particle {
 
 	    void SpacePropagate(const double&) noexcept; 
 
+        double &DistanceTraveled() { return distanceTraveled; }
+
         /// Returns the distance travelled by the particle
         /// @return double: the distance travelled by the particle
         double GetDistanceTraveled() const {return distanceTraveled;}

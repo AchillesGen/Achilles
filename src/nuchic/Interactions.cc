@@ -2,7 +2,6 @@
 #include <map>
 
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/basic_file_sink.h"
 
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
@@ -264,10 +263,10 @@ double GeantInteractions::CrossSection(const Particle& particle1,
             return m_crossSectionNP(pcm/1_GeV);
         }
     } catch (std::domain_error &e) {
-        spdlog::debug("Using Nasa Interaction");
+        spdlog::trace("Using Nasa Interaction");
         // double s = (p1Lab+p2Lab).M2();
         double s = (particle1.Momentum()+particle2.Momentum()).M2();
-        double smin = pow(particle1.Mass() + particle2.Mass(), 2);
+        double smin = pow(particle1.Mass(), 2) + pow(particle2.Mass(), 2);
         double plab = sqrt(pow(s, 2)/smin - s);
         return Interactions::CrossSectionLab(samePID, plab);
     }
@@ -289,7 +288,7 @@ double GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
         if(samePID) return m_thetaDistPP(energy, ran);
         else return m_thetaDistNP(energy, ran);
     } catch(std::domain_error &e) {
-        spdlog::debug("Using flat angular distribution");
+        spdlog::trace("Using flat angular distribution");
         return acos(2*ran-1);
     }
 }

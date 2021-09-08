@@ -69,7 +69,7 @@ class SymplecticIntegrator {
 };
 
 template<>
-void SymplecticIntegrator::Step<2>(double time_step) {
+inline void SymplecticIntegrator::Step<2>(double time_step) {
     HamiltonianA(time_step/2);
     HamiltonianB(time_step/2);
     Coupling(time_step);

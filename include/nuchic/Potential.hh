@@ -61,6 +61,12 @@ class Potential {
             return stencil5(fr, r, h);
         }
 
+        double Hamiltonian(double p, double q) const {
+            auto vals = this -> operator()(p, q);
+            auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
+            return sqrt(p*p + pow(mass_eff, 2)).real() + vals.rvector;
+        }
+
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
         double Mstar(double p, double m, double r) const {
@@ -75,7 +81,7 @@ class Potential {
             double p12 = sqrt((p1.P2() + p2.P2())/2);
             double m12Star = Mstar(p12, m, r);
 
-            return (p1 + p2).P()/m/(p1/m1Star - p2/m2Star).P()*m12Star/m;
+            return (p1 - p2).P()/m/(p1/m1Star - p2/m2Star).P()*m12Star/m;
         }
 
     private:

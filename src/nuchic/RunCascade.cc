@@ -220,6 +220,7 @@ class CalcTransparency : public RunMode {
     public:
         CalcTransparency(std::shared_ptr<Nucleus> nuc, Cascade cascade) 
             : RunMode(nuc, std::move(cascade)) {}
+
         void GenerateEvent(double kick_mom) override {
             double costheta = Random::Instance().Uniform(-1.0, 1.0); 
             double sintheta = sqrt(1-costheta*costheta);
@@ -254,7 +255,10 @@ class CalcTransparency : public RunMode {
             for(const auto &part : m_nuc -> Nucleons()) {
                 if(part.Status() == ParticleStatus::internal_test) {
                     ninteract++;
-                    break;
+                    distance += part.GetDistanceTraveled();
+                } else if(part.Status() == ParticleStatus::captured) {
+                    ncaptured++;
+                    ninteract++;
                 }
             }
         }
@@ -262,22 +266,27 @@ class CalcTransparency : public RunMode {
             double transparency = 1-ninteract/nevents;
             double error = sqrt(ninteract/nevents/nevents);
             fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+            fmt::print("  Average distance to interact: {}\n", distance/ninteract);
             out << fmt::format("{},{}\n", transparency, error);
         }
         void Reset() override {
             nevents = 0;
             ninteract = 0;
+            ncaptured = 0;
         }
 
     private:
         double nevents{};
         double ninteract{};
+        double distance{};
+        double ncaptured{};
 };
 
 class CalcTransparencyMFP : public RunMode {
     public:
         CalcTransparencyMFP(std::shared_ptr<Nucleus> nuc, Cascade cascade) 
             : RunMode(nuc, std::move(cascade)) {}
+
         void GenerateEvent(double kick_mom) override {
             double costheta = Random::Instance().Uniform(-1.0, 1.0); 
             double sintheta = sqrt(1-costheta*costheta);
@@ -302,7 +311,7 @@ class CalcTransparencyMFP : public RunMode {
                 spdlog::debug("  - {}", part);
             }
 
-            m_cascade.MeanFreePath_NuWro(m_nuc);
+            m_cascade.MeanFreePath_NuWro(m_nuc, 10000);
             nevents++;
 
             spdlog::debug("Final Nucleons:");
@@ -313,7 +322,10 @@ class CalcTransparencyMFP : public RunMode {
             for(const auto &part : m_nuc -> Nucleons()) {
                 if(part.Status() == ParticleStatus::internal_test) {
                     ninteract++;
-                    break;
+                    distance += part.GetDistanceTraveled();
+                } else if(part.Status() == ParticleStatus::captured) {
+                    ncaptured++;
+                    ninteract++;
                 }
             }
         }
@@ -321,17 +333,23 @@ class CalcTransparencyMFP : public RunMode {
             double transparency = 1-ninteract/nevents;
             double error = sqrt(ninteract/nevents/nevents);
             fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+            fmt::print("  Average distance to interact: {}\n", distance/ninteract);
+            fmt::print("  Number of captured nucleons: {}\n", ncaptured);
             out << fmt::format("{},{}\n", transparency, error);
         }
         void Reset() override {
             nevents = 0;
             ninteract = 0;
+            distance = 0;
+            ncaptured = 0;
         }
 
 
     private:
         double nevents{};
         double ninteract{};
+        double distance{};
+        double ncaptured{};
 };
 
 }

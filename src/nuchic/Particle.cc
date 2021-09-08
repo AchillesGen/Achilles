@@ -27,7 +27,6 @@ void Particle::Propagate(const double& time) noexcept {
 
 
 void Particle::SpacePropagate(const double& dist) noexcept {
-
     const double theta = momentum.Theta();
     const double phi = momentum.Phi();
 
