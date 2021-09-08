@@ -88,6 +88,13 @@ if(ENABLE_CASCADE_TEST)
     list(APPEND nuchic_targets nuchic-cascade)
 endif()
 
+if(ENABLE_POTENTIAL_TEST)
+    add_executable(nuchic-potential PotentialMain.cc RunPotential.cc)
+    target_link_libraries(nuchic-potential PRIVATE project_options project_warnings
+                                           PUBLIC physics docopt::docopt)
+    list(APPEND nuchic_targets nuchic-potential)
+endif()
+
 if(ENABLE_GZIP)
 list(APPEND nuchic_targets gzstream)
 endif()
