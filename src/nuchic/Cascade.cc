@@ -267,7 +267,8 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc, double step) {
 
 void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSteps) {
     localNucleus = nucleus;
-    localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
+    //localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
+    localPotential = std::make_shared<nuchic::SchroedingerPotential>(nucleus);    
     Particles particles = nucleus -> Nucleons();
 
     // Initialize symplectic integrators
@@ -384,7 +385,8 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
                                  const std::size_t& maxSteps) {
     localNucleus = nucleus;
-    localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
+    //localPotential = std::make_shared<nuchic::WiringaPotential>(nucleus);
+    localPotential = std::make_shared<nuchic::SchroedingerPotential>(nucleus);    
     Particles particles = nucleus -> Nucleons();
 
     if (kickedIdxs.size() != 1) {

@@ -23,6 +23,8 @@ class Nucleus;
 class Particle;
 class Event;
 class WiringaPotential;
+class SchroedingerPotential;
+
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -139,7 +141,8 @@ class Cascade {
         std::unique_ptr<Interactions> m_interactions;
         std::function<double(double, double)> probability;
         std::shared_ptr<Nucleus> localNucleus;
-        std::shared_ptr<WiringaPotential> localPotential;
+        //std::shared_ptr<WiringaPotential> localPotential;
+        std::shared_ptr<SchroedingerPotential> localPotential;	
         InMedium m_medium;
         bool m_potential_prop;
         std::map<size_t, SymplecticIntegrator> integrators;

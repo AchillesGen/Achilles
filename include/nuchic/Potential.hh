@@ -61,6 +61,12 @@ class Potential {
             return stencil5(fr, r, h);
         }
 
+	PotentialVals<double> derivative2_r(double p, double r, double h=step) const {
+            auto fr = [&](double x){ return this -> operator()(p, x); };
+            return stencil5second(fr, r, h);
+        }
+
+
         double Hamiltonian(double p, double q) const {
             auto vals = this -> operator()(p, q);
             auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
@@ -84,7 +90,7 @@ class Potential {
             return (p1 - p2).P()/m/(p1/m1Star - p2/m2Star).P()*m12Star/m;
         }
 
-    private:
+    protected:
         PotentialVals<double> stencil5(std::function<nuchic::PotentialVals<double>(double)> f, double x, double h) const {
             auto fp2h = f(x + 2*h);
             auto fph = f(x + h);
@@ -99,6 +105,23 @@ class Potential {
             results.iscalar = (-fp2h.iscalar + 8*fph.iscalar - 8*fmh.iscalar + fm2h.iscalar)/den;
             return results;
         }
+	PotentialVals<double> stencil5second(std::function<nuchic::PotentialVals<double>(double)> f, double x, double h) const {
+            auto fp2h = f(x + 2*h);
+            auto fph = f(x + h);
+            auto fm2h = f(x - 2*h);
+            auto fmh = f(x - h);
+            auto f0 = f(x);
+	    
+
+            nuchic::PotentialVals<double> results{};
+            double den = 12*pow(h,2);
+            results.rvector = (-fp2h.rvector + 16*fph.rvector - 30*f0.rvector +16*fmh.rvector - fm2h.rvector)/den;
+            results.ivector = (-fp2h.ivector + 16*fph.ivector - 30*f0.ivector +16*fmh.ivector - fm2h.ivector)/den;
+            results.rscalar = (-fp2h.rscalar + 16*fph.rscalar - 30*f0.rscalar +16*fmh.rscalar - fm2h.rscalar)/den;
+            results.iscalar = (-fp2h.iscalar + 16*fph.iscalar - 30*f0.iscalar +16*fmh.iscalar - fm2h.iscalar)/den;
+            return results;
+        }
+
 
         static constexpr double step = 0.01;
 };
@@ -157,6 +180,8 @@ class WiringaPotential : public Potential {
         double m_rho0;
         Reference m_ref;
 };
+
+
 
 class CooperPotential : public Potential {
     public:
@@ -276,7 +301,7 @@ class CooperPotential : public Potential {
             return {rva1, rsa1, rva2, rsa2};
         }
 
-    private:
+    protected:
         std::shared_ptr<Nucleus> m_nucleus;
         Reference m_ref;
         std::array<double, 22*8> data{};
@@ -348,6 +373,98 @@ class CooperPotential : public Potential {
                      0.000000E+00,  0.000000E+00,  0.000000E+00,  0.000000E+00,
                      0.000000E+00,  0.000000E+00,  0.000000E+00,  0.000000E+00,
                      0.000000E+00,  0.000000E+00,  0.000000E+00,  0.000000E+00};
+};
+
+class SchroedingerPotential: public CooperPotential {
+	    public:
+        SchroedingerPotential(std::shared_ptr<Nucleus> nucleus):CooperPotential(nucleus){} 
+         
+        std::string Name() const override { return "Schroedinger"; }
+
+#ifdef AUTODIFF
+        PotentialVals<autodiff::dual> operator()(const autodiff::dual &plab, const autodiff::dual &radius) const override {
+            return evaluate<autodiff::dual>(plab, radius);
+        }
+#else
+        PotentialVals<double> operator()(const double &plab, const double &radius) const override {
+              auto potential = evaluate<double >(plab, radius);
+	      PotentialVals<double> results{};
+	        const double u1 = potential.rscalar;
+	        const double w1= potential.iscalar;
+		const double u2 = potential.rvector;
+	        const double w2= potential.ivector;
+		auto deriv1 = stencil5([&] (double r){return evaluate <double>(plab,r);}, plab,radius);
+		auto deriv2 = stencil5second([&] (double r){return evaluate <double>(plab,r);}, plab,radius);
+	        const auto ud1 = deriv1.rscalar;
+		const auto udd1 = deriv2.rscalar;
+		const auto wd1 = deriv1.iscalar;
+		const auto wdd1 = deriv2.iscalar;
+		const auto ud2= deriv1.rvector;
+		const auto udd2= deriv2.rvector;
+		const auto wd2 = deriv1.ivector;
+		const auto wdd2 = deriv2.ivector;
+		
+
+		const auto tplab = sqrt(plab*plab + pow(nuchic::Constant::mN, 2)) - nuchic::Constant::mN;
+                const auto aa = static_cast<double>(m_nucleus -> NNucleons());
+                const auto wt = aa * nuchic::Constant::AMU; 
+                const auto ee = tplab;
+                //const auto acb = cbrt(aa);
+                //const auto caa = aa / (aa + 20);
+                //const auto y = caa, y2 = y*y, y3 = y*y2, y4 = y2*y2;
+                constexpr auto wp = 1.0072545*nuchic::Constant::AMU;
+                const auto el = ee+wp;
+                const auto wp2 = wp*wp;
+                const auto wt2 = wt*wt;
+                const auto pcm = sqrt(wt2*(el*el-wp2)/(wp2+wt2+2.0*wt*el));
+		const auto epcm = sqrt(wp2+pcm*pcm);
+                //const auto etcm = sqrt(wt2+pcm*pcm);
+                //const auto sr = epcm + etcm;
+
+		const auto redu = wp; //this corresponds to opt 5 needs more investigation
+
+
+                const auto ac=0; //can be changed if Coulomb corrections are to be included
+                const auto dc=0; //can be changed if Coulomb corrections are to be included
+                const auto ddc=0; //can be changed if Coulomb corrections are to be included
+		const auto couf1=0;		
+		const auto couf2=0;
+
+		const double hc2 = nuchic::Constant::HBARC2;
+		
+		const auto ucr1 = 2*epcm*u2 + 2*wp*u1-pow(u2,2)+pow(w2,2)+pow(u1,2)-pow(w1,2)-2*ac*u2;
+		const auto ucrw= 0.5/redu*ucr1;
+		const auto uci1=2*(epcm*w2+wp*w1-u2*w2+u1*w1-ac*w2);
+                const auto uciw=0.5/redu*uci1;
+
+		// central terms
+                const auto aab=epcm+wp+u1-u2-ac;
+		const auto adr = ud1-ud2 -dc;
+                const auto adi=wd1-wd2;
+                const auto addr=udd1-udd2-ddc;
+                const auto addi=wdd1-wdd2;
+                const auto aai=w1-w2;
+
+		const auto udr1=-1/radius*(adr*aab+adi*aai)/(pow(aab,2)+pow(aai,2));
+                const auto udr2=-0.5*(addr*aab+addi*aai)/(pow(aab,2)+pow(aai,2));
+                const auto udr3=0.75*((pow(adr,2)-pow(adi,2))*(pow(aab,2)-pow(aai,2))+4.0*adr*adi*
+				aab*aai)/(pow((pow(aab,2)-pow(aai,2)),2)+4.0*pow(aab,2)*pow(aai,2));
+		const auto udrw=0.5*hc2/redu*(udr1+udr2+udr3);
+                const auto udi1=-1.0/radius*(adi*aab-adr*aai)/(pow(aab,2)+pow(aai,2));
+                const auto udi2=-0.5*(addi*aab-addr*aai)/(pow(aab,2)+pow(aai,2));
+                const auto udi3=1.5*(adr*adi*(pow(aab,2)-pow(aai,2))-(pow(adr,2)-pow(adi,2))*aab*aai)
+			/(pow((pow(aab,2)-pow(aai,2)),2)+4.0*pow(aab,2)*pow(aai,2));
+                const auto udiw=0.5*hc2/redu*(udi1+udi2+udi3);
+
+                // CALCULATION OF CENTRAL POTENTIAL (WITH DARWIN)
+                const auto uer=ucrw+udrw-couf2*0.5*pow(ac,2)/redu+couf1*(epcm/redu)*ac;
+                const auto uei=uciw+udiw;
+		results.rvector=uer;
+		results.ivector=uei;
+            return results;
+        }
+#endif
+
 };
 
 }
