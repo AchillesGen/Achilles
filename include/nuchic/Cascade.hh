@@ -22,9 +22,6 @@ namespace nuchic {
 class Nucleus;
 class Particle;
 class Event;
-class WiringaPotential;
-class SchroedingerPotential;
-
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -86,7 +83,7 @@ class Cascade {
         ///@param idx: The index of the particle that has been kicked
         void SetKicked(const std::size_t& idx) { kickedIdxs.push_back(idx); }
 
-        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in
         /// the background.
         ///@param nucleus: The nucleus to evolve
         ///@param maxSteps: The maximum steps to take in the cascade
@@ -98,20 +95,20 @@ class Cascade {
         ///@param maxSteps: The maximum steps to take in the cascade
         void Evolve(nuchic::Event*, const std::size_t& maxSteps = cMaxSteps);
 
-        /// Simulate evolution of a kicked particle until it interacts for the 
+        /// Simulate evolution of a kicked particle until it interacts for the
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
         ///@param nucleus: The nucleus to evolve according to the mean free path calculation
         ///@param maxSteps: The maximum steps to take in the particle evolution
         void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
 
-        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in
         /// the background. This is done according to the NuWro algorithm.
         ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
         ///@param maxSteps: The maximum steps to take in the particle evolution
         void NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
 
-        /// Simulate evolution of a kicked particle until it interacts for the 
+        /// Simulate evolution of a kicked particle until it interacts for the
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
         ///@param nucleus: The nucleus to evolve according to the mean free path calculation
@@ -120,7 +117,7 @@ class Cascade {
         ///@}
     private:
         // Functions
-        std::size_t GetInter(Particles&, const Particle&, double& stepDistance); 
+        std::size_t GetInter(Particles&, const Particle&, double& stepDistance);
         void AdaptiveStep(const Particles&, const double&) noexcept;
         bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
@@ -142,7 +139,7 @@ class Cascade {
         std::function<double(double, double)> probability;
         std::shared_ptr<Nucleus> localNucleus;
         //std::shared_ptr<WiringaPotential> localPotential;
-        std::shared_ptr<SchroedingerPotential> localPotential;	
+        std::shared_ptr<SchroedingerPotential> localPotential;
         InMedium m_medium;
         bool m_potential_prop;
         std::map<size_t, SymplecticIntegrator> integrators;
@@ -161,7 +158,7 @@ struct convert<nuchic::Cascade> {
         auto distance = node["Step"].as<double>();
         cascade = nuchic::Cascade(std::move(interaction), probType, mediumType, potentialProp, distance);
         return true;
-    } 
+    }
 };
 
 template<>

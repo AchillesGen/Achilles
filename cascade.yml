@@ -10,16 +10,21 @@ Nucleus:
     Function: configuration
     Config Type: QMC
   FermiGas: Local
+  Potential:
+    Name: Wiringa
+    r0: 0.16
 
 Cascade:
-  Mode: CrossSection
+  Mode: CrossSectionMFP
   Interaction: 
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
   Step: 0.04
   Probability: Gaussian
+  InMedium: None
+  PotentialProp: False
 
-KickMomentum: [100, 1000, 20]
+KickMomentum: [20, 2000, 20]
 NEvents: 100
-SaveAs: pC_xsec
+SaveAs: pC_xsec_mfp
 PID: 2212

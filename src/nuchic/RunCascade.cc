@@ -364,6 +364,12 @@ void nuchic::RunCascade(const std::string &runcard) {
 
     // Load setup
     auto nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
+    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
+    auto potential = nuchic::PotentialFactory::Initialize(potential_name,
+                                                          nucleus,
+                                                          config["Nucleus"]["Potential"]);
+    nucleus -> SetPotential(std::move(potential));
+
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
     auto nevents = config["NEvents"].as<size_t>();
 

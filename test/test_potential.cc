@@ -71,10 +71,11 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto stencilp = potential.derivative_p(plab, r);
         auto stencilr = potential.derivative_r(plab, r);
 
-        CHECK(vals.rvector == Approx(rvector));
-        CHECK(vals.ivector == Approx(ivector));
-        CHECK(vals.rscalar == Approx(rscalar));
-        CHECK(vals.iscalar == Approx(iscalar));
+        // Require to match to 0.01% of Cooper code
+        CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
+        CHECK(vals.ivector == Approx(ivector).epsilon(0.0001));
+        CHECK(vals.rscalar == Approx(rscalar).epsilon(0.0001));
+        CHECK(vals.iscalar == Approx(iscalar).epsilon(0.0001));
 
         CHECK(stencilp.rvector != 0);
         CHECK(stencilr.rvector != 0);
@@ -167,3 +168,30 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 #endif // CATCH_CONFIG_ENABLE_BENCHMARKING
 }
 
+TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
+    constexpr double tplab = 100;
+    constexpr size_t AA = 12;
+
+    SECTION("Values are consistent") {
+        // Results from the fortran code for tplab = 100, r = 0.15, A = 12
+        constexpr double rvector = -27.159583, ivector = -11.257281;
+
+        auto nucleus = std::make_shared<MockNucleus>();
+        REQUIRE_CALL(*nucleus, NNucleons())
+            .LR_RETURN((AA))
+            .TIMES(AT_LEAST(1));
+
+        nuchic::SchroedingerPotential potential(nucleus, 5);
+
+        double r = 0.15;
+        double plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+
+        auto vals = potential(plab, r);
+
+        // Require to match to 0.01% of Cooper code
+        CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
+        CHECK(vals.ivector == Approx(ivector).epsilon(0.0001));
+        CHECK(vals.rscalar == Approx(0));
+        CHECK(vals.iscalar == Approx(0));
+    }
+}

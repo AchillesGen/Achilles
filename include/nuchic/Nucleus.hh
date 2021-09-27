@@ -12,6 +12,7 @@
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
+#include "nuchic/Potential.hh"
 #include "nuchic/Random.hh"
 
 #pragma GCC diagnostic push
@@ -23,6 +24,7 @@ namespace nuchic {
 
 class Particle;
 class ThreeVector;
+class Potential;
 
 using Particles = std::vector<Particle>;
 
@@ -77,18 +79,18 @@ class Nucleus {
         ///@param mom: The Fermi Momentum to be set in MeV
         void SetFermiMomentum(const double& mom) noexcept { fermiMomentum = mom; }
 
-        /// Set the potential energy of the nucleus. This value defaults to:
-        /// @f[
-        ///     \sqrt{m_{N}^2+k_{f}^2} - m_{N} + 8 \text{MeV}.
-        /// @f]
-        ///@param energy: The potential energy to be set in MeV
-        void SetPotential(const double& energy) noexcept { potential = energy; }
-
         /// Set the density function to use for configuration generation
         ///@param density: The function to be use for generating nucleons
         void SetDensity(std::unique_ptr<Density> _density) noexcept {
             density = std::move(_density);
         }
+
+        /// Set the potential function used for propagation in the nucleus
+        ///@param potential: The potential to use
+        void SetPotential(std::unique_ptr<Potential> _potential) noexcept {
+            potential = std::move(_potential);
+        }
+
         ///@}
 
         /// Set the radius of the nucleus in fm
@@ -140,12 +142,8 @@ class Nucleus {
         //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
-	    ///@return double: The potential in MeV	
-        double Potential(const double&) const noexcept;
-
-        /// Return the current potential energy of the nucleus
-        ///@return double: The potential energy in MeV
-        const double& PotentialEnergy() const noexcept { return potential; }
+	    ///@return std::shared_ptr<Potential>: The potential of the nucleus
+        std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
@@ -170,11 +168,6 @@ class Nucleus {
 
         /// @name Functions
         /// @{
-
-        /// Determine if a particle escapes from the nucleus or is recaptured
-        ///@param particle: The particle that is attempting to escape
-        ///@return bool: True if the particle escapes, False if recaptured
-        bool Escape(Particle&) noexcept;
 
         /// Generate a configuration of the nucleus based on the density function
         MOCK void GenerateConfig();
@@ -240,7 +233,7 @@ class Nucleus {
     private:
         Particles nucleons, protons, neutrons;
         std::vector<size_t> protonLoc, neutronLoc;
-        double binding{}, fermiMomentum{}, radius{}, potential{};
+        double binding{}, fermiMomentum{}, radius{};
         FermiGasType fermiGas{FermiGasType::Local};
         std::unique_ptr<Density> density;
         Interp1D rhoInterp;	
@@ -249,6 +242,7 @@ class Nucleus {
         static std::size_t NameToZ(const std::string&);
 
         FourVector m_recoil{};
+        std::shared_ptr<Potential> potential;
 };
 
 }

@@ -47,3 +47,6 @@ Nucleus:
     Function: configuration
     Config Type: QMC
   FermiGas: Local
+  Potential:
+    Name: Wiringa
+    r0: 0.16

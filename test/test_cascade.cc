@@ -18,7 +18,7 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
             .LR_RETURN((particles))
             .TIMES(AT_LEAST(3));
 
-        nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian);
+        nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian, nuchic::Cascade::InMedium::None);
         cascade.Kick(nucleus, {100, 0, 0, 0}, {10, 0});
         CHECK(particles[0].Status() == nuchic::ParticleStatus::propagating);
         CHECK(particles[1].Status() == nuchic::ParticleStatus::background);
@@ -61,7 +61,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         cascade.Evolve(&event);
 
         CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
@@ -80,7 +80,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
@@ -100,7 +100,7 @@ TEST_CASE("Evolve States", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.NuWro(nucleus);
 
@@ -130,7 +130,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(2)
             .LR_RETURN((hadrons));
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus), "MeanFreePath: only one particle should be kicked.");
 
         cascade.SetKicked(0);
@@ -143,7 +143,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(1)
             .LR_RETURN((hadrons));
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         cascade.SetKicked(1);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus),
             "MeanFreePath: kickNuc must have status -3 in order to accumulate DistanceTraveled.");
@@ -157,7 +157,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode);
+        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
         cascade.SetKicked(0);
         CHECK_NOTHROW(cascade.MeanFreePath(nucleus));
         CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);

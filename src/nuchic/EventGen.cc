@@ -24,6 +24,13 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
 
+    // Set potential for the nucleus
+    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
+    auto potential = nuchic::PotentialFactory::Initialize(potential_name,
+                                                          nucleus,
+                                                          config["Nucleus"]["Potential"]);
+    nucleus -> SetPotential(std::move(potential));
+
     // Event counts
     total_events = config["EventGen"]["TotalEvents"].as<size_t>();
     nevents = 0; // Initialize to zero
