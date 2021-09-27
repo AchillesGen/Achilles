@@ -100,7 +100,7 @@ class Beam {
         std::set<PID> BeamIDs() const { return m_pids; }
 
         // Accessors
-        std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }
+        std::shared_ptr<FluxType>& operator[](const PID pid) { return m_beams[pid]; }
         std::shared_ptr<FluxType> at(const PID pid) const { return m_beams.at(pid); }
         std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
 
