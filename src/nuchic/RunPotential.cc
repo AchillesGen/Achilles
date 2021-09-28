@@ -91,7 +91,6 @@ void RunPropagation(std::shared_ptr<nuchic::Potential> potential,
 }
 
 void RunBinding(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &config) {
-
     fmt::print("Potential binding\n");
     std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
     std::ofstream out(filename);

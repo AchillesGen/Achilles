@@ -11,6 +11,7 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/References.hh"
 #include "nuchic/Utilities.hh"
+#include "nuchic/Factory.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -38,6 +39,8 @@ class Potential {
         Potential& operator=(const Potential&) = default;
         Potential& operator=(Potential&&) = default;
 
+        static std::string Name() { return "Potential"; }
+
         virtual ~Potential() = default;
         virtual std::string GetReference() const = 0;
         virtual PotentialVals operator()(const double&, const double&) const = 0;
@@ -57,7 +60,7 @@ class Potential {
             return stencil5second(fr, r, h);
         }
 
-        double Hamiltonian(double p, double q) const {
+        virtual double Hamiltonian(double p, double q) const {
             auto vals = this -> operator()(p, q);
             auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
             return sqrt(p*p + pow(mass_eff, 2)).real() + vals.rvector;
@@ -72,7 +75,7 @@ class Potential {
         }
 
         bool IsCaptured(double r, double mom) const {
-            return mom <= BindingMomentum(r);
+            return Hamiltonian(mom, r) <= Constant::mN;
         }
 
         // NOTE: Calculates in the non-relativistic limit
@@ -101,67 +104,16 @@ class Potential {
         static constexpr double step = 0.01;
 };
 
-class PotentialFactory {
-    using Constructor = std::function<std::unique_ptr<Potential>(std::shared_ptr<Nucleus>, const YAML::Node&)>;
-
-    static std::map<std::string, Constructor>& Registry() {
-        static std::map<std::string, Constructor> registry;
-        return registry;
-    }
-
-    public:
-        static std::unique_ptr<Potential> Initialize(const std::string &name,
-                                                     std::shared_ptr<Nucleus> nuc,
-                                                     const YAML::Node &node) {
-            auto constructor = Registry().at(name);
-            return constructor(nuc, node);
-        }
-
-        template<class Derived>
-        static void Register(std::string name) {
-            if(IsRegistered(name))
-                spdlog::error("{} is already registered!", name);
-            spdlog::trace("Registering {}", name);
-            Registry()[name] = Derived::Construct;
-        }
-        
-        static bool IsRegistered(std::string name) {
-            return Registry().find(name) != Registry().end();
-        }
-
-        static void DisplayPotentials() {
-            fmt::print("Registered potentials:\n");
-            for(const auto &registered : Registry())
-                fmt::print("  - {}\n", registered.first);
-        }
-};
-
-template<class Derived>
-class RegistrablePotential {
-    protected:
-        RegistrablePotential() = default;
-        virtual ~RegistrablePotential() {
-            if(!m_registered)
-                spdlog::error("Error registering potentials");
-        }
-
-        static bool Register() {
-            PotentialFactory::template Register<Derived>(Derived::Name());
-            return true;
-        }
-
-    private:
-        static const bool m_registered;
-};
-template<class Derived>
-const bool RegistrablePotential<Derived>::m_registered = RegistrablePotential<Derived>::Register();
+template<typename Derived>
+using RegistrablePotential = Registrable<Potential, Derived, std::shared_ptr<Nucleus>&, const YAML::Node&>;
+using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus>&, const YAML::Node&>;
 
 class SquareWellPotential : public Potential, RegistrablePotential<SquareWellPotential> {
     public:
         SquareWellPotential(std::shared_ptr<Nucleus> nucleus) : m_nucleus{std::move(nucleus)} {}
         
         PotentialVals operator()(const double&, const double &r) const override;
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
         static std::string Name() { return "SquareWellPotential"; }
         std::string GetReference() const override { return ""; }
 
@@ -189,7 +141,12 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
         }
 
         static std::string Name() { return "Wiringa"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
+
+        double Hamiltonian(double p, double q) const override {
+            auto vals = this -> operator()(p, q);
+            return Constant::mN + p*p/(2*Constant::mN) + vals.rvector;
+        }
 
         std::string GetReference() const override { return m_ref.GetReference(); }
         double Rho0() const { return m_rho0; }
@@ -229,7 +186,7 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
         }
 
         static std::string Name() { return "Cooper"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
 
         std::string GetReference() const override { return m_ref.GetReference(); }
 
@@ -320,9 +277,14 @@ class SchroedingerPotential: public CooperPotential, RegistrablePotential<Schroe
             : CooperPotential(nucleus), m_mode{mode} {}
 
         static std::string Name() { return "Schroedinger"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
 
         PotentialVals operator()(const double &plab, const double &radius) const override;
+
+        double Hamiltonian(double p, double q) const override {
+            auto vals = this -> operator()(p, q);
+            return Constant::mN + p*p/(2*Constant::mN) + vals.rvector;
+        }
 
     private:
         static constexpr double wp = 1.0072545*nuchic::Constant::AMU;

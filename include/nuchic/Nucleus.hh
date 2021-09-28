@@ -24,7 +24,6 @@ namespace nuchic {
 
 class Particle;
 class ThreeVector;
-class Potential;
 
 using Particles = std::vector<Particle>;
 

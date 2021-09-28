@@ -71,7 +71,7 @@ std::array<PotentialVals, 3> Potential::stencil5all(std::function<nuchic::Potent
     return results;
 }
 
-std::unique_ptr<Potential> nuchic::SquareWellPotential::Construct(std::shared_ptr<Nucleus> nuc,
+std::unique_ptr<Potential> nuchic::SquareWellPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                                   const YAML::Node&) {
     return std::make_unique<SquareWellPotential>(nuc); 
 }
@@ -85,7 +85,7 @@ PotentialVals nuchic::SquareWellPotential::operator()(const double&, const doubl
     return result;
 }
 
-std::unique_ptr<Potential> nuchic::WiringaPotential::Construct(std::shared_ptr<Nucleus> nuc,
+std::unique_ptr<Potential> nuchic::WiringaPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                                const YAML::Node &node) {
     double r0 = node["r0"].as<double>();
     return std::make_unique<WiringaPotential>(nuc, r0);
@@ -103,7 +103,7 @@ PotentialVals nuchic::WiringaPotential::operator()(const double &plab, const dou
     return results;
 }
 
-std::unique_ptr<Potential> CooperPotential::Construct(std::shared_ptr<Nucleus> nuc,
+std::unique_ptr<Potential> CooperPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                       const YAML::Node&) {
     return std::make_unique<CooperPotential>(nuc);
 }
@@ -185,7 +185,7 @@ PotentialVals CooperPotential::evaluate(const double &plab, const double &radius
     return {rva1, rsa1, rva2, rsa2};
 }
 
-std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucleus> nuc,
+std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                             const YAML::Node &node) {
     size_t mode = node["Mode"].as<size_t>();
     return std::make_unique<SchroedingerPotential>(nuc, mode);
