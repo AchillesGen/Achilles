@@ -14,6 +14,7 @@ using namespace H5;
 using namespace nuchic;
 
 REGISTER_INTERACTION(GeantInteractions);
+// REGISTER_INTERACTION(GeantInteractionsDt);
 REGISTER_INTERACTION(NasaInteractions);
 REGISTER_INTERACTION(ConstantInteractions);
 

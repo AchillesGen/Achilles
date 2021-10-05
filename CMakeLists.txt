@@ -37,6 +37,7 @@ option(ENABLE_TESTING "Enable Test Builds" OFF)
 option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
 option(ENABLE_GZIP "Enable compression of event files" ON)
 option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
+option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)

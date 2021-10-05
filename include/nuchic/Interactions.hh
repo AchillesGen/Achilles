@@ -177,6 +177,55 @@ class GeantInteractions : public Interactions {
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
+// class GeantInteractionsDt : public Interactions {
+//     public:
+//         ///@name Constructors and Destructors
+//         ///@{
+// 
+//         /// Initialize GeantInteractionsDt class. This loads data from an input file
+//         ///@param filename: The location of the Geant4 hdf5 data file
+//         GeantInteractionsDt(const YAML::Node&);
+//         GeantInteractionsDt(const GeantInteractionsDt&) = default;
+//         GeantInteractionsDt(GeantInteractionsDt&&) = default;
+//         GeantInteractionsDt& operator=(const GeantInteractionsDt&) = default;
+//         GeantInteractionsDt& operator=(GeantInteractionsDt&&) = default;
+// 
+//         /// Generate a GeantInteractionsDt object. This is used in the InteractionFactory.
+//         ///@param data: The location of the data file to load containing the Geant4 cross-sections
+//         static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+//             return std::make_unique<GeantInteractionsDt>(data);
+//         }
+// 
+//         /// Default Destructor
+//         ~GeantInteractionsDt() override = default;
+//         ///@}
+// 
+//         /// Returns the name of the class, used in the InteractionFactory
+//         ///@return std::string: The name of the class
+//         static std::string GetName() { return "GeantInteractionsDt"; }
+// 
+//         // These functions are defined in the base class
+//         static bool IsRegistered() noexcept { return registered; }
+//         double CrossSection(const Particle&, const Particle&) const override;
+//         ThreeVector MakeMomentum(bool, const double&,
+//                                  const std::array<double, 2>&) const override;
+//     private:
+//         // Functions
+//         double CrossSectionAngle(bool, const double&, const double&) const;
+//         void LoadData(bool, const std::string&);
+// 
+//         // Variables
+//         std::vector<double> m_dt, m_cdf;
+//         std::vector<double> m_pcmPP, m_xsecPP;
+//         std::vector<double> m_pcmNP, m_xsecNP;
+//         Interp1D m_crossSectionPP, m_crossSectionNP;
+//         Interp2D m_tDistPP, m_tDistNP;
+//         static bool registered;
+// };
+
+/// Class for implementing an interaction model based on the Geant4 cross-section data. This
+/// interaction model contains information about the angular distribution of pp, pn, and nn
+/// interactions that occur during the intranuclear cascade.
 class ConstantInteractions : public Interactions {
     public:
         ///@name Constructors and Destructors
