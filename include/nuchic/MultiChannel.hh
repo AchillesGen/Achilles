@@ -16,16 +16,16 @@ struct MultiChannelSummary {
 
 struct MultiChannelParams {
     size_t ncalls{ncalls_default}, niterations{nint_default};
-    double atol{atol_default}, rtol{rtol_default};
+    double rtol{rtol_default};
     size_t nrefine{nrefine_default};
     double beta{beta_default}, min_alpha{min_alpha_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{10000}, nint_default{10};
-    static constexpr double atol_default{1e-4}, rtol_default{1e-4};
-    static constexpr size_t nrefine_default{10};
+    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr double rtol_default{1e-2};
+    static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr size_t nparams = 8;
+    static constexpr size_t nparams = 7;
 };
 
 class MultiChannel {
@@ -117,12 +117,11 @@ void nuchic::MultiChannel::operator()(Integrand<T> &func) {
 
 template<typename T>
 void nuchic::MultiChannel::Optimize(Integrand<T> &func) {
-    double abs_err = lim::max(), rel_err = lim::max();
-    while((abs_err > params.atol || rel_err > params.rtol) || summary.results.size() < params.niterations) {
+    double rel_err = lim::max();
+    while((rel_err > params.rtol) || summary.results.size() < params.niterations) {
         (*this)(func);
         StatsData current = summary.sum_results;
-        abs_err = current.Error();
-        rel_err = abs_err / std::abs(current.Mean());
+        rel_err = current.Error() / std::abs(current.Mean());
 
         PrintIteration();
         if(++params.iteration == params.nrefine) RefineChannels(func);
@@ -178,7 +177,6 @@ struct convert<nuchic::MultiChannelParams> {
 
         node["NCalls"] = rhs.ncalls;
         node["NIterations"] = rhs.niterations;
-        node["atol"] = rhs.atol;
         node["rtol"] = rhs.rtol;
         node["nrefine"] = rhs.nrefine;
         node["beta"] = rhs.beta;
@@ -193,7 +191,6 @@ struct convert<nuchic::MultiChannelParams> {
 
         rhs.ncalls = node["NCalls"].as<size_t>();
         rhs.niterations = node["NIterations"].as<size_t>();
-        rhs.atol = node["atol"].as<double>();
         rhs.rtol = node["rtol"].as<double>();
         rhs.nrefine = node["nrefine"].as<size_t>();
         rhs.beta = node["beta"].as<double>();

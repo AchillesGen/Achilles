@@ -2,6 +2,7 @@
 #define LEPTONIC_MAPPER_HH
 
 #include "nuchic/Mapper.hh"
+#include "nuchic/PhaseSpaceFactory.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
@@ -19,16 +20,34 @@ class FinalStateMapper : public Mapper<FourVector> {
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override = 0;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override = 0;
         size_t NDims() const override { return 3*nout - 4; }
+        YAML::Node ToYAML() const override = 0;
+        static std::string Name() { return "Final State"; }
 
     private:
         size_t nout;
 };
 
-class TwoBodyMapper : public FinalStateMapper {
+class TwoBodyMapper : public FinalStateMapper,
+                             RegistrablePS<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
     public:
-        TwoBodyMapper(double _s2, double _s3) : FinalStateMapper(2), s2{std::move(_s2)}, s3{std::move(_s3)} {}
+        TwoBodyMapper(const std::vector<double> &m) : FinalStateMapper(2), s2{m[0]}, s3{m[1]} {}
+        static std::string Name() { return "TwoBody"; }
+        static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
+            if(m.size() != 2) {
+                auto msg = fmt::format("Incorrect number of masses. Expected 2. Got {}", m.size());
+                throw std::runtime_error(msg);
+            }
+            return std::make_unique<TwoBodyMapper>(m);
+        }
+
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        YAML::Node ToYAML() const override {
+            YAML::Node result;
+            result["Name"] = Name();
+            result["Masses"] = std::vector<double>{s2, s3};
+            return result;
+        }
 
     private:
         const double s2, s3;
@@ -44,6 +63,13 @@ class SherpaMapper : public FinalStateMapper {
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
         // size_t NDims() const override { return sherpa_mapper -> NDims(); }
+        YAML::Node ToYAML() const override {
+            YAML::Node result;
+            result["Name"] = "SherpaMapper";
+            result["Sherpa"] = sherpa_mapper -> ToYAML();
+            result["Dim"] = NDims();
+            return result;
+        }
 
     private:
         Mapper_ptr<ATOOLS::Vec4D> sherpa_mapper;

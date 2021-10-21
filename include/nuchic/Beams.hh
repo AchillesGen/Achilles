@@ -104,6 +104,8 @@ class Beam {
         std::shared_ptr<FluxType> at(const PID pid) const { return m_beams.at(pid); }
         std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
 
+        friend YAML::convert<Beam>;
+
     private:
         int n_vars;
         std::set<PID> m_pids;
@@ -116,15 +118,14 @@ namespace YAML {
 
 template<>
 struct convert<std::shared_ptr<nuchic::FluxType>> {
-    // FIXME: Do we need to be able to encode the beams?? If so we need to figure out
-    //        how best to do it.
-    // static Node encode(const std::unique_ptr<nuchic::FluxType> &rhs) {
-    //     Node node;
-    //     node["Beam Type"] = "Monochromatic";
-    //     node["Beam Energy"] = rhs.m_energy;
+    // FIXME: How to encode a generic flux
+    static Node encode(const std::shared_ptr<nuchic::FluxType> &rhs) {
+        Node node;
+        node["Type"] = "Monochromatic";
+        node["Energy"] = rhs->Flux({}).E();
 
-    //     return node;
-    // }
+        return node;
+    }
 
     static bool decode(const Node &node, std::shared_ptr<nuchic::FluxType> &rhs) {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
@@ -146,9 +147,18 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
 template<>
 struct convert<nuchic::Beam> {
     // TODO: Implement encoding
-    // static Node encode(const nuchic::Beam) {
-    //     throw std::logic_error("Not implemented yet!");
-    // } 
+    static Node encode(const nuchic::Beam &rhs) {
+        Node node;
+
+        for(const auto &beam : rhs.m_beams) {
+            Node subnode;
+            subnode["Beam"]["PID"] = static_cast<int>(beam.first);
+            subnode["Beam"]["Beam Params"] = beam.second;
+            node.push_back(subnode);
+        }
+
+        return node;
+    } 
 
     static bool decode(const Node &node, nuchic::Beam &rhs) {
         nuchic::Beam::BeamMap beams; 

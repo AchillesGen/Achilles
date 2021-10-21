@@ -65,7 +65,8 @@ class AdaptiveMap2 {
     public:
         AdaptiveMap2() = default;
         AdaptiveMap2(size_t dims, size_t bins) 
-            : m_hist(dims * (bins+1)), m_dims(std::move(dims)), m_bins(std::move(bins)) {
+            : m_dims(std::move(dims)), m_bins(std::move(bins)) {
+                m_hist.resize(dims * (bins+1));
                 for(size_t i = 0; i < m_bins + 1; ++i) {
                     m_hist[i] = static_cast<double>(i)/static_cast<double>(bins);
                 }

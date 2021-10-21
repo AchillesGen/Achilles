@@ -5,6 +5,7 @@
 #include <iostream>
 #include "nuchic/Mapper.hh"
 #include "nuchic/RunModes.hh"
+#include "nuchic/Beams.hh"
 
 namespace YAML {
     class Node;
@@ -22,6 +23,12 @@ class QuasielasticTestMapper : public Mapper<FourVector> {
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
         size_t NDims() const override { return nvars; }
+        YAML::Node ToYAML() const override {
+            YAML::Node result;
+            result["Name"] = "QuasielasticTest";
+            result["Beam"] = *m_beam;
+            return result;
+        }
 
     private:
         RunMode mode;

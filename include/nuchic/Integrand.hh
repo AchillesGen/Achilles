@@ -2,6 +2,8 @@
 #define INTEGRAND_HH
 
 #include "nuchic/Mapper.hh"
+#include "nuchic/PhaseSpaceBuilder.hh"
+#include "nuchic/Beams.hh"
 #include "nuchic/Vegas.hh"
 
 namespace nuchic {
@@ -100,15 +102,26 @@ struct convert<nuchic::Channel<T>> {
     static Node encode(const nuchic::Channel<T> &rhs) {
         Node node;
         node["Integrator"] = rhs.integrator;
-        // TODO: Implement code to save the mapper state and type
-        node["Mapper"] = 0;
+        node["Mapper"] = rhs.mapping -> ToYAML();
         return node;
     }
 
     static bool decode(const Node &node, nuchic::Channel<T> &rhs) {
         if(node.size() != 2) return false;
         rhs.integrator = node["Integrator"].as<nuchic::Vegas2>();
-        //TODO: Implement mapper factory to load from saved state
+        // FIXME: Clean this up!
+        auto mapNode = node["Mapper"];
+        if(mapNode["Name"].as<std::string>() == "PSMapper") {
+            auto beam = std::make_shared<nuchic::Beam>(mapNode["BeamMapper"]["Beam"].as<nuchic::Beam>());
+            if(mapNode["FSMapper"]["Name"].as<std::string>() == "SherpaMapper") {
+                auto channel_id = mapNode["FSMapper"]["Sherpa"]["Name"].as<std::string>();
+                auto masses = mapNode["FSMapper"]["Sherpa"]["Masses"].as<std::vector<double>>();
+                rhs.mapping = nuchic::PSBuilder(mapNode["nlep"].as<size_t>(), mapNode["nhad"].as<size_t>())
+                                               .Beam(beam, 1)
+                                               .Hadron(mapNode["HadronMapper"]["Name"].as<std::string>())
+                                               .SherpaFinalState(channel_id, masses).build();
+            }
+        }
         return true;
     }
 };
