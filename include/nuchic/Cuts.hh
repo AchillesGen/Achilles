@@ -132,7 +132,7 @@ class CutFactory {
 
         template<class Derived>
         static void Register(std::string name) {
-            if(Registry().find(name) != Registry().end())
+            if(IsRegistered(name))
                 spdlog::error("{} is already registered!", name);
             spdlog::trace("Registering {} Cut", name);
             Registry()[name] = Derived::Construct;
@@ -143,8 +143,8 @@ class CutFactory {
         }
 
         static void DisplayCuts() {
-            fmt::print("Registered cuts:\n");
-            for(auto &registered : Registry()) 
+            fmt::print("Registered {} cuts:\n", Base::Name());
+            for(const auto &registered : Registry()) 
                 fmt::print("  - {}\n", registered.first);
         }
 };

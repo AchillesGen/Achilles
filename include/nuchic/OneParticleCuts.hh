@@ -11,6 +11,7 @@ class OneParticleCut : public CutBase<double> {
         virtual bool MakeCut(const FourVector&) const = 0;
         OneParticleCut(const YAML::Node &node) : CutBase(node) {}
         virtual ~OneParticleCut() = default;
+        static std::string Name() { return "Single Particle"; }
 };
 
 #define ONE_PARTICLE_CUT(CutName) \

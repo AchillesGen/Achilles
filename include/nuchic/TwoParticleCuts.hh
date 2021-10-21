@@ -11,6 +11,7 @@ class TwoParticleCut : public CutBase<double> {
         virtual bool MakeCut(const FourVector&, const FourVector&) const = 0;
         TwoParticleCut(const YAML::Node &node) : CutBase(node) {}
         virtual ~TwoParticleCut() = default;
+        static std::string Name() { return "Two Particle"; }
 };
 
 #define TWO_PARTICLE_CUT(CutName) \

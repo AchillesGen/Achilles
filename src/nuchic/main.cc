@@ -37,6 +37,7 @@ static const std::string USAGE =
 R"(
     Usage:
       nuchic [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
+      nuchic --display-cuts
       nuchic (-h | --help)
       nuchic --version
 
@@ -45,6 +46,7 @@ R"(
       -h --help                             Show this screen.
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
+      --display-cuts                        Display the available cuts
 )";
 
 void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
@@ -60,6 +62,12 @@ int main(int argc, char *argv[]) {
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
                                                     fmt::format("Nuchic {}", NUCHIC_VERSION)); //version string
+
+    if(args["--display-cuts"].asBool()) {
+        nuchic::CutFactory<nuchic::OneParticleCut>::DisplayCuts();
+        nuchic::CutFactory<nuchic::TwoParticleCut>::DisplayCuts();
+        return 0;
+    }
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
@@ -80,7 +88,6 @@ int main(int argc, char *argv[]) {
     nuchic::SherpaMEs sherpa;
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
-    for (auto arg: shargs) std::cout<<arg<<std::endl;
     sherpa.Initialize(shargs);
 
     GenerateEvents(runcard,&sherpa);
