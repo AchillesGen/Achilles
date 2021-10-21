@@ -12,8 +12,8 @@ class FormFactor {
     public:
         struct Values {
             double Gep, Gen, Gmp, Gmn; 
-            double F1s, F2s, F1v, F2v;
-            double Ges, Gms, Gev, Gmv;
+            double F1p, F2p, F1n, F2n;
+            double FA, FAs;
         };
 
         FormFactor() = default;
@@ -28,7 +28,7 @@ class FormFactor {
         static std::unique_ptr<FormFactor> Build(const YAML::Node&);
 
     protected:
-        void Fill(double, Values*) const;
+        void Fill(double, Values&) const;
 };
 
 class Dipole : public FormFactor {
@@ -38,7 +38,7 @@ class Dipole : public FormFactor {
         Values operator()(double) const override;
 
     private:
-        double lambda, MA, muP, muN;
+        double lambda, MA, muP, muN, gan1, gans;
 };
 
 class Kelly : public FormFactor {
@@ -48,7 +48,7 @@ class Kelly : public FormFactor {
         Values operator()(double) const override;
 
     private:
-        double lambda, MA, muP, muN;
+        double lambdasq, MA, muP, muN, gan1, gans;
         std::array<double, 4> termsEp{};
         std::array<double, 2> termsEn{};
         std::array<double, 4> termsMp{};
@@ -66,7 +66,7 @@ class BBBA : public FormFactor {
         Values operator()(double) const override;
 
     private:
-        double muP, muN;
+        double muP, muN, MA, gan1, gans;
         std::array<double, 4> numEp{}, denEp{};
         std::array<double, 4> numEn{}, denEn{};
         std::array<double, 4> numMp{}, denMp{};
@@ -100,7 +100,7 @@ class ArringtonHill : public FormFactor {
         Values operator()(double) const override;
 
     private:
-        double muP, muN, tcut, t0;
+        double muP, muN, tcut, t0, MA, gan1, gans;
         std::array<double, 13> epParams{}, enParams{}, mpParams{}, mnParams{};
 
         double ZExpand(std::array<double, 13> A, double z) const {

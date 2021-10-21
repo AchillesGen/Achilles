@@ -22,15 +22,11 @@ std::unique_ptr<nuchic::FormFactor> nuchic::FormFactor::Build(const YAML::Node &
     return result;
 }
 
-void nuchic::FormFactor::Fill(double tau, Values *result) const {
-    result -> Ges = result -> Gep + result -> Gen;
-    result -> Gev = result -> Gep - result -> Gen;
-    result -> Gms = result -> Gmp + result -> Gmn;
-    result -> Gmv = result -> Gmp - result -> Gmn;
-    result -> F1s = (result -> Ges + tau*result -> Gms)/(1+tau);
-    result -> F1v = (result -> Gev + tau*result -> Gmv)/(1+tau);
-    result -> F2s = (result -> Gms + tau*result -> Ges)/(1+tau);
-    result -> F2v = (result -> Gmv + tau*result -> Gev)/(1+tau);
+void nuchic::FormFactor::Fill(double tau, Values &result) const {
+    result.F1p = (result.Gep + tau*result.Gmp)/(1+tau);
+    result.F1n = (result.Gen + tau*result.Gmn)/(1+tau);
+    result.F2p = (result.Gmp - tau*result.Gep)/(1+tau);
+    result.F2n = (result.Gmn - tau*result.Gen)/(1+tau);
 }
 
 nuchic::Dipole::Dipole(const YAML::Node &config) {
@@ -38,6 +34,8 @@ nuchic::Dipole::Dipole(const YAML::Node &config) {
     MA = config["MA"].as<double>();
     muP = config["Mu Proton"].as<double>();
     muN = config["Mu Neutron"].as<double>();
+    gan1 = config["gan1"].as<double>();
+    gans = config["gans"].as<double>();
 }
 
 // Q2 in GeV^2
@@ -48,14 +46,16 @@ nuchic::FormFactor::Values nuchic::Dipole::operator()(double Q2) const {
     result.Gen = -muN*Q2*result.Gep/(1+Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
     result.Gmp = muP*result.Gep;
     result.Gmp = muN*result.Gep;
+    result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
+    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 
     double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
-    Fill(tau, &result);
+    Fill(tau, result);
     return result;
 }
 
 nuchic::Kelly::Kelly(const YAML::Node &config) {
-    lambda = config["lambda"].as<double>();
+    lambdasq = config["lambdasq"].as<double>();
     MA = config["MA"].as<double>();
     muP = config["Mu Proton"].as<double>();
     muN = config["Mu Neutron"].as<double>();
@@ -63,6 +63,8 @@ nuchic::Kelly::Kelly(const YAML::Node &config) {
     termsEn = config["Gen Params"].as<std::array<double, 2>>();
     termsMp = config["Gmp Params"].as<std::array<double, 4>>();
     termsMn = config["Gmn Params"].as<std::array<double, 4>>();
+    gan1 = config["gan1"].as<double>();
+    gans = config["gans"].as<double>();
 }
 
 nuchic::FormFactor::Values nuchic::Kelly::operator()(double Q2) const {
@@ -71,17 +73,22 @@ nuchic::FormFactor::Values nuchic::Kelly::operator()(double Q2) const {
     double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
 
     result.Gep = Parameterization(termsEp, tau);
-    result.Gen = 1.0/pow(1+Q2/lambda/lambda, 2)*termsEn[0]*tau/(1 + termsEn[1]*tau);
+    result.Gen = 1.0/pow(1+Q2/lambdasq, 2)*termsEn[0]*tau/(1 + termsEn[1]*tau);
     result.Gmp = muP*Parameterization(termsMp, tau);
     result.Gmn = muN*Parameterization(termsMn, tau);
+    result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
+    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 
-    Fill(tau, &result);
+    Fill(tau, result);
     return result;
 }
 
 nuchic::BBBA::BBBA(const YAML::Node &config) {
     muP = config["Mu Proton"].as<double>();
     muN = config["Mu Neutron"].as<double>();
+    MA = config["MA"].as<double>();
+    gan1 = config["gan1"].as<double>();
+    gans = config["gans"].as<double>();
 
     numEp = config["NumeratorEp Params"].as<std::array<double, 4>>();
     denEp = config["DenominatorEp Params"].as<std::array<double, 4>>();
@@ -102,14 +109,19 @@ nuchic::FormFactor::Values nuchic::BBBA::operator()(double Q2) const {
     result.Gen = Numerator(numEn, tau)/Denominator(denEn, tau);
     result.Gmp = muP*Numerator(numMp, tau)/Denominator(denMp, tau);
     result.Gmn = muN*Numerator(numMn, tau)/Denominator(denMn, tau);
+    result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
+    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 
-    Fill(tau, &result);
+    Fill(tau, result);
     return result;
 }
 
 nuchic::ArringtonHill::ArringtonHill(const YAML::Node &config) {
     muP = config["Mu Proton"].as<double>();
     muN = config["Mu Neutron"].as<double>();
+    MA = config["MA"].as<double>();
+    gan1 = config["gan1"].as<double>();
+    gans = config["gans"].as<double>();
 
     tcut = config["tcut"].as<double>();
     t0 = config["t0"].as<double>();
@@ -131,7 +143,9 @@ nuchic::FormFactor::Values nuchic::ArringtonHill::operator()(double Q2) const {
     result.Gen = ZExpand(enParams, z);
     result.Gmp = ZExpand(mpParams, z);
     result.Gmn = ZExpand(mnParams, z);
+    result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
+    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 
-    Fill(tau, &result);
+    Fill(tau, result);
     return result;
 }

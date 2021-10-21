@@ -16,7 +16,11 @@ using nuchic::QESpectral;
 using nuchic::QEGlobalFermiGas;
 
 nuchic::HardScattering::HardScattering(RunMode mode) 
-    : m_mode{mode} {}
+    : m_mode{mode} {
+    const std::string form_factor_file = "FormFactors.yml";
+    YAML::Node node = YAML::LoadFile(form_factor_file);
+    m_form_factor = FormFactor::Build(node);
+}
 
 int HardScattering::LeptonVariables() const {
     switch(m_mode) {
@@ -70,6 +74,34 @@ nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
     }
 
     return tensor;
+
+
+std::array<std::complex<double>, 3> HardScattering::CouplingsFF(const FormFactor::Values &formFactors,
+                                                                const std::vector<FormFactorInfo> &ffInfo) const {
+    std::array<std::complex<double>, 3> results{};
+
+    for(const auto & ff : ffInfo) {
+        spdlog::trace("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
+        switch(ff.form_factor) {
+            case FormFactorInfo::Type::F1p:
+                results[0] += formFactors.F1p*ff.coupling;
+                break;
+            case FormFactorInfo::Type::F1n:
+                results[0] += formFactors.F1n*ff.coupling;
+                break;
+            case FormFactorInfo::Type::F2p:
+                results[1] += formFactors.F2p*ff.coupling;
+                break;
+            case FormFactorInfo::Type::F2n:
+                results[1] += formFactors.F2n*ff.coupling;
+                break;
+            case FormFactorInfo::Type::FA:
+                results[2] += formFactors.FA*ff.coupling;
+                break;
+        }
+    }
+
+    return results;
 }
 
 void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &event) const {

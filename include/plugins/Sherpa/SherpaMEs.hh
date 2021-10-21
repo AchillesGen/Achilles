@@ -16,6 +16,19 @@ namespace nuchic {
 
 struct Process_Info;
 
+struct FormFactorInfo {
+    enum class Type {
+        F1p,
+        F1n,
+        F2p,
+        F2n,
+        FA
+    };
+
+    Type form_factor;
+    std::complex<double> coupling;
+};
+
 class SherpaMEs {
 private:
 
@@ -40,6 +53,9 @@ public:
   (const std::vector<int> fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;
+
+  std::vector<FormFactorInfo> FormFactors(int, int) const;
+  double Coupling(const std::string&) const;
 
 };// end of class SherpaMEs
 

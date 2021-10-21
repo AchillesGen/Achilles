@@ -13,6 +13,7 @@
 #include "nuchic/HardScatteringEnum.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/RunModes.hh"
+#include "nuchic/FormFactor.hh"
 #include "nuchic/Histogram.hh"
 #include "nuchic/ProcessInfo.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
@@ -79,6 +80,9 @@ class HardScattering {
         void SetSherpa(SherpaMEs *const _sherpa) { p_sherpa = _sherpa; }
         Tensor LeptonicTensor(const std::vector<FourVector>&,
                               const double&) const;
+        std::vector<FormFactorInfo> FormFactors(int npid, int vpid) const {
+            return p_sherpa -> FormFactors(npid, vpid);
+        }
 
         // Test Phasespace
         void SetHist(bool fill) { m_fill = fill; }
@@ -87,6 +91,9 @@ class HardScattering {
     protected:
         // Leptonic and Hadronic Tensor Helper Functions
         size_t NLeptons() const { return m_leptonicProcesses[0].m_ids.size()-2; }
+        FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor -> operator()(q2); }
+        std::array<std::complex<double>, 3> CouplingsFF(const FormFactor::Values&,
+                                                        const std::vector<FormFactorInfo>&) const;
 
         // Phase space factors
         static constexpr int nNucleonTypes = 2;
@@ -97,6 +104,7 @@ class HardScattering {
         SherpaMEs *p_sherpa{nullptr};
         std::vector<nuchic::Process_Info> m_leptonicProcesses{};
         bool m_fill{false};
+        std::unique_ptr<FormFactor> m_form_factor{nullptr};
         Histogram hist{500, 0, 1000, "Test"};
 
         // TODO: Move to the driver class?
