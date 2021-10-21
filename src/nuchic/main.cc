@@ -1,8 +1,11 @@
 #include "nuchic/EventGen.hh"
+#include "nuchic/FinalStateMapper.hh"
+#include "nuchic/HadronicMapper.hh"
 #include "nuchic/Version.hh"
 #include "nuchic/System.hh"
 #include "nuchic/Logging.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/Channels.hh"
 
 #include "docopt.h"
 
@@ -38,6 +41,7 @@ R"(
     Usage:
       nuchic [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
       nuchic --display-cuts
+      nuchic --display-ps
       nuchic (-h | --help)
       nuchic --version
 
@@ -47,6 +51,7 @@ R"(
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
       --display-cuts                        Display the available cuts
+      --display-ps                          Display the available phase spaces
 )";
 
 void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
@@ -66,6 +71,13 @@ int main(int argc, char *argv[]) {
     if(args["--display-cuts"].asBool()) {
         nuchic::CutFactory<nuchic::OneParticleCut>::DisplayCuts();
         nuchic::CutFactory<nuchic::TwoParticleCut>::DisplayCuts();
+        return 0;
+    }
+
+    if(args["--display-ps"].asBool()) {
+        nuchic::PSFactory<nuchic::HadronicBeamMapper, size_t>::DisplayPhaseSpaces();
+        nuchic::PSFactory<nuchic::FinalStateMapper, std::vector<double>>::DisplayPhaseSpaces();
+        nuchic::PSFactory<PHASIC::Channels, std::vector<double>>::DisplayPhaseSpaces();
         return 0;
     }
 

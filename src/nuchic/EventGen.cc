@@ -11,6 +11,7 @@
 #include "nuchic/ProcessInfo.hh"
 
 // TODO: Turn this into a factory to reduce the number of includes
+#include "nuchic/PhaseSpaceBuilder.hh"
 #include "nuchic/BeamMapper.hh"
 #include "nuchic/HadronicMapper.hh"
 #include "nuchic/FinalStateMapper.hh"
@@ -20,6 +21,7 @@
 #include "plugins/Sherpa/Channels3.hh"
 
 #include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/HepMC3/HepMC3EventWriter.hh"
 
 #include "yaml-cpp/yaml.h"
 
@@ -31,28 +33,27 @@ nuchic::Channel<nuchic::FourVector> BuildChannelTest(const YAML::Node &node, std
     return channel;
 }
 
-template<typename T, typename ...Args>
+template<typename T>
 nuchic::Channel<nuchic::FourVector> BuildChannel(size_t nlep, size_t nhad,
-                                                 std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> beam,
-                                                 std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> hadron,
-                                                 Args... args) {
+                                                 std::shared_ptr<nuchic::Beam> beam,
+                                                 const std::vector<double> &masses) {
     nuchic::Channel<nuchic::FourVector> channel;
-    auto finalStateMapper = std::make_unique<T>(std::forward<Args>(args)...);
-    channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
+    channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
+                                                   .Hadron("QESpectral")
+                                                   .FinalState(T::Name(), masses).build();
     nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
     return channel;
 }
 
-template<typename T, typename ...Args>
+template<typename T>
 nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(size_t nlep, size_t nhad,
-                                                       std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> beam,
-                                                       std::shared_ptr<nuchic::Mapper<nuchic::FourVector>> hadron,
-                                                       Args... args) {
+                                                       std::shared_ptr<nuchic::Beam> beam,
+                                                       const std::vector<double> &masses) {
     nuchic::Channel<nuchic::FourVector> channel;
-    auto sherpaMap = std::make_unique<T>(std::forward<Args>(args)...);
-    auto finalStateMapper = std::make_unique<nuchic::SherpaMapper>(nlep+nhad-2, std::move(sherpaMap));
-    channel.mapping = std::make_unique<nuchic::PSMapper>(nlep, nhad, beam, hadron, std::move(finalStateMapper));
+    channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
+                                                   .Hadron("QESpectral")
+                                                   .SherpaFinalState(T::Name(), masses).build();
     nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
     return channel;
@@ -65,18 +66,13 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config["Initialize"]["seed"])
-        seed = config["Initialize"]["seed"].as<unsigned int>();
+        seed = config["Initialize"]["Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
     // Load initial states
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
-
-    // Event counts
-    total_events = config["EventGen"]["TotalEvents"].as<size_t>();
-    nevents = 0; // Initialize to zero
-    max_batch = config["EventGen"]["MaxBatch"].as<size_t>();
 
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
@@ -123,37 +119,26 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         auto beamMapper = std::make_shared<BeamMapper>(1, beam);
         auto hadronMapper = std::make_shared<QESpectralMapper>(0);
         if(scattering -> Processes()[0].m_ids.size() == 4) {
-            // Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beamMapper, hadronMapper,
-            //                                                            0, pow(Constant::mN, 2));
-            // integrand.AddChannel(std::move(channel));
-            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beamMapper, hadronMapper,
-                                                                            0, pow(Constant::mN, 2));
-            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beamMapper, hadronMapper,
-                                                                            0, pow(Constant::mN, 2));
-            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(2, 2, beamMapper, hadronMapper,
-                                                                            0, pow(Constant::mN, 2));
-            integrand.AddChannel(std::move(channel0));
-            integrand.AddChannel(std::move(channel1));
-            integrand.AddChannel(std::move(channel2));
+            std::vector<double> masses{0, pow(Constant::mN, 2)};
+            Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beam, masses);
+            integrand.AddChannel(std::move(channel));
+            // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beam, masses);
+            // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beam, masses);
+            // Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(2, 2, beam, masses);
+            // integrand.AddChannel(std::move(channel0));
+            // integrand.AddChannel(std::move(channel1));
+            // integrand.AddChannel(std::move(channel2));
         } else if(scattering -> Processes()[0].m_ids.size() == 6) {
             spdlog::info("Initializing 2->4");
-            constexpr double s5 = (Constant::mN)*(Constant::mN);
-            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
-            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(4, 2, beamMapper, hadronMapper,
-                                                                            0, 0, 0, s5);
+            std::vector<double> masses{0, 0, 0, pow(Constant::mN, 2)};
+            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(2, 2, beam, masses);
+            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(2, 2, beam, masses);
+            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(2, 2, beam, masses);
+            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(2, 2, beam, masses);
+            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(2, 2, beam, masses);
+            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(2, 2, beam, masses);
+            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(2, 2, beam, masses);
+            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(2, 2, beam, masses);
             integrand.AddChannel(std::move(channel0));
             integrand.AddChannel(std::move(channel1));
             integrand.AddChannel(std::move(channel2));
@@ -171,7 +156,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup Multichannel integrator
     // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 10, 1e8, 5e-2, 1});
+    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 2});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"])
