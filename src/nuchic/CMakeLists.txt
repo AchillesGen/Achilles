@@ -57,7 +57,7 @@ add_library(event_gen SHARED
     EventWriter.cc
 )
 target_link_libraries(event_gen PRIVATE project_options project_warnings
-                                PUBLIC physics mappers fortran_interface)
+                                PUBLIC physics mappers fortran_interface hepmc3)
 
                             # pybind11_add_module(_nuchic MODULE
                             #     # Main file
@@ -85,7 +85,7 @@ add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen sherpa docopt::docopt)
 
-set_target_properties(nuchic event_gen fortran_interface physics cuts utilities gzstream sherpa mappers PROPERTIES # fortran_interface_f
+set_target_properties(nuchic event_gen fortran_interface physics cuts utilities gzstream sherpa mappers hepmc3 PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -93,7 +93,7 @@ set_target_properties(nuchic event_gen fortran_interface physics cuts utilities 
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen fortran_interface physics cuts utilities gzstream spdlog yaml-cpp fmt sherpa mappers #pybind11 fortran_interface_f 
+install(TARGETS nuchic event_gen fortran_interface physics cuts utilities gzstream spdlog yaml-cpp fmt sherpa mappers hepmc3 #pybind11 fortran_interface_f 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
