@@ -39,8 +39,8 @@ void HardScattering::AddProcess(const nuchic::Process_Info &process) {
     m_leptonicProcesses.push_back(process);
 }
 
-nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
-                                              const double &mu2) const {
+nuchic::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> &p,
+                                                  const double &mu2) const {
     std::vector<std::array<double, 4>> mom(p.size());
     auto qVec = p[1];
     for(size_t i = 2; i < p.size()-1; ++i) {
@@ -58,23 +58,24 @@ nuchic::Tensor HardScattering::LeptonicTensor(const std::vector<FourVector> &p,
     std::vector<int> pids;
     for(const auto &pid : m_leptonicProcesses[0].m_ids) {
         pids.emplace_back(pid);
-        spdlog::trace("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
+        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
                       mom[idx][0], mom[idx][1], mom[idx][2], mom[idx][3]); 
         ++idx;
     }
     auto currents = p_sherpa -> Calc(pids, mom, mu2);
 
-    Tensor tensor;
-    for(const auto &current : currents) { 
-        for(size_t i = 0; i < 4; ++i) {
-            for(size_t j = 0; j < 4; ++j) {
-                tensor[4*i+j] += current[i]*std::conj(current[j])/1_GeV/1_GeV;
+    for(auto &current : currents) { 
+        spdlog::trace("Current for {}", current.first);
+        for(size_t i = 0; i < current.second.size(); ++i) {
+            for(size_t j = 0; j < current.second[0].size(); ++j) {
+                current.second[i][j] /= 1_GeV;
+                spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
     }
 
-    return tensor;
-
+    return currents;
+}
 
 std::array<std::complex<double>, 3> HardScattering::CouplingsFF(const FormFactor::Values &formFactors,
                                                                 const std::vector<FormFactorInfo> &ffInfo) const {

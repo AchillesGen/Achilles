@@ -5,14 +5,20 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Event.hh"
+#include "nuchic/FormFactor.hh"
+#include "nuchic/Spinor.hh"
+
+#include <fstream>
 
 extern "C" {
     void InitializeOneBody(const char*, const char*, int, int);
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
-    void HadronicTensorOneBody(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*,
-                                std::complex<double>*, std::complex<double>*);
+    void SetSpinors(nuchic::FourVector*, nuchic::FourVector*, nuchic::FourVector*);
+    void GetSpectral(int, double, double, double&);
+    void HadronicCurrentOneBody(std::complex<double>, std::complex<double>, std::complex<double>,
+                                std::complex<double>*);
     void CleanUp(double**, int*);
 }
 
@@ -39,7 +45,9 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
     spdlog::trace("Finished initializing quasielastic spectral function model");
 }
 
-std::pair<nuchic::Tensor, nuchic::Tensor> nuchic::FQESpectral::HadronicTensor(Event &event) const {
+nuchic::HCurrents nuchic::FQESpectral::HadronicCurrents(Event &event,
+                                                        const FFInfoMap &protonFF,
+                                                        const FFInfoMap &neutronFF) const {
     auto pNucleonIn = event.Momentum().front();
     auto pNucleonOut = event.Momentum().back();
     auto qVec = event.Momentum()[1];
@@ -51,17 +59,88 @@ std::pair<nuchic::Tensor, nuchic::Tensor> nuchic::FQESpectral::HadronicTensor(Ev
     pNucleonIn = pNucleonIn.Rotate(rotMat);
     pNucleonOut = pNucleonOut.Rotate(rotMat);
     pNucleonIn.E() = Constant::mN - pNucleonIn.E();
+    auto ffVals = EvalFormFactor(-qVec.M2()/1.0_GeV/1.0_GeV);
 
-    Tensor result_p{}, result_n{};
-    HadronicTensorOneBody(&qVec, &pNucleonIn, &pNucleonOut, result_p.data(), result_n.data());
+    HCurrents results;
+    double spectralProton = 0, spectralNeutron = 0;
 
-    // Convert from fm^2 to MeV^-2
-    for(size_t i = 0; i < result_p.size(); ++i) {
-        result_p[i] *= pow(Constant::HBARC, 2);
-        result_n[i] *= pow(Constant::HBARC, 2);
+    spdlog::debug("Energy = {}", pNucleonIn.E());
+    GetSpectral(2212, pNucleonIn.E(), pNucleonIn.P(), spectralProton);
+    GetSpectral(2112, pNucleonIn.E(), pNucleonIn.P(), spectralNeutron);
+    spdlog::trace("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
+                  pNucleonIn.E(), pNucleonIn.P(), spectralProton,                  
+                  pNucleonIn.E(), pNucleonIn.P(), spectralNeutron);
+
+    // Setup spinors
+    pNucleonIn.E() = sqrt(pNucleonIn.P2() + Constant::mN2);
+    std::array<Spinor, 2> ubar, u;
+    ubar[0] = UBarSpinor(-1, pNucleonOut);
+    ubar[1] = UBarSpinor(1, pNucleonOut);
+    u[0] = USpinor(-1, -pNucleonIn);
+    u[1] = USpinor(1, -pNucleonIn);
+
+    spdlog::trace("ubar = {}, {}", ubar[0], ubar[1]);
+    spdlog::trace("u = {}, {}", u[0], u[1]);
+
+    // Calculate neutron contributions
+    for(const auto &formFactor : protonFF) {
+        std::vector<std::vector<std::complex<double>>> tmp;
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::debug("f1p = {}, f2p = {}, fa = {}", ffVal[0], ffVal[1], ffVal[2]);
+
+        for(size_t i = 0; i < 2; ++i) {
+            for(size_t j = 0; j < 2; ++j) {
+                std::vector<std::complex<double>> subcur(4);
+                for(size_t mu = 0; mu < 4; ++mu) {
+                    subcur[mu] = ubar[i]*(ffVal[0]*SpinMatrix::GammaMu(mu)
+                                        + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5())*u[j];
+                    double sign = 1;
+                    for(size_t nu = 0; nu < 4; ++nu) {
+                        subcur[mu] += ubar[i]*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN))*u[j];
+                        sign = -1;
+                    }
+                    subcur[mu] *= sqrt(spectralProton/6);
+                }
+                // Correct the Ward identity
+                // subcur[3] = qVec.E()/qVec.P()*subcur[0];
+                tmp.push_back(subcur);
+            }
+        }
+
+        results[0][formFactor.first] = tmp;
+
     }
 
-    return {result_p, result_n};
+    // Calculate neutron contributions
+    for(const auto &formFactor : neutronFF) {
+        std::vector<std::vector<std::complex<double>>> tmp;
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::debug("f1n = {}, f2n = {}, fa = {}", ffVal[0], ffVal[1], ffVal[2]);
+
+        for(size_t i = 0; i < 2; ++i) {
+            for(size_t j = 0; j < 2; ++j) {
+                std::vector<std::complex<double>> subcur(4);
+                for(size_t mu = 0; mu < 4; ++mu) {
+                    subcur[mu] = ubar[i]*(ffVal[0]*SpinMatrix::GammaMu(mu)
+                                        + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5())*u[j];
+                    double sign = 1;
+                    for(size_t nu = 0; nu < 4; ++nu) {
+                        subcur[mu] += ubar[i]*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN))*u[j];
+                        sign = -1;
+                    }
+
+                    subcur[mu] *= sqrt(spectralNeutron/6);
+                }
+                // Correct the Ward identity
+                // subcur[3] = qVec.E()/qVec.P()*subcur[0];
+                tmp.push_back(subcur);
+            }
+        }
+
+        results[1][formFactor.first] = tmp;
+    }
+
+    return results;
 }
 
 void nuchic::FQESpectral::CrossSection(Event &event) const {

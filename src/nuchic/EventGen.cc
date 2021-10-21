@@ -25,6 +25,77 @@
 
 #include "yaml-cpp/yaml.h"
 
+/// From https://gitlab.com/tesch1/cppduals/blob/master/duals/dual#L1304
+/// std::complex<> Formatter for libfmt https://github.com/fmtlib/fmt
+///
+/// libfmt does not provide a formatter for std::complex<>, although
+/// one is proposed for c++20.  Anyway, at the expense of a k or two,
+/// you can define CPPDUALS_LIBFMT_COMPLEX and get this one.
+///
+/// The standard iostreams formatting of complex numbers is (a,b),
+/// where a and b are the real and imaginary parts.  This formats a
+/// complex number (a+bi) as (a+bi), offering the same formatting
+/// options as the underlying type - with the addition of three
+/// optional format options, only one of which may appear directly
+/// after the ':' in the format spec (before any fill or align): '$'
+/// (the default if no flag is specified), '*', and ','.  The '*' flag
+/// adds a * before the 'i', producing (a+b*i), where a and b are the
+/// formatted value_type values.  The ',' flag simply prints the real
+/// and complex parts separated by a comma (same as iostreams' format).
+/// As a concrete exmple, this formatter can produce either (3+5.4i)
+/// or (3+5.4*i) or (3,5.4) for a complex<double> using the specs {:g}
+/// | {:$g}, {:*g}, or {:,g}, respectively.  (this implementation is a
+/// bit hacky - glad for cleanups).
+///
+template <typename T, typename Char>
+struct fmt::formatter<std::complex<T>,Char> : public fmt::formatter<T,Char>
+{
+  using base = fmt::formatter<T, Char>;
+  enum style { expr, star, pair } style_ = expr;
+  fmt::detail::dynamic_format_specs<Char> specs_;
+  FMT_CONSTEXPR auto parse(format_parse_context & ctx) -> decltype(ctx.begin()) {
+    using handler_type = fmt::detail::dynamic_specs_handler<format_parse_context>;
+    auto type = fmt::detail::type_constant<T, Char>::value;
+    fmt::detail::specs_checker<handler_type> handler(handler_type(specs_, ctx), type);
+    auto it = ctx.begin();
+    if (it != ctx.end()) {
+      switch (*it) {
+      case '$': style_ = style::expr; ctx.advance_to(++it); break;
+      case '*': style_ = style::star; ctx.advance_to(++it); break;
+      case ',': style_ = style::pair; ctx.advance_to(++it); break;
+      default: break;
+      }
+    }
+    parse_format_specs(ctx.begin(), ctx.end(), handler);
+    //todo: fixup alignment
+    return base::parse(ctx);
+  }
+  template <typename FormatCtx>
+  auto format(const std::complex<T> & x, FormatCtx & ctx) -> decltype(ctx.out()) {
+    format_to(ctx.out(), "(");
+    if (style_ == style::pair) {
+      base::format(x.real(), ctx);
+      format_to(ctx.out(), ",");
+      base::format(x.imag(), ctx);
+      return format_to(ctx.out(), ")");
+    }
+    if (x.real() || !x.imag())
+      base::format(x.real(), ctx);
+    if (x.imag()) {
+      if (x.real() && x.imag() >= 0 && specs_.sign != sign::plus)
+        format_to(ctx.out(), "+");
+      base::format(x.imag(), ctx);
+      if (style_ == style::star)
+        format_to(ctx.out(), "*i");
+      else
+        format_to(ctx.out(), "i");
+      if (std::is_same<typename std::decay<T>::type,float>::value)       format_to(ctx.out(), "f");
+      if (std::is_same<typename std::decay<T>::type,long double>::value) format_to(ctx.out(), "l");
+    }
+    return format_to(ctx.out(), ")");
+  }
+};
+
 nuchic::Channel<nuchic::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<nuchic::Beam> beam) {
     nuchic::Channel<nuchic::FourVector> channel;
     channel.mapping = std::make_unique<nuchic::QuasielasticTestMapper>(node, beam);
@@ -96,13 +167,14 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
 
     // Initialize the leptonic process
+    spdlog::debug("Initializing the leptonic current calculation");
     auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
     for(const auto &beam_id : beam -> BeamIDs()) {
         std::vector<PID> incoming = {nuchic::PID::dummyHadron(), beam_id};
         for(auto info : leptonicProcesses) {
             info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
             for(const auto id : info.m_ids)
-                spdlog::info("{}", int(id));
+                spdlog::debug("{}", int(id));
             if(!sherpa->InitializeProcess(info)) {
                 spdlog::error("Cannot initialize hard process");
                 exit(1);
@@ -175,11 +247,13 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup outputs
     auto output = config["Main"]["Output"];
+    bool zipped = true;
+    if(output["Zipped"])
+        zipped = output["Zipped"].as<bool>();
     if(output["Format"].as<std::string>() == "Nuchic") {
-        bool zipped = true;
-        if(output["Zipped"])
-            zipped = output["Zipped"].as<bool>();
         writer = std::make_unique<NuchicWriter>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "HepMC3") {
+        writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
     }
     writer -> WriteHeader(configFile);
 
@@ -187,50 +261,51 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     hist2 = Histogram(100, 0.0, 800.0, "momentum");
     hist3 = Histogram(50, -1.0, 1.0, "angle");
     hist4 = Histogram(200, 0.0, 1000.0, "energy");
-    hist5 = Histogram(200, 0.0, 1000.0, "momentum");
-    hist6 = Histogram(50, -1.0, 1.0, "angle");
+    hist5 = Histogram(300, 0.0, 300.0, "observable");
+    hist6 = Histogram(200, 0.0, 5.0, "wgt");
 }
 
 void nuchic::EventGen::Initialize() {
-    spdlog::info("Initializing integrator.");
+    // TODO: Clean up loading of previous results
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return GenerateEvent(mom, wgt);
     };
-    integrand.Function() = func;
-    integrator.Optimize(integrand);
-    integrator.Summary();
+    try {
+        YAML::Node old_results = YAML::LoadFile("results.yml");
+        integrator = old_results["Multichannel"].as<MultiChannel>();
+        integrand = old_results["Channels"].as<Integrand<FourVector>>();
+        YAML::Node results;
+        results["Multichannel"] = integrator;
+        results["Channels"] = integrand;
+        integrand.Function() = func;
+    } catch(const YAML::BadFile &e) {
+        spdlog::info("Initializing integrator.");
+        integrand.Function() = func;
+        if(config["Initialize"]["Accuracy"])
+            integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
+        integrator.Optimize(integrand);
+        integrator.Summary();
+
+        YAML::Node results;
+        results["Multichannel"] = integrator;
+        results["Channels"] = integrand;
+
+        std::ofstream fresults("results.yml");
+        fresults << results;
+        fresults.close();
+    }
 }
 
 void nuchic::EventGen::GenerateEvents() {
-    // integrator.Clear();
-    // integrator.Set(config["EventGen"]);
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = 100000;
+    integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
     integrator(integrand);
+    fmt::print("\n");
     auto result = integrator.Summary();
-    std::cout << "Integral = "
-        << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
-                       result.results.back().Mean(), result.results.back().Error(),
-                       result.results.back().Error() / result.results.back().Mean()*100) << std::endl;
-    // spdlog::info("Starting generating of n >= {} total events", total_events);
-    // spdlog::info("Using a maximum of {} total Vegas batches.", max_batch);
-    // Run integrator in batches until the desired number of events are found
-    // size_t batch_count = 1;
-    // while ((nevents < total_events) & (batch_count <= max_batch)){
-    //     integrator.Clear();  // Reset integrator for each batch
-    //     auto func = [&](const std::vector<double> &x, const double &wgt) {
-    //         auto niterations = config["EventGen"]["iterations"].as<double>();
-    //         return Calculate(x, wgt/niterations, batch_count);
-    //     };
-    //     spdlog::info("Running vegas batch number {}", batch_count);
-    //     integrator(func);
-    //     spdlog::info("Total events so far: {}/{}", nevents, total_events);
-    //     batch_count += 1;
-    // }
-    // if (batch_count >= max_batch){
-    //     spdlog::info("Stopping after reaching max batch threshold.");
-    // }
+    fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
+               result.results.back().Mean(), result.results.back().Error(),
+               result.results.back().Error() / result.results.back().Mean()*100);
 
     hist.Save(config["HistTest1"].as<std::string>());
     hist2.Save(config["HistTest2"].as<std::string>());
@@ -241,6 +316,13 @@ void nuchic::EventGen::GenerateEvents() {
 }
 
 double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
+    if(outputEvents) {
+        static size_t ievent = 0;
+        constexpr size_t statusUpdate = 10000;
+        if(++ievent % statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r", ievent, config["Main"]["NEvents"].as<size_t>());
+        }
+    }
     // Initialize the event, which generates the nuclear configuration
     // and initializes the beam particle for the event
     Event event(nucleus, mom, wgt);
@@ -258,123 +340,172 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     spdlog::debug("Calculating cross section");
 
     // Obtain the leptonic tensor
-    auto leptonTensor = scattering -> LeptonicTensor(event.Momentum(), 100);
-    spdlog::trace("Leptonic Tensor: {}", leptonTensor);
+    auto leptonCurrent = scattering -> LeptonicCurrents(event.Momentum(), 100);
+    spdlog::trace("Leptonic Current: {}", leptonCurrent);
 
     // Obtain the hadronic tensor
-    auto hadronTensors = scattering -> HadronicTensor(event);
-    spdlog::trace("Hadronic Tensor(proton): {}", hadronTensors.first);
-    spdlog::trace("Hadronic Tensor(neutron): {}", hadronTensors.second);
-    scattering -> CrossSection(event);
-    constexpr double alpha = 1.0/137;
-    std::array<std::complex<double>, 16> hTensor, lTensor;
+    static FFInfoMap protonFF, neutronFF;
+    if(protonFF.empty() && neutronFF.empty()) {
+        for(const auto &current : leptonCurrent) {
+            protonFF[current.first] = scattering -> FormFactors(2212, current.first);
+            neutronFF[current.first] = scattering -> FormFactors(2112, current.first);
+        }
+    }
+
+    auto hadronCurrent = scattering -> HadronicCurrents(event, protonFF, neutronFF);
+    spdlog::trace("Hadronic Current(proton): {}", hadronCurrent[0]);
+    spdlog::trace("Hadronic Current(neutron): {}", hadronCurrent[1]);
+
+#ifdef CHECK_TENSOR
+    std::array<std::complex<double>, 16> lTensor, lTensorExact, hTensor, hTensorExact;
+    auto pp = event.Momentum()[0];
+    auto ppp = event.Momentum()[3];
     auto ke = event.Momentum()[1];
     auto kep = event.Momentum()[2];
     auto q = ke - kep;
     auto rotMat = q.AlignZ();
     q = q.Rotate(rotMat);
-
-#if DEBUG_TENSORS
-    auto pp = event.Momentum()[0];
-    auto ppp = event.Momentum()[3];
-    auto e = pp.E();
-    pp.E() = sqrt(pp.P2() + pow(Constant::mN, 2));
-    auto q2 = q;
-    q2.E() = q.E() - e + Constant::mN - pp.E();
-    ke = ke.Rotate(rotMat);
-    kep = kep.Rotate(rotMat);
     pp = pp.Rotate(rotMat);
     ppp = ppp.Rotate(rotMat);
-    auto prefactor = alpha*4*M_PI/pow(q.M2(), 2);
-    auto prefactor2 = alpha*4*M_PI;
-    auto ppmn2 = pp*ppp-pow(Constant::mN, 2);
-    for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            // if(mu == 0 || nu == 0) hadronTensor[4*mu+nu] = 0;
-            // if(mu == 3 || nu == 3) hadronTensor[4*mu+nu] = 0;
-            // if((mu == 2 && nu == 1) || (mu == 1 && nu == 2)) hadronTensor[4*mu+nu] = 0;
-            hTensor[4*mu+nu] = 2*(pp[mu]*ppp[nu] + pp[nu]*ppp[mu])*prefactor2;
-            lTensor[4*mu+nu] = 2*(ke[mu]*kep[nu] + ke[nu]*kep[mu])*prefactor;
+    ke = ke.Rotate(rotMat);
+    kep = kep.Rotate(rotMat);
+
+    auto levicivita = [](int i, int j, int k, int l) -> std::complex<double> {
+        return (i-j)*(i-k)*(i-l)*(j-k)*(j-l)*(k-l)/12;
+    };
+    auto metric = [](int i, int j) -> double {
+        return i == j ? i == 0 ? 1 : -1 : 0;
+    };
+
+    spdlog::info("pp = {}", pp);
+    spdlog::info("ppp = {}", ppp);
+    spdlog::info("ke = {}", ke);
+    spdlog::info("kep = {}", kep);
+    spdlog::info("q = {}", q);
+    const auto mw = 79824.4;
+    const auto gw = 208.5;
+    auto prop2 = std::norm(1.0/((q.M2() - mw*mw) + std::complex<double>(0, 1)*mw*gw));
+    auto coupling = pow(0.464864*sqrt(2), 2)*prop2;
+    auto coupling2 = pow(0.464864*sqrt(2), 2);
+    auto lCurrent = leptonCurrent[24];
+    auto hCurrent = hadronCurrent[0][24];
+    for(size_t i = 0; i < 4; ++i) {
+        auto mu = static_cast<int>(i);
+        for(size_t j = 0; j < 4; ++j) {
+            auto nu = static_cast<int>(j);
+            for(size_t m = 0; m < 4; ++m) {
+                lTensor[i*4 + j] += lCurrent[m][i]*std::conj(lCurrent[m][j]);
+                hTensor[i*4 + j] += hCurrent[m][i]*std::conj(hCurrent[m][j]);
+            }
+            lTensorExact[i*4 + j] = (ke[i]*kep[j] + ke[j]*kep[i] - metric(mu, nu)*ke*kep)*coupling;
+            hTensorExact[i*4 + j] = (pp[i]*ppp[j] + pp[j]*ppp[i] - metric(mu, nu)*pp*ppp)*coupling2;
+            for(size_t k = 0; k < 4; ++k) {
+                auto alpha = static_cast<int>(k);
+                for(size_t l = 0; l < 4; ++l) {
+                    auto beta = static_cast<int>(l);
+                    double sign1 = 1;
+                    double sign2 = 1;
+                    if(k > 0) sign1 = -1;
+                    if(l > 0) sign2 = -1;
+                    lTensorExact[i*4 + j] += std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*ke[k]*kep[l]*coupling;
+                    hTensorExact[i*4 + j] += std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*pp[l]*ppp[k]*coupling2;
+                }
+            }
+            spdlog::info("Sherpa[{}, {}] = {:.3e}", i, j, lTensor[i*4 + j]);
+            spdlog::info("LExact[{}, {}] = {:.3e}", i, j, lTensorExact[i*4 + j]);
+            spdlog::info("HExact[{}, {}] = {:.3e}", i, j, hTensorExact[i*4 + j]);
         }
-        hTensor[4*mu+mu] += mu == 0 ? -2*ppmn2*prefactor2 : 2*ppmn2*prefactor2;
-        lTensor[4*mu+mu] += mu == 0 ? -2*ke*kep*prefactor : 2*ke*kep*prefactor;
+    }
+
+    std::complex<double> amp_n2{};
+    for(size_t i = 0; i < 4; ++i) {
+        for(size_t j = 0; j < 4; ++j) {
+            double sign = 1;
+            if((i == 0 && j != 0) || (j == 0 && i != 0)) sign = -1;
+            amp_n2 += sign*lTensorExact[i*4+j]*hTensorExact[i*4+j];
+        }
     }
 #endif
 
-    std::complex<double> amp_p{}, amp_n{};
-    const double factor = alpha;
-    for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            const size_t idx = 4*mu + nu;
-            if(nu == 3) {
-                hadronTensors.first[idx] = q.E()/q.P()*hadronTensors.first[4*mu];
-                hadronTensors.second[idx] = q.E()/q.P()*hadronTensors.second[4*mu];
-            } else if(mu == 3) {
-                hadronTensors.first[idx] = q.E()/q.P()*hadronTensors.first[nu];
-                hadronTensors.second[idx] = q.E()/q.P()*hadronTensors.second[nu];
+    scattering -> CrossSection(event);
+    double amp2_p{}, amp2_n{};
+    for(size_t i = 0; i < 4; ++i) {
+        for(size_t j = 0; j < 4; ++j) {
+            double sign = 1.0;
+            std::complex<double> amp_p{}, amp_n{};
+            for(size_t mu = 0; mu < 4; ++mu) {
+                for(const auto &lcurrent : leptonCurrent) {
+                    for(const auto &pcurrent : hadronCurrent[0])
+                        amp_p += sign*lcurrent.second[i][mu]*pcurrent.second[j][mu];
+                    for(const auto &ncurrent : hadronCurrent[1])
+                        amp_n += sign*lcurrent.second[i][mu]*ncurrent.second[j][mu];
+                }
+                sign = -1.0;
             }
-        }
-    }
-    for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            const size_t idx = 4*mu + nu;
-            if((mu == 0 && nu != 0) || (nu == 0 && mu != 0)) {
-                amp_p -= hadronTensors.first[idx]*leptonTensor[idx]*factor;
-                amp_n -= hadronTensors.second[idx]*leptonTensor[idx]*factor;
-            } else {
-                amp_p += hadronTensors.first[idx]*leptonTensor[idx]*factor;
-                amp_n += hadronTensors.second[idx]*leptonTensor[idx]*factor;
-            }
+            amp2_p += std::norm(amp_p);
+            amp2_n += std::norm(amp_n);
         }
     }
 
 #ifdef CHECK_WARD_ID
-    std::vector<double> ward(8);
+    auto ke = event.Momentum()[1];
+    auto kep = event.Momentum()[2];
+    auto q = ke - kep;
+    auto rotMat = q.AlignZ();
+    q = q.Rotate(rotMat);
+    std::vector<std::complex<double>> ward(3);
     for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            const size_t idx = 4*mu + nu;
-            if(mu == 0) {
-                ward[nu] += (q[mu]*hadronTensors.first[idx]).real();
-            } else {
-                ward[nu] -= (q[mu]*hadronTensors.first[idx]).real();
-            }
-            if(nu == 0) {
-                ward[4+mu] += (q[nu]*hadronTensors.first[idx]).real();
-            } else {
-                ward[4+mu] -= (q[nu]*hadronTensors.first[idx]).real();
-            }
+        if(mu == 0) {
+            ward[0] += q[mu]*leptonCurrent[22][mu];
+            ward[1] += q[mu]*hadronCurrent[0][22][mu];
+            ward[2] += q[mu]*hadronCurrent[1][22][mu];
+        } else {
+            ward[0] -= q[mu]*leptonCurrent[22][mu];
+            ward[1] -= q[mu]*hadronCurrent[0][22][mu];
+            ward[2] -= q[mu]*hadronCurrent[1][22][mu];
         }
     }
-    for(auto &w : ward) w /= amp_p.real();
-    if(amp.real() != 0) spdlog::info("Ward Identities: {}", ward);
+    for(auto &w : ward) w /= amp_p;
+    if(amp_p.real() != 0) {
+        spdlog::info("q = {}", q);
+        spdlog::info("H^\\mu = {}", hadronCurrent[0][22]);
+        spdlog::info("Ward Identities: {: .4e}, {: .4e}, {: .4e}",
+                     ward[0], ward[1], ward[2]);
+    }
 #endif
 
     double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
-    double xsec_p = amp_p.real()*Constant::HBARC2*2*M_PI*flux;
-    double xsec_n = amp_n.real()*Constant::HBARC2*2*M_PI*flux;
-    double defaultxsec{};
-    static double minRatio = std::numeric_limits<double>::infinity();
-    static double maxRatio = 0;
+    // TODO: Double check normalization factors
+    constexpr double GF = 1.116e-5/1_GeV/1_GeV;
+    double s = (event.Momentum()[0] + event.Momentum()[1]).M2();
+    double u = (event.Momentum()[0] - event.Momentum()[2]).M2();
+    double t = (event.Momentum()[0] - event.Momentum()[3]).M2();
+    spdlog::debug("p_nu = {}", event.Momentum()[1]);
+    spdlog::debug("p_n = {}", event.Momentum()[0]);
+    spdlog::debug("p_mu = {}", event.Momentum()[2]);
+    spdlog::debug("p_p = {}", event.Momentum()[3]);
+    spdlog::debug("s = {}, u = {}, t = {}", s, u, t);
+    spdlog::debug("amp^2 = {}, {}, {}, {}, {}", 32*GF*GF*pow(Constant::mN2-s, 2),  32*GF*GF*pow(Constant::mN2-u, 2),
+                  32*GF*GF*pow(Constant::mN2-t, 2), amp2_n, amp2_p);
+    double spin_avg = 4;
+    if(event.MatrixElement(0).inital_state[1] == PID::nu_electron() ||
+       event.MatrixElement(0).inital_state[1] == PID::nu_muon() ||
+       event.MatrixElement(0).inital_state[1] == PID::nu_tau())
+        spin_avg = 2;
+    double xsec_p = amp2_p*Constant::HBARC2/spin_avg*flux;
+    double xsec_n = amp2_n*Constant::HBARC2/spin_avg*flux;
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
-            if(event.MatrixElement(i).weight != 0) {
-                defaultxsec = event.MatrixElement(i).weight;
-            }
-            // break;
             event.MatrixElement(i).weight = xsec_p;
         } else {
             event.MatrixElement(i).weight = xsec_n;
         }
     }
-    if(defaultxsec != 0) {
-        double ratio = xsec_p/defaultxsec;
-        if(ratio < minRatio) minRatio = ratio;
-        if(ratio > maxRatio) maxRatio = ratio;
-        // spdlog::info("Default xsec = {}", defaultxsec);
-        // spdlog::info("Sherpa + Noemi xsec = {}", xsec);
-        // spdlog::info("Ratio = {}, Range = [{}, {}]", ratio, minRatio, maxRatio);
-    }
     if(!scattering -> InitializeEvent(event)) {
+        if(outputEvents) {
+            event.SetMEWeight(0);
+            writer -> Write(event);
+        }
         return 0;
     }
 
@@ -403,6 +534,10 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             // Short-circuit the evaluation
             // We want Vegas to adapt to avoid these points, i.e.,
             // the integrand should be interpreted as zero in this region
+            if(outputEvents) {
+                event.SetMEWeight(0);
+                writer -> Write(event);
+            }
             return 0;
         }
     }
@@ -433,8 +568,6 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
 
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
-            nevents += 1;
-            spdlog::debug("Found event: {}/{}", nevents, total_events);
             event.Finalize();
             writer -> Write(event);
             const auto energy = (Constant::mN - event.Momentum()[0].E());
@@ -446,10 +579,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             hist3.Fill(cosTheta, event.Weight()/calls);
             const auto energy_lepton = event.Momentum()[2].E();
             hist4.Fill(energy_lepton, event.Weight()/calls);
-            const auto energy_hadron = event.Momentum()[3].P();
-            hist5.Fill(energy_hadron, event.Weight()/calls);
-            const auto cosTheta_hadron = event.Momentum()[3].CosTheta();
-            hist6.Fill(cosTheta_hadron, event.Weight()/calls);
+            const auto omega = event.Momentum()[1].E() - event.Momentum()[2].E();
+            hist5.Fill(omega, event.Weight()/calls/(2*M_PI));
+            hist6.Fill(log10(event.Weight()));
         }
     }
 

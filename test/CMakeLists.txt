@@ -22,9 +22,10 @@ add_executable(nuchic-testsuite
     test_adaptive_map.cc
     test_stats.cc
     test_vegas.cc
-    test_multichannel.cc
-    test_integrand.cc
+    # test_multichannel.cc
+    # test_integrand.cc
     test_spectral.cc
+    test_spinor.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

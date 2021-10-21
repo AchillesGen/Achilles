@@ -6,6 +6,8 @@
 #include "COMIX/Main/Single_Process.H"
 #include "AMEGIC++/Main/Process_Base.H"
 #include "MODEL/Main/Running_AlphaS.H"
+#include "MODEL/Main/Model_Base.H"
+#include "MODEL/Main/Single_Vertex.H"
 #include "METOOLS/Explicit/Color_Calculator.H"
 #include "ATOOLS/Org/Library_Loader.H"
 #include "ATOOLS/Org/MyStrStream.H"
@@ -70,15 +72,22 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // addParameter(argv,"PDF_SET=None");
   // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
+  addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");
-  // addParameter(argv,"ACTIVE[23]=0");
+  addParameter(argv,"ACTIVE[23]=0");
+  addParameter(argv,"ACTIVE[9000005]=0");
+  addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
   m_pmap[nlo_type::lo] = new StringProcess_Map();
+
+  // Clean up memory
+  for(auto & arg : argv) delete arg;
+  argv.resize(0);
   return true;
 }
 
@@ -152,7 +161,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   return true;
 }
 
-std::vector<std::vector<std::complex<double>>> SherpaMEs::Calc
+nuchic::SherpaMEs::LeptonCurrents SherpaMEs::Calc
 (const std::vector<int> _fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
@@ -181,4 +190,26 @@ std::vector<std::vector<std::complex<double>>> SherpaMEs::Calc
 
   COMIX::Single_Process *singleProcess = proc->Get<COMIX::Single_Process>();
   return singleProcess -> LeptonicCurrent();
+}
+
+std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) const {
+    const std::vector<MODEL::Single_Vertex> &vertices(MODEL::s_model->OriginalVertices());
+    std::vector<FormFactorInfo> form_factors;
+    for(const auto &vertex : vertices) {
+        if(std::find(vertex.in.begin(), vertex.in.end(), -hpid) != vertex.in.end()
+                && std::find(vertex.in.begin(), vertex.in.end(), vpid) != vertex.in.end()) {
+            for(size_t i = 0; i < vertex.FormFactor.size(); ++i) {
+                std::string ff = vertex.FormFactor[i];
+                std::complex<double> coupling = vertex.Coupling(i);
+                FormFactorInfo::Type type;
+                if(ff == "F1p") type = FormFactorInfo::Type::F1p;
+                else if(ff == "F1n") type = FormFactorInfo::Type::F1n;
+                else if(ff == "F2p") type = FormFactorInfo::Type::F2p;
+                else if(ff == "F2n") type = FormFactorInfo::Type::F2n;
+                else if(ff == "FA") type = FormFactorInfo::Type::FA;
+                form_factors.push_back({type, coupling});
+            }
+        }
+    }
+    return form_factors;
 }
