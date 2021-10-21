@@ -107,7 +107,8 @@ end subroutine
 subroutine det_Ja(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu
-  real*8 :: f1v,f2v, fa  
+  complex*16 :: f1v,f2v, fa  
+  complex*16 :: tmp(4,4)
   
   do mu=1,4
      J_1(:,:,mu)=czero
@@ -115,33 +116,54 @@ subroutine det_Ja(f1v,f2v,fa)
         J_1(:,:,mu)=J_1(:,:,mu)+ci*f2v*sigma_munu(:,:,mu,nu)&
              &     *g_munu(nu,nu)*q(nu)/2.0d0/xmn
      enddo
-     J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)+fa*gamma_mu(:,:,mu)*gamma_mu(:,:,5)
+     J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)+fa*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))
   enddo
 end subroutine det_Ja
 
-subroutine det_current(hmunu)
+subroutine det_current(jmu)
     implicit none
-    complex*16, intent(out) :: hmunu(16)
-    complex*16 :: jmu(2,2,4)
-    integer*4 :: mu, nu, i, j
+    complex*16, intent(out) :: jmu(4)
+    complex*16 :: hmunu(4, 4)
+    integer*4 :: i1, f1, i, j
+    complex*16 :: J_mu(2,2,4),J_mu_dag(2,2,4)
+    complex*16 :: res(4,4),rt,rl
 
-    do mu=1,4
-        do i=1,2
-            do j=1,2
-                jmu(i, j, mu) = sum(ubarpp1(i,:)*matmul(J_1(:,:,mu),up1(j,:)))
-            enddo
-        enddo
+    do i1=1,2
+       do f1=1,2
+          do i=1,4
+             J_mu(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_1(:,:,i),up1(i1,:)))
+             J_mu_dag(f1,i1,i)=conjg(J_mu(f1,i1,i))
+          enddo
+       enddo
+    enddo
+    
+    res=0.0d0
+    do i1=1,2
+       do f1=1,2
+          do i=1,4
+             do j=1,4
+                 res(i,j)=res(i,j)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,j)
+             enddo
+          enddo
+       enddo
     enddo
 
-    do mu=1,4
-        do nu=1,4
-            do i=1,2
-                do j=1,2
-                    hmunu(4*(mu-1)+nu) = hmunu(4*(mu-1)+nu) + jmu(i, j, mu)*conjg(jmu(i, j, nu))
-                enddo
-            enddo
-        enddo
-    enddo
+    print*, res
+
+    !jmu(:) = 0
+    !hmunu(:, :) = 0
+    !do mu=1,4
+    !    do nu=1,4
+    !    do i=1,2
+    !        do j=1,2
+    !            jmu(mu) =  jmu(mu) + sum(ubarpp1(i,:)*matmul(J_1(:,:,mu),up1(j,:)))
+    !            hmunu(mu, nu) = hmunu(mu, nu) + sum(ubarpp1(i, :)*matmul
+    !        enddo
+    !    enddo
+    !    enddo
+    !enddo
+
+    !print*, hmunu
 end subroutine
 
 subroutine det_res1b(rl,rt)
