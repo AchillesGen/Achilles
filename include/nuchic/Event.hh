@@ -71,6 +71,7 @@ class Event {
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
         double Weight() const;
+        void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
     private:
@@ -85,6 +86,7 @@ class Event {
         MatrixElementVec m_me;
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
+        vParticles m_history{};
 };
 
 }

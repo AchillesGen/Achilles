@@ -8,6 +8,7 @@ nuchic::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
             n_vars = beam.second -> NVariables();
         if(m_pids.find(beam.first) != m_pids.end())
             throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(beam.first)));
+        spdlog::debug("Beam with PID: {} created.", beam.first);
         m_pids.insert(beam.first);
     }
 }

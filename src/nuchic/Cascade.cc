@@ -206,7 +206,7 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
         // Stop loop if no particles are propagating
         if(kickedIdxs.size() == 0) break;
 
-     // Adapt time step
+        // Adapt time step
         AdaptiveStep(particles, distance);
 
         // Make local copy of kickedIdxs

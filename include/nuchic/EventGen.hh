@@ -34,9 +34,6 @@ class EventGen {
         EventGen(const std::string&,SherpaMEs *const);
         void Initialize();
         void GenerateEvents();
-        size_t nevents;
-        size_t total_events;
-        size_t max_batch;
 
     private:
         bool runCascade, outputEvents, doHardCuts{false}, doEventCuts{false};

@@ -143,6 +143,11 @@ constexpr T factorial(const T &x) {
     return x == 0 ? 1 : x * factorial(x-1);
 }
 
+template<typename T>
+constexpr bool IsZero(const T &x, const T &tol) {
+    return std::abs(x) < tol;
+}
+
 }
 
 #endif // end of include guard: UTILITIES_HH

@@ -5,12 +5,6 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/Units.hh"
-#include "nuchic/Beams.hh"
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#include "yaml-cpp/yaml.h"
-#pragma GCC diagnostic pop
 
 using nuchic::QuasielasticTestMapper;
 
@@ -42,7 +36,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
     const std::vector<double> momRans(rans.begin() + m_beam -> NVariables(), rans.end());
     mom.resize(4);
 
-    mom[1] = m_beam -> Flux(PID::electron(), beamRans); 
+    mom[1] = m_beam -> Flux(PID::nu_muon(), beamRans); 
    
     size_t iRan = 0;
     double phi_l = dPhi*momRans[iRan++];
@@ -89,7 +83,7 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
 
     // Calculate the weights
     double wgt = 1.0;
-    wgt /= m_beam -> GenerateWeight(PID::electron(), mom[1], beamRans);  
+    wgt /= m_beam -> GenerateWeight(PID::nu_muon(), mom[1], beamRans);  
     size_t iRan = 0;
     momRans[iRan++] = mom[2].Phi()/dPhi;
     wgt /= dPhi;

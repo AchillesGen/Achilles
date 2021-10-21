@@ -41,15 +41,16 @@ private:
 
 public:
 
+  using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+
   SherpaMEs() = default;
 
   ~SherpaMEs();
 
   bool Initialize(const std::vector<std::string> &args);
-
   bool InitializeProcess(const Process_Info &info);
 
-  std::vector<std::vector<std::complex<double>>> Calc
+  LeptonCurrents Calc
   (const std::vector<int> fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;

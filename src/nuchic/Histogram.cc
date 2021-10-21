@@ -14,8 +14,9 @@ Histogram::Histogram(const size_t& nbins, const double& lower, const double& upp
     binvals = std::vector<double>(nbins, 0);
     errors = std::vector<double>(nbins, 0);
     double binsize = (upper-lower)/static_cast<double>(nbins);
+    binedges.resize(nbins+1);
     for(size_t i = 0; i <= nbins; ++i) {
-        binedges.push_back(lower+static_cast<double>(i)*binsize);
+        binedges[i] = lower+static_cast<double>(i)*binsize;
     }
 }
 
@@ -40,7 +41,7 @@ size_t Histogram::FindBin(const double& x) const {
 void Histogram::Fill(const double& x, const double& wgt) {
     const size_t loc = FindBin(x);
     nentries++;
-    if(loc != static_cast<size_t>(-1)) {
+    if(loc != static_cast<size_t>(-1) && loc != 0) {
         binvals[loc-1] += wgt/(binedges[loc]-binedges[loc-1]);
         errors[loc-1] += pow(wgt/(binedges[loc]-binedges[loc-1]), 2);
     }
