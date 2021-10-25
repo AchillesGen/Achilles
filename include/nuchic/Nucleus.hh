@@ -269,7 +269,7 @@ struct convert<nuchic::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-        auto configs = std::make_unique<nuchic::DensityConfiguration>("../src/nuchic/configurations/QMC_configs.out.gz");
+        auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
         nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;
