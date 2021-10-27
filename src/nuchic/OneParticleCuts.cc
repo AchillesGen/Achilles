@@ -7,6 +7,7 @@ bool nuchic::EnergyCut::MakeCut(const FourVector &mom) const {
 }
 
 bool nuchic::MomentumCut::MakeCut(const FourVector &mom) const {
+    spdlog::trace("Momentum = {}, Cut Result = {}", mom.P(), CheckCut(mom.P()));
     return CheckCut(mom.P());
 }
 

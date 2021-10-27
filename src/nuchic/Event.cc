@@ -44,7 +44,9 @@ void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
         m_nuc -> Nucleons()[idx[0]].Status() = ParticleStatus::initial_state;
         m_nuc -> Nucleons()[idx[0]].SetMomentum(m_mom[idx[1]]);
         Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
-        outNucleon.Status() = ParticleStatus::propagating;
+        // TODO: Have this be determined by Cascade flag
+        // outNucleon.Status() = ParticleStatus::propagating;
+        outNucleon.Status() = ParticleStatus::final_state;
         outNucleon.SetMomentum(m_mom[idx[2]]);
         m_nuc -> Nucleons().push_back(outNucleon);
     }
