@@ -204,14 +204,14 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         } else if(scattering -> Processes()[0].m_ids.size() == 6) {
             spdlog::info("Initializing 2->4");
             std::vector<double> masses{0, 0, 0, pow(Constant::mN, 2)};
-            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(2, 2, beam, masses);
-            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(2, 2, beam, masses);
-            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(2, 2, beam, masses);
-            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(2, 2, beam, masses);
-            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(2, 2, beam, masses);
-            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(2, 2, beam, masses);
-            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(2, 2, beam, masses);
-            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(2, 2, beam, masses);
+            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beam, masses);
+            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beam, masses);
+            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beam, masses);
+            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(4, 2, beam, masses);
+            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(4, 2, beam, masses);
+            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(4, 2, beam, masses);
+            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(4, 2, beam, masses);
+            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(4, 2, beam, masses);
             integrand.AddChannel(std::move(channel0));
             integrand.AddChannel(std::move(channel1));
             integrand.AddChannel(std::move(channel2));
@@ -431,7 +431,8 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
 
     scattering -> CrossSection(event);
     double amp2_p{}, amp2_n{};
-    for(size_t i = 0; i < 4; ++i) {
+    const size_t nspins = 1 << (event.Momentum().size() - 2);
+    for(size_t i = 0; i < nspins; ++i) {
         for(size_t j = 0; j < 4; ++j) {
             double sign = 1.0;
             std::complex<double> amp_p{}, amp_n{};
@@ -483,6 +484,8 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     static constexpr double to_nb = 1e6;
     double xsec_p = amp2_p*Constant::HBARC2/spin_avg*flux*to_nb;
     double xsec_n = amp2_n*Constant::HBARC2/spin_avg*flux*to_nb;
+    spdlog::debug("proton xsec = {}", xsec_p);
+    spdlog::debug("neutron xsec = {}", xsec_n);
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
             event.MatrixElement(i).weight = xsec_p;
