@@ -22,7 +22,6 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  mom = {}", mom);
     spdlog::trace("  emax = {}", emax);
-    spdlog::trace("  emax2 = {}", - point[1].E() - sqrt(det));
     spdlog::trace("  s = {}", (point[0] + point[1]).M2());
 }
 

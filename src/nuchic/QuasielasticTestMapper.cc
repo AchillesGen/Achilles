@@ -36,7 +36,8 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
     const std::vector<double> momRans(rans.begin() + m_beam -> NVariables(), rans.end());
     mom.resize(4);
 
-    mom[1] = m_beam -> Flux(PID::nu_muon(), beamRans); 
+    auto beam_id = *m_beam -> BeamIDs().begin();
+    mom[1] = m_beam -> Flux(beam_id, beamRans); 
    
     size_t iRan = 0;
     double phi_l = dPhi*momRans[iRan++];
@@ -83,7 +84,8 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
 
     // Calculate the weights
     double wgt = 1.0;
-    wgt /= m_beam -> GenerateWeight(PID::nu_muon(), mom[1], beamRans);  
+    auto beam_id = *m_beam -> BeamIDs().begin();
+    wgt /= m_beam -> GenerateWeight(beam_id, mom[1], beamRans);  
     size_t iRan = 0;
     momRans[iRan++] = mom[2].Phi()/dPhi;
     wgt /= dPhi;

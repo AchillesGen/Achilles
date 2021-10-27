@@ -37,7 +37,7 @@ class QuasielasticTestMapper : public Mapper<FourVector> {
         std::shared_ptr<Beam> m_beam;
         static constexpr double dPhi = 2*M_PI;
         static constexpr double dCos = 2;
-        static constexpr double dp = 1000;
+        static constexpr double dp = 800;
 };
 
 }
