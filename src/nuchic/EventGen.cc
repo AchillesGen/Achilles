@@ -171,7 +171,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     spdlog::debug("Initializing the leptonic current calculation");
     auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
     for(const auto &beam_id : beam -> BeamIDs()) {
-        std::vector<PID> incoming = {nuchic::PID::dummyHadron(), beam_id};
+        std::vector<PID> incoming = {nuchic::PID::proton(), beam_id};
         for(auto info : leptonicProcesses) {
             info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
             for(const auto id : info.m_ids)
@@ -388,8 +388,8 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     auto prop2 = std::norm(1.0/((q.M2() - mw*mw) + std::complex<double>(0, 1)*mw*gw));
     auto coupling = pow(0.464864*sqrt(2), 2)*prop2;
     auto coupling2 = pow(0.464864*sqrt(2), 2);
-    auto lCurrent = leptonCurrent[-24];
-    auto hCurrent = hadronCurrent[0][-24];
+    auto lCurrent = leptonCurrent[24];
+    auto hCurrent = hadronCurrent[0][24];
     for(size_t i = 0; i < 4; ++i) {
         auto mu = static_cast<int>(i);
         for(size_t j = 0; j < 4; ++j) {
@@ -473,9 +473,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     }
 #endif
     double spin_avg = 4;
-    if(event.MatrixElement(2).inital_state[1] == PID::nu_electron() ||
-       event.MatrixElement(0).inital_state[1] == PID::nu_muon() ||
-       event.MatrixElement(0).inital_state[1] == PID::nu_tau())
+    if(event.MatrixElement(0).inital_state[1].Abs() == PID::nu_electron() ||
+       event.MatrixElement(0).inital_state[1].Abs() == PID::nu_muon() ||
+       event.MatrixElement(0).inital_state[1].Abs() == PID::nu_tau())
         spin_avg = 2;
     double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
     // spdlog::info("relative velocity: {}", std::abs(event.Momentum()[1].P()/event.Momentum()[1].E() - event.Momentum()[0].P()/event.Momentum()[0].E()));

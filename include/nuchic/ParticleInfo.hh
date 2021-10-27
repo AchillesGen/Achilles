@@ -35,6 +35,7 @@ namespace nuchic {
             constexpr bool operator<(const PID &other) const { return id < other.id; }
             constexpr bool operator>(const PID &other) const { return id > other.id; }
             constexpr PID operator-() const { return PID{ -id }; }
+            PID Abs() const { return std::abs(id); }
             constexpr operator long int() const { return id; }
             constexpr operator int() const { return static_cast<int>(id); }
 
