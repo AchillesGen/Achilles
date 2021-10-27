@@ -68,7 +68,8 @@ nuchic::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> 
         spdlog::trace("Current for {}", current.first);
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
-                current.second[i][j] /= 1_GeV;
+                if(mom.size() == 4) current.second[i][j] /= 1_GeV;
+                else if(mom.size() == 6) current.second[i][j] /= pow(1_GeV, 3);
                 spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
