@@ -57,7 +57,7 @@ int SherpaMEs::SherpaVerbosity(int loglevel) const
 
 bool SherpaMEs::Initialize(const std::vector<std::string> &args)
 {
-  p_sherpa = new Sherpa();
+  p_sherpa = new Sherpa(1);
   std::vector<char*> argv;
   addParameter(argv,"Sherpa");
   addParameter(argv,"EVENTS=0");
