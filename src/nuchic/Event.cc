@@ -89,11 +89,9 @@ nuchic::vParticles& Event::Hadrons() {
 }
 
 double Event::Weight() const {
-    static constexpr double conv = 1e6;
-
     if(!ValidateEvent(0))
         throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    return m_vWgt*m_meWgt*conv;
+    return m_vWgt*m_meWgt;
 }
 
 bool Event::TotalCrossSection() {

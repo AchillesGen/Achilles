@@ -136,8 +136,9 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config["Initialize"]["seed"])
-        seed = config["Initialize"]["Seed"].as<unsigned int>();
+    if(config["Initialize"]["Seed"])
+        if(config["Initialize"]["Seed"].as<int>() > 0)
+            seed = config["Initialize"]["Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
@@ -192,14 +193,14 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         auto hadronMapper = std::make_shared<QESpectralMapper>(0);
         if(scattering -> Processes()[0].m_ids.size() == 4) {
             std::vector<double> masses{0, pow(Constant::mN, 2)};
-            Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beam, masses);
-            integrand.AddChannel(std::move(channel));
-            // Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beam, masses);
-            // Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beam, masses);
-            // Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(2, 2, beam, masses);
-            // integrand.AddChannel(std::move(channel0));
-            // integrand.AddChannel(std::move(channel1));
-            // integrand.AddChannel(std::move(channel2));
+            // Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beam, masses);
+            // integrand.AddChannel(std::move(channel));
+            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beam, masses);
+            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(2, 2, beam, masses);
+            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(2, 2, beam, masses);
+            integrand.AddChannel(std::move(channel0));
+            integrand.AddChannel(std::move(channel1));
+            integrand.AddChannel(std::move(channel2));
         } else if(scattering -> Processes()[0].m_ids.size() == 6) {
             spdlog::info("Initializing 2->4");
             std::vector<double> masses{0, 0, 0, pow(Constant::mN, 2)};
@@ -387,8 +388,8 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     auto prop2 = std::norm(1.0/((q.M2() - mw*mw) + std::complex<double>(0, 1)*mw*gw));
     auto coupling = pow(0.464864*sqrt(2), 2)*prop2;
     auto coupling2 = pow(0.464864*sqrt(2), 2);
-    auto lCurrent = leptonCurrent[24];
-    auto hCurrent = hadronCurrent[0][24];
+    auto lCurrent = leptonCurrent[-24];
+    auto hCurrent = hadronCurrent[0][-24];
     for(size_t i = 0; i < 4; ++i) {
         auto mu = static_cast<int>(i);
         for(size_t j = 0; j < 4; ++j) {
@@ -407,13 +408,14 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
                     double sign2 = 1;
                     if(k > 0) sign1 = -1;
                     if(l > 0) sign2 = -1;
-                    lTensorExact[i*4 + j] += std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*ke[k]*kep[l]*coupling;
-                    hTensorExact[i*4 + j] += std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*pp[l]*ppp[k]*coupling2;
+                    lTensorExact[i*4 + j] -= std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*ke[k]*kep[l]*coupling;
+                    // hTensorExact[i*4 + j] += std::complex<double>(0, 1)*levicivita(alpha, mu, beta, nu)*sign1*sign2*pp[l]*ppp[k]*coupling2;
                 }
             }
             spdlog::info("Sherpa[{}, {}] = {:.3e}", i, j, lTensor[i*4 + j]);
             spdlog::info("LExact[{}, {}] = {:.3e}", i, j, lTensorExact[i*4 + j]);
-            spdlog::info("HExact[{}, {}] = {:.3e}", i, j, hTensorExact[i*4 + j]);
+            spdlog::info("Ratio = {:.3e}", lTensor[i*4 +j] / lTensorExact[i*4 + j]);
+            // spdlog::info("HExact[{}, {}] = {:.3e}", i, j, hTensorExact[i*4 + j]);
         }
     }
 
@@ -435,10 +437,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             std::complex<double> amp_p{}, amp_n{};
             for(size_t mu = 0; mu < 4; ++mu) {
                 for(const auto &lcurrent : leptonCurrent) {
-                    for(const auto &pcurrent : hadronCurrent[0])
-                        amp_p += sign*lcurrent.second[i][mu]*pcurrent.second[j][mu];
-                    for(const auto &ncurrent : hadronCurrent[1])
-                        amp_n += sign*lcurrent.second[i][mu]*ncurrent.second[j][mu];
+                    auto boson = lcurrent.first;
+                    amp_p += sign*lcurrent.second[i][mu]*hadronCurrent[0][boson][j][mu];
+                    amp_n += sign*lcurrent.second[i][mu]*hadronCurrent[1][boson][j][mu];
                 }
                 sign = -1.0;
             }
@@ -453,47 +454,35 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     auto q = ke - kep;
     auto rotMat = q.AlignZ();
     q = q.Rotate(rotMat);
-    std::vector<std::complex<double>> ward(3);
-    for(size_t mu = 0; mu < 4; ++mu) {
-        if(mu == 0) {
-            ward[0] += q[mu]*leptonCurrent[22][mu];
-            ward[1] += q[mu]*hadronCurrent[0][22][mu];
-            ward[2] += q[mu]*hadronCurrent[1][22][mu];
-        } else {
-            ward[0] -= q[mu]*leptonCurrent[22][mu];
-            ward[1] -= q[mu]*hadronCurrent[0][22][mu];
-            ward[2] -= q[mu]*hadronCurrent[1][22][mu];
+    for(size_t i = 0; i < 4; ++i) {
+        std::vector<std::complex<double>> ward(3);
+        double sign = 1;
+        for(size_t mu = 0; mu < 4; ++mu) {
+            ward[0] += sign*q[mu]*leptonCurrent[22][i][mu];
+            ward[1] += sign*q[mu]*hadronCurrent[0][22][i][mu];
+            ward[2] += sign*q[mu]*hadronCurrent[1][22][i][mu];
+            sign = -1;
+        }
+        for(auto &w : ward) w /= amp2_p;
+        if(amp2_p != 0) {
+            spdlog::info("Spin idx: {}", i);
+            spdlog::info("Ward Identities (l, p, n): {: .4e}, {: .4e}, {: .4e}",
+                         ward[0], ward[1], ward[2]);
         }
     }
-    for(auto &w : ward) w /= amp_p;
-    if(amp_p.real() != 0) {
-        spdlog::info("q = {}", q);
-        spdlog::info("H^\\mu = {}", hadronCurrent[0][22]);
-        spdlog::info("Ward Identities: {: .4e}, {: .4e}, {: .4e}",
-                     ward[0], ward[1], ward[2]);
-    }
 #endif
-
-    double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
-    // TODO: Double check normalization factors
-    constexpr double GF = 1.116e-5/1_GeV/1_GeV;
-    double s = (event.Momentum()[0] + event.Momentum()[1]).M2();
-    double u = (event.Momentum()[0] - event.Momentum()[2]).M2();
-    double t = (event.Momentum()[0] - event.Momentum()[3]).M2();
-    spdlog::debug("p_nu = {}", event.Momentum()[1]);
-    spdlog::debug("p_n = {}", event.Momentum()[0]);
-    spdlog::debug("p_mu = {}", event.Momentum()[2]);
-    spdlog::debug("p_p = {}", event.Momentum()[3]);
-    spdlog::debug("s = {}, u = {}, t = {}", s, u, t);
-    spdlog::debug("amp^2 = {}, {}, {}, {}, {}", 32*GF*GF*pow(Constant::mN2-s, 2),  32*GF*GF*pow(Constant::mN2-u, 2),
-                  32*GF*GF*pow(Constant::mN2-t, 2), amp2_n, amp2_p);
     double spin_avg = 4;
-    if(event.MatrixElement(0).inital_state[1] == PID::nu_electron() ||
+    if(event.MatrixElement(2).inital_state[1] == PID::nu_electron() ||
        event.MatrixElement(0).inital_state[1] == PID::nu_muon() ||
        event.MatrixElement(0).inital_state[1] == PID::nu_tau())
         spin_avg = 2;
-    double xsec_p = amp2_p*Constant::HBARC2/spin_avg*flux;
-    double xsec_n = amp2_n*Constant::HBARC2/spin_avg*flux;
+    double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
+    // spdlog::info("relative velocity: {}", std::abs(event.Momentum()[1].P()/event.Momentum()[1].E() - event.Momentum()[0].P()/event.Momentum()[0].E()));
+    // double flux = 1.0/(4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) - event.Momentum()[0].M2()*event.Momentum()[1].M2()));
+    // flux *= event.Momentum()[3].E()/Constant::mN;
+    static constexpr double to_nb = 1e6;
+    double xsec_p = amp2_p*Constant::HBARC2/spin_avg*flux*to_nb;
+    double xsec_n = amp2_n*Constant::HBARC2/spin_avg*flux*to_nb;
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
             event.MatrixElement(i).weight = xsec_p;

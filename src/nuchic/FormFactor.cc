@@ -25,8 +25,8 @@ std::unique_ptr<nuchic::FormFactor> nuchic::FormFactor::Build(const YAML::Node &
 void nuchic::FormFactor::Fill(double tau, Values &result) const {
     result.F1p = (result.Gep + tau*result.Gmp)/(1+tau);
     result.F1n = (result.Gen + tau*result.Gmn)/(1+tau);
-    result.F2p = (result.Gmp - tau*result.Gep)/(1+tau);
-    result.F2n = (result.Gmn - tau*result.Gen)/(1+tau);
+    result.F2p = (result.Gmp - result.Gep)/(1+tau);
+    result.F2n = (result.Gmn - result.Gen)/(1+tau);
 }
 
 nuchic::Dipole::Dipole(const YAML::Node &config) {
@@ -43,7 +43,7 @@ nuchic::FormFactor::Values nuchic::Dipole::operator()(double Q2) const {
     Values result{};
 
     result.Gep = 1.0/pow(1.0+Q2/lambda/lambda, 2);
-    result.Gen = -muN*Q2*result.Gep/(1+Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
+    result.Gen = -muN*Q2*result.Gep/(1+5.6*Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
     result.Gmp = muP*result.Gep;
     result.Gmp = muN*result.Gep;
     result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);

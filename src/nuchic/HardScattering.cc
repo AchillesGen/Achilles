@@ -77,9 +77,9 @@ nuchic::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> 
     return currents;
 }
 
-std::array<std::complex<double>, 3> HardScattering::CouplingsFF(const FormFactor::Values &formFactors,
+nuchic::FormFactorArray HardScattering::CouplingsFF(const FormFactor::Values &formFactors,
                                                                 const std::vector<FormFactorInfo> &ffInfo) const {
-    std::array<std::complex<double>, 3> results{};
+    FormFactorArray results{};
 
     for(const auto & ff : ffInfo) {
         spdlog::trace("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
@@ -103,6 +103,35 @@ std::array<std::complex<double>, 3> HardScattering::CouplingsFF(const FormFactor
     }
 
     return results;
+}
+
+nuchic::Current HardScattering::CalculateHadronicCurrent(const std::array<Spinor, 2> &ubar,
+                                                         const std::array<Spinor, 2> &u,
+                                                         const FourVector &qVec,
+                                                         const FormFactorArray &ffVal) const {
+
+    Current result;
+    std::array<SpinMatrix, 4> gamma{};
+    for(size_t mu = 0; mu < 4; ++mu) {
+        gamma[mu] = ffVal[0]*SpinMatrix::GammaMu(mu) + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5();
+        double sign = 1;
+        for(size_t nu = 0; nu < 4; ++nu) {
+            gamma[mu] += std::complex<double>(0, 1)*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN));
+            sign = -1;
+        }
+    }
+
+    for(size_t i = 0; i < 2; ++i) {
+        for(size_t j = 0; j < 2; ++j) {
+            std::vector<std::complex<double>> subcur(4);
+            for(size_t mu = 0; mu < 4; ++mu) {
+                subcur[mu] = ubar[i]*gamma[mu]*u[j];
+            }
+            result.push_back(subcur);
+        }
+    }
+
+    return result;
 }
 
 void HardScattering::GeneratePhaseSpace(const std::vector<double> &rans, Event &event) const {

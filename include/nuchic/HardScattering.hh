@@ -1,6 +1,7 @@
 #ifndef HARD_SCATTERING_HH
 #define HARD_SCATTERING_HH
 
+#include "nuchic/Spinor.hh"
 #include <utility>
 #include <complex>
 #include <vector>
@@ -32,9 +33,11 @@ class Event;
 struct InitialState;
 
 using Particles = std::vector<Particle>;
-using Currents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+using Current = std::vector<std::vector<std::complex<double>>>;
+using Currents = std::map<int, Current>;
 using HCurrents = std::array<Currents, 2>;
 using FFInfoMap = std::map<int, std::vector<FormFactorInfo>>;
+using FormFactorArray = std::array<std::complex<double>, 3>;
 
 class HardScattering {
     public:
@@ -94,8 +97,10 @@ class HardScattering {
         // Leptonic and Hadronic Tensor Helper Functions
         size_t NLeptons() const { return m_leptonicProcesses[0].m_ids.size()-2; }
         FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor -> operator()(q2); }
-        std::array<std::complex<double>, 3> CouplingsFF(const FormFactor::Values&,
-                                                        const std::vector<FormFactorInfo>&) const;
+        FormFactorArray CouplingsFF(const FormFactor::Values&,
+                                    const std::vector<FormFactorInfo>&) const;
+        Current CalculateHadronicCurrent(const std::array<Spinor, 2>&, const std::array<Spinor, 2>&,
+                                         const FourVector&, const FormFactorArray&) const;
 
         // Phase space factors
         static constexpr int nNucleonTypes = 2;

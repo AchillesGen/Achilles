@@ -58,86 +58,67 @@ nuchic::HCurrents nuchic::FQESpectral::HadronicCurrents(Event &event,
     qVec = qVec.Rotate(rotMat);
     pNucleonIn = pNucleonIn.Rotate(rotMat);
     pNucleonOut = pNucleonOut.Rotate(rotMat);
-    pNucleonIn.E() = Constant::mN - pNucleonIn.E();
+    auto removal_energy = Constant::mN - pNucleonIn.E();
+    auto free_energy = sqrt(pNucleonIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2()/1.0_GeV/1.0_GeV);
+    auto omega = qVec.E();
+    qVec.E() = qVec.E() + pNucleonIn.E() - free_energy;
 
     HCurrents results;
     double spectralProton = 0, spectralNeutron = 0;
 
     spdlog::debug("Energy = {}", pNucleonIn.E());
-    GetSpectral(2212, pNucleonIn.E(), pNucleonIn.P(), spectralProton);
-    GetSpectral(2112, pNucleonIn.E(), pNucleonIn.P(), spectralNeutron);
-    spdlog::trace("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
-                  pNucleonIn.E(), pNucleonIn.P(), spectralProton,                  
-                  pNucleonIn.E(), pNucleonIn.P(), spectralNeutron);
+    GetSpectral(2212, removal_energy, pNucleonIn.P(), spectralProton);
+    GetSpectral(2112, removal_energy, pNucleonIn.P(), spectralNeutron);
+    spdlog::debug("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
+                  removal_energy, pNucleonIn.P(), spectralProton,                  
+                  removal_energy, pNucleonIn.P(), spectralNeutron);
 
     // Setup spinors
-    pNucleonIn.E() = sqrt(pNucleonIn.P2() + Constant::mN2);
+    pNucleonIn.E() = free_energy;
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pNucleonOut);
     ubar[1] = UBarSpinor(1, pNucleonOut);
     u[0] = USpinor(-1, -pNucleonIn);
     u[1] = USpinor(1, -pNucleonIn);
 
-    spdlog::trace("ubar = {}, {}", ubar[0], ubar[1]);
-    spdlog::trace("u = {}, {}", u[0], u[1]);
+    spdlog::debug("pNucleonIn = {}", pNucleonIn);
+    spdlog::debug("pNucleonOut = {}", pNucleonOut);
+    spdlog::debug("qVec = {}", qVec);
 
-    // Calculate neutron contributions
+    // Calculate proton contributions
     for(const auto &formFactor : protonFF) {
-        std::vector<std::vector<std::complex<double>>> tmp;
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::debug("f1p = {}, f2p = {}, fa = {}", ffVal[0], ffVal[1], ffVal[2]);
 
-        for(size_t i = 0; i < 2; ++i) {
-            for(size_t j = 0; j < 2; ++j) {
-                std::vector<std::complex<double>> subcur(4);
-                for(size_t mu = 0; mu < 4; ++mu) {
-                    subcur[mu] = ubar[i]*(ffVal[0]*SpinMatrix::GammaMu(mu)
-                                        + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5())*u[j];
-                    double sign = 1;
-                    for(size_t nu = 0; nu < 4; ++nu) {
-                        subcur[mu] += ubar[i]*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN))*u[j];
-                        sign = -1;
-                    }
-                    subcur[mu] *= sqrt(spectralProton/6);
-                }
-                // Correct the Ward identity
-                // subcur[3] = qVec.E()/qVec.P()*subcur[0];
-                tmp.push_back(subcur);
+        auto current = CalculateHadronicCurrent(ubar, u, qVec, ffVal);
+
+        for(auto &subcur : current) {
+            for(auto &val : subcur) {
+                val *= sqrt(spectralProton/6);
             }
+            // Correct the Ward identity
+            // subcur[3] = omega/qVec.P()*subcur[0];
         }
 
-        results[0][formFactor.first] = tmp;
-
+        results[0][formFactor.first] = current;
     }
 
     // Calculate neutron contributions
     for(const auto &formFactor : neutronFF) {
-        std::vector<std::vector<std::complex<double>>> tmp;
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::debug("f1n = {}, f2n = {}, fa = {}", ffVal[0], ffVal[1], ffVal[2]);
 
-        for(size_t i = 0; i < 2; ++i) {
-            for(size_t j = 0; j < 2; ++j) {
-                std::vector<std::complex<double>> subcur(4);
-                for(size_t mu = 0; mu < 4; ++mu) {
-                    subcur[mu] = ubar[i]*(ffVal[0]*SpinMatrix::GammaMu(mu)
-                                        + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5())*u[j];
-                    double sign = 1;
-                    for(size_t nu = 0; nu < 4; ++nu) {
-                        subcur[mu] += ubar[i]*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN))*u[j];
-                        sign = -1;
-                    }
-
-                    subcur[mu] *= sqrt(spectralNeutron/6);
-                }
-                // Correct the Ward identity
-                // subcur[3] = qVec.E()/qVec.P()*subcur[0];
-                tmp.push_back(subcur);
+        auto current = CalculateHadronicCurrent(ubar, u, qVec, ffVal);
+        for(auto &subcur : current) {
+            for(auto &val : subcur) {
+                val *= sqrt(spectralNeutron/6);
             }
+            // Correct the Ward identity
+            // subcur[3] = omega/qVec.P()*subcur[0];
         }
 
-        results[1][formFactor.first] = tmp;
+        results[1][formFactor.first] = current;
     }
 
     return results;
