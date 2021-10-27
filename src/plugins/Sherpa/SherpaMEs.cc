@@ -76,7 +76,7 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");
-  addParameter(argv,"ACTIVE[23]=0");
+  // addParameter(argv,"ACTIVE[23]=0");
   addParameter(argv,"ACTIVE[9000005]=0");
   addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
   // add additional commandline parameters
