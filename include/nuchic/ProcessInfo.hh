@@ -46,7 +46,7 @@ struct convert<std::vector<nuchic::Process_Info>> {
             if(!subnode.IsSequence()) return false;
             info.emplace_back(model,
                               subnode.as<std::vector<nuchic::PID>>());
-            info.back().m_ids.emplace_back(nuchic::PID::neutron());
+            info.back().m_ids.emplace_back(nuchic::PID::proton());
         }
         return true;
     }
