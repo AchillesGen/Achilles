@@ -105,6 +105,33 @@ void RunBinding(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &
     out.close();
 }
 
+
+void RunEnergySpectrum(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &config) {
+    fmt::print("Potential energy spectrum\n");
+    std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
+    std::ofstream out(filename);
+    auto radii = config["Radii"].as<std::vector<double>>();
+    double current_radius = radii[0];
+    auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
+
+    while(current_radius <= radii[1]) {
+	 double current_mom = kick_mom[0];
+	 while(current_mom <= kick_mom[1]) {
+            double energy_free= pow(current_mom,2)/2/nuchic::Constant::mN;
+            if(config["Potential"].as<std::string>() == "Cooper")
+		     energy_free= sqrt(pow(current_mom,2)+pow(nuchic::Constant::mN,2))-nuchic::Constant::mN;
+            double energy = potential -> EnergySpectrum (current_radius, current_mom);
+            fmt::print("  Radius = {}, Momentum = {}, Energy = {}, Free Energy = {}\n", current_radius, current_mom, energy, energy_free);
+            out << fmt::format("{:8.3f},{:8.3f},{:8.3f},{:8.3f}\n", current_radius, current_mom, energy, energy_free);
+            current_mom += kick_mom[2];
+	 }
+        current_radius += radii[2];
+    }
+    out.close();
+}
+
+
+
 void nuchic::RunPotential(const std::string &runcard) {
     auto config = YAML::LoadFile(runcard);
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -130,4 +157,6 @@ void nuchic::RunPotential(const std::string &runcard) {
         RunPropagation(potential, nucleus, config);
     else if(config["Mode"].as<std::string>() == "Binding")
         RunBinding(potential, config);
+    else if(config["Mode"].as<std::string>() == "EnergySpectrum")
+        RunEnergySpectrum(potential, config);
 }

@@ -71,6 +71,7 @@ std::array<PotentialVals, 3> Potential::stencil5all(std::function<nuchic::Potent
     return results;
 }
 
+/*
 std::unique_ptr<Potential> nuchic::SquareWellPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                                   const YAML::Node&) {
     return std::make_unique<SquareWellPotential>(nuc); 
@@ -84,6 +85,7 @@ PotentialVals nuchic::SquareWellPotential::operator()(const double&, const doubl
 
     return result;
 }
+*/
 
 std::unique_ptr<Potential> nuchic::WiringaPotential::Construct(std::shared_ptr<Nucleus>& nuc,
                                                                const YAML::Node &node) {

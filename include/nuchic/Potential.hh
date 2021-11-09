@@ -74,6 +74,10 @@ class Potential {
             return brent.CalcRoot(0, 1000);
         }
 
+	double EnergySpectrum(double r, double p) const {
+                return Hamiltonian(p, r) - Constant::mN;
+        }
+
         bool IsCaptured(double r, double mom) const {
             return Hamiltonian(mom, r) <= Constant::mN;
         }
@@ -86,11 +90,11 @@ class Potential {
 
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
-        double InMediumCorrectionNonRel(FourVector p1, FourVector p2, double m, double r) const {
-            double m1Star = Mstar(p1.P(), m, r);
-            double m2Star = Mstar(p2.P(), m, r);
+        double InMediumCorrectionNonRel(FourVector p1, FourVector p2, double m, double r1,double r2,double r3) const {
+            double m1Star = Mstar(p1.P(), m, r1);
+            double m2Star = Mstar(p2.P(), m, r2);
             double p12 = sqrt((p1.P2() + p2.P2())/2);
-            double m12Star = Mstar(p12, m, r);
+            double m12Star = Mstar(p12, m, r3);
 
             return (p1 - p2).P()/m/(p1/m1Star - p2/m2Star).P()*m12Star/m;
         }
@@ -108,7 +112,7 @@ template<typename Derived>
 using RegistrablePotential = Registrable<Potential, Derived, std::shared_ptr<Nucleus>&, const YAML::Node&>;
 using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus>&, const YAML::Node&>;
 
-class SquareWellPotential : public Potential, RegistrablePotential<SquareWellPotential> {
+/*class SquareWellPotential : public Potential, RegistrablePotential<SquareWellPotential> {
     public:
         SquareWellPotential(std::shared_ptr<Nucleus> nucleus) : m_nucleus{std::move(nucleus)} {}
         
@@ -120,6 +124,7 @@ class SquareWellPotential : public Potential, RegistrablePotential<SquareWellPot
     private:
         std::shared_ptr<Nucleus> m_nucleus;
 };
+*/
 
 class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential> {
     public:
