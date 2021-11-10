@@ -19,7 +19,14 @@ nuchic::HardScattering::HardScattering(RunMode mode)
     : m_mode{mode} {
     const std::string form_factor_file = "FormFactors.yml";
     YAML::Node node = YAML::LoadFile(form_factor_file);
-    m_form_factor = FormFactor::Build(node);
+    spdlog::debug("Setting up form factors");
+    const auto vectorFF = node["vector"].as<std::string>();
+    const auto axialFF = node["axial"].as<std::string>();
+    const auto coherentFF = node["coherent"].as<std::string>();
+    m_form_factor = FormFactorBuilder().Vector(vectorFF, node[vectorFF])
+                                       .AxialVector(axialFF, node[axialFF])
+                                       .Coherent(coherentFF, node[coherentFF])
+                                       .build();
 }
 
 int HardScattering::LeptonVariables() const {
@@ -79,7 +86,7 @@ nuchic::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> 
 }
 
 nuchic::FormFactorArray HardScattering::CouplingsFF(const FormFactor::Values &formFactors,
-                                                                const std::vector<FormFactorInfo> &ffInfo) const {
+                                                    const std::vector<FormFactorInfo> &ffInfo) const {
     FormFactorArray results{};
 
     for(const auto & ff : ffInfo) {
@@ -100,6 +107,9 @@ nuchic::FormFactorArray HardScattering::CouplingsFF(const FormFactor::Values &fo
             case FormFactorInfo::Type::FA:
                 results[2] += formFactors.FA*ff.coupling;
                 break;
+            case FormFactorInfo::Type::FCoh:
+                results[3] += formFactors.Fcoh*ff.coupling;
+                break;
         }
     }
 
@@ -115,6 +125,8 @@ nuchic::Current HardScattering::CalculateHadronicCurrent(const std::array<Spinor
     std::array<SpinMatrix, 4> gamma{};
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal[0]*SpinMatrix::GammaMu(mu) + ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5();
+        // gamma[mu] = ffVal[2]*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5();
+        // gamma[mu] = ffVal[0]*SpinMatrix::GammaMu(mu);
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] += std::complex<double>(0, 1)*(ffVal[1]*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN));
@@ -191,6 +203,18 @@ void HardScattering::GenerateLeptons(const std::vector<double> &leptonRans, Even
         event.MatrixElement(i).inital_state.push_back(PID::electron());
         event.MatrixElement(i).final_state.push_back(PID::electron());
     }
+}
+
+bool nuchic::Coherent::InitializeEvent(nuchic::Event &event) {
+    // Calculate and store total cross section
+    if(!event.TotalCrossSection())
+        return false;
+
+    // There is only one matrix element for coherent scattering
+    event.InitializeLeptons(0);
+    event.InitializeCoherent();
+
+    return true;
 }
 
 bool nuchic::Quasielastic::InitializeEvent(nuchic::Event &event) {

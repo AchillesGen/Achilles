@@ -31,6 +31,7 @@ add_library(physics SHARED
     InteractionsFactory.cc
     Nucleus.cc
     FormFactor.cc
+    FormFactorBuilder.cc
     Beams.cc
     HardScattering.cc
     HardScatteringFactory.cc
