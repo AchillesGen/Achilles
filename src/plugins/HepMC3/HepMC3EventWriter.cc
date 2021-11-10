@@ -79,27 +79,36 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     // TODO: Get nuclear pid from the nucleus object
     const HepMC3::FourVector initMass{0, 0, 0, 12000};
     GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, 1000060120, 4);
-    // TODO: Modify for MEC case
-    const auto initHadron = hadrons[0];
-    HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
-    GenParticlePtr p2 = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
+    HepMC3::FourVector hardVertexPos;
+    GenParticlePtr nucleon;
+    nuchic::FourVector recoilMom{0, 0, 0, 12000};
+    if(event.IsCoherent()) {
+        hardVertexPos = {0, 0, 0, 0};
+        nucleon = p1;
+    } else {
+        // TODO: Modify for MEC case
+        const auto initHadron = hadrons[0];
+        HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
+        nucleon = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
 
-    // Add vertex for hadrons from nucleus
-    const auto initPos = initHadron.Position();
-    const HepMC3::FourVector p2Pos{initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
-    GenVertexPtr v1 = std::make_shared<GenVertex>(p2Pos);
-    v1->add_particle_in(p1);
-    v1->add_particle_out(p2);
-    evt.add_vertex(v1);
+        // Add vertex for hadrons from nucleus
+        const auto initPos = initHadron.Position();
+        hardVertexPos = {initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
+        GenVertexPtr v1 = std::make_shared<GenVertex>(hardVertexPos);
+        v1->add_particle_in(p1);
+        v1->add_particle_out(nucleon);
+        evt.add_vertex(v1);
+    }
 
     // Add initial lepton
     const auto initLepton = leptons[0];
     const HepMC3::FourVector p3Mom{initLepton.Px(), initLepton.Py(), initLepton.Pz(), initLepton.E()};
     GenParticlePtr p3 = std::make_shared<GenParticle>(p3Mom, int(initLepton.ID()), 4);
+    recoilMom += initLepton.Momentum();
 
     // Add hard interaction vertex 
-    GenVertexPtr v2 = std::make_shared<GenVertex>(p2Pos);
-    v2->add_particle_in(p2);
+    GenVertexPtr v2 = std::make_shared<GenVertex>(hardVertexPos);
+    v2->add_particle_in(nucleon);
     v2->add_particle_in(p3);
 
     // Add remaining leptons
@@ -108,6 +117,7 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
         const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
         GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
         v2->add_particle_out(p);
+        recoilMom -= currPart.Momentum();
     }
 
     // Add remaining hard interaction hadrons
@@ -116,6 +126,7 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
         const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
         GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
         v2->add_particle_out(p);
+        recoilMom -= currPart.Momentum();
     }
 
     // TODO: Add in cascade information if available
@@ -123,7 +134,7 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     // Add in remnant Nucleus
     // TODO: Get recoil momentum for the nucleus
     // TODO: Move remnant to last cascade vertex???
-    const HepMC3::FourVector recoil{0, 0, 0, event.Remnant().Mass()};
+    const HepMC3::FourVector recoil{recoilMom.Px(), recoilMom.Py(), recoilMom.Pz(), recoilMom.E()};
     GenParticlePtr pRemnant = std::make_shared<GenParticle>(recoil, event.Remnant().PID(), 1);
     v2->add_particle_out(pRemnant);
     evt.add_vertex(v2);

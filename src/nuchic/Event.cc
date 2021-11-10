@@ -13,6 +13,8 @@ Event::Event(std::shared_ptr<Nucleus> nuc,
 }
 
 bool Event::ValidateEvent(size_t imatrix) const {
+    spdlog::trace("Number of momentums = {}", m_mom.size());
+    spdlog::trace("Number of states = {}", m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size());
     return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
 }
 
@@ -45,10 +47,17 @@ void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
         m_nuc -> Nucleons()[idx[0]].SetMomentum(m_mom[idx[1]]);
         Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
         // TODO: Have this be determined by Cascade flag
-        // outNucleon.Status() = ParticleStatus::propagating;
-        outNucleon.Status() = ParticleStatus::final_state;
+        outNucleon.Status() = ParticleStatus::propagating;
+        // outNucleon.Status() = ParticleStatus::final_state;
         outNucleon.SetMomentum(m_mom[idx[2]]);
         m_nuc -> Nucleons().push_back(outNucleon);
+    }
+}
+
+void Event::InitializeCoherent() {
+    m_coh = true;
+    for(auto &nucleon : m_nuc -> Nucleons()) {
+        nucleon.Status() = ParticleStatus::background;
     }
 }
 
@@ -93,12 +102,13 @@ nuchic::vParticles& Event::Hadrons() {
 double Event::Weight() const {
     if(!ValidateEvent(0))
         throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    return m_vWgt*m_meWgt;
+    spdlog::debug("Coherent xsec = {}", m_xsec_coherent);
+    return m_vWgt*(m_meWgt + m_xsec_coherent);
 }
 
 bool Event::TotalCrossSection() {
     m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, AddEvents);
-    return m_meWgt > 0 ? true : false;
+    return (m_meWgt + m_xsec_coherent) > 0 ? true : false;
 }
 
 std::vector<double> Event::EventProbs() const {

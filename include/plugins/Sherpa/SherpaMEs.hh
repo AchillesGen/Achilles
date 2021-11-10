@@ -22,7 +22,8 @@ struct FormFactorInfo {
         F1n,
         F2p,
         F2n,
-        FA
+        FA,
+        FCoh,
     };
 
     Type form_factor;

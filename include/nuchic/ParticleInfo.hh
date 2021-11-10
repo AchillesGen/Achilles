@@ -70,6 +70,8 @@ namespace nuchic {
             static constexpr PID neutron() { return PID{ 2112 }; }
             // Dummy hadron
             static constexpr PID dummyHadron() { return PID{ 2212 }; }
+            // Common Elements
+            static constexpr PID carbon() { return PID{ 1000060120 }; }
 
             // Stream Operator
             template<typename OStream>

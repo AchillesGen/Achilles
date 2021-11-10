@@ -44,6 +44,7 @@ class Event {
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
         void InitializeLeptons(size_t);
         void InitializeHadrons(const std::vector<std::array<size_t, 3>>&);
+        void InitializeCoherent();
         void Finalize();
 
         const NuclearRemnant &Remnant() const { return m_remnant; }
@@ -74,6 +75,10 @@ class Event {
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
+        bool IsCoherent() const { return m_coh; }
+        double &CoherentXsec() { return m_xsec_coherent; }
+        const double &CoherentXsec() const { return m_xsec_coherent; }
+
     private:
         static double AddEvents(double, const MatrixElementStruct&);
 
@@ -87,6 +92,10 @@ class Event {
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
         vParticles m_history{};
+
+        // Coherent variables
+        bool m_coh{false};
+        double m_xsec_coherent{};
 };
 
 }

@@ -37,6 +37,7 @@ add_library(physics SHARED
     HardScatteringFactory.cc
     Configuration.cc
     Event.cc
+    Coherent.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings

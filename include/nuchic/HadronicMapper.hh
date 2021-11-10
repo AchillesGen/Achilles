@@ -52,6 +52,19 @@ class QESpectralMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMa
         static constexpr double dp = 800;
 };
 
+class CoherentMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapper, CoherentMapper, size_t> {
+    public:
+        CoherentMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+        static std::string Name() { return "Coherent"; }
+        static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
+            return std::make_unique<CoherentMapper>(idx);
+        }
+
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        size_t NDims() const override { return 0; }
+};
+
 }
 
 

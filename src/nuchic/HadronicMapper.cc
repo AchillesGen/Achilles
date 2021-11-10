@@ -5,6 +5,15 @@
 #include "spdlog/spdlog.h"
 
 using nuchic::QESpectralMapper;
+using nuchic::CoherentMapper;
+
+void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double>&) const {
+    point[HadronIdx()] = {Constant::mN*12, 0, 0, 0};
+}
+
+double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double>&) const {
+    return 1;
+}
 
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
     // Generate inital nucleon state

@@ -47,7 +47,8 @@ nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
 
 nuchic::HCurrents nuchic::FQESpectral::HadronicCurrents(Event &event,
                                                         const FFInfoMap &protonFF,
-                                                        const FFInfoMap &neutronFF) const {
+                                                        const FFInfoMap &neutronFF,
+                                                        const FFInfoMap&) const {
     auto pNucleonIn = event.Momentum().front();
     auto pNucleonOut = event.Momentum().back();
     auto qVec = event.Momentum()[1];
@@ -61,6 +62,9 @@ nuchic::HCurrents nuchic::FQESpectral::HadronicCurrents(Event &event,
     auto removal_energy = Constant::mN - pNucleonIn.E();
     auto free_energy = sqrt(pNucleonIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2()/1.0_GeV/1.0_GeV);
+    // TEST: Check the neutrino and anti-neutrion form factors
+    // auto q2 = 100*100;
+    // ffVals = EvalFormFactor(q2/1.0_GeV/1.0_GeV);
     auto omega = qVec.E();
     qVec.E() = qVec.E() + pNucleonIn.E() - free_energy;
 

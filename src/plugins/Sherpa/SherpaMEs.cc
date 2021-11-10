@@ -200,6 +200,7 @@ std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) c
                 && std::find(vertex.in.begin(), vertex.in.end(), vpid) != vertex.in.end()) {
             for(size_t i = 0; i < vertex.FormFactor.size(); ++i) {
                 std::string ff = vertex.FormFactor[i];
+                spdlog::trace("For vertex {},{}: found form factor: {}", hpid, vpid, ff);
                 std::complex<double> coupling = vertex.Coupling(i);
                 FormFactorInfo::Type type;
                 if(ff == "F1p") type = FormFactorInfo::Type::F1p;
@@ -207,6 +208,7 @@ std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) c
                 else if(ff == "F2p") type = FormFactorInfo::Type::F2p;
                 else if(ff == "F2n") type = FormFactorInfo::Type::F2n;
                 else if(ff == "FA") type = FormFactorInfo::Type::FA;
+                else if(ff == "FCoh") type = FormFactorInfo::Type::FCoh;
                 form_factors.push_back({type, coupling});
             }
         }

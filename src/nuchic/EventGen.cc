@@ -25,76 +25,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-/// From https://gitlab.com/tesch1/cppduals/blob/master/duals/dual#L1304
-/// std::complex<> Formatter for libfmt https://github.com/fmtlib/fmt
-///
-/// libfmt does not provide a formatter for std::complex<>, although
-/// one is proposed for c++20.  Anyway, at the expense of a k or two,
-/// you can define CPPDUALS_LIBFMT_COMPLEX and get this one.
-///
-/// The standard iostreams formatting of complex numbers is (a,b),
-/// where a and b are the real and imaginary parts.  This formats a
-/// complex number (a+bi) as (a+bi), offering the same formatting
-/// options as the underlying type - with the addition of three
-/// optional format options, only one of which may appear directly
-/// after the ':' in the format spec (before any fill or align): '$'
-/// (the default if no flag is specified), '*', and ','.  The '*' flag
-/// adds a * before the 'i', producing (a+b*i), where a and b are the
-/// formatted value_type values.  The ',' flag simply prints the real
-/// and complex parts separated by a comma (same as iostreams' format).
-/// As a concrete exmple, this formatter can produce either (3+5.4i)
-/// or (3+5.4*i) or (3,5.4) for a complex<double> using the specs {:g}
-/// | {:$g}, {:*g}, or {:,g}, respectively.  (this implementation is a
-/// bit hacky - glad for cleanups).
-///
-template <typename T, typename Char>
-struct fmt::formatter<std::complex<T>,Char> : public fmt::formatter<T,Char>
-{
-  using base = fmt::formatter<T, Char>;
-  enum style { expr, star, pair } style_ = expr;
-  fmt::detail::dynamic_format_specs<Char> specs_;
-  FMT_CONSTEXPR auto parse(format_parse_context & ctx) -> decltype(ctx.begin()) {
-    using handler_type = fmt::detail::dynamic_specs_handler<format_parse_context>;
-    auto type = fmt::detail::type_constant<T, Char>::value;
-    fmt::detail::specs_checker<handler_type> handler(handler_type(specs_, ctx), type);
-    auto it = ctx.begin();
-    if (it != ctx.end()) {
-      switch (*it) {
-      case '$': style_ = style::expr; ctx.advance_to(++it); break;
-      case '*': style_ = style::star; ctx.advance_to(++it); break;
-      case ',': style_ = style::pair; ctx.advance_to(++it); break;
-      default: break;
-      }
-    }
-    parse_format_specs(ctx.begin(), ctx.end(), handler);
-    //todo: fixup alignment
-    return base::parse(ctx);
-  }
-  template <typename FormatCtx>
-  auto format(const std::complex<T> & x, FormatCtx & ctx) -> decltype(ctx.out()) {
-    format_to(ctx.out(), "(");
-    if (style_ == style::pair) {
-      base::format(x.real(), ctx);
-      format_to(ctx.out(), ",");
-      base::format(x.imag(), ctx);
-      return format_to(ctx.out(), ")");
-    }
-    if (x.real() || !x.imag())
-      base::format(x.real(), ctx);
-    if (x.imag()) {
-      if (x.real() && x.imag() >= 0 && specs_.sign != sign::plus)
-        format_to(ctx.out(), "+");
-      base::format(x.imag(), ctx);
-      if (style_ == style::star)
-        format_to(ctx.out(), "*i");
-      else
-        format_to(ctx.out(), "i");
-      if (std::is_same<typename std::decay<T>::type,float>::value)       format_to(ctx.out(), "f");
-      if (std::is_same<typename std::decay<T>::type,long double>::value) format_to(ctx.out(), "l");
-    }
-    return format_to(ctx.out(), ")");
-  }
-};
+#include "nuchic/ComplexFmt.hh"
 
 nuchic::Channel<nuchic::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<nuchic::Beam> beam) {
     nuchic::Channel<nuchic::FourVector> channel;
@@ -122,6 +53,9 @@ nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(size_t nlep, size_t nhad,
                                                        std::shared_ptr<nuchic::Beam> beam,
                                                        const std::vector<double> &masses) {
     nuchic::Channel<nuchic::FourVector> channel;
+    // channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
+    //                                                .Hadron("QESpectral")
+    //                                                .SherpaFinalState(T::Name(), masses).build();
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
                                                    .Hadron("QESpectral")
                                                    .SherpaFinalState(T::Name(), masses).build();
@@ -155,6 +89,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     }
 
     // Initialize hard cross-sections
+    spdlog::debug("Initializing hard interaction");
     auto scatteringNode = config["Main"]["Hard Scattering"];
     auto runMode = config["Main"]["Run Mode"].as<nuchic::RunMode>();
     scattering = HardScatteringFactory::Create(scatteringNode["Model"].as<std::string>(),
@@ -171,7 +106,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
     spdlog::debug("Initializing the leptonic current calculation");
     auto leptonicProcesses = config["Leptonic Tensor"].as<std::vector<nuchic::Process_Info>>();
     for(const auto &beam_id : beam -> BeamIDs()) {
-        std::vector<PID> incoming = {nuchic::PID::proton(), beam_id};
+        std::vector<PID> incoming = {nuchic::PID::neutron(), beam_id};
         for(auto info : leptonicProcesses) {
             info.m_ids.insert(info.m_ids.begin(), incoming.begin(), incoming.end());
             for(const auto id : info.m_ids)
@@ -193,6 +128,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         auto hadronMapper = std::make_shared<QESpectralMapper>(0);
         if(scattering -> Processes()[0].m_ids.size() == 4) {
             std::vector<double> masses{0, pow(Constant::mN, 2)};
+            // std::vector<double> masses{0, pow(Constant::mN*12, 2)};
             // Channel<FourVector> channel = BuildChannel<TwoBodyMapper>(2, 2, beam, masses);
             // integrand.AddChannel(std::move(channel));
             Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(2, 2, beam, masses);
@@ -204,6 +140,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const _sher
         } else if(scattering -> Processes()[0].m_ids.size() == 6) {
             spdlog::info("Initializing 2->4");
             std::vector<double> masses{0, 0, 0, pow(Constant::mN, 2)};
+            // std::vector<double> masses{0, 0, 0, pow(Constant::mN*12, 2)};
             Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(4, 2, beam, masses);
             Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(4, 2, beam, masses);
             Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(4, 2, beam, masses);
@@ -345,17 +282,19 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     spdlog::trace("Leptonic Current: {}", leptonCurrent);
 
     // Obtain the hadronic tensor
-    static FFInfoMap protonFF, neutronFF;
-    if(protonFF.empty() && neutronFF.empty()) {
+    static FFInfoMap protonFF, neutronFF, coherentFF;
+    if(protonFF.empty() && neutronFF.empty() && coherentFF.empty()) {
         for(const auto &current : leptonCurrent) {
-            protonFF[current.first] = scattering -> FormFactors(2212, current.first);
-            neutronFF[current.first] = scattering -> FormFactors(2112, current.first);
+            protonFF[current.first] = scattering -> FormFactors(PID::proton(), current.first);
+            neutronFF[current.first] = scattering -> FormFactors(PID::neutron(), current.first);
+            coherentFF[current.first] = scattering -> FormFactors(PID::carbon(), current.first);
         }
     }
 
-    auto hadronCurrent = scattering -> HadronicCurrents(event, protonFF, neutronFF);
+    auto hadronCurrent = scattering -> HadronicCurrents(event, protonFF, neutronFF, coherentFF);
     spdlog::trace("Hadronic Current(proton): {}", hadronCurrent[0]);
     spdlog::trace("Hadronic Current(neutron): {}", hadronCurrent[1]);
+    // spdlog::trace("Hadronic Current(coherent): {}", hadronCurrent[2]);
 
 #ifdef CHECK_TENSOR
     std::array<std::complex<double>, 16> lTensor, lTensorExact, hTensor, hTensorExact;
@@ -428,24 +367,29 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         }
     }
 #endif
-
-    scattering -> CrossSection(event);
-    double amp2_p{}, amp2_n{};
+    
+    // scattering -> CrossSection(event);
+    double amp2_p{}, amp2_n{}; //, amp2_coh{};
     const size_t nspins = 1 << (event.Momentum().size() - 2);
     for(size_t i = 0; i < nspins; ++i) {
         for(size_t j = 0; j < 4; ++j) {
             double sign = 1.0;
-            std::complex<double> amp_p{}, amp_n{};
+            std::complex<double> amp_p{}, amp_n{}; //, amp_coh{};
             for(size_t mu = 0; mu < 4; ++mu) {
                 for(const auto &lcurrent : leptonCurrent) {
                     auto boson = lcurrent.first;
-                    amp_p += sign*lcurrent.second[i][mu]*hadronCurrent[0][boson][j][mu];
-                    amp_n += sign*lcurrent.second[i][mu]*hadronCurrent[1][boson][j][mu];
+                    if(hadronCurrent[0].find(boson) != hadronCurrent[0].end())
+                        amp_p += sign*lcurrent.second[i][mu]*hadronCurrent[0][boson][j][mu];
+                    if(hadronCurrent[1].find(boson) != hadronCurrent[1].end())
+                        amp_n += sign*lcurrent.second[i][mu]*hadronCurrent[1][boson][j][mu];
+                    // if(hadronCurrent[2].find(boson) != hadronCurrent[2].end() && j == 0)
+                    //     amp_coh += sign*lcurrent.second[i][mu]*hadronCurrent[2][boson][j][mu];
                 }
                 sign = -1.0;
             }
             amp2_p += std::norm(amp_p);
             amp2_n += std::norm(amp_n);
+            // amp2_coh += std::norm(amp_coh);
         }
     }
 
@@ -478,21 +422,26 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
        event.MatrixElement(0).inital_state[1].Abs() == PID::nu_tau())
         spin_avg = 2;
     double flux = 1.0/(2*event.Momentum()[1].E())/(2*sqrt(event.Momentum()[0].P2() + Constant::mN2));
-    // spdlog::info("relative velocity: {}", std::abs(event.Momentum()[1].P()/event.Momentum()[1].E() - event.Momentum()[0].P()/event.Momentum()[0].E()));
     // double flux = 1.0/(4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) - event.Momentum()[0].M2()*event.Momentum()[1].M2()));
-    // flux *= event.Momentum()[3].E()/Constant::mN;
+    // TODO: Make this cleaner for coherent scattering
+    // double nuclear_spin = 2;
     static constexpr double to_nb = 1e6;
     double xsec_p = amp2_p*Constant::HBARC2/spin_avg*flux*to_nb;
     double xsec_n = amp2_n*Constant::HBARC2/spin_avg*flux*to_nb;
+    // double xsec_coh = amp2_coh*Constant::HBARC2/spin_avg*nuclear_spin*flux*to_nb;
     spdlog::debug("proton xsec = {}", xsec_p);
     spdlog::debug("neutron xsec = {}", xsec_n);
+    // spdlog::debug("coherent xsec = {}", xsec_coh);
     for(size_t i = 0; i < event.MatrixElements().size(); ++i) {
+        event.MatrixElement(i).inital_state[0] = pids[0];
+        event.MatrixElement(i).final_state.push_back(pids[pids.size()-1]);
         if(event.CurrentNucleus() -> Nucleons()[i].ID() == PID::proton()) {
             event.MatrixElement(i).weight = xsec_p;
         } else {
             event.MatrixElement(i).weight = xsec_n;
         }
     }
+    // event.CoherentXsec() = xsec_coh;
     if(!scattering -> InitializeEvent(event)) {
         if(outputEvents) {
             event.SetMEWeight(0);
