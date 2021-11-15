@@ -29,6 +29,7 @@ class FortranInteraction : public Interactions {
         }
 
         static std::string GetName() { return "FortranInteraction"; }
+        std::string Name() const override { return FortranInteraction::GetName(); }
         static bool IsRegistered() noexcept { return registered; }
         double CrossSection(const Particle &part1, const Particle &part2) const override {
             return CrossSectionFortran(&part1, &part2);

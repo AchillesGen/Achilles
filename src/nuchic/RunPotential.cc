@@ -42,8 +42,8 @@ nuchic::ThreeVector dHamiltonian_dr(const nuchic::ThreeVector &q, const nuchic::
 }
 
 void RunPropagation(std::shared_ptr<nuchic::Potential> potential,
-                                    std::shared_ptr<nuchic::Nucleus> nucleus,
-                                    const YAML::Node &config) {
+                    std::shared_ptr<nuchic::Nucleus> nucleus,
+                    const YAML::Node &config) {
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
     auto nevents = config["NEvents"].as<size_t>();
 
@@ -105,7 +105,6 @@ void RunBinding(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &
     out.close();
 }
 
-
 void RunEnergySpectrum(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &config) {
     fmt::print("Potential energy spectrum\n");
     std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
@@ -115,22 +114,82 @@ void RunEnergySpectrum(std::shared_ptr<nuchic::Potential> potential, const YAML:
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
 
     while(current_radius <= radii[1]) {
-	 double current_mom = kick_mom[0];
-	 while(current_mom <= kick_mom[1]) {
+        double current_mom = kick_mom[0];
+        while(current_mom <= kick_mom[1]) {
             double energy_free= pow(current_mom,2)/2/nuchic::Constant::mN;
             if(config["Potential"].as<std::string>() == "Cooper")
-		     energy_free= sqrt(pow(current_mom,2)+pow(nuchic::Constant::mN,2))-nuchic::Constant::mN;
+                energy_free= sqrt(pow(current_mom,2)+pow(nuchic::Constant::mN,2))-nuchic::Constant::mN;
             double energy = potential -> EnergySpectrum (current_radius, current_mom);
             fmt::print("  Radius = {}, Momentum = {}, Energy = {}, Free Energy = {}\n", current_radius, current_mom, energy, energy_free);
             out << fmt::format("{:8.3f},{:8.3f},{:8.3f},{:8.3f}\n", current_radius, current_mom, energy, energy_free);
             current_mom += kick_mom[2];
-	 }
+        }
         current_radius += radii[2];
     }
     out.close();
 }
 
+double binomial(size_t n, size_t k) {
+    if(k > n) throw std::runtime_error(fmt::format("Binomial coefficient requires n > k: {}, {}", n, k));
 
+    double result = 1.0;
+    if(k > n-k) k = n-k;
+    for(size_t i = 0; i < k; ++i) {
+        result *= static_cast<double>(n - i);
+        result /= static_cast<double>(i + 1);
+    }
+
+    return result;
+}
+
+double OscSeries(const double &eps, const std::function<double(size_t)> &func) {
+    int steps = static_cast<int>(std::ceil(-1.31*log10(eps)));
+    fmt::print("NSteps = {}\n", steps);
+    double d = pow(3.0+sqrt(8), steps);
+    d = (d+1/d)/2;
+    double b = -1, c = -d, s = 0;
+    for(int i = 0; i < steps; ++i) {
+        size_t idx = static_cast<size_t>(i);
+        c = b - c;
+        s += c*func(idx);
+        b = (i+steps)*(i-steps)*b/((i+0.5)*(i+1));
+    }
+
+    return s/d;
+}
+
+void RunApprox(std::shared_ptr<nuchic::Potential> potential, const YAML::Node &config) {
+    auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
+    auto current_mom = kick_mom[0];
+    double r = config["r0"].as<double>();
+
+    fmt::print("Potential Approximation running with r={}\n", r);
+    std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
+    std::ofstream out(filename);
+    while(current_mom <= kick_mom[1]) {
+        auto p = current_mom;
+        fmt::print("  Kick momentum: {} MeV    ", current_mom);
+        double exact = potential -> Hamiltonian(p, r);
+        auto vals = potential -> operator()(p, r);
+        fmt::print("Exact = {}\n", exact);
+        auto mass_eff = nuchic::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
+        double approx = mass_eff.real() + vals.rvector;
+        double approx2 = p + vals.rvector;
+        fmt::print("Approx[-1] = {}\n", approx);
+        auto func = [&](size_t k){
+            return (2/(static_cast<double>(k)+1)*binomial(2*k, k)*pow(p*p/(4.0*mass_eff*mass_eff), static_cast<int>(k+1))*mass_eff).real();
+        };
+        auto func2 = [&](size_t k) {
+            return (2/(static_cast<double>(k)+1)*binomial(2*k, k)*pow(mass_eff*mass_eff/(4.0*p*p), static_cast<int>(k+1))*p).real();
+        };
+        approx += OscSeries(5e-4, func);
+        approx2 += OscSeries(5e-4, func2);
+        fmt::print("ApproxSeries = {}, {}\n", approx, approx2);
+        out << fmt::format("{:8.3f},{:8.3f},{:8.3f},{:8.3f}\n", current_mom, exact, approx, approx2);
+
+        current_mom += kick_mom[2];
+    }
+}
 
 void nuchic::RunPotential(const std::string &runcard) {
     auto config = YAML::LoadFile(runcard);
@@ -159,4 +218,6 @@ void nuchic::RunPotential(const std::string &runcard) {
         RunBinding(potential, config);
     else if(config["Mode"].as<std::string>() == "EnergySpectrum")
         RunEnergySpectrum(potential, config);
+    else if(config["Mode"].as<std::string>() == "Approx")
+        RunApprox(potential, config);
 }

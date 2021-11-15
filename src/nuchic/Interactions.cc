@@ -1,6 +1,8 @@
 #include <iostream>
+#include <fstream>
 #include <map>
 
+#include "nuchic/Potential.hh"
 #include "spdlog/spdlog.h"
 
 #include "nuchic/Constants.hh"
@@ -8,7 +10,9 @@
 #include "nuchic/Interactions.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/ThreeVector.hh"
+#include "nuchic/FourVector.hh"
 #include "nuchic/Utilities.hh"
+#include "nuchic/Random.hh"
 
 using namespace H5;
 using namespace nuchic;
@@ -139,6 +143,36 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
     }
 }
 
+nuchic::Interactions::MomentumPair Interactions::FinalizeMomentum(const Particle &particle1,
+                                                                  const Particle &particle2,
+                                                                  std::shared_ptr<Potential> pot) const {
+
+    if(pot -> IsRelativistic())
+        throw std::runtime_error(fmt::format("{} is not compatible with a relativistic potential.",
+                                             Name()));
+   
+    // Boost to center of mass
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // Generate outgoing momentum
+    bool samePID = particle1.ID() == particle2.ID();
+    const double pcm = p1CM.Vec3().Magnitude();
+    std::array<double, 2> rans{};
+    Random::Instance().Generate(rans, 0.0, 1.0);
+    ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
+
+    FourVector p1Out = FourVector(momentum[0], momentum[1], momentum[2], p1CM.E());
+    FourVector p2Out = FourVector(-momentum[0], -momentum[1], -momentum[2], p1CM.E());
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostCM);
+    p2Out = p2Out.Boost(boostCM);
+
+    return {p1Out, p2Out};
+}
+
 GeantInteractions::GeantInteractions(const YAML::Node& node) {
     auto filename = node["GeantData"].as<std::string>();
 
@@ -216,10 +250,10 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
                 try{
                     theta[i*m_cdf.size() + j] = brent.CalcRoot(m_theta.front(), m_theta.back());
                 } catch (std::domain_error &e) {
-                    theta[i*m_cdf.size() + j] = *m_theta.begin()/sigAngular[i*180 + j]*m_cdf[j];
+                    theta[i*m_cdf.size() + j] = m_theta.front()/sigAngular[i*180 + j]*m_cdf[j];
                 }
             else
-                theta[i*m_cdf.size() + j] = *m_theta.end();
+                theta[i*m_cdf.size() + j] = m_theta.back();
         }
     }
 
@@ -294,8 +328,146 @@ double GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
     }
 }
 
+/*
+GeantInteractionsDt::GeantInteractionsDt(const YAML::Node& node) {
+    auto filename_pp = node["GeantDataPP"].as<std::string>();
+    auto filename_np = node["GeantDataNP"].as<std::string>();
+
+    // Read in the Geant4 dsigma/dt files
+    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_pp data from {0}.", filename_pp);
+    LoadData(true, filename_pp);
+
+    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_np data from {0}.", filename_np);
+    LoadData(false, filename_np);
+    throw;
+}
+
+void GeantInteractionsDt::LoadData(bool samePID, const std::string &filename) {
+    std::ifstream data(filename);
+
+    // Read in CDFs
+    const size_t nlines = samePID ? 40 : 39;
+    auto cdf = ReadBlock(data, nlines);
+
+    // Read in tmin and tmax
+    auto tmin = ReadBlock(data, 2);
+    auto tmax = ReadBlock(data, 1);
+
+    // Read in pcm
+    auto ecm2 = ReadBlock(data, 2);
+    for(auto & e : ecm2)
+        e = 4*(e*e + Constant::mN*Constant::mN);
+
+    // Read in lab energy and max sigma
+    auto elab = ReadBlock(data, 2);
+    auto max_sig = ReadBlock(data, 2);
+
+    // Read in total cross-section
+    auto xsec = ReadBlock(data, 2);
+
+    data.close();
+
+    // Obtain the PDF from the CDF
+    const size_t npts = cdf.size()/tmin.size();
+    std::vector<double> pdf(ecm2.size()*npts);
+    for(size_t i = 0; i < ecm2.size(); ++i) {
+        double tmp = 0;
+        for(size_t j = 0; j < npts; ++j) {
+            if(j == 0) pdf[i*npts] = cdf[i*npts];
+            else pdf[i*npts + j] = cdf[i*npts+j] - cdf[i*npts+j-1];
+
+            tmp += pdf[i*npts + j];
+        }
+    }
+
+    // Store data in class
+    auto trange = Linspace(0, 1, nlines);
+    std::reverse(trange.begin(), trange.end());
+    if(samePID) {
+        m_crossSectionPP.SetData(ecm2, xsec);
+        m_crossSectionPP.CubicSpline();
+        m_pdfPP.SetData(ecm2, trange, pdf);
+        m_pdfPP.BicubicSpline();
+    } else {
+        m_crossSectionNP.SetData(ecm2, xsec);
+        m_crossSectionNP.CubicSpline();
+        m_pdfNP.SetData(ecm2, trange, pdf);
+        m_pdfNP.BicubicSpline();
+    }
+}
+
+std::vector<double> GeantInteractionsDt::ReadBlock(std::ifstream &file, size_t nlines) const {
+    std::string line{};
+    std::vector<std::string> tokens;
+    for(size_t i = 0; i < nlines; ++i) {
+        std::getline(file, line);
+        tokenize(line, tokens);
+    }
+    std::vector<double> results;
+    for(const auto& token : tokens)
+        results.emplace_back(std::stod(token));
+
+    return results;
+}
+
+double GeantInteractionsDt::CrossSection(const Particle &particle1,
+                                         const Particle &particle2) const {
+    bool samePID = particle1.ID() == particle2.ID(); 
+    const double ecm2 = (particle1.Momentum() + particle2.Momentum()).M2()/1_GeV/1_GeV;
+
+    try{
+        if(samePID) {
+            return m_crossSectionPP(ecm2);
+        } else {
+            return m_crossSectionNP(ecm2);
+        }
+    } catch(std::domain_error &e) {
+        spdlog::warn("ecm2 {} not in table, using 0 for xsec", ecm2);
+        return 0;
+    }
+}
+
+// TODO: Finish implementing this function
+nuchic::Interactions::MomentumPair GeantInteractionsDt::FinalizeMomentum(const Particle &particle1,
+                                                                         const Particle &particle2,
+                                                                         std::shared_ptr<Potential> pot) const {
+    // Generate outgoing momentum
+    // bool samePID = particle1.ID() == particle2.ID();
+    // const double ecm2 = (particle1.Momentum() + particle2.Momentum()).M2();
+    // const double tmin = 2*particle1.Mass() + 2*particle2.Mass() - ecm2;
+    auto p1 = particle1.Momentum(); 
+    auto p2 = particle2.Momentum();
+    // auto q_free = p1 + p2;
+    p1.E() = pot->Hamiltonian(p1.P(), particle1.Radius());
+    p2.E() = pot->Hamiltonian(p2.P(), particle2.Radius());
+    // auto q = p1+p2;
+    
+    // Rotate so (p1 + p2) is along the z-axis
+    // auto rotation  = q.AlignZ();
+    // q = q.Rotate(rotation);
+
+    // Generate random variables
+    // std::array<double, 2> rans{};
+    // Random::Instance().Generate(rans, 0.0, 1.0);
+    // const double phi = 2*M_PI*rans[0];
+    // const double t =  samePID ?
+    //     (m_pdfPP(ecm2, rans[1])-1)*tmin : (m_pdfNP(ecm2, rans[1])-1)*tmin;
+
+    // ThreeVector momentum = MakeMomentum(samePID, ecm2, rans);
+
+    return {p1, p2};
+}
+
+// TODO: Finish implementing this function
+//ThreeVector GeantInteractionsDt::MakeMomentum(bool samePID,
+//                                              const double &pcm,
+//                                              const std::array<double, 2> &rans) const {
+//    double pR = pcm;
+//}
+*/
+
 double NasaInteractions::CrossSection(const Particle& particle1,
-                                       const Particle& particle2) const {
+                                      const Particle& particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum

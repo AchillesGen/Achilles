@@ -31,6 +31,20 @@ struct PotentialVals {
 
 class Nucleus;
 
+inline double binomial(size_t n, size_t k) {
+    if(k > n) throw std::runtime_error(fmt::format("Binomial coefficient requires n > k: {}, {}", n, k));
+
+    double result = 1.0;
+    if(k > n-k) k = n-k;
+    for(size_t i = 0; i < k; ++i) {
+        result *= static_cast<double>(n - i);
+        result /= static_cast<double>(i + 1);
+    }
+
+    return result;
+}
+
+
 class Potential {
     public:
         Potential() = default;
@@ -48,6 +62,32 @@ class Potential {
         PotentialVals derivative_p(double p, double r, double h=step) const {
             auto fp = [&](double x){ return this -> operator()(x, r); };
             return stencil5(fp, p, h);
+        }
+
+        PotentialVals derivative2_p(double p, double r, double h=step) const {
+            auto fp = [&](double x){ return this -> operator()(x, r); };
+            return stencil5second(fp, p, h);
+        }
+
+        PotentialVals derivativen_p(size_t n, double p, double r, double h=step) const {
+            auto fp = [&](double x) { return this -> operator()(x, r); };
+            PotentialVals deriv{};
+            for(size_t i = 0; i <= n; ++i) {
+                auto vals = fp(p + static_cast<double>(i)*h);
+                auto sign = pow(-1, static_cast<int>(i+n));
+                auto cnk = binomial(n, i);
+                deriv.rscalar += sign*cnk*vals.rscalar;
+                deriv.iscalar += sign*cnk*vals.iscalar;
+                deriv.rvector += sign*cnk*vals.rvector;
+                deriv.ivector += sign*cnk*vals.iscalar;
+            }
+
+            deriv.rscalar /= pow(h, static_cast<int>(n));
+            deriv.iscalar /= pow(h, static_cast<int>(n));
+            deriv.rvector /= pow(h, static_cast<int>(n));
+            deriv.ivector /= pow(h, static_cast<int>(n));
+
+            return deriv;
         }
 
         PotentialVals derivative_r(double p, double r, double h=step) const {
@@ -74,13 +114,15 @@ class Potential {
             return brent.CalcRoot(0, 1000);
         }
 
-	double EnergySpectrum(double r, double p) const {
-                return Hamiltonian(p, r) - Constant::mN;
+	    double EnergySpectrum(double r, double p) const {
+            return Hamiltonian(p, r) - Constant::mN;
         }
 
         bool IsCaptured(double r, double mom) const {
             return Hamiltonian(mom, r) <= Constant::mN;
         }
+
+        virtual bool IsRelativistic() const { return false; }
 
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
@@ -90,7 +132,9 @@ class Potential {
 
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
-        double InMediumCorrectionNonRel(FourVector p1, FourVector p2, double m, double r1,double r2,double r3) const {
+        double InMediumCorrectionNonRel(FourVector p1, FourVector p2, double m, double r1, double r2=-1, double r3=-1) const {
+            if(r2 < 0) r2 = r1;
+            if(r3 < 0) r3 = r1;
             double m1Star = Mstar(p1.P(), m, r1);
             double m2Star = Mstar(p2.P(), m, r2);
             double p12 = sqrt((p1.P2() + p2.P2())/2);
@@ -194,6 +238,7 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
         static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
 
         std::string GetReference() const override { return m_ref.GetReference(); }
+        bool IsRelativistic() const override { return true; }
 
         PotentialVals operator()(const double &plab, const double &radius) const override {
             return evaluate(plab, radius);

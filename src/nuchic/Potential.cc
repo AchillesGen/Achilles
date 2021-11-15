@@ -220,7 +220,7 @@ nuchic::PotentialVals SchroedingerPotential::operator()(const double &plab, cons
     const double etcm = sqrt(wt2+pcm*pcm);
     const double sr = epcm+etcm;
 
-    double redu{}; //this corresponds to opt 5 needs more investigation
+    double redu{};
     switch(m_mode) {
         case 2:
             redu = epcm*etcm/sr;
@@ -266,7 +266,7 @@ nuchic::PotentialVals SchroedingerPotential::operator()(const double &plab, cons
                            /(pow(pow(aab,2)-pow(aai,2),2)+4.0*pow(aab,2)*pow(aai,2));
     const auto udiw = 0.5*hc2/redu*(udi1+udi2+udi3);
 
-    // CALCULATION OF CENTRAL POTENTIAL (WITH DARWIN)
+    // Calculation of central potential (with Darwin)
     const auto uer = ucrw+udrw-couf2*0.5*pow(ac,2)/redu+couf1*(epcm/redu)*ac;
     const auto uei = uciw+udiw;
 

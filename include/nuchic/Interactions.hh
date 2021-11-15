@@ -20,6 +20,8 @@
 namespace nuchic {
 
 class Particle;
+class FourVector;
+class Potential;
 
 double CrossSection(bool, const double&);
 double CrossSectionAngle(bool, const double&, const double&);
@@ -63,6 +65,11 @@ class Interactions {
         virtual ThreeVector MakeMomentum(bool, const double&,
                                          const std::array<double, 2>&) const = 0;
 
+        using MomentumPair = std::pair<FourVector, FourVector>;
+        virtual MomentumPair FinalizeMomentum(const Particle&,
+                                              const Particle&,
+                                              std::shared_ptr<Potential>) const;
+        virtual std::string Name() const = 0;
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;
 };
@@ -115,6 +122,7 @@ class NasaInteractions : public Interactions {
         }
 
         static std::string GetName() { return "NasaInteractions"; }
+        std::string Name() const override { return NasaInteractions::GetName(); }
 
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
@@ -154,6 +162,7 @@ class GeantInteractions : public Interactions {
         /// Returns the name of the class, used in the InteractionFactory
         ///@return std::string: The name of the class
         static std::string GetName() { return "GeantInteractions"; }
+        std::string Name() const override { return GeantInteractions::GetName(); }
 
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
@@ -174,54 +183,58 @@ class GeantInteractions : public Interactions {
         static bool registered;
 };
 
+/*
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
-// class GeantInteractionsDt : public Interactions {
-//     public:
-//         ///@name Constructors and Destructors
-//         ///@{
-// 
-//         /// Initialize GeantInteractionsDt class. This loads data from an input file
-//         ///@param filename: The location of the Geant4 hdf5 data file
-//         GeantInteractionsDt(const YAML::Node&);
-//         GeantInteractionsDt(const GeantInteractionsDt&) = default;
-//         GeantInteractionsDt(GeantInteractionsDt&&) = default;
-//         GeantInteractionsDt& operator=(const GeantInteractionsDt&) = default;
-//         GeantInteractionsDt& operator=(GeantInteractionsDt&&) = default;
-// 
-//         /// Generate a GeantInteractionsDt object. This is used in the InteractionFactory.
-//         ///@param data: The location of the data file to load containing the Geant4 cross-sections
-//         static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
-//             return std::make_unique<GeantInteractionsDt>(data);
-//         }
-// 
-//         /// Default Destructor
-//         ~GeantInteractionsDt() override = default;
-//         ///@}
-// 
-//         /// Returns the name of the class, used in the InteractionFactory
-//         ///@return std::string: The name of the class
-//         static std::string GetName() { return "GeantInteractionsDt"; }
-// 
-//         // These functions are defined in the base class
-//         static bool IsRegistered() noexcept { return registered; }
-//         double CrossSection(const Particle&, const Particle&) const override;
-//         ThreeVector MakeMomentum(bool, const double&,
-//                                  const std::array<double, 2>&) const override;
-//     private:
-//         // Functions
-//         double CrossSectionAngle(bool, const double&, const double&) const;
-//         void LoadData(bool, const std::string&);
-// 
-//         // Variables
-//         std::vector<double> m_dt, m_cdf;
-//         std::vector<double> m_pcmPP, m_xsecPP;
-//         std::vector<double> m_pcmNP, m_xsecNP;
-//         Interp1D m_crossSectionPP, m_crossSectionNP;
-//         Interp2D m_tDistPP, m_tDistNP;
-//         static bool registered;
-// };
+class GeantInteractionsDt : public Interactions {
+    public:
+        ///@name Constructors and Destructors
+        ///@{
+
+        /// Initialize GeantInteractionsDt class. This loads data from an input file
+        ///@param filename: The location of the Geant4 hdf5 data file
+        GeantInteractionsDt(const YAML::Node&);
+        GeantInteractionsDt(const GeantInteractionsDt&) = default;
+        GeantInteractionsDt(GeantInteractionsDt&&) = default;
+        GeantInteractionsDt& operator=(const GeantInteractionsDt&) = default;
+        GeantInteractionsDt& operator=(GeantInteractionsDt&&) = default;
+
+        /// Generate a GeantInteractionsDt object. This is used in the InteractionFactory.
+        ///@param data: The location of the data file to load containing the Geant4 cross-sections
+        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
+            return std::make_unique<GeantInteractionsDt>(data);
+        }
+
+        /// Default Destructor
+        ~GeantInteractionsDt() override = default;
+        ///@}
+
+        /// Returns the name of the class, used in the InteractionFactory
+        ///@return std::string: The name of the class
+        static std::string GetName() { return "GeantInteractionsDt"; }
+        std::string Name() const override { return GeantInteractionsDt::GetName(); }
+
+        // These functions are defined in the base class
+        static bool IsRegistered() noexcept { return registered; }
+        double CrossSection(const Particle&, const Particle&) const override;
+        ThreeVector MakeMomentum(bool, const double&,
+                                 const std::array<double, 2>&) const override { return {}; }
+        MomentumPair FinalizeMomentum(const Particle&,
+                                      const Particle&,
+                                      std::shared_ptr<Potential>) const override;
+    private:
+        // Functions
+        double CrossSectionAngle(bool, const double&, const double&) const { return 0; }
+        void LoadData(bool, const std::string&);
+        std::vector<double> ReadBlock(std::ifstream &file, size_t nlines=1) const;
+
+        // Variables
+        Interp1D m_crossSectionPP, m_crossSectionNP;
+        Interp2D m_pdfPP, m_pdfNP;
+        static bool registered;
+};
+*/
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
@@ -252,6 +265,7 @@ class ConstantInteractions : public Interactions {
         /// Returns the name of the class, used in the InteractionFactory
         ///@return std::string: The name of the class
         static std::string GetName() { return "ConstantInteractions"; }
+        std::string Name() const override { return ConstantInteractions::GetName(); }
 
         // These functions are defined in the base class
         static bool IsRegistered() noexcept { return registered; }
