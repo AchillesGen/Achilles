@@ -9,18 +9,22 @@ module dirac_matrices
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, private, save :: up1(2,4),upp1(2,4), &
             &   ubarp1(2,4),ubarpp1(2,4)
+    complex*16, private, save :: uk1(2,4),ukp1(2,4), &
+            &   ubark1(2,4),ubarkp1(2,4)
+
     complex*16, private, save :: gamma_mu(4,4,5),g_munu(4,4),sigma_munu(4,4,4,4)
     complex*16, private, save :: q_sl(4,4)
-    real*8, private, save ::  p1(4),pp1(4),q(4)
+    real*8, private, save ::  p1(4),pp1(4),q(4),k1(4),kp1(4)
     complex*16, private, save :: J_1(4,4,4)
-    real*8, private,save :: xmn
+    real*8, private,save :: xmn,xmlept,w
 contains
 
-subroutine dirac_matrices_in(xmn_in)
+subroutine dirac_matrices_in(xmn_in, xmlept_in)
     implicit none
     integer*4 :: i,j
-    real*8 :: xmd_in,xmn_in,xmpi_in
+    real*8 :: xmn_in,xmlept_in
     xmn=xmn_in
+    xmlept=xmlept_in
     sig(:,:,:)=czero
     id(:,:)=czero
     id(1,1)=cone;id(2,2)=cone
@@ -54,7 +58,7 @@ subroutine define_spinors()
     implicit none
     integer*4 :: i
     complex*16 :: sigp1(2,2),sigp2(2,2),sigpp1(2,2),sigpp2(2,2)
-    real*8 :: cp1,cp2,cpp1,cpp2
+    real*8 :: cp1,cpp1
     sigp1=czero
     sigpp1=czero
     !.....initialize quadrispinors
@@ -95,12 +99,64 @@ subroutine define_spinors()
     return
 end subroutine
 
-subroutine current_init(p1_in,pp1_in,q_in)
+
+
+subroutine define_lept_spinors()
     implicit none
-    real*8 ::  p1_in(4),pp1_in(4),q_in(4)
+    integer*4 :: i
+    complex*16 :: sigk1(2,2),sigkp1(2,2)
+    real*8 :: ck1,ckp1
+    sigk1=czero
+    sigkp1=czero
+    !.....initialize quadrispinors
+    uk1=czero
+    ukp1=czero
+!.......initialize normalization factors
+    ck1=sqrt((k1(1)+xmlept)/(2.0d0*k1(1)))
+    ckp1=sqrt((kp1(1)+xmlept)/(2.0d0*kp1(1)))
+!.....define sigma*p
+    do i=1,3
+      sigk1=sigk1+sig(i,:,:)*k1(i+1)
+      sigkp1=sigkp1+sig(i,:,:)*kp1(i+1)
+    enddo
+!.....build quadri-spinors    
+    uk1(1,1:2)=up(:)
+    uk1(1,3:4)=matmul(sigk1(:,:),up(:))/(k1(1)+xmlept)
+    uk1(2,1:2)=down(:)
+    uk1(2,3:4)=matmul(sigk1(:,:),down(:))/(k1(1)+xmlept)
+    uk1(:,:)=ck1*uk1(:,:)
+!
+    ukp1(1,1:2)=up(:)
+    ukp1(1,3:4)=matmul(sigkp1(:,:),up(:))/(kp1(1)+xmlept)
+    ukp1(2,1:2)=down(:)
+    ukp1(2,3:4)=matmul(sigkp1(:,:),down(:))/(kp1(1)+xmlept)
+    ukp1(:,:)=ckp1*ukp1(:,:)
+!
+    ubark1(1,1:2)=up(:)
+    ubark1(1,3:4)=-matmul(up(:),sigk1(:,:))/(k1(1)+xmlept)
+    ubark1(2,1:2)=down(:)
+    ubark1(2,3:4)=-matmul(down(:),sigk1(:,:))/(k1(1)+xmlept)
+    ubark1(:,:)=ck1*ubark1(:,:)
+!
+    ubarkp1(1,1:2)=up(:)
+    ubarkp1(1,3:4)=-matmul(up(:),sigkp1(:,:))/(kp1(1)+xmlept)
+    ubarkp1(2,1:2)=down(:)
+    ubarkp1(2,3:4)=-matmul(down(:),sigkp1(:,:))/(kp1(1)+xmlept)
+    ubarkp1(:,:)=ckp1*ubarkp1(:,:)
+    return
+end subroutine
+
+
+subroutine current_init(p1_in,pp1_in,q_in,k1_in,kp1_in,win)
+    implicit none
+    real*8 ::  p1_in(4),pp1_in(4),q_in(4),k1_in(4),kp1_in(4),win
     p1=p1_in
     pp1=pp1_in
     q=q_in
+    k1=k1_in
+    kp1=kp1_in
+    w=win
+
     return
 end subroutine
 
@@ -124,11 +180,13 @@ subroutine det_Ja(f1v,f2v)
 end subroutine det_Ja
 
 
-subroutine det_res1b(rl,rt)
+subroutine hadr_tens(res)
    implicit none
    integer*4 :: i1,f1,i,j
    complex*16 :: J_mu(2,2,4),J_mu_dag(2,2,4)
-   real*8 :: res(4,4),rt,rl
+   real*8 :: res(4,4)
+   complex*16 :: res2(4,4)
+
    
 
    do i1=1,2
@@ -144,17 +202,91 @@ subroutine det_res1b(rl,rt)
    do i1=1,2
       do f1=1,2
          do i=1,4
-            res(i,i)=res(i,i)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,i)
+            do j=1,4
+               res(i,j)=res(i,j)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,j)
+               !write(6,*) i,j, res(i,j)
+             enddo  
+         enddo
+      enddo
+   enddo
+
+   res(1,4)=(w/q(4))*res(1,1)
+   res(4,1)=(w/q(4))*res(1,1)
+   res(4,4)=(w/q(4))**2*res(1,1)
+
+
+
+   
+   
+   
+
+  
+  return
+end subroutine hadr_tens
+
+
+subroutine lept_tens(lept)
+   implicit none
+   integer*4 :: i1,f1,i,j
+   complex*16 :: J_mu(2,2,4),J_mu_dag(2,2,4)
+   real*8 :: lept(4,4)
+
+   
+
+   do i1=1,2
+      do f1=1,2
+         do i=1,4
+            J_mu(f1,i1,i)=sum(ubarkp1(f1,:)*matmul(gamma_mu(:,:,i),uk1(i1,:)))
+            J_mu_dag(f1,i1,i)=conjg(J_mu(f1,i1,i))
          enddo
       enddo
    enddo
    
-   rl=res(1,1)
-   rt=res(2,2)+res(3,3)
+   lept=0.0d0
+   do i1=1,2
+      do f1=1,2
+         do i=1,4
+            do j=1,4
+               lept(i,j)=lept(i,j)+J_mu_dag(f1,i1,i)*J_mu(f1,i1,j)
+               !write(6,*) i,j, res(i,j)
+            enddo   
+         enddo
+      enddo
+   enddo
  
   return
-end subroutine det_res1b
+end subroutine lept_tens
+
+subroutine contract(sig)
+   implicit none
+   integer*4 :: i,j,l,m
+   real*8 :: lept(4,4),res(4,4)
+   real*8 :: sig
+
+   call hadr_tens(res)
+   call lept_tens(lept)
+
+   sig=0.0d0
+    do i=1,4
+        do j=1,4
+           sig = sig + g_munu(i,i)*lept(i,j)*res(i,j)*g_munu(j,j)
+        enddo 
+    enddo
+
+    
+    return
+      
+end subroutine contract        
+        
+
+
+
+
+
+
 end module dirac_matrices
+
+
 
 
 

@@ -9,6 +9,7 @@
 extern "C" {
     void InitializeOneBody(const char*, const char*, int, int);
     void CrossSectionOneBody(nuchic::FourVector*, nuchic::FourVector*,
+       		             nuchic::FourVector*, nuchic::FourVector*,
                              double, double, double, double, double, double,
                              unsigned long, unsigned long, double, double**, int*);
     void CleanUp(double**, int*);
@@ -59,7 +60,7 @@ void nuchic::FQESpectral::CrossSection(Event &event) const {
     double *result = nullptr;
     int size{};
 
-    CrossSectionOneBody(&pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
+    CrossSectionOneBody(&pNucleonIn, &pNucleonOut,&pLeptonIn, &pLeptonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
             ee, event.CurrentNucleus() -> NProtons(), event.CurrentNucleus() -> NNucleons(),
             event.CurrentNucleus() -> FermiMomentum(0), &result, &size);
 
@@ -121,7 +122,7 @@ void nuchic::FQEGlobalFermiGas::CrossSection(Event &event) const {
     double *result = nullptr;
     int size{};
 
-    CrossSectionOneBody(&pNucleonIn, &pNucleonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
+    CrossSectionOneBody(&pNucleonIn, &pNucleonOut,&pLeptonIn, &pLeptonOut, pNucleonIn.E(), pNucleonIn.P(), w, qval, theta,
             ee, event.CurrentNucleus() -> NProtons(), event.CurrentNucleus() -> NNucleons(),
             event.CurrentNucleus() -> FermiMomentum(0), &result, &size);
 

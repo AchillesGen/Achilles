@@ -104,7 +104,7 @@
        endif
     end subroutine
 
-    subroutine f_eval(p_4,pf_4,e,mom,w,qval,thetalept,ee,nZ,nA,kF,fp_o, fn_o)
+    subroutine f_eval(p_4,pf_4,k_4,kp_4,e,mom,w,qval,thetalept,ee,nZ,nA,kF,fp_o, fn_o)
         use mathtool
         implicit none
         real*8, parameter :: eps=5.0d0,small=1e-15
@@ -112,7 +112,7 @@
         integer, intent(in) :: nZ, nA 
         real*8, intent(in) :: kF
         real*8 :: p_4(4)
-        real*8, intent(in) :: pf_4(4)
+        real*8, intent(in) :: pf_4(4),k_4(4),kp_4(4)
         real*8, intent(in) :: w, qval, thetalept, ee
         real*8 :: wt, pkep, pken, xp, xpf, pke
         real*8, intent(out) :: fp_o, fn_o
@@ -128,7 +128,8 @@
            pken = pke_n_interp%call(e, mom)
            p_4(1)=sqrt(xp**2+mqe**2)
            wt=w-abs(e)+mqe-p_4(1)
-           call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig_p,sig_n)
+           if (wt.lt.0.0d0) return
+           call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,k_4/hbarc,kp_4/hbarc,thetalept,iform,sig_p,sig_n)
            ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
            fp_o=pkep*sig_p/dble(nZ)
            fn_o=pken*sig_n/dble(nA-nZ)
@@ -142,7 +143,7 @@
             pke=1.0/norm   
             p_4(1)=sqrt(xp**2+mqe**2)
             wt=w-abs(e)
-            call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,ee,thetalept,iform,sig_p, sig_n)
+            call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,k_4/hbarc,kp_4/hbarc,thetalept,iform,sig_p, sig_n)
             ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
             fp_o=pke*sig_p*pf_4(1)/xp/qval
             fn_o=pke*sig_n*pf_4(1)/xp/qval
