@@ -58,7 +58,9 @@ class EventGen {
 
         std::shared_ptr<EventWriter> writer;
 
-        Histogram hist;
+        Histogram hist, hist2, hist3;
+
+
 };
 
 }

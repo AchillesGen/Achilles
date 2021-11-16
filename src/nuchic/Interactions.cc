@@ -145,11 +145,11 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
 
 nuchic::Interactions::MomentumPair Interactions::FinalizeMomentum(const Particle &particle1,
                                                                   const Particle &particle2,
-                                                                  std::shared_ptr<Potential> pot) const {
+                                                                  std::shared_ptr<Potential>) const {
 
-    if(pot -> IsRelativistic())
-        throw std::runtime_error(fmt::format("{} is not compatible with a relativistic potential.",
-                                             Name()));
+//    if(pot -> IsRelativistic())
+//        throw std::runtime_error(fmt::format("{} is not compatible with a relativistic potential.",
+//                                             Name()));
    
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();

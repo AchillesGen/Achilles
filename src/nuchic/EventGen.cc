@@ -86,6 +86,8 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     writer -> WriteHeader(configFile);
 
     hist = Histogram(1000, 0.0, 1000.0, "xsec");
+    hist2 = Histogram(100, 0.0, 200.0, "tpe");
+    hist3 = Histogram(13, -0.5, 12.5, "np");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -122,6 +124,8 @@ void nuchic::EventGen::GenerateEvents() {
     }
 
     hist.Save("multi");
+    hist2.Save("tpe");
+    hist3.Save("np");
 }
 
 double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const size_t &batch) {
@@ -203,6 +207,17 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
             writer -> Write(event);
             const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
             hist.Fill(omega, event.Weight()/(2*M_PI));
+	    int nprotons = 0;
+	    double tpe= 0;
+	    for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+		    if(nucleon.Status() == ParticleStatus::escaped){
+                            double kin = nucleon.Momentum().E() -  Constant::mN;
+			    if (kin > tpe) tpe=kin;
+			    nprotons++;
+		    }
+	    }
+	    hist2.Fill(tpe, event.Weight());	    
+	    hist3.Fill(nprotons, event.Weight());
         }
     }
 
