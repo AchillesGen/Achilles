@@ -175,7 +175,7 @@ std::unique_ptr<nuchic::FormFactorImpl> nuchic::HelmFormFactor::Construct(nuchic
 }
 
 void nuchic::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
-    double kappa = sqrt(Q2)/Constant::HBARC*1.0_GeV;
+    double kappa = sqrt(Q2)/Constant::HBARC;
     result.Fcoh = 3*exp(-kappa*kappa*s*s/2)*(sin(kappa*r)-kappa*r*cos(kappa*r))/pow(kappa*r, 3);
 }
 
@@ -193,6 +193,6 @@ std::unique_ptr<nuchic::FormFactorImpl> nuchic::LovatoFormFactor::Construct(nuch
 }
 
 void nuchic::LovatoFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
-    double x = sqrt(Q2)/Constant::HBARC*1.0_GeV;
+    double x = sqrt(Q2)/Constant::HBARC;
     result.Fcoh = exp(-0.5*pow(b*x, 2))*(c[0]+c[1]*b*x+c[2]*pow(b*x, 2)+c[3]*pow(b*x, 3)+c[4]*pow(b*x, 4))/6.0;
 }

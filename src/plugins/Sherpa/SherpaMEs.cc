@@ -18,6 +18,8 @@
 #include "ATOOLS/Org/Run_Parameter.H"
 #include "nuchic/Logging.hh"
 #include "nuchic/ProcessInfo.hh"
+#include "nuchic/ParticleInfo.hh"
+#include "nuchic/FormFactor.hh"
 
 using namespace SHERPA;
 using namespace PHASIC;
@@ -84,6 +86,7 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
   m_pmap[nlo_type::lo] = new StringProcess_Map();
+  RegisterParticles();
 
   // Clean up memory
   for(auto & arg : argv) delete arg;
@@ -144,10 +147,17 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
 {
   Cluster_Amplitude* ampl = Cluster_Amplitude::New();
   int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
+  for (const auto &initial : info.m_states.begin()->first) {
+    msg_Info() << initial << " " << Flavour(initial) << std::endl;
+    ampl->CreateLeg(Vec4D(),Flavour(initial).Bar());
+  }
   for (size_t i(0);i<info.m_ids.size();++i) {
-    ampl->CreateLeg(Vec4D(),i<2?Flavour(info.m_ids[i]).Bar():
+    ampl->CreateLeg(Vec4D(),i<1?Flavour(info.m_ids[i]).Bar():
 		    Flavour(info.m_ids[i]));
   } 
+  for (const auto &final : info.m_states.begin()->second) {
+    ampl->CreateLeg(Vec4D(),Flavour(final));
+  }
   ampl->SetNIn(2);
   ampl->SetOrderQCD(0);
   ampl->SetOrderEW(info.m_ids.size()-2);
@@ -214,4 +224,22 @@ std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) c
         }
     }
     return form_factors;
+}
+
+void nuchic::SherpaMEs::RegisterParticles() const {
+    for(const auto &particleEntry : ATOOLS::s_kftable) {
+        auto pid = particleEntry.first;
+        auto particle = particleEntry.second;
+        static constexpr double to_MeV = 1000;
+        const auto mass = particle -> m_mass*to_MeV;
+        const auto width = particle -> m_width*to_MeV;
+        auto entry = std::make_shared<ParticleInfoEntry>(pid, mass, width, particle->m_icharge,
+                                                         particle->m_strong, particle->m_spin,
+                                                         particle->m_stable, particle->m_majorana,
+                                                         particle->m_massive, particle->m_hadron,
+                                                         particle->m_idname, particle->m_antiname);
+        nuchic::ParticleInfo::Database()[pid] = entry;
+    }
+
+    nuchic::Database::PrintParticle();
 }

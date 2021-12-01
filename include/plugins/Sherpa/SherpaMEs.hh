@@ -15,20 +15,7 @@ namespace SHERPA { class Sherpa; }
 namespace nuchic {
 
 struct Process_Info;
-
-struct FormFactorInfo {
-    enum class Type {
-        F1p,
-        F1n,
-        F2p,
-        F2n,
-        FA,
-        FCoh,
-    };
-
-    Type form_factor;
-    std::complex<double> coupling;
-};
+struct FormFactorInfo;
 
 class SherpaMEs {
 private:
@@ -58,6 +45,7 @@ public:
 
   std::vector<FormFactorInfo> FormFactors(int, int) const;
   double Coupling(const std::string&) const;
+  void RegisterParticles() const;
 
 };// end of class SherpaMEs
 

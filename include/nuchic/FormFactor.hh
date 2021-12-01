@@ -5,6 +5,7 @@
 
 #include <array>
 #include <memory>
+#include <complex>
 
 #include "yaml-cpp/node/node.h"
 
@@ -12,6 +13,20 @@ namespace nuchic {
 
 class FormFactorImpl;
 class FormFactorBuilder;
+
+struct FormFactorInfo {
+    enum class Type {
+        F1p,
+        F1n,
+        F2p,
+        F2n,
+        FA,
+        FCoh,
+    };
+
+    Type form_factor;
+    std::complex<double> coupling{};
+};
 
 class FormFactor {
     public:

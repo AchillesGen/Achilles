@@ -1,4 +1,5 @@
 #include "nuchic/SpectralFunction.hh"
+#include "spdlog/spdlog.h"
 #include <fstream>
 #include <cmath>
 
@@ -12,10 +13,10 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     energy.resize(ne);
     spectral.resize(ne*np);
     std::vector<double> dp_p(np);
-    for(size_t i = 0; i < np; ++i) {
-        data >> mom[i];
-        for(size_t j = 0; j < ne; ++j) {
-            data >> energy[j] >> spectral[i*ne+j];
+    for(size_t j = 0; j < np; ++j) {
+        data >> mom[j];
+        for(size_t i = 0; i < ne; ++i) {
+            data >> energy[i] >> spectral[j*ne+i];
         }
     }
     data.close();
@@ -30,6 +31,7 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     for(size_t i = 0; i < np; ++i) {
         norm += mom[i]*mom[i]*dp_p[i]*4*M_PI*hp;
     }
+    spdlog::debug("Spectral function normalization: {}", norm);
 
     // Find maximums for each p
     std::vector<double> maxS(np);
@@ -46,4 +48,11 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     // Setup spectral function interpolator
     func = Interp2D(mom, energy, spectral, InterpolationType::Polynomial);
     func.SetPolyOrder(1, 1);
+}
+
+double SpectralFunction::operator()(double p, double E) const {
+    if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back())
+        return 0;
+
+    return func(p, E);
 }
