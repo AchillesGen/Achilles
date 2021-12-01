@@ -2,13 +2,14 @@
 #include "nuchic/Constants.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
+#include "nuchic/ParticleInfo.hh"
 #include "spdlog/spdlog.h"
 
 using nuchic::QESpectralMapper;
 using nuchic::CoherentMapper;
 
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double>&) const {
-    point[HadronIdx()] = {Constant::mN*12, 0, 0, 0};
+    point[HadronIdx()] = {ParticleInfo(PID::carbon()).Mass(), 0, 0, 0};
 }
 
 double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double>&) const {

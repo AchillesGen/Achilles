@@ -25,7 +25,7 @@ class SpectralFunction {
 
         // Interpolators
         double operator()(double p) const { return overestimate(p); }
-        double operator()(double p, double E) const { return func(p, E); }
+        double operator()(double p, double E) const;
 
     private:
         double norm{};

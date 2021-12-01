@@ -3,9 +3,9 @@
 #include "nuchic/HardScattering.hh"
 #include "nuchic/HardScatteringFactory.hh"
 
-REGISTER_HARDSCATTERING(nuchic::Coherent);
+REGISTER_HARDSCATTERING(nuchic::FCoherent);
 
-nuchic::HCurrents nuchic::Coherent::HadronicCurrents(Event &event, const FFInfoMap&, const FFInfoMap&,
+nuchic::HCurrents nuchic::FCoherent::HadronicCurrents(Event &event, const FFInfoMap&, const FFInfoMap&,
                                                      const FFInfoMap &coherentFF) const {
     auto pIn = event.Momentum().front();
     auto pOut = event.Momentum().back();

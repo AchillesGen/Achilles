@@ -26,7 +26,7 @@ REGISTER_HARDSCATTERING(nuchic::FQESpectral);
 REGISTER_HARDSCATTERING(nuchic::FQEGlobalFermiGas);
 
 nuchic::FQESpectral::FQESpectral(const YAML::Node &config, RunMode mode)
-        : nuchic::QESpectral(mode) {
+        : nuchic::CQESpectral(mode) {
 
     spdlog::trace("Initializing quasielastic spectral function model");
     auto spectralP = config["SpectralP"].as<std::string>();
