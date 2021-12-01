@@ -9,6 +9,7 @@
 #include "nuchic/Nuchic.hh"
 #include "nuchic/HardScatteringEnum.hh"
 #include "nuchic/NuclearRemnant.hh"
+#include "nuchic/ProcessInfo.hh"
 
 namespace nuchic {
 
@@ -17,6 +18,7 @@ class FourVector;
 class Particle;
 class Nucleus;
 class Beam;
+class NuclearModel;
 
 struct InitialState {
     std::shared_ptr<Beam> beam;
@@ -42,9 +44,8 @@ class Event {
         MOCK ~Event() = default;
 
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
-        void InitializeLeptons(size_t);
-        void InitializeHadrons(const std::vector<std::array<size_t, 3>>&);
-        void InitializeCoherent();
+        void InitializeLeptons(const Process_Info&);
+        void InitializeHadrons(const Process_Info&);
         void Finalize();
 
         const NuclearRemnant &Remnant() const { return m_remnant; }
@@ -59,8 +60,7 @@ class Event {
         MatrixElementVec &MatrixElements() { return m_me; }
 
         bool TotalCrossSection();
-        std::vector<double> EventProbs() const;
-        static bool MatrixCompare(const MatrixElementStruct&, double);
+        size_t SelectNucleon() const;
 
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
         MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
@@ -75,12 +75,10 @@ class Event {
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
-        bool IsCoherent() const { return m_coh; }
-        double &CoherentXsec() { return m_xsec_coherent; }
-        const double &CoherentXsec() const { return m_xsec_coherent; }
-
     private:
+        static bool MatrixCompare(const MatrixElementStruct&, double);
         static double AddEvents(double, const MatrixElementStruct&);
+        std::vector<double> EventProbs() const;
 
         bool ValidateEvent(size_t) const;
 
@@ -92,10 +90,6 @@ class Event {
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
         vParticles m_history{};
-
-        // Coherent variables
-        bool m_coh{false};
-        double m_xsec_coherent{};
 };
 
 }

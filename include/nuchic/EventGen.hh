@@ -51,11 +51,7 @@ class EventGen {
         // CutCollection event_cuts{};
         MultiChannel integrator;
         Integrand<FourVector> integrand;
-        SherpaMEs *sherpa;
         YAML::Node config;
-        // std::vector<std::unique_ptr<HardScattering>> scatterings;
-        // std::vector<Histogram> xsecsVsE;
-        // std::vector<Vegas> integrators;
 
         std::shared_ptr<EventWriter> writer;
 

@@ -2,6 +2,7 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Particle.hh"
 #include "nuchic/Beams.hh"
+#include "nuchic/NuclearModel.hh"
 
 using nuchic::Event;
 
@@ -18,47 +19,35 @@ bool Event::ValidateEvent(size_t imatrix) const {
     return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
 }
 
-void Event::InitializeLeptons(size_t imatrix) {
-    if(!ValidateEvent(imatrix))
-        throw std::runtime_error("Phase space and Matrix element have different number of particles");
+// TODO: Make this cleaner and handle multiple nucleons in initial state
+void Event::InitializeLeptons(const Process_Info &process) {
+    // Setup initial state lepton
+    m_leptons.emplace_back(ParticleInfo(process.m_ids[0]), m_mom[1]);
+    m_leptons.back().Status() = ParticleStatus::initial_state;
 
-    size_t idx = 0;
-    for(auto pid : m_me[imatrix].inital_state) {
-        ParticleInfo info(pid);
-        if(info.IsLepton()) {
-            m_leptons.emplace_back(info, m_mom[idx]);
-            m_leptons.back().Status() = ParticleStatus::initial_state;
-        }
-        ++idx;
-    }
-    for(auto pid : m_me[imatrix].final_state) {
-        ParticleInfo info(pid);
-        if(info.IsLepton()) {
-            m_leptons.emplace_back(info, m_mom[idx]);
-            m_leptons.back().Status() = ParticleStatus::final_state;
-        }
-        ++idx;
+    // Setup final state leptons
+    for(size_t idx = 1; idx < process.m_ids.size(); ++idx) {
+        m_leptons.emplace_back(ParticleInfo(process.m_ids[idx]), m_mom[idx+1]);
+        m_leptons.back().Status() = ParticleStatus::final_state;
     }
 }
 
-void Event::InitializeHadrons(const std::vector<std::array<size_t, 3>> &idxs) {
-    for(const auto &idx : idxs) {
-        m_nuc -> Nucleons()[idx[0]].Status() = ParticleStatus::initial_state;
-        m_nuc -> Nucleons()[idx[0]].SetMomentum(m_mom[idx[1]]);
-        Particle outNucleon(m_nuc -> Nucleons()[idx[0]]);
-        // TODO: Have this be determined by Cascade flag
-        outNucleon.Status() = ParticleStatus::propagating;
-        // outNucleon.Status() = ParticleStatus::final_state;
-        outNucleon.SetMomentum(m_mom[idx[2]]);
-        m_nuc -> Nucleons().push_back(outNucleon);
-    }
-}
+void Event::InitializeHadrons(const Process_Info &process) {
+    // Coherent scattering is handled inside the coherent class
+    if(ParticleInfo(process.m_states.begin()->first[0]).IsNucleus())
+        return;
 
-void Event::InitializeCoherent() {
-    m_coh = true;
-    for(auto &nucleon : m_nuc -> Nucleons()) {
-        nucleon.Status() = ParticleStatus::background;
-    }
+    // TODO: Update to handle multiple initial and final state particles
+    // Initial state setup
+    size_t idx = SelectNucleon();
+    Particle &initial = m_nuc -> Nucleons()[idx];
+    initial.Momentum() = m_mom.front();
+    initial.Status() = ParticleStatus::initial_state;
+
+    // Final state setup
+    Particle final(process.m_states.at({initial.ID()})[0], m_mom.back(),
+                   initial.Position(), ParticleStatus::propagating);
+    m_nuc -> Nucleons().push_back(final);
 }
 
 void Event::Finalize() {
@@ -100,15 +89,22 @@ nuchic::vParticles& Event::Hadrons() {
 }
 
 double Event::Weight() const {
-    if(!ValidateEvent(0))
-        throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    spdlog::debug("Coherent xsec = {}", m_xsec_coherent);
-    return m_vWgt*(m_meWgt + m_xsec_coherent);
+    // if(!ValidateEvent(0))
+    //     throw std::runtime_error("Phase space and Matrix element have different number of particles");
+    return m_vWgt*m_meWgt;
 }
 
 bool Event::TotalCrossSection() {
     m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, AddEvents);
-    return (m_meWgt + m_xsec_coherent) > 0 ? true : false;
+    spdlog::debug("Total xsec = {}", m_meWgt);
+    return m_meWgt > 0 ? true : false;
+}
+
+size_t Event::SelectNucleon() const {
+    std::vector<double> probs = EventProbs();
+    double rand = Random::Instance().Uniform(0.0, 1.0);
+    return static_cast<size_t>(std::distance(probs.begin(),
+                               std::lower_bound(probs.begin(), probs.end(), rand)))-1;
 }
 
 std::vector<double> Event::EventProbs() const {
