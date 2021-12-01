@@ -113,6 +113,6 @@ int main(int argc, char *argv[]) {
     GenerateEvents(runcard,&sherpa);
 
     // Close dynamic libraries
-    dlclose(handle);
+    if(handle) dlclose(handle);
     return 0;
 }

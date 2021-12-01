@@ -116,7 +116,7 @@ namespace nuchic {
             }
 
             std::string ToString() const noexcept {
-                return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
+                return fmt::format("{:10d} {:20s} {:20s} {: .4e}    {:.4e}", 
                                 static_cast<int>(id), idname,
                                 antiname, mass, width);
             }
@@ -200,6 +200,10 @@ namespace nuchic {
             bool IsLepton() const noexcept { return std::abs(IntID()) > 10 && std::abs(IntID()) < 19; }
             bool IsQuark() const noexcept { return IntID() < 10; }
             bool IsGluon() const noexcept { return info -> id == PID::gluon(); }
+            bool IsNeutrino() const noexcept { return std::abs(IntID()) == 12 
+                                                   || std::abs(IntID()) == 14
+                                                   || std::abs(IntID()) == 16; }
+            bool IsNucleus() const noexcept { return std::abs(IntID()) > 1000000000; }
 
             int IntCharge() const noexcept { 
                 int charge(info -> icharge); 

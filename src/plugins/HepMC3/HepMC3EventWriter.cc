@@ -7,6 +7,7 @@
 #include "nuchic/Event.hh"
 #include "nuchic/Version.hh"
 #include "nuchic/Particle.hh"
+#include "nuchic/Nucleus.hh"
 #include "spdlog/spdlog.h"
 
 using nuchic::HepMC3Writer;
@@ -76,29 +77,24 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     // Load in particle information
     const std::vector<nuchic::Particle> hadrons = event.Hadrons();
     const std::vector<nuchic::Particle> leptons = event.Leptons();
-    // TODO: Get nuclear pid from the nucleus object
+    // TODO: Get nucleus mass from the nucleus object
     const HepMC3::FourVector initMass{0, 0, 0, 12000};
-    GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, 1000060120, 4);
+    GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, event.CurrentNucleus()->ID(), 4);
     HepMC3::FourVector hardVertexPos;
     GenParticlePtr nucleon;
     nuchic::FourVector recoilMom{0, 0, 0, 12000};
-    if(event.IsCoherent()) {
-        hardVertexPos = {0, 0, 0, 0};
-        nucleon = p1;
-    } else {
-        // TODO: Modify for MEC case
-        const auto initHadron = hadrons[0];
-        HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
-        nucleon = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
+    // TODO: Modify for MEC case
+    const auto initHadron = hadrons[0];
+    HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
+    nucleon = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
 
-        // Add vertex for hadrons from nucleus
-        const auto initPos = initHadron.Position();
-        hardVertexPos = {initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
-        GenVertexPtr v1 = std::make_shared<GenVertex>(hardVertexPos);
-        v1->add_particle_in(p1);
-        v1->add_particle_out(nucleon);
-        evt.add_vertex(v1);
-    }
+    // Add vertex for hadrons from nucleus
+    const auto initPos = initHadron.Position();
+    hardVertexPos = {initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
+    GenVertexPtr v1 = std::make_shared<GenVertex>(hardVertexPos);
+    v1->add_particle_in(p1);
+    v1->add_particle_out(nucleon);
+    evt.add_vertex(v1);
 
     // Add initial lepton
     const auto initLepton = leptons[0];

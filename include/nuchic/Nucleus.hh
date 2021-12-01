@@ -21,6 +21,7 @@
 
 namespace nuchic {
 
+class PID;
 class Particle;
 class ThreeVector;
 
@@ -98,6 +99,10 @@ class Nucleus {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the Nucleus object
+        
+        /// Return the nuclear PID
+        ///@return PID: The pid for the given nucleus
+        PID ID() const;
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
@@ -135,12 +140,12 @@ class Nucleus {
         ///@return double: The binding energy in MeV
         const double& BindingEnergy() const noexcept { return binding; }
 
-	/// Return the current Fermi Momentum of the nucleus
+        /// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
         //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
-	///@return double: The potential in MeV	
+        ///@return double: The potential in MeV	
         double Potential(const double&) const noexcept;
 
         /// Return the current potential energy of the nucleus

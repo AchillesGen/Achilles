@@ -33,7 +33,7 @@ void nuchic::ParticleInfo::BuildDatabase(const std::string &datafile) {
 }
 
 void nuchic::ParticleInfo::PrintDatabase() {
-    fmt::print("{:>7s} {:<20s} {:<20s} {:^10s}\t{:^10s}\n",
+    fmt::print("{:>10s} {:<20s} {:<20s} {:^10s}    {:^10s}\n",
                "PID", "Name", "Anti-name", "Mass (MeV)", "Width (MeV)");
     for(const auto &part : particleDB) {
         std::cout <<  *(part.second) << "\n";
