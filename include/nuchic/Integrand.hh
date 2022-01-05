@@ -76,7 +76,6 @@ class Integrand {
             double weight{};
             std::vector<double> rans;
             for(size_t i = 0; i < NChannels(); ++i) {
-                const auto grid = channels[i].integrator.Grid();
                 densities[i] = channels[i].mapping -> GenerateWeight(point, rans);
                 channels[i].rans = rans;
                 double vw = channels[i].integrator.GenerateWeight(rans);
@@ -118,7 +117,7 @@ struct convert<nuchic::Channel<T>> {
                 auto masses = mapNode["FSMapper"]["Sherpa"]["Masses"].as<std::vector<double>>();
                 rhs.mapping = nuchic::PSBuilder(mapNode["nlep"].as<size_t>(), mapNode["nhad"].as<size_t>())
                                                .Beam(beam, 1)
-                                               .Hadron(mapNode["HadronMapper"]["Name"].as<std::string>())
+                                               .Hadron(mapNode["HadronMapper"]["Name"].as<std::string>(), masses)
                                                .SherpaFinalState(channel_id, masses).build();
             }
         }

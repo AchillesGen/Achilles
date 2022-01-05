@@ -22,7 +22,7 @@ add_executable(nuchic-testsuite
     test_adaptive_map.cc
     test_stats.cc
     test_vegas.cc
-    # test_multichannel.cc
+    test_multichannel.cc
     # test_integrand.cc
     test_spectral.cc
     test_spinor.cc

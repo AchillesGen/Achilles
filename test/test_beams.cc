@@ -53,12 +53,12 @@ Beams:
         CHECK_THROWS_WITH(beams["Beams"].as<nuchic::Beam>(), "Multiple beams exist for PID: 12");
     }
 
-    SECTION("Spectrum Beams") {
-        nuchic::Spectrum spectrum("dummy.txt");
+    // SECTION("Spectrum Beams") {
+    //     nuchic::Spectrum spectrum("dummy.txt");
 
-        CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
-        CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
-        std::vector<double> rans;
-        CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
-    }
+    //     CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
+    //     CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
+    //     std::vector<double> rans;
+    //     CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
+    // }
 }

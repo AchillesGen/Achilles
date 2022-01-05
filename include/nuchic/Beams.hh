@@ -1,6 +1,7 @@
 #ifndef BEAMS_HH
 #define BEAMS_HH
 
+#include "nuchic/Histogram.hh"
 #include <set>
 #include <memory>
 
@@ -24,8 +25,8 @@ class FluxType {
         virtual ~FluxType() = default;
 
         virtual int NVariables() const = 0;
-        virtual FourVector Flux(const std::vector<double>&) = 0;
-        virtual double GenerateWeight(const FourVector&, std::vector<double>&) = 0;
+        virtual FourVector Flux(const std::vector<double>&) const = 0;
+        virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
 };
 
 class Monochromatic : public FluxType {
@@ -36,11 +37,11 @@ class Monochromatic : public FluxType {
             return 0;
         }
 
-        FourVector Flux(const std::vector<double>&) override {
+        FourVector Flux(const std::vector<double>&) const override {
             return {m_energy, 0, 0, m_energy};
         }
 
-        double GenerateWeight(const FourVector&, std::vector<double>&) override {
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override {
             return 1;
         }
 
@@ -60,21 +61,22 @@ class Monochromatic : public FluxType {
 // combine beams of different initial state particles in a straightforward manner
 class Spectrum : public FluxType {
     public:
-        Spectrum(const std::string&) {
-            spdlog::error("Spectrum Fluxes are not implemented");
-        }
+        enum class Type {
+            Histogram,
+        };
 
-        int NVariables() const override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        Spectrum(const YAML::Node&);
 
-        FourVector Flux(const std::vector<double>&) override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        int NVariables() const override { return 1; }
 
-        double GenerateWeight(const FourVector&, std::vector<double>&) override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        FourVector Flux(const std::vector<double>&) const override;
+
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+
+    private:
+        Histogram m_flux{};
+        double m_min_energy{}, m_max_energy{};
+        double m_delta_energy{};
 };
 
 class Beam {
@@ -134,9 +136,7 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
             rhs = std::make_shared<nuchic::Monochromatic>(energy);
             return true;
         } else if(node["Type"].as<std::string>() == "Spectrum") {
-            // TODO: Fill out details of building the spectrum from a YAML file
-            std::string filename = node["Filename"].as<std::string>();
-            rhs = std::make_shared<nuchic::Spectrum>(filename);
+            rhs = std::make_shared<nuchic::Spectrum>(node);
             return true;
         }
 
