@@ -21,14 +21,18 @@ bool Event::ValidateEvent(size_t imatrix) const {
 
 // TODO: Make this cleaner and handle multiple nucleons in initial state
 void Event::InitializeLeptons(const Process_Info &process) {
-    // Setup initial state lepton
-    m_leptons.emplace_back(ParticleInfo(process.m_ids[0]), m_mom[1]);
-    m_leptons.back().Status() = ParticleStatus::initial_state;
-
-    // Setup final state leptons
-    for(size_t idx = 1; idx < process.m_ids.size(); ++idx) {
-        m_leptons.emplace_back(ParticleInfo(process.m_ids[idx]), m_mom[idx+1]);
-        m_leptons.back().Status() = ParticleStatus::final_state;
+    // Setup leptons
+    bool initial_state = true;
+    for(const auto &elm : process.m_mom_map) {
+        if(ParticleInfo(elm.second).IsLepton() || ParticleInfo(elm.second).IsVector()) {
+            m_leptons.emplace_back(ParticleInfo(elm.second), m_mom[elm.first]);
+            if(initial_state) {
+                m_leptons.back().Status() = ParticleStatus::initial_state;
+                initial_state = false;
+            } else {
+                m_leptons.back().Status() = ParticleStatus::final_state;
+            }
+        }
     }
 }
 
@@ -37,15 +41,23 @@ void Event::InitializeHadrons(const Process_Info &process) {
     if(ParticleInfo(process.m_states.begin()->first[0]).IsNucleus())
         return;
 
+    // Get all hadronic momenta
+    std::vector<FourVector> mom;
+    for(const auto &elm : process.m_mom_map) {
+        if(ParticleInfo(elm.second).IsHadron()) {
+            mom.push_back(m_mom[elm.first]);
+        }
+    }
+
     // TODO: Update to handle multiple initial and final state particles
     // Initial state setup
     size_t idx = SelectNucleon();
     Particle &initial = m_nuc -> Nucleons()[idx];
-    initial.Momentum() = m_mom.front();
+    initial.Momentum() = mom.front();
     initial.Status() = ParticleStatus::initial_state;
 
     // Final state setup
-    Particle final(process.m_states.at({initial.ID()})[0], m_mom.back(),
+    Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
                    initial.Position(), ParticleStatus::propagating);
     m_nuc -> Nucleons().push_back(final);
 }

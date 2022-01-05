@@ -3,6 +3,7 @@
 #include "nuchic/EventWriter.hh"
 #include "nuchic/HardScatteringFactory.hh"
 #include "nuchic/HardScattering.hh"
+#include "nuchic/Logging.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/Cascade.hh"
@@ -11,6 +12,7 @@
 #include "nuchic/ProcessInfo.hh"
 #include "nuchic/NuclearModel.hh"
 #include "nuchic/ComplexFmt.hh"
+#include "nuchic/Units.hh"
 
 // TODO: Turn this into a factory to reduce the number of includes
 #include "nuchic/PhaseSpaceBuilder.hh"
@@ -41,7 +43,7 @@ nuchic::Channel<nuchic::FourVector> BuildChannel(nuchic::NuclearModel *model, si
                                                  const std::vector<double> &masses) {
     nuchic::Channel<nuchic::FourVector> channel;
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
-                                                   .Hadron(model -> PhaseSpace())
+                                                   .Hadron(model -> PhaseSpace(), masses)
                                                    .FinalState(T::Name(), masses).build();
     nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
@@ -53,9 +55,24 @@ nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(nuchic::NuclearModel *mod
                                                        std::shared_ptr<nuchic::Beam> beam,
                                                        const std::vector<double> &masses) {
     nuchic::Channel<nuchic::FourVector> channel;
+    auto massesGeV = masses;
+    for(auto &mass : massesGeV) mass /= (1000*1000);
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
-                                                   .Hadron(model -> PhaseSpace())
-                                                   .SherpaFinalState(T::Name(), masses).build();
+                                                   .Hadron(model -> PhaseSpace(), masses)
+                                                   .SherpaFinalState(T::Name(), massesGeV).build();
+    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    return channel;
+}
+
+nuchic::Channel<nuchic::FourVector> BuildGenChannel(nuchic::NuclearModel *model, size_t nlep, size_t nhad,
+                                                    std::shared_ptr<nuchic::Beam> beam,
+                                                    std::unique_ptr<PHASIC::Channels> final_state,
+                                                    const std::vector<double> &masses) {
+    nuchic::Channel<nuchic::FourVector> channel;
+    channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
+                                                   .Hadron(model -> PhaseSpace(), masses)
+                                                   .GenFinalState(std::move(final_state)).build();
     nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
     channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
     return channel;
@@ -73,7 +90,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    // Load initial states
+    // Load initial state, massess
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
 
@@ -107,6 +124,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
+    leptonicProcess.m_mom_map = sherpa -> MomentumMap(leptonicProcess.Ids());
 
     // Initialize hard cross-sections
     spdlog::debug("Initializing hard interaction");
@@ -117,12 +135,13 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
 
     // Setup channels
     spdlog::debug("Initializing phase space");
+    auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
     std::vector<double> masses = scattering -> Process().Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
-    } else {
+    } else if(config["OldPS"]) {
         if(scattering -> Process().Multiplicity() == 4) {
             Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(scattering -> Nuclear(), 2, 2,
                                                                             beam, masses);
@@ -163,6 +182,15 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
                                                   "Got a 2->{} process", leptonicProcess.m_ids.size());
             throw std::runtime_error(error);
         }
+    } else {
+        size_t count = 0;
+        for(auto & chan : channels) {
+            Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
+                                                          scattering -> Process().m_ids.size(), 2,
+                                                          beam, std::move(chan), masses);
+            integrand.AddChannel(std::move(channel));
+            spdlog::info("Adding Channel{}", count++);
+        }
     }
 
     // Setup Multichannel integrator
@@ -199,8 +227,8 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
     hist = Histogram(200, 0.0, 400.0, "energy");
     hist2 = Histogram(100, 0.0, 800.0, "momentum");
     hist3 = Histogram(50, -1.0, 1.0, "angle");
-    hist4 = Histogram(200, 0.0, 1000.0, "energy");
-    hist5 = Histogram(300, 0.0, 300.0, "observable");
+    hist4 = Histogram(200, 320.0, 520.0, "invariant_mass");
+    hist5 = Histogram(300, 0.0, 300.0, "omega");
     hist6 = Histogram(200, 4.0, 8.0, "wgt");
 }
 
@@ -285,6 +313,7 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
+            spdlog::trace("Outputting the event");
             writer -> Write(event);
         }
         return 0;
@@ -307,6 +336,14 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     for(const auto &particle : event.Hadrons()) {
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
+
+    spdlog::trace("Weight: {}", event.Weight());
+
+    // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
+    //     spdlog::info("Mass issue");
+    //     spdlog::drop("nuchic");
+    //     CreateLogger(0, 5);
+    // }
 
     // Perform hard cuts
     if(doHardCuts) {
@@ -358,9 +395,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             hist2.Fill(momentum, event.Weight()/calls);
             const auto cosTheta = event.Momentum()[2].CosTheta();
             hist3.Fill(cosTheta, event.Weight()/calls);
-            const auto energy_lepton = event.Momentum()[2].E();
+            const auto energy_lepton = (event.Momentum()[3]+event.Momentum()[4]).M();
             hist4.Fill(energy_lepton, event.Weight()/calls);
-            const auto omega = event.Momentum()[1].E() - event.Momentum()[2].E();
+            const auto omega = event.Momentum()[1].E() - (event.Momentum()[3]+event.Momentum()[4]).E();
             hist5.Fill(omega, event.Weight()/calls/(2*M_PI));
             hist6.Fill(log10(event.Weight()));
         }

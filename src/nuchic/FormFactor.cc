@@ -193,6 +193,7 @@ std::unique_ptr<nuchic::FormFactorImpl> nuchic::LovatoFormFactor::Construct(nuch
 }
 
 void nuchic::LovatoFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("LovatoFormFactor: Q2 = {}", Q2);
     double x = sqrt(Q2)/Constant::HBARC;
     result.Fcoh = exp(-0.5*pow(b*x, 2))*(c[0]+c[1]*b*x+c[2]*pow(b*x, 2)+c[3]*pow(b*x, 3)+c[4]*pow(b*x, 4))/6.0;
 }

@@ -45,16 +45,19 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
 }
 
 void HepMC3Writer::Write(const nuchic::Event &event) {
+    spdlog::debug("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
     results += event.Weight()*nb_to_pb;
+    spdlog::trace("Event weight = {}", event.Weight());
     if(event.Weight() == 0) {
         return;
     }
 
     // Setup event units
+    spdlog::trace("Setting up units");
     GenEvent evt(Units::MEV, Units::MM);
     evt.set_run_info(file.run_info());
     evt.set_event_number(results.Calls());
@@ -64,6 +67,7 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     evt.add_attribute("InteractionType", std::make_shared<IntAttribute>(1));
 
     // Cross Section
+    spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
     cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
     evt.add_attribute("GenCrossSection", cross_section);

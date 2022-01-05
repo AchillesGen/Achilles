@@ -22,42 +22,20 @@ void HardScattering::SetProcess(const nuchic::Process_Info &process) {
 nuchic::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> &p,
                                                   const double &mu2) const {
     std::vector<std::array<double, 4>> mom(p.size());
-    auto qVec = p[1];
-    for(size_t i = 2; i < p.size()-1; ++i) {
-        qVec -= p[i];
-    }
-    // auto rotMat = qVec.AlignZ();
-    mom[0] = (-qVec/1_GeV).Momentum(); // .Rotate(rotMat).Momentum();
-    mom[1] = (-p[1]/1_GeV).Momentum(); // .Rotate(rotMat).Momentum();
-    for(size_t i = 2; i < p.size()-1; ++i) {
-        mom[i] = (p[i]/1_GeV).Momentum(); // .Rotate(rotMat).Momentum();
-    }
-    mom.back() = {};
-
-    // TODO: Clean up to handle the dummy hadronic states
-    size_t idx = 0;
     std::vector<int> pids;
-    pids.emplace_back(m_leptonicProcess.m_states.begin()->first[0]);
-    spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
-                  mom[idx][0], mom[idx][1], mom[idx][2], mom[idx][3]); 
-    ++idx;
-    for(const auto &pid : m_leptonicProcess.m_ids) {
-        pids.emplace_back(pid);
-        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
-                      mom[idx][0], mom[idx][1], mom[idx][2], mom[idx][3]); 
-        ++idx;
+    for(const auto &elm : m_leptonicProcess.m_mom_map) {
+        pids.push_back(static_cast<int>(elm.second));
+        mom[elm.first] = (p[elm.first]/1_GeV).Momentum();
+        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
+                      mom[elm.first][0], mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]); 
     }
-    pids.emplace_back(m_leptonicProcess.m_states.begin()->second[0]);
-    spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids[idx],
-                  mom[idx][0], mom[idx][1], mom[idx][2], mom[idx][3]); 
     auto currents = p_sherpa -> Calc(pids, mom, mu2);
 
     for(auto &current : currents) { 
         spdlog::trace("Current for {}", current.first);
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
-                if(mom.size() == 4) current.second[i][j] /= 1_GeV;
-                else if(mom.size() == 6) current.second[i][j] /= pow(1_GeV, 3);
+                current.second[i][j] /= pow(1_GeV, static_cast<double>(mom.size())-3);
                 spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
@@ -85,7 +63,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
 
     std::vector<double> amps2(hadronCurrent.size());
-    const size_t nlep_spins = 1 << (event.Momentum().size() - 2);
+    const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
     for(size_t i = 0; i  < nlep_spins; ++i) {
         for(size_t j = 0; j < nhad_spins; ++j) {

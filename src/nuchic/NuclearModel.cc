@@ -61,9 +61,9 @@ Coherent::Coherent(const YAML::Node &config)
 std::vector<nuchic::NuclearModel::Currents> Coherent::CalcCurrents(const Event &event,
                                                                    const std::vector<FFInfoMap> &ff) const {
     auto pIn = event.Momentum().front();
-    auto pOut = event.Momentum().back();
+    auto pOut = event.Momentum()[2];
     auto qVec = event.Momentum()[1];
-    for(size_t  i = 2; i < event.Momentum().size()-1; ++i) {
+    for(size_t  i = 3; i < event.Momentum().size(); ++i) {
         qVec -= event.Momentum()[i];
     }
 
@@ -115,7 +115,7 @@ bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const
     Particle initial = Particle(nucleus_pid, event.Momentum().front());
     initial.Status() = ParticleStatus::initial_state;
     event.CurrentNucleus() -> Nucleons().push_back(initial);
-    Particle final(nucleus_pid, event.Momentum().back());
+    Particle final(nucleus_pid, event.Momentum()[2]);
     final.Status() = ParticleStatus::final_state;
     event.CurrentNucleus() -> Nucleons().push_back(final);
 
@@ -137,9 +137,9 @@ QESpectral::QESpectral(const YAML::Node &config)
 std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
                                                              const std::vector<FFInfoMap> &ff) const {
     auto pIn = event.Momentum().front();
-    auto pOut = event.Momentum().back();
+    auto pOut = event.Momentum()[2];
     auto qVec = event.Momentum()[1];
-    for(size_t i = 2; i < event.Momentum().size()-1; ++i) {
+    for(size_t i = 3; i < event.Momentum().size(); ++i) {
         qVec -= event.Momentum()[i];
     }
     auto removal_energy = Constant::mN - pIn.E();

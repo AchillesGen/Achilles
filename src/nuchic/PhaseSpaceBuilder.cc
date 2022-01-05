@@ -13,8 +13,9 @@ PSBuilder& PSBuilder::Beam(std::shared_ptr<nuchic::Beam> beam, size_t idx) {
     return *this;
 }
 
-PSBuilder& PSBuilder::Hadron(const std::string &mode, size_t idx) {
+PSBuilder& PSBuilder::Hadron(const std::string &mode, const std::vector<double> &masses, size_t idx) {
     phase_space->hbeam = PSFactory<HadronicBeamMapper, size_t>::Build(mode, idx);
+    phase_space->hbeam->SetMasses(masses);
     return *this;
 }
 
@@ -26,5 +27,10 @@ PSBuilder& PSBuilder::FinalState(const std::string &channel, const std::vector<d
 PSBuilder& PSBuilder::SherpaFinalState(const std::string &channel, const std::vector<double> &masses2) {
     auto sherpaMap = PSFactory<PHASIC::Channels, std::vector<double>>::Build(channel, masses2);
     phase_space->main = std::make_unique<SherpaMapper>(m_nlep+m_nhad-2, std::move(sherpaMap));
+    return *this;
+}
+
+PSBuilder& PSBuilder::GenFinalState(std::unique_ptr<PHASIC::Channels> channel) {
+    phase_space->main = std::make_unique<SherpaMapper>(m_nlep+m_nhad-2, std::move(channel));
     return *this;
 }
