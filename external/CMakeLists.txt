@@ -58,7 +58,7 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME catch2
         GITHUB_REPOSITORY catchorg/Catch2
-        GIT_TAG cfb695669830ceb73b0875a20af4241944eb48e0
+        GIT_TAG "v2.13.7"
     )
     add_library(Catch2::Catch2 ALIAS Catch2)
 
