@@ -15,8 +15,8 @@ class HadronicBeamMapper : public Mapper<FourVector> {
         HadronicBeamMapper(size_t idx, std::string name) 
             : m_idx{std::move(idx)}, m_name{std::move(name)} {}
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override = 0;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override = 0;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override = 0;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override = 0;
         size_t NDims() const override = 0;
         YAML::Node ToYAML() const override {
             YAML::Node result;
@@ -42,14 +42,22 @@ class QESpectralMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMa
             return std::make_unique<QESpectralMapper>(idx);
         }
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return 4; }
+        double Smin() const {
+            double smin = 0;
+            for(const auto &mass : Masses()) {
+                smin += sqrt(mass);
+            }
+            return smin*smin;
+        }
 
     private:
-        static constexpr double dCos = 2;
+        // static constexpr double dCos = 2;
         static constexpr double dPhi = 2*M_PI;
-        static constexpr double dp = 800;
+        // static constexpr double dp = 800;
+        // static constexpr double dE = 400;
 };
 
 class CoherentMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapper, CoherentMapper, size_t> {
@@ -60,8 +68,8 @@ class CoherentMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapp
             return std::make_unique<CoherentMapper>(idx);
         }
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return 0; }
 };
 

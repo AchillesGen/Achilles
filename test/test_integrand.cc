@@ -7,14 +7,15 @@ double dummy_func(const std::vector<double>&, double) {
 
 class DummyMapper : public nuchic::Mapper<double> {
     public:
-        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) const override {
+        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
             std::copy(rans.begin(), rans.end(), point.begin());
         }
-        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) const override {
+        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
             std::copy(point.begin(), point.end(), rans.begin());
             return 1.0;
         }
         size_t NDims() const override { return 1; }
+        YAML::Node ToYAML() const override { return YAML::Node(); }
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {

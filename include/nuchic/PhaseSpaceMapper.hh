@@ -14,8 +14,8 @@ class PSMapper : public Mapper<FourVector> {
         friend class PSBuilder;
         static PSBuilder build(size_t, size_t);
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { 
             return lbeam -> NDims() + hbeam -> NDims() + main -> NDims();
         }

@@ -10,7 +10,7 @@ using nuchic::TwoBodyMapper;
 using nuchic::SherpaMapper;
 using nuchic::FourVector;
 
-void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) const {
+void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     // The momentum are given in the following order:
     // 1. Momentum of the initial hadron
     // 2. Momentum of the initial lepton
@@ -42,7 +42,7 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     spdlog::trace("  s = {}, lambda = {}", s, lambda);
 }
 
-double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
+double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) {
     auto boostVec = (mom[0] + mom[1]).BoostVector();
     auto mom0 = mom[0].Boost(-boostVec);
     auto rotMat = mom0.AlignZ();
@@ -64,19 +64,19 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     return wgt;
 }
 
-void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) const {
+void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     std::vector<Vec4D> mom(point.size());
-    mom[0] = Vec4D(point[0][0], point[0][1], point[0][2], point[0][3]);
-    mom[1] = Vec4D(point[1][0], point[1][1], point[1][2], point[1][3]);
+    mom[0] = Vec4D(point[0][0]/1_GeV, point[0][1]/1_GeV, point[0][2]/1_GeV, point[0][3]/1_GeV);
+    mom[1] = Vec4D(point[1][0]/1_GeV, point[1][1]/1_GeV, point[1][2]/1_GeV, point[1][3]/1_GeV);
     sherpa_mapper -> GeneratePoint(mom, rans);
     for(size_t i = 2; i < point.size(); ++i) {
-        point[i] = FourVector(mom[i][0], mom[i][1], mom[i][2], mom[i][3]);
+        point[i] = FourVector(mom[i][0]*1_GeV, mom[i][1]*1_GeV, mom[i][2]*1_GeV, mom[i][3]*1_GeV);
     }
 }
 
-double SherpaMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) const {
+double SherpaMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) {
     std::vector<Vec4D> mom{};
     for(const auto &pt : point)
-        mom.emplace_back(pt[0], pt[1], pt[2], pt[3]);
+        mom.emplace_back(pt[0]/1_GeV, pt[1]/1_GeV, pt[2]/1_GeV, pt[3]/1_GeV);
     return sherpa_mapper -> GenerateWeight(mom, rans);
 }

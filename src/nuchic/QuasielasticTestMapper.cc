@@ -31,7 +31,7 @@ QuasielasticTestMapper::QuasielasticTestMapper(const YAML::Node &node, std::shar
     nvars += static_cast<size_t>(m_beam->NVariables());
 }
 
-void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) const {
+void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
     const std::vector<double> beamRans(rans.begin(), rans.begin() + m_beam -> NVariables());
     const std::vector<double> momRans(rans.begin() + m_beam -> NVariables(), rans.end());
     mom.resize(4);
@@ -78,7 +78,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
-double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) const {
+double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom, std::vector<double> &rans) {
     std::vector<double> beamRans(static_cast<size_t>(m_beam -> NVariables()));
     std::vector<double> momRans(nvars - beamRans.size());
 

@@ -20,8 +20,8 @@ class QuasielasticTestMapper : public Mapper<FourVector> {
     public:
         QuasielasticTestMapper(const YAML::Node&, std::shared_ptr<Beam>);
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return nvars; }
         YAML::Node ToYAML() const override {
             YAML::Node result;

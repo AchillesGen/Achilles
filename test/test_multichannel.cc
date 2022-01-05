@@ -15,13 +15,13 @@ double test_func_exp(const std::vector<double> &x, double wgt) {
 class DoubleMapper : public nuchic::Mapper<double> {
     public:
         DoubleMapper(size_t channel) : m_channel{std::move(channel)} {}
-        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) const override {
+        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
             double s = std::tan(std::acos(-1.0) * (rans[0] - 0.5));
             if(m_channel == 0) s += s0;
             else s += s1;
             point[0] = s;
         }
-        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) const override {
+        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
             const double sms0 = point[0] - s0;
             const double sms1 = point[0] - s1;
             rans.resize(1);
@@ -33,6 +33,7 @@ class DoubleMapper : public nuchic::Mapper<double> {
             return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
         }
         size_t NDims() const override { return 1; }
+        YAML::Node ToYAML() const override { return YAML::Node(); }
     private:
         size_t m_channel;
 };
@@ -74,7 +75,6 @@ TEST_CASE("YAML encoding / decoding Multichannel Parameters", "[multichannel]") 
 
     CHECK(params.ncalls == params2.ncalls);
     CHECK(params.niterations == params2.niterations);
-    CHECK(params.atol == params2.atol);
     CHECK(params.rtol == params2.rtol);
     CHECK(params.nrefine == params2.nrefine);
     CHECK(params.beta == params2.beta);
@@ -94,10 +94,10 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
 
     SECTION("Runs at least minimum required iterations") {
         static constexpr size_t nitn_min = 10;
-        static constexpr double rtol = 2e-2, atol = 2e-2;
+        static constexpr double rtol = 2e-2;
 
         nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                        nuchic::MultiChannelParams{100000, nitn_min, rtol, atol});
+                                        nuchic::MultiChannelParams{1000, nitn_min, rtol});
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
@@ -108,14 +108,13 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
 
     SECTION("Runs to desired precision") {
         static constexpr size_t nitn_min = 2;
-        static constexpr double rtol = 1e-3, atol = 1e-3;
+        static constexpr double rtol = 1e-3;
         nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                        nuchic::MultiChannelParams{100000, nitn_min, rtol, atol});
+                                        nuchic::MultiChannelParams{1000, nitn_min, rtol});
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
         CHECK(std::abs(results.sum_results.Mean() - 1.0) < 2*results.sum_results.Error());
-        CHECK(results.sum_results.Error() < atol);
         CHECK(results.sum_results.Error()/results.sum_results.Mean() < rtol);
     }
 }
@@ -129,10 +128,10 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
         channel.mapping = std::make_unique<DoubleMapper>(i);
         integrand.AddChannel(std::move(channel));
     }
-    static constexpr size_t ncalls = 100000, nitn_min = 2;
-    static constexpr double rtol = 1, atol = 1;
+    static constexpr size_t ncalls = 1000, nitn_min = 2;
+    static constexpr double rtol = 1;
     nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                    nuchic::MultiChannelParams{ncalls, nitn_min, rtol, atol});
+                                    nuchic::MultiChannelParams{ncalls, nitn_min, rtol});
     integrator.Optimize(integrand);
     auto results1 = integrator.Summary();
 
@@ -148,9 +147,8 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
     CHECK(integrator.NChannels() == integrator2.NChannels());
 
     // Check parameters
-    CHECK(params.ncalls == ncalls);
+    CHECK(params.ncalls == ncalls*(1 << nitn_min));
     CHECK(params.rtol == rtol);
-    CHECK(params.atol == atol);
     CHECK(params.niterations == nitn_min);
 
     // Check previous result history

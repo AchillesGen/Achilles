@@ -17,8 +17,8 @@ class FinalStateMapper : public Mapper<FourVector> {
     public:
         FinalStateMapper(size_t _nout) : nout{std::move(_nout)} {}
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override = 0;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override = 0;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override = 0;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override = 0;
         size_t NDims() const override { return 3*nout - 4; }
         YAML::Node ToYAML() const override = 0;
         static std::string Name() { return "Final State"; }
@@ -40,8 +40,8 @@ class TwoBodyMapper : public FinalStateMapper,
             return std::make_unique<TwoBodyMapper>(m);
         }
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         YAML::Node ToYAML() const override {
             YAML::Node result;
             result["Name"] = Name();
@@ -60,8 +60,8 @@ class SherpaMapper : public FinalStateMapper {
         SherpaMapper(size_t _nout, Mapper_ptr<ATOOLS::Vec4D> _mapper) 
             : FinalStateMapper(_nout), sherpa_mapper{std::move(_mapper)} {}
 
-        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) const override;
-        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) const override;
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         // size_t NDims() const override { return sherpa_mapper -> NDims(); }
         YAML::Node ToYAML() const override {
             YAML::Node result;
