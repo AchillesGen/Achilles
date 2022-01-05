@@ -20,6 +20,9 @@
 #include "nuchic/ProcessInfo.hh"
 #include "nuchic/ParticleInfo.hh"
 #include "nuchic/FormFactor.hh"
+#include "nuchic/Utilities.hh"
+#include "plugins/Sherpa/Channels.hh"
+#include <bitset>
 
 using namespace SHERPA;
 using namespace PHASIC;
@@ -79,8 +82,13 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");
   // addParameter(argv,"ACTIVE[23]=0");
+  addParameter(argv,"ACTIVE[25]=0");
   // addParameter(argv,"ACTIVE[9000005]=0");
   addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
+  addParameter(argv,"PRIORITY[2112]=99");
+  addParameter(argv,"PRIORITY[2212]=99");
+  // TODO: Make this something that is passed in
+  addParameter(argv,"PRIORITY[1000060120]=99");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
@@ -104,6 +112,9 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
   // pi.m_maxcpl[0]   = pi.m_mincpl[0] = ampl->OrderQCD();
   // pi.m_maxcpl[1]   = pi.m_mincpl[1] = ampl->OrderEW();
   pi.m_megenerator = megen;
+  // pi.m_ntchan = 3;
+  // pi.m_mtchan = 3;
+  pi.m_gpath = "Diagrams";
   for (size_t i(0); i<ampl->NIn(); ++i) {
     Flavour fl(ampl->Leg(i)->Flav().Bar());
     if (Flavour(kf_jet).Includes(fl)) fl=Flavour(kf_jet);
@@ -148,7 +159,6 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   Cluster_Amplitude* ampl = Cluster_Amplitude::New();
   int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
   for (const auto &initial : info.m_states.begin()->first) {
-    msg_Info() << initial << " " << Flavour(initial) << std::endl;
     ampl->CreateLeg(Vec4D(),Flavour(initial).Bar());
   }
   for (size_t i(0);i<info.m_ids.size();++i) {
@@ -162,7 +172,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   ampl->SetOrderQCD(0);
   ampl->SetOrderEW(info.m_ids.size()-2);
   // TODO: Need to fix this later
-  // Process_Base::SortFlavours(ampl);
+  Process_Base::SortFlavours(ampl);
   StringProcess_Map *pm(m_pmap[nlo_type::lo]);
   std::string name(Process_Base::GenerateName(ampl));
   if (pm->find(name)==pm->end()) getProcess(ampl);
@@ -171,8 +181,123 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   return true;
 }
 
+std::map<size_t, long> SherpaMEs::MomentumMap(const std::vector<long> &_fl) const {
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for (size_t i(0);i<_fl.size();++i) {
+      Flavour fl(Flavour((long int)(_fl[i])));
+      ampl->CreateLeg({},i<2?fl.Bar():fl,ColorID(0,0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size()-2);
+    Process_Base::SortFlavours(ampl);
+    StringProcess_Map *pm(m_pmap[nlo_type::lo]);
+    std::string name(Process_Base::GenerateName(ampl));
+    spdlog::info("Looking for process");
+    if (pm->find(name)==pm->end())
+      THROW(fatal_error,"Process not found: "+name);
+    Process_Base *proc(pm->find(name)->second);
+    auto *singleProcess = proc->Get<COMIX::Single_Process>();
+    std::map<size_t, long> mom_map;
+    size_t idx = 0;
+    for(const auto &flav : singleProcess -> Flavours())
+        mom_map[idx++] = flav;
+
+    return mom_map;
+}
+
+std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const std::vector<long> &_fl) const {
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for (size_t i(0);i<_fl.size();++i) {
+      Flavour fl(Flavour((long int)(_fl[i])));
+      ampl->CreateLeg({},i<2?fl.Bar():fl,ColorID(0,0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size()-2);
+    Process_Base::SortFlavours(ampl);
+    StringProcess_Map *pm(m_pmap[nlo_type::lo]);
+    std::string name(Process_Base::GenerateName(ampl));
+    spdlog::info("Looking for process");
+    if (pm->find(name)==pm->end())
+      THROW(fatal_error,"Process not found: "+name);
+    Process_Base *proc(pm->find(name)->second);
+    auto *singleProcess = proc->Get<COMIX::Single_Process>();
+    spdlog::info("Process found");
+
+    // Setup external particle channel components
+    std::map<int, std::vector<std::shared_ptr<ChannelNode>>> channelComponents;
+    std::vector<double> s;
+    const auto flavs = singleProcess -> Flavours();
+    for(size_t i = 0; i < flavs.size(); ++i) {
+        auto node = std::make_shared<ChannelNode>();
+        node -> m_pid = flavs[i];
+        node -> m_idx = 1 << i;
+        channelComponents[(1 << i)].push_back(node);
+        s.push_back(sqr(Flavour((kf_code)(flavs[i])).Mass(false)));
+    }
+
+    for(unsigned int nset = 2; nset < flavs.size(); ++nset) {
+      unsigned int cur = (1 << nset) - 1;
+      // Combine all currents
+      while(cur < (1 << (flavs.size()))) {
+        auto set = SetBits(cur, flavs.size());
+        for(unsigned int iset = 1; iset < nset; ++iset) {
+          unsigned int idx = (1 << iset) - 1;
+          while(idx < (1 << (nset - 1))) {
+            unsigned int subCur1 = 0;
+            for(unsigned int i = 0; i < flavs.size(); ++i)
+              subCur1 += set[i]*((idx >> i) & 1);
+            auto subCur2 = cur ^ subCur1;
+            // Skip over initial nucleon
+            if(SetBit(subCur1, 0) || SetBit(subCur2, 0)) break;
+            if(singleProcess -> Combinable(subCur1, subCur2)) {
+              // Create new channel component
+              for(const auto &subChan1 : channelComponents[subCur1]) {
+                for(const auto &subChan2 : channelComponents[subCur2]) {
+                  if(cur == (1 << flavs.size()) - 2) {
+                    auto node = std::make_shared<ChannelNode>();
+                    node -> m_left = subChan1;
+                    node -> m_right = subChan2;
+                    node -> m_pid = flavs[0];
+                    node -> m_idx = cur;
+                    channelComponents[cur].push_back(node);
+                  } else {
+                    for(const auto &elm : singleProcess -> CombinedFlavour(cur)) {
+                      auto node = std::make_shared<ChannelNode>();
+                      node -> m_left = subChan1;
+                      node -> m_right = subChan2;
+                      node -> m_pid = static_cast<int>(elm.Kfcode());
+                      node -> m_idx = cur;
+                      channelComponents[cur].push_back(node);
+                    }
+                  }
+                }
+              }
+
+            }
+            idx = NextPermutation(idx);
+          }
+        }
+        cur = NextPermutation(cur);
+      }
+    }
+
+    size_t lid = (1 << _fl.size()) - 2, rid = 2;
+    if(channelComponents.find(lid) == channelComponents.end()) throw;
+    std::vector<std::unique_ptr<PHASIC::Channels>> channels;
+    for(const auto &cur : channelComponents[lid]) {
+      auto channel = std::make_unique<GenChannel>(_fl.size(), s);
+      channel -> InitializeChannel(cur);
+      spdlog::debug("{}", channel -> ToString());
+      channels.push_back(std::move(channel));
+    }
+
+    return channels;
+}
+
 nuchic::SherpaMEs::LeptonCurrents SherpaMEs::Calc
-(const std::vector<int> _fl,
+(const std::vector<int> &_fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
 {
@@ -198,7 +323,7 @@ nuchic::SherpaMEs::LeptonCurrents SherpaMEs::Calc
   double res(proc->Differential(*ampl,1|2|4));
   ampl->Delete();
 
-  COMIX::Single_Process *singleProcess = proc->Get<COMIX::Single_Process>();
+  auto *singleProcess = proc->Get<COMIX::Single_Process>();
   return singleProcess -> LeptonicCurrent();
 }
 

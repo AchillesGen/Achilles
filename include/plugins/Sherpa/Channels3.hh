@@ -3,7 +3,6 @@
 
 // Channel_Generator_UniV
 #include "PHASIC++/Channels/Channel_Elements.H"
-#include "nuchic/PhaseSpaceFactory.hh"
 #include "plugins/Sherpa/Channels.hh"
 
 using namespace PHASIC;
@@ -28,8 +27,8 @@ class Channels3 : public Channels {
             : s2{std::move(s[0])}, s3{std::move(s[1])}, s4{std::move(s[2])}, s5{std::move(s[3])},
               m_name{std::move(name)} {}
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double>&) const override = 0;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double>&) const override = 0;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double>&) override = 0;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double>&) override = 0;
         size_t NDims() const override { return 5; }
         YAML::Node ToYAML() const override {
             YAML::Node result;
@@ -51,8 +50,8 @@ class C3_0 : public Channels3, nuchic::RegistrablePS<Channels, C3_0, std::vector
             return std::make_unique<C3_0>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_1 : public Channels3, nuchic::RegistrablePS<Channels, C3_1, std::vector<double>> {
@@ -67,8 +66,8 @@ class C3_1 : public Channels3, nuchic::RegistrablePS<Channels, C3_1, std::vector
             return std::make_unique<C3_1>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_2 : public Channels3, nuchic::RegistrablePS<Channels, C3_2, std::vector<double>> {
@@ -83,8 +82,8 @@ class C3_2 : public Channels3, nuchic::RegistrablePS<Channels, C3_2, std::vector
             return std::make_unique<C3_2>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_3 : public Channels3, nuchic::RegistrablePS<Channels, C3_3, std::vector<double>> {
@@ -99,8 +98,8 @@ class C3_3 : public Channels3, nuchic::RegistrablePS<Channels, C3_3, std::vector
             return std::make_unique<C3_3>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_4 : public Channels3, nuchic::RegistrablePS<Channels, C3_4, std::vector<double>> {
@@ -115,8 +114,8 @@ class C3_4 : public Channels3, nuchic::RegistrablePS<Channels, C3_4, std::vector
             return std::make_unique<C3_4>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_5 : public Channels3, nuchic::RegistrablePS<Channels, C3_5, std::vector<double>> {
@@ -131,8 +130,8 @@ class C3_5 : public Channels3, nuchic::RegistrablePS<Channels, C3_5, std::vector
             return std::make_unique<C3_5>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_6 : public Channels3, nuchic::RegistrablePS<Channels, C3_6, std::vector<double>> {
@@ -147,8 +146,8 @@ class C3_6 : public Channels3, nuchic::RegistrablePS<Channels, C3_6, std::vector
             return std::make_unique<C3_6>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C3_7 : public Channels3, nuchic::RegistrablePS<Channels, C3_7, std::vector<double>> {
@@ -163,8 +162,8 @@ class C3_7 : public Channels3, nuchic::RegistrablePS<Channels, C3_7, std::vector
             return std::make_unique<C3_7>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 }

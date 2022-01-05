@@ -7,9 +7,63 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include <string>
 #include <vector>
 
 namespace nuchic {
+
+// Bit operations taken from: https://graphics.stanford.edu/~seander/bithacks.html
+inline unsigned int NextPermutation(unsigned int inp) {
+    unsigned int t = inp | (inp - 1);
+    return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(inp) + 1));
+}
+
+inline bool SetBit(unsigned int inp, unsigned int pos) {
+    return inp & (1 << pos);
+}
+
+inline std::vector<unsigned int> SetBits(unsigned int inp, unsigned int size) {
+    std::vector<unsigned int> set;
+    for(unsigned int i = 0; i < size; ++i) {
+        if(SetBit(inp, i)) set.push_back(inp & (1 << i));
+    }
+    return set;
+}
+
+inline bool IsPower2(unsigned int val) {
+    return (val & (val - 1)) == 0;
+}
+
+inline unsigned int Log2(unsigned int val) {
+    static const std::array<unsigned int, 5> b = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 
+                                                  0xFF00FF00, 0xFFFF0000};
+    unsigned int r = (val & b[0]) != 0;
+    r |= static_cast<unsigned int>((val & b[4]) != 0) << 4;
+    r |= static_cast<unsigned int>((val & b[3]) != 0) << 3;
+    r |= static_cast<unsigned int>((val & b[2]) != 0) << 2;
+    r |= static_cast<unsigned int>((val & b[1]) != 0) << 1;
+    return r;
+}
+
+template<class ContainerT>
+void tokenize(const std::string& str, ContainerT& tokens,
+              const std::string& delimiters=" \n\t", bool trimEmpty=true) {
+    std::string::size_type lastPos = 0, length = str.length();
+    
+    using value_type = typename ContainerT::value_type;
+    using size_type = typename ContainerT::size_type;
+
+    while(lastPos < length+1) {
+        std::string::size_type pos = str.find_first_of(delimiters, lastPos);
+        if(pos == std::string::npos) pos = length;
+
+        if(pos != lastPos || !trimEmpty) {
+            tokens.push_back(value_type(str.data()+lastPos,
+                             static_cast<size_type>(pos)-lastPos));
+        }
+        lastPos = pos+1;
+    }
+}
 
 class FourVector;
 

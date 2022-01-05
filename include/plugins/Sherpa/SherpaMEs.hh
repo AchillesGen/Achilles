@@ -9,7 +9,10 @@
 #include <string>
 
 namespace ATOOLS { class Cluster_Amplitude; }
-namespace PHASIC { class Process_Base; }
+namespace PHASIC { 
+    class Process_Base;
+    class Channels;
+}
 namespace SHERPA { class Sherpa; }
 
 namespace nuchic {
@@ -38,8 +41,11 @@ public:
   bool Initialize(const std::vector<std::string> &args);
   bool InitializeProcess(const Process_Info &info);
 
+  std::vector<std::unique_ptr<PHASIC::Channels>> GenerateChannels(const std::vector<long> &fl) const;
+  std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
+
   LeptonCurrents Calc
-  (const std::vector<int> fl,
+  (const std::vector<int> &fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;
 

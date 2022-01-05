@@ -22,6 +22,8 @@ struct Process_Info {
         : m_model(std::move(model)), m_ids(std::move(ids)) {}
     size_t Multiplicity() const;
     std::vector<double> Masses() const;
+    std::vector<long> Ids() const;
+    std::map<size_t, long> m_mom_map;
 
     template<typename OStream>
     friend OStream& operator<<(OStream &os, const Process_Info &info) {

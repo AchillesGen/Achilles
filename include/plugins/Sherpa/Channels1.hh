@@ -23,8 +23,8 @@ class Channels1 : public Channels {
         Channels1(const std::vector<double> &s, std::string name) 
               : s2{s[0]}, s3{s[1]}, m_name{std::move(name)} {}
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double>&) const override = 0;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double>&) const override = 0;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double>&) override = 0;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double>&) override = 0;
         size_t NDims() const override { return 2; }
         YAML::Node ToYAML() const override {
             YAML::Node result;
@@ -46,8 +46,8 @@ class C1_0 : public Channels1, nuchic::RegistrablePS<Channels, C1_0, std::vector
             return std::make_unique<C1_0>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C1_1 : public Channels1, nuchic::RegistrablePS<Channels, C1_1, std::vector<double>> {
@@ -61,8 +61,8 @@ class C1_1 : public Channels1, nuchic::RegistrablePS<Channels, C1_1, std::vector
             }
             return std::make_unique<C1_1>(s);
         }
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 class C1_2 : public Channels1, nuchic::RegistrablePS<Channels, C1_2, std::vector<double>> {
@@ -77,8 +77,8 @@ class C1_2 : public Channels1, nuchic::RegistrablePS<Channels, C1_2, std::vector
             return std::make_unique<C1_2>(s);
         }
 
-        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) const override;
-        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) const override;
+        double GenerateWeight(const std::vector<Vec4D>&, std::vector<double> &) override;
+        void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
 }
