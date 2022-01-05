@@ -490,7 +490,7 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::escaped;
+                nucleon.Status() = ParticleStatus::final_state;
             }
         }
     }
