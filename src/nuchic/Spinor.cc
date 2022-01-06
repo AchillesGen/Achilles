@@ -87,7 +87,6 @@ SpinMatrix SpinMatrix::Slashed(const FourVector &mom) {
 }
 
 SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {
-    if(mu == nu) return {};
     return std::complex<double>(0, 1)/2.0*(GammaMu(mu)*GammaMu(nu) - GammaMu(nu)*GammaMu(mu));
 }
 

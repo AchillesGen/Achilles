@@ -7,7 +7,7 @@ bool nuchic::CutCollection::EvaluateCuts(const std::vector<nuchic::Particle> &pa
     spdlog::trace("Evaluating Cuts");
     for(size_t i = 0; i < parts.size(); ++i) {
         spdlog::trace("Making cut for {}, status = {}", parts[i].ID(), parts[i].Status());
-        if(!parts[i].IsFinal()) continue;
+        if(!parts[i].IsFinal() && !parts[i].IsPropagating()) continue;
         spdlog::trace("Making cut for {}", parts[i].ID());
         // Single Particle Cuts
         for(const auto &cut : one_part_cuts)
@@ -16,7 +16,7 @@ bool nuchic::CutCollection::EvaluateCuts(const std::vector<nuchic::Particle> &pa
         
         // Two Particle Cuts
         for(size_t j = i+1; j < parts.size(); ++j) {
-            if(!parts[j].IsFinal()) continue;
+            if(!parts[j].IsFinal() && !parts[i].IsPropagating()) continue;
             for(const auto &cut : two_part_cuts)
                 if(cut.Contains(parts[i].ID(), parts[j].ID()))
                     result &= cut.MakeCut(parts[i].Momentum(), parts[j].Momentum());
