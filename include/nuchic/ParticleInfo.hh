@@ -103,7 +103,7 @@ namespace nuchic {
             }
 
             std::string ToString() const noexcept {
-             return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
+                return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
                                 static_cast<int>(id), idname,
                                 antiname, mass, width);
             }
@@ -126,16 +126,19 @@ namespace nuchic {
         private:
             using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
             static ParticleDB particleDB;
+            static std::map<std::string, PID> nameToPID; 
             static void BuildDatabase(const std::string&);
 
         public:
             ParticleInfo(std::shared_ptr<ParticleInfoEntry> info_, const bool &anti_=false)
-                : info(std::move(info_)), anti(false) {
+                : info(std::move(info_)), anti(anti_) {
                 InitDatabase("data/Particles.yml");
+                if(particleDB.find(info -> id) == particleDB.end())
+                    particleDB[info -> id] = info;
                 if(anti && info -> majorana == 0) anti = anti_;
             }
 
-            ParticleInfo(const long int &id) : info(nullptr), anti(false) {
+            explicit ParticleInfo(const long int &id) : info(nullptr), anti(false) {
                 InitDatabase("data/Particles.yml");
                 auto it(particleDB.find(static_cast<PID>(std::abs(id))));
                 if(it != particleDB.end()) 
@@ -145,9 +148,11 @@ namespace nuchic {
                 if(id < 0 && info -> majorana == 0) anti = true;
             }
 
-            ParticleInfo(const PID &id, const bool &anti_) : info(nullptr), anti(false) {
+            ParticleInfo(const PID &id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
                 auto it(particleDB.find(id));
+                if(it == particleDB.end())
+                    throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
                 info = it -> second;
                 if(anti_ && info -> majorana == 0) anti = anti_;
             }
@@ -157,6 +162,8 @@ namespace nuchic {
             ~ParticleInfo() = default;
             ParticleInfo& operator=(const ParticleInfo &other) = default;
             ParticleInfo& operator=(ParticleInfo &&other) = default;
+
+            ParticleInfo Anti() { return ParticleInfo(-IntID()); }
 
             // Property functions
             std::string Name() const noexcept { return anti ? info -> antiname : info -> idname; }
@@ -199,7 +206,7 @@ namespace nuchic {
             }
             bool operator!=(const ParticleInfo &other) const noexcept { return !(*this == other); }
 
-            static ParticleDB Database() { return particleDB; }
+            static ParticleDB& Database() { return particleDB; }
             static void InitDatabase(const std::string &filename) {
                 if(particleDB.size() == 0) {
                     particleDB[PID::undefined()] =  std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
@@ -207,6 +214,7 @@ namespace nuchic {
                 }
             }
             static void PrintDatabase();
+            static const std::map<std::string, PID>& NameToPID() { return nameToPID; }
 
         private:
             std::shared_ptr<ParticleInfoEntry> info;

@@ -1,6 +1,7 @@
 #ifndef UNITS_HH
 #define UNITS_HH
 
+#include <cmath>
 namespace nuchic {
     constexpr double base_to_femto = 1.0e15;
 
@@ -47,7 +48,18 @@ namespace nuchic {
     constexpr double operator"" _GeV(unsigned long long int x) {
         return static_cast<double>(x)*1000;
     }
+    constexpr double operator"" _J(long double x) {
+        return static_cast<double>(x)/1.602176634e-13;
+    }
 
+    // Angle literals
+    constexpr double operator"" _rad(long double x) {
+        return static_cast<double>(x);
+    }
+    constexpr double operator"" _deg(long double x) {
+        constexpr double ToRads = M_PI/180;
+        return static_cast<double>(x)*ToRads;
+    }
 }
 
 #endif

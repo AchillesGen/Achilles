@@ -18,8 +18,10 @@ enum class ParticleStatus : int {
     external_test = -2,
     propagating = -1,
     background = 0,
-    escaped = 1,
-    captured = 2
+    initial_state = 1,
+    final_state = 2,
+    escaped = 3,
+    captured = 4
 };
 
 /// The Particle class provides a container to handle information about the particle.
@@ -53,19 +55,33 @@ class Particle {
         ///@param status: The status code of the particle (default = 0)
         ///@param mothers: The mother particles of the particle (default = Empty)
         ///@param daughters: The daughter particles of the particle (default = Empty)
-        Particle(const PID& pid = PID{0}, const FourVector& mom = FourVector(),
+        Particle(const PID& pid = PID{0}, FourVector mom = FourVector(),
                  ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = static_cast<ParticleStatus>(0),
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
-            info(pid), momentum(mom), position(std::move(pos)), status(_status),
+            info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
             mothers(std::move(_mothers)), daughters(std::move(_daughters)) { formationZone = 0;}
+
         Particle(const long int& pid, const FourVector& mom = FourVector(),
                  ThreeVector  pos = ThreeVector(), const int& _status = 0,
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
             info(pid), momentum(mom), position(std::move(pos)), status(static_cast<ParticleStatus>(_status)),
             mothers(std::move(_mothers)), daughters(std::move(_daughters)) {formationZone = 0;}
-        Particle(const Particle&) = default;
+
+        Particle(ParticleInfo _info, const FourVector &mom=FourVector(),
+                 ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
+                 std::vector<int> _mothers = std::vector<int>(),
+                 std::vector<int> _daughters = std::vector<int>()) noexcept
+                    : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
+                      status(std::move(_status)), mothers(std::move(_mothers)),
+                      daughters(std::move(_daughters)) { formationZone = 0;}
+
+        Particle(const Particle &other) : info{ParticleInfo(other.info.ID())},
+            momentum{other.momentum},
+            position{other.position}, status{other.status}, mothers{other.mothers},
+            formationZone{other.formationZone} {}
+
         Particle(Particle&&) = default;
         Particle& operator=(const Particle&) = default;
         Particle& operator=(Particle&&) = default;
@@ -85,10 +101,6 @@ class Particle {
         /// Set the momentum of the particle
         ///@param FourVector: The momentum to be set
         void SetMomentum(const FourVector& mom) noexcept {momentum = mom;}
-
-        /// Set the status of the particle (See Particle description for details)
-        ///@param int: The status to be set
-        void SetStatus(const ParticleStatus& _status) noexcept {status = _status;}
 
         /// Set the mother particles of the given particle
         ///@param std::vector<int>: A vector containing information about the mother particles
@@ -135,13 +147,15 @@ class Particle {
         ///@return int: PID of the particle
         PID ID() const noexcept { return info.ID(); }
 
+        ParticleInfo Info() const noexcept { return info; }
+
         /// Returns the position of the particle
         ///@return ThreeVector: The position of the particle
-        const ThreeVector& Position() const noexcept {return position;}
+        const ThreeVector& Position() const noexcept { return position; }
 
         /// Returns the momentum of the particle
         ///@return FourVector: The momentum of the particle
-        const FourVector& Momentum() const noexcept {return momentum;}
+        const FourVector& Momentum() const noexcept { return momentum; }
 
         /// Gets the velocity / boost vector of a given particle
         ///@return ThreeVector: Velocity of the particle in units of c
@@ -149,7 +163,11 @@ class Particle {
 
         /// Gets the current particle status
         ///@return int: The status of the particle
-        const ParticleStatus& Status() const noexcept {return status;}
+        const ParticleStatus& Status() const noexcept { return status; }
+
+        /// Set the status of the particle (See Particle description for details)
+        ///@param int: The status to be set
+        ParticleStatus& Status() noexcept { return status; }
 
         /// Return a vector of the mother particle indices
         ///@return std::vector<int>: A vector of indices referring to the mother particle
@@ -165,24 +183,24 @@ class Particle {
 
         /// Return the mass of the given particle
         ///@return double: The mass of the particle
-        double Mass() const noexcept {return momentum.M();}
+        double Mass() const noexcept { return info.Mass(); }
 
         /// Return the momentum in the x-direction
         ///@return double: Value of momentum in x-direction
-        double Px() const noexcept {return momentum.Px();}
+        double Px() const noexcept { return momentum.Px(); }
 
         /// Return the momentum in the y-direction
         ///@return double: Value of momentum in y-direction
-        double Py() const noexcept {return momentum.Py();}
+        double Py() const noexcept { return momentum.Py(); }
 
         /// Return the momentum in the z-direction
         ///@return double: Value of momentum in z-direction
-        double Pz() const noexcept {return momentum.Pz();}
+        double Pz() const noexcept { return momentum.Pz(); }
 
         /// Return the energy
         ///@return double: Value of energy
-        double E() const noexcept {return momentum.E();}
-        double Radius() const noexcept {return position.Magnitude();}
+        double E() const noexcept { return momentum.E(); }
+        double Radius() const noexcept { return position.Magnitude(); }
         ///@}
 
         /// @name Functions
@@ -202,21 +220,28 @@ class Particle {
 
         /// Check to see if the particle is a final state particle
         ///@return bool: True if a final state particle, False otherwise
-        bool IsFinal() const noexcept {return status == ParticleStatus::escaped;}
+        bool IsFinal() const noexcept {return (status == ParticleStatus::escaped)
+                                           || (status == ParticleStatus::final_state); }
 
         /// Propagate the particle according to its momentum by a given time step
         ///@param timeStep: The amount of time to propagate the particle for
         void Propagate(const double&) noexcept;
 
-	void SpacePropagate(const double&) noexcept; 
+	    void SpacePropagate(const double&) noexcept; 
+
+        double &DistanceTraveled() { return distanceTraveled; }
 
         /// Returns the distance travelled by the particle
         /// @return double: the distance travelled by the particle
-        double GetDistanceTraveled() {return distanceTraveled;}
+        double GetDistanceTraveled() const {return distanceTraveled;}
 
         /// Propagate a particle back in time. Useful for testing purposes
         ///@param timeStep: The amount of time to propagate a particle back in time for
         void BackPropagate(const double&) noexcept;
+
+        /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
+        ///@param rot_mat: the 3x3 rotation matrix
+        void Rotate(const std::array<double, 9>&) noexcept;
 
         /// Return a string representation of the particle
         ///@return std::string: a string representation of the particle

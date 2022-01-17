@@ -2,6 +2,7 @@
 
 #include "nuchic/FourVector.hh"
 #include "nuchic/ThreeVector.hh"
+#include "spdlog/spdlog.h"
 
 using namespace nuchic;
 
@@ -32,6 +33,15 @@ double FourVector::DeltaR(const FourVector& other) const noexcept {
     return sqrt(DEta*DEta + DPhi*DPhi);
 }
 
+double FourVector::CosAngle(const FourVector &other) const noexcept {
+    auto p1 = Vec3(), p2 = other.Vec3();
+    return std::max(std::min(p1*p2/(p1.P()*p2.P()), 1.0), -1.0);
+}
+
+double FourVector::Angle(const FourVector &other) const noexcept {
+    return std::acos(CosAngle(other));
+}
+
 ThreeVector FourVector::Vec3() const noexcept {
     return {vec[0], vec[1], vec[2]};
 }
@@ -43,7 +53,7 @@ void FourVector::SetVectM(const ThreeVector& vec3, const double& mass) noexcept 
     vec[3] = sqrt(mass*mass + vec3*vec3);
 }
 
-FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
+FourVector FourVector::Boost(const ThreeVector& beta) const noexcept {
     const double beta2 = beta*beta;
     const double gamma = 1.0/sqrt(1.0 - beta2);
     const double betap = beta[0]*vec[0] + beta[1]*vec[1] + beta[2]*vec[2];
@@ -58,8 +68,37 @@ FourVector FourVector::Boost(const ThreeVector& beta) noexcept {
 }
 
 FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
-                                             const double& beta_z) noexcept {
+                                             const double& beta_z) const noexcept {
     return Boost(ThreeVector(beta_x, beta_y, beta_z));
+}
+
+FourVector FourVector::Rotate(const RotMat &mat) const noexcept {
+    return {mat[0]*vec[0]+mat[1]*vec[1]+mat[2]*vec[2],
+            mat[3]*vec[0]+mat[4]*vec[1]+mat[5]*vec[2],
+            mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2], vec[3]};
+}
+
+FourVector FourVector::RotateBack(const RotMat &mat) const noexcept {
+    return {mat[0]*vec[0]+mat[3]*vec[1]+mat[6]*vec[2],
+            mat[1]*vec[0]+mat[4]*vec[1]+mat[7]*vec[2],
+            mat[2]*vec[0]+mat[5]*vec[1]+mat[8]*vec[2], vec[3]};
+}
+
+nuchic::FourVector::RotMat FourVector::Align(const ThreeVector &axis) const noexcept {
+
+    ThreeVector a = Vec3().Unit();
+
+    auto v = a.Cross(axis);
+    double c = a.Dot(axis);
+
+    return {1-v[1]*v[1]/(1+c)-v[2]*v[2]/(1+c), -v[2]+v[0]*v[1]/(1+c), v[1]+v[0]*v[2]/(1+c),
+            v[2]+v[0]*v[1]/(1+c), 1-v[0]*v[0]/(1+c)-v[2]*v[2]/(1+c), -v[0]+v[1]*v[2]/(1+c),
+            -v[1]+v[0]*v[2]/(1+c), v[0]+v[1]*v[2]/(1+c), 1-v[0]*v[0]/(1+c)-v[1]*v[1]/(1+c)};
+}
+
+nuchic::FourVector::RotMat FourVector::AlignZ() const noexcept {
+    ThreeVector z{0, 0, 1};
+    return Align(z);
 }
 
 FourVector FourVector::Cross(const FourVector& other) const noexcept {

@@ -8,8 +8,29 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <string>
 
 namespace nuchic {
+
+template<class ContainerT>
+void tokenize(const std::string& str, ContainerT& tokens,
+              const std::string& delimiters=" \n\t", bool trimEmpty=true) {
+    std::string::size_type lastPos = 0, length = str.length();
+    
+    using value_type = typename ContainerT::value_type;
+    using size_type = typename ContainerT::size_type;
+
+    while(lastPos < length+1) {
+        std::string::size_type pos = str.find_first_of(delimiters, lastPos);
+        if(pos == std::string::npos) pos = length;
+
+        if(pos != lastPos || !trimEmpty) {
+            tokens.push_back(value_type(str.data()+lastPos,
+                             static_cast<size_type>(pos)-lastPos));
+        }
+        lastPos = pos+1;
+    }
+}
 
 const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
 bool sortPairSecond(const std::pair<std::size_t, double>& a,
@@ -33,6 +54,12 @@ class Brent {
         ///@return double: The root that was found within the given tolerance
         double CalcRoot(double, double) const;
 
+        /// Calculate the minimum in the given range.
+        ///@param ax: The lower bound to search for the minimum
+        ///@param bx: The upper bound to search for the minimum
+        ///@param cx: The initial guess for the minimum, (default: will find a guess)
+        ///@return double: The minimum that was found within the given tolerance
+        double Minimize(const double &ax, const double &bx, const double &cx=1E99) const;
     private:
         // Functions
         inline void swap(double &fa, double &fb, double &a, double &b) const {
@@ -46,11 +73,22 @@ class Brent {
             }
             return;
         }
+        inline void shift(double &a, double &b, double &c, const double &d) const {
+            a = b; b = c; c = d;
+        }
+        void GetBracket(double &a, double &b, double &c,
+                        double &fa, double &fb, double &fc) const;
 
         // Variables
         std::function<double(double)> m_func;
         double m_tol;
         static constexpr double base_tol = 1e-6;
+        static const size_t itmax = 100;
+        static constexpr double tiny = 1.0E-20;
+        static constexpr double glimit = 100.0;
+        static constexpr double gold = 1.618034;
+        static constexpr double cgold = 0.3819660;
+        static constexpr double eps = std::numeric_limits<double>::epsilon()*1.0E-3;
 };
 
 /// Template class to act as a helper for generating ranges in log space. This is done in 

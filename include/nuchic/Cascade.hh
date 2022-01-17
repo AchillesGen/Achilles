@@ -5,17 +5,23 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/SymplecticIntegrator.hh"
 #include "nuchic/ThreeVector.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Random.hh"
 #include "nuchic/Interpolation.hh"
+#include "nuchic/Interactions.hh"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
 
 class Nucleus;
 class Particle;
-class Interactions;
+class Event;
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -25,12 +31,20 @@ using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
 /// interaction occurs, we calculate the interaction cross-section of Np and Nn, where N is the
 /// propagating nucleon.
 class Cascade {
+    static constexpr int cMaxSteps = 100000;
     public:
         // Probability Enums
         enum ProbabilityType {
             Gaussian,
             Pion,
             Cylinder
+        };
+
+        // In-Medium Effects Enums
+        enum InMedium {
+            None,
+            NonRelativistic,
+            Relativistic
         };
 
         /// @name Constructor and Destructor
@@ -41,10 +55,10 @@ class Cascade {
         ///@param prob: The interaction probability function to be used
         ///@param dist: The maximum distance step to take when propagating
         ///TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
-        Cascade(const std::shared_ptr<Interactions>,  const ProbabilityType&, const double&);
-        Cascade(const Cascade&) = default;
+        Cascade() = default;
+        Cascade(std::unique_ptr<Interactions>,  const ProbabilityType&,
+                const InMedium&, bool potential_prob=false, const double& dist=0.03);
         Cascade(Cascade&&) = default;
-        Cascade& operator=(const Cascade&) = default;
         Cascade& operator=(Cascade&&) = default;
 
         /// Default destructor
@@ -69,35 +83,41 @@ class Cascade {
         ///@param idx: The index of the particle that has been kicked
         void SetKicked(const std::size_t& idx) { kickedIdxs.push_back(idx); }
 
-        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in
         /// the background.
         ///@param nucleus: The nucleus to evolve
         ///@param maxSteps: The maximum steps to take in the cascade
-        void Evolve(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
+        void Evolve(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
 
-        /// Simulate evolution of a kicked particle until it interacts for the 
+        /// Simulate the cascade on an event until all particles either escape,
+        /// are recaptured, or are in the background.
+        ///@param event: The event to run the cascade evolution on
+        ///@param maxSteps: The maximum steps to take in the cascade
+        void Evolve(nuchic::Event*, const std::size_t& maxSteps = cMaxSteps);
+
+        /// Simulate evolution of a kicked particle until it interacts for the
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
         ///@param nucleus: The nucleus to evolve according to the mean free path calculation
         ///@param maxSteps: The maximum steps to take in the particle evolution
-        void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
+        void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
 
-        /// Simulate the cascade until all particles either escape, are recaptured, or are in 
+        /// Simulate the cascade until all particles either escape, are recaptured, or are in
         /// the background. This is done according to the NuWro algorithm.
         ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
         ///@param maxSteps: The maximum steps to take in the particle evolution
-	void NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
+        void NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
 
-	/// Simulate evolution of a kicked particle until it interacts for the 
+        /// Simulate evolution of a kicked particle until it interacts for the
         /// first time with another particle, accumulating the total distance
         /// traveled by the kicked particle before it interacts.
         ///@param nucleus: The nucleus to evolve according to the mean free path calculation
         ///@param maxSteps: The maximum steps to take in the particle evolution
-        void MeanFreePath_NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps);
+        void MeanFreePath_NuWro(std::shared_ptr<Nucleus>, const std::size_t& maxSteps = cMaxSteps);
         ///@}
     private:
         // Functions
-        std::size_t GetInter(Particles&, const Particle&, double& stepDistance); 
+        std::size_t GetInter(Particles&, const Particle&, double& stepDistance);
         void AdaptiveStep(const Particles&, const double&) noexcept;
         bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
@@ -108,16 +128,66 @@ class Cascade {
         void Escaped(Particles&);
         bool FinalizeMomentum(Particle&, Particle&) noexcept;
         bool PauliBlocking(const Particle&) const noexcept;
+        void AddIntegrator(size_t, const Particle&);
+        void Propagate(size_t, Particle*, double);
+        void UpdateIntegrator(size_t, Particle*);
 
         // Variables
         std::vector<std::size_t> kickedIdxs;
-        double distance, timeStep{};
-        std::shared_ptr<Interactions> m_interactions;
+        double distance{}, timeStep{};
+        std::unique_ptr<Interactions> m_interactions;
         std::function<double(double, double)> probability;
-        randutils::mt19937_rng rng;
         std::shared_ptr<Nucleus> localNucleus;
+        InMedium m_medium;
+        bool m_potential_prop;
+        std::map<size_t, SymplecticIntegrator> integrators;
 };
 
+}
+
+namespace YAML {
+template<>
+struct convert<nuchic::Cascade> {
+    static bool decode(const Node &node, nuchic::Cascade &cascade) {
+        auto interaction = nuchic::InteractionFactory::Create(node["Interaction"]);
+        auto probType = node["Probability"].as<nuchic::Cascade::ProbabilityType>();
+        auto mediumType = node["InMedium"].as<nuchic::Cascade::InMedium>();
+        auto potentialProp = node["PotentialProp"].as<bool>();
+        auto distance = node["Step"].as<double>();
+        cascade = nuchic::Cascade(std::move(interaction), probType, mediumType, potentialProp, distance);
+        return true;
+    }
+};
+
+template<>
+struct convert<nuchic::Cascade::ProbabilityType> {
+    static bool decode(const Node &node, nuchic::Cascade::ProbabilityType &type) {
+        if(node.as<std::string>() == "Gaussian")
+            type = nuchic::Cascade::ProbabilityType::Gaussian;
+        else if(node.as<std::string>() == "Pion")
+            type = nuchic::Cascade::ProbabilityType::Pion;
+        else if(node.as<std::string>() == "Cylinder")
+            type = nuchic::Cascade::ProbabilityType::Cylinder;
+        else
+            return false;
+        return true;
+    }
+};
+
+template<>
+struct convert<nuchic::Cascade::InMedium> {
+    static bool decode(const Node &node, nuchic::Cascade::InMedium &type) {
+        if(node.as<std::string>() == "None")
+            type = nuchic::Cascade::InMedium::None;
+        else if(node.as<std::string>() == "NonRelativistic")
+            type = nuchic::Cascade::InMedium::NonRelativistic;
+        else if(node.as<std::string>() == "Relativistic")
+            type = nuchic::Cascade::InMedium::Relativistic;
+        else
+            return false;
+        return true;
+    }
+};
 }
 
 #endif // end of include guard: CASCADE_HH

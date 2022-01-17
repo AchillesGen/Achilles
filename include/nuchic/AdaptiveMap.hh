@@ -22,7 +22,7 @@ class AdaptiveMap {
         AdaptiveMap(AdaptiveMap&&) = default;
         AdaptiveMap &operator=(const AdaptiveMap&) = default;
         AdaptiveMap &operator=(AdaptiveMap&&) = default;
-        virtual ~AdaptiveMap() = default;;
+        virtual ~AdaptiveMap() = default;
 
         void MakeUniform(const size_t& nbins_=0);
         std::vector<double> Jacobian(const std::vector<double>&);

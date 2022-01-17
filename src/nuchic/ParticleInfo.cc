@@ -76,6 +76,7 @@ void nuchic::ParticleInfo::BuildDatabase(const std::string &datafile) {
     for(auto particle : particles) {
         auto entry = std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());
         particleDB.emplace(entry -> id, entry);
+        nameToPID.emplace(entry -> idname, entry -> id);
     }
     PrintDatabase();
 }
@@ -104,6 +105,7 @@ std::ostream& operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
 }
 
 ParticleInfo::ParticleDB ParticleInfo::particleDB;
+std::map<std::string, nuchic::PID> ParticleInfo::nameToPID;
 
 bool ParticleInfo::IsBaryon() const noexcept {
     if(IntID() % 10000 < 1000) return false;

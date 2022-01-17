@@ -7,9 +7,18 @@
 #include <memory>
 #include <vector>
 
+#include "nuchic/Nuchic.hh"
+#include "nuchic/Configuration.hh"
 #include "nuchic/Constants.hh"
+#include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
+#include "nuchic/Potential.hh"
 #include "nuchic/Random.hh"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
 
@@ -41,15 +50,16 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
+        Nucleus() = default;
         Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
-                const std::string&, const FermiGasType&, std::function<Particles()>);
-        Nucleus(const Nucleus&) = default;
+                const std::string&, const FermiGasType&, std::unique_ptr<Density>);
+        Nucleus(const Nucleus&) = delete;
         Nucleus(Nucleus&&) = default;
-        Nucleus& operator=(const Nucleus&) = default;
+        Nucleus& operator=(const Nucleus&) = delete;
         Nucleus& operator=(Nucleus&&) = default;
 
         /// Default destructor
-        ~Nucleus() = default;
+        MOCK ~Nucleus() = default;
         ///@}
 
         /// @name Setters
@@ -68,16 +78,18 @@ class Nucleus {
         ///@param mom: The Fermi Momentum to be set in MeV
         void SetFermiMomentum(const double& mom) noexcept { fermiMomentum = mom; }
 
-        /// Set the potential energy of the nucleus. This value defaults to:
-        /// @f[
-        ///     \sqrt{m_{N}^2+k_{f}^2} - m_{N} + 8 \text{MeV}.
-        /// @f]
-        ///@param energy: The potential energy to be set in MeV
-        void SetPotential(const double& energy) noexcept { potential = energy; }
-
         /// Set the density function to use for configuration generation
         ///@param density: The function to be use for generating nucleons
-        void SetDensity(const std::function<Particles()>& _density) noexcept { density = _density; }
+        void SetDensity(std::unique_ptr<Density> _density) noexcept {
+            density = std::move(_density);
+        }
+
+        /// Set the potential function used for propagation in the nucleus
+        ///@param potential: The potential to use
+        void SetPotential(std::unique_ptr<Potential> _potential) noexcept {
+            potential = std::move(_potential);
+        }
+
         ///@}
 
         /// Set the radius of the nucleus in fm
@@ -90,7 +102,15 @@ class Nucleus {
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
-        Particles& Nucleons() noexcept { return nucleons; }
+        MOCK Particles& Nucleons() noexcept { return nucleons; }
+
+        /// Return a vector of the ids of the protons in the nucleus
+        ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
+        std::vector<size_t> ProtonsIDs() noexcept { return protonLoc; }
+
+        /// Return a vector of the ids of the neutrons in the nucleus
+        ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector 
+        std::vector<size_t> NeutronsIDs() noexcept { return neutronLoc; }
 
         /// Return a vector of the current protons
         ///@return Particles: The current protons generated for the nucleus
@@ -102,7 +122,7 @@ class Nucleus {
 
         /// Return the number of nucleons in the nucleus
         ///@return int: The number of nucleons in the nucleus
-        std::size_t NNucleons() const noexcept { return nucleons.size(); }
+        MOCK std::size_t NNucleons() const noexcept { return nucleons.size(); }
 
         /// Return the number of protons in the nucleus
         ///@return int: The number of protons in the nucleus
@@ -116,45 +136,40 @@ class Nucleus {
         ///@return double: The binding energy in MeV
         const double& BindingEnergy() const noexcept { return binding; }
 
-	/// Return the current Fermi Momentum of the nucleus
+	    /// Return the current Fermi Momentum of the nucleus
         ///@return double: The Fermi Momentum in MeV
         //const double& FermiMomentum() const noexcept {return fermiMomentum;}
 
         /// Return the phenomenological potential
-	///@return double: The potential in MeV	
-        double Potential(const double&) const noexcept;
-
-        /// Return the current potential energy of the nucleus
-        ///@return double: The potential energy in MeV
-        const double& PotentialEnergy() const noexcept { return potential; }
+	    ///@return std::shared_ptr<Potential>: The potential of the nucleus
+        std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
-        const double& Radius() const noexcept { return radius; }
+        MOCK const double& Radius() const noexcept { return radius; }
 
         /// Return the density of the nucleus at a given location
         ///@param position: The radius to calculate the density at
         ///@return double: The density at the input radius
-        double Rho(const double &position) const noexcept { 
+        MOCK double Rho(const double &position) const noexcept { 
             return position > rhoInterp.max() ? 0 : rhoInterp(position);
         }
         ///@}
 	
         /// Return the Fermi momentum according to a given FG model
-	///@param position: The radius to calculate the density
+	    ///@param position: The radius to calculate the density
         double FermiMomentum(const double&) const noexcept;	//
-	///@}
+
+        void SetRecoil(const FourVector recoil) {
+            m_recoil = recoil;
+        }
+	    ///@}
 
         /// @name Functions
         /// @{
 
-        /// Determine if a particle escapes from the nucleus or is recaptured
-        ///@param particle: The particle that is attempting to escape
-        ///@return bool: True if the particle escapes, False if recaptured
-        bool Escape(Particle&) noexcept;
-
         /// Generate a configuration of the nucleus based on the density function
-        void GenerateConfig();
+        MOCK void GenerateConfig();
 
         /// Generate a random momentum for a nucleon in the nucleus
         ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
@@ -204,7 +219,7 @@ class Nucleus {
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&, const double&,
                                    const std::string&, const FermiGasType&,
-                                   const std::function<Particles()>&);
+                                   std::unique_ptr<Density>);
 
         /// @name Stream Operators
         /// @{
@@ -216,17 +231,47 @@ class Nucleus {
 
     private:
         Particles nucleons, protons, neutrons;
-        double binding, fermiMomentum, radius{}, potential{};
-        FermiGasType fermiGas;
-        std::function<Particles()> density;
+        std::vector<size_t> protonLoc, neutronLoc;
+        double binding{}, fermiMomentum{}, radius{};
+        FermiGasType fermiGas{FermiGasType::Local};
+        std::unique_ptr<Density> density;
         Interp1D rhoInterp;	
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
 
-        randutils::mt19937_rng rng;
+        FourVector m_recoil{};
+        std::shared_ptr<Potential> potential;
 };
 
+}
+
+namespace YAML {
+template<>
+struct convert<nuchic::Nucleus> {
+    static bool decode(const Node &node, nuchic::Nucleus &nuc) {
+        std::string name = node["Name"].as<std::string>();
+        auto binding = node["Binding"].as<double>();
+        auto kf = node["Fermi Momentum"].as<double>();
+
+        nuchic::Nucleus::FermiGasType type = nuchic::Nucleus::FermiGasType::Local;
+        if(node["FermiGas"].as<std::string>() == "Local")
+            type = nuchic::Nucleus::FermiGasType::Local;
+        else if(node["FermiGas"].as<std::string>() == "Global")
+            type = nuchic::Nucleus::FermiGasType::Global;
+        else return false;
+
+        auto densityFile = node["Density"]["File"].as<std::string>();
+#ifdef GZIP
+        auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
+#else
+        auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out");
+#endif
+        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
+
+        return true;
+    }
+};
 }
 
 #endif // end of include guard: NUCLEUS_HH

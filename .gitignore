@@ -5,7 +5,7 @@ __pycache__/*
 .DS_Store
 *.so
 *.egg-info/
-build/
+build*
 *.png
 *.eps
 *.pdf
@@ -24,3 +24,10 @@ compile_commands.json
 *.back
 tags
 lib*.so*
+include/nuchic/System.hh
+plots/
+*dylib
+.clangd
+figs/
+tmp/
+.vimspector.json

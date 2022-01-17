@@ -16,21 +16,23 @@ class ThreeVector;
 /// The FourVector class provides an easy to use container to handle four
 /// component vectors, such as four-position and four-momentum
 class FourVector {
+    using RotMat = std::array<double, 9>;
+
     public:
         /// @name Constructors and Destructors
         ///@{
 
         /// Create an empty FourVector object
-        FourVector() noexcept : vec({0, 0, 0, 0}) {}
+        constexpr FourVector() noexcept : vec({0, 0, 0, 0}) {}
         /// Create a ThreeVector object with values given by p
         ///@param p: A std::array<double, 4> containing the values for the vector
-        FourVector(std::array<double, 4> p) noexcept : vec(p) {}
+        constexpr FourVector(std::array<double, 4> p) noexcept : vec(p) {}
         /// Create a FourVector object with values pX, pY, pZ, and E
         ///@param pX: The px value of the vector
         ///@param pY: The py value of the vector
         ///@param pZ: The pz value of the vector
         ///@param E: The E value of the vector
-        FourVector(double pX, double pY, double pZ, double E) noexcept 
+        constexpr FourVector(double pX, double pY, double pZ, double E) noexcept 
             : vec({pX, pY, pZ, E}) {}
         /// Create a FourVector object from a ThreeVector and an energy
         ///@param other: ThreeVector object containing 3-momentum information
@@ -91,6 +93,8 @@ class FourVector {
         /// @name Getters
         /// @{
         /// These functions provide get specific features from the FourVector object
+        
+        constexpr size_t Size() const noexcept { return 4; }
 
         /// Return the momentum as an array
         ///@return std::array<double, 4>: An array containing the four momentum
@@ -115,18 +119,22 @@ class FourVector {
         /// Return the momentum in the x-direction
         ///@return double: the momentum in the x-direction
         const double& Px() const noexcept {return vec[0];}
+        double& Px() noexcept {return vec[0];}
 
         /// Return the momentum in the y-direction
         ///@return double: the momentum in the y-direction
         const double& Py() const noexcept {return vec[1];}
+        double& Py() noexcept {return vec[1];}
 
         /// Return the momentum in the z-direction
         ///@return double: the momentum in the z-direction
         const double& Pz() const noexcept {return vec[2];}
+        double& Pz() noexcept {return vec[2];}
 
         /// Return the energy
         ///@return double: the energy
         const double& E() const noexcept {return vec[3];}
+        double& E() noexcept {return vec[3];}
 
         /// Return the transverse momentum squared
         ///@return double: Transverse momentum squared
@@ -187,14 +195,34 @@ class FourVector {
         /// Boost the four vector to the frame given by the three vector velocities
         ///@param beta: The boost vector to determine the frame
         ///@return FourVector: The vector in the corresponding frame
-        FourVector Boost(const ThreeVector&) noexcept;
+        FourVector Boost(const ThreeVector&) const noexcept;
 
         /// Boost the four vector to the frame given by the three vector velocities
         ///@param beta_x: The boost in the x-direction
         ///@param beta_y: The boost in the y-direction
         ///@param beta_z: The boost in the z-direction
         ///@return FourVector: The vector in the corresponding frame
-        FourVector Boost(const double&, const double&, const double&) noexcept;
+        FourVector Boost(const double&, const double&, const double&) const noexcept;
+
+        /// Rotate the four vector to the frame given by the 3 angles
+        ///@param mat: The rotation matrix
+        ///@return FourVector: The vector in the corresponding frame
+        FourVector Rotate(const RotMat&) const noexcept;
+
+        /// Rotate the four vector to the frame given by the 3 angles
+        ///@param mat: The rotation matrix
+        ///@return FourVector: The vector in the corresponding frame
+        FourVector RotateBack(const RotMat&) const noexcept;
+
+        /// Obtain the rotation matrix to align the vector with a given axis
+        ///@param axis: The axis to rotate to align with
+        ///@return std::array<double, 9>: The rotation matrix to align the vector
+        ///                               with the given axis
+        RotMat Align(const ThreeVector&) const noexcept;
+
+        /// Get the rotation matrix to align the vector with the z-axis
+        ///@return std::array<double, 9>: The matrix needed to define the rotation
+        RotMat AlignZ() const noexcept;
 
         /// Calculate the cross product between two four vectors
         ///@param other: The vector to take the cross product with respect to
@@ -212,6 +240,16 @@ class FourVector {
         double Dot(const FourVector& other) const noexcept {
             return (*this) * other;
         }
+
+        /// Calculate the cosine of the angle between two four vectors
+        ///@param other: four vector to take angle between
+        ///@return double: cos(angle) between the two four vectors in radians
+        double CosAngle(const FourVector&) const noexcept;
+
+        /// Calculate the angle between two four vectors
+        ///@param other: four vector to take angle between
+        ///@return double: angle between the two four vectors in radians
+        double Angle(const FourVector&) const noexcept;
 
         /// Return a string representation of the vector
         ///@return std::string: a string representation of the vector
