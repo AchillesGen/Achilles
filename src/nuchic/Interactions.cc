@@ -15,6 +15,7 @@
 #include "nuchic/Random.hh"
 
 using namespace nuchic;
+using namespace H5;
 
 REGISTER_INTERACTION(GeantInteractions);
 // REGISTER_INTERACTION(GeantInteractionsDt);

@@ -23,14 +23,12 @@ target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
 endif()
 
-add_library(interaction_plugin SHARED
-    InteractionLoader.cc
-    Interactions.cc
-    InteractionsFactory.cc
-)
-target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
-                                         PUBLIC spdlog::spdlog stdc++fs dl
-)
+# add_library(interaction_plugin SHARED
+#     InteractionLoader.cc
+# )
+# target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
+#                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
+# )
 
 add_library(physics SHARED
     Cascade.cc
@@ -41,6 +39,8 @@ add_library(physics SHARED
     HardScatteringFactory.cc
     Configuration.cc
     Event.cc
+    Interactions.cc
+    InteractionsFactory.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 if(ENABLE_GZIP)

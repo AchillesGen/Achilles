@@ -8,6 +8,9 @@
 #include <vector>
 
 #include "nuchic/ThreeVector.hh"
+#include "nuchic/Interpolation.hh"
+
+#include "H5Cpp.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
