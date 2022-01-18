@@ -1,1 +1,1 @@
-[![Build Status](https://travis-ci.com/jxi24/FNALNeuGen.svg?branch=master)](https://travis-ci.com/jxi24/FNALNeuGen)
+![Build](https://github.com/jxi24/Achilles/actions/workflows/cmake.yml/badge.svg)
