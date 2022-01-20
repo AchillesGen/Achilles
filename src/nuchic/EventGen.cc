@@ -9,6 +9,7 @@
 #include "nuchic/Particle.hh"
 #include "nuchic/Units.hh"
 
+
 #include "yaml-cpp/yaml.h"
 
 nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, outputEvents{false} {
@@ -86,8 +87,10 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     writer -> WriteHeader(configFile);
 
     hist = Histogram(1000, 0.0, 1000.0, "xsec");
-    hist2 = Histogram(100, 0.0, 200.0, "tpe");
+    hist2 = Histogram(100, 0.0, 1400.0, "tpe");
     hist3 = Histogram(13, -0.5, 12.5, "np");
+    hist4 = Histogram(100, 0.0, 1400.0, "erec");
+    
 }
 
 void nuchic::EventGen::Initialize() {
@@ -126,6 +129,8 @@ void nuchic::EventGen::GenerateEvents() {
     hist.Save("multi");
     hist2.Save("tpe");
     hist3.Save("np");
+    hist4.Save("erec");
+    
 }
 
 double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double &wgt, const size_t &batch) {
@@ -207,17 +212,29 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
             writer -> Write(event);
             const auto omega = event.Leptons()[0].E() - event.Leptons()[1].E();
             hist.Fill(omega, event.Weight()/(2*M_PI));
+	    const auto eps=21.0;
+	    const auto erec= (Constant::mN*eps + Constant::mN*event.Leptons()[1].E())
+		    /(Constant::mN-event.Leptons()[1].E()+event.Leptons()[1].Pz() );
+	    const auto cosAngle=event.Leptons()[1].Pz()/event.Leptons()[1].E();
+	    auto theta = std::acos(cosAngle)*180/M_PI;
+	    if (theta > 17+ 7_GeV/event.Leptons()[1].E() && event.Leptons()[1].E()>400) { 
+            	hist4.Fill(erec, event.Weight());
+	    }
+	    
 	    int nprotons = 0;
 	    double tpe= 0;
 	    for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
-		    if(nucleon.Status() == ParticleStatus::escaped){
-                            double kin = nucleon.Momentum().E() -  Constant::mN;
+		    if(nucleon.Status() == ParticleStatus::escaped && nucleon.ID() == PID::proton()){
+                            double kin = nucleon.Momentum().E() - Constant::mN+eps +event.Leptons()[1].E();
 			    if (kin > tpe) tpe=kin;
 			    nprotons++;
 		    }
 	    }
-	    hist2.Fill(tpe, event.Weight());	    
+            if (nprotons==1) {	    	    
+	          hist2.Fill(tpe, event.Weight());
+	    }	  
 	    hist3.Fill(nprotons, event.Weight());
+	    
         }
     }
 

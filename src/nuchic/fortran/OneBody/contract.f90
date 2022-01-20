@@ -72,11 +72,11 @@
       if(id.eq.1) then
          call det_Ja(ff1p,ff2p)
          call contract(sig_p)
-         sig=sig_mott*0.5d0*(sig_p) 
+         sig=sig_mott*0.5d0*(sig_p)*(qm2*hbarc**2)**2/1.e12
       elseif(id.eq.2) then
          call det_Ja(ff1n,ff2n)
          call contract(sig_n)
-         sig=sig_mott*0.5d0*(sig_n) 
+         sig=sig_mott*0.5d0*(sig_n)*(qm2*hbarc**2)**2/1.e12
       endif
       return
     end subroutine sigccc
