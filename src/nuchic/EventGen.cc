@@ -87,7 +87,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     writer -> WriteHeader(configFile);
 
     hist = Histogram(1000, 0.0, 1000.0, "xsec");
-    hist2 = Histogram(100, 0.0, 1400.0, "tpe");
+    hist2 = Histogram(20, 600.0, 1200.0, "tpe");
     hist3 = Histogram(13, -0.5, 12.5, "np");
     hist4 = Histogram(100, 0.0, 1400.0, "erec");
     
@@ -219,21 +219,28 @@ double nuchic::EventGen::Calculate(const std::vector<double> &rans, const double
 	    auto theta = std::acos(cosAngle)*180/M_PI;
 	    if (theta > 17+ 7_GeV/event.Leptons()[1].E() && event.Leptons()[1].E()>400) { 
             	hist4.Fill(erec, event.Weight());
-	    }
+	    
 	    
 	    int nprotons = 0;
 	    double tpe= 0;
 	    for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+		   		    
 		    if(nucleon.Status() == ParticleStatus::escaped && nucleon.ID() == PID::proton()){
-                            double kin = nucleon.Momentum().E() - Constant::mN+eps +event.Leptons()[1].E();
-			    if (kin > tpe) tpe=kin;
-			    nprotons++;
+			     const auto pf= sqrt(pow(nucleon.Momentum().E(),2)-pow(Constant::mN,2));
+			     const auto cosAngle_h=nucleon.Momentum().Pz()/pf;
+	                     auto theta_h = std::acos(cosAngle_h)*180/M_PI;
+			     if (theta_h > 12 && theta_h < 140 && pf > 300) {
+                               double kin = nucleon.Momentum().E() - Constant::mN+eps +event.Leptons()[1].E();
+			       if (kin > tpe) tpe=kin;
+			       nprotons++;
+			     }
 		    }
 	    }
             if (nprotons==1) {	    	    
 	          hist2.Fill(tpe, event.Weight());
 	    }	  
 	    hist3.Fill(nprotons, event.Weight());
+	}
 	    
         }
     }
