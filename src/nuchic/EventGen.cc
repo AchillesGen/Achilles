@@ -85,7 +85,7 @@ nuchic::EventGen::EventGen(const std::string &configFile) : runCascade{false}, o
     }
     writer -> WriteHeader(configFile);
 
-    hist = Histogram(1000, 0.0, 1000.0, "xsec");
+    hist = Histogram(100, 0.0, 1000.0, "xsec");
     hist2 = Histogram(100, 0.0, 200.0, "tpe");
     hist3 = Histogram(13, -0.5, 12.5, "np");
 }
@@ -123,7 +123,7 @@ void nuchic::EventGen::GenerateEvents() {
         spdlog::info("Stopping after reaching max batch threshold.");
     }
 
-    hist.Save("multi");
+    hist.Save("multi2");
     hist2.Save("tpe");
     hist3.Save("np");
 }
