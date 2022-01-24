@@ -52,7 +52,7 @@ class Nucleus {
         ///                to the density profile
         Nucleus() = default;
         Nucleus(const std::size_t&, const std::size_t&, const double&, const double&,
-                const std::string&, const FermiGasType&, std::unique_ptr<Density>);
+                const std::string&, const std::string&, const FermiGasType&, std::unique_ptr<Density>);
         Nucleus(const Nucleus&) = delete;
         Nucleus(Nucleus&&) = default;
         Nucleus& operator=(const Nucleus&) = delete;
@@ -83,6 +83,10 @@ class Nucleus {
         void SetDensity(std::unique_ptr<Density> _density) noexcept {
             density = std::move(_density);
         }
+
+        //void SetPotentialQ(std::unique_ptr<PotentialQ> _potentialQ) noexcept {
+        //    potentialQ = std::move(_potentialQ);
+        //}
 
         /// Set the potential function used for propagation in the nucleus
         ///@param potential: The potential to use
@@ -155,6 +159,13 @@ class Nucleus {
             return position > rhoInterp.max() ? 0 : rhoInterp(position);
         }
         ///@}
+	/// Return the momentum dependent potential at a given momentum
+        ///@param : The kin energy to calculate the density at
+        ///@return double: The potential at the input tkin
+
+	MOCK double PotQ(const double &tkin) const noexcept { 
+            return tkin > potInterp.max() ? 0 : potInterp(tkin);
+        }
 	
         /// Return the Fermi momentum according to a given FG model
 	    ///@param position: The radius to calculate the density
@@ -218,7 +229,7 @@ class Nucleus {
         ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&, const double&,
-                                   const std::string&, const FermiGasType&,
+                                   const std::string&, const std::string&, const FermiGasType&,
                                    std::unique_ptr<Density>);
 
         /// @name Stream Operators
@@ -235,7 +246,11 @@ class Nucleus {
         double binding{}, fermiMomentum{}, radius{};
         FermiGasType fermiGas{FermiGasType::Local};
         std::unique_ptr<Density> density;
-        Interp1D rhoInterp;	
+        //std::unique_ptr<PotentialQ> potentialQ;
+	
+        Interp1D rhoInterp;
+        Interp1D potInterp;	
+	
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
@@ -262,12 +277,14 @@ struct convert<nuchic::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
+        auto potentialFile = node["Density"]["FilePotential"].as<std::string>();
+	
 #ifdef GZIP
         auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
 #else
         auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out");
 #endif
-        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
+        nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, potentialFile, type, std::move(configs));
 
         return true;
     }

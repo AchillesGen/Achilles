@@ -137,7 +137,8 @@ void QESpectral::GenerateHadrons(const std::vector<double> &rans,
     // event.PhaseSpace().weight *= tmp.Magnitude() > 225 ? 1 : 0;
 
     double Epp = sqrt(pow(Constant::mN, 2)+tmp.P2()); 
-    double Ep = Constant::mN+Q.E()-Epp+15.0;
+    double pot_pp = event.CurrentNucleus() -> PotQ(Epp-Constant::mN);
+    double Ep = Constant::mN+Q.E()-Epp -pot_pp;
     event.PhaseSpace().momentum.emplace_back(p*sinT*cos(phi),
                                              p*sinT*sin(phi),
                                              p*cosT, Ep);

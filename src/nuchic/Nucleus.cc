@@ -30,7 +30,7 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEnergy,
-                 const double& kf, const std::string& densityFilename, const FermiGasType& fgType,
+                 const double& kf, const std::string& densityFilename,const std::string& potentialFilename, const FermiGasType& fgType,
                  std::unique_ptr<Density> _density) 
                         : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType),
                           density(std::move(_density)) {
@@ -71,6 +71,25 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
 
     rhoInterp.SetData(vecRadius, vecDensity);
     rhoInterp.CubicSpline();
+
+
+
+    //
+    std::ifstream potentialFile(potentialFilename);
+    if(!potentialFile.is_open())
+        throw std::runtime_error(fmt::format("Nucleus: Potential file {} does not exist.", potentialFilename));
+   
+
+    double tkin_{}, potentialQ_{};
+    std::vector<double> vecTkin, vecPotentialQ;
+    while(potentialFile >> tkin_ >> potentialQ_ ) {
+        vecTkin.push_back(std::move(tkin_));
+        vecPotentialQ.push_back(std::move(potentialQ_));
+    }
+
+    potInterp.SetData(vecTkin, vecPotentialQ);
+    potInterp.CubicSpline();
+
     
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying number of nucleons it will 
@@ -142,7 +161,7 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
 
 Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
                              const double& fermiMomentum,
-                             const std::string& densityFilename, const FermiGasType& fg_type,
+                             const std::string& densityFilename,const std::string& potentialFilename, const FermiGasType& fg_type,
                              std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
@@ -154,7 +173,7 @@ Nucleus Nucleus::MakeNucleus(const std::string& name, const double& bEnergy,
             "Nucleus: parsing nuclear name '{0}', expecting a density "
             "with A={1} total nucleons and Z={2} protons.", 
             name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename,
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, potentialFilename,
                        fg_type, std::move(density));
     }
 
