@@ -1,6 +1,8 @@
 #ifndef RANDOM_HH
 #define RANDOM_HH
 
+#include <memory>
+
 #include "nuchic/Randutils.hh"
 
 namespace nuchic {

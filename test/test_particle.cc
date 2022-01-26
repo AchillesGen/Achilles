@@ -2,6 +2,7 @@
 
 #include "catch2/catch.hpp"
 
+#include "nuchic/Constants.hh"
 #include "nuchic/Particle.hh"
 #include "Approx.hh"
 
@@ -55,7 +56,7 @@ TEST_CASE("Propagate", "[Particle]") {
     SECTION("Time propagation") {
         part.Propagate(1);
         CHECK_THAT(part.Position(),
-                   IsVectorApprox<nuchic::ThreeVector>(nuchic::ThreeVector{20, 0, 0}).margin(eps));
+                   IsVectorApprox<nuchic::ThreeVector>(nuchic::ThreeVector{nuchic::Constant::HBARC/10, 0, 0}).margin(eps));
         part.BackPropagate(1);
         CHECK_THAT(part.Position(),
                    IsVectorApprox<nuchic::ThreeVector>(nuchic::ThreeVector{0, 0, 0}).margin(eps));

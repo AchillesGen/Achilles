@@ -56,8 +56,8 @@ add_library(docopt::docopt ALIAS docopt)
 
 CPMAddPackage(
     NAME yaml-cpp
-    GITHUB_REPOSITORY jbeder/yaml-cpp
-    GIT_TAG 4edff1fa5dbfca16fc72d89870841bee89f8ef89
+    GITHUB_REPOSITORY jxi24/yaml-cpp
+    GIT_TAG master
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
@@ -67,9 +67,8 @@ add_library(yaml::cpp ALIAS yaml-cpp)
 
 CPMAddPackage(
     NAME yaml-fortran
-    GITHUB_REPOSITORY BoldingBruggeman/fortran-yaml
-    GIT_TAG e465992dab9bcc147abd4c758fa05ee419f50e12
-    PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/yaml-fortran.patch"
+    GITHUB_REPOSITORY jxi24/fortran-yaml
+    GIT_TAG master
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
@@ -95,9 +94,8 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     # Fortran Unit Tests
     CPMAddPackage(
         NAME fortran_unit_test
-        GITHUB_REPOSITORY dongli/fortran-unit-test
-        GIT_TAG 3e291757c7ef028a93dccaac8393cc0371641dbe
-        PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/fortran_unit_test.patch"
+        GITHUB_REPOSITORY jxi24/fortran-unit-test
+        GIT_TAG master
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
 endif()
