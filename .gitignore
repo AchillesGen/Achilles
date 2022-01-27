@@ -31,3 +31,4 @@ plots/
 figs/
 tmp/
 .vimspector.json
+coverage.info
