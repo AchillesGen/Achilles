@@ -40,7 +40,8 @@ jobs:
      
     - name: Code coverage
       working-directory: ${{github.workspace}}
-      run: lcov --directory . --capture --output-file.info \
-        && lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' --output-file coverage.info \
-        && lcov --list coverage.info \
-        && bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+      run: |
+        lcov --directory . --capture --output-file.info
+        lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' --output-file coverage.info
+        lcov --list coverage.info
+        bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
