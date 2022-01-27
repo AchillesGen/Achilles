@@ -1,6 +1,7 @@
 #include "nuchic/EventWriter.hh"
 #include "nuchic/Event.hh"
 #include "nuchic/Particle.hh"
+#include "nuchic/Version.hh"
 #include "fmt/format.h"
 
 nuchic::NuchicWriter::NuchicWriter(const std::string &filename, bool zip) : toFile{true}, zipped{zip} {
@@ -16,7 +17,7 @@ nuchic::NuchicWriter::NuchicWriter(const std::string &filename, bool zip) : toFi
 }
 
 void nuchic::NuchicWriter::WriteHeader(const std::string &filename) {
-    *m_out << "Nuchic Version: 1.0.0\n";
+    *m_out << fmt::format("Nuchic Version: {}\n", NUCHIC_VERSION);
     *m_out << fmt::format("{0:-^40}\n\n", "");
 
     std::ifstream input(filename);
@@ -35,5 +36,4 @@ void nuchic::NuchicWriter::Write(const Event &event) {
     }
     *m_out << fmt::format("  - {}\n", event.Remnant());
     *m_out << fmt::format("  Weight: {}\n", event.Weight());
-    *m_out << fmt::format("  Batch: {}\n\n", event.Batch());
 }

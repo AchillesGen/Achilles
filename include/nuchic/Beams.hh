@@ -1,6 +1,7 @@
 #ifndef BEAMS_HH
 #define BEAMS_HH
 
+#include "nuchic/Histogram.hh"
 #include <set>
 #include <memory>
 
@@ -24,8 +25,8 @@ class FluxType {
         virtual ~FluxType() = default;
 
         virtual int NVariables() const = 0;
-        virtual FourVector Flux(const std::vector<double>&) = 0;
-        virtual double Weight(const std::vector<double>&) = 0;
+        virtual FourVector Flux(const std::vector<double>&) const = 0;
+        virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
 };
 
 class Monochromatic : public FluxType {
@@ -36,11 +37,11 @@ class Monochromatic : public FluxType {
             return 0;
         }
 
-        FourVector Flux(const std::vector<double>&) override {
-            return {0, 0, m_energy, m_energy};
+        FourVector Flux(const std::vector<double>&) const override {
+            return {m_energy, 0, 0, m_energy};
         }
 
-        double Weight(const std::vector<double>&) override {
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override {
             return 1;
         }
 
@@ -60,21 +61,22 @@ class Monochromatic : public FluxType {
 // combine beams of different initial state particles in a straightforward manner
 class Spectrum : public FluxType {
     public:
-        Spectrum(const std::string&) {
-            spdlog::error("Spectrum Fluxes are not implemented");
-        }
+        enum class Type {
+            Histogram,
+        };
 
-        int NVariables() const override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        Spectrum(const YAML::Node&);
 
-        FourVector Flux(const std::vector<double>&) override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        int NVariables() const override { return 1; }
 
-        double Weight(const std::vector<double>&) override {
-            throw std::runtime_error("Spectrum Fluxes are not implemented");
-        }
+        FourVector Flux(const std::vector<double>&) const override;
+
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+
+    private:
+        Histogram m_flux{};
+        double m_min_energy{}, m_max_energy{};
+        double m_delta_energy{};
 };
 
 class Beam {
@@ -93,16 +95,18 @@ class Beam {
         virtual FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
             return m_beams.at(pid) -> Flux(rans); 
         }
-        double Weight(const PID pid, const std::vector<double> &rans) const { 
-            return m_beams.at(pid) -> Weight(rans); 
+        double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans) const { 
+            return m_beams.at(pid) -> GenerateWeight(p, rans); 
         }
         size_t NBeams() const { return m_beams.size(); }
-        std::set<PID> BeamIDs() const { return m_pids; }
+        const std::set<PID>& BeamIDs() const { return m_pids; }
 
         // Accessors
         std::shared_ptr<FluxType>& operator[](const PID pid) { return m_beams[pid]; }
         std::shared_ptr<FluxType> at(const PID pid) const { return m_beams.at(pid); }
         std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
+
+        friend YAML::convert<Beam>;
 
     private:
         int n_vars;
@@ -110,22 +114,20 @@ class Beam {
         BeamMap m_beams;
 };
 
-
 }
 
 namespace YAML {
 
 template<>
 struct convert<std::shared_ptr<nuchic::FluxType>> {
-    // FIXME: Do we need to be able to encode the beams?? If so we need to figure out
-    //        how best to do it.
-    // static Node encode(const std::unique_ptr<nuchic::FluxType> &rhs) {
-    //     Node node;
-    //     node["Beam Type"] = "Monochromatic";
-    //     node["Beam Energy"] = rhs.m_energy;
+    // FIXME: How to encode a generic flux
+    static Node encode(const std::shared_ptr<nuchic::FluxType> &rhs) {
+        Node node;
+        node["Type"] = "Monochromatic";
+        node["Energy"] = rhs->Flux({}).E();
 
-    //     return node;
-    // }
+        return node;
+    }
 
     static bool decode(const Node &node, std::shared_ptr<nuchic::FluxType> &rhs) {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
@@ -134,9 +136,7 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
             rhs = std::make_shared<nuchic::Monochromatic>(energy);
             return true;
         } else if(node["Type"].as<std::string>() == "Spectrum") {
-            // TODO: Fill out details of building the spectrum from a YAML file
-            std::string filename = node["Filename"].as<std::string>();
-            rhs = std::make_shared<nuchic::Spectrum>(filename);
+            rhs = std::make_shared<nuchic::Spectrum>(node);
             return true;
         }
 
@@ -147,9 +147,18 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
 template<>
 struct convert<nuchic::Beam> {
     // TODO: Implement encoding
-    // static Node encode(const nuchic::Beam) {
-    //     throw std::logic_error("Not implemented yet!");
-    // } 
+    static Node encode(const nuchic::Beam &rhs) {
+        Node node;
+
+        for(const auto &beam : rhs.m_beams) {
+            Node subnode;
+            subnode["Beam"]["PID"] = static_cast<int>(beam.first);
+            subnode["Beam"]["Beam Params"] = beam.second;
+            node.push_back(subnode);
+        }
+
+        return node;
+    } 
 
     static bool decode(const Node &node, nuchic::Beam &rhs) {
         nuchic::Beam::BeamMap beams; 

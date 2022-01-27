@@ -7,10 +7,44 @@
 #include <functional>
 #include <memory>
 #include <utility>
+#include <string>
 #include <vector>
 #include <string>
 
 namespace nuchic {
+
+// Bit operations taken from: https://graphics.stanford.edu/~seander/bithacks.html
+inline unsigned int NextPermutation(unsigned int inp) {
+    unsigned int t = inp | (inp - 1);
+    return (t + 1) | (((~t & -~t) - 1) >> (__builtin_ctz(inp) + 1));
+}
+
+inline bool SetBit(unsigned int inp, unsigned int pos) {
+    return inp & (1 << pos);
+}
+
+inline std::vector<unsigned int> SetBits(unsigned int inp, unsigned int size) {
+    std::vector<unsigned int> set;
+    for(unsigned int i = 0; i < size; ++i) {
+        if(SetBit(inp, i)) set.push_back(inp & (1 << i));
+    }
+    return set;
+}
+
+inline bool IsPower2(unsigned int val) {
+    return (val & (val - 1)) == 0;
+}
+
+inline unsigned int Log2(unsigned int val) {
+    static const std::array<unsigned int, 5> b = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 
+                                                  0xFF00FF00, 0xFFFF0000};
+    unsigned int r = (val & b[0]) != 0;
+    r |= static_cast<unsigned int>((val & b[4]) != 0) << 4;
+    r |= static_cast<unsigned int>((val & b[3]) != 0) << 3;
+    r |= static_cast<unsigned int>((val & b[2]) != 0) << 2;
+    r |= static_cast<unsigned int>((val & b[1]) != 0) << 1;
+    return r;
+}
 
 template<class ContainerT>
 void tokenize(const std::string& str, ContainerT& tokens,
@@ -31,6 +65,10 @@ void tokenize(const std::string& str, ContainerT& tokens,
         lastPos = pos+1;
     }
 }
+
+class FourVector;
+
+bool CheckMasses(const std::vector<nuchic::FourVector>&, const std::vector<double>&, double=1e-8);
 
 const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
 bool sortPairSecond(const std::pair<std::size_t, double>& a,
@@ -175,6 +213,11 @@ constexpr T ipow(const T &x, const size_t &pow) {
 template<typename T>
 constexpr T factorial(const T &x) {
     return x == 0 ? 1 : x * factorial(x-1);
+}
+
+template<typename T>
+constexpr bool IsZero(const T &x, const T &tol) {
+    return std::abs(x) < tol;
 }
 
 }

@@ -8,12 +8,14 @@ add_library(utilities SHARED
     ParticleInfo.cc
     Vegas.cc
     AdaptiveMap.cc
+    Multichannel.cc
     Histogram.cc
-    Cuts.cc
     MomSolver.cc
     Autodiff.cc
     SymplecticIntegrator.cc
     Potential.cc
+    Spinor.cc
+    ProcessInfo.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -30,36 +32,59 @@ endif()
 #                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
 # )
 
+add_library(cuts SHARED
+    Cuts.cc
+    OneParticleCuts.cc
+    TwoParticleCuts.cc
+    CombinedCuts.cc
+)
+target_link_libraries(cuts PRIVATE project_options project_warnings
+                           PUBLIC utilities) #pybind11::pybind11 
+
 add_library(physics SHARED
     Cascade.cc
     Nucleus.cc
     FormFactor.cc
+    FormFactorBuilder.cc
     Beams.cc
     HardScattering.cc
-    HardScatteringFactory.cc
     Configuration.cc
     Event.cc
     Interactions.cc
     InteractionsFactory.cc
+    SpectralFunction.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 if(ENABLE_GZIP)
 target_compile_definitions(physics PUBLIC GZIP) 
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream)
+                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream sherpa cuts)
 else()
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES})
+                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} sherpa cuts)
 endif()
 
-add_subdirectory(fortran)
+add_library(mappers SHARED
+    PhaseSpaceMapper.cc
+    FinalStateMapper.cc
+    BeamMapper.cc
+    HadronicMapper.cc
+    QuasielasticTestMapper.cc
+    PhaseSpaceBuilder.cc
+)
+target_link_libraries(mappers PRIVATE project_options project_warnings
+                              PUBLIC physics)
+
+# add_subdirectory(fortran)
 
 add_library(event_gen SHARED
+    # TODO: Move to its own library
+    NuclearModel.cc
     EventGen.cc
     EventWriter.cc
 )
 target_link_libraries(event_gen PRIVATE project_options project_warnings
-                                PUBLIC physics fortran_interface)
+                                PUBLIC physics mappers hepmc3) #fortran_interface
 
                             # pybind11_add_module(_nuchic MODULE
                             #     # Main file
@@ -85,8 +110,8 @@ target_link_libraries(event_gen PRIVATE project_options project_warnings
 
 add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
-                             PUBLIC event_gen docopt::docopt)
-set(nuchic_targets nuchic event_gen fortran_interface physics utilities)
+                             PUBLIC event_gen sherpa docopt::docopt)
+set(nuchic_targets nuchic event_gen physics utilities) # fortran_interface 
 
 if(ENABLE_CASCADE_TEST)
     add_executable(nuchic-cascade CascadeMain.cc RunCascade.cc)
@@ -113,7 +138,7 @@ set_target_properties(${nuchic_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS ${nuchic_targets} spdlog fmt yaml-cpp #pybind11 fortran_interface_f 
+install(TARGETS nuchic event_gen physics cuts utilities gzstream spdlog yaml-cpp fmt sherpa mappers hepmc3 #pybind11 fortran_interface_f 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

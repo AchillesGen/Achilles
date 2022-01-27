@@ -42,6 +42,10 @@ class Random {
             return m_rng -> variate<std::size_t, std::discrete_distribution>(array);
         }
 
+        std::size_t SelectIndex(const std::vector<double> &array) {
+            return m_rng -> variate<std::size_t, std::discrete_distribution>(array.begin(), array.end());
+        }
+
     private:
         Random() {
             m_rng = std::make_shared<randutils::mt19937_rng>();

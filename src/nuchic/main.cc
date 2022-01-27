@@ -1,7 +1,12 @@
 #include "nuchic/EventGen.hh"
+#include "nuchic/FinalStateMapper.hh"
+#include "nuchic/HadronicMapper.hh"
+#include "nuchic/FormFactor.hh"
 #include "nuchic/Version.hh"
 #include "nuchic/System.hh"
 #include "nuchic/Logging.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/Channels.hh"
 
 #include "docopt.h"
 
@@ -35,18 +40,25 @@ void Splash() {
 static const std::string USAGE =
 R"(
     Usage:
-      nuchic [<input>] [-v | -vv]
+      nuchic [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
+      nuchic --display-cuts
+      nuchic --display-ps
+      nuchic --display-ff
       nuchic (-h | --help)
       nuchic --version
 
     Options:
-      -v[v]            Increase verbosity level.
-      -h --help        Show this screen.
-      --version        Show version.
+      -v[v]                                 Increase verbosity level.
+      -h --help                             Show this screen.
+      --version                             Show version.
+      -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
+      --display-cuts                        Display the available cuts
+      --display-ps                          Display the available phase spaces
+      --display-ff                          Display the available form factors
 )";
 
-void GenerateEvents(const std::string &runcard) {
-    nuchic::EventGen generator(runcard);
+void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
+    nuchic::EventGen generator(runcard,sherpa);
     generator.Initialize();
     generator.GenerateEvents();
 }
@@ -58,6 +70,24 @@ int main(int argc, char *argv[]) {
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
                                                     fmt::format("Nuchic {}", NUCHIC_VERSION)); //version string
+
+    if(args["--display-cuts"].asBool()) {
+        nuchic::CutFactory<nuchic::OneParticleCut>::DisplayCuts();
+        nuchic::CutFactory<nuchic::TwoParticleCut>::DisplayCuts();
+        return 0;
+    }
+
+    if(args["--display-ps"].asBool()) {
+        nuchic::PSFactory<nuchic::HadronicBeamMapper, size_t>::DisplayPhaseSpaces();
+        nuchic::PSFactory<nuchic::FinalStateMapper, std::vector<double>>::DisplayPhaseSpaces();
+        nuchic::PSFactory<PHASIC::Channels, std::vector<double>>::DisplayPhaseSpaces();
+        return 0;
+    }
+
+    if(args["--display-ff"].asBool()) {
+        nuchic::FormFactorFactory::Display();
+        return 0;
+    }
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
@@ -75,10 +105,14 @@ int main(int argc, char *argv[]) {
             spdlog::warn("Cannot open HardScattering: {}", dlerror());
         }
     }
+    nuchic::SherpaMEs sherpa;
+    std::vector<std::string> shargs;
+    if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
+    sherpa.Initialize(shargs);
 
-    GenerateEvents(runcard);
+    GenerateEvents(runcard,&sherpa);
 
     // Close dynamic libraries
-    dlclose(handle);
+    if(handle) dlclose(handle);
     return 0;
 }

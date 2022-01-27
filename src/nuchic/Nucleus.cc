@@ -89,6 +89,21 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
         throw std::runtime_error("Invalid density function! Incorrect number of protons or neutrons.");
 }
 
+nuchic::PID Nucleus::ID() const {
+    // Output format based on PDG Monte-Carlo PIDs
+    // Nuclear codes are given as a 10 digit number:
+    // +/- 10LZZZAAAI
+    // L: number of strange baryons
+    // Z: number of protons
+    // A: number of nucleons
+    // I: excited state (0 is ground state)
+    static constexpr int IDBase = 1000000000;
+    static constexpr int ZBase = 10000;
+    static constexpr int ABase = 10;
+    int ID = IDBase + ZBase*static_cast<int>(NProtons()) + ABase*static_cast<int>(NNucleons());
+    return PID{ID};
+}
+
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     nucleons = _nucleons;
     std::size_t idx = 0;
@@ -121,7 +136,7 @@ void Nucleus::GenerateConfig() {
         auto mom3 = GenerateMomentum(particle.Position().Magnitude());
         double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom*mom;
-        particle.SetMomentum(FourVector(mom3[0], mom3[1], mom3[2], sqrt(energy2)));
+        particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
 
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;

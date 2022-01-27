@@ -10,10 +10,10 @@
 #include <utility>
 #include <functional>
 
-namespace YAML {
-    template<typename T>
-    struct convert;
-}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace nuchic {
     class ParticleInfoEntry;
@@ -34,6 +34,8 @@ namespace nuchic {
             constexpr bool operator!=(const PID &other) const { return id != other.id; }
             constexpr bool operator<(const PID &other) const { return id < other.id; }
             constexpr bool operator>(const PID &other) const { return id > other.id; }
+            constexpr PID operator-() const { return PID{ -id }; }
+            PID Abs() const { return std::abs(id); }
             constexpr operator long int() const { return id; }
             constexpr operator int() const { return static_cast<int>(id); }
 
@@ -66,6 +68,17 @@ namespace nuchic {
             // Baryons
             static constexpr PID proton() { return PID{ 2212 }; }
             static constexpr PID neutron() { return PID{ 2112 }; }
+            // Dummy hadron
+            static constexpr PID dummyHadron() { return PID{ 2212 }; }
+            // Common Elements
+            static constexpr PID carbon() { return PID{ 1000060120 }; }
+
+            // Stream Operator
+            template<typename OStream>
+            friend OStream& operator<<(OStream &os, const PID &pid) {
+                os << pid.id;
+                return os;
+            }
 
         private:
             // Ensure id matches the numbering scheme defined at:
@@ -103,7 +116,7 @@ namespace nuchic {
             }
 
             std::string ToString() const noexcept {
-                return fmt::format("{:7d} {:20s} {:20s} {:.4e}\t{:.4e}", 
+                return fmt::format("{:10d} {:20s} {:20s} {: .4e}    {:.4e}", 
                                 static_cast<int>(id), idname,
                                 antiname, mass, width);
             }
@@ -148,8 +161,12 @@ namespace nuchic {
                 if(id < 0 && info -> majorana == 0) anti = true;
             }
 
-            ParticleInfo(const PID &id, const bool &anti_=false) : info(nullptr), anti(anti_) {
+            ParticleInfo(PID id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
+                if(id < PID::undefined()) {
+                    id = -id;
+                    anti = true;
+                }
                 auto it(particleDB.find(id));
                 if(it == particleDB.end())
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
@@ -180,9 +197,13 @@ namespace nuchic {
             bool IsVector() const noexcept { return IntSpin() == 2; }
             bool IsTensor() const noexcept { return IntSpin() == 4; }
             bool IsPhoton() const noexcept { return info -> id == PID::photon(); }
-            bool IsLepton() const noexcept { return IntID() > 10 && IntID() < 19; }
+            bool IsLepton() const noexcept { return std::abs(IntID()) > 10 && std::abs(IntID()) < 19; }
             bool IsQuark() const noexcept { return IntID() < 10; }
             bool IsGluon() const noexcept { return info -> id == PID::gluon(); }
+            bool IsNeutrino() const noexcept { return std::abs(IntID()) == 12 
+                                                   || std::abs(IntID()) == 14
+                                                   || std::abs(IntID()) == 16; }
+            bool IsNucleus() const noexcept { return std::abs(IntID()) > 1000000000; }
 
             int IntCharge() const noexcept { 
                 int charge(info -> icharge); 
@@ -226,6 +247,78 @@ namespace nuchic {
         static constexpr auto InitParticle = ParticleInfo::InitDatabase;
         static constexpr auto PrintParticle = ParticleInfo::PrintDatabase;
     }
+
+}
+
+namespace YAML {
+
+template<>
+struct convert<nuchic::PID> {
+    static bool decode(const Node &node, nuchic::PID &pid) {
+        if(node.IsScalar()) {
+            pid = nuchic::PID(node.as<int>());
+            return true;
+        }
+        return false;
+    }
+};
+
+template<>
+struct convert<std::set<nuchic::PID>> {
+    static bool decode(const Node &node, std::set<nuchic::PID> &pids) {
+        if(node.IsScalar()) {
+            pids.insert(node.as<nuchic::PID>());
+            return true;
+        }
+
+        for(const auto &subnode : node) {
+            pids.insert(subnode.as<nuchic::PID>());
+        }
+        return true;
+    }
+};
+
+template<>
+struct convert<nuchic::ParticleInfoEntry> {
+    static Node encode(const nuchic::ParticleInfoEntry &partInfo) {
+        Node node;
+        node.push_back(static_cast<int>(partInfo.id));
+        node.push_back(partInfo.mass);
+        node.push_back(partInfo.width);
+        node.push_back(partInfo.icharge);
+        node.push_back(partInfo.strong);
+        node.push_back(partInfo.spin);
+        node.push_back(partInfo.stable);
+        node.push_back(partInfo.majorana);
+        node.push_back(partInfo.massive);
+        node.push_back(partInfo.hadron);
+        node.push_back(partInfo.idname);
+        node.push_back(partInfo.antiname);
+
+        return node;
+    }
+
+    static bool decode(const Node &node, nuchic::ParticleInfoEntry &partInfo) {
+        if(!node.IsSequence() || node.size() != 12) {
+            return false;
+        } 
+
+        partInfo.id = static_cast<nuchic::PID>(node[0].as<int>());
+        partInfo.mass = node[1].as<double>();
+        partInfo.width = node[2].as<double>();
+        partInfo.icharge = node[3].as<int>();
+        partInfo.strong = node[4].as<int>();
+        partInfo.spin = node[5].as<int>();
+        partInfo.stable = node[6].as<int>();
+        partInfo.majorana = node[7].as<int>();
+        partInfo.massive = node[8].as<bool>();
+        partInfo.hadron = node[9].as<bool>();
+        partInfo.idname = node[10].as<std::string>();
+        partInfo.antiname = node[11].as<std::string>();
+
+        return true;
+    }
+};
 
 }
 

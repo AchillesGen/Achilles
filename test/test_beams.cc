@@ -27,10 +27,11 @@ Beams:
         CHECK(beam.NBeams() == 2); 
         CHECK(beam.BeamIDs() == std::set<nuchic::PID>{12, 13});
         CHECK(beam.at(nuchic::PID(12)) == beam[nuchic::PID(12)]);
-        CHECK(beam.Flux(nuchic::PID(12), {}) == nuchic::FourVector(0, 0, 100, 100));
-        CHECK(beam.Flux(nuchic::PID(13), {}) == nuchic::FourVector(0, 0, 200, 200));
-        CHECK(beam.Weight(nuchic::PID(12), {0}) == 1.0);
-        CHECK(beam.Weight(nuchic::PID(13), {0}) == 1.0);
+        CHECK(beam.Flux(nuchic::PID(12), {}) == nuchic::FourVector(100, 0, 0, 100));
+        CHECK(beam.Flux(nuchic::PID(13), {}) == nuchic::FourVector(200, 0, 0, 200));
+        std::vector<double> rans;
+        CHECK(beam.GenerateWeight(nuchic::PID(12), {}, rans) == 1.0);
+        CHECK(beam.GenerateWeight(nuchic::PID(13), {}, rans) == 1.0);
     }
 
     SECTION("Throw on Identical Beams") {
@@ -52,11 +53,12 @@ Beams:
         CHECK_THROWS_WITH(beams["Beams"].as<nuchic::Beam>(), "Multiple beams exist for PID: 12");
     }
 
-    SECTION("Spectrum Beams") {
-        nuchic::Spectrum spectrum("dummy.txt");
+    // SECTION("Spectrum Beams") {
+    //     nuchic::Spectrum spectrum("dummy.txt");
 
-        CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
-        CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
-        CHECK_THROWS_WITH(spectrum.Weight({}), "Spectrum Fluxes are not implemented");
-    }
+    //     CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
+    //     CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
+    //     std::vector<double> rans;
+    //     CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
+    // }
 }

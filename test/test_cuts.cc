@@ -1,8 +1,12 @@
 #include "catch2/catch.hpp"
 
+#include "nuchic/CombinedCuts.hh"
 #include "nuchic/Cuts.hh"
+#include "nuchic/OneParticleCuts.hh"
+#include "nuchic/TwoParticleCuts.hh"
 #include "nuchic/FourVector.hh"
 #include "nuchic/Particle.hh"
+#include "nuchic/Units.hh"
 
 #include "catch_utils.hh"
 
@@ -13,190 +17,157 @@
 
 #include <iostream>
 
+template<class T>
+struct TestCutBase : public nuchic::CutBase<T> {
+    TestCutBase(YAML::Node node) : nuchic::CutBase<T>(node) {}
+    bool MakeCut(const T& val) const { return this->CheckCut(val); }
+};
+
+TEMPLATE_TEST_CASE("Base Cut", "[Cuts]", double, float, size_t, int) {
+    SECTION("Check for valid syntax") {
+        YAML::Node node;
+        REQUIRE_THROWS_AS(TestCutBase<TestType>(node), std::runtime_error);
+        node["min"] = 30;
+        REQUIRE_NOTHROW(TestCutBase<TestType>(node));
+        node["max"] = 100;
+        REQUIRE_NOTHROW(TestCutBase<TestType>(node));
+        node["range"] = std::vector<TestType>{30, 50};
+        REQUIRE_THROWS_AS(TestCutBase<TestType>(node), std::runtime_error);
+        YAML::Node node2;
+        node2["range"] = std::vector<TestType>{30, 50};
+        REQUIRE_NOTHROW(TestCutBase<TestType>(node2));
+    }
+
+    SECTION("Cuts work as expected") {
+        YAML::Node node;
+        node["min"] = 10;
+        auto cut = TestCutBase<TestType>(node);
+        auto val = static_cast<TestType>(GENERATE(take(30, random(0., 100.))));
+        CHECK((val > 10) == cut.MakeCut(val)); 
+    }
+}
+
 TEST_CASE("Single particle cuts", "[Cuts]") {
-    SECTION("Cuts must have a valid type") {
-        auto type = GENERATE(values({
-                nuchic::CutType::Q2,
-                nuchic::CutType::Energy,
-                nuchic::CutType::Momentum,
-                nuchic::CutType::InvariantMass,
-                nuchic::CutType::TransverseMomentum,
-                nuchic::CutType::AngleTheta,
-                nuchic::CutType::AnglePhi,
-                nuchic::CutType::ETheta2
-            }));
+    auto mom = GENERATE(take(30, randomMomentum(1000)));
 
-        nuchic::Cut cut;
-        CHECK_NOTHROW(cut.Add(type, 10));
+    SECTION("Energy Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::EnergyCut cut(node);
+        CHECK(cut.MakeCut(mom) == (mom.E() > 10));
     }
 
-    SECTION("Single values define minimum cut") {
-        nuchic::Cut cut;
-        cut.Add(nuchic::CutType::Energy, 100);
-
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() > 100));
+    SECTION("Momentum Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::MomentumCut cut(node);
+        CHECK(cut.MakeCut(mom) == (mom.P() > 10));
     }
 
-    SECTION("Single range expects value to be within range") {
-        nuchic::Cut cut;
-        cut.Add(nuchic::CutType::Energy, {{50, 100}});
-
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() > 50 && mom.E() < 100));
+    SECTION("AngleTheta Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::AngleThetaCut cut(node);
+        CHECK(cut.MakeCut(mom) == (mom.Theta()*180/M_PI > 10));
     }
 
-    SECTION("Negative number in range means no upper cut") {
-        nuchic::Cut cut;
-        cut.Add(nuchic::CutType::Energy, {{100, -1}});
-
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == mom.E() > 100);
+    SECTION("Transverse Momentum Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::TransverseMomentumCut cut(node);
+        CHECK(cut.MakeCut(mom) == (mom.Pt() > 10));
     }
 
-    SECTION("Multiple ranges define multiple allowed regions") {
-        nuchic::Cut cut;
-        cut.Add(nuchic::CutType::Energy, {{50, 100}, {150, std::numeric_limits<double>::infinity()}});
-
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == ((mom.E() > 50 && mom.E() < 100)
-                           || (mom.E() > 150)));
-    }
-
-    SECTION("Can only have one cut of each allowed type except custom") {
-        nuchic::Cut cut;
-        cut.Add(nuchic::CutType::Energy, {{50, 100}});
-        CHECK_THROWS_WITH(cut.Add(nuchic::CutType::Energy, -1),
-                          "Cut: May only have one cut of each type except Custom. Found additional cut of type: nuchic::CutType::Energy");
-
-        cut.Add([](const nuchic::FourVector&) { return true; }, -1);
-        CHECK_NOTHROW(cut.Add([](const nuchic::FourVector&) { return true; }, -1));
+    SECTION("ETheta2 Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::ETheta2Cut cut(node);
+        CHECK(cut.MakeCut(mom) == (mom.E()*pow(mom.Theta(), 2) > 10));
     }
 }
 
-TEST_CASE("Single particle cuts from YAML", "[Cuts]") {
-    YAML::Node node = YAML::Load(R"node(
-    cuts:
-      - cut:
-          type: AngleTheta
-      - cut:
-          type: Energy
-          range: [50, 100]
-      - cut:
-          type: Energy
-          min: 50
-          max: 100
-      - cut:
-          type: Energy
-          max: 100
-      - cut:
-          type: Energy
-          min: 10
-      - cut:
-          type: Energy
-          range: [[50, 100], [200, 300]])node");
+TEST_CASE("Two particle cuts", "[Cuts]") {
+    auto mom1 = GENERATE(take(30, randomMomentum(1000)));
+    auto mom2 = GENERATE(take(30, randomMomentum(1000)));
 
-    SECTION("Cuts must have either a range or min / max option") {
-        CHECK_THROWS(node["cuts"][0]["cut"].as<nuchic::Cut>());
+    SECTION("DeltaTheta Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::DeltaThetaCut cut(node);
+        CHECK(cut.MakeCut(mom1, mom2) == (std::acos(mom1.CosAngle(mom2))*180/M_PI > 10));
     }
 
-    SECTION("Cuts must have a valid type") {
-        {
-            auto cutNode = GENERATE(as<std::string>{},
-                    "cut:\n    min: 10\n    type: Q2",
-                    "cut:\n    min: 10\n    type: Energy",
-                    "cut:\n    min: 10\n    type: Momentum",
-                    "cut:\n    min: 10\n    type: Mass",
-                    "cut:\n    min: 10\n    type: TransverseMomentum",
-                    "cut:\n    min: 10\n    type: Theta",
-                    "cut:\n    min: 10\n    type: Phi",
-                    "cut:\n    min: 10\n    type: ETheta2"
-                );
-            auto yamlCut = YAML::Load(cutNode);
-
-            CHECK_NOTHROW(yamlCut["cut"].as<nuchic::Cut>());
-        }
-    }
-
-    SECTION("Cuts accept only minimum value") {
-        CHECK_NOTHROW(node["cuts"][4]["cut"].as<nuchic::Cut>());
-
-        auto cut = node["cuts"][4]["cut"].as<nuchic::Cut>();
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() > 10));
-    }
-
-    SECTION("Cuts accept only a maximum value") {
-        CHECK_NOTHROW(node["cuts"][3]["cut"].as<nuchic::Cut>());
-
-        auto cut = node["cuts"][3]["cut"].as<nuchic::Cut>();
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() < 100));
-    }
-
-    SECTION("Cuts accept both a minimum and maximum value") {
-        CHECK_NOTHROW(node["cuts"][2]["cut"].as<nuchic::Cut>());
-
-        auto cut = node["cuts"][2]["cut"].as<nuchic::Cut>();
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() < 100 && mom.E() > 50));
-    }
-
-    SECTION("Cuts accept a range of allowed values") {
-        CHECK_NOTHROW(node["cuts"][1]["cut"].as<nuchic::Cut>());
-
-        auto cut = node["cuts"][1]["cut"].as<nuchic::Cut>();
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == (mom.E() < 100 && mom.E() > 50));
-    }
-
-    SECTION("Cuts accept multiple ranges") {
-        CHECK_NOTHROW(node["cuts"][5]["cut"].as<nuchic::Cut>());
-
-        auto cut = node["cuts"][5]["cut"].as<nuchic::Cut>();
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
-        CHECK(cut(mom) == ((mom.E() < 100 && mom.E() > 50)
-                           || (mom.E() > 200 && mom.E() < 300)));
-
+    SECTION("InvariantMass Cut") {
+        YAML::Node node;
+        node["min"] = 10;
+        nuchic::InvariantMassCut cut(node);
+        CHECK(cut.MakeCut(mom1, mom2) == ((mom1+mom2).M() > 10));
     }
 }
 
-TEST_CASE("Load all cuts into a map", "[Cuts]") {
-    YAML::Node node = YAML::Load(R"node(
-Cuts:
-  e-:
-      - cut:
-          type: Energy
-          range: [600, 900]
-      - cut:
-          type: Momentum
-          min: 600
-          max: 900
-  12:
-      - cut:
-          type: Energy
-          range: [200, 500]
-      - cut:
-          type: Momentum
-          min: 200
-          max: 500
-    )node");
+TEST_CASE("CutCollection", "[Cuts]") {
+    nuchic::CutCollection cuts;
+    auto mom1 = GENERATE(take(30, randomMomentum(1000)));
+    auto mom2 = GENERATE(take(30, randomMomentum(1000)));
+    auto part1 = nuchic::Particle(nuchic::PID::electron(), mom1);
+    auto part2 = nuchic::Particle(nuchic::PID::muon(), mom2);
+    auto part3 = nuchic::Particle(nuchic::PID::electron(), mom2);
+    auto part4 = nuchic::Particle(-nuchic::PID::electron(), mom2);
+    part1.Status() = nuchic::ParticleStatus::final_state;
+    part2.Status() = nuchic::ParticleStatus::final_state;
+    part3.Status() = nuchic::ParticleStatus::final_state;
+    part4.Status() = nuchic::ParticleStatus::final_state;
 
-    SECTION("Load from a PID or a name") {
-        CHECK_NOTHROW(node["Cuts"].as<nuchic::Cuts>());
+    SECTION("Single PIDs work") {
+        YAML::Node node;
+        node["min"] = 10;
+        auto cut = nuchic::CutFactory<nuchic::OneParticleCut>::InitializeCut("Energy", node);
+        cuts.AddCut({nuchic::PID::electron()}, std::move(cut)); 
+        CHECK(cuts.EvaluateCuts({part1}) == (mom1.E() > 10));
+        CHECK(cuts.EvaluateCuts({part2}) == true);
+        CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10));
 
-        auto cuts = node["Cuts"].as<nuchic::Cuts>();
+        auto cut2 = nuchic::CutFactory<nuchic::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        cuts.AddCut({nuchic::PID::electron()}, std::move(cut2));
+        bool pass_cuts = (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2))*180/M_PI > 10);
+        CHECK(cuts.EvaluateCuts({part1, part3}) == pass_cuts);
+    }
 
-        auto mom = GENERATE(take(30, randomMomentum(1000)));
+    SECTION("Sets of PIDs work") {
+        YAML::Node node;
+        node["min"] = 10;
+        auto cut = nuchic::CutFactory<nuchic::OneParticleCut>::InitializeCut("Energy", node);
+        cuts.AddCut({nuchic::PID::electron(), nuchic::PID::muon()}, std::move(cut)); 
+        CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10 && mom2.E() > 10));
 
-        // From name
-        bool electronCuts = (mom.E() > 600 && mom.E() < 900);
-        electronCuts &= (mom.P() > 600 && mom.P() < 900);
-        CHECK(cuts[{nuchic::PID::electron()}](mom) == electronCuts);
+        auto cut2 = nuchic::CutFactory<nuchic::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        cuts.AddCut({nuchic::PID::electron(), nuchic::PID::muon()}, std::move(cut2));
+        bool pass_cuts = (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2))*180/M_PI > 10);
+        CHECK(cuts.EvaluateCuts({part1, part2}) == pass_cuts);
+    }
 
-        // From PID
-        bool neutrinoCuts = (mom.E() > 200 && mom.E() < 500);
-        neutrinoCuts &= (mom.P() > 200 && mom.P() < 500);
-        CHECK(cuts[{nuchic::PID::nu_electron()}](mom) == neutrinoCuts);
+    SECTION("YAML correctly builds CutCollection") {
+        YAML::Node node = YAML::Load(R"node(
+        cuts:
+            - Type: Energy
+              PIDs: [11, -11]
+              min: 10
+            - Type: InvariantMass
+              PIDs: [11, -11]
+              range: [80, 100]
+            - Type: AngleTheta
+              PIDs: 13
+              max: 30
+            - Type: DeltaTheta
+              PIDs: [11, -11]
+              range: [[10, 30], [60, 80]]
+        )node");
+
+        cuts = node["cuts"].as<nuchic::CutCollection>();
+        bool pass_cuts = (mom1.E() > 10) && (mom2.E() > 10);
+        pass_cuts &= (mom1+mom2).M() > 80 && (mom1+mom2).M() < 100;
+        double dtheta = std::acos(mom1.CosAngle(mom2))*180/M_PI;
+        pass_cuts &= (dtheta > 10 && dtheta < 30) || (dtheta > 60 && dtheta < 80);
+        CHECK(cuts.EvaluateCuts({part1, part4}) == pass_cuts);
     }
 }

@@ -132,6 +132,7 @@
            call cc1(qval/hbarc,w,wt,xp/hbarc,xpf/hbarc,p_4/hbarc,pf_4/hbarc,k_4/hbarc,kp_4/hbarc,thetalept,iform,sig_p,sig_n)
            ! f_o=xp**2*pke*(dble(nZ)*sig)*2.0d0*pi*delta_w*2.0d0
            fp_o=pkep*sig_p/dble(nZ)
+           ! fp_o=sig_p
            fn_o=pken*sig_n/dble(nA-nZ)
         else
             if(xp.gt.kF) then

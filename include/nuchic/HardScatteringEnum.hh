@@ -5,6 +5,7 @@ namespace nuchic {
 
 enum class HardScatteringType {
     None = -1,
+    Coherent,
     Quasielastic,
     MesonExchangeCurrent,
     Interference_QE_MEC,

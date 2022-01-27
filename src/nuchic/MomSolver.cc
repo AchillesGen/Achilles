@@ -15,15 +15,15 @@ nuchic::FourVector nuchic::SolveDelta(const nuchic::FourVector &p1, const nuchic
     const double sinTheta = sqrt(1 - pow(cosTheta, 2));
     auto _func = [&](double energy) {
         double p3Mag = sqrt(energy*energy - m3*m3);
-        FourVector p3(p3Mag*sinTheta*cos(phi),
-                p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy);
+        FourVector p3(energy, p3Mag*sinTheta*cos(phi),
+                p3Mag*sinTheta*sin(phi), p3Mag*cosTheta);
         return s - 2*pcm*p3 + m3*m3 - m4*m4;
     };
 
     Brent brent(_func);
     double energy = brent.CalcRoot(m3, (p1 + p2).E());
     double p3Mag = sqrt(energy*energy - m3*m3);
-    return FourVector(p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy).Boost(beta);
+    return FourVector(energy, p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta).Boost(beta);
 }
 
 std::pair<double, double> nuchic::FindMomentumRange(const nuchic::FourVector &q_free, double rangeExtend) {
@@ -46,7 +46,7 @@ nuchic::FourVector nuchic::SolveDeltaWithPotential(const nuchic::FourVector &q,
     const double energy = sqrt(p3Mag*p3Mag + pow(m3 + potential3.rscalar, 2)) + potential3.rvector;
     auto _func = [&](double cosTheta) {
         double sinTheta = sqrt(1-cosTheta*cosTheta);
-        FourVector p3 = {p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy};
+        FourVector p3 = {energy, p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta};
         auto p4 = q - p3;
         auto potential4 = potential(p4.P(), radius4);
         p4.E() = sqrt(p4.P2() + pow(m4 + potential4.rscalar, 2)) + potential4.rvector;
@@ -56,5 +56,5 @@ nuchic::FourVector nuchic::SolveDeltaWithPotential(const nuchic::FourVector &q,
     Brent brent(_func);
     double cosTheta = brent.CalcRoot(-1, 1);
     double sinTheta = sqrt(1-cosTheta*cosTheta);
-    return {p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta, energy};
+    return {energy, p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta};
 }

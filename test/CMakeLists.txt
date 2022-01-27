@@ -18,28 +18,35 @@ add_executable(nuchic-testsuite
     # test_form_factor.cc
     test_cascade.cc
     test_beams.cc
-    test_event.cc
+    # test_event.cc
     test_cuts.cc
     test_mom_solver.cc
     test_autodiff.cc
     test_symplectic_integrator.cc
     test_potential.cc
+    test_adaptive_map.cc
+    test_stats.cc
+    test_vegas.cc
+    test_multichannel.cc
+    # test_integrand.cc
+    test_spectral.cc
+    test_spinor.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)
 
-enable_language(Fortran)
-add_executable(nuchic-fortran-yaml test_yaml_fortran.f90)
-target_link_libraries(nuchic-fortran-yaml PUBLIC yaml::fortran)
-
-set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
-add_executable(nuchic-fortran-testsuite
-    test_fortran.f90
-)
-target_link_libraries(nuchic-fortran-testsuite PRIVATE project_options
-    PUBLIC physics fortran_interface FUT::FUT)
+# enable_language(Fortran)
+# add_executable(nuchic-fortran-yaml test_yaml_fortran.f90)
+# target_link_libraries(nuchic-fortran-yaml PUBLIC yaml::fortran)
+# 
+# set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
+# add_executable(nuchic-fortran-testsuite
+#     test_fortran.f90
+# )
+# target_link_libraries(nuchic-fortran-testsuite PRIVATE project_options
+#     PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
-add_test(NAME fortran-testsuite
-         COMMAND nuchic-fortran-testsuite)
+# add_test(NAME fortran-testsuite
+#          COMMAND nuchic-fortran-testsuite)
 catch_discover_tests(nuchic-testsuite)

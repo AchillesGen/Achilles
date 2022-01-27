@@ -156,6 +156,7 @@ class Particle {
         /// Returns the momentum of the particle
         ///@return FourVector: The momentum of the particle
         const FourVector& Momentum() const noexcept { return momentum; }
+        FourVector& Momentum() noexcept { return momentum; }
 
         /// Gets the velocity / boost vector of a given particle
         ///@return ThreeVector: Velocity of the particle in units of c

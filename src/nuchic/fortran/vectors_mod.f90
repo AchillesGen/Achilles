@@ -80,11 +80,11 @@ module libvectors
 
 contains ! Implementation of functions
     ! FourVector
-    function create_fourvector(x, y, z, e)
+    function create_fourvector(e, x, y, z)
         implicit none
         type(fourvector) :: create_fourvector
-        double precision, intent(in) :: x, y, z, e
-        create_fourvector%ptr = create_fourvector_c(x, y, z, e)
+        double precision, intent(in) :: e, x, y, z
+        create_fourvector%ptr = create_fourvector_c(e, x, y, z)
     end function
 
     function copy_constructor4(other)
@@ -196,10 +196,10 @@ contains ! Implementation of functions
         class(fourvector), intent(in) :: this
         double precision, dimension(4) :: array4
 
-        array4(1) = this%get(3)
-        array4(2) = this%get(0)
-        array4(3) = this%get(1)
-        array4(4) = this%get(2)
+        array4(1) = this%get(0)
+        array4(2) = this%get(1)
+        array4(3) = this%get(2)
+        array4(4) = this%get(3)
     end function
 
     function create_threevector(x, y, z)

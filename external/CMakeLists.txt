@@ -9,7 +9,6 @@
 
 CPMFindPackage(
     NAME fmt
-    # Use this commit which eliminates variable shadowing but is a stable point
     GIT_TAG 7.1.3
     GITHUB_REPOSITORY fmtlib/fmt
 )
@@ -17,9 +16,10 @@ add_library(fmt::fmt ALIAS fmt)
 
 CPMFindPackage(
     NAME spdlog
-    GIT_TAG "v1.8.2"
+    GIT_TAG "v1.8.5"
     GITHUB_REPOSITORY gabime/spdlog
-    OPTIONS 
+    OPTIONS
+        "SPDLOG_COMPILED_LIB ON"
         "SPDLOG_FMT_EXTERNAL ON"
         "SPDLOG_BUILD_SHARED ON"
 )

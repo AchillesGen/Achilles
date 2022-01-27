@@ -260,13 +260,13 @@ void Vegas::RandomBatch(size_t cubeBase, size_t nCubeBatch_,
     }
 }
 
-nuchic::Batch Vegas::MakeBatch(const Func& fcn, Batch2D x_, Batch wgt) {
+nuchic::Batch Vegas::MakeBatch(const Func<double>& fcn, Batch2D x_, Batch wgt) {
     Batch res;
     for(size_t i = 0; i < x_.size(); ++i) res.push_back(fcn(x_[i],wgt[i]));
     return res;
 }
 
-nuchic::VegasPt Vegas::operator() (const Func& fcn) {
+nuchic::VegasPt Vegas::operator() (const Func<double>& fcn) {
     static const std::string header = fmt::format("{:^3s}   {:^23s}    {:^23s}   {:^8s}\n",
                                                   "itn","integral",
                                                   "wgt average","chi2/dof");
@@ -371,6 +371,76 @@ nuchic::VegasPt Vegas::operator() (const Func& fcn) {
     return result.GetResult();
 }
 
+void nuchic::Vegas2::operator()(const Func<double> &func) {
+    std::vector<double> rans(grid.Dims());
+    std::vector<double> train_data(grid.Dims()*grid.Bins());
+
+    StatsData results;
+
+    for(size_t i = 0; i < params.ncalls; ++i) {
+        Random::Instance().Generate(rans);
+
+        double wgt = grid(rans);
+        double val = func(rans, wgt);
+        double val2 = val * val;
+
+        results += val;
+
+        for(size_t j = 0; j < grid.Dims(); ++j) {
+            train_data[j * grid.Bins() + grid.FindBin(j, rans[j])] += val2; 
+        }
+    }
+
+    grid.Adapt(params.alpha, train_data);
+    summary.results.push_back(results);
+    summary.sum_results += results;
+}
+
+void nuchic::Vegas2::Optimize(const Func<double> &func) {
+    double abs_err = lim::max(), rel_err = lim::max();
+    size_t irefine = 0;
+    while ((abs_err > params.atol && rel_err > params.rtol) || summary.results.size() < params.ninterations) {
+        (*this)(func);
+        StatsData current = summary.Result();
+        abs_err = current.Error();
+        rel_err = abs_err / std::abs(current.Mean());
+
+        PrintIteration();
+        if(++irefine == params.nrefine) {
+            Refine();
+            irefine = 0;
+        }
+    }
+}
+
+double nuchic::Vegas2::GenerateWeight(const std::vector<double> &rans) const {
+    return grid.GenerateWeight(rans); 
+}
+
+void nuchic::Vegas2::Adapt(const std::vector<double> &train_data) {
+    grid.Adapt(params.alpha, train_data);
+}
+
+void nuchic::Vegas2::Refine() {
+    grid.Split();
+    params.ncalls *= 2;
+}
+
+nuchic::VegasSummary nuchic::Vegas2::Summary() const {
+    std::cout << "Final integral = "
+              << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
+                             summary.Result().Mean(), summary.Result().Error(),
+                             summary.Result().Error() / summary.Result().Mean()*100) << std::endl;
+    return summary;
+}
+
+void nuchic::Vegas2::PrintIteration() const {
+    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+            summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
+            summary.Result().Mean(), summary.Result().Error()) << std::endl;
+}
+
+
 //Below are functions for preforming the modified Kahan Summation, to ensure that the number of threads does
 //not effect the result for a fixed random seed
 void nuchic::KBNSummation::AddTerm(double value) noexcept { 
@@ -383,5 +453,3 @@ void nuchic::KBNSummation::AddTerm(double value) noexcept {
     }
     sum = t;
 }
-
-

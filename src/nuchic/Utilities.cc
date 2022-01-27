@@ -1,6 +1,16 @@
 #include "nuchic/Utilities.hh"
 #include "spdlog/spdlog.h"
+#include "nuchic/FourVector.hh"
 #include <stdexcept>
+
+
+bool nuchic::CheckMasses(const std::vector<nuchic::FourVector> &mom,
+                         const std::vector<double> &masses, double eps) {
+    if(mom.size() != masses.size()) return false;
+    for(size_t i = 0; i < mom.size(); ++i) 
+        if(std::abs(mom[i].M2() - masses[i]) > eps) return false;
+    return true;
+}
 
 const std::array<double, 3> nuchic::ToCartesian(const std::array<double, 3>& vec) {
     const double x = vec[0] * std::sin(vec[1]) * std::cos(vec[2]);

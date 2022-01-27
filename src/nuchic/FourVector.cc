@@ -7,7 +7,7 @@
 using namespace nuchic;
 
 FourVector::FourVector(const ThreeVector& other, const double& E) noexcept
-    : vec({other[0], other[1], other[2], E}) {}
+    : vec({E, other[0], other[1], other[2]}) {}
 
 double FourVector::M() const noexcept {
     return std::sqrt(M2());
@@ -43,28 +43,28 @@ double FourVector::Angle(const FourVector &other) const noexcept {
 }
 
 ThreeVector FourVector::Vec3() const noexcept {
-    return {vec[0], vec[1], vec[2]};
+    return {Px(), Py(), Pz()};
 }
 
 void FourVector::SetVectM(const ThreeVector& vec3, const double& mass) noexcept {
-    vec[0] = vec3.Px();
-    vec[1] = vec3.Py();
-    vec[2] = vec3.Pz();
-    vec[3] = sqrt(mass*mass + vec3*vec3);
+    Px() = vec3.Px();
+    Py() = vec3.Py();
+    Pz() = vec3.Pz();
+    E() = sqrt(mass*mass + vec3*vec3);
 }
 
 FourVector FourVector::Boost(const ThreeVector& beta) const noexcept {
     const double beta2 = beta*beta;
     const double gamma = 1.0/sqrt(1.0 - beta2);
-    const double betap = beta[0]*vec[0] + beta[1]*vec[1] + beta[2]*vec[2];
+    const double betap = beta[0]*Px() + beta[1]*Py() + beta[2]*Pz();
     const double gamma2 = beta2 > 0 ? (gamma-1.0)/beta2 : 0.0;
 
-    double pX = vec[0] + gamma2*betap*beta[0]+gamma*beta[0]*vec[3];
-    double pY = vec[1] + gamma2*betap*beta[1]+gamma*beta[1]*vec[3];
-    double pZ = vec[2] + gamma2*betap*beta[2]+gamma*beta[2]*vec[3];
-    double E = gamma*(vec[3] + betap);
+    double pX = Px() + gamma2*betap*beta[0]+gamma*beta[0]*E();
+    double pY = Py() + gamma2*betap*beta[1]+gamma*beta[1]*E();
+    double pZ = Pz() + gamma2*betap*beta[2]+gamma*beta[2]*E();
+    double energy = gamma*(E() + betap);
 
-    return {pX, pY, pZ, E};
+    return {energy, pX, pY, pZ};
 }
 
 FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
@@ -73,15 +73,17 @@ FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
 }
 
 FourVector FourVector::Rotate(const RotMat &mat) const noexcept {
-    return {mat[0]*vec[0]+mat[1]*vec[1]+mat[2]*vec[2],
-            mat[3]*vec[0]+mat[4]*vec[1]+mat[5]*vec[2],
-            mat[6]*vec[0]+mat[7]*vec[1]+mat[8]*vec[2], vec[3]};
+    return {E(),
+            mat[0]*Px()+mat[1]*Py()+mat[2]*Pz(),
+            mat[3]*Px()+mat[4]*Py()+mat[5]*Pz(),
+            mat[6]*Px()+mat[7]*Py()+mat[8]*Pz()};
 }
 
 FourVector FourVector::RotateBack(const RotMat &mat) const noexcept {
-    return {mat[0]*vec[0]+mat[3]*vec[1]+mat[6]*vec[2],
-            mat[1]*vec[0]+mat[4]*vec[1]+mat[7]*vec[2],
-            mat[2]*vec[0]+mat[5]*vec[1]+mat[8]*vec[2], vec[3]};
+    return {E(),
+            mat[0]*Px()+mat[3]*Py()+mat[6]*Pz(),
+            mat[1]*Px()+mat[4]*Py()+mat[7]*Pz(),
+            mat[2]*Px()+mat[5]*Py()+mat[8]*Pz()};
 }
 
 nuchic::FourVector::RotMat FourVector::Align(const ThreeVector &axis) const noexcept {
@@ -107,48 +109,48 @@ FourVector FourVector::Cross(const FourVector& other) const noexcept {
 }
 
 ThreeVector FourVector::BoostVector() const noexcept {
-    return {vec[0]/vec[3], vec[1]/ vec[3], vec[2]/vec[3]};
+    return {Px()/E(), Py()/E(), Pz()/E()};
 }
 
 FourVector& FourVector::operator+=(const FourVector& other) noexcept {
-    vec[0] += other.vec[0];
-    vec[1] += other.vec[1];
-    vec[2] += other.vec[2];
-    vec[3] += other.vec[3];
+    E() += other.E();
+    Px() += other.Px();
+    Py() += other.Py();
+    Pz() += other.Pz();
 
     return *this;
 }
 
 FourVector& FourVector::operator-=(const FourVector& other) noexcept {
-    vec[0] -= other.vec[0];
-    vec[1] -= other.vec[1];
-    vec[2] -= other.vec[2];
-    vec[3] -= other.vec[3];
+    E() -= other.E();
+    Px() -= other.Px();
+    Py() -= other.Py();
+    Pz() -= other.Pz();
 
     return *this;
 }
 
 FourVector& FourVector::operator*=(const double& scale) noexcept {
-    vec[0] *= scale;
-    vec[1] *= scale;
-    vec[2] *= scale;
-    vec[3] *= scale;
+    E() *= scale;
+    Px() *= scale;
+    Py() *= scale;
+    Pz() *= scale;
 
     return *this;
 }
 
 FourVector& FourVector::operator/=(const double& scale) {
-    vec[0] /= scale;
-    vec[1] /= scale;
-    vec[2] /= scale;
-    vec[3] /= scale;
+    E() /= scale;
+    Px() /= scale;
+    Py() /= scale;
+    Pz() /= scale;
 
     return *this;
 }
 
 double FourVector::operator*(const FourVector& other) const noexcept {
-    return vec[3]*other.vec[3] 
-        - (vec[0]*other.vec[0] + vec[1]*other.vec[1] + vec[2]*other.vec[2]);
+    return E()*other.E()
+        - (Px()*other.Px() + Py()*other.Py() + Pz()*other.Pz());
 }
 
 FourVector FourVector::operator-() const noexcept {
@@ -187,22 +189,23 @@ std::string FourVector::ToString() const noexcept {
 namespace nuchic {
 
 std::istream& operator>>(std::istream& is, FourVector& vec) {
-    std::string head(11, ' '), sep1(1, ' '), sep2(1, ' '),
+    std::string head_name = "FourVector(";
+    std::string head(head_name.size(), ' '), sep1(1, ' '), sep2(1, ' '),
         sep3(1, ' '), tail(1, ' ');
-    double px, py, pz, e;
+    double e{}, px{}, py{}, pz{};
     is.read(&head[0], 11);
-    is >> px;
-    is.read(&sep1[0], 1);
-    is >> py;
-    is.read(&sep2[0], 1);
-    is >> pz;
-    is.read(&sep3[0], 1);
     is >> e;
+    is.read(&sep1[0], 1);
+    is >> px;
+    is.read(&sep2[0], 1);
+    is >> py;
+    is.read(&sep3[0], 1);
+    is >> pz;
     is.read(&tail[0], 1);
-    if(head == "FourVector(" &&
+    if(head == head_name &&
        sep1 == "," && sep2 == "," && 
        sep3 == "," && tail == ")") 
-        vec = FourVector(px, py, pz, e);
+        vec = FourVector(e, px, py, pz);
     return is;
 }
 

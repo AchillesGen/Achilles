@@ -11,8 +11,8 @@
 #include "spdlog/spdlog.h"
 
 TEST_CASE("CM Momentum Delta solver", "[DeltaFunctions]") {
-        nuchic::FourVector p1(0, 0, 100, sqrt(pow(nuchic::Constant::mN, 2) + 100*100));
-        nuchic::FourVector p2(0, 0, -100, sqrt(pow(nuchic::Constant::mN, 2) + 100*100));
+        nuchic::FourVector p1(sqrt(pow(nuchic::Constant::mN, 2) + 100*100), 0, 0, 100);
+        nuchic::FourVector p2(sqrt(pow(nuchic::Constant::mN, 2) + 100*100), 0, 0, -100);
         double cosTheta = 0.5;
         double phi = 0;
         auto p3 = nuchic::SolveDelta(p1, p2, nuchic::Constant::mN, nuchic::Constant::mN, cosTheta, phi);
@@ -20,7 +20,7 @@ TEST_CASE("CM Momentum Delta solver", "[DeltaFunctions]") {
 
         double sinTheta = sqrt(0.75);
         CHECK(p1 + p2 == p3 + p4);
-        CHECK(p3 == nuchic::FourVector(100*sinTheta, 0, 100*cosTheta, p1.E()));
+        CHECK(p3 == nuchic::FourVector(p1.E(), 100*sinTheta, 0, 100*cosTheta));
 }
 
 TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {

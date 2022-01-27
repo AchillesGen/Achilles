@@ -18,21 +18,22 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
             .LR_RETURN((particles))
             .TIMES(AT_LEAST(3));
 
-        nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian, nuchic::Cascade::InMedium::None);
-        cascade.Kick(nucleus, {100, 0, 0, 0}, {10, 0});
+        nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian,
+                                nuchic::Cascade::InMedium::None);
+        cascade.Kick(nucleus, {0, 100, 0, 0}, {10, 0});
         CHECK(particles[0].Status() == nuchic::ParticleStatus::propagating);
         CHECK(particles[1].Status() == nuchic::ParticleStatus::background);
         particles[0].Status() = nuchic::ParticleStatus::background;
 
         cascade.Reset();
-        cascade.Kick(nucleus, {100, 0, 0, 0}, {0, 10});
+        cascade.Kick(nucleus, {0, 100, 0, 0}, {0, 10});
         CHECK(particles[0].Status() == nuchic::ParticleStatus::background);
         CHECK(particles[1].Status() == nuchic::ParticleStatus::propagating);
     }
 }
 
 TEST_CASE("Evolve States", "[Cascade]") {
-    nuchic::Particles hadrons = {{nuchic::PID::proton(), {100, 0, 0, 1000},
+    nuchic::Particles hadrons = {{nuchic::PID::proton(), {1000, 100, 0, 0},
                                  {0, 0, 0}, nuchic::ParticleStatus::propagating}};
     constexpr double radius = 1;
 

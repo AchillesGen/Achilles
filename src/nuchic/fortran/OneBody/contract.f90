@@ -1,16 +1,15 @@
     module xsec_fact
     implicit none
-    real*8, parameter :: xmp=938.272046d0,xmn=939.56563d0,xm=0.5d0*(xmn+xmp)
-    real*8, parameter :: hbarc=197.327053d0,G_F = 1.14e-5*0.1973d0**2
+    real*8, parameter :: xmp=938.27208816d0,xmn=939.56542052d0,xm=0.5d0*(xmn+xmp)
+    real*8, parameter :: hbarc=197.3269804,G_F = 1.14e-5*0.1973d0**2
     real*8, parameter :: pi= 4.0d0*atan(1.0d0),c0=1.0d0/16.0d0/pi/pi
     real*8, save :: e,ef,cost,q2,p2,pf2,sint,sina2,wf,wtf
   end module xsec_fact
 
-
-
   subroutine cc1(xq,w,wt,xk,xp,p_4,pp_4,k_4,kp_4,theta,ig,sig_p, sig_n)
     use xsec_fact
     use dirac_matrices
+    use libutilities
     implicit none
     integer*4 :: ig,i
     real*8 :: xq, w,wt, xk, xp, ee0, theta
@@ -25,9 +24,11 @@
 !     thetae   electron scattering angle
 !     xk, xp   initital and final nucleon three-momenta in inverse fm
 !     sina2    sin(alpha)**2, alpha being the angle between the 
-      wf = w/hbarc
-      wtf=wt/hbarc
+      e = ee0/constants%hbarc
+      wf = w/constants%hbarc
+      wtf=wt/constants%hbarc
       ef = kp_4(1)           
+      ef = e-wf            
       q2 = xq**2
       q_4(1)=wtf
       q_4(2:3)=0.0d0

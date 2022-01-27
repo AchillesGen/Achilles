@@ -1,10 +1,12 @@
 #ifndef EVENTGEN_HH
 #define EVENTGEN_HH
 
-#include "nuchic/Cuts.hh"
+#include "nuchic/CombinedCuts.hh"
 #include "nuchic/Histogram.hh"
 #include "nuchic/ParticleInfo.hh"
+#include "nuchic/QuasielasticTestMapper.hh"
 #include "nuchic/Vegas.hh"
+#include "nuchic/MultiChannel.hh"
 
 #include <memory>
 #include <vector>
@@ -25,42 +27,34 @@ class Cascade;
 class HardScattering;
 class EventWriter;
 
-using Cuts = std::map<PID, Cut>;
+class SherpaMEs;
 
 class EventGen {
     public:
-        EventGen(const std::string&);
+        EventGen(const std::string&,SherpaMEs *const);
         void Initialize();
         void GenerateEvents();
-        size_t nevents;
-        size_t total_events;
-        size_t max_batch;
 
     private:
         bool runCascade, outputEvents, doHardCuts{false}, doEventCuts{false};
         bool doRotate{false};
-        double Calculate(const std::vector<double>&, const double&, const size_t&);
+        double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
-        bool MakeEventCuts(Event&);
+        // bool MakeEventCuts(Event&);
         void Rotate(Event&);
 
         std::shared_ptr<Beam> beam;
         std::shared_ptr<Nucleus> nucleus;
         std::shared_ptr<Cascade> cascade;
         std::shared_ptr<HardScattering> scattering;
-        Cuts hard_cuts{};
-        Cuts event_cuts{};
-        Vegas integrator;
+        CutCollection hard_cuts{};
+        // CutCollection event_cuts{};
+        MultiChannel integrator;
+        Integrand<FourVector> integrand;
         YAML::Node config;
-        // std::vector<std::unique_ptr<HardScattering>> scatterings;
-        // std::vector<Histogram> xsecsVsE;
-        // std::vector<Vegas> integrators;
 
         std::shared_ptr<EventWriter> writer;
-
-        Histogram hist, hist2, hist3;
-
-
+        Histogram hist, hist2, hist3, hist4, hist5, hist6;
 };
 
 }

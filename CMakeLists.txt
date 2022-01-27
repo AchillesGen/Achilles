@@ -59,6 +59,13 @@ if(ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
 endif()
 
+# Find Sherpa
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
+find_package(SHERPA REQUIRED)
+
+# Find HepMC3
+find_package(HepMC3 REQUIRED)
+
 # Add dependencies
 include(CMake/CPM.cmake)
 add_subdirectory(external)

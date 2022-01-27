@@ -55,7 +55,7 @@
 
      G_D=1.0d0/(1.0d0+Q2G/Lambdasq)**2
      G_A=gan1/(1.0d0+Q2G/MAsq)**2
-!     
+!    
      if(ichoice.eq.1)then
 !             
        G_ep = G_D 
@@ -72,6 +72,7 @@
     &              (1. + b_mp(1)*tau + b_mp(2)*tau**2 + b_mp(3)*tau**3)
        G_mn = mu_n*(1. + a_mn*tau)/ &
     &              (1. + b_mn(1)*tau + b_mn(2)*tau**2 + b_mn(3)*tau**3)
+       print*, G_ep, G_en, G_mp, G_mn
      else if(ichoice.eq.3)then   
        num_ep = zero
        den_ep = one
