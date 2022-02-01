@@ -2,6 +2,55 @@
 
 #include "nuchic/Utilities.hh"
 
+TEST_CASE("Bit operations", "[Utilities]") {
+
+    SECTION("NextPermutation") {
+        unsigned int inp = 0b100;
+        auto perm1 = nuchic::NextPermutation(inp);
+        auto perm2 = nuchic::NextPermutation(perm1);
+        CHECK(perm1 == 0b1000);
+        CHECK(perm2 == 0b10000);
+    }
+
+    SECTION("SetBit") {
+        unsigned int inp = 0b100;
+        CHECK(nuchic::SetBit(inp, 0) == false);    
+        CHECK(nuchic::SetBit(inp, 1) == false);    
+        CHECK(nuchic::SetBit(inp, 2) == true);    
+    }
+
+    SECTION("SetBits") {
+        unsigned int inp = 0b1010;
+        auto result = nuchic::SetBits(inp, 4);
+        CHECK(result.size() == 2);
+        CHECK(result[0] == 2);
+        CHECK(result[1] == 8);
+    }
+
+    SECTION("IsPower2") {
+        unsigned int inp = 0b100;
+        CHECK(nuchic::IsPower2(inp) == true);
+        CHECK(nuchic::IsPower2(inp+1) == false);
+    }
+
+    SECTION("Log2") {
+        for(unsigned int i = 0; i < 16; ++i) {
+            CHECK(nuchic::Log2(1 << i) == i);
+        }
+    }
+}
+
+TEST_CASE("Tokenize", "[Utilities]") {
+    std::string str = "This is a string";
+    std::vector<std::string> tokens;
+    nuchic::tokenize(str, tokens);
+    CHECK(tokens.size() == 4);
+    CHECK(tokens[0] == "This");
+    CHECK(tokens[1] == "is");
+    CHECK(tokens[2] == "a");
+    CHECK(tokens[3] == "string");
+}
+
 TEST_CASE("Coordiante Transforms", "[Utilities]") {
     SECTION("ToCartesian") {
         std::array<double, 3> rcoord{10, 0, 0}, xcoord{0, 0, 10};

@@ -60,14 +60,19 @@ TEST_CASE("Errors 2D", "[Interp]") {
     SECTION("No extrapolation allowed") {
         const std::vector<double> x = {0, 1, 2}; 
         const std::vector<double> y = {0, 1, 2};
+        const std::vector<double> z = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 
-        nuchic::Interp1D interp(x, y, nuchic::InterpolationType::Polynomial);
-        interp.SetPolyOrder(2);
+        nuchic::Interp2D interp(x, y, z, nuchic::InterpolationType::Polynomial);
+        interp.SetPolyOrder(2, 2);
 
-        CHECK_THROWS_WITH(interp(-1),
-                          fmt::format("Input ({}) less than minimum value ({})", -1, 0));
-        CHECK_THROWS_WITH(interp(3),
-                          fmt::format("Input ({}) greater than maximum value ({})", 3, 2));
+        CHECK_THROWS_WITH(interp(-1, 0),
+                          fmt::format("Input ({}) less than minimum x value ({})", -1, 0));
+        CHECK_THROWS_WITH(interp(3, 0),
+                          fmt::format("Input ({}) greater than maximum x value ({})", 3, 2));
+        CHECK_THROWS_WITH(interp(0, -1),
+                          fmt::format("Input ({}) less than minimum y value ({})", -1, 0));
+        CHECK_THROWS_WITH(interp(0, 3),
+                          fmt::format("Input ({}) greater than maximum y value ({})", 3, 2));
     }
 }
 

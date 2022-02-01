@@ -58,22 +58,22 @@ void Histogram::Normalize(const double& norm) {
 }
 
 double Histogram::Integral() const {
-    return Integral(0, binedges.size());
+    return Integral(0, binvals.size());
 }
 
-double Histogram::Integral(const size_t& lower, const size_t& upper) const {
+double Histogram::Integral(size_t lower, size_t upper) const {
     double result = 0;
     double sign = 1;
-    if(lower > upper)
+    if(lower > upper) {
         sign = -1;
+        std::swap(lower, upper);
+    }
 
-    if(lower > binedges.size())
-        throw std::runtime_error("Invalid range for histogram integration");
-    if(upper > binedges.size())
+    if(upper > binvals.size())
         throw std::runtime_error("Invalid range for histogram integration");
 
-    for(size_t i = lower; i < upper; ++i) {
-        const auto mean = binvals[i];///static_cast<double>(nentries);
+    for(size_t i = lower; i <= upper; ++i) {
+        const auto mean = binvals[i];
         result += mean*(binedges[i+1]-binedges[i]);
     }
 

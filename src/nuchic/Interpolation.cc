@@ -193,7 +193,7 @@ double Interp2D::operator()(const double& x, const double& y) const {
     if(y > knotY.back()) 
         throw std::domain_error(fmt::format("Input ({}) greater than maximum y value ({})", y, knotY.back()));
     if(y < knotY.front()) 
-        throw std::domain_error(fmt::format("Input ({}) less than minimum y value ({})", x, knotY.front()));
+        throw std::domain_error(fmt::format("Input ({}) less than minimum y value ({})", y, knotY.front()));
 
 
     double result = 0;

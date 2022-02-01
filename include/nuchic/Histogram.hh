@@ -54,7 +54,7 @@ class Histogram {
         virtual void Scale(const double&);
         virtual void Normalize(const double& norm=1.0);
         virtual double Integral() const;
-        virtual double Integral(const size_t&, const size_t&) const;
+        virtual double Integral(size_t, size_t) const;
         virtual void Save(std::ostream* out=&std::cout) const;
         virtual void Save(const std::string&) const;
 
@@ -70,9 +70,6 @@ class Histogram {
         std::vector<double> errors;
         size_t nentries{};
         size_t FindBin(const double&) const;
-
-    private:
-        void Save(std::ostream &) const;
 };
 
 #ifdef HAVE_YODA
