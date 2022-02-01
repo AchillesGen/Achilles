@@ -20,8 +20,8 @@ class DummyMapper : public nuchic::Mapper<double> {
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
     nuchic::Channel<double> channel;
-    nuchic::AdaptiveMap2 map(1, 10);
-    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    nuchic::AdaptiveMap map(1, 10);
+    channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
     channel.mapping = std::make_unique<DummyMapper>();
 
     YAML::Node node;
@@ -37,8 +37,8 @@ TEST_CASE("YAML encoding / decoding Integrand", "[multichannel]") {
     nuchic::Integrand<double> integrand(dummy_func);
     for(size_t i = 0; i < 10; ++i) {
         nuchic::Channel<double> channel;
-        nuchic::AdaptiveMap2 map(1, 10);
-        channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+        nuchic::AdaptiveMap map(1, 10);
+        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
         channel.mapping = std::make_unique<DummyMapper>();
         integrand.AddChannel(std::move(channel));
     }

@@ -44,8 +44,8 @@ TEST_CASE("Vegas Integration", "[vegas]") {
     SECTION("Runs at least minimum required iterations") {
         static constexpr size_t nitn_min = 10;
         static constexpr double rtol = 2e-2, atol = 2e-2;
-        nuchic::AdaptiveMap2 map(2, 100);
-        nuchic::Vegas2 vegas(map, nuchic::VegasParams{10000, 20, rtol, atol, 1.5, nitn_min});
+        nuchic::AdaptiveMap map(2, 100);
+        nuchic::Vegas vegas(map, nuchic::VegasParams{10000, 20, rtol, atol, 1.5, nitn_min});
 
         vegas.Optimize(test_func2);
         auto results = vegas.Summary();
@@ -57,8 +57,8 @@ TEST_CASE("Vegas Integration", "[vegas]") {
     SECTION("Runs to desired precision") {
         static constexpr size_t nitn_min = 2;
         static constexpr double rtol = 1e-3, atol = 1e-3;
-        nuchic::AdaptiveMap2 map(2, 100);
-        nuchic::Vegas2 vegas(map, nuchic::VegasParams{10000, 2, rtol, atol, 1.5, nitn_min});
+        nuchic::AdaptiveMap map(2, 100);
+        nuchic::Vegas vegas(map, nuchic::VegasParams{10000, 2, rtol, atol, 1.5, nitn_min});
 
         vegas.Optimize(test_func);
         auto results = vegas.Summary();
@@ -72,15 +72,15 @@ TEST_CASE("Vegas Integration", "[vegas]") {
 TEST_CASE("YAML encoding / decoding Vegas", "[vegas]") {
     static constexpr size_t nitn_min = 2;
     static constexpr double rtol = 1, atol = 1;
-    nuchic::AdaptiveMap2 map(2, 10);
-    nuchic::Vegas2 vegas(map, nuchic::VegasParams{100, 2, rtol, atol, 1.5, nitn_min});
+    nuchic::AdaptiveMap map(2, 10);
+    nuchic::Vegas vegas(map, nuchic::VegasParams{100, 2, rtol, atol, 1.5, nitn_min});
     vegas.Optimize(test_func);
     auto results1 = vegas.Summary();
 
     YAML::Node node;
     node["Vegas"] = vegas;
 
-    auto vegas2 = node["Vegas"].as<nuchic::Vegas2>();
+    auto vegas2 = node["Vegas"].as<nuchic::Vegas>();
     auto results2 = vegas2.Summary();
 
     CHECK(results1.sum_results.Mean() == results2.sum_results.Mean());

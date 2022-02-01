@@ -87,8 +87,8 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
     for(size_t i = 0; i < 2; ++i) {
         nuchic::Channel<double> channel;
         channel.mapping = std::make_unique<DoubleMapper>(i);
-        nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 50);
-        channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+        nuchic::AdaptiveMap map(channel.mapping -> NDims(), 50);
+        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
 
@@ -123,8 +123,8 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
     nuchic::Integrand<double> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
         nuchic::Channel<double> channel;
-        nuchic::AdaptiveMap2 map(1, 50);
-        channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+        nuchic::AdaptiveMap map(1, 50);
+        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
         channel.mapping = std::make_unique<DoubleMapper>(i);
         integrand.AddChannel(std::move(channel));
     }

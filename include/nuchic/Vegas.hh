@@ -38,95 +38,8 @@ class KBNSummation{
         double sum{}, correction{};
 };
 
-using VegasPt = std::array<double,2>;
-using Batch = std::vector<double>;
-using BatchInt = std::vector<std::size_t>;
-using Batch2D = std::vector<std::vector<double>>;
 template<typename T>
 using Func = std::function<double(const std::vector<T>&, const double&)>;
-
-class VegasResult {
-    public:
-        VegasResult(bool weighted_ = true) : weighted(weighted_) {}
-        void Update(double, double);
-        VegasPt GetResult() const {return {mean, std::sqrt(var)};}
-        bool Converged(const double&, const double&) const;
-        std::string Summary() const;
-        size_t Calls() const { return calls; }
-        size_t FiniteCalls() const { return finiteCalls; }
-        size_t NonZeroCalls() const { return nonZeroCalls; }
-        double Max() const { return max; }
-
-    private:
-        size_t calls{}, nonZeroCalls{}, finiteCalls{};
-        std::vector<double> sMean, sVar;
-        double sum{}, sum2{}, sumVar{}, max{};
-        double mean{}, meanDivVar{}, mean2DivVar{};
-        double var{}, OneDivVar{};
-        std::size_t n{};
-        bool weighted;
-        double chi2() const;
-        double dof() const { return static_cast<double>(sMean.size() - 1); }
-};
-
-class Vegas {
-    public:
-        Vegas() = default;
-        Vegas(nuchic::AdaptiveMap, const YAML::Node&);
-        Vegas(const Vegas&) = default;
-        Vegas(Vegas&&) = default;
-        Vegas &operator=(const Vegas&) = default;
-        Vegas &operator=(Vegas&&) = default;
-        ~Vegas() = default;
-
-        void SetDefaults();
-        void Set(const YAML::Node&);
-        void Clear() {result = VegasResult(adapt);}
-        std::string Settings(const std::size_t& ngrid=0);
-        void RandomBatch(std::size_t, std::size_t, Batch2D&, Batch2D&, Batch&, BatchInt&);
-        VegasPt operator ()(const Func<double>&);
-        
-    private:
-        static void SynchronizeMPI();
-
-        void Setup();
-//        void FillSigF(const std::function<double(std::vector<double>,double)>&,
-//                      size_t cubeBase, size_t cubeBatch);
-        Batch MakeBatch(const Func<double>&, Batch2D, Batch);
-        Batch2D GenerateRandom(const std::size_t&, const std::size_t&);
-
-        std::vector<double> sigF;
-        Batch jac, fdv2;
-        std::vector<std::size_t> nEvalCube;
-        double sumSigF{};
-        nuchic::AdaptiveMap map;
-        std::size_t neval{}, nitn{}, maxinc{}, nCubeBatch{};
-        std::size_t maxCube{}, maxEvalCube{}, minEvalCube{};
-        std::size_t ndims{}, nstrats{}, nincrements{}, nCube{}, lastNEval{};
-        double alpha{}, beta{}, rtol{}, atol{};
-        bool adapt{}, adaptErrors{}, sync{};
-        VegasResult result;
-
-        // Default parameters
-        static constexpr size_t nitn_default = 10;
-        static constexpr size_t neval_default = 1000;
-        static constexpr size_t maxinc_default = 1000;
-        static constexpr size_t nCubeBatch_default = 1000;
-        static constexpr size_t maxCube_default = 1e9;
-        static constexpr size_t maxEvalCube_default = 1e7;
-        static constexpr double alpha_default = 1.5;
-        static constexpr double beta_default = 0.75;
-        static constexpr bool adapt_default = true;
-        static constexpr bool adaptErrors_default = false;
-        static constexpr double rtol_default = 0;
-        static constexpr double atol_default = 0;
-        static constexpr bool sync_default = true;
-
-// #ifdef USING_MPI
-//         int GetMPIRank();
-//         int mpiRank{};
-// #endif
-};
 
 struct VegasParams {
     size_t ncalls{ncalls_default}, nrefine{nrefine_default};
@@ -145,7 +58,7 @@ struct VegasSummary {
     StatsData Result() const { return sum_results; }
 };
 
-class Vegas2 {
+class Vegas {
     public:
         enum class Verbosity {
             silent,
@@ -154,8 +67,8 @@ class Vegas2 {
             very_verbose
         };
 
-        Vegas2() = default;
-        Vegas2(AdaptiveMap2 map, VegasParams _params) : grid{std::move(map)}, params{std::move(_params)} {}
+        Vegas() = default;
+        Vegas(AdaptiveMap map, VegasParams _params) : grid{std::move(map)}, params{std::move(_params)} {}
 
         // Utilities
         void SetVerbosity(size_t v = 1) {
@@ -165,8 +78,8 @@ class Vegas2 {
             else if(v == 3) verbosity = Verbosity::very_verbose;
             else throw std::runtime_error("Vegas: Invalid verbosity level");
         }
-        AdaptiveMap2 Grid() const { return grid; }
-        AdaptiveMap2 &Grid() { return grid; }
+        AdaptiveMap Grid() const { return grid; }
+        AdaptiveMap &Grid() { return grid; }
         // bool Serialize(std::ostream &out) const {
         //     
         // }
@@ -184,12 +97,12 @@ class Vegas2 {
         VegasSummary Summary() const; 
 
         // YAML interface
-        friend YAML::convert<nuchic::Vegas2>;
+        friend YAML::convert<nuchic::Vegas>;
 
     private:
         void PrintIteration() const;
 
-        AdaptiveMap2 grid;
+        AdaptiveMap grid;
         VegasSummary summary;
         VegasParams params{};
         Verbosity verbosity{Verbosity::normal};
@@ -228,18 +141,18 @@ struct convert<nuchic::VegasSummary> {
 };
 
 template<>
-struct convert<nuchic::Vegas2> {
-    static Node encode(const nuchic::Vegas2 &rhs) {
+struct convert<nuchic::Vegas> {
+    static Node encode(const nuchic::Vegas &rhs) {
         Node node;
         node["Grid"] = rhs.grid;
         node["Summary"] = rhs.summary;
         return node;
     }
 
-    static bool decode(const Node &node, nuchic::Vegas2 &rhs) {
+    static bool decode(const Node &node, nuchic::Vegas &rhs) {
         if(node.size() != 2) return false;
 
-        rhs.grid = node["Grid"].as<nuchic::AdaptiveMap2>();
+        rhs.grid = node["Grid"].as<nuchic::AdaptiveMap>();
         rhs.summary = node["Summary"].as<nuchic::VegasSummary>();
         return true;
     }

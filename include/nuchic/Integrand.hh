@@ -10,7 +10,7 @@ namespace nuchic {
 
 template<typename T>
 struct Channel {
-    Vegas2 integrator;
+    Vegas integrator;
     std::unique_ptr<Mapper<T>> mapping;
     double weight{};
     std::vector<double> train_data;
@@ -107,7 +107,7 @@ struct convert<nuchic::Channel<T>> {
 
     static bool decode(const Node &node, nuchic::Channel<T> &rhs) {
         if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<nuchic::Vegas2>();
+        rhs.integrator = node["Integrator"].as<nuchic::Vegas>();
         // FIXME: Clean this up!
         auto mapNode = node["Mapper"];
         if(mapNode["Name"].as<std::string>() == "PSMapper") {
