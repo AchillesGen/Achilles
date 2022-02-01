@@ -5,9 +5,11 @@
 #include "nuchic/Units.hh"
 #include "nuchic/Utilities.hh"
 
+#ifdef ENABLE_BSM
 using ATOOLS::Vec4D;
-using nuchic::TwoBodyMapper;
 using nuchic::SherpaMapper;
+#endif
+using nuchic::TwoBodyMapper;
 using nuchic::FourVector;
 
 void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
@@ -64,6 +66,7 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     return wgt;
 }
 
+#ifdef ENABLE_BSM
 void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     std::vector<Vec4D> mom(point.size());
     mom[0] = Vec4D(point[0][0]/1_GeV, point[0][1]/1_GeV, point[0][2]/1_GeV, point[0][3]/1_GeV);
@@ -80,3 +83,4 @@ double SherpaMapper::GenerateWeight(const std::vector<FourVector> &point, std::v
         mom.emplace_back(pt[0]/1_GeV, pt[1]/1_GeV, pt[2]/1_GeV, pt[3]/1_GeV);
     return sherpa_mapper -> GenerateWeight(mom, rans);
 }
+#endif

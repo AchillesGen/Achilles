@@ -21,19 +21,24 @@
 #include "nuchic/FinalStateMapper.hh"
 #include "nuchic/PhaseSpaceMapper.hh"
 #include "nuchic/QuasielasticTestMapper.hh"
+
+#ifdef ENABLE_BSM
 #include "plugins/Sherpa/Channels1.hh"
 #include "plugins/Sherpa/Channels3.hh"
-
 #include "plugins/Sherpa/SherpaMEs.hh"
+#endif
+
+#ifdef ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#endif
 
 #include "yaml-cpp/yaml.h"
 
 nuchic::Channel<nuchic::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<nuchic::Beam> beam) {
     nuchic::Channel<nuchic::FourVector> channel;
     channel.mapping = std::make_unique<nuchic::QuasielasticTestMapper>(node, beam);
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
-    channel.integrator = nuchic::Vegas2(map, {});
+    nuchic::AdaptiveMap map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas(map, {});
     return channel;
 }
 
@@ -45,11 +50,12 @@ nuchic::Channel<nuchic::FourVector> BuildChannel(nuchic::NuclearModel *model, si
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .FinalState(T::Name(), masses).build();
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
-    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    nuchic::AdaptiveMap map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
     return channel;
 }
 
+#ifdef ENABLE_BSM
 template<typename T>
 nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(nuchic::NuclearModel *model, size_t nlep, size_t nhad,
                                                        std::shared_ptr<nuchic::Beam> beam,
@@ -60,8 +66,8 @@ nuchic::Channel<nuchic::FourVector> BuildChannelSherpa(nuchic::NuclearModel *mod
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .SherpaFinalState(T::Name(), massesGeV).build();
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
-    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    nuchic::AdaptiveMap map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
     return channel;
 }
 
@@ -73,10 +79,11 @@ nuchic::Channel<nuchic::FourVector> BuildGenChannel(nuchic::NuclearModel *model,
     channel.mapping = nuchic::PSBuilder(nlep, nhad).Beam(beam, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .GenFinalState(std::move(final_state)).build();
-    nuchic::AdaptiveMap2 map(channel.mapping -> NDims(), 2);
-    channel.integrator = nuchic::Vegas2(map, nuchic::VegasParams{});
+    nuchic::AdaptiveMap map(channel.mapping -> NDims(), 2);
+    channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
     return channel;
 }
+#endif
 
 nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherpa) :
   runCascade{false}, outputEvents{false} {
@@ -141,54 +148,25 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
 
     // Setup channels
     spdlog::debug("Initializing phase space");
-    auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
     std::vector<double> masses = scattering -> Process().Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
-    } else if(config["OldPS"]) {
+    } else {
+#ifndef ENABLE_BSM
         if(scattering -> Process().Multiplicity() == 4) {
-            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C1_0>(scattering -> Nuclear(), 2, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C1_1>(scattering -> Nuclear(), 2, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C1_2>(scattering -> Nuclear(), 2, 2,
-                                                                            beam, masses);
+            Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(scattering -> Nuclear(), 2, 2,
+                                                                       beam, masses);
             integrand.AddChannel(std::move(channel0));
-            integrand.AddChannel(std::move(channel1));
-            integrand.AddChannel(std::move(channel2));
-        } else if(scattering -> Process().Multiplicity() == 6) {
-            Channel<FourVector> channel0 = BuildChannelSherpa<PHASIC::C3_0>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel1 = BuildChannelSherpa<PHASIC::C3_1>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel2 = BuildChannelSherpa<PHASIC::C3_2>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel3 = BuildChannelSherpa<PHASIC::C3_3>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel4 = BuildChannelSherpa<PHASIC::C3_4>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel5 = BuildChannelSherpa<PHASIC::C3_5>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel6 = BuildChannelSherpa<PHASIC::C3_6>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            Channel<FourVector> channel7 = BuildChannelSherpa<PHASIC::C3_7>(scattering -> Nuclear(), 4, 2,
-                                                                            beam, masses);
-            integrand.AddChannel(std::move(channel0));
-            integrand.AddChannel(std::move(channel1));
-            integrand.AddChannel(std::move(channel2));
-            integrand.AddChannel(std::move(channel3));
-            integrand.AddChannel(std::move(channel4));
-            integrand.AddChannel(std::move(channel5));
-            integrand.AddChannel(std::move(channel6));
-            integrand.AddChannel(std::move(channel7));
         } else {
-            const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 and 2->4 processes. "
+            const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+                                                  "BSM being enabled. "
                                                   "Got a 2->{} process", leptonicProcess.m_ids.size());
             throw std::runtime_error(error);
         }
-    } else {
+#else
+        auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
@@ -197,6 +175,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
             integrand.AddChannel(std::move(channel));
             spdlog::info("Adding Channel{}", count++);
         }
+#endif
     }
 
     // Setup Multichannel integrator
@@ -225,8 +204,10 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
         zipped = output["Zipped"].as<bool>();
     if(output["Format"].as<std::string>() == "Nuchic") {
         writer = std::make_unique<NuchicWriter>(output["Name"].as<std::string>(), zipped);
+#ifdef ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+#endif
     }
     writer -> WriteHeader(configFile);
 

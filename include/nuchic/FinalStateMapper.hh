@@ -4,10 +4,12 @@
 #include "nuchic/Mapper.hh"
 #include "nuchic/PhaseSpaceFactory.hh"
 
+#ifdef ENABLE_BSM
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
+#endif // ENABLE_BSM
 
 namespace nuchic {
 
@@ -55,6 +57,7 @@ class TwoBodyMapper : public FinalStateMapper,
         static constexpr double dPhi = 2*M_PI;
 };
 
+#ifdef ENABLE_BSM
 class SherpaMapper : public FinalStateMapper {
     public:
         SherpaMapper(size_t _nout, Mapper_ptr<ATOOLS::Vec4D> _mapper) 
@@ -74,6 +77,7 @@ class SherpaMapper : public FinalStateMapper {
     private:
         Mapper_ptr<ATOOLS::Vec4D> sherpa_mapper;
 };
+#endif // ENABLE_BSM
 
 }
 

@@ -4,7 +4,10 @@
 #include "nuchic/PhaseSpaceFactory.hh"
 #include "nuchic/HadronicMapper.hh"
 #include "nuchic/FinalStateMapper.hh"
+
+#ifdef ENABLE_BSM
 #include "plugins/Sherpa/Channels.hh"
+#endif
 
 using nuchic::PSBuilder;
 
@@ -24,6 +27,7 @@ PSBuilder& PSBuilder::FinalState(const std::string &channel, const std::vector<d
     return *this;
 }
 
+#ifdef ENABLE_BSM
 PSBuilder& PSBuilder::SherpaFinalState(const std::string &channel, const std::vector<double> &masses2) {
     auto sherpaMap = PSFactory<PHASIC::Channels, std::vector<double>>::Build(channel, masses2);
     phase_space->main = std::make_unique<SherpaMapper>(m_nlep+m_nhad-2, std::move(sherpaMap));
@@ -34,3 +38,4 @@ PSBuilder& PSBuilder::GenFinalState(std::unique_ptr<PHASIC::Channels> channel) {
     phase_space->main = std::make_unique<SherpaMapper>(m_nlep+m_nhad-2, std::move(channel));
     return *this;
 }
+#endif

@@ -1,2 +1,6 @@
+if(ENABLE_BSM)
 add_subdirectory(Sherpa)
+endif()
+if(ENABLE_HEPMC3)
 add_subdirectory(HepMC3)
+endif()

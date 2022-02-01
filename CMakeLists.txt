@@ -38,6 +38,8 @@ option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
 option(ENABLE_GZIP "Enable compression of event files" ON)
 option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
 option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
+option(ENABLE_BSM "Enable the generation of BSM events (Requires Sherap)" ON) 
+option(ENABLE_HEPMC3 "Enable the HepMC3 output format" ON)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
@@ -59,12 +61,16 @@ if(ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
 endif()
 
+if(ENABLE_BSM)
 # Find Sherpa
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 find_package(SHERPA REQUIRED)
+endif()
 
+if(ENABLE_HEPMC3)
 # Find HepMC3
 find_package(HepMC3 REQUIRED)
+endif()
 
 # Add dependencies
 include(CMake/CPM.cmake)

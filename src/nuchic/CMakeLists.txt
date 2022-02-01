@@ -1,3 +1,5 @@
+set(nuchic_targets "")
+
 add_library(utilities SHARED
     Constants.cc
     FourVector.cc
@@ -20,6 +22,7 @@ add_library(utilities SHARED
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+list(APPEND nuchic_targets utilities)
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
@@ -33,13 +36,13 @@ endif()
 # )
 
 add_library(cuts SHARED
-    Cuts.cc
     OneParticleCuts.cc
     TwoParticleCuts.cc
     CombinedCuts.cc
 )
 target_link_libraries(cuts PRIVATE project_options project_warnings
                            PUBLIC utilities) #pybind11::pybind11 
+list(APPEND nuchic_targets cuts)
 
 add_library(physics SHARED
     Cascade.cc
@@ -55,14 +58,20 @@ add_library(physics SHARED
     SpectralFunction.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+set(physics_libs "")
 if(ENABLE_GZIP)
-target_compile_definitions(physics PUBLIC GZIP) 
-target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} gzstream sherpa cuts)
-else()
-target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities ${HDF5_CXX_LIBRARIES} sherpa cuts)
+    list(APPEND nuchic_targets gzstream)
+    target_compile_definitions(physics PUBLIC GZIP)
+    target_link_libraries(physics PUBLIC gzstream)
 endif()
+if(ENABLE_BSM)
+    list(APPEND nuchic_targets sherpa)
+    target_compile_definitions(physics PUBLIC ENABLE_BSM)
+    target_link_libraries(physics PUBLIC sherpa)
+endif()
+target_link_libraries(physics PRIVATE project_options project_warnings
+                              PUBLIC utilities cuts ${HDF5_CXX_LIBRARIES})
+list(APPEND nuchic_targets physics)
 
 add_library(mappers SHARED
     PhaseSpaceMapper.cc
@@ -74,6 +83,7 @@ add_library(mappers SHARED
 )
 target_link_libraries(mappers PRIVATE project_options project_warnings
                               PUBLIC physics)
+list(APPEND nuchic_targets mappers)
 
 # add_subdirectory(fortran)
 
@@ -83,8 +93,14 @@ add_library(event_gen SHARED
     EventGen.cc
     EventWriter.cc
 )
+if(ENABLE_HEPMC3)
+list(APPEND nuchic_targets hepmc3)
+target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
+target_link_libraries(event_gen PUBLIC hepmc3)
+endif()
 target_link_libraries(event_gen PRIVATE project_options project_warnings
-                                PUBLIC physics mappers hepmc3) #fortran_interface
+                                PUBLIC physics mappers) #fortran_interface
+list(APPEND nuchic_targets event_gen)
 
                             # pybind11_add_module(_nuchic MODULE
                             #     # Main file
@@ -111,7 +127,7 @@ target_link_libraries(event_gen PRIVATE project_options project_warnings
 add_executable(nuchic main.cc)
 target_link_libraries(nuchic PRIVATE project_options project_warnings
                              PUBLIC event_gen sherpa docopt::docopt)
-set(nuchic_targets nuchic event_gen physics utilities) # fortran_interface 
+list(APPEND nuchic_targets nuchic)
 
 if(ENABLE_CASCADE_TEST)
     add_executable(nuchic-cascade CascadeMain.cc RunCascade.cc)
@@ -127,9 +143,6 @@ if(ENABLE_POTENTIAL_TEST)
     list(APPEND nuchic_targets nuchic-potential)
 endif()
 
-if(ENABLE_GZIP)
-list(APPEND nuchic_targets gzstream)
-endif()
 set_target_properties(${nuchic_targets} PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
@@ -138,7 +151,7 @@ set_target_properties(${nuchic_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS nuchic event_gen physics cuts utilities gzstream spdlog yaml-cpp fmt sherpa mappers hepmc3 #pybind11 fortran_interface_f 
+install(TARGETS ${nuchic_tragets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
         EXPORT nuchic-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
