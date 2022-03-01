@@ -15,6 +15,9 @@ Particles:
     - Particle: [3312, 1321.71, 4.02e-12, -3, 0, 1, 0, 0, true, true, cascade-, cascadebar+]
     - Particle: [3334, 1672.45, 8.02e-12, -3, 0, 3, 0, 0, true, true,   omega-, omegabar+]
 
+    # Nuclei
+    - Particle: [1000060120, 11188, 0.0, 0, 0, 0, 1, 0, true, true, carbon, anticarbon]
+
     # Mesons
     - Particle: [111, 134.977,      0.0, 0, 0, 0, 1, 1, true, true, pion0, pion0]
     - Particle: [211, 139.571,      0.0, 3, 0, 0, 1, 0, true, true, pion+, pion-]
