@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  CMAKE_VERSION: 3.21.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 4.4
 
