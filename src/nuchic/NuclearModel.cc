@@ -9,16 +9,16 @@ using nuchic::NuclearModel;
 using nuchic::Coherent;
 using nuchic::QESpectral;
 
-NuclearModel::NuclearModel(const std::string& ff_file) {
+NuclearModel::NuclearModel(const YAML::Node& config,
+                           FormFactorBuilder &ffbuilder = FormFactorBuilder::Instance()) {
     spdlog::debug("Setting up form factors");
-    const YAML::Node config = YAML::LoadFile(ff_file);
     const auto vectorFF = config["vector"].as<std::string>();
     const auto axialFF = config["axial"].as<std::string>();
     const auto coherentFF = config["coherent"].as<std::string>();
-    m_form_factor = FormFactorBuilder().Vector(vectorFF, config[vectorFF])
-                                       .AxialVector(axialFF, config[axialFF])
-                                       .Coherent(coherentFF, config[coherentFF])
-                                       .build();
+    m_form_factor = ffbuilder.Vector(vectorFF, config[vectorFF])
+                             .AxialVector(axialFF, config[axialFF])
+                             .Coherent(coherentFF, config[coherentFF])
+                             .build();
 }
 
 NuclearModel::FormFactorArray NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
@@ -52,9 +52,14 @@ NuclearModel::FormFactorArray NuclearModel::CouplingsFF(const FormFactor::Values
     return results;
 }
 
+YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
+    return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
+}
+
 // TODO: Clean this up such that the nucleus isn't loaded twice
-Coherent::Coherent(const YAML::Node &config) 
-        : NuclearModel(config["NuclearModel"]["FormFactorFile"].as<std::string>()) {
+Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
+                   FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
+        : NuclearModel(form_factor, builder) {
     nucleus_pid = config["Nucleus"].as<Nucleus>().ID();
 }
 
@@ -123,12 +128,14 @@ bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const
 }
 
 std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
-    return std::make_unique<Coherent>(config);
+    auto form_factor = LoadFormFactor(config);
+    return std::make_unique<Coherent>(config, form_factor);
 }
 
 // TODO: Clean this interface up
-QESpectral::QESpectral(const YAML::Node &config) 
-        : NuclearModel(config["NuclearModel"]["FormFactorFile"].as<std::string>()),
+QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
+                       FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
+        : NuclearModel(form_factor, builder),
           spectral_proton{config["NuclearModel"]["SpectralP"].as<std::string>()},
           spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {
     b_ward = config["NuclearModel"]["Ward"].as<bool>();
@@ -194,7 +201,7 @@ void QESpectral::AllowedStates(Process_Info &info) const {
     }
     charge /= 3;
     if(std::abs(charge) > 1)
-        throw std::runtime_error(fmt::format("Quasielastic: Requires charge < 2, but found charge {}", charge));
+        throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
 
     switch(charge) {
         case -1: // Final state has less charge than initial
@@ -215,9 +222,9 @@ bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) con
     for(size_t i = 0; i < event.CurrentNucleus() -> Nucleons().size(); ++i) {
         auto current_nucleon = event.CurrentNucleus() -> Nucleons()[i];
         if(current_nucleon.ID() == PID::proton()) {
-            event.MatrixElement(i).weight = xsecs[0];
+            event.MatrixElementWgt(i) = xsecs[0];
         } else {
-            event.MatrixElement(i).weight = xsecs[1];
+            event.MatrixElementWgt(i) = xsecs[1];
         }
     }
     if(!event.TotalCrossSection())
@@ -227,7 +234,8 @@ bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) con
 }
 
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
-    return std::make_unique<QESpectral>(config);
+    auto form_factor = LoadFormFactor(config);
+    return std::make_unique<QESpectral>(config, form_factor);
 }
 
 NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,

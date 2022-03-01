@@ -7,6 +7,7 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/Event.hh"
+#include "nuchic/NuclearModel.hh"
 #include "nuchic/FormFactor.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
 
@@ -24,6 +25,15 @@ class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
 };
 
+class MockNuclearModel : public trompeloeil::mock_interface<nuchic::NuclearModel> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK0(Mode);
+    IMPLEMENT_CONST_MOCK0(PhaseSpace);
+    IMPLEMENT_CONST_MOCK2(CalcCurrents);
+    IMPLEMENT_CONST_MOCK1(AllowedStates);
+    IMPLEMENT_CONST_MOCK0(NSpins);
+    IMPLEMENT_CONST_MOCK2(FillNucleus);
+};
 
 class MockSherpaME : public trompeloeil::mock_interface<nuchic::SherpaMEs> {
     static constexpr bool trompeloeil_movable_mock = true;

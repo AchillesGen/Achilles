@@ -35,7 +35,8 @@ class NuclearModel {
         using FFInfoMap = std::map<int, std::vector<FormFactorInfo>>;
         using FormFactorArray = std::array<std::complex<double>, 4>;
 
-        NuclearModel(const std::string&);
+        NuclearModel() = default;
+        NuclearModel(const YAML::Node&, FormFactorBuilder&);
         NuclearModel(const NuclearModel&) = delete;
         NuclearModel(NuclearModel&&) = default;
         NuclearModel& operator=(const NuclearModel&) = delete;
@@ -53,6 +54,7 @@ class NuclearModel {
         FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor -> operator()(q2); }
         FormFactorArray CouplingsFF(const FormFactor::Values&,
                                     const std::vector<FormFactorInfo>&) const;
+        static YAML::Node LoadFormFactor(const YAML::Node&);
 
     private:
         std::unique_ptr<FormFactor> m_form_factor{nullptr};
@@ -65,7 +67,7 @@ using NuclearModelFactory = Factory<NuclearModel, const YAML::Node&>;
 
 class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     public:
-        Coherent(const YAML::Node&);
+        Coherent(const YAML::Node&, const YAML::Node&, FormFactorBuilder&);
 
         NuclearMode Mode() const override { return NuclearMode::Coherent; }
         std::string PhaseSpace() const override { return Name(); }
@@ -84,7 +86,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
 
 class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     public:
-        QESpectral(const YAML::Node&);
+        QESpectral(const YAML::Node&, const YAML::Node&, FormFactorBuilder&);
 
         NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
         std::string PhaseSpace() const override { return Name(); }

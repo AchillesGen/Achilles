@@ -32,6 +32,7 @@ add_executable(nuchic-testsuite
     test_spectral.cc
     test_spinor.cc
     test_histogram.cc
+    test_nuclear_model.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

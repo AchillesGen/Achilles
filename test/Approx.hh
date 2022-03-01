@@ -1,6 +1,7 @@
 #ifndef APPROX_HH
 #define APPROX_HH
 
+#include <complex>
 #include <sstream>
 
 #include "catch2/catch.hpp"
@@ -40,6 +41,46 @@ class IsVectorApprox : public Catch::MatcherBase<T> {
 
     private:
         T _vec;
+        double _epsilon{std::numeric_limits<double>::epsilon() * 100};
+        double _margin{0.0};
+};
+
+class VectorComplexApprox : public Catch::MatcherBase<std::vector<std::complex<double>>> {
+    public:
+        VectorComplexApprox(std::vector<std::complex<double>> t) : _vec(t) {}
+
+        bool match(const std::vector<std::complex<double>> &t) const override {
+            bool result = true;
+            for(size_t i = 0; i < t.size(); ++i) {
+                result &= (t[i].real() == Approx(_vec[i].real())
+                                                .epsilon(_epsilon)
+                                                .margin(_margin));
+            }
+            return result;
+        }
+
+        VectorComplexApprox& epsilon(double eps) {
+            _epsilon = eps;
+            return *this;
+        }
+
+        VectorComplexApprox& margin(double margin) {
+            _margin = margin;
+            return *this;
+        }
+
+        std::string describe() const override {
+            std::ostringstream oss;
+            oss << "is approximately {";
+            for(const auto &elm : _vec) {
+                oss << elm.real() << (elm.imag() < 0 ? "-" : "+") << elm.imag() << ", ";
+            }
+            oss << "\b\b}";
+            return oss.str();
+        }
+
+    private:
+        std::vector<std::complex<double>> _vec;
         double _epsilon{std::numeric_limits<double>::epsilon() * 100};
         double _margin{0.0};
 };
