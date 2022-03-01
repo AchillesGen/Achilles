@@ -108,6 +108,7 @@ class Nucleus {
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
         MOCK Particles& Nucleons() noexcept { return nucleons; }
+        const Particles& Nucleons() const noexcept { return nucleons; }
 
         /// Return a vector of the ids of the protons in the nucleus
         ///@return std::vector<size_t>: The current ids of protons in nucleon vector 

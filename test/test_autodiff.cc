@@ -10,7 +10,15 @@ TEST_CASE("Dual Numbers", "[Utilities]") {
         nuchic::Dual y(GENERATE(take(10, random<double>(-100, 100))));
         double a(GENERATE(take(10, random<double>(-100, 100))));
 
-        auto z = x + y;
+        auto z = +x;
+        CHECK(z.Value() == x.Value());
+        CHECK(z.Derivative() == x.Derivative());
+
+        z = -x;
+        CHECK(z.Value() == -x.Value());
+        CHECK(z.Derivative() == -x.Derivative());
+
+        z = x + y;
         CHECK(z.Value() == x.Value() + y.Value());
         CHECK(z.Derivative() == Approx(2));
 

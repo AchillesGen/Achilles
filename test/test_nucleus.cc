@@ -49,6 +49,8 @@ TEST_CASE("Nucleus construction", "[nucleus]") {
         CHECK(nuc.NProtons() == Z);
         CHECK(nuc.NNeutrons() == A-Z);
         CHECK(nuc.Radius() > 0);
+        CHECK(nuc.ID() == nuchic::PID(1000060120));
+        CHECK(nuc.ToString() == "12C");
         // CHECK(nuc.PotentialEnergy() > 0);
 
         auto density3 = std::make_unique<MockDensity>();
@@ -98,6 +100,30 @@ TEST_CASE("Nucleus construction", "[nucleus]") {
             .RETURN(particles);
         CHECK_THROWS_WITH(nuchic::Nucleus(Z+1, A, 0, 0, dFile, fermiGas, std::move(density3)),
                           "Invalid density function! Incorrect number of protons or neutrons.");
+    }
+}
+
+TEST_CASE("Nuclear Configuration", "[Nucleus]") {
+    const auto fermiGas = nuchic::Nucleus::FermiGasType::Global;
+    static constexpr size_t Z = 6;
+    static constexpr double kf = 250;
+
+    nuchic::Particles particles;
+    for(size_t i = 0; i < Z; ++i) {
+        particles.emplace_back(nuchic::PID::proton());
+        particles.emplace_back(nuchic::PID::neutron());
+    }
+
+    auto density = std::make_unique<MockDensity>();
+    REQUIRE_CALL(*density, GetConfiguration())
+        .TIMES(2)
+        .RETURN(particles);
+
+    nuchic::Nucleus nuc(Z, 2*Z, 0, kf, dFile, fermiGas, std::move(density));
+    nuc.GenerateConfig();
+    for(size_t i = 0; i < 2*Z; ++i) {
+        CHECK(nuc.Nucleons()[i].Momentum().P() < kf);
+        CHECK(nuc.Nucleons()[i].Position() == nuchic::ThreeVector());
     }
 }
 

@@ -71,6 +71,11 @@ TEST_CASE("Brent", "[Utilities]") {
         CHECK(brent.CalcRoot(-2, 0) == Approx(-1));
         CHECK_THROWS_AS(brent.CalcRoot(3, 4), std::domain_error);
     }
+
+    SECTION("Minimize") {
+        nuchic::Brent brent(func);
+        CHECK(brent.Minimize(-2, 1) == Approx(0.5));
+    }
 }
 
 TEST_CASE("GridSpace Generation", "[Utilities]") {
