@@ -27,23 +27,20 @@ class FluxType {
         virtual int NVariables() const = 0;
         virtual FourVector Flux(const std::vector<double>&) const = 0;
         virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
+        virtual std::string Type() const = 0;
 };
 
 class Monochromatic : public FluxType {
     public:
         Monochromatic(const double &energy) : m_energy(energy) {}
-
-        int NVariables() const override {
-            return 0;
-        }
-
+        int NVariables() const override { return 0; }
         FourVector Flux(const std::vector<double>&) const override {
             return {m_energy, 0, 0, m_energy};
         }
-
         double GenerateWeight(const FourVector&, std::vector<double>&) const override {
             return 1;
         }
+        std::string Type() const override { return "Monochromatic"; }
 
     private:
         double m_energy;
@@ -64,19 +61,37 @@ class Spectrum : public FluxType {
         enum class Type {
             Histogram,
         };
+        enum class FluxFormat {
+            Achilles,
+            MiniBooNE,
+            T2K,
+        };
 
         Spectrum(const YAML::Node&);
-
         int NVariables() const override { return 1; }
-
         FourVector Flux(const std::vector<double>&) const override;
-
         double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        std::string Type() const override { return "Spectrum"; }
+        std::string Format() const;
+        double MinEnergy() const { return m_min_energy; }
+        double MaxEnergy() const { return m_max_energy; }
 
     private:
-        Histogram m_flux{};
+        void AchillesHeader(std::ifstream&);
+        void MiniBooNEHeader(std::ifstream&);
+        void T2KHeader(std::ifstream&);
+
+        enum class flux_units {
+            v_nb_POT_MeV,
+            v_cm2_POT_MeV,
+            v_cm2_POT_50MeV,
+            cm2_50MeV,
+        };
+        std::function<double(double)> m_flux{};
         double m_min_energy{}, m_max_energy{};
         double m_delta_energy{};
+        flux_units m_units;
+        FluxFormat m_format;
 };
 
 class Beam {
@@ -102,7 +117,7 @@ class Beam {
         const std::set<PID>& BeamIDs() const { return m_pids; }
 
         // Accessors
-        std::shared_ptr<FluxType>& operator[](const PID pid) { return m_beams[pid]; }
+        std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }
         std::shared_ptr<FluxType> at(const PID pid) const { return m_beams.at(pid); }
         std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
 
@@ -123,8 +138,7 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
     // FIXME: How to encode a generic flux
     static Node encode(const std::shared_ptr<nuchic::FluxType> &rhs) {
         Node node;
-        node["Type"] = "Monochromatic";
-        node["Energy"] = rhs->Flux({}).E();
+        node["Type"] = rhs -> Type();
 
         return node;
     }

@@ -12,6 +12,7 @@ namespace Constant {
     constexpr double HBAR = H/(2*M_PI);
     constexpr double HBARC = HBAR*C;
     constexpr double HBARC2 = HBARC*HBARC*10; // mb MeV^2
+    constexpr double NAVOGADRO = 6.02214076e23; // mol^-1 
     // constexpr double HBARC = 197.3269804_fm * 1_MeV;
     // constexpr double HBARC2 = 0.3893793721_mb * 1_GeV * 1_GeV;
 

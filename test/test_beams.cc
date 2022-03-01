@@ -5,6 +5,43 @@
 
 #include <iostream>
 
+TEST_CASE("Spectrum Beam", "[Beams]") {
+    SECTION("Parse headers") {
+        SECTION("Parse Achilles header") {
+            YAML::Node beam = YAML::Load("Histogram: flux/miniboone.dat");
+            nuchic::Spectrum spectrum(beam);
+            CHECK(spectrum.Format() == "Achilles");
+            CHECK(spectrum.MinEnergy() == 0.0);
+            CHECK(spectrum.MaxEnergy() == 4450.0);
+        }
+        SECTION("Parse MiniBooNE header") {
+            YAML::Node beam = YAML::Load("Histogram: flux/miniboone_nu.dat");
+            nuchic::Spectrum spectrum(beam);
+            CHECK(spectrum.Format() == "MiniBooNE");
+            CHECK(spectrum.MinEnergy() == 0.0);
+            CHECK(spectrum.MaxEnergy() == 10000.0);
+        }
+        SECTION("Parse T2K header") {
+            YAML::Node beam = YAML::Load("Histogram: flux/T2K_nu.dat");
+            nuchic::Spectrum spectrum(beam);
+            CHECK(spectrum.Format() == "T2K");
+            CHECK(spectrum.MinEnergy() == 0.0);
+            CHECK(spectrum.MaxEnergy() == 30000.0);
+        }
+    }
+
+    SECTION("Parameters set correctly") {
+        YAML::Node beam = YAML::Load("Histogram: flux/dummy.dat");
+        nuchic::Spectrum spectrum(beam);
+
+        CHECK(spectrum.NVariables() == 1);
+        CHECK(spectrum.Flux({0.5}) == nuchic::FourVector(500, 0, 0, 500));
+        std::vector<double> rans(1);
+        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans) == 1./50.*1000);
+        CHECK(rans[0] == 0.5);
+    }
+}
+
 TEST_CASE("From YAML", "[Beams]") {
     SECTION("Multiple Monochromatic Beams") {
         YAML::Node beams = YAML::Load(R"beam(
@@ -52,13 +89,4 @@ Beams:
     
         CHECK_THROWS_WITH(beams["Beams"].as<nuchic::Beam>(), "Multiple beams exist for PID: 12");
     }
-
-    // SECTION("Spectrum Beams") {
-    //     nuchic::Spectrum spectrum("dummy.txt");
-
-    //     CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
-    //     CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
-    //     std::vector<double> rans;
-    //     CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
-    // }
 }
