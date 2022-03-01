@@ -34,6 +34,7 @@ add_executable(nuchic-testsuite
     test_histogram.cc
     test_configuration.cc
     test_nuclear_model.cc
+    test_hard_scattering.cc
     test_hadronic_mapper.cc
     test_final_state_mapper.cc
     test_event_writer.cc

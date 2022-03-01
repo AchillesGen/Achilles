@@ -25,6 +25,10 @@ struct Process_Info {
     std::vector<long> Ids() const;
     std::map<size_t, long> m_mom_map;
 
+    bool operator==(const Process_Info &other) const {
+        return m_model == other.m_model && m_ids == other.m_ids && m_states == other.m_states;
+    }
+
     template<typename OStream>
     friend OStream& operator<<(OStream &os, const Process_Info &info) {
         os << "Process_Info(" << info.m_model;

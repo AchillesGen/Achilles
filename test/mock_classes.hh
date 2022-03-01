@@ -56,6 +56,15 @@ class MockEvent : public trompeloeil::mock_interface<nuchic::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(CurrentNucleus);
     IMPLEMENT_MOCK0(Hadrons);
+    IMPLEMENT_MOCK1(InitializeLeptons);
+    IMPLEMENT_MOCK1(InitializeHadrons);
+    MAKE_CONST_MOCK0(Momentum, const std::vector<nuchic::FourVector>&());
+    MAKE_MOCK0(Momentum, std::vector<nuchic::FourVector>&());
+    IMPLEMENT_CONST_MOCK0(Particles);
+    IMPLEMENT_CONST_MOCK0(Remnant);
+    IMPLEMENT_CONST_MOCK0(Weight);
+};
+
 class MockFormFactor : public trompeloeil::mock_interface<nuchic::FormFactor> {
     static constexpr bool trompeloeil_movable_mock = true;
     nuchic::FormFactor::Values operator()(double Q2) const override { return call_op(Q2); }

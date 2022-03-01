@@ -283,12 +283,6 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
 
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Process().m_ids;
-    for(auto &me : event.MatrixElements()) {
-        me.inital_state.resize(2);
-        me.inital_state[1] = pids[1];
-        for(size_t idx = 2; idx < pids.size() - 1; ++idx)
-            me.final_state.push_back(pids[idx]);
-    }
 
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
