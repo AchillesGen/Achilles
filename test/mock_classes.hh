@@ -7,6 +7,7 @@
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/Event.hh"
+#include "nuchic/FormFactor.hh"
 
 class MockDensity : public trompeloeil::mock_interface<nuchic::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -37,6 +38,18 @@ class MockEvent : public trompeloeil::mock_interface<nuchic::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(CurrentNucleus);
     IMPLEMENT_MOCK0(Hadrons);
+class MockFormFactor : public trompeloeil::mock_interface<nuchic::FormFactor> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    nuchic::FormFactor::Values operator()(double Q2) const override { return call_op(Q2); }
+    MAKE_CONST_MOCK1(call_op, nuchic::FormFactor::Values(double));
+};
+
+class MockFormFactorBuilder : public trompeloeil::mock_interface<nuchic::FormFactorBuilder> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_MOCK2(Vector);
+    IMPLEMENT_MOCK2(AxialVector);
+    IMPLEMENT_MOCK2(Coherent);
+    IMPLEMENT_MOCK0(build);
 };
 
 #endif

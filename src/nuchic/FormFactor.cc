@@ -29,8 +29,7 @@ nuchic::VectorDipole::VectorDipole(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::VectorDipole::Construct(nuchic::FFType type,
                                                                         const YAML::Node &node) {
-    if(type != FFType::vector)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    Validate<VectorDipole>(type);
     return std::make_unique<VectorDipole>(node);
 }
 
@@ -38,7 +37,7 @@ void nuchic::VectorDipole::Evaluate(double Q2, FormFactor::Values &result) const
     result.Gep = 1.0/pow(1.0+Q2/lambda/lambda, 2);
     result.Gen = -muN*Q2*result.Gep/(1+5.6*Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
     result.Gmp = muP*result.Gep;
-    result.Gmp = muN*result.Gep;
+    result.Gmn = muN*result.Gep;
 
     double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
     Fill(tau, result);
@@ -53,8 +52,7 @@ nuchic::AxialDipole::AxialDipole(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::AxialDipole::Construct(nuchic::FFType type,
                                                                        const YAML::Node &node) {
-    if(type != FFType::axial)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type axial, got type {}", type));
+    Validate<AxialDipole>(type);
     return std::make_unique<AxialDipole>(node);
 }
 
@@ -76,8 +74,7 @@ nuchic::Kelly::Kelly(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::Kelly::Construct(nuchic::FFType type,
                                                                  const YAML::Node &node) {
-    if(type != FFType::vector)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    Validate<Kelly>(type);
     return std::make_unique<Kelly>(node);
 }
 
@@ -109,8 +106,7 @@ nuchic::BBBA::BBBA(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::BBBA::Construct(nuchic::FFType type,
                                                                 const YAML::Node &node) {
-    if(type != FFType::vector)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    Validate<BBBA>(type);
     return std::make_unique<BBBA>(node);
 }
 
@@ -141,8 +137,7 @@ nuchic::ArringtonHill::ArringtonHill(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::ArringtonHill::Construct(nuchic::FFType type,
                                                                          const YAML::Node &node) {
-    if(type != FFType::vector)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    Validate<ArringtonHill>(type);
     return std::make_unique<ArringtonHill>(node);
 }
 
@@ -169,8 +164,7 @@ nuchic::HelmFormFactor::HelmFormFactor(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::HelmFormFactor::Construct(nuchic::FFType type,
                                                                           const YAML::Node &node) {
-    if(type != FFType::coherent)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type coherent, got type {}", type));
+    Validate<HelmFormFactor>(type);
     return std::make_unique<HelmFormFactor>(node);
 }
 
@@ -187,8 +181,7 @@ nuchic::LovatoFormFactor::LovatoFormFactor(const YAML::Node &config) {
 
 std::unique_ptr<nuchic::FormFactorImpl> nuchic::LovatoFormFactor::Construct(nuchic::FFType type,
                                                                             const YAML::Node &node) {
-    if(type != FFType::coherent)
-        throw std::runtime_error(fmt::format("FormFactor: Expected type coherent, got type {}", type));
+    Validate<LovatoFormFactor>(type);
     return std::make_unique<LovatoFormFactor>(node);
 }
 

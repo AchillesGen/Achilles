@@ -7,6 +7,7 @@
 #include <memory>
 #include <complex>
 
+#include "nuchic/Nuchic.hh"
 #include "yaml-cpp/node/node.h"
 
 namespace nuchic {
@@ -26,6 +27,10 @@ struct FormFactorInfo {
 
     Type form_factor;
     std::complex<double> coupling{};
+
+    bool operator==(const FormFactorInfo &other) const {
+        return form_factor == other.form_factor && coupling == other.coupling;
+    }
 };
 
 class FormFactor {
@@ -38,8 +43,9 @@ class FormFactor {
         };
 
         FormFactor() = default;
+        MOCK ~FormFactor() = default;
 
-        Values operator()(double Q2) const;
+        MOCK Values operator()(double Q2) const;
 
         friend FormFactorBuilder;
 
@@ -55,6 +61,22 @@ enum class FFType {
     coherent
 };
 
+inline std::string FFTypeToString(FFType type) {
+    std::string result;
+    switch(type) {
+        case FFType::vector:
+            result = "vector";
+            break;
+        case FFType::axial:
+            result = "axial";
+            break;
+        case FFType::coherent:
+            result = "coherent";
+            break;
+    }
+    return result;
+}
+
 template<typename Derived>
 using RegistrableFormFactor = Registrable<FormFactorImpl, Derived, FFType, const YAML::Node&>;
 using FormFactorFactory = Factory<FormFactorImpl, FFType, const YAML::Node&>;
@@ -64,11 +86,16 @@ class FormFactorBuilder {
         FormFactorBuilder() {
             form_factor = std::make_unique<FormFactor>();
         }
-        FormFactorBuilder& Vector(const std::string&, const YAML::Node&);
-        FormFactorBuilder& AxialVector(const std::string&, const YAML::Node&); 
-        FormFactorBuilder& Coherent(const std::string&, const YAML::Node&);
+        static FormFactorBuilder& Instance() {
+            static FormFactorBuilder instance;
+            return instance;
+        }
+        MOCK ~FormFactorBuilder() = default;
+        MOCK FormFactorBuilder& Vector(const std::string&, const YAML::Node&);
+        MOCK FormFactorBuilder& AxialVector(const std::string&, const YAML::Node&); 
+        MOCK FormFactorBuilder& Coherent(const std::string&, const YAML::Node&);
 
-        std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
+        MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
 
     private:
         std::unique_ptr<FormFactor> form_factor = nullptr;
@@ -83,25 +110,29 @@ class FormFactorImpl {
         FormFactorImpl& operator=(const FormFactorImpl&) = default;
         FormFactorImpl& operator=(FormFactorImpl&&) = default;
         virtual ~FormFactorImpl() = default;
-
         virtual void Evaluate(double, FormFactor::Values&) const = 0;
-        virtual FFType Type() const = 0;
 
         static std::unique_ptr<FormFactorImpl> Build(const YAML::Node&);
         static std::string Name() { return "Form Factor"; }
     protected:
         void Fill(double, FormFactor::Values&) const;
+        template<typename Derived>
+        static void Validate(FFType other) { 
+            if(Derived::Type() != other)
+                throw std::runtime_error(fmt::format("FormFactor: Expected type {}, got type {}",
+                                                     FFTypeToString(Derived::Type()), FFTypeToString(other))); 
+        }
 };
 
 class VectorDipole : public FormFactorImpl, RegistrableFormFactor<VectorDipole> {
     public:
         VectorDipole(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::vector; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "VectorDipole"; }
+        static FFType Type() { return FFType::vector; }
     private:
         double lambda, muP, muN;
 };
@@ -110,11 +141,11 @@ class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
     public:
         AxialDipole(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::axial; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "AxialDipole"; }
+        static FFType Type() { return FFType::axial; }
     private:
         double MA, gan1, gans;
 };
@@ -123,11 +154,11 @@ class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
     public:
         Kelly(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::vector; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "Kelly"; }
+        static FFType Type() { return FFType::vector; }
     private:
         double lambdasq, muP, muN;
         std::array<double, 4> termsEp{};
@@ -144,11 +175,11 @@ class BBBA : public FormFactorImpl, RegistrableFormFactor<BBBA> {
     public:
         BBBA(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::vector; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "BBBA"; }
+        static FFType Type() { return FFType::vector; }
     private:
         double muP, muN;
         std::array<double, 4> numEp{}, denEp{};
@@ -181,11 +212,11 @@ class ArringtonHill : public FormFactorImpl, RegistrableFormFactor<ArringtonHill
     public:
         ArringtonHill(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::vector; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "ArringtonHill"; }
+        static FFType Type() { return FFType::vector; }
     private:
         double muP, muN, tcut, t0;
         std::array<double, 13> epParams{}, enParams{}, mpParams{}, mnParams{};
@@ -204,11 +235,11 @@ class HelmFormFactor : public FormFactorImpl, RegistrableFormFactor<HelmFormFact
     public:
         HelmFormFactor(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::coherent; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "Helm"; }
+        static FFType Type() { return FFType::coherent; }
     private:
         double s, r;
 };
@@ -217,11 +248,11 @@ class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoForm
     public:
         LovatoFormFactor(const YAML::Node&);
         void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::coherent; }
 
         // Required factory methods
         static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
         static std::string Name() { return "Lovato"; }
+        static FFType Type() { return FFType::coherent; }
     private:
         double b;
         std::array<double, 5> c{};

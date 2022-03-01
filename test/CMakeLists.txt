@@ -15,10 +15,10 @@ add_executable(nuchic-testsuite
     test_particle_info.cc
     test_particle.cc
     test_nucleus.cc
-    # test_form_factor.cc
+    test_form_factor.cc
     test_cascade.cc
     test_beams.cc
-    # test_event.cc
+    test_event.cc
     test_cuts.cc
     test_mom_solver.cc
     test_autodiff.cc
