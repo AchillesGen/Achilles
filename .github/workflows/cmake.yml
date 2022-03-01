@@ -1,21 +1,32 @@
-name: CMake
+name: CMake Build Matrix
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+on: [push, pull_request]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
+  CCACHE_VERSION: 4.4
 
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - {
+              name: "Ubuntu Latest GCC", artifact: "Linux.tar.bz2",
+              os: ubuntu-latest,
+              cc: "gcc", cxx: "g++"
+            }
+          - {
+              name: "macOS Latest Clang", artifact: "macOS.tar.bz2",
+              os: macos-latest,
+              cc: "clang", cxx: "clang++"
+            }
 
     steps:
     - uses: actions/checkout@v2
@@ -23,10 +34,42 @@ jobs:
     - name: Install dependencies
       run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
 
+    - name: Set up cache
+      id: cache-cpm
+      uses: actions/cache@v2
+      with:
+        path: ~/cpm-cache
+        key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+        restore-keys: |
+          ${{ runner.os }}-cpm-
+
+    - name: Download ccache 
+      id: ccache 
+      shell: cmake -P {0}
+      run: |
+        set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${ { runner.os } }.tar.xz")
+        file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
+
+    - name: Prepare ccache timestamp
+      id: ccache_cache_timestamp
+      shell: camke -P {0}
+      run: |
+        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
+        message("::set-output name=timestamp::${current_date}")
+
+    - name: ccache cache files 
+      uses: actions/cache@v2
+      with:
+        path: .ccache
+        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        restore-keys: |
+          ${{ matrix.config.name }}-ccache-
+
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_TESTING=ON -DCOVERAGE=ON
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_TESTING=ON -DCOVERAGE=ON -DCPM_SOURCE_CACHE=~/cpm-cache
 
     - name: Build
       # Build your program with the given configuration
