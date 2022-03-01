@@ -34,10 +34,12 @@ add_executable(nuchic-testsuite
     test_histogram.cc
     test_configuration.cc
     test_nuclear_model.cc
+    test_hadronic_mapper.cc
+    test_final_state_mapper.cc
     test_event_writer.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
-                                       PUBLIC physics)
+                                       PUBLIC physics mappers event_gen)
 
 # enable_language(Fortran)
 # add_executable(nuchic-fortran-yaml test_yaml_fortran.f90)
