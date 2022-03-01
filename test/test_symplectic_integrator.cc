@@ -9,16 +9,21 @@
 #include <fstream>
 #include <complex>
 
-constexpr double a = 0.09320982;
-constexpr double b = 0.10665348;
-constexpr double c = 0.42438208;
-constexpr double d = 2.80880048;
-
 double Rho(double r) {
+    static constexpr double a = 0.09320982;
+    static constexpr double b = 0.10665348;
+    static constexpr double c = 0.42438208;
+    static constexpr double d = 2.80880048;
+
     return a*pow(r, c)*exp(-b*pow(r, d));
 }
 
 double dRho(double r) {
+    static constexpr double a = 0.09320982;
+    static constexpr double b = 0.10665348;
+    static constexpr double c = 0.42438208;
+    static constexpr double d = 2.80880048;
+
     return a*pow(r, c-1)*exp(-b*pow(r, d))*(c-b*d*pow(r, d));
 }
 

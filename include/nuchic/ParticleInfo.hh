@@ -322,4 +322,21 @@ struct convert<nuchic::ParticleInfoEntry> {
 
 }
 
+namespace fmt {
+
+template<>
+struct formatter<nuchic::PID> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
+
+    template<typename FormatContext>
+    auto format(const nuchic::PID &pid, FormatContext &ctx) {
+        return format_to(ctx.out(), "{}", pid.AsInt());
+    }
+};
+
+}
+
 #endif
