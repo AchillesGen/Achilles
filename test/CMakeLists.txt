@@ -34,6 +34,7 @@ add_executable(nuchic-testsuite
     test_histogram.cc
     test_configuration.cc
     test_nuclear_model.cc
+    test_event_writer.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)
