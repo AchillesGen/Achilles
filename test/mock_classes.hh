@@ -8,6 +8,7 @@
 #include "nuchic/Beams.hh"
 #include "nuchic/Event.hh"
 #include "nuchic/FormFactor.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 
 class MockDensity : public trompeloeil::mock_interface<nuchic::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -21,6 +22,13 @@ class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
     MAKE_CONST_MOCK0(Radius, const double&(), noexcept override);
     MAKE_CONST_MOCK1(Rho, double(const double&), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
+};
+
+
+class MockSherpaME : public trompeloeil::mock_interface<nuchic::SherpaMEs> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK3(Calc);
+    IMPLEMENT_CONST_MOCK2(FormFactors);
 };
 
 class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions> {

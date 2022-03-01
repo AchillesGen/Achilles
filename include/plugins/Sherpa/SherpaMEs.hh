@@ -1,6 +1,7 @@
 #ifndef nuchic__plugins__SherpaMEs_hh
 #define nuchic__plugins__SherpaMEs_hh
 
+#include "nuchic/Nuchic.hh"
 #include "nuchic/ParticleInfo.hh"
 
 #include <complex>
@@ -36,7 +37,7 @@ public:
 
   SherpaMEs() = default;
 
-  ~SherpaMEs();
+  MOCK ~SherpaMEs();
 
   bool Initialize(const std::vector<std::string> &args);
   bool InitializeProcess(const Process_Info &info);
@@ -44,12 +45,12 @@ public:
   std::vector<std::unique_ptr<PHASIC::Channels>> GenerateChannels(const std::vector<long> &fl) const;
   std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
 
-  LeptonCurrents Calc
+  MOCK LeptonCurrents Calc
   (const std::vector<int> &fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2) const;
 
-  std::vector<FormFactorInfo> FormFactors(int, int) const;
+  MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;
   double Coupling(const std::string&) const;
   void RegisterParticles() const;
 
