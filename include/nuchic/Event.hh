@@ -29,35 +29,27 @@ using vParticles = std::vector<Particle>;
 using vMomentum = std::vector<FourVector>;
 
 class Event {
-    struct MatrixElementStruct {
-        std::vector<PID> inital_state;
-        std::vector<PID> final_state;
-        double weight{};
-    };
-
-    using MatrixElementVec = std::vector<MatrixElementStruct>;
-
     public:
-        Event() = default;
+        Event(double vWgt = 0) : m_vWgt{vWgt} {}
         Event(std::shared_ptr<Nucleus>, 
               std::vector<FourVector>, double);
         MOCK ~Event() = default;
 
         void SetHardScatteringType(HardScatteringType type) { m_type = type; }
-        void InitializeLeptons(const Process_Info&);
-        void InitializeHadrons(const Process_Info&);
+        MOCK void InitializeLeptons(const Process_Info&);
+        MOCK void InitializeHadrons(const Process_Info&);
         void Finalize();
 
-        const NuclearRemnant &Remnant() const { return m_remnant; }
+        MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
 
-        const vMomentum &Momentum() const { return m_mom; }
-        vMomentum &Momentum() { return m_mom; }
+        MOCK const vMomentum &Momentum() const { return m_mom; }
+        MOCK vMomentum &Momentum() { return m_mom; }
 
-        const MatrixElementStruct &MatrixElement(size_t i) const { return m_me[i]; }
-        MatrixElementStruct &MatrixElement(size_t i) { return m_me[i]; }
+        const double &MatrixElementWgt(size_t i) const { return m_me[i]; }
+        double &MatrixElementWgt(size_t i) { return m_me[i]; }
 
-        const MatrixElementVec &MatrixElements() const { return m_me; }
-        MatrixElementVec &MatrixElements() { return m_me; }
+        const std::vector<double> &MatrixElementWgts() const { return m_me; }
+        std::vector<double> &MatrixElementWgts() { return m_me; }
 
         bool TotalCrossSection();
         size_t SelectNucleon() const;
@@ -65,28 +57,32 @@ class Event {
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
         MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
 
-        void AddParticle(const Particle&);
-        vParticles Particles() const;
+        MOCK vParticles Particles() const;
         const vParticles& Hadrons() const;
         MOCK vParticles& Hadrons();
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
-        double Weight() const;
+        MOCK double Weight() const;
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
+        bool operator==(const Event &other) const {
+            return m_type == other.m_type && m_nuc == other.m_nuc
+                && m_remnant == other.m_remnant && m_mom == other.m_mom
+                && m_me == other.m_me && m_vWgt == other.m_meWgt
+                && m_leptons == other.m_leptons;
+        }
+
     private:
-        static bool MatrixCompare(const MatrixElementStruct&, double);
-        static double AddEvents(double, const MatrixElementStruct&);
         std::vector<double> EventProbs() const;
 
-        bool ValidateEvent(size_t) const;
+        // bool ValidateEvent(size_t) const;
 
         HardScatteringType m_type{HardScatteringType::None};
         std::shared_ptr<Nucleus> m_nuc;
         NuclearRemnant m_remnant{};
         vMomentum m_mom{};
-        MatrixElementVec m_me;
+        std::vector<double> m_me;
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
         vParticles m_history{};

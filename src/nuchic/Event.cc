@@ -13,11 +13,11 @@ Event::Event(std::shared_ptr<Nucleus> nuc,
     m_me.resize(m_nuc -> NNucleons());
 }
 
-bool Event::ValidateEvent(size_t imatrix) const {
-    spdlog::trace("Number of momentums = {}", m_mom.size());
-    spdlog::trace("Number of states = {}", m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size());
-    return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
-}
+// bool Event::ValidateEvent(size_t imatrix) const {
+//     spdlog::trace("Number of momentums = {}", m_mom.size());
+//     spdlog::trace("Number of states = {}", m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size());
+//     return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
+// }
 
 // TODO: Make this cleaner and handle multiple nucleons in initial state
 void Event::InitializeLeptons(const Process_Info &process) {
@@ -77,14 +77,6 @@ void Event::Finalize() {
     m_remnant = NuclearRemnant(nA, nZ);
 }
 
-void Event::AddParticle(const Particle &part) {
-    if(part.Info().IsHadron()) {
-        m_nuc -> Nucleons().push_back(part);
-    } else {
-        m_leptons.push_back(part);
-    }
-}
-
 nuchic::vParticles Event::Particles() const {
     vParticles result;
     result.insert(result.end(), Hadrons().begin(), Hadrons().end());
@@ -101,13 +93,11 @@ nuchic::vParticles& Event::Hadrons() {
 }
 
 double Event::Weight() const {
-    // if(!ValidateEvent(0))
-    //     throw std::runtime_error("Phase space and Matrix element have different number of particles");
     return m_vWgt*m_meWgt;
 }
 
 bool Event::TotalCrossSection() {
-    m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, AddEvents);
+    m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, std::plus<>());
     spdlog::debug("Total xsec = {}", m_meWgt);
     return m_meWgt > 0 ? true : false;
 }
@@ -124,18 +114,10 @@ std::vector<double> Event::EventProbs() const {
     probs.push_back(0.0);
     double cumulative = 0.0;
     for(const auto & m : m_me) {
-        cumulative += m.weight;
+        cumulative += m;
         probs.emplace_back(cumulative / m_meWgt);
     }
     return probs;
-}
-
-bool Event::MatrixCompare(const MatrixElementStruct &m, double value) {
-    return m.weight < value;
-}
-
-double Event::AddEvents(double value, const MatrixElementStruct &m) {
-    return value + m.weight;
 }
 
 void Event::Rotate(const std::array<double,9>& rot_mat) {
