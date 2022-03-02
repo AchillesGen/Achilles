@@ -4,6 +4,8 @@
 #include <complex>
 #include <sstream>
 
+#include "nuchic/FourVector.hh"
+
 #include "catch2/catch.hpp"
 
 // Inspiration taken from: https://github.com/catchorg/Catch2/issues/1467#issuecomment-473928075 
@@ -81,6 +83,79 @@ class VectorComplexApprox : public Catch::MatcherBase<std::vector<std::complex<d
 
     private:
         std::vector<std::complex<double>> _vec;
+        double _epsilon{std::numeric_limits<double>::epsilon() * 100};
+        double _margin{0.0};
+};
+
+class FourVectorApprox : public Catch::MatcherBase<nuchic::FourVector> {
+    public:
+        FourVectorApprox(nuchic::FourVector t) : _vec(t) {}
+
+        bool match(const nuchic::FourVector &t) const override {
+            bool result = true;
+            for(size_t i = 0; i < 4; ++i) {
+                result &= (t[i] == Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
+            }
+            return result;
+        }
+
+        FourVectorApprox& epsilon(double eps) {
+            _epsilon = eps;
+            return *this;
+        }
+
+        FourVectorApprox& margin(double margin) {
+            _margin = margin;
+            return *this;
+        }
+
+        std::string describe() const override {
+            std::ostringstream oss;
+            oss << "is approximately {" << _vec << "}";
+            return oss.str();
+        }
+
+    private:
+        nuchic::FourVector _vec;
+        double _epsilon{std::numeric_limits<double>::epsilon() * 100};
+        double _margin{0.0};
+};
+
+class AllFourVectorApprox : public Catch::MatcherBase<std::vector<nuchic::FourVector>> {
+    public:
+        AllFourVectorApprox(std::vector<nuchic::FourVector> t) : _vec(t) {}
+
+        bool match(const std::vector<nuchic::FourVector> &t) const override {
+            bool result = true;
+            for(size_t i = 0; i < t.size(); ++i) {
+                FourVectorApprox vector_matcher(_vec[i]);
+                result &= vector_matcher.epsilon(_epsilon).margin(_margin).match(t[i]);
+            }
+            return result;
+        }
+
+        AllFourVectorApprox& epsilon(double eps) {
+            _epsilon = eps;
+            return *this;
+        }
+
+        AllFourVectorApprox& margin(double margin) {
+            _margin = margin;
+            return *this;
+        }
+
+        std::string describe() const override {
+            std::ostringstream oss;
+            oss << "is approximately {";
+            for(const auto &elm : _vec) {
+                oss << elm << ", ";
+            }
+            oss << "\b\b}";
+            return oss.str();
+        }
+
+    private:
+        std::vector<nuchic::FourVector> _vec;
         double _epsilon{std::numeric_limits<double>::epsilon() * 100};
         double _margin{0.0};
 };

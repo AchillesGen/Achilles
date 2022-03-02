@@ -50,6 +50,9 @@ class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions>
 
 class MockBeam : public trompeloeil::mock_interface<nuchic::Beam> {
     IMPLEMENT_CONST_MOCK2(Flux); 
+    IMPLEMENT_CONST_MOCK0(BeamIDs);
+    IMPLEMENT_CONST_MOCK3(GenerateWeight);
+    IMPLEMENT_CONST_MOCK0(NVariables);
 };
 
 class MockEvent : public trompeloeil::mock_interface<nuchic::Event> {

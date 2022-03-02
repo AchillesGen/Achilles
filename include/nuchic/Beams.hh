@@ -1,6 +1,7 @@
 #ifndef BEAMS_HH
 #define BEAMS_HH
 
+#include "nuchic/Nuchic.hh"
 #include "nuchic/Histogram.hh"
 #include <set>
 #include <memory>
@@ -106,15 +107,15 @@ class Beam {
         virtual ~Beam() = default;
 
         Beam() { n_vars = 0; }
-        int NVariables() const { return  n_vars; }
-        virtual FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
+        MOCK int NVariables() const { return  n_vars; }
+        MOCK FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
             return m_beams.at(pid) -> Flux(rans); 
         }
-        double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans) const { 
+        MOCK double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans) const { 
             return m_beams.at(pid) -> GenerateWeight(p, rans); 
         }
         size_t NBeams() const { return m_beams.size(); }
-        const std::set<PID>& BeamIDs() const { return m_pids; }
+        MOCK const std::set<PID>& BeamIDs() const { return m_pids; }
 
         // Accessors
         std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }

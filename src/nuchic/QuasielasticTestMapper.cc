@@ -59,9 +59,9 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
             sinT = sqrt(1-cosT*cosT);
             break;
     }
-    mom[2] = {Elepton, Elepton*sinT*cos(phi_l), Elepton*sinT*sin(phi_l), Elepton*cosT};
+    mom[3] = {Elepton, Elepton*sinT*cos(phi_l), Elepton*sinT*sin(phi_l), Elepton*cosT};
 
-    auto Q = mom[1] - mom[2];
+    auto Q = mom[1] - mom[3];
     double cosT_h = dCos*momRans[iRan++] - 1;
     double sinT_h = sqrt(1-cosT_h*cosT_h);
     double phi_h = dPhi*momRans[iRan++];
@@ -73,7 +73,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom, const s
     double Epp = sqrt(pow(Constant::mN, 2) + tmp2.P2());
     double Ep = Constant::mN+Q.E()-Epp;
     mom[0] = FourVector(tmp, Constant::mN-Ep);
-    mom[3] = FourVector(tmp2, Epp);
+    mom[2] = FourVector(tmp2, Epp);
 
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
@@ -87,18 +87,18 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     auto beam_id = *m_beam -> BeamIDs().begin();
     wgt /= m_beam -> GenerateWeight(beam_id, mom[1], beamRans);  
     size_t iRan = 0;
-    momRans[iRan++] = mom[2].Phi()/dPhi;
+    momRans[iRan++] = mom[3].Phi()/dPhi;
     wgt /= dPhi;
     switch(mode) {
         case RunMode::FixedAngleEnergy:
             break;
         case RunMode::FixedAngle:
-            momRans[iRan++] = mom[2].E()/mom[1].E();
+            momRans[iRan++] = mom[3].E()/mom[1].E();
             wgt /= mom[1].E();
             break;
         case RunMode::FullPhaseSpace:
-            momRans[iRan++] = mom[2].E()/mom[1].E();
-            momRans[iRan++] = (mom[2].CosTheta()+1)/dCos;
+            momRans[iRan++] = mom[3].E()/mom[1].E();
+            momRans[iRan++] = (mom[3].CosTheta()+1)/dCos;
             wgt /= (mom[1].E()*dCos);
             break;
     }
@@ -106,7 +106,7 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     momRans[iRan++] = (mom[0].CosTheta()+1)/dCos;
     momRans[iRan++] = mom[0].Phi()/dPhi;
     momRans[iRan++] = mom[0].P()/dp;
-    wgt /= (dCos*dPhi*dp*mom[0].P2()*mom[2].E()/(mom[3].E()));
+    wgt /= (dCos*dPhi*dp*mom[0].P2()*mom[3].E()/(mom[2].E()));
     wgt *= 16*M_PI*M_PI;
 
     if(mom[0].E() > Constant::mN) wgt = std::numeric_limits<double>::infinity();
