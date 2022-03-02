@@ -40,6 +40,7 @@ add_executable(nuchic-testsuite
     test_hadronic_mapper.cc
     test_final_state_mapper.cc
     test_quasielastic_mapper.cc
+    test_beam_mapper.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics mappers event_gen)
