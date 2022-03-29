@@ -123,6 +123,10 @@ TEST_CASE("CutCollection", "[Cuts]") {
     auto part2 = nuchic::Particle(nuchic::PID::muon(), mom2);
     auto part3 = nuchic::Particle(nuchic::PID::electron(), mom2);
     auto part4 = nuchic::Particle(-nuchic::PID::electron(), mom2);
+    part1.Status() = nuchic::ParticleStatus::final_state;
+    part2.Status() = nuchic::ParticleStatus::final_state;
+    part3.Status() = nuchic::ParticleStatus::final_state;
+    part4.Status() = nuchic::ParticleStatus::final_state;
 
     SECTION("Single PIDs work") {
         YAML::Node node;

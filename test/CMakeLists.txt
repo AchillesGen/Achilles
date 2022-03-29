@@ -14,18 +14,19 @@ add_executable(nuchic-testsuite
     test_particle_info.cc
     test_particle.cc
     test_nucleus.cc
-    # test_form_factor.cc
+    test_form_factor.cc
     test_cascade.cc
     test_beams.cc
-    test_event.cc
+    # test_event.cc
     test_cuts.cc
     test_adaptive_map.cc
     test_stats.cc
     test_vegas.cc
     test_multichannel.cc
-    # test_integrand.cc
+    test_integrand.cc
     test_spectral.cc
     test_spinor.cc
+    test_process_info.cc
 )
 target_link_libraries(nuchic-testsuite PRIVATE project_options project_warnings catch_main 
                                        PUBLIC physics)

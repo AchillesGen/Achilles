@@ -24,6 +24,17 @@ class Density {
         virtual std::vector<Particle> GetConfiguration() = 0;
 };
 
+class UniformConfiguration : public Density {
+    public:
+        UniformConfiguration(size_t nprotons, size_t nneutrons, double radius)
+            : m_nprotons{nprotons}, m_nneutrons{nneutrons}, m_radius{radius} {}
+        std::vector<Particle> GetConfiguration() override;
+
+    private:
+        size_t m_nprotons, m_nneutrons;
+        double m_radius;
+};
+
 class DensityConfiguration : public Density {
     public:
         DensityConfiguration(const std::string&);
