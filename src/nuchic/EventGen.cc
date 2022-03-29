@@ -229,7 +229,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
     hist3 = Histogram(50, -1.0, 1.0, "angle");
     hist4 = Histogram(200, 320.0, 520.0, "invariant_mass");
     hist5 = Histogram(300, 0.0, 300.0, "omega");
-    hist6 = Histogram(200, 4.0, 8.0, "wgt");
+    hist6 = Histogram(500, 0.0, 10.0, "wgt");
 }
 
 void nuchic::EventGen::Initialize() {
@@ -303,6 +303,9 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             me.final_state.push_back(pids[idx]);
     }
 
+    // Setup flux value
+    event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
+
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
 
@@ -310,6 +313,7 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     auto xsecs = scattering -> CrossSection(event);
 
     // Initialize the event
+    spdlog::debug("Filling the event");
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);

@@ -11,6 +11,21 @@
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
 
+std::vector<nuchic::Particle> nuchic::UniformConfiguration::GetConfiguration() {
+    std::vector<nuchic::Particle> config;
+    for(size_t i = 0; i < m_nneutrons + m_nprotons; ++i) {
+        double r = Random::Instance().Uniform(0.0, m_radius);
+        double ctheta = Random::Instance().Uniform(-1.0, 1.0);
+        double stheta = sqrt(1-ctheta*ctheta);
+        double phi = Random::Instance().Uniform(0.0, 2*M_PI);
+        auto pid = i < m_nprotons ? PID::proton() : PID::neutron();
+        ThreeVector pos{r*stheta*cos(phi), r*stheta*sin(phi), r*ctheta};
+        config.emplace_back(pid, FourVector(), pos);
+    }
+    
+    return config;
+}
+
 nuchic::DensityConfiguration::DensityConfiguration(const std::string &filename) {
     // Load configuration
     igzstream configs(filename.c_str());

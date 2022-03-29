@@ -13,6 +13,7 @@
 #include "nuchic/FourVector.hh"
 #include "nuchic/Interpolation.hh"
 #include "nuchic/Random.hh"
+#include "nuchic/ParticleInfo.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -21,7 +22,6 @@
 
 namespace nuchic {
 
-class PID;
 class Particle;
 class ThreeVector;
 
@@ -249,6 +249,7 @@ class Nucleus {
         FermiGasType fermiGas{FermiGasType::Local};
         std::unique_ptr<Density> density;
         Interp1D rhoInterp;	
+        size_t m_nprotons, m_nneutrons;
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
@@ -274,7 +275,9 @@ struct convert<nuchic::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-        auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
+        // auto configs = std::make_unique<nuchic::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
+        // TODO: Handle configurations correctly
+        auto configs = std::make_unique<nuchic::UniformConfiguration>(18, 22, 8);
         nuc = nuchic::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;

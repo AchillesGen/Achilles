@@ -87,6 +87,7 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
 
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number of protons or neutrons.");
+    m_nneutrons = nNeutrons;
 }
 
 nuchic::PID Nucleus::ID() const {
@@ -100,7 +101,9 @@ nuchic::PID Nucleus::ID() const {
     static constexpr int IDBase = 1000000000;
     static constexpr int ZBase = 10000;
     static constexpr int ABase = 10;
-    int ID = IDBase + ZBase*static_cast<int>(NProtons()) + ABase*static_cast<int>(NNucleons());
+    int ID = IDBase 
+           + ZBase*static_cast<int>(NProtons()) 
+           + ABase*static_cast<int>(NProtons() + NNeutrons());
     return PID{ID};
 }
 

@@ -52,6 +52,7 @@ double nuchic::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
             std::make_move_iterator(mainRans.begin()),
             std::make_move_iterator(mainRans.end()));
     swap(rans, hbeamRans);
+    if(!std::isfinite(wgt)) wgt = std::numeric_limits<double>::infinity();
 
     // Debugging
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);

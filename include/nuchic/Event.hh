@@ -65,6 +65,9 @@ class Event {
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
         MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
 
+        const double& Flux() const { return flux; }
+        double& Flux() { return flux; }
+
         void AddParticle(const Particle&);
         vParticles Particles() const;
         const vParticles& Hadrons() const;
@@ -90,6 +93,7 @@ class Event {
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
         vParticles m_history{};
+        double flux;
 };
 
 }

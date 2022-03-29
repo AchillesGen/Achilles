@@ -60,6 +60,13 @@ find_package(SHERPA REQUIRED)
 # Find HepMC3
 find_package(HepMC3 REQUIRED)
 
+# Find ROOT if needed
+option(USE_ROOT "Enable reading of ROOT flux files" OFF)
+if(USE_ROOT)
+    MESSAGE(STATUS "Building with ROOT flux files")
+    find_package(ROOT REQUIRED)
+endif()
+
 # Add dependencies
 include(CMake/CPM.cmake)
 add_subdirectory(external)
@@ -96,6 +103,9 @@ endif()
 
 # Main code
 add_subdirectory(src)
+
+# Tools
+add_subdirectory(tools)
 
 # Install CMake find_package files
 include(CMakePackageConfigHelpers)

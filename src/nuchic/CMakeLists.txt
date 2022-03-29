@@ -42,6 +42,10 @@ add_library(physics SHARED
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC cuts ${HDF5_CXX_LIBRARIES} gzstream sherpa)
+if(USE_ROOT)
+    target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
+    target_compile_definitions(physics PUBLIC -DUSE_ROOT)
+endif()
 
 add_library(mappers SHARED
     PhaseSpaceMapper.cc

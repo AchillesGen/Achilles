@@ -27,23 +27,22 @@ class FluxType {
         virtual int NVariables() const = 0;
         virtual FourVector Flux(const std::vector<double>&) const = 0;
         virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
+        virtual std::string Type() const = 0;
+        virtual double EvaluateFlux(const FourVector&) const = 0;
 };
 
 class Monochromatic : public FluxType {
     public:
         Monochromatic(const double &energy) : m_energy(energy) {}
-
-        int NVariables() const override {
-            return 0;
-        }
-
+        int NVariables() const override { return 0; }
         FourVector Flux(const std::vector<double>&) const override {
             return {m_energy, 0, 0, m_energy};
         }
-
         double GenerateWeight(const FourVector&, std::vector<double>&) const override {
             return 1;
         }
+        std::string Type() const override { return "Monochromatic"; }
+        double EvaluateFlux(const FourVector&) const override { return 1; }
 
     private:
         double m_energy;
@@ -63,20 +62,27 @@ class Spectrum : public FluxType {
     public:
         enum class Type {
             Histogram,
+            ROOTHist,
         };
 
         Spectrum(const YAML::Node&);
-
         int NVariables() const override { return 1; }
-
         FourVector Flux(const std::vector<double>&) const override;
-
         double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        std::string Type() const override { return "Spectrum"; }
+        double EvaluateFlux(const FourVector&) const override;
 
     private:
-        Histogram m_flux{};
+        enum class flux_units {
+            v_nb_POT_MeV,
+            v_cm2_POT_MeV,
+            v_cm2_POT_50MeV,
+        };
+        std::function<double(double)> m_flux{};
         double m_min_energy{}, m_max_energy{};
-        double m_delta_energy{};
+        double m_delta_energy{}, m_energy_units{1};
+        double m_flux_integral{};
+        flux_units m_units;
 };
 
 class Beam {
@@ -100,6 +106,9 @@ class Beam {
         }
         size_t NBeams() const { return m_beams.size(); }
         const std::set<PID>& BeamIDs() const { return m_pids; }
+        double EvaluateFlux(const PID pid, const FourVector &p) const {
+            return m_beams.at(pid) -> EvaluateFlux(p);
+        }
 
         // Accessors
         std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }
@@ -123,8 +132,7 @@ struct convert<std::shared_ptr<nuchic::FluxType>> {
     // FIXME: How to encode a generic flux
     static Node encode(const std::shared_ptr<nuchic::FluxType> &rhs) {
         Node node;
-        node["Type"] = "Monochromatic";
-        node["Energy"] = rhs->Flux({}).E();
+        node["Type"] = rhs -> Type();
 
         return node;
     }

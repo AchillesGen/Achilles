@@ -74,7 +74,7 @@ class GenChannel : public Channels, nuchic::RegistrablePS<Channels, GenChannel, 
 
     private:
         constexpr static size_t m_rid = 2, m_lid = 1;
-        constexpr static double m_salpha=0.9;
+        constexpr static double m_salpha=0.9, m_scutoff=1000;
         constexpr static double m_amct=1.0, m_alpha=0.9, m_ctmax=1.0, m_ctmin=-1.0;
         ChannelNode *LocateNode(ChannelNode *node, size_t id);
         void BuildPoint(ChannelNode* node, size_t lid, const std::vector<double>&, size_t depth=0);

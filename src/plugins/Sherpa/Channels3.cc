@@ -167,12 +167,22 @@ double GenChannel::BuildSWeight(ChannelNode *node, size_t id, std::vector<double
 double GenChannel::PropMomenta(ChannelNode *node, size_t id, double smin, double smax, double ran) {
     auto foundNode = LocateNode(node, id);
     if(!foundNode) {
+        spdlog::trace("ThresholdMomenta({}, {}, {}, {}) = {}",
+                      0.01, smin, smax, ran,
+                      CE.ThresholdMomenta(m_salpha, 0.01, smin, smax, ran));
         return CE.ThresholdMomenta(m_salpha, 0.01, smin, smax, ran);
     }
     auto flav = Flavour((kf_code)(foundNode -> m_pid));
     if(flav.Mass() == 0) {
+        spdlog::trace("MasslessPropMomenta({}, {}, {}) = {}",
+                      smin, smax, ran,
+                      CE.MasslessPropMomenta(m_salpha, smin, smax, ran));
         return CE.MasslessPropMomenta(m_salpha, smin, smax, ran);
     } else {
+        spdlog::trace("MassivePropMomenta({}, {}, {}, {}, {}) = {}",
+                      flav.Mass(), flav.Width(), smin, smax, ran,
+                      CE.MassivePropMomenta(flav.Mass(), flav.Width(), 1, smin, smax, ran));
+        if(smax < flav.Mass()*flav.Mass()/m_scutoff) return smin + ran*(smax-smin);
         return CE.MassivePropMomenta(flav.Mass(), flav.Width(), 1, smin, smax, ran);
     }
 }
@@ -190,7 +200,12 @@ double GenChannel::PropWeight(ChannelNode *node, size_t id, double smin, double 
         wgt = CE.MasslessPropWeight(m_salpha, smin, smax, s, ran);
         spdlog::trace("MasslessPropWeight = {}", wgt);
     } else {
-        wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), 1, smin, smax, s, ran);
+        if(smax < flav.Mass()*flav.Mass()/m_scutoff) {
+            wgt = 1.0/(smax-smin);
+            ran = (s-smin)/(smax-smin);
+        } else {
+            wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), 1, smin, smax, s, ran);
+        }
         spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}",
                       wgt, flav.Mass(), flav.Width(), smin, smax, s);
     }

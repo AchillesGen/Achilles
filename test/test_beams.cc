@@ -27,8 +27,8 @@ Beams:
         CHECK(beam.NBeams() == 2); 
         CHECK(beam.BeamIDs() == std::set<nuchic::PID>{12, 13});
         CHECK(beam.at(nuchic::PID(12)) == beam[nuchic::PID(12)]);
-        CHECK(beam.Flux(nuchic::PID(12), {}) == nuchic::FourVector(0, 0, 100, 100));
-        CHECK(beam.Flux(nuchic::PID(13), {}) == nuchic::FourVector(0, 0, 200, 200));
+        CHECK(beam.Flux(nuchic::PID(12), {}) == nuchic::FourVector(100, 0, 0, 100));
+        CHECK(beam.Flux(nuchic::PID(13), {}) == nuchic::FourVector(200, 0, 0, 200));
         std::vector<double> rans;
         CHECK(beam.GenerateWeight(nuchic::PID(12), {}, rans) == 1.0);
         CHECK(beam.GenerateWeight(nuchic::PID(13), {}, rans) == 1.0);
@@ -53,12 +53,16 @@ Beams:
         CHECK_THROWS_WITH(beams["Beams"].as<nuchic::Beam>(), "Multiple beams exist for PID: 12");
     }
 
-    // SECTION("Spectrum Beams") {
-    //     nuchic::Spectrum spectrum("dummy.txt");
+    SECTION("Spectrum Beams") {
+        YAML::Node beam = YAML::Load("Histogram: dummy.txt");
+        nuchic::Spectrum spectrum(beam);
 
-    //     CHECK_THROWS_WITH(spectrum.NVariables(), "Spectrum Fluxes are not implemented");
-    //     CHECK_THROWS_WITH(spectrum.Flux({}), "Spectrum Fluxes are not implemented");
-    //     std::vector<double> rans;
-    //     CHECK_THROWS_WITH(spectrum.GenerateWeight({}, rans), "Spectrum Fluxes are not implemented");
-    // }
+        for(size_t i = 0; i < 4400; ++i) {
+            auto enu = static_cast<double>(i);
+            nuchic::FourVector mom{enu, 0, 0, enu};
+            std::vector<double> rans(1);
+            double flux = spectrum.GenerateWeight(mom, rans);
+            std::cout << fmt::format("{},{}\n", enu, flux);
+        }
+    }
 }
