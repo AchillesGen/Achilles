@@ -23,8 +23,20 @@ std::vector<double> nuchic::Process_Info::Masses() const {
 std::vector<long> nuchic::Process_Info::Ids() const {
     std::vector<long> ids;
 
-    // Get initial hadronic id
-    ids.push_back(m_states.begin() -> first[0].AsInt());
+    // Get initial hadronic id (if MEC convert to MEC PID)
+    if(m_states.begin() -> first.size() == 2) {
+        if(m_states.begin() -> first[0] == nuchic::PID::proton()) {
+            ids.push_back(m_states.begin() -> first[1] == nuchic::PID::proton() 
+                          ? nuchic::PID::MECpp()
+                          : nuchic::PID::MECpn());
+        } else {
+            ids.push_back(m_states.begin() -> first[1] == nuchic::PID::proton() 
+                          ? nuchic::PID::MECnp()
+                          : nuchic::PID::MECnn());
+        }
+    } else {
+        ids.push_back(m_states.begin() -> first[0].AsInt());
+    }
 
     // Get inital lepton id
     ids.push_back(m_ids[0].AsInt());

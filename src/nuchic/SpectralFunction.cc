@@ -47,7 +47,7 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
 
     // Setup spectral function interpolator
     func = Interp2D(mom, energy, spectral, InterpolationType::Polynomial);
-    func.SetPolyOrder(1, 1);
+    func.SetPolyOrder(3, 1);
 }
 
 double SpectralFunction::operator()(double p, double E) const {

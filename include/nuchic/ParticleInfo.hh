@@ -68,10 +68,15 @@ namespace nuchic {
             // Baryons
             static constexpr PID proton() { return PID{ 2212 }; }
             static constexpr PID neutron() { return PID{ 2112 }; }
-            // Dummy hadron
-            static constexpr PID dummyHadron() { return PID{ 2212 }; }
+            // Dinucleons for the MEC calculations
+            static constexpr PID MECpp() { return PID{ 99221221 }; }
+            static constexpr PID MECnn() { return PID{ 99211211 }; }
+            static constexpr PID MECnp() { return PID{ 99211221 }; }
+            static constexpr PID MECpn() { return PID{ 99221211 }; }
             // Common Elements
+            static constexpr PID dummyNucleus() { return PID{ 1000000000 }; }
             static constexpr PID carbon() { return PID{ 1000060120 }; }
+            static constexpr PID argon() { return PID{ 1000180400 }; }
 
             // Stream Operator
             template<typename OStream>
@@ -184,7 +189,7 @@ namespace nuchic {
 
             // Property functions
             std::string Name() const noexcept { return anti ? info -> antiname : info -> idname; }
-            PID ID() const noexcept { return info -> id; }
+            PID ID() const noexcept { return anti ? -info -> id : info -> id; }
             int IntID() const noexcept { return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id); }
             bool IsBaryon() const noexcept;
             bool IsHadron() const noexcept { return info -> hadron; }

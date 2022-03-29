@@ -93,6 +93,50 @@ class FormFactorImpl {
         void Fill(double, FormFactor::Values&) const;
 };
 
+// Dummy Form Factors
+
+class VectorDummy : public FormFactorImpl, RegistrableFormFactor<VectorDummy> {
+    public:
+        VectorDummy(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+        FFType Type() const override { return FFType::vector; }
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "VectorDummy"; }
+    private:
+        double m_f1p, m_f1n;
+        double m_f2p, m_f2n;
+};
+
+class AxialDummy : public FormFactorImpl, RegistrableFormFactor<AxialDummy> {
+    public:
+        AxialDummy(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+        FFType Type() const override { return FFType::axial; }
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "AxialDummy"; }
+    private:
+        double m_fa;
+};
+
+class CoherentDummy : public FormFactorImpl, RegistrableFormFactor<CoherentDummy> {
+    public:
+        CoherentDummy(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+        FFType Type() const override { return FFType::coherent; }
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "CoherentDummy"; }
+    private:
+        double m_fcoh;
+};
+
+// Vector Form Factors
+
 class VectorDipole : public FormFactorImpl, RegistrableFormFactor<VectorDipole> {
     public:
         VectorDipole(const YAML::Node&);
@@ -104,19 +148,6 @@ class VectorDipole : public FormFactorImpl, RegistrableFormFactor<VectorDipole> 
         static std::string Name() { return "VectorDipole"; }
     private:
         double lambda, muP, muN;
-};
-
-class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
-    public:
-        AxialDipole(const YAML::Node&);
-        void Evaluate(double, FormFactor::Values&) const override;
-        FFType Type() const override { return FFType::axial; }
-
-        // Required factory methods
-        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
-        static std::string Name() { return "AxialDipole"; }
-    private:
-        double MA, gan1, gans;
 };
 
 class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
@@ -199,6 +230,23 @@ class ArringtonHill : public FormFactorImpl, RegistrableFormFactor<ArringtonHill
             return result + A[0];
         }
 };
+
+// Axial Form Factors
+
+class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
+    public:
+        AxialDipole(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+        FFType Type() const override { return FFType::axial; }
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "AxialDipole"; }
+    private:
+        double MA, gan1, gans;
+};
+
+// Coherent form factors
 
 class HelmFormFactor : public FormFactorImpl, RegistrableFormFactor<HelmFormFactor> {
     public:

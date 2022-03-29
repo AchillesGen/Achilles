@@ -20,6 +20,58 @@ void nuchic::FormFactorImpl::Fill(double tau, FormFactor::Values &result) const 
     result.F2n = (result.Gmn - result.Gen)/(1+tau);
 }
 
+// Dummy Form Factors
+nuchic::VectorDummy::VectorDummy(const YAML::Node &config) {
+    m_f1p = config["f1p"].as<double>();
+    m_f1n = config["f1n"].as<double>();
+    m_f2p = config["f2p"].as<double>();
+    m_f2n = config["f2n"].as<double>();
+}
+
+std::unique_ptr<nuchic::FormFactorImpl> nuchic::VectorDummy::Construct(nuchic::FFType type,
+                                                                        const YAML::Node &node) {
+    if(type != FFType::vector)
+        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    return std::make_unique<VectorDummy>(node);
+}
+
+void nuchic::VectorDummy::Evaluate(double, FormFactor::Values &result) const {
+    result.F1p = m_f1p;
+    result.F1n = m_f1n;
+    result.F2p = m_f2p;
+    result.F2n = m_f2n;
+}
+
+nuchic::AxialDummy::AxialDummy(const YAML::Node &config) {
+    m_fa = config["fa"].as<double>();
+}
+
+std::unique_ptr<nuchic::FormFactorImpl> nuchic::AxialDummy::Construct(nuchic::FFType type,
+                                                                        const YAML::Node &node) {
+    if(type != FFType::axial)
+        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    return std::make_unique<AxialDummy>(node);
+}
+
+void nuchic::AxialDummy::Evaluate(double, FormFactor::Values &result) const {
+    result.FA = m_fa;
+}
+
+nuchic::CoherentDummy::CoherentDummy(const YAML::Node &config) {
+    m_fcoh = config["fcoh"].as<double>();
+}
+
+std::unique_ptr<nuchic::FormFactorImpl> nuchic::CoherentDummy::Construct(nuchic::FFType type,
+                                                                        const YAML::Node &node) {
+    if(type != FFType::coherent)
+        throw std::runtime_error(fmt::format("FormFactor: Expected type vector, got type {}", type));
+    return std::make_unique<CoherentDummy>(node);
+}
+
+void nuchic::CoherentDummy::Evaluate(double, FormFactor::Values &result) const {
+    result.Fcoh = m_fcoh;
+}
+
 // Vector Dipole Form Factor
 nuchic::VectorDipole::VectorDipole(const YAML::Node &config) {
     lambda = config["lambda"].as<double>();
@@ -36,7 +88,7 @@ std::unique_ptr<nuchic::FormFactorImpl> nuchic::VectorDipole::Construct(nuchic::
 
 void nuchic::VectorDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.Gep = 1.0/pow(1.0+Q2/lambda/lambda, 2);
-    result.Gen = -muN*Q2*result.Gep/(1+5.6*Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
+    result.Gen = -muN*Q2*result.Gep/(1+Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
     result.Gmp = muP*result.Gep;
     result.Gmp = muN*result.Gep;
 

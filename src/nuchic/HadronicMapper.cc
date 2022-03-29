@@ -9,7 +9,8 @@ using nuchic::QESpectralMapper;
 using nuchic::CoherentMapper;
 
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
-    point[HadronIdx()] = {ParticleInfo(PID::carbon()).Mass(), 0, 0, 0};
+    // TODO: Set this in initialization
+    point[HadronIdx()] = {ParticleInfo(PID::argon()).Mass(), 0, 0, 0};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
 }
 
@@ -40,9 +41,18 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
     // cosT_max = cosT_max > 1 ? 1 : cosT_max;
     // const double cosT = (cosT_max + 1) * rans[1] - 1;
     // const double sinT = sqrt(1 - cosT*cosT);
+    
+    // const double cosT = dCos*rans[1] - 1;
+    // const double sinT = sqrt(1 - cosT*cosT);
+    // const double phi = dPhi*rans[2];
+    // const double dp = -cosT*point[1].E() + sqrt(pow(cosT*point[1].E(), 2)+ 2*Constant::mN*point[1].E()+Constant::mN2-Smin());
+    // const double mom = dp*rans[0];
+    // const double dE = point[1].E()+Constant::mN-sqrt(pow(point[1].E(), 2)+2*cosT*point[1].E()*mom + mom*mom + Smin());
+    // const double energy = dE*rans[3];
 
     point[HadronIdx()] = {Constant::mN - energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT = {}", cosT);
     spdlog::trace("  mom = {}", mom);
     spdlog::trace("  energy = {}", energy);
@@ -73,7 +83,16 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point, st
     // double cosT_max = (point[HadronIdx()].M2() + 2*point[1].E()*point[HadronIdx()].E() - Smin())/(2*point[HadronIdx()].P()*point[1].P());
     // cosT_max = cosT_max > 1 ? 1 : cosT_max;
     // const double dCos = (cosT_max + 1);
-    rans[1] = (point[HadronIdx()].CosTheta()+1)/dCos;
+    // rans[1] = (point[HadronIdx()].CosTheta()+1)/dCos;
+
+    // const double cosT = point[HadronIdx()].CosTheta();
+    // const double dp = -cosT*point[1].E() + sqrt(pow(cosT*point[1].E(), 2)+ 2*Constant::mN*point[1].E()+Constant::mN2-Smin());
+    // const double mom = point[HadronIdx()].P();
+    // const double dE = point[1].E()+Constant::mN-sqrt(pow(point[1].E(), 2)+2*cosT*point[1].E()*mom + mom*mom + Smin());
+    // rans[0] = point[HadronIdx()].P()/dp;
+    // rans[1] = (point[HadronIdx()].CosTheta()+1)/dCos;
+    // rans[2] = point[HadronIdx()].Phi()/dPhi;
+    // rans[3] = (Constant::mN - point[HadronIdx()].E())/dE;
 
     double wgt = 1.0/point[0].P2()/dp/dCos/dPhi/dE;
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);

@@ -125,6 +125,23 @@ struct convert<nuchic::Channel<T>> {
     }
 };
 
+// Dummy YAML encoding / decoding for testing basics
+template<>
+struct convert<nuchic::Channel<double>> {
+    static Node encode(const nuchic::Channel<double> &rhs) {
+        Node node;
+        node["Integrator"] = rhs.integrator;
+        node["Mapper"] = rhs.mapping -> ToYAML();
+        return node;
+    }
+
+    static bool decode(const Node &node, nuchic::Channel<double> &rhs) {
+        if(node.size() != 2) return false;
+        rhs.integrator = node["Integrator"].as<nuchic::Vegas2>();
+        return true;
+    }
+};
+
 template<typename T>
 struct convert<nuchic::Integrand<T>> {
     static Node encode(const nuchic::Integrand<T> &rhs) {
