@@ -4,6 +4,17 @@
 
 #include "catch_utils.hh"
 
+TEST_CASE("Percentiles", "[vegas]") {
+    SECTION("Percentile is calculated correctly") {
+        nuchic::Percentile percentile(0.9);
+        for(size_t i = 0; i < 101; ++i) {
+            percentile.Add(static_cast<double>(i));
+        }
+
+        CHECK(percentile.Get() == 90);
+    }
+}
+
 TEST_CASE("Statistics class", "[vegas]") {
     SECTION("Adding individual points together") {
         nuchic::StatsData data;

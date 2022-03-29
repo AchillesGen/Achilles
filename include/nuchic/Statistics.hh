@@ -16,6 +16,46 @@ namespace nuchic {
 
 using lim = std::numeric_limits<double>;
 
+// Class taken from: https://stackoverflow.com/q/3738349/9201027
+class Percentile {
+    public:
+        Percentile(double percentile) : m_percentile(percentile) {}
+
+        void Add(const double &x) {
+            if(m_lower.empty() || x <= m_lower.front()) {
+                m_lower.push_back(x);
+                std::push_heap(m_lower.begin(), m_lower.end(), std::less<>());
+            } else {
+                m_upper.push_back(x);
+                std::push_heap(m_upper.begin(), m_upper.end(), std::greater<>());
+            }
+
+            auto size = static_cast<size_t>(static_cast<double>(m_lower.size() + m_upper.size())*m_percentile) + 1;
+            if(m_lower.size() > size) {
+                std::pop_heap(m_lower.begin(), m_lower.end(), std::less<>());
+                m_upper.push_back(m_lower.back());
+                std::push_heap(m_upper.begin(), m_upper.end(), std::greater<>());
+                m_lower.pop_back();
+            } else if(m_lower.size() < size) {
+                std::pop_heap(m_upper.begin(), m_upper.end(), std::greater<>());
+                m_lower.push_back(m_upper.back());
+                std::push_heap(m_lower.begin(), m_lower.end(), std::less<>());
+                m_upper.pop_back();
+            }
+        }
+
+        double Get() const { return m_lower.front(); }
+        
+        void Clear() {
+            m_lower.clear();
+            m_upper.clear();
+        }
+
+    private:
+        double m_percentile;
+        std::vector<double> m_lower, m_upper;
+};
+
 // Structure to hold moments
 class StatsData {
     public:
