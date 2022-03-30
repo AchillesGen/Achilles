@@ -7,6 +7,7 @@
 #include "nuchic/QuasielasticTestMapper.hh"
 #include "nuchic/Vegas.hh"
 #include "nuchic/MultiChannel.hh"
+#include "nuchic/Unweighter.hh"
 
 #include <memory>
 #include <vector>
@@ -54,6 +55,7 @@ class EventGen {
         YAML::Node config;
 
         std::shared_ptr<EventWriter> writer;
+        std::unique_ptr<Unweighter> unweighter;
 
         Histogram hist, hist2, hist3, hist4, hist5, hist6;
 };

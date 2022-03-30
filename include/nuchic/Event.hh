@@ -74,7 +74,9 @@ class Event {
         MOCK vParticles& Hadrons();
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
-        double Weight() const;
+        void CalcWeight();
+        const double& Weight() const { return m_wgt; }
+        double& Weight() { return m_wgt; }
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
@@ -90,7 +92,7 @@ class Event {
         NuclearRemnant m_remnant{};
         vMomentum m_mom{};
         MatrixElementVec m_me;
-        double m_vWgt{}, m_meWgt{};
+        double m_vWgt{}, m_meWgt{}, m_wgt{-1};
         vParticles m_leptons{};
         vParticles m_history{};
         double flux;

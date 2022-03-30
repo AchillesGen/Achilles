@@ -90,6 +90,10 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
+    // Setup unweighter
+    unweighter = UnweighterFactory::Initialize(config["Unweighting"]["Name"].as<std::string>(),
+                                               config["Unweighting"]);
+
     // Load initial state, massess
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
@@ -280,14 +284,17 @@ void nuchic::EventGen::GenerateEvents() {
     hist4.Save(config["HistTest4"].as<std::string>());
     hist5.Save(config["HistTest5"].as<std::string>());
     hist6.Save(config["HistTest6"].as<std::string>());
+    fmt::print("Unweighting efficiency: {:^8.5e} %\n",
+               unweighter->Efficiency() * 100);
 }
 
 double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     if(outputEvents) {
-        static size_t ievent = 0;
-        constexpr size_t statusUpdate = 10000;
-        if(++ievent % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", ievent, config["Main"]["NEvents"].as<size_t>());
+        static constexpr size_t statusUpdate = 1000;
+        if(unweighter->Accepted() % statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r",
+                       unweighter->Accepted(),
+                       config["Main"]["NEvents"].as<size_t>());
         }
     }
     // Initialize the event, which generates the nuclear configuration
@@ -317,8 +324,12 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
+            event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
+            // Update number of calls needed to ensure the number of generated events
+            // is the same as that requested by the user
+            integrator.Parameters().ncalls++;
         }
         return 0;
     }
@@ -341,6 +352,7 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
 
+    event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
     // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
@@ -358,7 +370,11 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             // the integrand should be interpreted as zero in this region
             if(outputEvents) {
                 event.SetMEWeight(0);
+                event.CalcWeight();
                 writer -> Write(event);
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
             }
             return 0;
         }
@@ -391,6 +407,11 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
+            if(!unweighter->AcceptEvent(event)) {
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
+            }
             writer -> Write(event);
             const auto energy = (Constant::mN - event.Momentum()[0].E());
             const auto calls = static_cast<double>(integrator.Parameters().ncalls);
@@ -405,6 +426,8 @@ double nuchic::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const
             hist5.Fill(omega, event.Weight()/calls/(2*M_PI));
             hist6.Fill(log10(event.Weight()));
         }
+    } else {
+        unweighter->AddEvent(event);
     }
 
     // Always return the weight when the event passes the initial hard cut.

@@ -100,10 +100,10 @@ nuchic::vParticles& Event::Hadrons() {
     return m_nuc -> Nucleons();
 }
 
-double Event::Weight() const {
+void Event::CalcWeight() {
     // if(!ValidateEvent(0))
     //     throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    return m_vWgt*m_meWgt;
+    m_wgt = m_vWgt*m_meWgt;
 }
 
 bool Event::TotalCrossSection() {
