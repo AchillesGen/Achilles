@@ -3,17 +3,31 @@
 
 #include "catch2/catch.hpp"
 #include "catch2/trompeloeil.hpp"
+
+// Includes to mock
 #include "nuchic/Interactions.hh"
+#include "nuchic/Potential.hh"
 #include "nuchic/Nucleus.hh"
 #include "nuchic/Beams.hh"
 #include "nuchic/Event.hh"
 #include "nuchic/NuclearModel.hh"
 #include "nuchic/FormFactor.hh"
+#include "nuchic/PhaseSpaceBuilder.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
 
 class MockDensity : public trompeloeil::mock_interface<nuchic::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(GetConfiguration);
+};
+
+class MockPotential : public trompeloeil::mock_interface<nuchic::Potential> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK2(Hamiltonian);
+    IMPLEMENT_CONST_MOCK0(GetReference);
+    nuchic::PotentialVals operator()(const double &p, const double &r) const override {
+        return call_op(p, r);
+    }
+    MAKE_CONST_MOCK2(call_op, nuchic::PotentialVals(const double&, const double&));
 };
 
 class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
@@ -23,6 +37,8 @@ class MockNucleus : public trompeloeil::mock_interface<nuchic::Nucleus> {
     MAKE_CONST_MOCK0(Radius, const double&(), noexcept override);
     MAKE_CONST_MOCK1(Rho, double(const double&), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
+    MAKE_CONST_MOCK0(GetPotential, std::shared_ptr<nuchic::Potential>(), noexcept override);
+    MAKE_CONST_MOCK1(
 };
 
 class MockNuclearModel : public trompeloeil::mock_interface<nuchic::NuclearModel> {
@@ -45,6 +61,7 @@ class MockInteraction : public trompeloeil::mock_interface<nuchic::Interactions>
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK2(CrossSection);
     IMPLEMENT_CONST_MOCK3(MakeMomentum);
+    IMPLEMENT_CONST_MOCK3(FinalizeMomentum);
     IMPLEMENT_CONST_MOCK0(Name);
 };
 
@@ -80,6 +97,23 @@ class MockFormFactorBuilder : public trompeloeil::mock_interface<nuchic::FormFac
     IMPLEMENT_MOCK2(AxialVector);
     IMPLEMENT_MOCK2(Coherent);
     IMPLEMENT_MOCK0(build);
+};
+
+class MockMapper : public trompeloeil::mock_interface<nuchic::Mapper<nuchic::FourVector>> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_MOCK2(GeneratePoint);
+    IMPLEMENT_MOCK2(GenerateWeight);
+    IMPLEMENT_CONST_MOCK0(NDims);
+    IMPLEMENT_MOCK1(SetMasses);
+    IMPLEMENT_CONST_MOCK0(Masses);
+    IMPLEMENT_CONST_MOCK0(ToYAML);
+};
+
+class MockPSBuilder : public trompeloeil::mock_interface<nuchic::PSBuilder> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_MOCK2(Beam);
+    IMPLEMENT_MOCK3(Hadron);
+    IMPLEMENT_MOCK2(FinalState);
 };
 
 #endif

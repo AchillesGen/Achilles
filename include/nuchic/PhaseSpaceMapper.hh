@@ -19,6 +19,9 @@ class PSMapper : public Mapper<FourVector> {
         size_t NDims() const override { 
             return lbeam -> NDims() + hbeam -> NDims() + main -> NDims();
         }
+        void SetLeptonBeam(Mapper_sptr<FourVector> _lbeam) { lbeam = _lbeam; }
+        void SetHadronBeam(Mapper_sptr<FourVector> _hbeam) { hbeam = _hbeam; }
+        void SetFinalState(Mapper_ptr<FourVector> final) { main = std::move(final); }
 
         YAML::Node ToYAML() const override {
             YAML::Node node;
@@ -35,8 +38,8 @@ class PSMapper : public Mapper<FourVector> {
 
     private:
         size_t nleptons, nhadrons;
-        Mapper_sptr<FourVector> lbeam, hbeam;
-        Mapper_ptr<FourVector> main; 
+        Mapper_sptr<FourVector> lbeam{}, hbeam{};
+        Mapper_ptr<FourVector> main{}; 
 };
 
 }

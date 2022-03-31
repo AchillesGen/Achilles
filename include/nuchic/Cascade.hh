@@ -64,6 +64,43 @@ class Cascade {
         /// Default destructor
         ~Cascade() = default;
         ///@}
+        
+        /// @name Getters
+        ///@{
+        
+        /// Get the name of the interaction model used
+        ///@return std::string: Name of the interaction model
+        std::string InteractionModel() const { return m_interactions -> Name(); } 
+
+        /// Get the probability model used
+        ///@return std::string: Name of the probability model
+        std::string ProbabilityModel() const { return m_probability_name; }
+
+        /// Get InMedium setting used
+        ///@return std::string: InMedium setting
+        std::string InMediumSetting() const {
+            std::string name;
+            switch(m_medium) {
+                case None:
+                    name = "None";
+                    break;
+                case NonRelativistic:
+                    name = "NonRelativistic";
+                    break;
+                case Relativistic:
+                    name = "Relativistic";
+                    break;
+            }
+            return name;
+        }
+
+        /// Get potential prop option
+        ///@return bool: PotentialProp option
+        bool UsePotentialProp() const { return m_potential_prop; }
+
+        /// Get step size
+        ///@return double: default step size
+        double StepSize() const { return distance; }
 
         /// @name Functions
         ///@{
@@ -141,6 +178,7 @@ class Cascade {
         InMedium m_medium;
         bool m_potential_prop;
         std::map<size_t, SymplecticIntegrator> integrators;
+        std::string m_probability_name;
 };
 
 }

@@ -34,8 +34,8 @@ class Mapper {
         virtual void GeneratePoint(std::vector<T>&, const std::vector<double> &) = 0;
         virtual double GenerateWeight(const std::vector<T>&, std::vector<double> &) = 0;
         virtual size_t NDims() const = 0;
-        void SetMasses(std::vector<double> masses) { m_masses = std::move(masses); }
-        const std::vector<double>& Masses() const { return m_masses; }
+        virtual void SetMasses(std::vector<double> masses) { m_masses = std::move(masses); }
+        virtual const std::vector<double>& Masses() const { return m_masses; }
 
         // Printers
         static void Print(const char* func, const std::vector<T> &point, const std::vector<double> &rans) {

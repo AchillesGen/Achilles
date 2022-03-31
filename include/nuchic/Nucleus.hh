@@ -148,7 +148,7 @@ class Nucleus {
 
         /// Return the phenomenological potential
 	    ///@return std::shared_ptr<Potential>: The potential of the nucleus
-        std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
+        MOCK std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers

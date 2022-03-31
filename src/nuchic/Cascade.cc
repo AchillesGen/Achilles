@@ -27,11 +27,13 @@ Cascade::Cascade(std::unique_ptr<Interactions> interactions,
 
     switch(prob) {
         case ProbabilityType::Gaussian:
+            m_probability_name = "Gaussian";
             probability = [](const double &b2, const double &sigma) -> double {
                 return exp(-M_PI*b2/sigma);
             };
             break;
         case ProbabilityType::Pion:
+            m_probability_name = "Pion";
             probability = [](const double &b2, const double &sigma) -> double {
                 double b = sqrt(b2);
                 // TODO: This does not work, we need to rethink this
@@ -40,6 +42,7 @@ Cascade::Cascade(std::unique_ptr<Interactions> interactions,
             };
             break;
         case ProbabilityType::Cylinder:
+            m_probability_name = "Cylinder";
             probability = [](const double &b2, const double &sigma) -> double {
                 return b2 < sigma/M_PI ? 1 : 0;
             };
@@ -188,7 +191,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
         std::vector<size_t> newKicked{};
         for(auto idx : kickedIdxs) {
             Particle* kickNuc = &particles[idx];
-	        spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
+            spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
             // Update formation zones
             if(kickNuc -> InFormationZone()) {
@@ -201,23 +204,23 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
             // Get allowed interactions
             auto dist2 = AllowedInteractions(particles, idx);
             if(dist2.size() == 0) {
-		        newKicked.push_back(idx);
-	            continue;
-	        }
+                newKicked.push_back(idx);
+                continue;
+            }
 
             // Get interaction
             auto hitIdx = Interacted(particles, *kickNuc, dist2);
-	        if(hitIdx == SIZE_MAX) {
-		        newKicked.push_back(idx);
-	            continue;
-	        }
+            if(hitIdx == SIZE_MAX) {
+                newKicked.push_back(idx);
+                continue;
+            }
             Particle* hitNuc = &particles[hitIdx];
 
             // Finalize Momentum
             bool hit = FinalizeMomentum(*kickNuc, *hitNuc);
-	        UpdateIntegrator(idx, kickNuc);
+            UpdateIntegrator(idx, kickNuc);
 
-	        if(hit) {
+            if(hit) {
                 if(m_potential_prop
                    && localNucleus -> GetPotential() -> Hamiltonian(kickNuc -> Momentum().P(),
                                                                     kickNuc -> Position().P()) < Constant::mN) {
