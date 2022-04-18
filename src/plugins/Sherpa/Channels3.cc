@@ -1,7 +1,7 @@
 #include "plugins/Sherpa/Channels3.hh"
 #include "ATOOLS/Phys/Flavour.H"
 #include <cmath>
-#include "nuchic/Utilities.hh"
+#include "Achilles/Utilities.hh"
 #include "plugins/Sherpa/PrintVec.hh"
 #include "COMIX/Main/Single_Process.H"
 
@@ -14,7 +14,7 @@ double GenChannel::SCut(size_t id) {
     }
     double result = 0;
     for(size_t i = 0; i < m_n; ++i) {
-        if(nuchic::SetBit(id, i)) {
+        if(achilles::SetBit(id, i)) {
             result += sqrt(m_s[i]);
         }
     }
@@ -29,12 +29,12 @@ void GenChannel::FillMomenta(ChannelNode *node) {
     size_t aid = (1 << m_n) - 1 - node -> m_idx;
     m_p[node -> m_idx] = Vec4D{};
     for(size_t i = 0; i < m_n; ++i) {
-        if(nuchic::SetBit(node -> m_idx, i)) {
+        if(achilles::SetBit(node -> m_idx, i)) {
             m_p[node -> m_idx] += m_p[(1 << i)];
         }
     }
-    if(!nuchic::IsPower2(node -> m_left -> m_idx)) FillMomenta(node -> m_left.get());
-    if(!nuchic::IsPower2(node -> m_right -> m_idx)) FillMomenta(node -> m_right.get());
+    if(!achilles::IsPower2(node -> m_left -> m_idx)) FillMomenta(node -> m_left.get());
+    if(!achilles::IsPower2(node -> m_right -> m_idx)) FillMomenta(node -> m_right.get());
 }
 
 std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) const {
@@ -50,7 +50,7 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
         std::swap(cur -> m_left, cur -> m_right);
     }
     if(cid == m_rid) {
-        if(!nuchic::IsPower2(bid)) {
+        if(!achilles::IsPower2(bid)) {
             result += PrintSPoint(cur -> m_left.get(), bid);
             return result;
         } else {
@@ -74,8 +74,8 @@ std::string GenChannel::PrintSPoint(ChannelNode *node, size_t id) const {
                                      cid, node -> m_pid,
                                      aid, node -> m_left -> m_pid,
                                      bid, node -> m_right -> m_pid);
-    if(!nuchic::IsPower2(aid)) result += PrintSPoint(node -> m_left.get(), aid);
-    if(!nuchic::IsPower2(bid)) result += PrintSPoint(node -> m_right.get(), bid);
+    if(!achilles::IsPower2(aid)) result += PrintSPoint(node -> m_left.get(), aid);
+    if(!achilles::IsPower2(bid)) result += PrintSPoint(node -> m_right.get(), bid);
     return result;
 }
 
@@ -106,7 +106,7 @@ void GenChannel::BuildPoint(ChannelNode *cur, size_t lid, const std::vector<doub
         std::swap(cur -> m_left, cur -> m_right);
     }
     if(cid == m_rid) {
-        if(!nuchic::IsPower2(bid)) {
+        if(!achilles::IsPower2(bid)) {
             BuildSPoint(cur -> m_left.get(), bid, rans);
             return;
         } else {
@@ -122,8 +122,8 @@ void GenChannel::BuildSPoint(ChannelNode *node, size_t id, const std::vector<dou
     size_t aid = node -> m_left -> m_idx;
     size_t bid = node -> m_right -> m_idx;
     SChannelMomenta(node, aid, bid, cid, rans);
-    if(!nuchic::IsPower2(aid)) BuildSPoint(node -> m_left.get(), aid, rans);
-    if(!nuchic::IsPower2(bid)) BuildSPoint(node -> m_right.get(), bid, rans);
+    if(!achilles::IsPower2(aid)) BuildSPoint(node -> m_left.get(), aid, rans);
+    if(!achilles::IsPower2(bid)) BuildSPoint(node -> m_right.get(), bid, rans);
 }
 
 double GenChannel::BuildWeight(ChannelNode *cur, size_t lid, std::vector<double> &rans, size_t depth) {
@@ -141,7 +141,7 @@ double GenChannel::BuildWeight(ChannelNode *cur, size_t lid, std::vector<double>
         std::swap(cur -> m_left, cur -> m_right);
     }
     if(cid == m_rid) {
-        if(!nuchic::IsPower2(bid)) {
+        if(!achilles::IsPower2(bid)) {
             wgt *= BuildSWeight(cur -> m_left.get(), bid, rans);
             return wgt;
         } else {
@@ -159,8 +159,8 @@ double GenChannel::BuildSWeight(ChannelNode *node, size_t id, std::vector<double
     size_t aid = node -> m_left -> m_idx;
     size_t bid = node -> m_right -> m_idx;
     wgt *= SChannelWeight(node, aid, bid, cid, rans);
-    if(!nuchic::IsPower2(aid)) wgt *= BuildSWeight(node -> m_left.get(), aid, rans);
-    if(!nuchic::IsPower2(bid)) wgt *= BuildSWeight(node -> m_right.get(), bid, rans);
+    if(!achilles::IsPower2(aid)) wgt *= BuildSWeight(node -> m_left.get(), aid, rans);
+    if(!achilles::IsPower2(bid)) wgt *= BuildSWeight(node -> m_right.get(), bid, rans);
     return wgt;
 }
 
@@ -207,11 +207,11 @@ void GenChannel::TChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
                                                 + std::to_string(pid) + ")";
     double se = SCut(bid), sp = SCut(pid);
     double rtsmax = (m_p[aid]+m_p[m_rid]).Mass();
-    if(!nuchic::IsPower2(bid)) {
+    if(!achilles::IsPower2(bid)) {
         double smin = se, smax = sqr(rtsmax - sqrt(sp));
         se = PropMomenta(node, bid, smin, smax, rans[iran++]); 
     }
-    if(!nuchic::IsPower2(pid)) {
+    if(!achilles::IsPower2(pid)) {
         double smin = sp, smax = sqr(rtsmax - sqrt(se));
         sp = PropMomenta(node, pid, smin, smax, rans[iran++]);
     }
@@ -243,12 +243,12 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
                                                + std::to_string(cid) + ", "
                                                + std::to_string(pid) + ")";
     spdlog::trace("{}", name);
-    if(!nuchic::IsPower2(bid)) {
+    if(!achilles::IsPower2(bid)) {
         double smin = se, smax = sqr(rtsmax - sqrt(sp));
         wgt *= PropWeight(node, bid, smin, smax, se=m_p[bid].Abs2(), rans[iran++]);
         spdlog::trace("  smin = {}, smax = {}", smin, smax);
     }
-    if(!nuchic::IsPower2(pid)) {
+    if(!achilles::IsPower2(pid)) {
         double smin = sp, smax = sqr(rtsmax - sqrt(se));
         wgt *= PropWeight(node, pid, smin, smax, sp=m_p[pid].Abs2(), rans[iran++]);
         spdlog::trace("  smin = {}, smax = {}", smin, smax);
@@ -276,12 +276,12 @@ void GenChannel::SChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
                                                 + std::to_string(aid) + ", "
                                                 + std::to_string(bid) + ")";
     double rts = m_p[cid].Mass(), sl = SCut(lid), sr = SCut(rid);
-    if(!nuchic::IsPower2(lid)) {
+    if(!achilles::IsPower2(lid)) {
         double smin = sl, smax = sqr(rts - sqrt(sr));
         spdlog::trace("smin = {}, smax = {}, rts = {}, sr = {}", smin, smax, rts, sr);
         sl = PropMomenta(node, lid, smin, smax, rans[iran++]);
     }
-    if(!nuchic::IsPower2(rid)) {
+    if(!achilles::IsPower2(rid)) {
         double smin = sr, smax = sqr(rts - sqrt(sl));
         spdlog::trace("smin = {}, smax = {}, rts = {}, sl = {}", smin, smax, rts, sl);
         sr = PropMomenta(node, rid, smin, smax, rans[iran++]);
@@ -303,11 +303,11 @@ double GenChannel::SChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     double wgt = 1.0;
     size_t lid = SId(aid), rid = SId(bid);
     double rts = m_p[cid].Mass(), sl = SCut(lid), sr = SCut(rid);
-    if(!nuchic::IsPower2(lid)) {
+    if(!achilles::IsPower2(lid)) {
         double smin = sl, smax = sqr(rts - sqrt(sr));
         wgt *= PropWeight(node, lid, smin, smax, sl=m_p[lid].Abs2(), rans[iran++]);
     }
-    if(!nuchic::IsPower2(rid)) {
+    if(!achilles::IsPower2(rid)) {
         double smin = sr, smax = sqr(rts - sqrt(sl));
         wgt *= PropWeight(node, rid, smin, smax, sr=m_p[rid].Abs2(), rans[iran++]);
     }

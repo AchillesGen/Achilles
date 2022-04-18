@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
-#include "nuchic/Potential.hh"
-#include "nuchic/Particle.hh"
+#include "Achilles/Potential.hh"
+#include "Achilles/Particle.hh"
 #include <iostream>
 
 double stencil5(std::function<double(double)> f, double x, double h) {
@@ -27,11 +27,11 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
 
-        nuchic::CooperPotential potential(nucleus);
+        achilles::CooperPotential potential(nucleus);
 
 #ifdef AUTODIFF
         autodiff::real r = 0.15;
-        autodiff::real plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        autodiff::real plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
         auto func_rv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).rvector; };
         auto func_iv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).ivector; };
@@ -64,7 +64,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         CHECK(disdr == Approx(stencilr.iscalar));
 #else
         double r = 0.15;
-        double plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
 #endif
         auto vals = potential(plab, r);
@@ -128,8 +128,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         REQUIRE_CALL(*nucleus, NNucleons())
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
-        nuchic::CooperPotential potential(nucleus);
-        autodiff::dual plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        achilles::CooperPotential potential(nucleus);
+        autodiff::dual plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
         auto func_rv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).rvector; };
         auto func_iv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).ivector; };
@@ -152,12 +152,12 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 
     BENCHMARK_ADVANCED("Stencil")(Catch::Benchmark::Chronometer meter) {
         double r = 0.15;
-        double plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons())
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
-        nuchic::CooperPotential potential(nucleus);
+        achilles::CooperPotential potential(nucleus);
 
         meter.measure([&]() {
                 potential.derivative_p(plab, r);
@@ -181,10 +181,10 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(1));
 
-        nuchic::SchroedingerPotential potential(nucleus, 5);
+        achilles::SchroedingerPotential potential(nucleus, 5);
 
         double r = 0.15;
-        double plab = sqrt(pow(tplab + nuchic::Constant::mN, 2) - pow(nuchic::Constant::mN, 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
         auto vals = potential(plab, r);
 

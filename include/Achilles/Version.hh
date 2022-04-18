@@ -1,0 +1,9 @@
+#ifndef VERSION_HH
+#define VERSION_HH
+
+#define ACHILLES_VERSION "1.0.0"
+#define ACHILLES_VERSION_MAJOR "1"
+#define ACHILLES_VERSION_MINOR "0"
+#define ACHILLES_VERSION_PATCH "0"
+
+#endif

@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
 
-#include "nuchic/Cascade.hh"
-#include "nuchic/Nucleus.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/Interactions.hh"
-#include "nuchic/Event.hh"
+#include "Achilles/Cascade.hh"
+#include "Achilles/Nucleus.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Interactions.hh"
+#include "Achilles/Event.hh"
 
 TEST_CASE("Initialize Cascade", "[Cascade]") {
-    nuchic::Particles particles = {{nuchic::PID::proton()}, {nuchic::PID::neutron()}};
+    achilles::Particles particles = {{achilles::PID::proton()}, {achilles::PID::neutron()}};
 
     SECTION("Kick Nucleon") {
         auto interaction = std::make_unique<MockInteraction>();
@@ -18,28 +18,28 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
             .LR_RETURN((particles))
             .TIMES(AT_LEAST(3));
 
-        nuchic::Cascade cascade(std::move(interaction), nuchic::Cascade::ProbabilityType::Gaussian,
-                                nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), achilles::Cascade::ProbabilityType::Gaussian,
+                                  achilles::Cascade::InMedium::None);
         cascade.Kick(nucleus, {0, 100, 0, 0}, {10, 0});
-        CHECK(particles[0].Status() == nuchic::ParticleStatus::propagating);
-        CHECK(particles[1].Status() == nuchic::ParticleStatus::background);
-        particles[0].Status() = nuchic::ParticleStatus::background;
+        CHECK(particles[0].Status() == achilles::ParticleStatus::propagating);
+        CHECK(particles[1].Status() == achilles::ParticleStatus::background);
+        particles[0].Status() = achilles::ParticleStatus::background;
 
         cascade.Reset();
         cascade.Kick(nucleus, {0, 100, 0, 0}, {0, 10});
-        CHECK(particles[0].Status() == nuchic::ParticleStatus::background);
-        CHECK(particles[1].Status() == nuchic::ParticleStatus::propagating);
+        CHECK(particles[0].Status() == achilles::ParticleStatus::background);
+        CHECK(particles[1].Status() == achilles::ParticleStatus::propagating);
     }
 }
 
 TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
-    nuchic::Particles hadrons = {{nuchic::PID::proton(), {1000, 100, 0, 0},
-                                 {0, 0, 0}, nuchic::ParticleStatus::propagating}};
+    achilles::Particles hadrons = {{achilles::PID::proton(), {1000, 100, 0, 0},
+                                   {0, 0, 0}, achilles::ParticleStatus::propagating}};
     constexpr double radius = 1;
 
-    auto mode = GENERATE(nuchic::Cascade::ProbabilityType::Gaussian,
-                         nuchic::Cascade::ProbabilityType::Pion,
-                         nuchic::Cascade::ProbabilityType::Cylinder);
+    auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
+                         achilles::Cascade::ProbabilityType::Pion,
+                         achilles::Cascade::ProbabilityType::Cylinder);
 
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
@@ -57,11 +57,11 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .TIMES(1)
             .RETURN(5);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None, true);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::captured);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::captured);
     }
 
     SECTION("Large Formation Zone") {
@@ -81,18 +81,18 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .RETURN(radius);
 
         hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
     }
 
     SECTION("Evolve Event") {
         MockEvent event;
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        std::shared_ptr<nuchic::Nucleus> tmp = nucleus;
+        std::shared_ptr<achilles::Nucleus> tmp = nucleus;
 
         REQUIRE_CALL(event, Hadrons())
             .TIMES(AT_LEAST(2))
@@ -112,10 +112,10 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.Evolve(&event);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
         CHECK(hadrons[0].Radius() > radius);
     }
 
@@ -134,11 +134,11 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
         CHECK(hadrons[0].Radius() > radius);
     }
 
@@ -157,27 +157,27 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.NuWro(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
         CHECK(hadrons[0].Radius() > radius);
     }
 }
 
 TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
-    nuchic::Particles hadrons = {{nuchic::PID::proton(), {1000, 100, 0, 0},
-                                 {0, 0, 0}, nuchic::ParticleStatus::propagating},
-                                 {nuchic::PID::proton(), {nuchic::Constant::mN, 0, 0, 0},
-                                 {0.5, 0, 0}, nuchic::ParticleStatus::background},
-                                 {nuchic::PID::neutron(), {nuchic::Constant::mN, 0, 0, 0},
-                                 {3, 0, 0}, nuchic::ParticleStatus::background}};
+    achilles::Particles hadrons = {{achilles::PID::proton(), {1000, 100, 0, 0},
+                                   {0, 0, 0}, achilles::ParticleStatus::propagating},
+                                   {achilles::PID::proton(), {achilles::Constant::mN, 0, 0, 0},
+                                   {0.5, 0, 0}, achilles::ParticleStatus::background},
+                                   {achilles::PID::neutron(), {achilles::Constant::mN, 0, 0, 0},
+                                   {3, 0, 0}, achilles::ParticleStatus::background}};
     constexpr double radius = 4;
 
-    auto mode = GENERATE(nuchic::Cascade::ProbabilityType::Gaussian,
-                         nuchic::Cascade::ProbabilityType::Pion,
-                         nuchic::Cascade::ProbabilityType::Cylinder);
+    auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
+                         achilles::Cascade::ProbabilityType::Pion,
+                         achilles::Cascade::ProbabilityType::Cylinder);
 
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
@@ -195,13 +195,13 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .TIMES(1)
             .RETURN(5);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None, true);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::captured);
-        CHECK(hadrons[1].Status() == nuchic::ParticleStatus::background);
-        CHECK(hadrons[2].Status() == nuchic::ParticleStatus::background);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::captured);
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+        CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
     }
 
     SECTION("Large Formation Zone") {
@@ -221,20 +221,20 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .RETURN(radius);
 
         hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
-        CHECK(hadrons[1].Status() == nuchic::ParticleStatus::background);
-        CHECK(hadrons[2].Status() == nuchic::ParticleStatus::background);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+        CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
     }
 
     SECTION("Evolve Event") {
         MockEvent event;
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        std::shared_ptr<nuchic::Nucleus> tmp = nucleus;
+        std::shared_ptr<achilles::Nucleus> tmp = nucleus;
 
         REQUIRE_CALL(event, Hadrons())
             .TIMES(AT_LEAST(2))
@@ -257,7 +257,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
 
-        std::pair<nuchic::FourVector, nuchic::FourVector> output{{1000, 80, 0, 0}, {150, -20, 0, 0}};
+        std::pair<achilles::FourVector, achilles::FourVector> output{{1000, 80, 0, 0}, {150, -20, 0, 0}};
         REQUIRE_CALL(*interaction, CrossSection(trompeloeil::_, hadrons[1]))
             .TIMES(1)
             .RETURN(1000);
@@ -268,12 +268,12 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .TIMES(2)
             .LR_RETURN((output));
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.Evolve(&event);
 
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
-        CHECK(hadrons[1].Status() == nuchic::ParticleStatus::background);
-        CHECK(hadrons[2].Status() == nuchic::ParticleStatus::background);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+        CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
         CHECK(hadrons[0].Radius() > radius);
     }
 
@@ -292,26 +292,26 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     //         .TIMES(AT_LEAST(1))
     //         .RETURN(radius);
 
-    //     nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+    //     achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
     //     cascade.SetKicked(0);
     //     cascade.NuWro(nucleus);
 
-    //     CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+    //     CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
     //     CHECK(hadrons[0].Radius() > radius);
     // }
 }
 
 TEST_CASE("Mean Free Path", "[Cascade]") {
-    nuchic::Particles hadrons = {{nuchic::PID::proton(), {100, 0, 0, 1000},
-                                 {0, 0, 0}, nuchic::ParticleStatus::internal_test},
-                                 {nuchic::PID::proton(), {100, 0, 0, 1000},
-                                 {0, 0, -1}, nuchic::ParticleStatus::background},
-                                };
+    achilles::Particles hadrons = {{achilles::PID::proton(), {100, 0, 0, 1000},
+                                   {0, 0, 0}, achilles::ParticleStatus::internal_test},
+                                   {achilles::PID::proton(), {100, 0, 0, 1000},
+                                   {0, 0, -1}, achilles::ParticleStatus::background},
+                                  };
     constexpr double radius = 2;
 
-    auto mode = GENERATE(nuchic::Cascade::ProbabilityType::Gaussian,
-                         nuchic::Cascade::ProbabilityType::Pion,
-                         nuchic::Cascade::ProbabilityType::Cylinder);
+    auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
+                         achilles::Cascade::ProbabilityType::Pion,
+                         achilles::Cascade::ProbabilityType::Cylinder);
 
     auto interaction = std::make_unique<MockInteraction>();
     auto nucleus = std::make_shared<MockNucleus>();
@@ -322,7 +322,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(2)
             .LR_RETURN((hadrons));
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus), "MeanFreePath: only one particle should be kicked.");
 
         cascade.SetKicked(0);
@@ -338,7 +338,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(1)
             .RETURN(nullptr);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(1);
         CHECK_THROWS_WITH(cascade.MeanFreePath(nucleus),
             "MeanFreePath: kickNuc must have status -3 in order to accumulate DistanceTraveled.");
@@ -355,10 +355,10 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
             .TIMES(1)
             .RETURN(nullptr);
 
-        nuchic::Cascade cascade(std::move(interaction), mode, nuchic::Cascade::InMedium::None);
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         CHECK_NOTHROW(cascade.MeanFreePath(nucleus));
-        CHECK(hadrons[0].Status() == nuchic::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
         CHECK(hadrons[0].Radius() > radius);
     }
 }
@@ -380,7 +380,7 @@ TEST_CASE("Cascade YAML", "[Cascade]") {
     Step: 0.04
     )node", prob, in_medium));
 
-    auto cascade = node.as<nuchic::Cascade>();
+    auto cascade = node.as<achilles::Cascade>();
 
     CHECK(cascade.InteractionModel() == "ConstantInteractions");
     CHECK(cascade.ProbabilityModel() == prob);

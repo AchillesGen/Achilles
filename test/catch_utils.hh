@@ -7,7 +7,7 @@
 #include <random>
 #include "catch2/catch.hpp"
 
-#include "nuchic/FourVector.hh"
+#include "Achilles/FourVector.hh"
 
 class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string> {
     static constexpr auto& chars = "abcdefghijklmnopqrstuvwxyz"
@@ -39,12 +39,12 @@ class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string>
         }
 };
 
-class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::FourVector> {
+class RandomMomentumGenerator : public Catch::Generators::IGenerator<achilles::FourVector> {
     double m_maxVal;
     double m_mass;
     std::mt19937 m_rand{std::random_device{}()};
     std::uniform_real_distribution<double> m_dist;
-    nuchic::FourVector current_momentum{};
+    achilles::FourVector current_momentum{};
 
     public:
         RandomMomentumGenerator(double maxVal, double mass = 0):
@@ -55,7 +55,7 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::Fou
             static_cast<void>(next());
         };
 
-        nuchic::FourVector const& get() const override;
+        achilles::FourVector const& get() const override;
         bool next() override {
             double pmag = m_dist(m_rand);
             double cost = 2*m_dist(m_rand)/m_maxVal - 1;
@@ -65,19 +65,19 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<nuchic::Fou
             double px = pmag*sint*cos(phi);
             double py = pmag*sint*sin(phi);
             double pz = pmag*cost;
-            current_momentum = nuchic::FourVector(e, px, py, pz);
+            current_momentum = achilles::FourVector(e, px, py, pz);
             return true;
         }
 };
 
-inline nuchic::FourVector const& RandomMomentumGenerator::get() const {
+inline achilles::FourVector const& RandomMomentumGenerator::get() const {
     return current_momentum;
 }
 // This helper function provides a nicer UX when instantiating the generator
 // Notice that it returns an instance of GeneratorWrapper<std::string>, which
 // is a value-wrapper around std::unique_ptr<IGenerator<std::string>>.
-inline Catch::Generators::GeneratorWrapper<nuchic::FourVector> randomMomentum(double max, double mass = 0) {
-    return Catch::Generators::GeneratorWrapper<nuchic::FourVector>(std::unique_ptr<Catch::Generators::IGenerator<nuchic::FourVector>>(new RandomMomentumGenerator(max, mass)));
+inline Catch::Generators::GeneratorWrapper<achilles::FourVector> randomMomentum(double max, double mass = 0) {
+    return Catch::Generators::GeneratorWrapper<achilles::FourVector>(std::unique_ptr<Catch::Generators::IGenerator<achilles::FourVector>>(new RandomMomentumGenerator(max, mass)));
 }
 
 class RandomVectorGenerator : public Catch::Generators::IGenerator<std::vector<double>> {

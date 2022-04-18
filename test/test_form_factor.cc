@@ -2,18 +2,18 @@
 
 #include <iostream>
 
-#include "nuchic/Constants.hh"
-#include "nuchic/FormFactor.hh"
-#include "nuchic/Units.hh"
+#include "Achilles/Constants.hh"
+#include "Achilles/FormFactor.hh"
+#include "Achilles/Units.hh"
 
 #include "yaml-cpp/yaml.h"
 
-using nuchic::operator""_GeV;
+using achilles::operator""_GeV;
 
-class DummyFF : public nuchic::FormFactorImpl, nuchic::RegistrableFormFactor<DummyFF> {
+class DummyFF : public achilles::FormFactorImpl, achilles::RegistrableFormFactor<DummyFF> {
     public:
         DummyFF() = default;
-        void Evaluate(double, nuchic::FormFactor::Values &vals) const override {
+        void Evaluate(double, achilles::FormFactor::Values &vals) const override {
             vals.Gep = 1;
             vals.Gmp = 1;
             vals.Gen = 1;
@@ -22,17 +22,17 @@ class DummyFF : public nuchic::FormFactorImpl, nuchic::RegistrableFormFactor<Dum
         }
 
         // Required factory methods
-        static std::unique_ptr<FormFactorImpl> Construct(nuchic::FFType, const YAML::Node&) {
+        static std::unique_ptr<FormFactorImpl> Construct(achilles::FFType, const YAML::Node&) {
             return std::make_unique<DummyFF>();
         }
         static std::string Name() { return "FFTest"; }
-        static nuchic::FFType Type() { return nuchic::FFType::vector; }
+        static achilles::FFType Type() { return achilles::FFType::vector; }
 };
 
 TEST_CASE("Utilities", "[FormFactor]") {
     SECTION("Fill works") {
         DummyFF ff;
-        nuchic::FormFactor::Values vals;
+        achilles::FormFactor::Values vals;
         ff.Evaluate(1, vals);
         CHECK(vals.F1p == 1);
         CHECK(vals.F1n == 1);
@@ -44,10 +44,10 @@ TEST_CASE("Utilities", "[FormFactor]") {
 TEST_CASE("Vector", "[FormFactor]") {
     SECTION("Dipole") {
         YAML::Node node = YAML::Load("lambda: 1\nMu Proton: 1\nMu Neutron: 1");
-        auto ff = nuchic::VectorDipole::Construct(nuchic::FFType::vector, node);
-        CHECK_THROWS_WITH(nuchic::VectorDipole::Construct(nuchic::FFType::axial, node),
+        auto ff = achilles::VectorDipole::Construct(achilles::FFType::vector, node);
+        CHECK_THROWS_WITH(achilles::VectorDipole::Construct(achilles::FFType::axial, node),
             "FormFactor: Expected type vector, got type axial");
-        nuchic::FormFactor::Values vals;
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
         CHECK(vals.Gep == Approx(0.25));
         // Value below is the result of:
@@ -69,12 +69,12 @@ TEST_CASE("Vector", "[FormFactor]") {
             Gmp Params: [1, 1, 1, 1]
             Gmn Params: [1, 1, 1, 1]
             )node");
-        CHECK_THROWS_WITH(nuchic::Kelly::Construct(nuchic::FFType::axial, node),
+        CHECK_THROWS_WITH(achilles::Kelly::Construct(achilles::FFType::axial, node),
             "FormFactor: Expected type vector, got type axial");
-        auto ff = nuchic::Kelly::Construct(nuchic::FFType::vector, node);
-        nuchic::FormFactor::Values vals;
+        auto ff = achilles::Kelly::Construct(achilles::FFType::vector, node);
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
-        const double tau = 1.0/(4*pow(nuchic::Constant::mp/1_GeV, 2));
+        const double tau = 1.0/(4*pow(achilles::Constant::mp/1_GeV, 2));
         CHECK(vals.Gep == Approx((1+tau)/(1+tau+tau*tau+tau*tau*tau)));
         CHECK(vals.Gen == Approx(0.25*tau/(1+tau)));
         CHECK(vals.Gmp == vals.Gep);
@@ -94,12 +94,12 @@ TEST_CASE("Vector", "[FormFactor]") {
             NumeratorMn Params: [1, 1, 1, 1]
             DenominatorMn Params: [1, 1, 1, 1]
             )node");
-        CHECK_THROWS_WITH(nuchic::BBBA::Construct(nuchic::FFType::axial, node),
+        CHECK_THROWS_WITH(achilles::BBBA::Construct(achilles::FFType::axial, node),
             "FormFactor: Expected type vector, got type axial");
-        auto ff = nuchic::BBBA::Construct(nuchic::FFType::vector, node);
-        nuchic::FormFactor::Values vals;
+        auto ff = achilles::BBBA::Construct(achilles::FFType::vector, node);
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
-        const double tau = 1.0/(4*pow(nuchic::Constant::mp/1_GeV, 2));
+        const double tau = 1.0/(4*pow(achilles::Constant::mp/1_GeV, 2));
         const double num = 1 + tau + tau*tau + tau*tau*tau;
         const double den = 1 + tau + tau*tau + tau*tau*tau + tau*tau*tau*tau;
         CHECK(vals.Gep == Approx(num/den));
@@ -119,10 +119,10 @@ TEST_CASE("Vector", "[FormFactor]") {
             Gmp Params: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
             Gmn Params: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
             )node");
-        CHECK_THROWS_WITH(nuchic::ArringtonHill::Construct(nuchic::FFType::axial, node),
+        CHECK_THROWS_WITH(achilles::ArringtonHill::Construct(achilles::FFType::axial, node),
             "FormFactor: Expected type vector, got type axial");
-        auto ff = nuchic::ArringtonHill::Construct(nuchic::FFType::vector, node);
-        nuchic::FormFactor::Values vals;
+        auto ff = achilles::ArringtonHill::Construct(achilles::FFType::vector, node);
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
         CHECK(vals.Gep == Approx(13)); 
         CHECK(vals.Gen == Approx(13)); 
@@ -134,10 +134,10 @@ TEST_CASE("Vector", "[FormFactor]") {
 TEST_CASE("Axial", "[FormFactor]") {
     SECTION("Dipole") {
         YAML::Node node = YAML::Load("MA: 1\ngan1: 1\ngans: 1");
-        CHECK_THROWS_WITH(nuchic::AxialDipole::Construct(nuchic::FFType::vector, node),
+        CHECK_THROWS_WITH(achilles::AxialDipole::Construct(achilles::FFType::vector, node),
             "FormFactor: Expected type axial, got type vector");
-        auto ff = nuchic::AxialDipole::Construct(nuchic::FFType::axial, node);
-        nuchic::FormFactor::Values vals;
+        auto ff = achilles::AxialDipole::Construct(achilles::FFType::axial, node);
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
         CHECK(vals.FA == Approx(-0.25));
         CHECK(vals.FAs == Approx(-0.25));
@@ -149,26 +149,26 @@ TEST_CASE("Coherent", "[FormFactor]") {
         const double s = 0.2;
         const double A = 12;
         YAML::Node node = YAML::Load(fmt::format("s: {}\nA: {}", s, A));
-        auto ff = nuchic::HelmFormFactor::Construct(nuchic::FFType::coherent, node);
-        CHECK_THROWS_WITH(nuchic::HelmFormFactor::Construct(nuchic::FFType::vector, node),
+        auto ff = achilles::HelmFormFactor::Construct(achilles::FFType::coherent, node);
+        CHECK_THROWS_WITH(achilles::HelmFormFactor::Construct(achilles::FFType::vector, node),
             "FormFactor: Expected type coherent, got type vector");
-        nuchic::FormFactor::Values vals;
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
         // Dummy result for A=12, s=0.2
         const double r = sqrt(1.2*1.2*std::cbrt(A)*std::cbrt(A) - 5*s*s);
-        const double kappa = 1.0/nuchic::Constant::HBARC;
+        const double kappa = 1.0/achilles::Constant::HBARC;
         const double result = 3*exp(-kappa*kappa*0.2*0.2/2)*(sin(kappa*r) - kappa*r*cos(kappa*r))/pow(kappa*r, 3);
         CHECK(vals.Fcoh == Approx(result));
     }
 
     SECTION("Lovato") {
         YAML::Node node = YAML::Load("b: 1\nc: [1, 1, 1, 1, 1]");
-        CHECK_THROWS_WITH(nuchic::LovatoFormFactor::Construct(nuchic::FFType::vector, node),
+        CHECK_THROWS_WITH(achilles::LovatoFormFactor::Construct(achilles::FFType::vector, node),
             "FormFactor: Expected type coherent, got type vector");
-        auto ff = nuchic::LovatoFormFactor::Construct(nuchic::FFType::coherent, node);
-        nuchic::FormFactor::Values vals;
+        auto ff = achilles::LovatoFormFactor::Construct(achilles::FFType::coherent, node);
+        achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
-        const double x = 1.0/nuchic::Constant::HBARC;
+        const double x = 1.0/achilles::Constant::HBARC;
         const double result = exp(-0.5*x*x)*(1+x+x*x+x*x*x+x*x*x*x)/6.0;
         CHECK(vals.Fcoh == Approx(result));
     }
@@ -178,12 +178,12 @@ TEST_CASE("Builder", "[FormFactor]") {
     YAML::Node vector = YAML::Load("lambda: 1\nMu Proton: 1\nMu Neutron: 1");
     YAML::Node axial = YAML::Load("MA: 1\ngan1: 1\ngans: 1");
     YAML::Node coherent = YAML::Load("b: 1\nc: [1, 1, 1, 1, 1]");
-    auto ff = nuchic::FormFactorBuilder().Vector("VectorDipole", vector)
-                                         .AxialVector("AxialDipole", axial)
-                                         .Coherent("Lovato", coherent)
-                                         .build();
+    auto ff = achilles::FormFactorBuilder().Vector("VectorDipole", vector)
+                                           .AxialVector("AxialDipole", axial)
+                                           .Coherent("Lovato", coherent)
+                                           .build();
     auto vals = ff -> operator()(1);
-    const double x = 1.0/nuchic::Constant::HBARC;
+    const double x = 1.0/achilles::Constant::HBARC;
     const double result = exp(-0.5*x*x)*(1+x+x*x+x*x*x+x*x*x*x)/6.0;
     CHECK(vals.Gep == Approx(0.25));
     // Value below is the result of:

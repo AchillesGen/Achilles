@@ -4,7 +4,7 @@
 // Channel_Generator_UniV
 #include "PHASIC++/Channels/Channel_Elements.H"
 #include "plugins/Sherpa/Channels.hh"
-#include "nuchic/PhaseSpaceFactory.hh"
+#include "Achilles/PhaseSpaceFactory.hh"
 
 using namespace PHASIC;
 using namespace ATOOLS;
@@ -34,7 +34,7 @@ class Channels1 : public Channels {
         }
 };
 
-class C1_0 : public Channels1, nuchic::RegistrablePS<Channels, C1_0, std::vector<double>> {
+class C1_0 : public Channels1, achilles::RegistrablePS<Channels, C1_0, std::vector<double>> {
     public:
         C1_0(const std::vector<double> &s) : Channels1(s, Name()) {}
         static std::string Name() { return "C1_0"; }
@@ -50,7 +50,7 @@ class C1_0 : public Channels1, nuchic::RegistrablePS<Channels, C1_0, std::vector
         void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
-class C1_1 : public Channels1, nuchic::RegistrablePS<Channels, C1_1, std::vector<double>> {
+class C1_1 : public Channels1, achilles::RegistrablePS<Channels, C1_1, std::vector<double>> {
     public:
         C1_1(const std::vector<double> &s) : Channels1(s, Name()) {}
         static std::string Name() { return "C1_1"; }
@@ -65,7 +65,7 @@ class C1_1 : public Channels1, nuchic::RegistrablePS<Channels, C1_1, std::vector
         void GeneratePoint(std::vector<Vec4D>&, const std::vector<double> &) override;
 };
 
-class C1_2 : public Channels1, nuchic::RegistrablePS<Channels, C1_2, std::vector<double>> {
+class C1_2 : public Channels1, achilles::RegistrablePS<Channels, C1_2, std::vector<double>> {
     public:
         C1_2(const std::vector<double> &s) : Channels1(s, Name()) {}
         static std::string Name() { return "C1_2"; }

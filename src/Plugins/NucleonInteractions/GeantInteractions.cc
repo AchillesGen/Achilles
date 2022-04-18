@@ -3,15 +3,15 @@
 
 #include "spdlog/spdlog.h"
 
-#include "nuchic/Constants.hh"
-#include "nuchic/FourVector.hh"
-#include "nuchic/GeantInteractions.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/ThreeVector.hh"
-#include "nuchic/Utilities.hh"
+#include "Achilles/Constants.hh"
+#include "Achilles/FourVector.hh"
+#include "Achilles/GeantInteractions.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/ThreeVector.hh"
+#include "Achilles/Utilities.hh"
 
 using namespace H5;
-using namespace nuchic;
+using namespace achilles;
 
 REGISTER_INTERACTION(GeantInteractions);
 
@@ -69,7 +69,7 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
     sig.read(sigAngular.data(), PredType::NATIVE_DOUBLE, sigSpace, sigSpace);
 
     // Perform interpolation for angles
-    nuchic::Interp2D interp;
+    achilles::Interp2D interp;
     interp.BicubicSpline(pcmVec, m_theta, sigAngular);
 
     std::vector<double> theta(pcmVec.size()*m_cdf.size());
@@ -79,7 +79,7 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
             auto func = [interp, pcmVec, this, i, j](double x){
                 return interp(pcmVec[i], x) - this -> m_cdf[j];
             };
-            nuchic::Brent brent(func, accuracy);
+            achilles::Brent brent(func, accuracy);
             if(j != m_cdf.size() - 1)
                 try{
                     theta[i*m_cdf.size() + j] = brent.CalcRoot(m_theta.front(), m_theta.back());

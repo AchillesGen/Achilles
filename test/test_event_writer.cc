@@ -3,37 +3,37 @@
 
 #include <sstream>
 
-#include "nuchic/EventWriter.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/Version.hh"
+#include "Achilles/EventWriter.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Version.hh"
 
 TEST_CASE("Builtin", "[EventWriter]") {
     SECTION("Write Header") {
         std::stringstream ss;
-        nuchic::NuchicWriter writer(&ss);
+        achilles::AchillesWriter writer(&ss);
 
         writer.WriteHeader("dummy.txt");
         
-        std::string expected = fmt::format(R"result(Nuchic Version: {0}
+        std::string expected = fmt::format(R"result(Achilles Version: {0}
 {1:-^40}
 
 {1:-^40}
 
-)result", NUCHIC_VERSION, "");
+)result", ACHILLES_VERSION, "");
 
         CHECK(ss.str() == expected);
     }
 
     SECTION("Writing Event") {
         std::stringstream ss;
-        nuchic::NuchicWriter writer(&ss);
+        achilles::AchillesWriter writer(&ss);
 
-        static constexpr nuchic::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-        static constexpr nuchic::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
-        nuchic::Particles particles = {
-            {nuchic::PID::proton(), hadron0, {}, nuchic::ParticleStatus::initial_state},
-            {nuchic::PID::proton(), hadron1, {}, nuchic::ParticleStatus::final_state}};
-        nuchic::NuclearRemnant remnant(11, 5);
+        static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
+        static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+        achilles::Particles particles = {
+            {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
+            {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
+        achilles::NuclearRemnant remnant(11, 5);
         
         MockEvent event;
         REQUIRE_CALL(event, Particles())

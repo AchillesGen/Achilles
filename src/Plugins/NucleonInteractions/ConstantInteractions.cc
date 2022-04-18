@@ -1,5 +1,5 @@
-#include "nuchic/ConstantInteractions.hh"
+#include "Achilles/ConstantInteractions.hh"
 
-using namespace nuchic;
+using namespace achilles;
 
 REGISTER_INTERACTION(ConstantInteractions);
