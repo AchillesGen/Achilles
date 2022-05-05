@@ -8,6 +8,7 @@
 #include "nuchic/Vegas.hh"
 #include "nuchic/MultiChannel.hh"
 #include "nuchic/Unweighter.hh"
+#include "plugins/Sherpa/SherpaMEs.hh"
 
 #include <memory>
 #include <vector>
@@ -32,7 +33,7 @@ class SherpaMEs;
 
 class EventGen {
     public:
-        EventGen(const std::string&,SherpaMEs *const);
+        EventGen(const std::string&, std::vector<std::string>&);
         void Initialize();
         void GenerateEvents();
 
@@ -44,6 +45,7 @@ class EventGen {
         // bool MakeEventCuts(Event&);
         void Rotate(Event&);
 
+        std::unique_ptr<SherpaMEs> sherpa;
         std::shared_ptr<Beam> beam;
         std::shared_ptr<Nucleus> nucleus;
         std::shared_ptr<Cascade> cascade;

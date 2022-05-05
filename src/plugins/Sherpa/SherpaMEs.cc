@@ -75,7 +75,7 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"BEAM_ENERGY_1=100");
   addParameter(argv,"BEAM_ENERGY_2=100");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
-  addParameter(argv,"MODEL=DarkNeutrinoPortal_Majorana_UFO");
+  // addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");

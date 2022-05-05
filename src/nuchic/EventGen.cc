@@ -24,7 +24,6 @@
 #include "plugins/Sherpa/Channels1.hh"
 #include "plugins/Sherpa/Channels3.hh"
 
-#include "plugins/Sherpa/SherpaMEs.hh"
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
 
 #include "yaml-cpp/yaml.h"
@@ -78,9 +77,14 @@ nuchic::Channel<nuchic::FourVector> BuildGenChannel(nuchic::NuclearModel *model,
     return channel;
 }
 
-nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherpa) :
+nuchic::EventGen::EventGen(const std::string &configFile, std::vector<std::string> &shargs) :
   runCascade{false}, outputEvents{false} {
     config = YAML::LoadFile(configFile);
+
+    // Setup sherpa
+    sherpa = std::make_unique<nuchic::SherpaMEs>();
+    shargs.push_back("MODEL=" + config["Process"]["Model"].as<std::string>());
+    sherpa -> Initialize(shargs);
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -134,7 +138,7 @@ nuchic::EventGen::EventGen(const std::string &configFile, SherpaMEs *const sherp
     spdlog::debug("Initializing hard interaction");
     scattering = std::make_shared<HardScattering>();
     scattering -> SetProcess(leptonicProcess);
-    scattering -> SetSherpa(sherpa);
+    scattering -> SetSherpa(sherpa.get());
     scattering -> SetNuclear(std::move(nuclear_model));
 
     // Setup channels

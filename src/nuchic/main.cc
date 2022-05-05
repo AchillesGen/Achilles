@@ -57,8 +57,8 @@ R"(
       --display-ff                          Display the available form factors
 )";
 
-void GenerateEvents(const std::string &runcard,nuchic::SherpaMEs *const sherpa) {
-    nuchic::EventGen generator(runcard,sherpa);
+void GenerateEvents(const std::string &runcard, std::vector<std::string>& sherpa) {
+    nuchic::EventGen generator(runcard, sherpa);
     generator.Initialize();
     generator.GenerateEvents();
 }
@@ -105,12 +105,10 @@ int main(int argc, char *argv[]) {
             spdlog::warn("Cannot open HardScattering: {}", dlerror());
         }
     }
-    nuchic::SherpaMEs sherpa;
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
-    sherpa.Initialize(shargs);
 
-    GenerateEvents(runcard,&sherpa);
+    GenerateEvents(runcard, shargs);
 
     // Close dynamic libraries
     if(handle) dlclose(handle);
