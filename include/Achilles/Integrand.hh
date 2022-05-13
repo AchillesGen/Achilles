@@ -105,6 +105,8 @@ struct convert<achilles::Channel<T>> {
         return node;
     }
 
+    // TODO: This is broken!
+    /*
     static bool decode(const Node &node, achilles::Channel<T> &rhs) {
         if(node.size() != 2) return false;
         rhs.integrator = node["Integrator"].as<achilles::Vegas>();
@@ -123,6 +125,7 @@ struct convert<achilles::Channel<T>> {
         }
         return true;
     }
+    */
 };
 
 template<typename T>

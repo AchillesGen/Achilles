@@ -49,16 +49,21 @@ void Event::InitializeHadrons(const Process_Info &process) {
         }
     }
 
+    spdlog::trace("here");
     // TODO: Update to handle multiple initial and final state particles
     // Initial state setup
     size_t idx = SelectNucleon();
+    spdlog::trace("here");
     Particle &initial = m_nuc -> Nucleons()[idx];
+    spdlog::trace("here, mom.size() = {}", mom.size());
     initial.Momentum() = mom.front();
     initial.Status() = ParticleStatus::initial_state;
 
+    spdlog::trace("here");
     // Final state setup
     Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
                    initial.Position(), ParticleStatus::propagating);
+    spdlog::trace("here");
     m_nuc -> Nucleons().push_back(final);
 }
 

@@ -86,7 +86,7 @@ achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *
 #endif
 
 achilles::EventGen::EventGen(const std::string &configFile,
-                           const std::vector<std::string> &shargs) {
+                             const std::vector<std::string> &shargs) {
     config = YAML::LoadFile(configFile);
 
     // Setup random number generator
@@ -98,6 +98,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     Random::Instance().Seed(seed);
 
     // Load initial state, massess
+    spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
 
@@ -144,6 +145,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
 #else
     // Dummy call to remove unused error
     shargs.size();
+    leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
+    leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
+    leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
+    leptonicProcess.m_mom_map[3] = leptonicProcess.Ids()[3];
 #endif
 
     // Initialize hard cross-sections
@@ -211,12 +216,17 @@ achilles::EventGen::EventGen(const std::string &configFile,
     bool zipped = true;
     if(output["Zipped"])
         zipped = output["Zipped"].as<bool>();
+    spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
     if(output["Format"].as<std::string>() == "Achilles") {
         writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
 #ifdef ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
 #endif
+    } else {
+        std::string msg = fmt::format("Achilles: Invalid output format requested {}",
+                                      output["Format"].as<std::string>());
+        throw std::runtime_error(msg);
     }
     writer -> WriteHeader(configFile);
 
@@ -233,15 +243,16 @@ void achilles::EventGen::Initialize() {
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return GenerateEvent(mom, wgt);
     };
-    try {
-        YAML::Node old_results = YAML::LoadFile("results.yml");
-        integrator = old_results["Multichannel"].as<MultiChannel>();
-        integrand = old_results["Channels"].as<Integrand<FourVector>>();
-        YAML::Node results;
-        results["Multichannel"] = integrator;
-        results["Channels"] = integrand;
-        integrand.Function() = func;
-    } catch(const YAML::BadFile &e) {
+    // TODO: Loading the saved data is broken
+    // try {
+    //     YAML::Node old_results = YAML::LoadFile("results.yml");
+    //     integrator = old_results["Multichannel"].as<MultiChannel>();
+    //     integrand = old_results["Channels"].as<Integrand<FourVector>>();
+    //     YAML::Node results;
+    //     results["Multichannel"] = integrator;
+    //     results["Channels"] = integrand;
+    //     integrand.Function() = func;
+    // } catch(const YAML::BadFile &e) {
         spdlog::info("Initializing integrator.");
         integrand.Function() = func;
         if(config["Initialize"]["Accuracy"])
@@ -256,7 +267,7 @@ void achilles::EventGen::Initialize() {
         std::ofstream fresults("results.yml");
         fresults << results;
         fresults.close();
-    }
+    // }
 }
 
 void achilles::EventGen::GenerateEvents() {

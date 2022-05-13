@@ -5,6 +5,7 @@
 #include "spdlog/spdlog.h"
 
 using achilles::FourVector;
+using achilles::ThreeVector;
 
 FourVector::FourVector(const ThreeVector& other, const double& E) noexcept
     : vec({E, other[0], other[1], other[2]}) {}

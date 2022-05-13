@@ -99,7 +99,7 @@ if(NOT ENABLE_GZIP)
 endif()
 
 # Build Plugin Library
-add_subdirectory(src/Plugins)
+# add_subdirectory(src/Plugins)
 
 # Testing
 if(ENABLE_TESTING)

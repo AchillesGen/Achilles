@@ -22,6 +22,19 @@ namespace Constant {
     constexpr double mN = (mp + mn) / 2.0;
     constexpr double AMU = 931.49410248_MeV;
     constexpr double mN2 = mN*mN;
+
+    // EW parameters
+    constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
+    constexpr double MZ = 91.1876_GeV;
+    constexpr double MW = 80.359_GeV;
+    constexpr double GAMZ = 2.4952_GeV;
+    constexpr double GAMW = 2.0895_GeV;
+    constexpr double cos2w = MW*MW/MZ/MZ;
+    constexpr double sin2w = 1 - cos2w;
+    const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
+    const double ee = sqrt(alpha);
+    const double cw = sqrt(cos2w);
+    const double sw = sqrt(sin2w);
 }
 
 }

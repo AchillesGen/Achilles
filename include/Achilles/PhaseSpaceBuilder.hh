@@ -20,6 +20,9 @@ class PSBuilder {
         MOCK PSBuilder& Beam(std::shared_ptr<Beam>, size_t=1);
         MOCK PSBuilder& Hadron(const std::string&, const std::vector<double>&, size_t=0);
         MOCK PSBuilder& FinalState(const std::string&, const std::vector<double>&);
+#ifdef ENABLE_BSM
+        MOCK PSBuilder& SherpaFinalState(const std::string&, const std::vector<double>&);
+#endif // ENABLE_BSM
         MOCK PSBuilder& SherpaFinalState(const std::string&, const std::vector<double>&);
         MOCK PSBuilder& GenFinalState(std::unique_ptr<PHASIC::Channels>);
 
