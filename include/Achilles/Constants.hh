@@ -32,7 +32,7 @@ namespace Constant {
     constexpr double cos2w = MW*MW/MZ/MZ;
     constexpr double sin2w = 1 - cos2w;
     const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
-    const double ee = sqrt(alpha);
+    const double ee = sqrt(4*M_PI*alpha);
     const double cw = sqrt(cos2w);
     const double sw = sqrt(sin2w);
 }
