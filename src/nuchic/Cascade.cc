@@ -55,15 +55,18 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector& energyTra
                    const std::array<double, 2>& sigma) {
     std::vector<std::size_t> indices;
 
+    // Interact with protons or neutrons according to their total cross section
     auto ddSigma = {sigma[0], sigma[1]};
     auto index = Random::Instance().SelectIndex(ddSigma);
 
     auto interactPID = index == 0 ? PID::proton() : PID::neutron();
 
+    // Restrict to particles of chosen species
     for(std::size_t i = 0; i < nucleus -> Nucleons().size(); ++i) {
         if(nucleus -> Nucleons()[i].ID() == interactPID) indices.push_back(i);
     }
 
+    // Kick a single particle from the list
     kickedIdxs.push_back(Random::Instance().Pick(indices));
     auto kicked = &nucleus -> Nucleons()[kickedIdxs.back()];
     kicked -> Status() = ParticleStatus::propagating;
@@ -537,6 +540,8 @@ void Cascade::Escaped(Particles &particles) {
     }
 }
 
+/// Convert a time step in [fm] to [1/MeV].
+/// timeStep = distance / max("betas of all kicked particles") / hbarc
 void Cascade::AdaptiveStep(const Particles& particles, const double& stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
@@ -547,6 +552,9 @@ void Cascade::AdaptiveStep(const Particles& particles, const double& stepDistanc
     timeStep = stepDistance/(beta*Constant::HBARC);
 }
 
+/// Determine whether "position" is between the two planes orthogonal to the
+/// displacement "point2 - point1" and containing the points "point1" and 
+/// "point2,"" respectively.
 bool Cascade::BetweenPlanes(const ThreeVector& position,
                             const ThreeVector& point1,
                             const ThreeVector& point2) const noexcept {
@@ -557,6 +565,9 @@ bool Cascade::BetweenPlanes(const ThreeVector& position,
     return ((position - point1).Dot(dist) >= 0 && (position - point2).Dot(dist) <=0);
 }
 
+/// Project the vector "position" onto the plane containing the point "planePt"
+/// and orthogonal to the vector "planeVec" by subtracting off the projection
+/// of "position - planePt" onto the normal vector "planeVec".
 const ThreeVector Cascade::Project(const ThreeVector& position,
                                    const ThreeVector& planePt,
                                    const ThreeVector& planeVec) const noexcept {
@@ -565,6 +576,19 @@ const ThreeVector Cascade::Project(const ThreeVector& position,
     return position - projection;
 }
 
+/// Get a sorted list of allowed InteractionDistances, i.e., of pairs
+/// (index, distance). Allowed interactions are those between the planes 
+/// orthogonal to the momentum of the specified particle and located at 
+/// (i) the particle's current position and 
+/// (ii) the particle's position after propagating for "timeStep".
+/// For example, in the diagram below, interaction with A is allowed, while 
+/// interactions with B and C are not allowed.
+///    plane1  plane2
+///      |   A   |
+///      |       |
+///      x---->  |
+///      |       |   B 
+///  C   |       |
 const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
                                                         const std::size_t& idx) const noexcept {
     InteractionDistances results;
@@ -584,6 +608,7 @@ const InteractionDistances Cascade::AllowedInteractions(Particles& particles,
         // if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, point2)) continue;
         auto projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
+        // (Squared) distance in the direction orthogonal to the momentum
         double dist2 = (projectedPosition - point1).Magnitude2();
 
         results.push_back(std::make_pair(i, dist2));
@@ -611,10 +636,17 @@ double Cascade::GetXSec(const Particle& particle1, const Particle& particle2) co
     return m_interactions -> CrossSection(particle1, particle2) * fact;
 }
 
+/// Decide whether or not an interaction occured.
+/// The total probability is normalized to the cross section "sigma" when 
+/// integrated over the plane.
 std::size_t Cascade::Interacted(const Particles& particles, const Particle& kickedParticle,
                                 const InteractionDistances& dists) noexcept {
     for(auto dist : dists) {
+        // Cross section in mb
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
+        // 1 barn = 100 fm^2, so 1 mb = 0.1 fm^2.
+        // Thus: (xsec [mb]) x (0.1 [fm^2]/ 1 [mb]) = 0.1 xsec [fm^2]
+        // dist.second is fm^2; factor of 10 converts mb to fm^2
         const double prob = probability(dist.second, xsec/10);
         if(Random::Instance().Uniform(0.0, 1.0) < prob) return dist.first;
     }
