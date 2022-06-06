@@ -16,13 +16,27 @@ class WeylSpinor {
 
         WeylSpinor() = default;
         WeylSpinor(bool type, const FourVector &p) {
+            double pp(PPlus(p).real()), pm(PMinus(p).real());
             Complex rpp(sqrt(PPlus(p))), rpm(sqrt(PMinus(p))), pt(PT(p));
-            if( pt != Complex(0.0, 0.0))
+            double sv(std::abs(p[0])*1e-8);
+            if( (std::abs(pt.real()) > sv || std::abs(pt.imag()) > sv) &&
+                (std::abs(rpp.real()) > sv || std::abs(rpp.imag()) > sv) )
                 rpm = Complex(pt.real(), type ? pt.imag() : -pt.imag()) / rpp;
 
             m_type = type;
             m_u1 = rpp;
             m_u2 = rpm;
+
+            if (pp<0.0 || pm<0.0) {
+              if (type) {
+                m_u1=Complex(-m_u1.imag(),m_u1.real());
+                m_u2=Complex(-m_u2.imag(),m_u2.real());
+              }
+              else {
+                m_u1=-Complex(-m_u1.imag(),m_u1.real());
+                m_u2=-Complex(-m_u2.imag(),m_u2.real());
+              }
+            }
         }
         WeylSpinor(bool type, Complex u1, Complex u2) : m_type{type}, m_u1{u1}, m_u2{u2} {}
         WeylSpinor(const WeylSpinor&) = default;

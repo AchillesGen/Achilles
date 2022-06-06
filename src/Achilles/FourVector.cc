@@ -73,6 +73,20 @@ FourVector FourVector::Boost(const double& beta_x, const double& beta_y,
     return Boost(ThreeVector(beta_x, beta_y, beta_z));
 }
 
+double FourVector::SmallOMCT(const FourVector& v) const noexcept {
+  double mag(sqrt(P2()*v.P2()));
+  double pq(vec[1]*v[1]+vec[2]*v[2]+vec[3]*v[3]);
+  double ct(std::min(std::max(pq/mag,-1.),1.));
+  if (ct<0.) return 1.-ct;
+  double st(this->Vec3().Cross(v.Vec3()).P()/mag);
+  double st2(st/(2.*sqrt((ct+1)/2.)));
+  return 2.*st2*st2;
+}
+
+double FourVector::SmallMLDP(const FourVector& v) const noexcept {
+  return vec[0]*v[0]*SmallOMCT(v);
+}
+
 FourVector FourVector::Rotate(const RotMat &mat) const noexcept {
     return {E(),
             mat[0]*Px()+mat[1]*Py()+mat[2]*Pz(),

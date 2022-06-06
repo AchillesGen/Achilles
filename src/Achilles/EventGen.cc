@@ -304,6 +304,12 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Process().m_ids;
 
+    spdlog::debug("Event Phase Space:");
+    size_t idx = 0;
+    for(const auto &momentum : event.Momentum()) {
+        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
+    }
+
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
 
@@ -318,12 +324,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             writer -> Write(event);
         }
         return 0;
-    }
-
-    spdlog::trace("Event Phase Space:");
-    size_t idx = 0;
-    for(const auto &momentum : event.Momentum()) {
-        spdlog::trace("\t{}: {}", ++idx, momentum);
     }
 
     spdlog::trace("Leptons:");

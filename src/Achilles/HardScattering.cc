@@ -130,7 +130,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
     // Calculate currents
     Current result;
     double q2 = (p[1] - p.back()).M2();
-    std::complex<double> prop = 1.0/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
+    std::complex<double> prop = std::complex<double>(0, 1)/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
     spdlog::trace("Calculating Current for {}", pid);
     for(size_t i = 0; i < 2; ++i) {
         for(size_t j = 0; j < 2; ++j) {

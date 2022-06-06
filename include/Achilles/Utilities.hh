@@ -220,6 +220,11 @@ constexpr bool IsZero(const T &x, const T &tol) {
     return std::abs(x) < tol;
 }
 
+template<typename T>
+T Sign(const T &a) {
+  return a > 0 ? 1 : ( a < 0 ? -1 : 0 );
+}
+
 }
 
 #endif // end of include guard: UTILITIES_HH

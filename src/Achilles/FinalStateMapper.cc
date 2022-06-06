@@ -1,6 +1,7 @@
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/Poincare.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
@@ -23,7 +24,7 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     auto sqrts = sqrt(s);
     auto boostVec = p01.BoostVector();
     auto mom0 = mom[0].Boost(-boostVec);
-    auto rotMat = mom0.AlignZ();
+    Poincare zax(mom0, FourVector(1.,0.,0.,1.));
     auto cosT = dCos*rans[0] - 1;
     auto sinT = sqrt(1 - cosT*cosT);
     auto phi = dPhi*rans[1];
@@ -35,9 +36,11 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     mom[2] = {E1, pCM*sinT*cos(phi), pCM*sinT*sin(phi), pCM*cosT};
     mom[3] = {E2, -pCM*sinT*cos(phi), -pCM*sinT*sin(phi), -pCM*cosT};
 
-    mom[2] = mom[2].RotateBack(rotMat).Boost(boostVec);
-    mom[3] = mom[3].RotateBack(rotMat).Boost(boostVec);
+    zax.RotateBack(mom[2]);
+    zax.RotateBack(mom[3]);
 
+    mom[2] = mom[2].Boost(boostVec);
+    mom[3] = mom[3].Boost(boostVec);
 
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));

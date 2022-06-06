@@ -196,6 +196,9 @@ class FourVector {
 
         /// @name Functions
         /// @{
+        
+        double SmallOMCT(const FourVector& v) const noexcept;
+        double SmallMLDP(const FourVector& v) const noexcept;
 
         /// Boost the four vector to the frame given by the three vector velocities
         ///@param beta: The boost vector to determine the frame
@@ -402,8 +405,8 @@ template<> struct fmt::formatter<achilles::FourVector> {
         // ctx.out() is an output iterator to write to
         return format_to(
                 ctx.out(),
-                presentation == 'f' ? "FourVector({:.3f}, {:.3f}, {:.3f}, {:.3f})"
-                                    : "FourVector({:.3e}, {:.3e}, {:.3e}, {:.3e})",
+                presentation == 'f' ? "FourVector({:.8f}, {:.8f}, {:.8f}, {:.8f})"
+                                    : "FourVector({:.8e}, {:.8e}, {:.8e}, {:.8e})",
                 p.E(), p.Px(), p.Py(), p.Pz());
     }
 };
