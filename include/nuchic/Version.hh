@@ -1,9 +1,0 @@
-#ifndef VERSION_HH
-#define VERSION_HH
-
-#define NUCHIC_VERSION "1.0.0"
-#define NUCHIC_VERSION_MAJOR "1"
-#define NUCHIC_VERSION_MINOR "0"
-#define NUCHIC_VERSION_PATCH "0"
-
-#endif

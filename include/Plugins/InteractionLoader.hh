@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 #error Plugin Library: Currently only works with c++14 or newer
 #endif
 
-namespace nuchic {
+namespace achilles {
 
 class Interactions;
 class InteractionFactory;
@@ -36,6 +36,6 @@ class InteractionLoader {
         static std::set<Interactions*> loadedPlugins;
 };
 
-} // end nuchic namespace
+} // end achilles namespace
 
 #endif

@@ -1,12 +1,12 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/CombinedCuts.hh"
-#include "nuchic/Cuts.hh"
-#include "nuchic/OneParticleCuts.hh"
-#include "nuchic/TwoParticleCuts.hh"
-#include "nuchic/FourVector.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/Units.hh"
+#include "Achilles/CombinedCuts.hh"
+#include "Achilles/Cuts.hh"
+#include "Achilles/OneParticleCuts.hh"
+#include "Achilles/TwoParticleCuts.hh"
+#include "Achilles/FourVector.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Units.hh"
 
 #include "catch_utils.hh"
 
@@ -18,8 +18,8 @@
 #include <iostream>
 
 template<class T>
-struct TestCutBase : public nuchic::CutBase<T> {
-    TestCutBase(YAML::Node node) : nuchic::CutBase<T>(node) {}
+struct TestCutBase : public achilles::CutBase<T> {
+    TestCutBase(YAML::Node node) : achilles::CutBase<T>(node) {}
     bool MakeCut(const T& val) const { return this->CheckCut(val); }
 };
 
@@ -53,35 +53,35 @@ TEST_CASE("Single particle cuts", "[Cuts]") {
     SECTION("Energy Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::EnergyCut cut(node);
+        achilles::EnergyCut cut(node);
         CHECK(cut.MakeCut(mom) == (mom.E() > 10));
     }
 
     SECTION("Momentum Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::MomentumCut cut(node);
+        achilles::MomentumCut cut(node);
         CHECK(cut.MakeCut(mom) == (mom.P() > 10));
     }
 
     SECTION("AngleTheta Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::AngleThetaCut cut(node);
+        achilles::AngleThetaCut cut(node);
         CHECK(cut.MakeCut(mom) == (mom.Theta()*180/M_PI > 10));
     }
 
     SECTION("Transverse Momentum Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::TransverseMomentumCut cut(node);
+        achilles::TransverseMomentumCut cut(node);
         CHECK(cut.MakeCut(mom) == (mom.Pt() > 10));
     }
 
     SECTION("ETheta2 Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::ETheta2Cut cut(node);
+        achilles::ETheta2Cut cut(node);
         CHECK(cut.MakeCut(mom) == (mom.E()*pow(mom.Theta(), 2) > 10));
     }
 }
@@ -93,42 +93,42 @@ TEST_CASE("Two particle cuts", "[Cuts]") {
     SECTION("DeltaTheta Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::DeltaThetaCut cut(node);
+        achilles::DeltaThetaCut cut(node);
         CHECK(cut.MakeCut(mom1, mom2) == (std::acos(mom1.CosAngle(mom2))*180/M_PI > 10));
     }
 
     SECTION("InvariantMass Cut") {
         YAML::Node node;
         node["min"] = 10;
-        nuchic::InvariantMassCut cut(node);
+        achilles::InvariantMassCut cut(node);
         CHECK(cut.MakeCut(mom1, mom2) == ((mom1+mom2).M() > 10));
     }
 }
 
 TEST_CASE("CutCollection", "[Cuts]") {
-    nuchic::CutCollection cuts;
+    achilles::CutCollection cuts;
     auto mom1 = GENERATE(take(30, randomMomentum(1000)));
     auto mom2 = GENERATE(take(30, randomMomentum(1000)));
-    auto part1 = nuchic::Particle(nuchic::PID::electron(), mom1);
-    auto part2 = nuchic::Particle(nuchic::PID::muon(), mom2);
-    auto part3 = nuchic::Particle(nuchic::PID::electron(), mom2);
-    auto part4 = nuchic::Particle(-nuchic::PID::electron(), mom2);
-    part1.Status() = nuchic::ParticleStatus::final_state;
-    part2.Status() = nuchic::ParticleStatus::final_state;
-    part3.Status() = nuchic::ParticleStatus::final_state;
-    part4.Status() = nuchic::ParticleStatus::final_state;
+    auto part1 = achilles::Particle(achilles::PID::electron(), mom1);
+    auto part2 = achilles::Particle(achilles::PID::muon(), mom2);
+    auto part3 = achilles::Particle(achilles::PID::electron(), mom2);
+    auto part4 = achilles::Particle(-achilles::PID::electron(), mom2);
+    part1.Status() = achilles::ParticleStatus::final_state;
+    part2.Status() = achilles::ParticleStatus::final_state;
+    part3.Status() = achilles::ParticleStatus::final_state;
+    part4.Status() = achilles::ParticleStatus::final_state;
 
     SECTION("Single PIDs work") {
         YAML::Node node;
         node["min"] = 10;
-        auto cut = nuchic::CutFactory<nuchic::OneParticleCut>::InitializeCut("Energy", node);
-        cuts.AddCut({nuchic::PID::electron()}, std::move(cut)); 
+        auto cut = achilles::CutFactory<achilles::OneParticleCut>::InitializeCut("Energy", node);
+        cuts.AddCut({achilles::PID::electron()}, std::move(cut)); 
         CHECK(cuts.EvaluateCuts({part1}) == (mom1.E() > 10));
         CHECK(cuts.EvaluateCuts({part2}) == true);
         CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10));
 
-        auto cut2 = nuchic::CutFactory<nuchic::TwoParticleCut>::InitializeCut("DeltaTheta", node);
-        cuts.AddCut({nuchic::PID::electron()}, std::move(cut2));
+        auto cut2 = achilles::CutFactory<achilles::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        cuts.AddCut({achilles::PID::electron()}, std::move(cut2));
         bool pass_cuts = (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2))*180/M_PI > 10);
         CHECK(cuts.EvaluateCuts({part1, part3}) == pass_cuts);
     }
@@ -136,12 +136,12 @@ TEST_CASE("CutCollection", "[Cuts]") {
     SECTION("Sets of PIDs work") {
         YAML::Node node;
         node["min"] = 10;
-        auto cut = nuchic::CutFactory<nuchic::OneParticleCut>::InitializeCut("Energy", node);
-        cuts.AddCut({nuchic::PID::electron(), nuchic::PID::muon()}, std::move(cut)); 
+        auto cut = achilles::CutFactory<achilles::OneParticleCut>::InitializeCut("Energy", node);
+        cuts.AddCut({achilles::PID::electron(), achilles::PID::muon()}, std::move(cut)); 
         CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10 && mom2.E() > 10));
 
-        auto cut2 = nuchic::CutFactory<nuchic::TwoParticleCut>::InitializeCut("DeltaTheta", node);
-        cuts.AddCut({nuchic::PID::electron(), nuchic::PID::muon()}, std::move(cut2));
+        auto cut2 = achilles::CutFactory<achilles::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        cuts.AddCut({achilles::PID::electron(), achilles::PID::muon()}, std::move(cut2));
         bool pass_cuts = (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2))*180/M_PI > 10);
         CHECK(cuts.EvaluateCuts({part1, part2}) == pass_cuts);
     }
@@ -163,7 +163,7 @@ TEST_CASE("CutCollection", "[Cuts]") {
               range: [[10, 30], [60, 80]]
         )node");
 
-        cuts = node["cuts"].as<nuchic::CutCollection>();
+        cuts = node["cuts"].as<achilles::CutCollection>();
         bool pass_cuts = (mom1.E() > 10) && (mom2.E() > 10);
         pass_cuts &= (mom1+mom2).M() > 80 && (mom1+mom2).M() < 100;
         double dtheta = std::acos(mom1.CosAngle(mom2))*180/M_PI;

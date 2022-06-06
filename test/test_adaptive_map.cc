@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp" 
 
-#include "nuchic/AdaptiveMap.hh"
+#include "Achilles/AdaptiveMap.hh"
 
 #include "catch_utils.hh"
 #include <iostream>
 #include <sstream>
 
 TEST_CASE("Adaptive Map Construction", "[vegas]") {
-    nuchic::AdaptiveMap map(2, 4);
+    achilles::AdaptiveMap map(2, 4);
 
     CHECK(map.Dims() == 2);
     CHECK(map.Bins() == 4);
@@ -20,7 +20,7 @@ TEST_CASE("Adaptive Map Construction", "[vegas]") {
 TEST_CASE("Numbers generated according to Adaptive Map", "[vegas]") {
     constexpr size_t ndims = 2;
     constexpr size_t nbins = 10;
-    nuchic::AdaptiveMap map(ndims, nbins);
+    achilles::AdaptiveMap map(ndims, nbins);
 
     SECTION("Uniform Distribution"){
         auto rans = GENERATE(take(100, randomVector(ndims)));
@@ -61,7 +61,7 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
     SECTION("Adapting the map") {
         constexpr size_t ndims = 2;
         constexpr size_t nbins = 10;
-        nuchic::AdaptiveMap map(ndims, nbins);
+        achilles::AdaptiveMap map(ndims, nbins);
         const auto data = GENERATE(take(1, randomVector(ndims*nbins, 0, 100)));
 
         // No change if alpha = 0
@@ -84,7 +84,7 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
     }
 
     SECTION("Splitting the map") {
-        nuchic::AdaptiveMap map(2, 2);
+        achilles::AdaptiveMap map(2, 2);
 
         map.Split();
         CHECK(map.Dims() == 2);
@@ -93,16 +93,16 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
         CHECK(edges == map.Edges(0));
         CHECK(edges == map.Edges(1));
 
-        map = nuchic::AdaptiveMap(2, 2);
-        map.Split(nuchic::AdaptiveMapSplit::third);
+        map = achilles::AdaptiveMap(2, 2);
+        map.Split(achilles::AdaptiveMapSplit::third);
         CHECK(map.Dims() == 2);
         CHECK(map.Bins() == 6);
         const std::vector<double> edges2{0.0, 0.5/3.0, 1.0/3.0, 1.5/3.0, 2.0/3.0, 2.5/3.0, 1.0};
         CHECK_THAT(map.Edges(0), Catch::Matchers::Approx(edges2));
         CHECK_THAT(map.Edges(1), Catch::Matchers::Approx(edges2));
 
-        map = nuchic::AdaptiveMap(2, 2);
-        map.Split(nuchic::AdaptiveMapSplit::quarter);
+        map = achilles::AdaptiveMap(2, 2);
+        map.Split(achilles::AdaptiveMapSplit::quarter);
         CHECK(map.Dims() == 2);
         CHECK(map.Bins() == 8);
         const std::vector<double> edges3{0.0, 0.5/4, 1.0/4, 1.5/4, 2.0/4, 2.5/4, 3.0/4, 3.5/4, 1.0};
@@ -112,12 +112,12 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
 }
 
 TEST_CASE("Serializing / Deserializing Adaptive Map", "[vegas]") {
-    nuchic::AdaptiveMap map(4, 4);
+    achilles::AdaptiveMap map(4, 4);
 
     std::stringstream data;
     map.Serialize(data);
 
-    nuchic::AdaptiveMap map2;
+    achilles::AdaptiveMap map2;
     map2.Deserialize(data);
 
     CHECK(map.Dims() == map2.Dims());
@@ -128,12 +128,12 @@ TEST_CASE("Serializing / Deserializing Adaptive Map", "[vegas]") {
 }
 
 TEST_CASE("YAML encoding / decoding Adaptive Map", "[vegas]") {
-    nuchic::AdaptiveMap map(4, 4);
+    achilles::AdaptiveMap map(4, 4);
 
     YAML::Node config;
     config["AdaptiveMap"] = map;
 
-    nuchic::AdaptiveMap map2 = config["AdaptiveMap"].as<nuchic::AdaptiveMap>();
+    achilles::AdaptiveMap map2 = config["AdaptiveMap"].as<achilles::AdaptiveMap>();
 
     CHECK(map.Dims() == map2.Dims());
     CHECK(map.Bins() == map2.Bins());

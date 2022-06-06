@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "nuchic/MultiChannel.hh"
+#include "Achilles/MultiChannel.hh"
 #include "catch_utils.hh"
 
 constexpr double s0 = -10.0;
@@ -12,7 +12,7 @@ double test_func_exp(const std::vector<double> &x, double wgt) {
         / std::sqrt(std::acos(-1.0)) / 3.0 * wgt;
 }
 
-class DoubleMapper : public nuchic::Mapper<double> {
+class DoubleMapper : public achilles::Mapper<double> {
     public:
         DoubleMapper(size_t channel) : m_channel{std::move(channel)} {}
         void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
@@ -39,7 +39,7 @@ class DoubleMapper : public nuchic::Mapper<double> {
 };
 
 TEST_CASE("YAML encoding / decoding Multichannel Summary", "[multichannel]") {
-    nuchic::MultiChannelSummary summary;
+    achilles::MultiChannelSummary summary;
     constexpr size_t nentries = 2;
     for(size_t i = 0; i < nentries; ++i) {
         auto vals = GENERATE(take(10, randomVector(100)));
@@ -56,7 +56,7 @@ TEST_CASE("YAML encoding / decoding Multichannel Summary", "[multichannel]") {
 
     YAML::Node node;
     node["Summary"] = summary;
-    auto summary2 = node["Summary"].as<nuchic::MultiChannelSummary>();
+    auto summary2 = node["Summary"].as<achilles::MultiChannelSummary>();
 
     CHECK(summary.results.size() == summary2.results.size());
     for(size_t i = 0; i < summary.results.size(); ++i) 
@@ -67,11 +67,11 @@ TEST_CASE("YAML encoding / decoding Multichannel Summary", "[multichannel]") {
 }
 
 TEST_CASE("YAML encoding / decoding Multichannel Parameters", "[multichannel]") {
-    nuchic::MultiChannelParams params{};
+    achilles::MultiChannelParams params{};
 
     YAML::Node node;
     node["Params"] = params;
-    auto params2 = node["Params"].as<nuchic::MultiChannelParams>();
+    auto params2 = node["Params"].as<achilles::MultiChannelParams>();
 
     CHECK(params.ncalls == params2.ncalls);
     CHECK(params.niterations == params2.niterations);
@@ -83,12 +83,12 @@ TEST_CASE("YAML encoding / decoding Multichannel Parameters", "[multichannel]") 
 }
 
 TEST_CASE("Multi-Channel Integration", "[multichannel]") {
-    nuchic::Integrand<double> integrand(test_func_exp);
+    achilles::Integrand<double> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
-        nuchic::Channel<double> channel;
+        achilles::Channel<double> channel;
         channel.mapping = std::make_unique<DoubleMapper>(i);
-        nuchic::AdaptiveMap map(channel.mapping -> NDims(), 50);
-        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
+        achilles::AdaptiveMap map(channel.mapping -> NDims(), 50);
+        channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
 
@@ -96,8 +96,8 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         static constexpr size_t nitn_min = 10;
         static constexpr double rtol = 2e-2;
 
-        nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                        nuchic::MultiChannelParams{1000, nitn_min, rtol});
+        achilles::MultiChannel integrator(1, integrand.NChannels(),
+                                          achilles::MultiChannelParams{1000, nitn_min, rtol});
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
@@ -109,8 +109,8 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
     SECTION("Runs to desired precision") {
         static constexpr size_t nitn_min = 2;
         static constexpr double rtol = 1e-3;
-        nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                        nuchic::MultiChannelParams{1000, nitn_min, rtol});
+        achilles::MultiChannel integrator(1, integrand.NChannels(),
+                                          achilles::MultiChannelParams{1000, nitn_min, rtol});
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
@@ -120,25 +120,25 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
 }
 
 TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
-    nuchic::Integrand<double> integrand(test_func_exp);
+    achilles::Integrand<double> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
-        nuchic::Channel<double> channel;
-        nuchic::AdaptiveMap map(1, 50);
-        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
+        achilles::Channel<double> channel;
+        achilles::AdaptiveMap map(1, 50);
+        channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         channel.mapping = std::make_unique<DoubleMapper>(i);
         integrand.AddChannel(std::move(channel));
     }
     static constexpr size_t ncalls = 1000, nitn_min = 2;
     static constexpr double rtol = 1;
-    nuchic::MultiChannel integrator(1, integrand.NChannels(),
-                                    nuchic::MultiChannelParams{ncalls, nitn_min, rtol});
+    achilles::MultiChannel integrator(1, integrand.NChannels(),
+                                      achilles::MultiChannelParams{ncalls, nitn_min, rtol});
     integrator.Optimize(integrand);
     auto results1 = integrator.Summary();
 
     YAML::Node node;
     node["Multichannel"] = integrator;
 
-    auto integrator2 = node["Multichannel"].as<nuchic::MultiChannel>();
+    auto integrator2 = node["Multichannel"].as<achilles::MultiChannel>();
     auto results2 = integrator2.Summary();
     auto params = integrator2.Parameters();
    

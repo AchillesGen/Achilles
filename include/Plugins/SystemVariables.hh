@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace nuchic {
+namespace achilles {
 
 namespace SystemVariables {
     const std::string libraryPrefix = "lib";

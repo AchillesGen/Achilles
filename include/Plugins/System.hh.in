@@ -10,7 +10,7 @@ namespace fs = std::experimental::filesystem;
 namespace fs = std::filesystem;
 #endif
 
-namespace nuchic {
+namespace achilles {
 
 namespace SystemVariables {
     const std::string libraryPrefix = "@LIBPREFIX@";

@@ -1,8 +1,8 @@
-#ifndef nuchic__plugins__SherpaMEs_hh
-#define nuchic__plugins__SherpaMEs_hh
+#ifndef achilles__plugins__SherpaMEs_hh
+#define achilles__plugins__SherpaMEs_hh
 
-#include "nuchic/Nuchic.hh"
-#include "nuchic/ParticleInfo.hh"
+#include "Achilles/Achilles.hh"
+#include "Achilles/ParticleInfo.hh"
 
 #include <complex>
 #include <array>
@@ -16,7 +16,7 @@ namespace PHASIC {
 }
 namespace SHERPA { class Sherpa; }
 
-namespace nuchic {
+namespace achilles {
 
 struct Process_Info;
 struct FormFactorInfo;
@@ -56,6 +56,6 @@ public:
 
 };// end of class SherpaMEs
 
-}// end namespace nuchic
+}// end namespace achilles
 
 #endif

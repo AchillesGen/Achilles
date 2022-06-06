@@ -1,14 +1,14 @@
-#include "nuchic/Interactions.hh"
+#include "Achilles/Interactions.hh"
 #include "Plugins/InteractionLoader.hh"
 #include "spdlog/spdlog.h"
-#include "nuchic/Particle.hh"
+#include "Achilles/Particle.hh"
 
 int main() {
-    nuchic::InteractionLoader::LoadInteractions({"."}); 
+    achilles::InteractionLoader::LoadInteractions({"."}); 
     spdlog::info("Finished Registering");
 
-    std::shared_ptr<nuchic::Interactions> tmp = nuchic::InteractionFactory::Create("ConstantInteractions", "10");
-    nuchic::Particle p1{};
+    std::shared_ptr<achilles::Interactions> tmp = achilles::InteractionFactory::Create("ConstantInteractions", "10");
+    achilles::Particle p1{};
     
     spdlog::info("Constant Cross-Section = {}", tmp->CrossSection(p1, p1));
 

@@ -3,14 +3,14 @@
 
 #include "spdlog/spdlog.h"
 
-#include "nuchic/Constants.hh"
-#include "nuchic/FourVector.hh"
-#include "nuchic/NasaInteractions.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/ThreeVector.hh"
-#include "nuchic/Utilities.hh"
+#include "Achilles/Constants.hh"
+#include "Achilles/FourVector.hh"
+#include "Achilles/NasaInteractions.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/ThreeVector.hh"
+#include "Achilles/Utilities.hh"
 
-using namespace nuchic;
+using namespace achilles;
 
 REGISTER_INTERACTION(NasaInteractions);
 

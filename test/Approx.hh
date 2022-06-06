@@ -4,7 +4,7 @@
 #include <complex>
 #include <sstream>
 
-#include "nuchic/FourVector.hh"
+#include "Achilles/FourVector.hh"
 
 #include "catch2/catch.hpp"
 
@@ -87,11 +87,11 @@ class VectorComplexApprox : public Catch::MatcherBase<std::vector<std::complex<d
         double _margin{0.0};
 };
 
-class FourVectorApprox : public Catch::MatcherBase<nuchic::FourVector> {
+class FourVectorApprox : public Catch::MatcherBase<achilles::FourVector> {
     public:
-        FourVectorApprox(nuchic::FourVector t) : _vec(t) {}
+        FourVectorApprox(achilles::FourVector t) : _vec(t) {}
 
-        bool match(const nuchic::FourVector &t) const override {
+        bool match(const achilles::FourVector &t) const override {
             bool result = true;
             for(size_t i = 0; i < 4; ++i) {
                 result &= (t[i] == Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
@@ -116,16 +116,16 @@ class FourVectorApprox : public Catch::MatcherBase<nuchic::FourVector> {
         }
 
     private:
-        nuchic::FourVector _vec;
+        achilles::FourVector _vec;
         double _epsilon{std::numeric_limits<double>::epsilon() * 100};
         double _margin{0.0};
 };
 
-class AllFourVectorApprox : public Catch::MatcherBase<std::vector<nuchic::FourVector>> {
+class AllFourVectorApprox : public Catch::MatcherBase<std::vector<achilles::FourVector>> {
     public:
-        AllFourVectorApprox(std::vector<nuchic::FourVector> t) : _vec(t) {}
+        AllFourVectorApprox(std::vector<achilles::FourVector> t) : _vec(t) {}
 
-        bool match(const std::vector<nuchic::FourVector> &t) const override {
+        bool match(const std::vector<achilles::FourVector> &t) const override {
             bool result = true;
             for(size_t i = 0; i < t.size(); ++i) {
                 FourVectorApprox vector_matcher(_vec[i]);
@@ -155,7 +155,7 @@ class AllFourVectorApprox : public Catch::MatcherBase<std::vector<nuchic::FourVe
         }
 
     private:
-        std::vector<nuchic::FourVector> _vec;
+        std::vector<achilles::FourVector> _vec;
         double _epsilon{std::numeric_limits<double>::epsilon() * 100};
         double _margin{0.0};
 };

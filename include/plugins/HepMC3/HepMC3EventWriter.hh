@@ -1,8 +1,8 @@
 #ifndef HEPMC3_EVENT_WRITER_HH
 #define HEPMC3_EVENT_WRITER_HH
 
-#include "nuchic/EventWriter.hh"
-#include "nuchic/Statistics.hh"
+#include "Achilles/EventWriter.hh"
+#include "Achilles/Statistics.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -10,7 +10,7 @@
 #include "HepMC3/WriterAscii.h"
 #pragma GCC diagnostic pop
 
-namespace nuchic {
+namespace achilles {
 
 class HepMC3Writer : public EventWriter {
     public:
@@ -24,7 +24,7 @@ class HepMC3Writer : public EventWriter {
     private:
         static std::shared_ptr<std::ostream> InitializeStream(const std::string&, bool);
         HepMC3::WriterAscii file;
-        nuchic::StatsData results;
+        achilles::StatsData results;
 };
 
 }

@@ -5,8 +5,8 @@
 #include <utility>
 
 #include "ATOOLS/Math/Vector.H"
-#include "nuchic/Mapper.hh"
-#include "nuchic/PhaseSpaceFactory.hh"
+#include "Achilles/Mapper.hh"
+#include "Achilles/PhaseSpaceFactory.hh"
 
 namespace COMIX {
     class Single_Process;
@@ -18,7 +18,7 @@ namespace ATOOLS {
 
 namespace PHASIC {
 
-class Channels : public nuchic::Mapper<ATOOLS::Vec4D> {
+class Channels : public achilles::Mapper<ATOOLS::Vec4D> {
     public:
         double GenerateWeight(const std::vector<ATOOLS::Vec4D>&, std::vector<double>&) override = 0;
         void GeneratePoint(std::vector<ATOOLS::Vec4D>&, const std::vector<double>&) override = 0;
@@ -33,7 +33,7 @@ struct ChannelNode {
 
 };
 
-class GenChannel : public Channels, nuchic::RegistrablePS<Channels, GenChannel, std::vector<double>> {
+class GenChannel : public Channels, achilles::RegistrablePS<Channels, GenChannel, std::vector<double>> {
     public:
         GenChannel(size_t npart, std::vector<double> s) : m_n{npart}, m_nout{npart-2}, m_s{std::move(s)} {
             m_p.resize(1 << m_n);

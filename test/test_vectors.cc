@@ -2,57 +2,57 @@
 
 #include "catch2/catch.hpp"
 
-#include "nuchic/FourVector.hh"
-#include "nuchic/ThreeVector.hh"
+#include "Achilles/FourVector.hh"
+#include "Achilles/ThreeVector.hh"
 #include "spdlog/spdlog.h"
 
 TEST_CASE("Three Vector is constructed properly", "[Vectors]") {
     SECTION("Direct Constructors") {
-        nuchic::ThreeVector p1, p2(1, 2, 3), p3(std::array<double, 3>{1, 2, 3});
+        achilles::ThreeVector p1, p2(1, 2, 3), p3(std::array<double, 3>{1, 2, 3});
         CHECK((p1[0] == 0 && p1[1] == 0 && p1[2] == 0));
         CHECK(p2 == p3);
     }
 
     SECTION("Move and Copy Constructors and Assignment") {
-        nuchic::ThreeVector p1(1, 2, 3);
-        nuchic::ThreeVector p2(p1);
+        achilles::ThreeVector p1(1, 2, 3);
+        achilles::ThreeVector p2(p1);
         CHECK(p1 == p2);
 
-        nuchic::ThreeVector p3(std::move(p1));
+        achilles::ThreeVector p3(std::move(p1));
         CHECK(p2 == p3);
 
-        nuchic::ThreeVector p4 = p3;
-        nuchic::ThreeVector p5 = std::move(p2);
+        achilles::ThreeVector p4 = p3;
+        achilles::ThreeVector p5 = std::move(p2);
         CHECK(p4 == p5);
     }
 }
 
 TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
     SECTION("Direct Constructors") {
-        nuchic::ThreeVector p0(1, 2, 3);
-        nuchic::FourVector p1, p2(4, 1, 2, 3), p3(std::array<double, 4>{4, 1, 2, 3});
-        nuchic::FourVector p4(p0, 4);
+        achilles::ThreeVector p0(1, 2, 3);
+        achilles::FourVector p1, p2(4, 1, 2, 3), p3(std::array<double, 4>{4, 1, 2, 3});
+        achilles::FourVector p4(p0, 4);
         CHECK((p1[1] == 0 && p1[2] == 0 && p1[3] == 0 && p1[0] == 0));
         CHECK(p2 == p3);
         CHECK(p2 == p4);
     }
 
     SECTION("Move and Copy Constructors and Assignment") {
-        nuchic::FourVector p1(1, 2, 3, 4);
-        nuchic::FourVector p2(p1);
+        achilles::FourVector p1(1, 2, 3, 4);
+        achilles::FourVector p2(p1);
         CHECK(p1 == p2);
 
-        nuchic::FourVector p3(std::move(p1));
+        achilles::FourVector p3(std::move(p1));
         CHECK(p2 == p3);
 
-        nuchic::FourVector p4 = p3;
-        nuchic::FourVector p5 = std::move(p2);
+        achilles::FourVector p4 = p3;
+        achilles::FourVector p5 = std::move(p2);
         CHECK(p4 == p5);
     }
 
     SECTION("Setters and Getters") {
-        nuchic::FourVector p1;
-        p1.SetVectM(nuchic::ThreeVector(1, 2, 3), 0);
+        achilles::FourVector p1;
+        p1.SetVectM(achilles::ThreeVector(1, 2, 3), 0);
 
         CHECK(p1.Px() == 1);
         CHECK(p1.Py() == 2);
@@ -64,7 +64,7 @@ TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
 
 TEST_CASE("Accessors work as expected", "[Vectors]") {
     SECTION("Three Vector access") {
-        nuchic::ThreeVector p(1, 2, 3);
+        achilles::ThreeVector p(1, 2, 3);
         CHECK(p[0] == 1);
         CHECK(p[1] == 2);
         CHECK(p[2] == 3);
@@ -72,7 +72,7 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
     }
 
     SECTION("Four Vector access") {
-        nuchic::FourVector p(1, 2, 3, 4);
+        achilles::FourVector p(1, 2, 3, 4);
         CHECK(p[0] == 1);
         CHECK(p[1] == 2);
         CHECK(p[2] == 3);
@@ -83,7 +83,7 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
 
 TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     SECTION("Addition") {
-        nuchic::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(2, 4, 6);
+        achilles::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(2, 4, 6);
         CHECK(p1+p2 == p3);
 
         p1 += p2;
@@ -91,7 +91,7 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Subtraction and Negation") {
-        nuchic::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(0, 0, 0), p4(-1, -2, -3);
+        achilles::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(0, 0, 0), p4(-1, -2, -3);
         CHECK(p1-p2 == p3);
         CHECK(-p1 == p4);
 
@@ -100,7 +100,7 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Multiplication") {
-        nuchic::ThreeVector p1(1, 2, 3), p2(3, 6, 9);
+        achilles::ThreeVector p1(1, 2, 3), p2(3, 6, 9);
         constexpr double scalar1 = 3, scalar2 = 14;
 
         CHECK(p1*p1 == scalar2);
@@ -113,7 +113,7 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Division") {
-        nuchic::ThreeVector p1(1, 2, 3), p2(3, 6, 9);
+        achilles::ThreeVector p1(1, 2, 3), p2(3, 6, 9);
         constexpr double scalar = 3.0;
 
         CHECK(p2 / scalar == p1);
@@ -125,7 +125,7 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
 
 TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
     SECTION("Magnitude") {
-        nuchic::ThreeVector p1(4, 3, 2);
+        achilles::ThreeVector p1(4, 3, 2);
         constexpr double magnitude = 29;
 
         CHECK(p1.Magnitude2() == magnitude);
@@ -135,7 +135,7 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Transverse momentum and Angles") {
-        nuchic::ThreeVector p1(1, 2, 3), p2(0, 0, 4), p3(1, 1, 1);
+        achilles::ThreeVector p1(1, 2, 3), p2(0, 0, 4), p3(1, 1, 1);
         constexpr double pt2 = 5;
 
         CHECK(p1.Pt2() == pt2);
@@ -146,14 +146,14 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Cross Product") {
-        nuchic::ThreeVector p1(3, 2, 1), p2(1, 2, 3), p3(4, -8, 4);
+        achilles::ThreeVector p1(3, 2, 1), p2(1, 2, 3), p3(4, -8, 4);
 
         CHECK(p1.Cross(p2) == p3);
         CHECK(p1.Cross(p2) == -p2.Cross(p1));
     }
 
     SECTION("Unit Vector") {
-        nuchic::ThreeVector p1(3, 3, 3), p2(1.0/sqrt(3), 1.0/sqrt(3), 1.0/sqrt(3));
+        achilles::ThreeVector p1(3, 3, 3), p2(1.0/sqrt(3), 1.0/sqrt(3), 1.0/sqrt(3));
         auto p1Unit = p1.Unit();
 
         CHECK((p1Unit[0] == Approx(p2[0]) && p1Unit[1] == Approx(p2[1])
@@ -164,7 +164,7 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
 
 TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     SECTION("Addition") {
-        nuchic::FourVector p1(1, 2, 3, 4), p2(4, 3, 2, 1), p3(5, 5, 5, 5);
+        achilles::FourVector p1(1, 2, 3, 4), p2(4, 3, 2, 1), p3(5, 5, 5, 5);
         CHECK(p1+p2 == p3);
 
         p1 += p2;
@@ -172,7 +172,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Subtraction and Negation") {
-        nuchic::FourVector p1(1, 2, 3, 4), p2(1, 2, 3, 4), p3(0, 0, 0, 0), p4(-1, -2, -3, -4);
+        achilles::FourVector p1(1, 2, 3, 4), p2(1, 2, 3, 4), p3(0, 0, 0, 0), p4(-1, -2, -3, -4);
         CHECK(p1-p2 == p3);
         CHECK(-p1 == p4);
 
@@ -181,7 +181,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Multiplication") {
-        nuchic::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
+        achilles::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
         constexpr double scalar1 = 3, scalar2 = 16-9-4-1;
 
         CHECK(p1*p1 == scalar2);
@@ -194,7 +194,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     }
 
     SECTION("Division") {
-        nuchic::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
+        achilles::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
         constexpr double scalar = 3.0;
 
         CHECK(p2 / scalar == p1);
@@ -206,7 +206,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
 
 TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     SECTION("Magnitude and Mass") {
-        nuchic::FourVector p(4, 1, 2, 3);
+        achilles::FourVector p(4, 1, 2, 3);
         constexpr double mass = 2;
 
         CHECK(p.Magnitude2() == mass);
@@ -216,7 +216,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Momentum and Transverse Momentum") {
-        nuchic::FourVector p(4, 1, 2, 3);
+        achilles::FourVector p(4, 1, 2, 3);
         constexpr double pvec2 = 14;
         constexpr double pt2 = 5;
 
@@ -227,7 +227,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Angles") {
-        nuchic::FourVector p1(4, 0, 0, 4), p2(4, 1, 1, 1), p3(4, 1, -1, 1);
+        achilles::FourVector p1(4, 0, 0, 4), p2(4, 1, 1, 1), p3(4, 1, -1, 1);
 
         CHECK(p1.Theta() == 0);
         CHECK(p1.Phi() == 0);
@@ -236,14 +236,14 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Cross Product") {
-        nuchic::FourVector p1(4, 3, 2, 1), p2(4, 1, 2, 3), p3(0, 4, -8, 4);
+        achilles::FourVector p1(4, 3, 2, 1), p2(4, 1, 2, 3), p3(0, 4, -8, 4);
 
         CHECK(p1.Cross(p2) == p3);
         CHECK(p1.Cross(p2) == -p2.Cross(p1));
     }
 
     SECTION("Boost") {
-        nuchic::FourVector p1(4, 3, 2, 1), p2(25, 12, 2, -3);
+        achilles::FourVector p1(4, 3, 2, 1), p2(25, 12, 2, -3);
         auto beta = p2.BoostVector();
         auto partway = p1.Boost(beta);
         auto p3 = p1.Boost(beta).Boost(-beta);
@@ -255,20 +255,20 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1])
                && p4[2] == Approx(p1[2]) && p4[3] == Approx(p1[3])));
 
-        nuchic::FourVector pMass(sqrt(100 + 4), 0, 0, 2);
+        achilles::FourVector pMass(sqrt(100 + 4), 0, 0, 2);
         beta = pMass.BoostVector();
         CHECK(pMass.Boost(-beta).M() == Approx(10));
     }
 
     SECTION("Rapidity") {
-        nuchic::FourVector p1(4, 1, 2, 3);
+        achilles::FourVector p1(4, 1, 2, 3);
         constexpr double rapidity = 0.9729550745276566;
 
         CHECK(p1.Rapidity() == Approx(rapidity));
     }
 
     SECTION("Angle between vectors") {
-        nuchic::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1); 
+        achilles::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1); 
         double t1 = p1.Theta(), t2 = p2.Theta();
 
         CHECK(std::cos(t1-t2) == Approx(p1.CosAngle(p2)));
@@ -276,7 +276,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
     
     SECTION("DeltaR") {
-        nuchic::FourVector p1(4, 1, 2, 3), p2(4, 3, 2, 1);
+        achilles::FourVector p1(4, 1, 2, 3), p2(4, 3, 2, 1);
         double DEta = p1.Rapidity() - p2.Rapidity();
         double DPhi = p1.Phi() - p2.Phi();
         double DR = sqrt(DEta*DEta + DPhi*DPhi);
@@ -289,7 +289,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
 TEST_CASE("Rotations", "[Vectors]") {
     constexpr double eps = 1e-12;
     SECTION("Four Vectors") {
-        nuchic::FourVector p(4, 1, 2, 3);
+        achilles::FourVector p(4, 1, 2, 3);
         auto rotMat = p.AlignZ();
         auto result = p.Rotate(rotMat);
 
@@ -300,7 +300,7 @@ TEST_CASE("Rotations", "[Vectors]") {
     }
 
     SECTION("Three Vectors") {
-        nuchic::ThreeVector x(1, 0, 0), y(0, 1, 0), z(0, 0, 1);
+        achilles::ThreeVector x(1, 0, 0), y(0, 1, 0), z(0, 0, 1);
 
         auto mat = x.Align(y);
         auto rotX = x.Rotate(mat);
@@ -320,8 +320,8 @@ TEST_CASE("Rotations", "[Vectors]") {
 
 TEST_CASE("I/O and String", "[Vectors]") {
     SECTION("FourVector ToString and from string") {
-        nuchic::FourVector p(1, 2, 3, 4);
-        nuchic::FourVector p2;
+        achilles::FourVector p(1, 2, 3, 4);
+        achilles::FourVector p2;
         CHECK(p.ToString() == "FourVector(1.000000, 2.000000, 3.000000, 4.000000)");
 
         std::stringstream ss;
@@ -332,8 +332,8 @@ TEST_CASE("I/O and String", "[Vectors]") {
     }
 
     SECTION("ThreeVector ToString and from string") {
-        nuchic::ThreeVector p(1, 2, 3);
-        nuchic::ThreeVector p2;
+        achilles::ThreeVector p(1, 2, 3);
+        achilles::ThreeVector p2;
         CHECK(p.ToString() == "ThreeVector(1.000000, 2.000000, 3.000000)");
 
         std::stringstream ss;
