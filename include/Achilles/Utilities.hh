@@ -20,13 +20,13 @@ inline unsigned int NextPermutation(unsigned int inp) {
 }
 
 inline bool SetBit(unsigned int inp, unsigned int pos) {
-    return inp & (1 << pos);
+    return inp & (1u << pos);
 }
 
 inline std::vector<unsigned int> SetBits(unsigned int inp, unsigned int size) {
     std::vector<unsigned int> set;
     for(unsigned int i = 0; i < size; ++i) {
-        if(SetBit(inp, i)) set.push_back(inp & (1 << i));
+        if(SetBit(inp, i)) set.push_back(inp & (1u << i));
     }
     return set;
 }
