@@ -127,7 +127,7 @@ list(APPEND achilles_targets event_gen)
 
 add_executable(achilles main.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
-                               PUBLIC event_gen docopt::docopt)
+                               PUBLIC event_gen docopt::docopt dl)
 list(APPEND achilles_targets achilles)
 
 if(ENABLE_CASCADE_TEST)

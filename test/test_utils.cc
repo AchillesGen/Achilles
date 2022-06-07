@@ -35,7 +35,7 @@ TEST_CASE("Bit operations", "[Utilities]") {
 
     SECTION("Log2") {
         for(unsigned int i = 0; i < 16; ++i) {
-            CHECK(achilles::Log2(1 << i) == i);
+            CHECK(achilles::Log2(1u << i) == i);
         }
     }
 }
