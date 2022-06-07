@@ -36,14 +36,14 @@ struct ChannelNode {
 class GenChannel : public Channels, achilles::RegistrablePS<Channels, GenChannel, std::vector<double>> {
     public:
         GenChannel(size_t npart, std::vector<double> s) : m_n{npart}, m_nout{npart-2}, m_s{std::move(s)} {
-            m_p.resize(1 << m_n);
+            m_p.resize(1ul << m_n);
         }
         bool InitializeChannel(std::shared_ptr<ChannelNode>);
         void GeneratePoint(std::vector<ATOOLS::Vec4D> &p, const std::vector<double> &rans) override;
         double GenerateWeight(const std::vector<ATOOLS::Vec4D> &p, std::vector<double> &rans) override {
             iran = 0;
             for(size_t i = 0; i < m_n; ++i) {
-                m_p[1 << i] = p[i];
+                m_p[1ul << i] = p[i];
             }
             FillMomenta(m_nodes.get());
             auto lid = static_cast<size_t>((1 << m_n) - 2);

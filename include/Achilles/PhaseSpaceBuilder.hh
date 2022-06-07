@@ -23,7 +23,6 @@ class PSBuilder {
 #ifdef ENABLE_BSM
         MOCK PSBuilder& SherpaFinalState(const std::string&, const std::vector<double>&);
 #endif // ENABLE_BSM
-        MOCK PSBuilder& SherpaFinalState(const std::string&, const std::vector<double>&);
         MOCK PSBuilder& GenFinalState(std::unique_ptr<PHASIC::Channels>);
 
         MOCK std::unique_ptr<PSMapper> build() { return std::move(phase_space); }

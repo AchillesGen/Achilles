@@ -36,6 +36,8 @@ TEST_CASE("QuasielasticTestMapper", "[PhaseSpace]") {
     auto input = fmt::format(input_fmt, std::get<0>(mode));
     auto node = YAML::Load(input);
     std::vector<double> rans(std::get<1>(mode)+nvars, 0.5);
+    if(rans.size() == 0)
+        throw;
     rans[0] = 0;
     achilles::QuasielasticTestMapper mapper(node, beam);
 

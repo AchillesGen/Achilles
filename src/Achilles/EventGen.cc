@@ -134,10 +134,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
-    achilles::SherpaMEs sherpa;
-    sherpa.Initialize(shargs);
+    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!sherpa->InitializeProcess(leptonicProcess)) {
+    if(!sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
