@@ -3,6 +3,8 @@
 #include "mock_classes.hh"
 #include "Achilles/HardScattering.hh"
 
+#ifdef ENABLE_BSM
+
 TEST_CASE("CrossSection", "[HardScattering]") {
     achilles::Process_Info info; 
     info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
@@ -78,3 +80,5 @@ TEST_CASE("FillEvent", "[HardScattering]") {
     scattering.SetNuclear(std::move(model));
     scattering.FillEvent(event, xsecs);
 }
+
+#endif
