@@ -100,7 +100,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .LR_SIDE_EFFECT(mom[1] = beam_mom);
     REQUIRE_CALL(*beam_map, GenerateWeight(mom_out, lbeam_rans_out))
         .TIMES(1)
-        .LR_SIDE_EFFECT(lbeam_rans_out = lbeam_rans)
+        .LR_SIDE_EFFECT(_2 = lbeam_rans)
         .RETURN(1.0);
 
     REQUIRE_CALL(*hadron_map, NDims())
@@ -111,7 +111,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .LR_SIDE_EFFECT(mom[0] = hadron_mom);
     REQUIRE_CALL(*hadron_map, GenerateWeight(mom_out, hadron_rans_out))
         .TIMES(1)
-        .LR_SIDE_EFFECT(hadron_rans_out = hadron_rans)
+        .LR_SIDE_EFFECT(_2 = hadron_rans)
         .RETURN(1.0);
 
     REQUIRE_CALL(*final_state_map, NDims())
@@ -123,7 +123,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .LR_SIDE_EFFECT(mom[3] = final_state_mom[1]);
     REQUIRE_CALL(*final_state_map, GenerateWeight(mom_out, final_state_rans_out))
         .TIMES(1)
-        .LR_SIDE_EFFECT(final_state_rans_out = final_state_rans)
+        .LR_SIDE_EFFECT(_2 = final_state_rans)
         .RETURN(1.0);
 
     achilles::PSMapper mapper(2, 2);

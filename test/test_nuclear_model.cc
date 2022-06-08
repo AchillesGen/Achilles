@@ -275,7 +275,7 @@ NuclearModel:
                                                                     {0.0013261,0.00679448},
                                                                     {0.00103612,0.000901872}}};
         for(size_t i = 0; i < 4; ++i) {
-            REQUIRE_THAT(results[0][achilles::PID::photon()][i], VectorComplexApprox(expected[i]).margin(1e-8));
+            REQUIRE_THAT(results[0][achilles::PID::photon()][i], VectorComplexApprox(expected[i]).margin(1e-5));
         }
     }
 
