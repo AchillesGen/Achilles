@@ -77,14 +77,14 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // addParameter(argv,"PDF_SET=None");
   // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
-  addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
+  // addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");
   // addParameter(argv,"ACTIVE[23]=0");
   addParameter(argv,"ACTIVE[25]=0");
   // addParameter(argv,"ACTIVE[9000005]=0");
-  addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
+  // addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
   addParameter(argv,"PRIORITY[2112]=99");
   addParameter(argv,"PRIORITY[2212]=99");
   // TODO: Make this something that is passed in

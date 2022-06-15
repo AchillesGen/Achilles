@@ -5,6 +5,9 @@
 #include "Achilles/Version.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Logging.hh"
+#include "Achilles/Interactions.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/NuclearModel.hh"
 #ifdef ENABLE_BSM
 #include "plugins/Sherpa/SherpaMEs.hh"
 #include "plugins/Sherpa/Channels.hh"
@@ -46,6 +49,8 @@ R"(
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
+      achilles --display-int-models
+      achilles --display-nuc-models
       achilles (-h | --help)
       achilles --version
 
@@ -57,6 +62,8 @@ R"(
       --display-cuts                        Display the available cuts
       --display-ps                          Display the available phase spaces
       --display-ff                          Display the available form factors
+      --display-int-models                  Display the available cascade interaction models
+      --display-nuc-models                  Display the available nuclear interaction models
 )";
 
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
@@ -90,6 +97,16 @@ int main(int argc, char *argv[]) {
 
     if(args["--display-ff"].asBool()) {
         achilles::FormFactorFactory::Display();
+        return 0;
+    }
+
+    if(args["--display-int-models"].asBool()) {
+        achilles::InteractionFactory::Display();
+        return 0;
+    }
+
+    if(args["--display-nuc-models"].asBool()) {
+        achilles::NuclearModelFactory::Display();
         return 0;
     }
 

@@ -95,7 +95,7 @@ class InteractionFactory {
         static std::unique_ptr<Interactions> Create(const YAML::Node&);
 
         /// Produce a list of all the registered interactions
-        static void ListInteractions();
+        static void Display();
 
     private:
         static auto &methods() {

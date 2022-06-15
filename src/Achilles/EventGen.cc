@@ -86,7 +86,7 @@ achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *
 #endif
 
 achilles::EventGen::EventGen(const std::string &configFile,
-                             const std::vector<std::string> &shargs) {
+                             std::vector<std::string> shargs) {
     config = YAML::LoadFile(configFile);
 
     // Setup random number generator
@@ -135,6 +135,11 @@ achilles::EventGen::EventGen(const std::string &configFile,
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
     achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    if(model == "SM") model = "SM_Nuc";
+    shargs.push_back("MODEL=" + model);
+    shargs.push_back("UFO_PARAM_CARD=" + param_card);
     sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     if(!sherpa -> InitializeProcess(leptonicProcess)) {
@@ -229,13 +234,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
         throw std::runtime_error(msg);
     }
     writer -> WriteHeader(configFile);
-
-    hist = Histogram(200, 0.0, 400.0, "energy");
-    hist2 = Histogram(100, 0.0, 800.0, "momentum");
-    hist3 = Histogram(50, -1.0, 1.0, "angle");
-    hist4 = Histogram(200, 320.0, 520.0, "invariant_mass");
-    hist5 = Histogram(300, 0.0, 300.0, "omega");
-    hist6 = Histogram(200, 4.0, 8.0, "wgt");
 }
 
 void achilles::EventGen::Initialize() {
@@ -280,13 +278,6 @@ void achilles::EventGen::GenerateEvents() {
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
-
-    hist.Save(config["HistTest1"].as<std::string>());
-    hist2.Save(config["HistTest2"].as<std::string>());
-    hist3.Save(config["HistTest3"].as<std::string>());
-    hist4.Save(config["HistTest4"].as<std::string>());
-    hist5.Save(config["HistTest5"].as<std::string>());
-    hist6.Save(config["HistTest6"].as<std::string>());
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
@@ -390,18 +381,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // Keep a running total of the number of surviving events
             event.Finalize();
             writer -> Write(event);
-            const auto energy = (Constant::mN - event.Momentum()[0].E());
-            const auto calls = static_cast<double>(integrator.Parameters().ncalls);
-            hist.Fill(energy, event.Weight()/calls);
-            const auto momentum = event.Momentum()[0].P();
-            hist2.Fill(momentum, event.Weight()/calls);
-            const auto cosTheta = event.Momentum()[2].CosTheta();
-            hist3.Fill(cosTheta, event.Weight()/calls);
-            const auto energy_lepton = (event.Momentum()[3]+event.Momentum()[4]).M();
-            hist4.Fill(energy_lepton, event.Weight()/calls);
-            const auto omega = event.Momentum()[1].E() - (event.Momentum()[3]+event.Momentum()[4]).E();
-            hist5.Fill(omega, event.Weight()/calls/(2*M_PI));
-            hist6.Fill(log10(event.Weight()));
         }
     }
 

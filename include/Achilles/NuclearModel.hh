@@ -50,6 +50,8 @@ class NuclearModel {
         virtual size_t NSpins() const = 0;
         virtual bool FillNucleus(Event&, const std::vector<double>&) const = 0;
 
+        static std::string Name() { return "Nuclear Model"; }
+
     protected:
         FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor -> operator()(q2); }
         FormFactorArray CouplingsFF(const FormFactor::Values&,

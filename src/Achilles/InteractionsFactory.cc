@@ -25,7 +25,7 @@ std::unique_ptr<Interactions> InteractionFactory::Create(const YAML::Node& node)
     throw std::runtime_error(fmt::format("Invalid Interaction Mode", name));
 }
 
-void InteractionFactory::ListInteractions() {
+void InteractionFactory::Display() {
     fmt::print("+{:-^30s}+\n|{:^30s}|\n+{:-^30s}+\n", "", "Interactions", "");
     for(auto method : methods()) {
         fmt::print(" - {:30s}\n", method.first);

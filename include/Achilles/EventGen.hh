@@ -31,7 +31,7 @@ class SherpaMEs;
 
 class EventGen {
     public:
-        EventGen(const std::string&, const std::vector<std::string>&);
+        EventGen(const std::string&, std::vector<std::string>);
         void Initialize();
         void GenerateEvents();
 
@@ -54,7 +54,6 @@ class EventGen {
         YAML::Node config;
 
         std::shared_ptr<EventWriter> writer;
-        Histogram hist, hist2, hist3, hist4, hist5, hist6;
 };
 
 }
