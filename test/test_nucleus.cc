@@ -170,7 +170,16 @@ TEST_CASE("Make Nucleus", "[Nucleus]") {
         std::smatch match;
 
         std::regex_match(name, match, regex);
-        CHECK_THROWS_WITH(achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, fermiGas, std::move(density)),
-                          fmt::format("Invalid nucleus: {} does not exist.", match[2]));
+        bool bad_random = false;
+        const std::vector<std::string> elements{"mfp", "H", "He", "Li", "C", "O", "Al", "Ar", "Ca", "Fe"};
+        for(const auto &valid : elements) {
+            if(match[2] == valid) {
+                bad_random = true;
+                break;
+            }
+        }
+        if(!bad_random) 
+            CHECK_THROWS_WITH(achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, fermiGas, std::move(density)),
+                              fmt::format("Invalid nucleus: {} does not exist.", match[2]));
     }
 }

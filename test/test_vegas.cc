@@ -50,7 +50,7 @@ TEST_CASE("Vegas Integration", "[vegas]") {
         vegas.Optimize(test_func2);
         auto results = vegas.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < 2*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
         CHECK(results.results.size() >= nitn_min);
     }
 
@@ -63,7 +63,7 @@ TEST_CASE("Vegas Integration", "[vegas]") {
         vegas.Optimize(test_func);
         auto results = vegas.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < 2*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
         CHECK(results.sum_results.Error() < atol);
         CHECK(results.sum_results.Error()/results.sum_results.Mean() < rtol);
     }

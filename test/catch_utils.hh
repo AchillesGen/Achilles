@@ -9,6 +9,8 @@
 
 #include "Achilles/FourVector.hh"
 
+static constexpr double nsigma = 3;
+
 class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string> {
     static constexpr auto& chars = "abcdefghijklmnopqrstuvwxyz"
                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ";

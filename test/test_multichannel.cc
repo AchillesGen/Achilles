@@ -101,7 +101,7 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < 2*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
         CHECK(results.results.size() >= nitn_min);
     }
 
@@ -114,7 +114,7 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < 2*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
         CHECK(results.sum_results.Error()/results.sum_results.Mean() < rtol);
     }
 }
