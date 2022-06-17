@@ -9,8 +9,9 @@ Main:
       Zipped: True
 
 Process:
-  Model: SM_Nuc
+  Model: DarkNeutrinoPortal_Dirac_UFO
   Final States: [11]
+  ParamCard: parameters.dat
 
 Initialize:
   Seed: 12345678
