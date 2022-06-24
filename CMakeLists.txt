@@ -65,6 +65,7 @@ if(ENABLE_BSM)
 # Find Sherpa
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 find_package(SHERPA REQUIRED)
+find_package(ZLIB REQUIRED)
 endif()
 
 if(ENABLE_HEPMC3)

@@ -220,8 +220,13 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 for(const auto &lcurrent : leptonCurrent) {
                     auto boson = lcurrent.first;
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
-                        if(hadronCurrent[k].find(boson) != hadronCurrent[k].end())
+                        if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()) {
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+                            for(size_t nu = 0; nu < 4; ++nu) {
+                                // Calculate W^{\mu\nu}
+                                // Calculate L^{h}_{\mu\nu}
+                            }
+                        }
                     }
                 }
                 sign = -1.0;
@@ -230,6 +235,8 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 amps2[k] += std::norm(amps[k]);
         }
     }
+
+    // Contract W^{\mu\nu} with L_{\mu\nu} => Numerator of P_(L,T)
 
     double spin_avg = 1;
     if(!ParticleInfo(m_leptonicProcess.m_ids[0]).IsNeutrino()) spin_avg *= 2;
