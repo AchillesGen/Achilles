@@ -4,19 +4,20 @@
 #include "nuchic/NuclearModel.hh"
 
 extern "C" {
-    bool CreateModel(char*, size_t&);
-    bool InitModel(char*, size_t&);
-    void CleanUpEvent(double**, double**, int*);
+    void RegisterAll();
+    bool CreateModel(char*);
+    bool InitModel(char*);
+    void CleanUpEvent(std::complex<double>**, size_t*);
     void CleanUpModel();
     int GetMode();
-    void GetName(char*, size_t&);
+    void GetName(char*);
     // TODO: Figure out how to pass a FFInfoMap to fortran
     //       - Evaluate form factors in C++ and just pass the complex valued array to fortran
     //       - Develop an interface to the form factor and maps
     //       - Other ideas?
-    void GetCurrents(const nuchic::Event*, int*, int*, double**, double**, int*);
+    void GetCurrents(const nuchic::Event*, int**, size_t*, std::complex<double>**, size_t*);
     bool GetAllowedStates(nuchic::Process_Info*);
-    int GetNSpins();
+    size_t GetNSpins();
     bool FillNucleus(nuchic::Event*, const double*, size_t);
 }
 
@@ -31,10 +32,11 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
             return static_cast<NuclearMode>(GetMode());
         }
         std::string PhaseSpace() const override {
-            char *name;
-            size_t length = 0;
-            GetName(name, length);
-            return std::string(name);
+            char *name = nullptr;
+            GetName(name);
+            auto tmp = std::string(name);
+            delete name;
+            return tmp;
         }
         std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const override;
         void AllowedStates(Process_Info &info) const override {
@@ -48,6 +50,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
         // Required factory methods
         static std::unique_ptr<NuclearModel> Construct(const YAML::Node&);
         static std::string Name() { return "FortranModel"; }
+
+        // Method needed to register fortran models at start-up
+        static void RegisterModels() { RegisterAll(); }
 };
 
 }
