@@ -11,7 +11,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cmodelname = std::make_unique<char[]>(len_model+1);
     strcpy(cmodelname.get(), modelname.c_str());
 
-    if(!CreateModel(cmodelname.get(), len_model)) {
+    if(!CreateModel(cmodelname.get())) {
         auto msg = fmt::format("NuclearModel: Invalid model requested {}. Please ensure the model is registered", modelname);
         throw std::runtime_error(msg);
     }
@@ -21,7 +21,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cfilename = std::make_unique<char[]>(len+1);
     strcpy(cfilename.get(), filename.c_str());
 
-    if(!InitModel(cfilename.get(), len)) {
+    if(!InitModel(cfilename.get())) {
         auto msg = fmt::format("NuclearModel: Could not initialize model {} using file {}.",
                                modelname, filename);
         throw std::runtime_error(msg);
@@ -31,20 +31,19 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
 std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &event,
                                                                const std::vector<FFInfoMap> &ff) const {
     std::vector<NuclearModel::Currents> result;
-    double *real = nullptr, *imag = nullptr;
+    std::complex<double> *cur = nullptr;
     std::vector<int> bosons;
     int nbosons{};
-    int size = 4*GetNSpins();
+    size_t size = 4*GetNSpins();
 
     // Get current from fortran and convert to right format
     // TODO: How to handle various initial states?
-    GetCurrents(&event, bosons.data(), &nbosons, &real, &imag, &size);
+    GetCurrents(&event, bosons.data(), &nbosons, &cur, &size);
     // TODO: Figure out how to handle converting to std::vector<Currents>
 
     // Clean up memory usage
-    CleanUpEvent(&real, &imag, &size);
-    real = nullptr;
-    imag = nullptr;
+    CleanUpEvent(&cur, &size);
+    cur = nullptr;
 
     return result;
 }

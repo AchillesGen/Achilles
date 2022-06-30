@@ -85,7 +85,7 @@ target_link_libraries(mappers PRIVATE project_options project_warnings
                               PUBLIC physics)
 list(APPEND nuchic_targets mappers)
 
-# add_subdirectory(fortran)
+add_subdirectory(fortran)
 
 add_library(event_gen SHARED
     # TODO: Move to its own library

@@ -58,7 +58,8 @@
       real*8, parameter :: alpha=1.0d0/137.0d0
       real*8 :: tan2,sig_mott,qm2
       real*8 :: ff1s,ff2s,ff1v,ff2v,ffa,ffp,ges,gms,gev,gmv
-      real*8 :: sig,sig_p,sig_n,ff1p,ff1n,ff2p,ff2n
+      real*8 :: sig,sig_p,sig_n 
+      complex*16 :: ff1p,ff1n,ff2p,ff2n,fa
 
 
       qm2 = q2-wf**2           
@@ -71,11 +72,11 @@
       ff2n=0.5d0*(-ff2v+ff2s)
 
       if(id.eq.1) then
-         call det_Ja(ff1p,ff2p)
+         call det_Ja(ff1p,ff2p,fa)
          call contract(sig_p)
          sig=sig_mott*0.5d0*(sig_p) 
       elseif(id.eq.2) then
-         call det_Ja(ff1n,ff2n)
+         call det_Ja(ff1n,ff2n,fa)
          call contract(sig_n)
          sig=sig_mott*0.5d0*(sig_n) 
       endif

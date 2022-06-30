@@ -8,7 +8,13 @@ add_library(fortran_interface SHARED
     logging_mod.f90
     interaction_mod.f90
     interpolation_mod.f90
-    hardscattering_mod.f90
+    # hardscattering_mod.f90
+    event_mod.f90
+    nucleus_mod.f90
+    nuclear_model.f90
+    nuclear_model_factory.f90
+    nuclear_model_interface.f90
+    process_info_mod.f90
     OneBody/pke_read_xsec.f90
     OneBody/contract.f90
     OneBody/currents.f90
@@ -26,7 +32,10 @@ add_library(fortran_interface SHARED
     FLogging.cc
     FInteractions.cc
     FInterpolation.cc
-    FHardScattering.cc
+    # FHardScattering.cc
+    FEvent.cc 
+    FNucleus.cc
+    FProcessInfo.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
                                         PUBLIC physics)
