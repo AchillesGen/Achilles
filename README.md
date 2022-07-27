@@ -38,7 +38,7 @@ cmake .. -DSHERPA_ROOT_DIR=/path/to/Sherpa
 make -jN
 ```
 
-If the HepMC3 cmake files are not within the CMake module path, you can add the `-DHEPMC3_DIR=/path/to/hepmc3/cmake/files`
+If the HepMC3 cmake files are not within the CMake module path, you can add the `-DHepMC3_DIR=/path/to/hepmc3/cmake/files`
 to the above `cmake` command. Additional details and optional dependencies can be found below.
 
 ### Optional Dependencies
@@ -46,7 +46,7 @@ to the above `cmake` command. Additional details and optional dependencies can b
 #### HepMC3
 
 The HepMC3 code can be found [here](https://gitlab.cern.ch/hepmc/HepMC3), and has details on building and
-installing the code.
+installing the code. Achilles requires HepMC3 version 3.2.5 or newer.
 
 HepMC3 provides a C++ and python interface for writing HepMC3 files based on the [arxiv:1912.08005](https://arxiv.org/abs/1912.08005).
 The HepMC3 is supported and maintained by the LHC and heavy ion communities. This has become a
@@ -229,7 +229,7 @@ file. Additionally, the model needs to include modifications to handle the inter
 are currently not automated by FeynRules. Further details can be found in the [wiki](https://github.com/jxi24/Achilles/wiki/BSM).
 
 The UFO files for the Dark Neutrino portal model () are included in the repository in the folder `UFO`.
-To add this model to be available to Achilles, run the command `Sherpa-generate-model --ncores=N UFO/DarkNeutrinoPortal_Dirac_UFO`. An example run card and parameter card are also provided as `run_hnl.yml` and `hnl_parameters.dat`. Events can be generated with this example file using `./bin/achilles run_hnl.yml`.
+To add this model to be available to Achilles, run the command `Sherpa-generate-model --ncore=N UFO/DarkNeutrinoPortal_Dirac_UFO`. An example run card and parameter card are also provided as `run_hnl.yml` and `hnl_parameters.dat`. Events can be generated with this example file using `./bin/achilles run_hnl.yml`.
 
 ## Citing Achilles
 
