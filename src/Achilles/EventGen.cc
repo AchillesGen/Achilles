@@ -272,12 +272,17 @@ void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
     integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
+    std::string filename = fmt::format("events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
+    outputfile.open(filename);
     integrator(integrand);
     fmt::print("\n");
     auto result = integrator.Summary();
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
+    fmt::print("Polarization = {:^8.5e} +/- {:^8.5e}, {:^8.5e} +/- {:^8.5e}\n",
+                polarization0.Mean(), polarization0.Error(),
+                polarization1.Mean(), polarization1.Error());
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
@@ -313,6 +318,8 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             event.SetMEWeight(0);
             spdlog::trace("Outputting the event");
             writer -> Write(event);
+            polarization0 += 0;
+            polarization1 += 0;
         }
         return 0;
     }
@@ -381,6 +388,19 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // Keep a running total of the number of surviving events
             event.Finalize();
             writer -> Write(event);
+            polarization0 += event.Polarization(0)*wgt*6;
+            polarization1 += event.Polarization(1)*wgt*6;
+            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0)*wgt*6 << "," << event.Polarization(1)*wgt*6 << "," << event.Weight() << std::endl;
+            // File: events_enu_{Enu}.txt
+            // Event: q0 = E_nu - E_tau
+            // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()
+            //
+            // total cross section = mean(event.Weight())
+            //
+            // Python: 
+            // Figure 5: Histogram in q0 (cut on 15 < theta_tau < 17) PL_num/(total cross section), PT_num/(total cross section)
+            // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
+            // New Fig: Total cross section for tau neutrino vs Enu
         }
     }
 

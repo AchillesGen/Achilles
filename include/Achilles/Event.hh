@@ -72,6 +72,7 @@ class Event {
                 && m_me == other.m_me && m_vWgt == other.m_meWgt
                 && m_leptons == other.m_leptons;
         }
+        double& Polarization(size_t idx) { return m_polarization[idx]; }
 
     private:
         std::vector<double> EventProbs() const;
@@ -86,6 +87,7 @@ class Event {
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
         vParticles m_history{};
+        std::array<double, 2> m_polarization{};
 };
 
 }

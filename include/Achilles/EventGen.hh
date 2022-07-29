@@ -53,7 +53,10 @@ class EventGen {
         Integrand<FourVector> integrand;
         YAML::Node config;
 
+        std::ofstream outputfile;
+
         std::shared_ptr<EventWriter> writer;
+        StatsData polarization0, polarization1;
 };
 
 }
