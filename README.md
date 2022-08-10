@@ -54,7 +54,7 @@ standard in the HEP event generator community.
 
 For details on the additions to the HepMC3 standard for colliders to neutrino physics see [here](https://github.com/NuHepMC/Spec).
 
-To disable the requirement of HepMC3, add the option `-DHEPMC3=OFF` to the cmake command.
+To disable the requirement of HepMC3, add the option `-DENABLE_HEPMC3=OFF` to the cmake command.
 
 #### Sherpa
 
@@ -64,6 +64,7 @@ implemented into the Comix matrix element generator within the Sherpa codebase.
 
 The required version of Sherpa is in the process of being made public, but can be supplied upon request to the
 Achilles authors.
+Note that to enable UFO support from Sherpa, add the option `--enable-ufo' to the configure command.
 
 To disable the requirement of Sherpa, add the option `-DENABLE_BSM=OFF` to the cmake command.
 
