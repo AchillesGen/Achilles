@@ -1,5 +1,8 @@
 #include "catch2/catch.hpp" 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreturn-local-addr"
 #include "mock_classes.hh"
+#pragma GCC diagnostic pop
 
 #include <sstream>
 

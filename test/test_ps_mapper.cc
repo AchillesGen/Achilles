@@ -50,7 +50,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     achilles::FourVector beam_mom = {achilles::Constant::mN, 0, 0, 0};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
-    auto mapper = achilles::PSBuilder(2, 2).Beam(beam, 1)
+    auto mapper = achilles::PSBuilder(2, 2).Beam(beam, {achilles::Constant::mN2, 0.0}, 1)
                                          .Hadron("Dummy", {achilles::Constant::mN2, 0.0})
                                          .FinalState("Dummy", {achilles::Constant::mN2, 0.0})
                                          .build();
@@ -60,7 +60,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     REQUIRE_CALL(*beam, BeamIDs())
         .TIMES(1)
         .LR_RETURN((beam_id));
-    REQUIRE_CALL(*beam, Flux(achilles::PID::electron(), beam_rans))
+    REQUIRE_CALL(*beam, Flux(achilles::PID::electron(), beam_rans, achilles::Constant::mN2))
         .TIMES(1)
         .LR_RETURN((beam_mom));
     REQUIRE_CALL(*beam, NVariables())

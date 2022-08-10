@@ -35,9 +35,9 @@ TEST_CASE("Spectrum Beam", "[Beams]") {
         achilles::Spectrum spectrum(beam);
 
         CHECK(spectrum.NVariables() == 1);
-        CHECK(spectrum.Flux({0.5}) == achilles::FourVector(500, 0, 0, 500));
+        CHECK(spectrum.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
         std::vector<double> rans(1);
-        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans) == 1./50.*1000);
+        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1./50.*1000);
         CHECK(rans[0] == 0.5);
     }
 }
@@ -64,11 +64,11 @@ Beams:
         CHECK(beam.NBeams() == 2); 
         CHECK(beam.BeamIDs() == std::set<achilles::PID>{12, 13});
         CHECK(beam.at(achilles::PID(12)) == beam[achilles::PID(12)]);
-        CHECK(beam.Flux(achilles::PID(12), {}) == achilles::FourVector(100, 0, 0, 100));
-        CHECK(beam.Flux(achilles::PID(13), {}) == achilles::FourVector(200, 0, 0, 200));
+        CHECK(beam.Flux(achilles::PID(12), {}, 0) == achilles::FourVector(100, 0, 0, 100));
+        CHECK(beam.Flux(achilles::PID(13), {}, 0) == achilles::FourVector(200, 0, 0, 200));
         std::vector<double> rans;
-        CHECK(beam.GenerateWeight(achilles::PID(12), {}, rans) == 1.0);
-        CHECK(beam.GenerateWeight(achilles::PID(13), {}, rans) == 1.0);
+        CHECK(beam.GenerateWeight(achilles::PID(12), {}, rans, 0) == 1.0);
+        CHECK(beam.GenerateWeight(achilles::PID(13), {}, rans, 0) == 1.0);
     }
 
     SECTION("Throw on Identical Beams") {
