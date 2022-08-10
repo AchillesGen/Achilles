@@ -72,6 +72,13 @@ if(ENABLE_HEPMC3)
 find_package(HepMC3 REQUIRED)
 endif()
 
+# Find ROOT if needed
+option(USE_ROOT "Enable reading of ROOT flux files" OFF)
+if(USE_ROOT)
+    MESSAGE(STATUS "Building with ROOT flux files")
+    find_package(ROOT REQUIRED)
+endif()
+
 # Add dependencies
 include(CMake/CPM.cmake)
 add_subdirectory(external)

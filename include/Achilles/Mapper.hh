@@ -49,6 +49,15 @@ class Mapper {
         }
         virtual YAML::Node ToYAML() const = 0;
 
+    protected:
+        double Smin() const {
+            double smin = 0;
+            for(const auto &mass : Masses()) {
+                smin += sqrt(mass);
+            }
+            return smin*smin;
+        }
+
     private:
         std::string mapping_name{};
         std::vector<double> m_masses;

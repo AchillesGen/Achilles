@@ -29,6 +29,14 @@ using vParticles = std::vector<Particle>;
 using vMomentum = std::vector<FourVector>;
 
 class Event {
+    struct MatrixElementStruct {
+        std::vector<PID> inital_state;
+        std::vector<PID> final_state;
+        double weight{};
+    };
+
+    using MatrixElementVec = std::vector<MatrixElementStruct>;
+
     public:
         Event(double vWgt = 0) : m_vWgt{vWgt} {}
         Event(std::shared_ptr<Nucleus>, 
@@ -57,12 +65,17 @@ class Event {
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
         MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
 
+        const double& Flux() const { return flux; }
+        double& Flux() { return flux; }
+
         MOCK vParticles Particles() const;
         const vParticles& Hadrons() const;
         MOCK vParticles& Hadrons();
         const vParticles& Leptons() const { return m_leptons; }
         vParticles& Leptons() { return m_leptons; }
-        MOCK double Weight() const;
+        void CalcWeight();
+        MOCK const double& Weight() const { return m_wgt; }
+        double& Weight() { return m_wgt; }
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
@@ -74,6 +87,8 @@ class Event {
         }
 
     private:
+        static bool MatrixCompare(const MatrixElementStruct&, double);
+        static double AddEvents(double, const MatrixElementStruct&);
         std::vector<double> EventProbs() const;
 
         // bool ValidateEvent(size_t) const;
@@ -83,9 +98,10 @@ class Event {
         NuclearRemnant m_remnant{};
         vMomentum m_mom{};
         std::vector<double> m_me;
-        double m_vWgt{}, m_meWgt{};
+        double m_vWgt{}, m_meWgt{}, m_wgt{-1};
         vParticles m_leptons{};
         vParticles m_history{};
+        double flux;
 };
 
 }

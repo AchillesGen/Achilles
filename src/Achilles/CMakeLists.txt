@@ -19,6 +19,7 @@ add_library(utilities SHARED
     Spinor.cc
     ProcessInfo.cc
     Poincare.cc
+    Unweighter.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -69,6 +70,10 @@ if(ENABLE_BSM)
     list(APPEND achilles_targets sherpa)
     target_compile_definitions(physics PUBLIC ENABLE_BSM)
     target_link_libraries(physics PUBLIC sherpa)
+endif()
+if(USE_ROOT)
+    target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
+    target_compile_definitions(physics PUBLIC -DUSE_ROOT)
 endif()
 target_link_libraries(physics PRIVATE project_options project_warnings
                               PUBLIC utilities cuts ${HDF5_CXX_LIBRARIES})

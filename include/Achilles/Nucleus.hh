@@ -103,7 +103,7 @@ class Nucleus {
         
         /// Return the nuclear PID
         ///@return PID: The pid for the given nucleus
-        PID ID() const;
+        PID ID() const { return m_pid; }
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
@@ -245,6 +245,7 @@ class Nucleus {
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
+        PID m_pid;
 
         FourVector m_recoil{};
         std::shared_ptr<Potential> potential;

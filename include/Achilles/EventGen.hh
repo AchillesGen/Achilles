@@ -7,6 +7,7 @@
 #include "Achilles/QuasielasticTestMapper.hh"
 #include "Achilles/Vegas.hh"
 #include "Achilles/MultiChannel.hh"
+#include "Achilles/Unweighter.hh"
 
 #include <memory>
 #include <vector>
@@ -54,6 +55,7 @@ class EventGen {
         YAML::Node config;
 
         std::shared_ptr<EventWriter> writer;
+        std::unique_ptr<Unweighter> unweighter;
 };
 
 }

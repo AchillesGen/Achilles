@@ -5,9 +5,15 @@
 
 #include <fstream>
 
+#ifdef USE_ROOT
+#include "TFile.h"
+#include "TH1D.h"
+#endif
+
 using achilles::Spectrum;
 
 Spectrum::Spectrum(const YAML::Node &node) {
+    spdlog::debug("Loading spectrum flux");
     if(node["Histogram"]) {
         std::string filename = node["Histogram"].as<std::string>();
         std::ifstream hist(filename.c_str());
@@ -64,6 +70,27 @@ Spectrum::Spectrum(const YAML::Node &node) {
         }
         edges.push_back(std::stod(tokens[ehi_token])*to_mev);
 
+        // Calculate Integral
+        bool use_width{};
+        switch(m_units) {
+            case flux_units::v_cm2_POT_50MeV:
+                use_width = true;
+                break;
+            case flux_units::cm2_50MeV:
+                use_width = true;
+                break;
+            case flux_units::v_cm2_POT_MeV:
+            case flux_units::v_nb_POT_MeV:
+                use_width = false;
+                break;
+        }
+
+        for(size_t i = 0; i < heights.size(); ++i) {
+            double width = use_width ? edges[i+1] - edges[i] : 1;
+            m_flux_integral += width*heights[i];
+        }
+        spdlog::trace("Flux integral = {}", m_flux_integral);
+
         // Create interpolation function
         std::vector<double> bin_centers;
         bin_centers.push_back(edges[0]);
@@ -80,6 +107,43 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_min_energy = edges.front();
         m_max_energy = edges.back();
         m_delta_energy = m_max_energy - m_min_energy;
+        } else if(node["ROOTHist"]) {
+#ifdef USE_ROOT
+            std::string filename = "flux/" + node["ROOTHist"]["File"].as<std::string>();
+            spdlog::trace("Reading flux file: {}", filename);
+            TFile *file = new TFile(filename.c_str());
+            TH1D *hist = static_cast<TH1D*>(file -> Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
+            bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
+            double norm = node["ROOTHist"]["Norm"].as<double>();
+            hist -> Scale(norm);
+            m_flux_integral = hist -> Integral(use_width ? "width" : "");
+            spdlog::trace("Flux Integral = {}", m_flux_integral);
+            std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
+            std::vector<double> heights; //(static_cast<size_t>(hist -> GetNbinsX())+2);
+            bin_centers.push_back(hist -> GetBinLowEdge(1));
+            heights.push_back(hist -> GetBinContent(1));
+            size_t i;
+            for(i = 1; i <= static_cast<size_t>(hist -> GetNbinsX()); ++i) {
+                double height = hist -> GetBinContent(static_cast<int>(i));
+                if(height == 0) break;
+                bin_centers.push_back(hist -> GetBinCenter(static_cast<int>(i)));
+                heights.push_back(hist -> GetBinContent(static_cast<int>(i)));
+            }
+            bin_centers.push_back(hist -> GetBinLowEdge(static_cast<int>(i))
+                                  + hist -> GetBinWidth(static_cast<int>(i))); 
+            heights.push_back(heights.back());
+
+            Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
+            interp.SetPolyOrder(1);
+
+            m_flux = [=](double x){ return interp(x); };
+            m_min_energy = bin_centers.front();
+            m_max_energy = bin_centers.back();
+            m_delta_energy = m_max_energy - m_min_energy;
+            m_energy_units = 1.0/1.0_GeV;
+#else
+            throw std::runtime_error("Achilles has not been compiled with ROOT support");
+#endif
     } else {
         throw std::runtime_error("Spectrum: Only histogram fluxes are implemented");
     }
@@ -151,32 +215,46 @@ std::string Spectrum::Format() const {
     return "Undefined";
 }
 
-achilles::FourVector Spectrum::Flux(const std::vector<double> &ran) const {
-    double energy = ran[0]*m_delta_energy + m_min_energy;
+achilles::FourVector Spectrum::Flux(const std::vector<double> &ran, double smin) const {
+    // TODO: Resolve this with a cut
+    static constexpr double eps = 5;
+    double min_energy = (sqrt(smin) - Constant::mN + eps)*m_energy_units;
+    min_energy = std::max(min_energy, m_min_energy);
+    double delta_energy = m_max_energy - min_energy;
+    double energy = (ran[0]*delta_energy + min_energy)/m_energy_units;
     return {energy, 0, 0, energy};
 }
 
-double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran) const {
-    ran[0] = (beam.E() - m_min_energy) / m_delta_energy;
-    double scale = 1;
-    static constexpr double to_nb = 1e-33;
-    static constexpr double to_10_20_POT = 1e20;
-    static constexpr double per_mol = Constant::NAVOGADRO;
-    switch(m_units) {
-        case flux_units::v_cm2_POT_50MeV:
-            scale *= to_nb/50*to_10_20_POT*per_mol;
-            break;
-        case flux_units::v_cm2_POT_MeV:
-            scale *= to_nb*to_10_20_POT*per_mol;
-            break;
-        case flux_units::v_nb_POT_MeV:
-            scale *= to_10_20_POT*per_mol;
-            break;
-        case flux_units::cm2_50MeV:
-            scale *= 1./50.;
-            break;
-    }
-    return (m_delta_energy*m_flux(beam.E()))*scale;
+double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran, double smin) const {
+    // TODO: Resolve this with a cut
+    static constexpr double eps = 5;
+    double min_energy = (sqrt(smin) - Constant::mN + eps)*m_energy_units;
+    min_energy = std::max(min_energy, m_min_energy);
+    double delta_energy = m_max_energy - min_energy;
+    ran[0] = (beam.E()*m_energy_units - min_energy) / delta_energy;
+    // double scale = 1;
+    // static constexpr double to_nb = 1e-33;
+    // static constexpr double to_10_20_POT = 1e20;
+    // static constexpr double per_mol = Constant::NAVOGADRO;
+    // switch(m_units) {
+    //     case flux_units::v_cm2_POT_50MeV:
+    //         scale *= to_nb/50*to_10_20_POT*per_mol;
+    //         break;
+    //     case flux_units::v_cm2_POT_MeV:
+    //         scale *= to_nb*to_10_20_POT*per_mol;
+    //         break;
+    //     case flux_units::v_nb_POT_MeV:
+    //         scale *= to_10_20_POT*per_mol;
+    //         break;
+    //     case flux_units::cm2_50MeV:
+    //         scale *= 1./50.;
+    //         break;
+    // }
+    return (delta_energy*m_flux(beam.E()*m_energy_units))/m_flux_integral;
+}
+
+double Spectrum::EvaluateFlux(const FourVector &beam) const {
+    return m_flux(beam.E()*m_energy_units);
 }
 
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {

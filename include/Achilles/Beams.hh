@@ -26,22 +26,24 @@ class FluxType {
         virtual ~FluxType() = default;
 
         virtual int NVariables() const = 0;
-        virtual FourVector Flux(const std::vector<double>&) const = 0;
-        virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
+        virtual FourVector Flux(const std::vector<double>&, double) const = 0;
+        virtual double GenerateWeight(const FourVector&, std::vector<double>&, double) const = 0;
         virtual std::string Type() const = 0;
+        virtual double EvaluateFlux(const FourVector&) const = 0;
 };
 
 class Monochromatic : public FluxType {
     public:
         Monochromatic(const double &energy) : m_energy(energy) {}
         int NVariables() const override { return 0; }
-        FourVector Flux(const std::vector<double>&) const override {
+        FourVector Flux(const std::vector<double>&, double) const override {
             return {m_energy, 0, 0, m_energy};
         }
-        double GenerateWeight(const FourVector&, std::vector<double>&) const override {
+        double GenerateWeight(const FourVector&, std::vector<double>&, double) const override {
             return 1;
         }
         std::string Type() const override { return "Monochromatic"; }
+        double EvaluateFlux(const FourVector&) const override { return 1; }
 
     private:
         double m_energy;
@@ -61,6 +63,7 @@ class Spectrum : public FluxType {
     public:
         enum class Type {
             Histogram,
+            ROOTHist,
         };
         enum class FluxFormat {
             Achilles,
@@ -70,12 +73,13 @@ class Spectrum : public FluxType {
 
         Spectrum(const YAML::Node&);
         int NVariables() const override { return 1; }
-        FourVector Flux(const std::vector<double>&) const override;
-        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        FourVector Flux(const std::vector<double>&, double) const override;
+        double GenerateWeight(const FourVector&, std::vector<double>&, double) const override;
         std::string Type() const override { return "Spectrum"; }
         std::string Format() const;
         double MinEnergy() const { return m_min_energy; }
         double MaxEnergy() const { return m_max_energy; }
+        double EvaluateFlux(const FourVector&) const override;
 
     private:
         void AchillesHeader(std::ifstream&);
@@ -90,7 +94,8 @@ class Spectrum : public FluxType {
         };
         std::function<double(double)> m_flux{};
         double m_min_energy{}, m_max_energy{};
-        double m_delta_energy{};
+        double m_delta_energy{}, m_energy_units{1};
+        double m_flux_integral{};
         flux_units m_units;
         FluxFormat m_format;
 };
@@ -108,14 +113,18 @@ class Beam {
 
         Beam() { n_vars = 0; }
         MOCK int NVariables() const { return  n_vars; }
-        MOCK FourVector Flux(const PID pid, const std::vector<double> &rans) const { 
-            return m_beams.at(pid) -> Flux(rans); 
+        MOCK FourVector Flux(const PID pid, const std::vector<double> &rans, double smin) const { 
+            return m_beams.at(pid) -> Flux(rans, smin); 
         }
-        MOCK double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans) const { 
-            return m_beams.at(pid) -> GenerateWeight(p, rans); 
+        MOCK double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans,
+                                   double smin) const { 
+            return m_beams.at(pid) -> GenerateWeight(p, rans, smin); 
         }
         size_t NBeams() const { return m_beams.size(); }
         MOCK const std::set<PID>& BeamIDs() const { return m_pids; }
+        double EvaluateFlux(const PID pid, const FourVector &p) const {
+            return m_beams.at(pid) -> EvaluateFlux(p);
+        }
 
         // Accessors
         std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }

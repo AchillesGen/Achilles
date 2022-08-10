@@ -47,7 +47,7 @@ achilles::Channel<achilles::FourVector> BuildChannel(achilles::NuclearModel *mod
                                                  std::shared_ptr<achilles::Beam> beam,
                                                  const std::vector<double> &masses) {
     achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
+    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .FinalState(T::Name(), masses).build();
     achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
@@ -63,7 +63,7 @@ achilles::Channel<achilles::FourVector> BuildChannelSherpa(achilles::NuclearMode
     achilles::Channel<achilles::FourVector> channel;
     auto massesGeV = masses;
     for(auto &mass : massesGeV) mass /= (1000*1000);
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
+    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .SherpaFinalState(T::Name(), massesGeV).build();
     achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
@@ -76,7 +76,7 @@ achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *
                                                     std::unique_ptr<PHASIC::Channels> final_state,
                                                     const std::vector<double> &masses) {
     achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
+    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
                                                    .GenFinalState(std::move(final_state)).build();
     achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
@@ -96,6 +96,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
             seed = config["Initialize"]["Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
+
+    // Setup unweighter
+    unweighter = UnweighterFactory::Initialize(config["Unweighting"]["Name"].as<std::string>(),
+                                               config["Unweighting"]);
 
     // Load initial state, massess
     spdlog::trace("Initializing the beams");
@@ -278,14 +282,17 @@ void achilles::EventGen::GenerateEvents() {
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
+    fmt::print("Unweighting efficiency: {:^8.5e} %\n",
+               unweighter->Efficiency() * 100);
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     if(outputEvents) {
-        static size_t ievent = 0;
-        constexpr size_t statusUpdate = 10000;
-        if(++ievent % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", ievent, config["Main"]["NEvents"].as<size_t>());
+        static constexpr size_t statusUpdate = 1000;
+        if(unweighter->Accepted() % statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r",
+                       unweighter->Accepted(),
+                       config["Main"]["NEvents"].as<size_t>());
         }
     }
     // Initialize the event, which generates the nuclear configuration
@@ -294,6 +301,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Process().m_ids;
+
+    // Setup flux value
+    event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
 
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
@@ -308,11 +318,16 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     auto xsecs = scattering -> CrossSection(event);
 
     // Initialize the event
+    spdlog::debug("Filling the event");
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
+            event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
+            // Update number of calls needed to ensure the number of generated events
+            // is the same as that requested by the user
+            integrator.Parameters().ncalls++;
         }
         return 0;
     }
@@ -329,6 +344,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
 
+    event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
     // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
@@ -346,7 +362,11 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // the integrand should be interpreted as zero in this region
             if(outputEvents) {
                 event.SetMEWeight(0);
+                event.CalcWeight();
                 writer -> Write(event);
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
             }
             return 0;
         }
@@ -354,8 +374,22 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Run the cascade if needed
     if(runCascade) {
+        spdlog::trace("Hadrons:");
+        idx = 0;
+        for(const auto &particle : event.Hadrons()) {
+            if(particle.Status() == ParticleStatus::initial_state
+                && particle.ID() == PID::proton())
+                spdlog::info("\t{}: {}", idx, particle);
+            ++idx;
+        }
         spdlog::debug("Runnning cascade");
         cascade -> Evolve(&event);
+
+        spdlog::trace("Hadrons (Post Cascade):");
+        idx = 0;
+        for(const auto &particle : event.Hadrons()) {
+            spdlog::trace("\t{}: {}", ++idx, particle);
+        }
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
@@ -369,7 +403,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)
             Rotate(event);
-
         // Perform event-level final cuts before writing
         bool outputCurrentEvent = true;
         // if(doEventCuts){
@@ -380,8 +413,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
+            if(!unweighter->AcceptEvent(event)) {
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
+            }
             writer -> Write(event);
         }
+        } else {
+            unweighter->AddEvent(event);
     }
 
     // Always return the weight when the event passes the initial hard cut.
