@@ -75,7 +75,7 @@ class Event {
         vParticles& Leptons() { return m_leptons; }
         void CalcWeight();
         MOCK const double& Weight() const { return m_wgt; }
-        double& Weight() { return m_wgt; }
+        MOCK double& Weight() { return m_wgt; }
         void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 

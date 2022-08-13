@@ -37,7 +37,7 @@ TEST_CASE("Spectrum Beam", "[Beams]") {
         CHECK(spectrum.NVariables() == 1);
         CHECK(spectrum.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
         std::vector<double> rans(1);
-        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1./50.*1000);
+        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1.0);
         CHECK(rans[0] == 0.5);
     }
 }

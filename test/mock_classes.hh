@@ -81,7 +81,8 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     MAKE_MOCK0(Momentum, std::vector<achilles::FourVector>&());
     IMPLEMENT_CONST_MOCK0(Particles);
     IMPLEMENT_CONST_MOCK0(Remnant);
-    IMPLEMENT_CONST_MOCK0(Weight);
+    MAKE_CONST_MOCK0(Weight, const double&());
+    MAKE_MOCK0(Weight, double&());
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {

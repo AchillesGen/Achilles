@@ -85,7 +85,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
     }
 
     SECTION("Evolve Event") {
@@ -115,7 +115,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.Evolve(&event);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[0].Radius() > radius);
     }
 
@@ -138,7 +138,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[0].Radius() > radius);
     }
 
@@ -161,7 +161,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         cascade.SetKicked(0);
         cascade.NuWro(nucleus);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[0].Radius() > radius);
     }
 }
@@ -225,7 +225,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
         CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
     }
@@ -271,7 +271,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.Evolve(&event);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
         CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
         CHECK(hadrons[0].Radius() > radius);
@@ -296,7 +296,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     //     cascade.SetKicked(0);
     //     cascade.NuWro(nucleus);
 
-    //     CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+    //     CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
     //     CHECK(hadrons[0].Radius() > radius);
     // }
 }
@@ -358,7 +358,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         CHECK_NOTHROW(cascade.MeanFreePath(nucleus));
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::escaped);
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
         CHECK(hadrons[0].Radius() > radius);
     }
 }
