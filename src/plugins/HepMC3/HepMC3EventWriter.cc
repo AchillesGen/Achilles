@@ -89,7 +89,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, event.CurrentNucleus()->ID(), 4);
     HepMC3::FourVector hardVertexPos;
     GenParticlePtr nucleon;
-    achilles::FourVector recoilMom{0, 0, 0, nuc_mass};
+    achilles::FourVector recoilMom{nuc_mass, 0, 0, 0};
     // TODO: Modify for MEC case
     size_t idx = 0;
     for(; idx < hadrons.size(); ++idx) {
@@ -110,7 +110,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
 
     // Add initial lepton
     // TODO: Get maximum neutrino energy from the beam
-    const HepMC3::FourVector initBeam{10000, 0, 0, 10000};
+    const HepMC3::FourVector initBeam{0, 0, 10000, 10000};
     GenParticlePtr p3In = std::make_shared<GenParticle>(initBeam, leptons[0].ID(), 4);
     const auto initLepton = leptons[0];
     const HepMC3::FourVector p3Mom{initLepton.Px(), initLepton.Py(), initLepton.Pz(), initLepton.E()};

@@ -379,7 +379,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         for(const auto &particle : event.Hadrons()) {
             if(particle.Status() == ParticleStatus::initial_state
                 && particle.ID() == PID::proton())
-                spdlog::info("\t{}: {}", idx, particle);
+                spdlog::trace("\t{}: {}", idx, particle);
             ++idx;
         }
         spdlog::debug("Runnning cascade");
