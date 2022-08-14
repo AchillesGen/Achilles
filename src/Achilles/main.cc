@@ -8,6 +8,7 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/NuclearModel.hh"
+#include "plugins/Manager/PluginManager.hh"
 #ifdef ENABLE_BSM
 #include "plugins/Sherpa/SherpaMEs.hh"
 #include "plugins/Sherpa/Channels.hh"
@@ -109,6 +110,7 @@ void GenerateEvents(const std::string &runcard, const std::vector<std::string> &
 int main(int argc, char *argv[]) {
 
     Splash();
+    achilles::Plugin::Manager plugin_manager;
     std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
@@ -150,22 +152,22 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
 
-    const std::string lib = libPrefix + "fortran_interface" + libSuffix;
-    std::string name = installLibs + lib;
-    void *handle = dlopen(name.c_str(), RTLD_NOW);
-    if(!handle) {
-        name = buildLibs + lib;
-        handle = dlopen(name.c_str(), RTLD_NOW);
-        if(!handle) {
-            spdlog::warn("Cannot open HardScattering: {}", dlerror());
-        }
-    }
+    // const std::string lib = libPrefix + "fortran_interface" + libSuffix;
+    // std::string name = installLibs + lib;
+    // void *handle = dlopen(name.c_str(), RTLD_NOW);
+    // if(!handle) {
+    //     name = buildLibs + lib;
+    //     handle = dlopen(name.c_str(), RTLD_NOW);
+    //     if(!handle) {
+    //         spdlog::warn("Cannot open HardScattering: {}", dlerror());
+    //     }
+    // }
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
 
     GenerateEvents(runcard, shargs);
 
     // Close dynamic libraries
-    if(handle) dlclose(handle);
+    // if(handle) dlclose(handle);
     return 0;
 }
