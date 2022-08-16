@@ -151,8 +151,10 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
 void HardScattering::SetProcess(const Process_Info &process) {
     spdlog::debug("Adding Process: {}", process);
     m_leptonicProcess = process;
+#ifndef ENABLE_BSM
     m_current.Initialize(process);
     SMFormFactor = m_current.GetFormFactor();
+#endif
 }
 
 achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> &p,
