@@ -69,7 +69,7 @@ contains
 
         if(allocated(self % model_list)) then
             do i = 1, size(self % model_list)
-                write(*,*) trim(self % model_list(i) % name)
+                write(*,*) " - ", trim(self % model_list(i) % name)
             enddo
         endif
     end subroutine print_models
@@ -78,7 +78,7 @@ contains
         class(ModelFactory), intent(inout) :: self
         character(len=*), intent(in) :: name
         procedure(constructor) :: construct
-        type(ModelConstructor) :: model
+        type(ModelConstructor) :: build_model
         integer :: i
 
         ! Ensure name is not a duplicate
@@ -92,10 +92,10 @@ contains
             enddo
         endif
 
-        model % construct => construct 
-        model % name = trim(name)
+        build_model % construct => construct 
+        build_model % name = trim(name)
 
         if(.not. allocated(self % model_list)) allocate(self % model_list(0))
-        self % model_list = [self % model_list, model]
+        self % model_list = [self % model_list, build_model]
     end subroutine
 end module nuclear_model_factory

@@ -24,7 +24,8 @@ std::vector<long> nuchic::Process_Info::Ids() const {
     std::vector<long> ids;
 
     // Get initial hadronic id
-    ids.push_back(m_states.begin() -> first[0].AsInt());
+    for(size_t i = 0; i < m_states.begin() -> first.size(); ++i)
+        ids.push_back(m_states.begin() -> first[i].AsInt());
 
     // Get inital lepton id
     ids.push_back(m_ids[0].AsInt());

@@ -94,7 +94,7 @@ std::vector<nuchic::NuclearModel::Currents> Coherent::CalcCurrents(const Event &
     return results;
 }
 
-void Coherent::AllowedStates(Process_Info &info) const {
+void Coherent::AllowedStates(Process_Info &info) {
     // Check for charge conservation
     int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
     for(size_t i = 1; i < info.m_ids.size(); ++i) {
@@ -193,7 +193,7 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     return results;
 }
 
-void QESpectral::AllowedStates(Process_Info &info) const {
+void QESpectral::AllowedStates(Process_Info &info) {
     // Check for charge conservation
     int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
     for(size_t i = 1; i < info.m_ids.size(); ++i) {

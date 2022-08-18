@@ -89,9 +89,9 @@ contains ! Implementation of functions
 
     function copy_constructor4(other)
         implicit none
-        type(c_ptr), intent(in) :: other
+        type(c_ptr), intent(in), target :: other
         type(fourvector) :: copy_constructor4
-        copy_constructor4%ptr = copy_fourvector_c(other)
+        copy_constructor4%ptr = other
     end function
 
     subroutine delete_fourvector(this)

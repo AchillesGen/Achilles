@@ -7,7 +7,7 @@ interface
         type(c_ptr) :: info, process_model_c
     end function
 
-    subroutine process_ids_c(info, ids, len) bind(C, name="ProcessIds")
+    subroutine process_ids_c(info, ids, len) bind(C, name="ProcessIDs")
         use iso_c_binding
         implicit none
 
@@ -16,7 +16,7 @@ interface
         integer(c_size_t), intent(out) :: len
     end subroutine
 
-    function process_multiplicity_c(info) bind(C, name="ProcessMultiiplicity")
+    function process_multiplicity_c(info) bind(C, name="ProcessMultiplicity")
         use iso_c_binding
         implicit none
 
@@ -38,7 +38,7 @@ interface
         implicit none
 
         type(c_ptr), intent(inout) :: info
-        integer(c_size_t), intent(in) :: in, out
+        integer(c_size_t), intent(in), value :: in, out
         integer(c_long), dimension(:), intent(in) :: initial(in), final(out)
     end subroutine
 end interface

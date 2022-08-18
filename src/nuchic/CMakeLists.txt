@@ -99,7 +99,7 @@ target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC hepmc3)
 endif()
 target_link_libraries(event_gen PRIVATE project_options project_warnings
-                                PUBLIC physics mappers) #fortran_interface
+                                PUBLIC physics mappers fortran_interface)
 list(APPEND nuchic_targets event_gen)
 
                             # pybind11_add_module(_nuchic MODULE

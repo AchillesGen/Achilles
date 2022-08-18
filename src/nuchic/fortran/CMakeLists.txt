@@ -36,6 +36,7 @@ add_library(fortran_interface SHARED
     FEvent.cc 
     FNucleus.cc
     FProcessInfo.cc
+    FNuclearModel.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
                                         PUBLIC physics)

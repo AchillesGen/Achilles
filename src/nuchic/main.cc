@@ -7,6 +7,8 @@
 #include "nuchic/Logging.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
 #include "plugins/Sherpa/Channels.hh"
+#include "nuchic/fortran/FNuclearModel.hh"
+#include "nuchic/NuclearModel.hh"
 
 #include "docopt.h"
 
@@ -44,6 +46,7 @@ R"(
       nuchic --display-cuts
       nuchic --display-ps
       nuchic --display-ff
+      nuchic --display-nuc-models
       nuchic (-h | --help)
       nuchic --version
 
@@ -86,6 +89,13 @@ int main(int argc, char *argv[]) {
 
     if(args["--display-ff"].asBool()) {
         nuchic::FormFactorFactory::Display();
+        return 0;
+    }
+
+    nuchic::FortranModel::RegisterModels();
+    if(args["--display-nuc-models"].asBool()) {
+        nuchic::NuclearModelFactory::Display();
+        nuchic::FortranModel::DisplayModels();
         return 0;
     }
 

@@ -1,6 +1,7 @@
 module nuclear_model
     use iso_c_binding
     use libevent
+    implicit none
 
     private
     public :: model
@@ -44,14 +45,18 @@ module nuclear_model
             character(len=:), allocatable :: nm_psname
         end function
 
-        subroutine nm_currents(self, event_in, bosons, nbosons, currents, size)
-            use libevent
+        subroutine nm_currents(self, mom_in, nin, mom_out, nout, qvec, ff, len_ff, cur, len_cur)
+            use libvectors
+            use iso_c_binding
             import model 
             class(model), intent(inout) :: self
-            class(event), intent(in) :: event_in
-            integer, intent(in) :: nbosons, size
-            integer, dimension(nbosons), intent(in) :: bosons
-            complex*16, dimension(size), intent(out) :: currents
+            integer(c_size_t), intent(in), value :: nin, nout, len_ff
+            integer(c_int), intent(out) :: len_cur
+            complex(c_double_complex), dimension(len_ff), intent(in) :: ff
+            type(fourvector) :: qvec
+            type(fourvector), dimension(nin), intent(in) :: mom_in
+            type(fourvector), dimension(nout), intent(in) :: mom_out
+            complex(c_double_complex), dimension(:), intent(out), pointer :: cur
         end subroutine
 
         function nm_states(self, info)

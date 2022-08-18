@@ -8,7 +8,7 @@ module libprocess_info
 
     type process_info 
         private
-        type(c_ptr) :: ptr
+        type(c_ptr), pointer :: ptr
     contains
         procedure :: self => get_ptr
         procedure :: model => process_model 
@@ -26,9 +26,9 @@ contains
 
     function copy_process_info(info)
         implicit none
-        type(c_ptr), intent(in) :: info
+        type(c_ptr), intent(in), target :: info
         type(process_info) :: copy_process_info
-        copy_process_info%ptr = info
+        copy_process_info%ptr => info
     end function
 
     function get_ptr(this)
@@ -78,6 +78,7 @@ contains
         class(process_info), intent(inout) :: this
         integer(c_size_t), intent(in) :: in, out
         integer(c_long), dimension(:), intent(in) :: initial(in), final(out)
+        character*12 hexval
 
         call process_add_state_c(this%ptr, initial, final, in, out)
     end subroutine

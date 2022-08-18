@@ -6,6 +6,7 @@
 #include "nuchic/FormFactor.hh"
 #include "nuchic/ProcessInfo.hh"
 #include "nuchic/SpectralFunction.hh"
+#include "nuchic/Particle.hh"
 
 #include "yaml-cpp/node/node.h"
 
@@ -46,10 +47,11 @@ class NuclearModel {
         virtual NuclearMode Mode() const = 0;
         virtual std::string PhaseSpace() const = 0;
         virtual std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const = 0;
-        virtual void AllowedStates(Process_Info&) const = 0;
+        virtual void AllowedStates(Process_Info&) = 0;
         virtual size_t NSpins() const = 0;
         virtual bool FillNucleus(Event&, const std::vector<double>&) const = 0;
 
+        static std::string Name() { return "Nuclear Model"; }
     protected:
         FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor -> operator()(q2); }
         FormFactorArray CouplingsFF(const FormFactor::Values&,
@@ -72,7 +74,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
         NuclearMode Mode() const override { return NuclearMode::Coherent; }
         std::string PhaseSpace() const override { return Name(); }
         std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const override;
-        void AllowedStates(Process_Info&) const override;
+        void AllowedStates(Process_Info&) override;
         size_t NSpins() const override { return 1; }
         bool FillNucleus(Event&, const std::vector<double>&) const override;
 
@@ -91,7 +93,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
         NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
         std::string PhaseSpace() const override { return Name(); }
         std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const override;
-        void AllowedStates(Process_Info&) const override;
+        void AllowedStates(Process_Info&) override;
         size_t NSpins() const override { return 4; }
         bool FillNucleus(Event&, const std::vector<double>&) const override;
 
