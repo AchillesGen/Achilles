@@ -1,7 +1,5 @@
 #include "nuchic/Constants.hh"
 
-#include <iostream>
-
 // Fortran constants interface
 extern "C" {
 

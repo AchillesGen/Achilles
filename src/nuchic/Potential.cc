@@ -1,6 +1,5 @@
 #include "nuchic/Potential.hh"
 #include "nuchic/Nucleus.hh"
-#include <iostream>
 
 using nuchic::PotentialVals;
 using nuchic::Potential;

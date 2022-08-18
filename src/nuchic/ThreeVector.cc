@@ -1,6 +1,5 @@
-#include <iostream>
-
 #include "nuchic/ThreeVector.hh"
+#include <iostream>
 
 using namespace nuchic;
 

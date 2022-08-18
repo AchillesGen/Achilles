@@ -1,8 +1,6 @@
 #include "fmt/ostream.h"
 #include "nuchic/Interpolation.hh"
 
-#include <iostream>
-
 extern "C" {
     // Fortran 1D interpolation interface
     nuchic::Interp1D *CreateInterp1D(const double *x, const double *y, int n, int mode) {

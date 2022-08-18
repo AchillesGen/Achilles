@@ -4,7 +4,6 @@
 #include <fstream>
 #include <stdexcept>
 #include <algorithm>
-#include <iostream>
 
 namespace nuchic {
 

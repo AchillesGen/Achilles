@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
-#include <iostream>
 
 #include "nuchic/AdaptiveMap.hh"
 #include "nuchic/Random.hh"

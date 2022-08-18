@@ -1,5 +1,4 @@
 #include "nuchic/FormFactor.hh"
-#include <iostream>
 
 using nuchic::FormFactorBuilder;
 

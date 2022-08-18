@@ -2,8 +2,6 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <iostream>
-
 #include "fmt/format.h"
 #include "nuchic/Interpolation.hh"
 
