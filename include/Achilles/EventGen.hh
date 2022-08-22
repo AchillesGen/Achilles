@@ -37,7 +37,7 @@ class EventGen {
         void GenerateEvents();
 
     private:
-        bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
+        bool runCascade{false}, outputEvents{false}, doHardCuts{false};
         bool doRotate{false};
         double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
