@@ -39,7 +39,7 @@ add_library(fortran_interface SHARED
     FNuclearModel.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
-                                        PUBLIC physics)
+                                        PUBLIC physics nuclear_models)
 
 
 # add_executable(constant_test 

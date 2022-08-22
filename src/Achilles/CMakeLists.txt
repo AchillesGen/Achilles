@@ -91,12 +91,18 @@ target_link_libraries(mappers PRIVATE project_options project_warnings
                               PUBLIC physics)
 list(APPEND achilles_targets mappers)
 
+add_library(nuclear_models SHARED
+    NuclearModel.cc
+)
+target_link_libraries(nuclear_models PRIVATE project_options project_warnings
+                                     PUBLIC physics)
+list(APPEND achilles_targets nuclear_models)
+
 add_subdirectory(fortran)
 list(APPEND achilles_targets fortran_interface)
 
 add_library(event_gen SHARED
     # TODO: Move to its own library
-    NuclearModel.cc
     EventGen.cc
     EventWriter.cc
 )
@@ -106,7 +112,7 @@ target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC hepmc3)
 endif()
 target_link_libraries(event_gen PRIVATE project_options project_warnings
-                                PUBLIC physics mappers fortran_interface)
+                                PUBLIC physics mappers fortran_interface nuclear_models)
 list(APPEND achilles_targets event_gen)
 
                             # pybind11_add_module(_achilles MODULE
