@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
 #include "fmt/format.h"
-#include "nuchic/Histogram.hh"
+#include "Achilles/Histogram.hh"
 
 #include <sstream>
 
 TEST_CASE("Histogram Stats", "[Histogram]") {
-    nuchic::Histogram hist(11, -0.5, 10.5, "test");
-    nuchic::Histogram hist2({-0.5, 0.5, 1.5, 2.5,
+    achilles::Histogram hist(11, -0.5, 10.5, "test");
+    achilles::Histogram hist2({-0.5, 0.5, 1.5, 2.5,
                               3.5, 4.5, 5.5, 6.5,
                               7.5, 8.5, 9.5, 10.5}, "test2");
 

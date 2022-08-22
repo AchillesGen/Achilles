@@ -1,31 +1,31 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/ParticleInfo.hh"
+#include "Achilles/ParticleInfo.hh"
 
 TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     SECTION("Must be a valid particle") {
-        CHECK_THROWS_WITH(nuchic::ParticleInfo(23413), 
+        CHECK_THROWS_WITH(achilles::ParticleInfo(23413), 
                           "Invalid PID: id=23413");
 
-        CHECK_THROWS_WITH(nuchic::ParticleInfo(nuchic::PID(23413)),
+        CHECK_THROWS_WITH(achilles::ParticleInfo(achilles::PID(23413)),
                           "Invalid PID: id=23413");
        
-        for(const auto &entry : nuchic::ParticleInfo::Database()) {
-            CHECK_NOTHROW(nuchic::ParticleInfo(entry.first));
+        for(const auto &entry : achilles::ParticleInfo::Database()) {
+            CHECK_NOTHROW(achilles::ParticleInfo(entry.first));
         }
     }
 
     SECTION("Add Entry to database") {
-        const auto size = nuchic::ParticleInfo::Database().size();
-        auto entry = std::make_shared<nuchic::ParticleInfoEntry>(nuchic::PID(123456789), 0, 0, 0, 0,
-                                                                 0, 0, 0, true, false, "test", "anti-test");
-        nuchic::ParticleInfo info(entry);
+        const auto size = achilles::ParticleInfo::Database().size();
+        auto entry = std::make_shared<achilles::ParticleInfoEntry>(achilles::PID(123456789), 0, 0, 0, 0,
+                                                                   0, 0, 0, true, false, "test", "anti-test");
+        achilles::ParticleInfo info(entry);
 
-        CHECK(nuchic::ParticleInfo::Database().size() == size + 1);
+        CHECK(achilles::ParticleInfo::Database().size() == size + 1);
     }
 
     SECTION("Negative PIDs are interpreted as anti-particles") {
-        nuchic::ParticleInfo info1(nuchic::PID::proton()), info2(-2212); 
+        achilles::ParticleInfo info1(achilles::PID::proton()), info2(-2212); 
 
         CHECK(info1.Anti() == info2);
         CHECK(info1.Anti().Anti() == info1);
@@ -33,16 +33,16 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
 
     SECTION("Valid properties are returned") {
         // dummy particle
-        auto entry = std::make_shared<nuchic::ParticleInfoEntry>(nuchic::PID(123456789), 10, 1, 1, 1,
-                                                                 1, 1, 0, true, false, "test", "anti-test");
-        nuchic::ParticleInfo info(entry);
-        nuchic::ParticleInfo ainfo(entry, true);
+        auto entry = std::make_shared<achilles::ParticleInfoEntry>(achilles::PID(123456789), 10, 1, 1, 1,
+                                                                   1, 1, 0, true, false, "test", "anti-test");
+        achilles::ParticleInfo info(entry);
+        achilles::ParticleInfo ainfo(entry, true);
 
         CHECK(info.Name() == "test");
         CHECK(ainfo.Name() == "anti-test");
 
-        CHECK(info.ID() == nuchic::PID(123456789));
-        CHECK(ainfo.ID() == nuchic::PID(123456789));
+        CHECK(info.ID() == achilles::PID(123456789));
+        CHECK(ainfo.ID() == achilles::PID(123456789));
 
         CHECK(info.IntID() == 123456789);
         CHECK(ainfo.IntID() == -123456789);
@@ -80,8 +80,8 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     }
 
     SECTION("Equality of two particles") {
-        nuchic::ParticleInfo info1(nuchic::PID::proton()), info2(nuchic::PID::proton()),
-                             info3(nuchic::PID::neutron()), info4(-2212);
+        achilles::ParticleInfo info1(achilles::PID::proton()), info2(achilles::PID::proton()),
+                               info3(achilles::PID::neutron()), info4(-2212);
 
         // Only same PIDs are equal
         CHECK(info1 == info2);

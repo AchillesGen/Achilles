@@ -1,19 +1,19 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/ProcessInfo.hh"
+#include "Achilles/ProcessInfo.hh"
 #include <sstream>
 
 TEST_CASE("ProcessInfo", "[ProcessInfo]") {
-    nuchic::Process_Info info("SM", {nuchic::PID::electron(), nuchic::PID::electron()});
-    info.m_states = {{{nuchic::PID::proton()}, {nuchic::PID::proton()}}};
+    achilles::Process_Info info("SM", {achilles::PID::electron(), achilles::PID::electron()});
+    info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
 
     SECTION("Multiplicity is correct") {
         CHECK(info.Multiplicity() == 4);
     }
 
     SECTION("Masses are correct") {
-        std::vector<double> expected{pow(nuchic::ParticleInfo(nuchic::PID::proton()).Mass(), 2),
-                                     pow(nuchic::ParticleInfo(nuchic::PID::electron()).Mass(), 2)};
+        std::vector<double> expected{pow(achilles::ParticleInfo(achilles::PID::proton()).Mass(), 2),
+                                     pow(achilles::ParticleInfo(achilles::PID::electron()).Mass(), 2)};
 
         CHECK(info.Masses() == expected);
     }
@@ -39,8 +39,8 @@ TEST_CASE("ProcessInfo YAML", "[ProcessInfo]") {
         Final States: [14, 11, -11]
     )node");
 
-    auto info = node.as<nuchic::Process_Info>();
+    auto info = node.as<achilles::Process_Info>();
 
     CHECK(info.m_model == "SM");
-    CHECK(info.m_ids == std::vector<nuchic::PID>{14, 11, -11});
+    CHECK(info.m_ids == std::vector<achilles::PID>{14, 11, -11});
 }

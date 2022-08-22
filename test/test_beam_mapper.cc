@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/BeamMapper.hh"
+#include "Achilles/BeamMapper.hh"
 #include "mock_classes.hh"
 #include "Approx.hh"
 
 TEST_CASE("BeamMapper", "[PhaseSpace]") {
-    static constexpr auto electron = nuchic::PID::electron();
-    const std::set<nuchic::PID> beam_ids{electron};
-    const nuchic::FourVector beam_mom{1000, 0, 0, 1000};
+    static constexpr auto electron = achilles::PID::electron();
+    const std::set<achilles::PID> beam_ids{electron};
+    const achilles::FourVector beam_mom{1000, 0, 0, 1000};
     const std::vector<double> beam_rans{0.5};
     std::vector<double> new_rans(1);
     static constexpr int nvars = 1;
@@ -17,7 +17,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
         REQUIRE_CALL(*beam, NVariables())
             .TIMES(1)
             .LR_RETURN((nvars));
-        nuchic::BeamMapper mapper(0, beam);
+        achilles::BeamMapper mapper(0, beam);
         CHECK(mapper.NDims() == nvars);
     }
 
@@ -26,17 +26,17 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
         REQUIRE_CALL(*beam, BeamIDs())
             .TIMES(2)
             .LR_RETURN((beam_ids));
-        REQUIRE_CALL(*beam, Flux(electron, beam_rans))
+        REQUIRE_CALL(*beam, Flux(electron, beam_rans, 0))
             .TIMES(1)
             .LR_RETURN((beam_mom));
-        REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_))
+        REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_, 0))
             .LR_SIDE_EFFECT(_3[0] = 0.5)
             .TIMES(1)
             .RETURN(1.0);
 
         SECTION("Forward") {
-            nuchic::BeamMapper mapper(0, beam);
-            std::vector<nuchic::FourVector> mom(1);
+            achilles::BeamMapper mapper(0, beam);
+            std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, beam_rans);
             double wgt = mapper.GenerateWeight(mom, new_rans);
             CHECK_THAT(beam_rans, 
@@ -46,9 +46,9 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
         }
 
         SECTION("Reverse") {
-            nuchic::BeamMapper mapper(0, beam);
+            achilles::BeamMapper mapper(0, beam);
             double wgt = mapper.GenerateWeight({beam_mom}, new_rans);
-            std::vector<nuchic::FourVector> mom(1);
+            std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, new_rans);
             CHECK_THAT(beam_rans, 
                        Catch::Matchers::Approx(new_rans));

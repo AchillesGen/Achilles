@@ -6,7 +6,7 @@ if(POLICY CMP0053)
 endif()
 
 # Set the project name and basic settings
-project(NUCHIC LANGUAGES CXX VERSION 1.0.0)
+project(ACHILLES LANGUAGES CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 # Link this 'library' to set the c++ standard / compile-time options requested
@@ -72,6 +72,13 @@ if(ENABLE_HEPMC3)
 find_package(HepMC3 REQUIRED)
 endif()
 
+# Find ROOT if needed
+option(USE_ROOT "Enable reading of ROOT flux files" OFF)
+if(USE_ROOT)
+    MESSAGE(STATUS "Building with ROOT flux files")
+    find_package(ROOT REQUIRED)
+endif()
+
 # Add dependencies
 include(CMake/CPM.cmake)
 add_subdirectory(external)
@@ -81,12 +88,15 @@ set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
-configure_file(include/nuchic/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/nuchic/System.hh)
+configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/Achilles/System.hh)
 
 # Copy over data files
-file(COPY ${NUCHIC_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${NUCHIC_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${NUCHIC_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/flux DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Unzip if GZIP not turned on
 if(NOT ENABLE_GZIP)
@@ -99,7 +109,7 @@ if(NOT ENABLE_GZIP)
 endif()
 
 # Build Plugin Library
-add_subdirectory(src/Plugins)
+# add_subdirectory(src/Plugins)
 
 # Testing
 if(ENABLE_TESTING)
@@ -127,20 +137,20 @@ add_subdirectory(src)
 include(CMakePackageConfigHelpers)
 
 configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/CMake/nuchic-config.cmake.in
-    ${CMAKE_BINARY_DIR}/CMake/nuchic-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nuchic
+    ${CMAKE_SOURCE_DIR}/CMake/achilles-config.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
 )
 
 write_basic_package_version_file(
-    ${CMAKE_BINARY_DIR}/CMake/nuchic-config-version.cmake
-    VERSION ${NUCHIC_VERSION}
+    ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
+    VERSION ${ACHILLES_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 install(
     FILES
-        ${CMAKE_BINARY_DIR}/CMake/nuchic-config.cmake
-        ${CMAKE_BINARY_DIR}/CMake/nuchic-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/nuchic
+        ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
+        ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
 )

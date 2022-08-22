@@ -1,11 +1,11 @@
 #include "catch2/catch.hpp"
-#include "nuchic/Integrand.hh"
+#include "Achilles/Integrand.hh"
 
 double dummy_func(const std::vector<double>&, double) {
     return 1.0;
 }
 
-class DummyMapper : public nuchic::Mapper<double> {
+class DummyMapper : public achilles::Mapper<double> {
     public:
         void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
             std::copy(rans.begin(), rans.end(), point.begin());
@@ -19,14 +19,14 @@ class DummyMapper : public nuchic::Mapper<double> {
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
-    nuchic::Channel<double> channel;
-    nuchic::AdaptiveMap map(1, 10);
-    channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
+    achilles::Channel<double> channel;
+    achilles::AdaptiveMap map(1, 10);
+    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
     channel.mapping = std::make_unique<DummyMapper>();
 
     YAML::Node node;
     node["Channel"] = channel;
-    auto channel2 = node["Channel"].as<nuchic::Channel<double>>();
+    auto channel2 = node["Channel"].as<achilles::Channel<double>>();
 
     CHECK(channel.integrator.Grid().Dims() == channel2.integrator.Grid().Dims());
     CHECK(channel.integrator.Grid().Bins() == channel2.integrator.Grid().Bins());
@@ -34,18 +34,18 @@ TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
 }
 
 TEST_CASE("YAML encoding / decoding Integrand", "[multichannel]") {
-    nuchic::Integrand<double> integrand(dummy_func);
+    achilles::Integrand<double> integrand(dummy_func);
     for(size_t i = 0; i < 10; ++i) {
-        nuchic::Channel<double> channel;
-        nuchic::AdaptiveMap map(1, 10);
-        channel.integrator = nuchic::Vegas(map, nuchic::VegasParams{});
+        achilles::Channel<double> channel;
+        achilles::AdaptiveMap map(1, 10);
+        channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         channel.mapping = std::make_unique<DummyMapper>();
         integrand.AddChannel(std::move(channel));
     }
 
     YAML::Node node;
     node["Integrand"] = integrand;
-    auto integrand2 = node["Integrand"].as<nuchic::Integrand<double>>();
+    auto integrand2 = node["Integrand"].as<achilles::Integrand<double>>();
 
     CHECK(integrand.NChannels() == integrand2.NChannels());
     for(size_t i = 0; i < integrand.NChannels(); ++i) {

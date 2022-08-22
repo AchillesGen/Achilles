@@ -1,0 +1,51 @@
+(ufo){
+block sminputs
+	1       137                 # aEWM1
+    2       1.16637e-05           # Gf
+	3       0.1184                # aS
+
+block yukawa
+	1       0.00504               # ymdo
+	2       0.00255               # ymup
+	3       0.101                 # yms
+	4       1.27                  # ymc
+	5       4.7                   # ymb
+	6       172                   # ymt
+	11      0.000511              # yme
+	13      0.10566               # ymm
+	15      1.777                 # ymtau
+
+block frblock
+    1       0.25                  # aD
+    2       2e-10               # aEMeps2
+    3       9e-07                 # PMNSmu42
+
+block mass
+	23      91.1876               # MZ
+	11      0              # Me
+	13      0               # MMU
+	15      0                 # MTA
+	2       0               # MU
+	4       0                  # MC
+	6       172                   # MT
+	1       0               # MD
+	3       0                 # MS
+	5       0                   # MB
+	25      125                   # MH
+    9000005 0.03                  # MZD
+    9000006 0.42                  # MvD
+    # 9000006 0.00                  # MvD
+	2212    0.938 #91875884                 # Mproton
+	2112    0.938 #91875884                 # Mneutron
+	1000060120 11.178                # Mcarbon
+	1000180400 37.216                # Margon
+
+decay 	23      2.4952                # WZ
+decay 	24      2.085                 # WW
+decay 	6       1.50833649            # WT
+decay 	25      0.00407               # WH
+decay 	9000005 5.e-12 # WZD
+decay 	9000006 4.630139622813411e-06 # WvD
+
+}(ufo)
+

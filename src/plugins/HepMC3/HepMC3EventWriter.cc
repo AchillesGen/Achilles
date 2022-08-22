@@ -4,13 +4,13 @@
 #include "HepMC3/GenVertex.h"
 #include "HepMC3/GenParticle.h"
 
-#include "nuchic/Event.hh"
-#include "nuchic/Version.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/Nucleus.hh"
+#include "Achilles/Event.hh"
+#include "Achilles/Version.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Nucleus.hh"
 #include "spdlog/spdlog.h"
 
-using nuchic::HepMC3Writer;
+using achilles::HepMC3Writer;
 using namespace HepMC3;
 
 std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename, bool zipped) {
@@ -31,8 +31,8 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     // Setup generator information
     spdlog::trace("Writing Header");
     auto run = std::make_shared<GenRunInfo>(); 
-    struct GenRunInfo::ToolInfo generator={std::string("Nuchic"),
-                                           std::string(NUCHIC_VERSION),
+    struct GenRunInfo::ToolInfo generator={std::string("Achilles"),
+                                           std::string(ACHILLES_VERSION),
                                            std::string("Neutrino event generator")};
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config={std::string(filename),"1.0",std::string("Run card")};
@@ -44,7 +44,7 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     spdlog::trace("Finished writing Header");
 }
 
-void HepMC3Writer::Write(const nuchic::Event &event) {
+void HepMC3Writer::Write(const achilles::Event &event) {
     spdlog::debug("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
@@ -71,6 +71,7 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     auto cross_section = std::make_shared<GenCrossSection>();
     cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
     evt.add_attribute("GenCrossSection", cross_section);
+    evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
     evt.weight("Default") = event.Weight()*nb_to_pb;
 
     // TODO: once we have a detector to simulate interaction location
@@ -79,16 +80,23 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     // evt.shift_position_to(position);
 
     // Load in particle information
-    const std::vector<nuchic::Particle> hadrons = event.Hadrons();
-    const std::vector<nuchic::Particle> leptons = event.Leptons();
-    // TODO: Get nucleus mass from the nucleus object
-    const HepMC3::FourVector initMass{0, 0, 0, 12000};
+    const std::vector<achilles::Particle> hadrons = event.Hadrons();
+    // spdlog::info("nhadrons = {}" , hadrons.size());
+    const std::vector<achilles::Particle> leptons = event.Leptons();
+    // TODO: Clean this up
+    const auto nuc_mass = achilles::ParticleInfo(event.CurrentNucleus() -> ID()).Mass();
+    const HepMC3::FourVector initMass{0, 0, 0, nuc_mass};
     GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, event.CurrentNucleus()->ID(), 4);
     HepMC3::FourVector hardVertexPos;
     GenParticlePtr nucleon;
-    nuchic::FourVector recoilMom{0, 0, 0, 12000};
+    achilles::FourVector recoilMom{nuc_mass, 0, 0, 0};
     // TODO: Modify for MEC case
-    const auto initHadron = hadrons[0];
+    size_t idx = 0;
+    for(; idx < hadrons.size(); ++idx) {
+        if(hadrons[idx].Status() == ParticleStatus::initial_state)
+            break;
+    }
+    const auto initHadron = hadrons[idx];
     HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
     nucleon = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
 
@@ -101,10 +109,18 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     evt.add_vertex(v1);
 
     // Add initial lepton
+    // TODO: Get maximum neutrino energy from the beam
+    const HepMC3::FourVector initBeam{0, 0, 10000, 10000};
+    GenParticlePtr p3In = std::make_shared<GenParticle>(initBeam, leptons[0].ID(), 4);
     const auto initLepton = leptons[0];
     const HepMC3::FourVector p3Mom{initLepton.Px(), initLepton.Py(), initLepton.Pz(), initLepton.E()};
     GenParticlePtr p3 = std::make_shared<GenParticle>(p3Mom, int(initLepton.ID()), 4);
     recoilMom += initLepton.Momentum();
+    // Add vertex for neutrino flux
+    GenVertexPtr vLepIn = std::make_shared<GenVertex>(hardVertexPos);
+    vLepIn->add_particle_in(p3In);
+    vLepIn->add_particle_out(p3);
+    evt.add_vertex(vLepIn);
 
     // Add hard interaction vertex 
     GenVertexPtr v2 = std::make_shared<GenVertex>(hardVertexPos);
@@ -121,7 +137,8 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     }
 
     // Add remaining hard interaction hadrons
-    for(size_t i = 1; i < hadrons.size(); ++i) {
+    for(size_t i = 0; i < hadrons.size(); ++i) {
+        if(i == idx) continue;
         const auto currPart = hadrons[i];
         const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
         GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
@@ -134,9 +151,11 @@ void HepMC3Writer::Write(const nuchic::Event &event) {
     // Add in remnant Nucleus
     // TODO: Get recoil momentum for the nucleus
     // TODO: Move remnant to last cascade vertex???
-    const HepMC3::FourVector recoil{recoilMom.Px(), recoilMom.Py(), recoilMom.Pz(), recoilMom.E()};
-    GenParticlePtr pRemnant = std::make_shared<GenParticle>(recoil, event.Remnant().PID(), 1);
-    v2->add_particle_out(pRemnant);
+    if(event.Remnant().PID() != int(achilles::PID::dummyNucleus())) {
+        const HepMC3::FourVector recoil{recoilMom.Px(), recoilMom.Py(), recoilMom.Pz(), recoilMom.E()};
+        GenParticlePtr pRemnant = std::make_shared<GenParticle>(recoil, event.Remnant().PID(), 1);
+        v2->add_particle_out(pRemnant);
+    }
     evt.add_vertex(v2);
 
     file.write_event(evt);

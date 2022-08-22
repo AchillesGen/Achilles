@@ -16,18 +16,18 @@
 #include "ATOOLS/Org/CXXFLAGS_PACKAGES.H"
 #include "ATOOLS/Org/MyStrStream.H"
 #include "ATOOLS/Org/Run_Parameter.H"
-#include "nuchic/Logging.hh"
-#include "nuchic/ProcessInfo.hh"
-#include "nuchic/ParticleInfo.hh"
-#include "nuchic/FormFactor.hh"
-#include "nuchic/Utilities.hh"
+#include "Achilles/Logging.hh"
+#include "Achilles/ProcessInfo.hh"
+#include "Achilles/ParticleInfo.hh"
+#include "Achilles/FormFactor.hh"
+#include "Achilles/Utilities.hh"
 #include "plugins/Sherpa/Channels.hh"
 #include <bitset>
 
 using namespace SHERPA;
 using namespace PHASIC;
 using namespace ATOOLS;
-using namespace nuchic;
+using namespace achilles;
 
 PHASIC::NLOTypeStringProcessMap_Map m_pmap;
 PHASIC::Process_Vector m_procs;
@@ -67,7 +67,7 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"Sherpa");
   addParameter(argv,"EVENTS=0");
   addParameter(argv,"INIT_ONLY=6");
-  int level(SherpaVerbosity(spdlog::get("nuchic")->level()));
+  int level(SherpaVerbosity(spdlog::get("achilles")->level()));
   addParameter(argv,"OUTPUT="+ToString(level));
   // Set beams and PDFs.
   addParameter(argv,"BEAM_1=2212");
@@ -77,14 +77,14 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // addParameter(argv,"PDF_SET=None");
   // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
-  addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
+  // addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
   addParameter(argv,"LEPTONIC_CURRENT_MODE=1");
   addParameter(argv,"ALPHAQED_DEFAULT_SCALE=0");
   addParameter(argv,"1/ALPHAQED(MZ)=137");
   // addParameter(argv,"ACTIVE[23]=0");
   addParameter(argv,"ACTIVE[25]=0");
   // addParameter(argv,"ACTIVE[9000005]=0");
-  addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
+  // addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
   addParameter(argv,"PRIORITY[2112]=99");
   addParameter(argv,"PRIORITY[2212]=99");
   // TODO: Make this something that is passed in
@@ -296,7 +296,7 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const
     return channels;
 }
 
-nuchic::SherpaMEs::LeptonCurrents SherpaMEs::Calc
+achilles::SherpaMEs::LeptonCurrents SherpaMEs::Calc
 (const std::vector<int> &_fl,
  const std::vector<std::array<double, 4> > &p,
  const double &mu2) const
@@ -327,7 +327,7 @@ nuchic::SherpaMEs::LeptonCurrents SherpaMEs::Calc
   return singleProcess -> LeptonicCurrent();
 }
 
-std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) const {
+std::vector<FormFactorInfo> achilles::SherpaMEs::FormFactors(int hpid, int vpid) const {
     const std::vector<MODEL::Single_Vertex> &vertices(MODEL::s_model->OriginalVertices());
     std::vector<FormFactorInfo> form_factors;
     for(const auto &vertex : vertices) {
@@ -351,7 +351,7 @@ std::vector<FormFactorInfo> nuchic::SherpaMEs::FormFactors(int hpid, int vpid) c
     return form_factors;
 }
 
-void nuchic::SherpaMEs::RegisterParticles() const {
+void achilles::SherpaMEs::RegisterParticles() const {
     for(const auto &particleEntry : ATOOLS::s_kftable) {
         auto pid = particleEntry.first;
         auto particle = particleEntry.second;
@@ -363,8 +363,8 @@ void nuchic::SherpaMEs::RegisterParticles() const {
                                                          particle->m_stable, particle->m_majorana,
                                                          particle->m_massive, particle->m_hadron,
                                                          particle->m_idname, particle->m_antiname);
-        nuchic::ParticleInfo::Database()[pid] = entry;
+        achilles::ParticleInfo::Database()[pid] = entry;
     }
 
-    nuchic::Database::PrintParticle();
+    achilles::Database::PrintParticle();
 }

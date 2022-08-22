@@ -1,13 +1,13 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/Autodiff.hh"
+#include "Achilles/Autodiff.hh"
 #include "catch_utils.hh"
 
 TEST_CASE("Dual Numbers", "[Utilities]") {
-    nuchic::Dual x(GENERATE(take(10, random<double>(0, 100))));
+    achilles::Dual x(GENERATE(take(10, random<double>(0, 100))));
 
     SECTION("Operators") {
-        nuchic::Dual y(GENERATE(take(10, random<double>(-100, 100))));
+        achilles::Dual y(GENERATE(take(10, random<double>(-100, 100))));
         double a(GENERATE(take(10, random<double>(-100, 100))));
 
         auto z = +x;

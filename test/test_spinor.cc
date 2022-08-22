@@ -1,15 +1,15 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/Spinor.hh"
-#include "nuchic/Constants.hh"
+#include "Achilles/Spinor.hh"
+#include "Achilles/Constants.hh"
 #include <sstream>
 #include <iostream>
 
-using nuchic::SpinMatrix;
+using achilles::SpinMatrix;
 
 TEST_CASE("Spinors", "[Spinors]") {
     SECTION("Spinor Inner product") {
-        nuchic::FourVector mom{1000, 0, 0, 100};
+        achilles::FourVector mom{1000, 0, 0, 100};
         for(int i = -1; i < 2; i+=2) {
             for(int j = -1; j < 2; j+=2) {
                 auto s1 = USpinor(i, mom);
@@ -42,7 +42,7 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
     }
 
     SECTION("Spinor outer product (massless)") {
-        nuchic::FourVector mom{1000, 0, 0, 1000};
+        achilles::FourVector mom{1000, 0, 0, 1000};
         SpinMatrix result;
         for(int i = -1; i < 2; i+=2) {
             for(int j = -1; j < 2; j+=2) {
@@ -63,7 +63,7 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
         const double p = 1000;
         const double mass = 1000;
         const double energy = sqrt(mass*mass + p*p);
-        nuchic::FourVector mom{energy, 0, 0, p};
+        achilles::FourVector mom{energy, 0, 0, p};
         SpinMatrix result;
         for(int i = -1; i < 2; i+=2) {
             for(int j = -1; j < 2; j+=2) {

@@ -1,14 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "nuchic/NuclearModel.hh"
-#include "nuchic/Particle.hh"
-#include "nuchic/Units.hh"
+#include "Achilles/NuclearModel.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Units.hh"
 
 #include "yaml-cpp/yaml.h"
 #include "mock_classes.hh"
 #include "Approx.hh"
 
-using nuchic::operator""_GeV;
+using achilles::operator""_GeV;
 
 TEST_CASE("CoherentModel", "[NuclearModel]") {
     YAML::Node config = YAML::Load(R"config(
@@ -45,29 +45,29 @@ Nucleus:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::Coherent model(config, ff, builder);
+        achilles::Coherent model(config, ff, builder);
 
-        nuchic::Process_Info info;
-        info.m_ids = {nuchic::PID::electron(), nuchic::PID::electron()};
+        achilles::Process_Info info;
+        info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
         model.AllowedStates(info);
-        CHECK(info.m_states[{nuchic::PID::carbon()}] == std::vector<nuchic::PID>{nuchic::PID::carbon()});
+        CHECK(info.m_states[{achilles::PID::carbon()}] == std::vector<achilles::PID>{achilles::PID::carbon()});
 
-        nuchic::Process_Info invalid;
-        invalid.m_ids = {nuchic::PID::electron(), nuchic::PID::nu_electron()};
+        achilles::Process_Info invalid;
+        invalid.m_ids = {achilles::PID::electron(), achilles::PID::nu_electron()};
         CHECK_THROWS_WITH(model.AllowedStates(invalid), "Coherent: Requires charge 0, but found charge 1");
     }
 
     SECTION("CalcCurrents") {
-        std::vector<nuchic::FourVector> momentum = {{11.178_GeV, 0, 0, 0},
-                                                    {4.159051495317648_GeV, 0, 0, 4.159051495317648_GeV},
-                                                    {11.179382065495107_GeV, 0.11140855999009017_GeV,
-                                                     0.1334001474175966_GeV, 0.0263039872165316_GeV},
-                                                    {3.195267141839163_GeV, -0.19106532624117684_GeV,
-                                                     0.036750024067231254_GeV, 3.189337797185557_GeV},
-                                                    {0.8015109318750572_GeV, 0.07305947032271103_GeV,
-                                                     -0.13285393143782712_GeV, 0.7870399739612345_GeV},
-                                                    {0.16089135610832217_GeV, 0.006597295928375643_GeV,
-                                                     -0.03729624004700072_GeV, 0.15636973695432532_GeV}};
+        std::vector<achilles::FourVector> momentum = {{11.178_GeV, 0, 0, 0},
+                                                      {4.159051495317648_GeV, 0, 0, 4.159051495317648_GeV},
+                                                      {11.179382065495107_GeV, 0.11140855999009017_GeV,
+                                                       0.1334001474175966_GeV, 0.0263039872165316_GeV},
+                                                      {3.195267141839163_GeV, -0.19106532624117684_GeV,
+                                                       0.036750024067231254_GeV, 3.189337797185557_GeV},
+                                                      {0.8015109318750572_GeV, 0.07305947032271103_GeV,
+                                                       -0.13285393143782712_GeV, 0.7870399739612345_GeV},
+                                                      {0.16089135610832217_GeV, 0.006597295928375643_GeV,
+                                                       -0.03729624004700072_GeV, 0.15636973695432532_GeV}};
         MockEvent e;
         const MockEvent& event = e;
         REQUIRE_CALL(event, Momentum())
@@ -75,7 +75,7 @@ Nucleus:
             .LR_RETURN((momentum));
 
         double Q2 = -(momentum[1] - momentum[3] - momentum[4] - momentum[5]).M2();
-        nuchic::FormFactor::Values value;
+        achilles::FormFactor::Values value;
         value.Fcoh = 1;
         REQUIRE_CALL(*form_factor, call_op(Q2))
             .TIMES(1)
@@ -86,16 +86,16 @@ Nucleus:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::Coherent model(config, ff, builder);
+        achilles::Coherent model(config, ff, builder);
 
-        std::vector<nuchic::NuclearModel::FFInfoMap> info_map(3);
-        info_map[2][nuchic::PID::carbon()] = {nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::FCoh, 1}};
+        std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
+        info_map[2][achilles::PID::carbon()] = {achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FCoh, 1}};
         auto results = model.CalcCurrents(event, info_map);
         std::vector<std::complex<double>> expected = {momentum[0][0]+momentum[2][0],
                                                       momentum[0][1]+momentum[2][1],
                                                       momentum[0][2]+momentum[2][2],
                                                       momentum[0][3]+momentum[2][3]};
-        CHECK(results[0][nuchic::PID::carbon()][0] == expected);
+        CHECK(results[0][achilles::PID::carbon()][0] == expected);
     }
 
     SECTION("Properly fill event") {
@@ -104,26 +104,26 @@ Nucleus:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::Coherent model(config, ff, builder);
+        achilles::Coherent model(config, ff, builder);
 
-        std::vector<nuchic::Particle> nucleons{};
+        std::vector<achilles::Particle> nucleons{};
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(3)
             .LR_RETURN((nucleons));
 
-        std::vector<nuchic::FourVector> momentum = {{11.178_GeV, 0, 0, 0},
-                                                    {4.159051495317648_GeV, 0, 0, 4.159051495317648_GeV},
-                                                    {11.179382065495107_GeV, 0.11140855999009017_GeV,
-                                                     0.1334001474175966_GeV, 0.0263039872165316_GeV},
-                                                    {3.195267141839163_GeV, -0.19106532624117684_GeV,
-                                                     0.036750024067231254_GeV, 3.189337797185557_GeV},
-                                                    {0.8015109318750572_GeV, 0.07305947032271103_GeV,
-                                                     -0.13285393143782712_GeV, 0.7870399739612345_GeV},
-                                                    {0.16089135610832217_GeV, 0.006597295928375643_GeV,
-                                                     -0.03729624004700072_GeV, 0.15636973695432532_GeV}};
+        std::vector<achilles::FourVector> momentum = {{11.178_GeV, 0, 0, 0},
+                                                      {4.159051495317648_GeV, 0, 0, 4.159051495317648_GeV},
+                                                      {11.179382065495107_GeV, 0.11140855999009017_GeV,
+                                                       0.1334001474175966_GeV, 0.0263039872165316_GeV},
+                                                      {3.195267141839163_GeV, -0.19106532624117684_GeV,
+                                                       0.036750024067231254_GeV, 3.189337797185557_GeV},
+                                                      {0.8015109318750572_GeV, 0.07305947032271103_GeV,
+                                                       -0.13285393143782712_GeV, 0.7870399739612345_GeV},
+                                                      {0.16089135610832217_GeV, 0.006597295928375643_GeV,
+                                                       -0.03729624004700072_GeV, 0.15636973695432532_GeV}};
 
-        nuchic::Event event;
+        achilles::Event event;
         event.CurrentNucleus() = nucleus;
         event.Momentum() = momentum;
 
@@ -165,51 +165,51 @@ NuclearModel:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::QESpectral model(config, ff, builder);
+        achilles::QESpectral model(config, ff, builder);
 
         SECTION("Neutral Current") {
-            nuchic::Process_Info info;
-            info.m_ids = {nuchic::PID::electron(), nuchic::PID::electron()};
+            achilles::Process_Info info;
+            info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
             model.AllowedStates(info);
-            CHECK(info.m_states[{nuchic::PID::proton()}] == std::vector<nuchic::PID>{nuchic::PID::proton()});
-            CHECK(info.m_states[{nuchic::PID::neutron()}] == std::vector<nuchic::PID>{nuchic::PID::neutron()});
+            CHECK(info.m_states[{achilles::PID::proton()}] == std::vector<achilles::PID>{achilles::PID::proton()});
+            CHECK(info.m_states[{achilles::PID::neutron()}] == std::vector<achilles::PID>{achilles::PID::neutron()});
         }
 
         SECTION("-1 Nuclear Charge") {
-            nuchic::Process_Info info;
-            info.m_ids = {-nuchic::PID::nu_electron(), -nuchic::PID::electron()};
+            achilles::Process_Info info;
+            info.m_ids = {-achilles::PID::nu_electron(), -achilles::PID::electron()};
             model.AllowedStates(info);
-            CHECK(info.m_states[{nuchic::PID::proton()}] == std::vector<nuchic::PID>{nuchic::PID::neutron()});
+            CHECK(info.m_states[{achilles::PID::proton()}] == std::vector<achilles::PID>{achilles::PID::neutron()});
         }
 
         SECTION("+1 Nuclear Charge") {
-            nuchic::Process_Info info;
-            info.m_ids = {nuchic::PID::nu_electron(), nuchic::PID::electron()};
+            achilles::Process_Info info;
+            info.m_ids = {achilles::PID::nu_electron(), achilles::PID::electron()};
             model.AllowedStates(info);
-            CHECK(info.m_states[{nuchic::PID::neutron()}] == std::vector<nuchic::PID>{nuchic::PID::proton()});
+            CHECK(info.m_states[{achilles::PID::neutron()}] == std::vector<achilles::PID>{achilles::PID::proton()});
         }
 
         SECTION("-2 Nuclear Charge") {
-            nuchic::Process_Info invalid;
-            invalid.m_ids = {nuchic::PID::electron(), -nuchic::PID::electron()};
+            achilles::Process_Info invalid;
+            invalid.m_ids = {achilles::PID::electron(), -achilles::PID::electron()};
             CHECK_THROWS_WITH(model.AllowedStates(invalid), "Quasielastic: Requires |charge| < 2, but found |charge| 2");
         }
 
         SECTION("+2 Nuclear Charge") {
-            nuchic::Process_Info invalid;
-            invalid.m_ids = {-nuchic::PID::electron(), nuchic::PID::electron()};
+            achilles::Process_Info invalid;
+            invalid.m_ids = {-achilles::PID::electron(), achilles::PID::electron()};
             CHECK_THROWS_WITH(model.AllowedStates(invalid), "Quasielastic: Requires |charge| < 2, but found |charge| 2");
         }
     }
 
     SECTION("CalcCurrents") {
-        std::vector<nuchic::FourVector> momentum = {{0.8334268643628409_GeV, 0.0841386014098756_GeV,
-                                                     0.35434104526508325_GeV, -0.25207280069997196_GeV},
-                                                    {4_GeV, 0, 0, 4_GeV},
-                                                    {3.9936896971024103_GeV, 0.8919304531816128_GeV,
-                                                     0.5832575462220676_GeV, 3.732825216669567_GeV},
-                                                    {0.8397371672604309_GeV, -0.8077918517717372_GeV,
-                                                     -0.22891650095698435_GeV, 0.01510198263046103_GeV}};
+        std::vector<achilles::FourVector> momentum = {{0.8334268643628409_GeV, 0.0841386014098756_GeV,
+                                                       0.35434104526508325_GeV, -0.25207280069997196_GeV},
+                                                      {4_GeV, 0, 0, 4_GeV},
+                                                      {3.9936896971024103_GeV, 0.8919304531816128_GeV,
+                                                       0.5832575462220676_GeV, 3.732825216669567_GeV},
+                                                      {0.8397371672604309_GeV, -0.8077918517717372_GeV,
+                                                       -0.22891650095698435_GeV, 0.01510198263046103_GeV}};
         MockEvent e;
         const MockEvent& event = e;
         REQUIRE_CALL(event, Momentum())
@@ -217,7 +217,7 @@ NuclearModel:
             .LR_RETURN((momentum));
 
         double Q2 = -(momentum[1] - momentum[3]).M2()/1.0_GeV/1.0_GeV;
-        nuchic::FormFactor::Values value;
+        achilles::FormFactor::Values value;
         value.F1p = 1;
         value.F1n = 1;
         value.F2p = 1;
@@ -232,15 +232,15 @@ NuclearModel:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::QESpectral model(config, ff, builder);
+        achilles::QESpectral model(config, ff, builder);
 
-        std::vector<nuchic::NuclearModel::FFInfoMap> info_map(3);
-        info_map[0][nuchic::PID::photon()] = {nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::F1p, 1},
-                                              nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::F2p, 1},
-                                              nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::FA, 1}};
-        info_map[1][nuchic::PID::photon()] = {nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::F1n, 1},
-                                               nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::F2n, 1},
-                                               nuchic::FormFactorInfo{nuchic::FormFactorInfo::Type::FA, 1}};
+        std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
+        info_map[0][achilles::PID::photon()] = {achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1p, 1},
+                                                achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2p, 1},
+                                                achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
+        info_map[1][achilles::PID::photon()] = {achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
+                                                achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
+                                                achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
         auto results = model.CalcCurrents(event, info_map);
         std::vector<std::vector<std::complex<double>>> expected = {{{0.00018993,0.0012343},
                                                                     {-0.00170272,4.6931e-05},
@@ -275,7 +275,7 @@ NuclearModel:
                                                                     {0.0013261,0.00679448},
                                                                     {0.00103612,0.000901872}}};
         for(size_t i = 0; i < 4; ++i) {
-            REQUIRE_THAT(results[0][nuchic::PID::photon()][i], VectorComplexApprox(expected[i]).margin(1e-8));
+            REQUIRE_THAT(results[0][achilles::PID::photon()][i], VectorComplexApprox(expected[i]).margin(1e-5));
         }
     }
 
@@ -285,20 +285,21 @@ NuclearModel:
             .TIMES(1)
             .IN_SEQUENCE(seq)
             .LR_RETURN(std::move(form_factor));
-        nuchic::QESpectral model(config, ff, builder);
+        achilles::QESpectral model(config, ff, builder);
 
-        std::vector<nuchic::Particle> nucleons{nuchic::PID::proton(), nuchic::PID::neutron()};
+        std::vector<achilles::Particle> nucleons{achilles::PID::proton(), achilles::PID::neutron()};
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(5) // Should be 2*nucleons.size()+1
             .LR_RETURN((nucleons));
-        nuchic::Event event(1);
+        achilles::Event event(1);
         event.MatrixElementWgts().resize(nucleons.size());
         event.CurrentNucleus() = nucleus;
 
         std::vector<double> xsecs = {10, 20};
         auto pass = model.FillNucleus(event, xsecs);
         CHECK(pass == true);
+        event.CalcWeight();
         CHECK(event.Weight() == xsecs[0] + xsecs[1]);
     }
 }
