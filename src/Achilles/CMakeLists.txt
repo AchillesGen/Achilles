@@ -158,7 +158,7 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 include(GNUInstallDirs)
 
 install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
-        EXPORT achilles-targets
+        # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -166,7 +166,7 @@ install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interf
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT achilles-targets
-    FILE achilles-targets.cmake
-    NAMESPACE achilles::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles)
+# install(EXPORT achilles-targets
+#     FILE achilles-targets.cmake
+#     NAMESPACE achilles::
+#     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles)
