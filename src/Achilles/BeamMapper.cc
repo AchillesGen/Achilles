@@ -6,13 +6,15 @@ using achilles::BeamMapper;
 
 void BeamMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     auto beam_id = *m_beam -> BeamIDs().begin();
-    point[m_idx] = m_beam -> Flux(beam_id, rans, Smin());
+    static constexpr double eps=5;
+    point[m_idx] = m_beam -> Flux(beam_id, rans, sqrt(Smin())-sqrt(Masses()[0])+eps);
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
 }
 
 double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) {
     auto beam_id = *m_beam -> BeamIDs().begin();
-    auto wgt = m_beam -> GenerateWeight(beam_id, point[m_idx], rans, Smin());
+    static constexpr double eps=5;
+    auto wgt = m_beam -> GenerateWeight(beam_id, point[m_idx], rans, sqrt(Smin())-sqrt(Masses()[0])+eps);
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Beam weight = {}", wgt);
     return 1.0/wgt;
