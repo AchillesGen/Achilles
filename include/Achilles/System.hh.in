@@ -1,13 +1,28 @@
 #ifndef SYSTEM_HH
 #define SYSTEM_HH
 
+#include <regex>
 #include <string>
+#include <vector>
+
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#error "Could not find includes: <filesystem> or <experimental/filesystem>"
+#endif
 
 namespace achilles {
 
 namespace SystemVariables {
     const std::string libPrefix = "@LIBPREFIX@";
     const std::string libSuffix = "@LIBSUFFIX@";
+    const std::string pluginBase = libPrefix + "AchillesPlugin";
+    const std::string pluginRegex = pluginBase + ".*\\" + libSuffix;
+    const std::regex validPluginName(pluginRegex);
 }
 
 namespace PathVariables {
@@ -17,6 +32,40 @@ namespace PathVariables {
     const std::string installLibs = installPath + "lib/";
     const std::string buildData = buildPath + "data/";
     const std::string installData = installPath + "share/Achilles/data/";
+}
+
+namespace Filesystem {
+    enum class FileType {
+        any = -1,
+        regular,
+        directory,
+        empty
+    };
+
+    std::vector<std::string> GetPluginPaths();
+
+    template<typename T>
+    bool is_type(const T &path, FileType type) {
+        switch(type) {
+            case FileType::any:
+                return true;
+            case FileType::regular:
+                return fs::is_regular_file(path);
+            case FileType::directory:
+                return fs::is_directory(path);
+            case FileType::empty:
+                return fs::is_empty(path);
+        }
+        return false;
+    }
+
+    template<typename Func>
+    void RecurseDirectories(const fs::path &directory, Func f, FileType type = FileType::any) {
+        for(const auto &file_path : fs::recursive_directory_iterator(directory)) {
+            if(!is_type(file_path, type)) continue;
+            f(file_path);
+        }
+    }
 }
 
 }

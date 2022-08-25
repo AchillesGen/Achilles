@@ -32,6 +32,13 @@ class Factory {
             Registry()[name] = Derived::Construct;
         }
 
+        static void Deregister(const std::string &name) {
+            if(!IsRegistered(name)) 
+                spdlog::error("{} is not registered!", name);
+            spdlog::trace("Deregistering {}", name);
+            Registry().erase(name);
+        }
+
         static bool IsRegistered(const std::string &name) {
             return Registry().find(name) != Registry().end();
         }

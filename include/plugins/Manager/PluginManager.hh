@@ -1,10 +1,9 @@
 #ifndef PLUGIN_MANAGER
 #define PLUGIN_MANAGER
 
+#include <array>
 #include <string>
 #include <vector>
-#include "Achilles/Utilities.hh"
-#include "Achilles/System.hh"
 
 namespace achilles {
 
@@ -16,9 +15,9 @@ class Manager {
         ~Manager() { Close(); }
 
     private:
-        std::vector<std::string> GetPluginPaths();
         void Open();
         void Close();
+        bool ValidateVersion(const std::array<int, 3>&) const;
         std::vector<void*> m_handles;
 };
 

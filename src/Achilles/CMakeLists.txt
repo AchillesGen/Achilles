@@ -20,10 +20,11 @@ add_library(utilities SHARED
     ProcessInfo.cc
     Poincare.cc
     Unweighter.cc
+    System.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
-                                PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+                                PUBLIC spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11 
 list(APPEND achilles_targets utilities)
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)

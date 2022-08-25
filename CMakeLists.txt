@@ -53,6 +53,12 @@ endif()
 # Check for python development environment
 # find_package(Python REQUIRED COMPONENTS Development)
 
+# Add CMake modules to CMAKE_MODULE_PATH
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
+
+# Ensure compiler supports filesystem and needed compiler flags
+find_package(Filesystem REQUIRED)
+
 # Find HDF5
 find_package(HDF5 REQUIRED COMPONENTS CXX)
 
@@ -63,7 +69,6 @@ endif()
 
 if(ENABLE_BSM)
 # Find Sherpa
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 find_package(SHERPA REQUIRED)
 endif()
 
