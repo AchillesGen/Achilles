@@ -45,6 +45,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
             }
             MiniBooNEHeader(hist);
         } else if(line.find("ND280") != std::string::npos) {
+            m_energy_units = 1.0/1.0_GeV;
             m_format = FluxFormat::T2K;
             T2KHeader(hist);
             elo_token = 1;
@@ -58,10 +59,6 @@ Spectrum::Spectrum(const YAML::Node &node) {
         // Read in data
         std::vector<std::string> tokens;
         std::vector<double> edges, heights;
-        // double to_mev = 1;
-        // if(m_format == FluxFormat::MiniBooNE || m_format == FluxFormat::T2K) {
-        //     to_mev = 1000; 
-        // }
         while(std::getline(hist, line)) {
             tokens.clear();
 
@@ -217,42 +214,16 @@ std::string Spectrum::Format() const {
 }
 
 achilles::FourVector Spectrum::Flux(const std::vector<double> &ran, double min_energy) const {
-    // TODO: Resolve this with a cut
-    // static constexpr double eps = 5; 
-    // double min_energy = (sqrt(smin) - Masses()[0] + eps)*m_energy_units;
     min_energy = std::max(min_energy*m_energy_units, m_min_energy);
     double delta_energy = m_max_energy - min_energy;
     double energy = (ran[0]*delta_energy + min_energy)/m_energy_units;
-    // spdlog::info("min_energy: {}, delta_energy: {}, m_max_energy: {}", min_energy, delta_energy, m_max_energy);
     return {energy, 0, 0, energy};
 }
 
 double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran, double min_energy) const {
-    // TODO: Resolve this with a cut
-    // static constexpr double eps = 5;
-    // double min_energy = (sqrt(smin) - Constant::mN + eps)*m_energy_units;
-    // min_energy = std::max(min_energy, m_min_energy);
     min_energy = std::max(min_energy*m_energy_units, m_min_energy);
     double delta_energy = m_max_energy - min_energy;
     ran[0] = (beam.E()*m_energy_units - min_energy) / delta_energy;
-    // double scale = 1;
-    // static constexpr double to_nb = 1e-33;
-    // static constexpr double to_10_20_POT = 1e20;
-    // static constexpr double per_mol = Constant::NAVOGADRO;
-    // switch(m_units) {
-    //     case flux_units::v_cm2_POT_50MeV:
-    //         scale *= to_nb/50*to_10_20_POT*per_mol;
-    //         break;
-    //     case flux_units::v_cm2_POT_MeV:
-    //         scale *= to_nb*to_10_20_POT*per_mol;
-    //         break;
-    //     case flux_units::v_nb_POT_MeV:
-    //         scale *= to_10_20_POT*per_mol;
-    //         break;
-    //     case flux_units::cm2_50MeV:
-    //         scale *= 1./50.;
-    //         break;
-    // }
     return (delta_energy*m_flux(beam.E()*m_energy_units))/m_flux_integral;
 }
 

@@ -6,6 +6,8 @@ using achilles::BeamMapper;
 
 void BeamMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     auto beam_id = *m_beam -> BeamIDs().begin();
+    // TODO: 1. Resolve this arbitrary eps with a cut
+    //       2. Replace the sqrt(Smin())-sqrt(Masses()[0]) with final state hadronic mass
     static constexpr double eps=5;
     point[m_idx] = m_beam -> Flux(beam_id, rans, sqrt(Smin())-sqrt(Masses()[0])+eps);
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
@@ -13,6 +15,8 @@ void BeamMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector
 
 double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) {
     auto beam_id = *m_beam -> BeamIDs().begin();
+    // TODO: 1. Resolve this arbitrary eps with a cut
+    //       2. Replace the sqrt(Smin())-sqrt(Masses()[0]) with final state hadronic mass
     static constexpr double eps=5;
     auto wgt = m_beam -> GenerateWeight(beam_id, point[m_idx], rans, sqrt(Smin())-sqrt(Masses()[0])+eps);
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);

@@ -19,14 +19,14 @@ TEST_CASE("Spectrum Beam", "[Beams]") {
             achilles::Spectrum spectrum(beam);
             CHECK(spectrum.Format() == "MiniBooNE");
             CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 10000.0);
+            CHECK(spectrum.MaxEnergy() == 10.0);
         }
         SECTION("Parse T2K header") {
             YAML::Node beam = YAML::Load("Histogram: flux/T2K_nu.dat");
             achilles::Spectrum spectrum(beam);
             CHECK(spectrum.Format() == "T2K");
             CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 30000.0);
+            CHECK(spectrum.MaxEnergy() == 30.0);
         }
     }
 
