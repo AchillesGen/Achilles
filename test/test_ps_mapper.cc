@@ -60,7 +60,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     REQUIRE_CALL(*beam, BeamIDs())
         .TIMES(1)
         .LR_RETURN((beam_id));
-    REQUIRE_CALL(*beam, Flux(achilles::PID::electron(), beam_rans, achilles::Constant::mN2))
+    REQUIRE_CALL(*beam, Flux(achilles::PID::electron(), beam_rans, trompeloeil::ge(0)))
         .TIMES(1)
         .LR_RETURN((beam_mom));
     REQUIRE_CALL(*beam, NVariables())
