@@ -56,6 +56,22 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
 }
 
+size_t NuclearModel::NSpins() const {
+    size_t nspins = 1;
+    for(const auto &init_state : m_info.m_states.begin() -> first) {
+        nspins *= ParticleInfo(init_state).NSpins();
+    }
+    for(const auto &final_state : m_info.m_states.begin() -> second) {
+        nspins *= ParticleInfo(final_state).NSpins();
+    }
+    return nspins;
+}
+
+// TODO: Figure out how to handle a general case, if possible
+bool NuclearModel::FillNucleus(Event&, const std::vector<double>&) const {
+    return false;
+}
+
 // TODO: Clean this up such that the nucleus isn't loaded twice
 Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
                    FormFactorBuilder &builder = FormFactorBuilder::Instance()) 

@@ -157,7 +157,7 @@ if(ENABLE_POTENTIAL_TEST)
     list(APPEND achilles_targets achilles-potential)
 endif()
 
-set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
+set_target_properties(${achilles_targets} AchillesPlugin_nuclear_test PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
@@ -165,7 +165,7 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
+install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt AchillesPlugin_nuclear_test
         EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

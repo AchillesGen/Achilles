@@ -215,11 +215,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
 
-    // if(config["Main"]["EventCuts"])
-    //     doEventCuts = config["Main"]["EventCuts"].as<bool>();
-    // spdlog::info("Apply event cuts? {}", doEventCuts);
-    // event_cuts = config["EventCuts"].as<achilles::CutCollection>();
-
     // Setup outputs
     auto output = config["Main"]["Output"];
     bool zipped = true;
@@ -405,10 +400,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             Rotate(event);
         // Perform event-level final cuts before writing
         bool outputCurrentEvent = true;
-        // if(doEventCuts){
-        //     spdlog::debug("Making event cuts");
-        //     outputCurrentEvent = MakeEventCuts(event);
-        // }
 
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events

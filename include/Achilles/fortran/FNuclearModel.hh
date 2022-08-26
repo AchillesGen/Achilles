@@ -12,9 +12,9 @@ extern "C" {
     void CleanUpModel();
     int GetMode();
     char* GetName();
-    void GetCurrents(achilles::FourVector *pin, size_t nin, size_t nout, achilles::FourVector *q,
-                     std::complex<double>* ff, size_t nff,
-                     std::complex<double>** current, int *ncurrent);
+    void GetCurrents(long *pids_in, long *pids_out, achilles::FourVector *pin, size_t nin, size_t nout,          
+                     achilles::FourVector *q, std::complex<double>* ff, size_t nff,
+                     std::complex<double>* current, size_t nspins, size_t nlorentz);
     bool GetAllowedStates(achilles::Process_Info*);
     size_t GetNSpins();
     bool FillNucleus(achilles::Event*, const double*, size_t);

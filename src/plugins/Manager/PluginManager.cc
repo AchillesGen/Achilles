@@ -42,9 +42,12 @@ void Manager::Open() {
                 spdlog::warn("PluginManager: Plugin expects version {}, using version {}",
                              fmt::join(expected_version.begin(), expected_version.end(), "."),
                              fmt::join(CurrentVersion.begin(), CurrentVersion.end(), "."));
-                spdlog::info("Ref left = {}", dlclose(handle)); 
+                dlclose(handle);
                 return;
             }
+
+            auto register_plugin = fptr_cast<void>(dlsym(handle, "Register"));
+            if(register_plugin) register_plugin();
 
             m_handles.push_back(std::move(handle));
         }

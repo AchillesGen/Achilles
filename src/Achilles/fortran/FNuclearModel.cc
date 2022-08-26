@@ -69,22 +69,35 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
             auto formfactors = CouplingsFF(ffVals, ffinfo.second);
 
             // Get current from fortran and convert to right format
-            std::complex<double> *cur = nullptr;
+            std::complex<double> *cur = new std::complex<double>[NSpins()*4];
             size_t nff = formfactors.size();
-            int ncur{};
-            GetCurrents(moms.data(), nin, nout, &q, formfactors.data(), nff, &cur, &ncur);
+            std::vector<long> pids_in;
+            std::vector<long> pids_out;
+            for(const auto &state : m_info.m_states) {
+                for(const auto &pid : state.first)
+                    pids_in.push_back(pid);
+                for(const auto &pid : state.second)
+                    pids_out.push_back(pid);
+            }
+            GetCurrents(pids_in.data(), pids_out.data(), moms.data(), nin, nout, &q,
+                        formfactors.data(), nff, cur, NSpins(), 4);
+
+            for(size_t j = 0; j < NSpins(); ++j) {
+                for(size_t k = 0; k < 4; ++k) {
+                    spdlog::info("cur({}, {}) = {}", j, k, cur[j + NSpins()*k]);
+                }
+            }
 
             // Convert from array to Current
-            for(size_t j = 0; j < static_cast<size_t>(ncur/4); ++j) {
+            for(size_t j = 0; j < NSpins(); ++j) {
                 std::vector<std::complex<double>> tmp(4);
-                for(size_t mu = 0; mu < 4; ++mu) {
-                    tmp[mu] = cur[mu+4*j];
+                for(size_t k = 0; k < tmp.size(); ++k) {
+                    tmp[k] = cur[j + NSpins()*k];
                 }
                 result[i][ffinfo.first].push_back(tmp);
             }
 
-            // Clean up memory usage
-            CleanUpEvent(&cur, &ncur);
+            delete[] cur;
             cur = nullptr;
         }
     }

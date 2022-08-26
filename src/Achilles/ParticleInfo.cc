@@ -81,6 +81,18 @@ bool ParticleInfo::IsCHadron() const noexcept {
     return false;
 }
 
+size_t ParticleInfo::NSpins() const noexcept {
+    if(IsFermion()) {
+        if(IntSpin() == 2) return 2;
+        else return 4;
+    } else {
+        if(IsVector())
+            return IsMassive() ? 3 : 2;
+        else
+            return 1;
+    }
+}
+
 double ParticleInfo::GenerateLifeTime() const {
     throw std::runtime_error("Not Implemented Yet");
     return 0.0;

@@ -78,7 +78,6 @@ contains
         class(process_info), intent(inout) :: this
         integer(c_size_t), intent(in) :: in, out
         integer(c_long), dimension(:), intent(in) :: initial(in), final(out)
-        character*12 hexval
 
         call process_add_state_c(this%ptr, initial, final, in, out)
     end subroutine

@@ -48,8 +48,8 @@ class NuclearModel {
         virtual std::string PhaseSpace() const = 0;
         virtual std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const = 0;
         virtual void AllowedStates(Process_Info&) = 0;
-        virtual size_t NSpins() const = 0;
-        virtual bool FillNucleus(Event&, const std::vector<double>&) const = 0;
+        virtual size_t NSpins() const;
+        virtual bool FillNucleus(Event&, const std::vector<double>&) const;
 
         static std::string Name() { return "Nuclear Model"; }
 
@@ -58,6 +58,7 @@ class NuclearModel {
         FormFactorArray CouplingsFF(const FormFactor::Values&,
                                     const std::vector<FormFactorInfo>&) const;
         static YAML::Node LoadFormFactor(const YAML::Node&);
+        Process_Info m_info;
 
     private:
         std::unique_ptr<FormFactor> m_form_factor{nullptr};

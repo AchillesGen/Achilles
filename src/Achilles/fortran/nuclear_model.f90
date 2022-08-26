@@ -45,18 +45,19 @@ module nuclear_model
             character(len=:), allocatable :: nm_psname
         end function
 
-        subroutine nm_currents(self, mom_in, nin, mom_out, nout, qvec, ff, len_ff, cur, len_cur)
+        subroutine nm_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, len_ff, cur, nspin, nlorentz)
             use libvectors
             use iso_c_binding
             import model 
             class(model), intent(inout) :: self
-            integer(c_size_t), intent(in), value :: nin, nout, len_ff
-            integer(c_int), intent(out) :: len_cur
+            integer(c_size_t), intent(in), value :: nin, nout, len_ff, nspin, nlorentz
             complex(c_double_complex), dimension(len_ff), intent(in) :: ff
             type(fourvector) :: qvec
+            integer(c_int), dimension(nin), intent(in) :: pids_in
+            integer(c_int), dimension(nout), intent(in) :: pids_out
             type(fourvector), dimension(nin), intent(in) :: mom_in
             type(fourvector), dimension(nout), intent(in) :: mom_out
-            complex(c_double_complex), dimension(:), intent(out), pointer :: cur
+            complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
         end subroutine
 
         function nm_states(self, info)

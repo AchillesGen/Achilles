@@ -214,6 +214,7 @@ namespace achilles {
             double Charge() const noexcept { return static_cast<double>(IntCharge()) / 3; }
             int IntSpin() const noexcept { return info -> spin; }
             double Spin() const noexcept { return static_cast<double>(info -> spin) / 2; }
+            size_t NSpins() const noexcept;
             bool SelfAnti() const noexcept { return info -> majorana != 0; } 
             bool Majorana() const noexcept { return info -> majorana == 1; }
             int Stable() const noexcept { return info -> stable; }
