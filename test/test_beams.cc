@@ -14,6 +14,13 @@ TEST_CASE("Spectrum Beam", "[Beams]") {
             CHECK(spectrum.MinEnergy() == 0.0);
             CHECK(spectrum.MaxEnergy() == 4450.0);
         }
+        SECTION("Parse MINVERvA Flux") {
+            YAML::Node beam = YAML::Load("Histogram: flux/minerva_numu_fhc.dat");
+            achilles::Spectrum spectrum(beam);
+            CHECK(spectrum.Format() == "Achilles");
+            CHECK(spectrum.MinEnergy() == 0.0);
+            CHECK(spectrum.MaxEnergy() == 100.0);
+        }
         SECTION("Parse MiniBooNE header") {
             YAML::Node beam = YAML::Load("Histogram: flux/miniboone_nu.dat");
             achilles::Spectrum spectrum(beam);
