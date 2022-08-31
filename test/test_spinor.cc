@@ -10,12 +10,18 @@ using achilles::SpinMatrix;
 TEST_CASE("Spinors", "[Spinors]") {
     SECTION("Spinor Inner product") {
         achilles::FourVector mom{1000, 0, 0, 100};
+        double mass = 100;
+        achilles::FourVector mom2{mass, 0, 0, 0};
         for(int i = -1; i < 2; i+=2) {
             for(int j = -1; j < 2; j+=2) {
                 auto s1 = USpinor(i, mom);
                 auto s2 = UBarSpinor(j, mom);
+                auto s3 = USpinor(i, mom2);
+                auto s4 = UBarSpinor(j, mom2);
                 if(i == j) CHECK((s2*s1).real() == Approx(2.0*mom.M()));
                 else CHECK(s2*s1 == std::complex<double>());
+                if(i == j) CHECK((s4*s3).real() == Approx(2.0*mom2.M()));
+                else CHECK(s4*s3 == std::complex<double>());
             }
         }
     }
@@ -88,5 +94,19 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
                 CHECK(SpinMatrix::SigmaMuNu(mu, nu) == std::complex<double>(0, 1)*(SpinMatrix::GammaMu(mu)*SpinMatrix::GammaMu(nu) - gmunu*SpinMatrix::Identity()));
             }
         }
+    }
+
+    SECTION("SpinMatrix * Spinor") {
+        achilles::FourVector mom{1000, 0, 0, 1000};
+        for(int i = -1; i < 2; i+=2) {
+            auto s1 = USpinor(i, mom);
+            auto result = SpinMatrix::Identity()*s1;
+            auto expected = USpinor(i, mom);
+            CHECK(result[0] == expected[0]);
+            CHECK(result[1] == expected[1]);
+            CHECK(result[2] == expected[2]);
+            CHECK(result[3] == expected[3]);
+        }
+
     }
 }

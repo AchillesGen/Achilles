@@ -42,6 +42,7 @@ add_executable(achilles-testsuite
     test_quasielastic_mapper.cc
     test_beam_mapper.cc
     test_ps_mapper.cc
+    test_poincare.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
                                          PUBLIC physics mappers event_gen)
