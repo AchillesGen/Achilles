@@ -10,7 +10,6 @@ Event::Event(std::shared_ptr<Nucleus> nuc,
              std::vector<FourVector> mom, double vwgt)
         : m_nuc{std::move(nuc)}, m_mom{std::move(mom)}, m_vWgt{std::move(vwgt)} {
     m_nuc -> GenerateConfig();
-    m_me.resize(m_nuc -> NNucleons());
 }
 
 // bool Event::ValidateEvent(size_t imatrix) const {
@@ -37,29 +36,57 @@ void Event::InitializeLeptons(const Process_Info &process) {
 }
 
 void Event::InitializeHadrons(const Process_Info &process) {
-    // Coherent scattering is handled inside the coherent class
-    if(ParticleInfo(process.m_states.begin()->first[0]).IsNucleus())
-        return;
+    // Get number of incoming and ougoing hadrons
+    const size_t nhin = process.state.first.size();
+    const size_t nhout = process.state.second.size();
 
-    // Get all hadronic momenta
-    std::vector<FourVector> mom;
-    for(const auto &elm : process.m_mom_map) {
-        if(ParticleInfo(elm.second).IsHadron()) {
-            mom.push_back(m_mom[elm.first]);
-        }
+    // Check if the process is coherent
+    if(ParticleInfo(process.state.first[0]).IsNucleus()) {
+        // Remove all nucleons
+        m_nuc -> Nucleons().clear(); 
+
+        // Setup initial and final state nucleus
+        const auto id = process.state.first[0];
+        Particle initial = Particle(id, m_mom[0]);
+        initial.Status() = ParticleStatus::initial_state;
+        m_nuc -> Nucleons().push_back(initial);
+        Particle final_state = Particle(id, m_mom[2]);
+        final_state.Status() = ParticleStatus::final_state;
+        m_nuc -> Nucleons().push_back(final_state);
+        return;
     }
 
-    // TODO: Update to handle multiple initial and final state particles
-    // Initial state setup
-    size_t idx = SelectNucleon();
-    Particle &initial = m_nuc -> Nucleons()[idx];
-    initial.Momentum() = mom.front();
-    initial.Status() = ParticleStatus::initial_state;
+    // Check if the process is MEC or QE-MEC interference
+    if(nhin > 1 && nhin == nhout) {
+        for(size_t i = 0; i < nhin; ++i) {
+            const auto id = process.state.first[i];
+            auto part = m_nuc -> SelectNucleon(id);
+            part.Status() = ParticleStatus::initial_state;
+            part.Momentum() = m_mom[i];
+            auto final_state = Particle(process.state.second[i], m_mom[nhin+1+i]);
+            final_state.Status() = ParticleStatus::propagating;
+            final_state.Position() = part.Position();
+            m_nuc -> Nucleons().push_back(final_state);
+        }
+        return;
+    }
 
-    // Final state setup
-    Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
-                   initial.Position(), ParticleStatus::propagating);
-    m_nuc -> Nucleons().push_back(final);
+    // Handle hadrons
+    ThreeVector position;
+    for(const auto &elm : process.m_mom_map) {
+        if(!ParticleInfo(elm.second).IsHadron()) continue;
+        if(elm.first < nhin) {
+            auto part = m_nuc -> SelectNucleon(elm.second);
+            part.Status() = ParticleStatus::initial_state;
+            part.Momentum() = m_mom[elm.first];
+            position = part.Position();
+        } else {
+            auto part = Particle(elm.second, m_mom[elm.first]); 
+            part.Status() = ParticleStatus::propagating;
+            part.Position() = position;
+            m_nuc -> Nucleons().push_back(part);
+        }
+    }
 }
 
 void Event::Finalize() {
@@ -98,29 +125,29 @@ void Event::CalcWeight() {
     m_wgt = m_vWgt*m_meWgt;
 }
 
-bool Event::TotalCrossSection() {
-    m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, std::plus<>());
+bool Event::CalcTotalCrossSection(const std::vector<double> &xsec) {
+    m_meWgt = std::accumulate(xsec.begin(), xsec.end(), 0.0, std::plus<>());
     spdlog::debug("Total xsec = {}", m_meWgt);
     return m_meWgt > 0 ? true : false;
 }
 
-size_t Event::SelectNucleon() const {
-    std::vector<double> probs = EventProbs();
-    double rand = Random::Instance().Uniform(0.0, 1.0);
-    return static_cast<size_t>(std::distance(probs.begin(),
-                               std::lower_bound(probs.begin(), probs.end(), rand)))-1;
-}
+// size_t Event::SelectNucleon() const {
+//     std::vector<double> probs = EventProbs();
+//     double rand = Random::Instance().Uniform(0.0, 1.0);
+//     return static_cast<size_t>(std::distance(probs.begin(),
+//                                std::lower_bound(probs.begin(), probs.end(), rand)))-1;
+// }
 
-std::vector<double> Event::EventProbs() const {
-    std::vector<double> probs;
-    probs.push_back(0.0);
-    double cumulative = 0.0;
-    for(const auto & m : m_me) {
-        cumulative += m;
-        probs.emplace_back(cumulative / m_meWgt);
-    }
-    return probs;
-}
+// std::vector<double> Event::EventProbs() const {
+//     std::vector<double> probs;
+//     probs.push_back(0.0);
+//     double cumulative = 0.0;
+//     for(const auto & m : m_me) {
+//         cumulative += m;
+//         probs.emplace_back(cumulative / m_meWgt);
+//     }
+//     return probs;
+// }
 
 void Event::Rotate(const std::array<double,9>& rot_mat) {
     for (auto& particle: m_nuc -> Nucleons()){ particle.Rotate(rot_mat); }

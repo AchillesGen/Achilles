@@ -19,16 +19,16 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
     using namespace achilles::Constant;
     const std::complex<double> i(0, 1);
     // Determine process
-    bool init_neutrino = ParticleInfo(process.m_ids[0]).IsNeutrino();
-    bool neutral_current = NeutralCurrent(process.m_ids[0], process.m_ids[1]);
-    bool charged_current = ChargedCurrent(init_neutrino, process.m_ids[0], process.m_ids[1]);
+    bool init_neutrino = ParticleInfo(process.ids[0]).IsNeutrino();
+    bool neutral_current = NeutralCurrent(process.ids[0], process.ids[1]);
+    bool charged_current = ChargedCurrent(init_neutrino, process.ids[0], process.ids[1]);
     if(!neutral_current && !charged_current) 
         throw std::runtime_error("HardScattering: Invalid process");
 
     // TODO: Define couplings correctly
     if(charged_current) {
-        pid = init_neutrino ? (process.m_ids[0].AsInt() < 0 ? -24 : 24)
-                            : (process.m_ids[0].AsInt() < 0 ? 24 : -24);
+        pid = init_neutrino ? (process.ids[0].AsInt() < 0 ? -24 : 24)
+                            : (process.ids[0].AsInt() < 0 ? 24 : -24);
         coupl_right = 0;
         coupl_left = ee*i/(sw*sqrt(2));
         mass = Constant::MW;
@@ -46,7 +46,7 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
             pid = 22;
         }
     }
-    anti = process.m_ids[0].AsInt() < 0;
+    anti = process.ids[0].AsInt() < 0;
 }
 
 bool LeptonicCurrent::NeutralCurrent(achilles::PID initial, achilles::PID final) const {
@@ -148,11 +148,11 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
     return currents;
 }
 
-void HardScattering::SetProcess(const Process_Info &process) {
-    spdlog::debug("Adding Process: {}", process);
-    m_leptonicProcess = process;
+void HardScattering::SetProcessGroup(const Process_Group &process_group) {
+    spdlog::debug("Adding Process Group: {}", process_group);
+    m_group = process_group;
 #ifndef ENABLE_BSM
-    m_current.Initialize(process);
+    m_current.Initialize(process_group);
     SMFormFactor = m_current.GetFormFactor();
 #endif
 }
@@ -163,7 +163,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<int> pids;
-    for(const auto &elm : m_leptonicProcess.m_mom_map) {
+    for(const auto &elm : m_group.processes[0].m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
         mom[elm.first] = (p[elm.first]/1_GeV).Momentum();
         spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
@@ -195,18 +195,18 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     // TODO: Move this to initialization to remove check each time
     static std::vector<NuclearModel::FFInfoMap> ffInfo;
     if(ffInfo.empty()) {
-        ffInfo.resize(3);
+        ffInfo.resize(m_group.processes.size());
         for(const auto &current : leptonCurrent) {
+            size_t idx = 0;
+            for(const auto &process : m_group.processes) {
 #ifdef ENABLE_BSM
-            ffInfo[0][current.first] = p_sherpa -> FormFactors(PID::proton(), current.first);
-            ffInfo[1][current.first] = p_sherpa -> FormFactors(PID::neutron(), current.first);
-            ffInfo[2][current.first] = p_sherpa -> FormFactors(PID::carbon(), current.first);
+                // TODO: Handle MEC
+                ffInfo[idx++][current.first] = p_sherpa -> FormFactors(process.state.first[0], current.first);
 #else
-            // TODO: Define values somewhere
-            ffInfo[0][current.first] = SMFormFactor.at({PID::proton(), current.first});
-            ffInfo[1][current.first] = SMFormFactor.at({PID::neutron(), current.first});
-            ffInfo[2][current.first] = SMFormFactor.at({PID::carbon(), current.first});
+                // TODO: Define values somewhere
+                ffInfo[idx++][current.first] = SMFormFactor.at({process.state.first[0], current.first});
 #endif
+            }
         }
     }
     auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
@@ -234,17 +234,18 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
 
     double spin_avg = 1;
-    if(!ParticleInfo(m_leptonicProcess.m_ids[0]).IsNeutrino()) spin_avg *= 2;
+    if(!ParticleInfo(m_group.processes[0].ids[0]).IsNeutrino()) spin_avg *= 2;
     if(m_nuclear -> NSpins() > 1) spin_avg *= 2;
 
-    // TODO: Correct this flux
-    // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 
-    //                      - event.Momentum()[0].M2()*event.Momentum()[1].M2());
-    double mass = ParticleInfo(m_leptonicProcess.m_states.begin()->first[0]).Mass();
-    double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
     static constexpr double to_nb = 1e6;
-    std::vector<double> xsecs(hadronCurrent.size());
-    for(size_t i = 0; i < hadronCurrent.size(); ++i) {
+    std::vector<double> xsecs(m_group.processes.size());
+    for(size_t i = 0; i < m_group.processes.size(); ++i) {
+        // TODO: Handle the case for MEC
+        double mass = ParticleInfo(m_group.processes[i].state.first[0]).Mass();
+        double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
+        // TODO: Correct this flux
+        // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 
+        //                      - event.Momentum()[0].M2()*event.Momentum()[1].M2());
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
@@ -253,11 +254,15 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 }
 
 bool HardScattering::FillEvent(Event& event, const std::vector<double> &xsecs) const {
-    if(!m_nuclear -> FillNucleus(event, xsecs))
+    // TODO: Handle multiple different beam particles
+    if(!event.CalcTotalCrossSection(xsecs))
         return false;
+
+    auto idx = Random::Instance().SelectIndex(xsecs);
+    auto process = m_group.processes[idx];
    
-    event.InitializeLeptons(m_leptonicProcess);
-    event.InitializeHadrons(m_leptonicProcess);
+    event.InitializeLeptons(process);
+    event.InitializeHadrons(process);
 
     return true;
 }

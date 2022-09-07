@@ -29,14 +29,6 @@ using vParticles = std::vector<Particle>;
 using vMomentum = std::vector<FourVector>;
 
 class Event {
-    struct MatrixElementStruct {
-        std::vector<PID> inital_state;
-        std::vector<PID> final_state;
-        double weight{};
-    };
-
-    using MatrixElementVec = std::vector<MatrixElementStruct>;
-
     public:
         Event(double vWgt = 0) : m_vWgt{vWgt} {}
         Event(std::shared_ptr<Nucleus>, 
@@ -53,14 +45,9 @@ class Event {
         MOCK const vMomentum &Momentum() const { return m_mom; }
         MOCK vMomentum &Momentum() { return m_mom; }
 
-        const double &MatrixElementWgt(size_t i) const { return m_me[i]; }
-        double &MatrixElementWgt(size_t i) { return m_me[i]; }
-
-        const std::vector<double> &MatrixElementWgts() const { return m_me; }
-        std::vector<double> &MatrixElementWgts() { return m_me; }
-
-        bool TotalCrossSection();
-        size_t SelectNucleon() const;
+        bool CalcTotalCrossSection(const std::vector<double>&);
+        double TotalCrossSection() const { return m_meWgt; }
+        // size_t SelectNucleon() const;
 
         const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
         MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
@@ -76,20 +63,17 @@ class Event {
         void CalcWeight();
         MOCK const double& Weight() const { return m_wgt; }
         MOCK double& Weight() { return m_wgt; }
-        void SetMEWeight(double wgt) { m_meWgt = wgt; }
         void Rotate(const std::array<double,9>&);
 
         bool operator==(const Event &other) const {
             return m_type == other.m_type && m_nuc == other.m_nuc
                 && m_remnant == other.m_remnant && m_mom == other.m_mom
-                && m_me == other.m_me && m_vWgt == other.m_meWgt
+                && m_vWgt == other.m_vWgt && m_meWgt == other.m_meWgt
                 && m_leptons == other.m_leptons;
         }
 
     private:
-        static bool MatrixCompare(const MatrixElementStruct&, double);
-        static double AddEvents(double, const MatrixElementStruct&);
-        std::vector<double> EventProbs() const;
+        // std::vector<double> EventProbs() const;
 
         // bool ValidateEvent(size_t) const;
 
@@ -97,7 +81,6 @@ class Event {
         std::shared_ptr<Nucleus> m_nuc;
         NuclearRemnant m_remnant{};
         vMomentum m_mom{};
-        std::vector<double> m_me;
         double m_vWgt{}, m_meWgt{}, m_wgt{-1};
         vParticles m_leptons{};
         vParticles m_history{};

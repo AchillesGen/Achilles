@@ -45,12 +45,12 @@ add_library(AchillesPlugin_nuclear_test nuclear_model_test.f90)
 target_link_libraries(AchillesPlugin_nuclear_test PRIVATE project_options
                                                   PUBLIC fortran_interface)
 
-# add_executable(constant_test 
-#     test_constants.f90
-# )
-# target_link_libraries(constant_test PRIVATE project_options
-#                                     PUBLIC fortran_interface
-# )
+add_executable(constant_test 
+    test_constants.f90
+)
+target_link_libraries(constant_test PRIVATE project_options
+                                    PUBLIC fortran_interface
+)
 # 
 # add_executable(interaction_test
 #     test_interaction.cc

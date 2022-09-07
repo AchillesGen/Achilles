@@ -15,9 +15,9 @@ module nuclear_model
             procedure(nm_mode), deferred :: mode
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
-            procedure(nm_states), deferred :: states
-            procedure(nm_nspins), deferred :: nspins 
-            procedure(nm_fill_nucleus), deferred :: fill_nucleus
+!            procedure(nm_states), deferred :: states
+!            procedure(nm_nspins), deferred :: nspins 
+!            procedure(nm_fill_nucleus), deferred :: fill_nucleus
     end type model
 
     abstract interface
@@ -60,30 +60,30 @@ module nuclear_model
             complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
         end subroutine
 
-        function nm_states(self, info)
-            use libprocess_info
-            import model 
-            class(model), intent(inout) :: self
-            type(process_info), intent(inout) :: info
-            logical :: nm_states
-        end function
+!        function nm_states(self, info)
+!            use libprocess_info
+!            import model 
+!            class(model), intent(inout) :: self
+!            type(process_info), intent(inout) :: info
+!            logical :: nm_states
+!        end function
 
-        function nm_nspins(self)
-            use iso_c_binding
-            import model 
-            class(model), intent(inout) :: self
-            integer(c_size_t) nm_nspins
-        end function
+!        function nm_nspins(self)
+!            use iso_c_binding
+!            import model 
+!            class(model), intent(inout) :: self
+!            integer(c_size_t) nm_nspins
+!        end function
 
-        function nm_fill_nucleus(self, evt, xsec, len)
-            use libevent
-            use iso_c_binding
-            import model
-            class(model), intent(inout) :: self
-            class(event), intent(inout) :: evt
-            integer(c_size_t), value :: len
-            real(c_double), dimension(len), intent(in) :: xsec
-            logical :: nm_fill_nucleus
-        end function
+!        function nm_fill_nucleus(self, evt, xsec, len)
+!            use libevent
+!            use iso_c_binding
+!            import model
+!            class(model), intent(inout) :: self
+!            class(event), intent(inout) :: evt
+!            integer(c_size_t), value :: len
+!            real(c_double), dimension(len), intent(in) :: xsec
+!            logical :: nm_fill_nucleus
+!        end function
     end interface
 end module nuclear_model

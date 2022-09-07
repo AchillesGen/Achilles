@@ -9,8 +9,8 @@ using achilles::NuclearModel;
 using achilles::Coherent;
 using achilles::QESpectral;
 
-NuclearModel::NuclearModel(const YAML::Node& config,
-                           FormFactorBuilder &ffbuilder = FormFactorBuilder::Instance()) {
+NuclearModel::NuclearModel(const YAML::Node& config, const std::shared_ptr<Nucleus> &nuc,
+                           FormFactorBuilder &ffbuilder = FormFactorBuilder::Instance()) : m_nucleus{nuc} {
     spdlog::debug("Setting up form factors");
     const auto vectorFF = config["vector"].as<std::string>();
     const auto axialFF = config["axial"].as<std::string>();
@@ -56,28 +56,137 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
 }
 
+achilles::Process_Group NuclearModel::AllowedStates(const Process_Info &info) {
+    // TODO: Fill info and split for each nuclear state
+    // TODO: Figure out how to combine with multiple incoming beams
+    // Check for charge conservation
+    int charge = -ParticleInfo(info.ids[0]).IntCharge();
+    for(size_t i = 1; i < info.ids.size(); ++i) {
+        charge += ParticleInfo(info.ids[i]).IntCharge();
+    }
+    charge /= 3;
+    spdlog::debug("Charge = {}", charge);
+
+    switch(Mode()) {
+        case NuclearMode::None:
+            throw std::runtime_error("NuclearModel: Invalid mode. Define custom AllowedStates");
+            break;
+        case NuclearMode::Coherent:
+            if(charge != 0)
+                throw std::runtime_error(fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
+            
+            m_group.processes.push_back(info);
+            m_group.processes.back().state = {{m_nucleus->ID()}, {m_nucleus->ID()}};
+            break;
+        case NuclearMode::Quasielastic:
+            if(std::abs(charge) > 1)
+                throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            
+            switch(charge) {
+                case -1: // Final state has less charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron()}, {PID::proton()}}; 
+                    break; 
+                case 0: // Same charge in inital and final
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton()}, {PID::proton()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron()}, {PID::neutron()}}; 
+                    break;
+                case 1: // Final state has more charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton()}, {PID::neutron()}}; 
+                    break;
+            }
+            break;
+        case NuclearMode::MesonExchangeCurrent:
+            if(std::abs(charge) > 2)
+                throw std::runtime_error(fmt::format("{}: Requires |charge| < 3, but found |charge| {}",
+                                         ToString(Mode()), std::abs(charge)));
+            
+            switch(charge) {
+                case -2: // Final state has less charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                                                      {PID::proton(), PID::proton()}}; 
+                    break;
+                case -1: // Final state has less charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                                                      {PID::proton(), PID::proton()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                                                      {PID::proton(), PID::proton()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                                                      {PID::proton(), PID::neutron()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                                                      {PID::neutron(), PID::proton()}}; 
+                    break; 
+                case 0: // Same charge in inital and final
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                                                      {PID::neutron(), PID::neutron()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                                                      {PID::proton(), PID::neutron()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                                                      {PID::neutron(), PID::proton()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                                                      {PID::proton(), PID::proton()}}; 
+                    break;
+                case 1: // Final state has more charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                                                      {PID::neutron(), PID::neutron()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                                                      {PID::neutron(), PID::neutron()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                                                      {PID::neutron(), PID::proton()}}; 
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                                                      {PID::proton(), PID::neutron()}}; 
+                    break;
+                case 2: // Final state has more charge than initial
+                    m_group.processes.push_back(info);
+                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                                                      {PID::neutron(), PID::neutron()}}; 
+                    break;
+            }
+            break;
+        // TODO: Implement remaining cases
+        case NuclearMode::Interference_QE_MEC:
+        case NuclearMode::Resonance:
+        case NuclearMode::ShallowInelastic:
+        case NuclearMode::DeepInelastic:
+            throw std::runtime_error(fmt::format("NuclearModel: Allowed states for {} not implemented yet",
+                                                 ToString(Mode())));
+    }
+    return m_group;
+}
+
 size_t NuclearModel::NSpins() const {
     size_t nspins = 1;
-    for(const auto &init_state : m_info.m_states.begin() -> first) {
+    // TODO: Make less dependent on process 0
+    for(const auto &init_state : m_group.processes[0].state.first) {
         nspins *= ParticleInfo(init_state).NSpins();
     }
-    for(const auto &final_state : m_info.m_states.begin() -> second) {
+    for(const auto &final_state : m_group.processes[0].state.second) {
         nspins *= ParticleInfo(final_state).NSpins();
     }
     return nspins;
 }
 
-// TODO: Figure out how to handle a general case, if possible
-bool NuclearModel::FillNucleus(Event&, const std::vector<double>&) const {
-    return false;
-}
-
 // TODO: Clean this up such that the nucleus isn't loaded twice
-Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
+Coherent::Coherent(const YAML::Node&, const YAML::Node &form_factor,
+                   const std::shared_ptr<Nucleus> &nuc,
                    FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
-        : NuclearModel(form_factor, builder) {
-    nucleus_pid = config["Nucleus"].as<Nucleus>().ID();
-}
+        : NuclearModel(form_factor, nuc, builder) {}
 
 std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event &event,
                                                                    const std::vector<FFInfoMap> &ff) const {
@@ -110,48 +219,49 @@ std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event
     return results;
 }
 
-void Coherent::AllowedStates(Process_Info &info) {
-    // Check for charge conservation
-    int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
-    for(size_t i = 1; i < info.m_ids.size(); ++i) {
-        charge += ParticleInfo(info.m_ids[i]).IntCharge();
-    }
-    charge /= 3;
-    spdlog::debug("Charge = {}", charge);
-    if(charge != 0)
-        throw std::runtime_error(fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
+// void Coherent::AllowedStates(Process_Info &info) {
+//     // Check for charge conservation
+//     int charge = -ParticleInfo(info.ids[0]).IntCharge();
+//     for(size_t i = 1; i < info.ids.size(); ++i) {
+//         charge += ParticleInfo(info.ids[i]).IntCharge();
+//     }
+//     charge /= 3;
+//     spdlog::debug("Charge = {}", charge);
+//     if(charge != 0)
+//         throw std::runtime_error(fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
+// 
+//     info.states[{nucleus_pid}] = {nucleus_pid}; 
+// }
 
-    info.m_states[{nucleus_pid}] = {nucleus_pid}; 
-}
+// bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
+//     // Calculate total cross section
+//     if(xsecs[0] == 0) return false;
+//     event.SetMEWeight(xsecs[0]);
+// 
+//     // Remove all nucleons
+//     event.CurrentNucleus() -> Nucleons().clear();
+// 
+//     // Setup initial and final state nucleus
+//     Particle initial = Particle(nucleus_pid, event.Momentum().front());
+//     initial.Status() = ParticleStatus::initial_state;
+//     event.CurrentNucleus() -> Nucleons().push_back(initial);
+//     Particle final(nucleus_pid, event.Momentum()[2]);
+//     final.Status() = ParticleStatus::final_state;
+//     event.CurrentNucleus() -> Nucleons().push_back(final);
+// 
+//     return true;
+// }
 
-bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
-    // Calculate total cross section
-    if(xsecs[0] == 0) return false;
-    event.SetMEWeight(xsecs[0]);
-
-    // Remove all nucleons
-    event.CurrentNucleus() -> Nucleons().clear();
-
-    // Setup initial and final state nucleus
-    Particle initial = Particle(nucleus_pid, event.Momentum().front());
-    initial.Status() = ParticleStatus::initial_state;
-    event.CurrentNucleus() -> Nucleons().push_back(initial);
-    Particle final(nucleus_pid, event.Momentum()[2]);
-    final.Status() = ParticleStatus::final_state;
-    event.CurrentNucleus() -> Nucleons().push_back(final);
-
-    return true;
-}
-
-std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
+std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config, const std::shared_ptr<Nucleus> &nuc) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<Coherent>(config, form_factor);
+    return std::make_unique<Coherent>(config, form_factor, nuc);
 }
 
 // TODO: Clean this interface up
 QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
+                       const std::shared_ptr<Nucleus> &nuc,
                        FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
-        : NuclearModel(form_factor, builder),
+        : NuclearModel(form_factor, nuc, builder),
           spectral_proton{config["NuclearModel"]["SpectralP"].as<std::string>()},
           spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {
     b_ward = config["NuclearModel"]["Ward"].as<bool>();
@@ -198,7 +308,7 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
                 for(auto &val : subcur) {
                     // TODO: Move this to phase space 
                     // TODO: Move normalization to spectral function definition
-                    val *= sqrt(spectral[i]/6);
+                    val *= sqrt(spectral[i]);
                 }
                 // Correct the Ward identity
                 if(b_ward) subcur[3] = omega/qVec.P()*subcur[0];
@@ -209,49 +319,50 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     return results;
 }
 
-void QESpectral::AllowedStates(Process_Info &info) {
-    // Check for charge conservation
-    int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
-    for(size_t i = 1; i < info.m_ids.size(); ++i) {
-        charge += ParticleInfo(info.m_ids[i]).IntCharge();
-    }
-    charge /= 3;
-    if(std::abs(charge) > 1)
-        throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+// void QESpectral::AllowedStates(Process_Info &info) {
+//     // Check for charge conservation
+//     int charge = -ParticleInfo(info.ids[0]).IntCharge();
+//     for(size_t i = 1; i < info.ids.size(); ++i) {
+//         charge += ParticleInfo(info.ids[i]).IntCharge();
+//     }
+//     charge /= 3;
+//     if(std::abs(charge) > 1)
+//         throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+// 
+//     switch(charge) {
+//         case -1: // Final state has less charge than initial
+//             info.states[{PID::neutron()}] = {PID::proton()}; 
+//             break; 
+//         case 0: // Same charge in inital and final
+//             info.states[{PID::proton()}] = {PID::proton()}; 
+//             info.states[{PID::neutron()}] = {PID::neutron()}; 
+//             break;
+//         case 1: // Final state has more charge than initial
+//             info.states[{PID::proton()}] = {PID::neutron()}; 
+//             break;
+//     }
+// }
 
-    switch(charge) {
-        case -1: // Final state has less charge than initial
-            info.m_states[{PID::neutron()}] = {PID::proton()}; 
-            break; 
-        case 0: // Same charge in inital and final
-            info.m_states[{PID::proton()}] = {PID::proton()}; 
-            info.m_states[{PID::neutron()}] = {PID::neutron()}; 
-            break;
-        case 1: // Final state has more charge than initial
-            info.m_states[{PID::proton()}] = {PID::neutron()}; 
-            break;
-    }
-}
+// bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
+//     // Calculate total cross section
+//     for(size_t i = 0; i < event.CurrentNucleus() -> Nucleons().size(); ++i) {
+//         auto current_nucleon = event.CurrentNucleus() -> Nucleons()[i];
+//         if(current_nucleon.ID() == PID::proton()) {
+//             event.MatrixElementWgt(i) = xsecs[0];
+//         } else {
+//             event.MatrixElementWgt(i) = xsecs[1];
+//         }
+//     }
+//     if(!event.TotalCrossSection())
+//         return false;
+// 
+//     return true;
+// }
 
-bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
-    // Calculate total cross section
-    for(size_t i = 0; i < event.CurrentNucleus() -> Nucleons().size(); ++i) {
-        auto current_nucleon = event.CurrentNucleus() -> Nucleons()[i];
-        if(current_nucleon.ID() == PID::proton()) {
-            event.MatrixElementWgt(i) = xsecs[0];
-        } else {
-            event.MatrixElementWgt(i) = xsecs[1];
-        }
-    }
-    if(!event.TotalCrossSection())
-        return false;
-
-    return true;
-}
-
-std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
+std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config,
+                                                    const std::shared_ptr<Nucleus> &nuc) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<QESpectral>(config, form_factor);
+    return std::make_unique<QESpectral>(config, form_factor, nuc);
 }
 
 NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,

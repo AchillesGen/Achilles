@@ -9,9 +9,9 @@ module nuclear_model_test
     type, extends(model) :: test
         contains
             procedure :: init => test_init
-            procedure :: fill_nucleus => test_fill
-            procedure :: nspins => test_spins
-            procedure :: states => test_states
+!            procedure :: fill_nucleus => test_fill
+!            procedure :: nspins => test_spins
+!            procedure :: states => test_states
             procedure :: currents => test_currents
             procedure :: ps_name => test_ps
             procedure :: mode => test_mode
@@ -91,42 +91,42 @@ contains
         cur(4, 4) = 16
     end subroutine
 
-    function test_states(self, info)
-        use libprocess_info
-        use iso_c_binding
-        class(test), intent(inout) :: self
-        type(process_info), intent(inout) :: info
-        logical :: test_states
-        integer(c_size_t) :: in, out
-        integer(c_long), dimension(:), allocatable :: initial, final
-        in = 1
-        out = 1
-        allocate(initial(in))
-        allocate(final(out))
-        initial(1) = 2212
-        final(1) = 2212
-        test_states = .true.
-        call info%add_state(initial, final, in, out)
-        deallocate(initial)
-        deallocate(final)
-    end function
+!    function test_states(self, info)
+!        use libprocess_info
+!        use iso_c_binding
+!        class(test), intent(inout) :: self
+!        type(process_info), intent(inout) :: info
+!        logical :: test_states
+!        integer(c_size_t) :: in, out
+!        integer(c_long), dimension(:), allocatable :: initial, final
+!        in = 1
+!        out = 1
+!        allocate(initial(in))
+!        allocate(final(out))
+!        initial(1) = 2212
+!        final(1) = 2212
+!        test_states = .true.
+!        call info%add_state(initial, final, in, out)
+!        deallocate(initial)
+!        deallocate(final)
+!    end function
 
-    function test_spins(self)
-        use iso_c_binding
-        class(test), intent(inout) :: self
-        integer(c_size_t) test_spins
-        test_spins = 4
-    end function
+!    function test_spins(self)
+!        use iso_c_binding
+!        class(test), intent(inout) :: self
+!        integer(c_size_t) test_spins
+!        test_spins = 4
+!    end function
 
-    function test_fill(self, evt, xsec, len)
-        use libevent
-        use iso_c_binding
-        class(test), intent(inout) :: self
-        class(event), intent(inout) :: evt
-        integer(c_size_t), value :: len
-        real(c_double), dimension(len), intent(in) :: xsec
-        logical :: test_fill
-        test_fill = .true.
-    end function
+!    function test_fill(self, evt, xsec, len)
+!        use libevent
+!        use iso_c_binding
+!        class(test), intent(inout) :: self
+!        class(event), intent(inout) :: evt
+!        integer(c_size_t), value :: len
+!        real(c_double), dimension(len), intent(in) :: xsec
+!        logical :: test_fill
+!        test_fill = .true.
+!    end function
 
 end module nuclear_model_test

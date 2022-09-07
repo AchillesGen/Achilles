@@ -132,6 +132,17 @@ void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
     }
 }
 
+Particle& Nucleus::SelectNucleon(PID pid) {
+    size_t idx;
+    if(pid == PID::proton()) {
+        idx = Random::Instance().Pick(protonLoc);
+    } else {
+        idx = Random::Instance().Pick(neutronLoc);
+    }
+
+    return nucleons[idx];
+}
+
 void Nucleus::GenerateConfig() {
     // Get a configuration from the density function
     Particles particles = density -> GetConfiguration();

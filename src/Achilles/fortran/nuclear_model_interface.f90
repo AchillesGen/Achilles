@@ -124,40 +124,40 @@ contains
         call model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, qvector, ff, len_ff, cur, nspin, nlorentz)
     end subroutine
 
-    function allowed_states(cinfo) bind(C, name="GetAllowedStates")
-        use iso_c_binding
-        use libprocess_info
-        implicit none
+!    function allowed_states(cinfo) bind(C, name="GetAllowedStates")
+!        use iso_c_binding
+!        use libprocess_info
+!        implicit none
+!
+!        type(c_ptr) :: cinfo
+!        type(process_info) :: info
+!        logical :: allowed_states
+!
+!        info = process_info(cinfo)
+!        allowed_states = model_ptr%states(info) 
+!    end function
 
-        type(c_ptr) :: cinfo
-        type(process_info) :: info
-        logical :: allowed_states
+!    function nspins() bind(C, name="GetNSpins")
+!        use iso_c_binding
+!        implicit none
+!
+!        integer(c_size_t) :: nspins
+!
+!        nspins = model_ptr%nspins()
+!    end function
 
-        info = process_info(cinfo)
-        allowed_states = model_ptr%states(info) 
-    end function
-
-    function nspins() bind(C, name="GetNSpins")
-        use iso_c_binding
-        implicit none
-
-        integer(c_size_t) :: nspins
-
-        nspins = model_ptr%nspins()
-    end function
-
-    function fill_nucleus(evt, xsec, len) bind(C, name="FillNucleus")
-        use iso_c_binding
-        use libevent
-        implicit none
-
-        type(c_ptr) :: evt
-        type(event) :: fevt
-        integer(c_size_t), value :: len
-        real(c_double), dimension(len), intent(in) :: xsec
-        logical :: fill_nucleus
-
-        fevt = event(evt)
-        fill_nucleus = model_ptr%fill_nucleus(fevt, xsec, len)
-    end function
+!    function fill_nucleus(evt, xsec, len) bind(C, name="FillNucleus")
+!        use iso_c_binding
+!        use libevent
+!        implicit none
+!
+!        type(c_ptr) :: evt
+!        type(event) :: fevt
+!        integer(c_size_t), value :: len
+!        real(c_double), dimension(len), intent(in) :: xsec
+!        logical :: fill_nucleus
+!
+!        fevt = event(evt)
+!        fill_nucleus = model_ptr%fill_nucleus(fevt, xsec, len)
+!    end function
 end module

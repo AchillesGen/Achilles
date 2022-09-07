@@ -110,6 +110,8 @@ class Nucleus {
         MOCK Particles& Nucleons() noexcept { return nucleons; }
         const Particles& Nucleons() const noexcept { return nucleons; }
 
+        MOCK Particle& SelectNucleon(PID);
+
         /// Return a vector of the ids of the protons in the nucleus
         ///@return std::vector<size_t>: The current ids of protons in nucleon vector 
         std::vector<size_t> ProtonsIDs() noexcept { return protonLoc; }

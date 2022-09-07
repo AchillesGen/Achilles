@@ -158,19 +158,19 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
 {
   Cluster_Amplitude* ampl = Cluster_Amplitude::New();
   int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
-  for (const auto &initial : info.m_states.begin()->first) {
+  for (const auto &initial : info.state.first) {
     ampl->CreateLeg(Vec4D(),Flavour(initial).Bar());
   }
-  for (size_t i(0);i<info.m_ids.size();++i) {
-    ampl->CreateLeg(Vec4D(),i<1?Flavour(info.m_ids[i]).Bar():
-		    Flavour(info.m_ids[i]));
+  for (size_t i(0);i<info.ids.size();++i) {
+    ampl->CreateLeg(Vec4D(),i<1?Flavour(info.ids[i]).Bar():
+		    Flavour(info.ids[i]));
   } 
-  for (const auto &final : info.m_states.begin()->second) {
+  for (const auto &final : info.state.second) {
     ampl->CreateLeg(Vec4D(),Flavour(final));
   }
   ampl->SetNIn(2);
   ampl->SetOrderQCD(0);
-  ampl->SetOrderEW(info.m_ids.size()-2);
+  ampl->SetOrderEW(info.ids.size()-2);
   // TODO: Need to fix this later
   Process_Base::SortFlavours(ampl);
   StringProcess_Map *pm(m_pmap[nlo_type::lo]);

@@ -67,8 +67,8 @@ class HardScattering {
         size_t SelectMatrixElement(Event&) const;
 
         // Process accessors
-        void SetProcess(const Process_Info&);
-        Process_Info Process() const { return m_leptonicProcess; }
+        void SetProcessGroup(const Process_Group&);
+        Process_Group ProcessGroup() const { return m_group; }
 
         // Pointer operations
 #ifdef ENABLE_BSM
@@ -86,7 +86,7 @@ class HardScattering {
         SherpaMEs *p_sherpa{nullptr};
 #endif
         LeptonicCurrent m_current{};
-        Process_Info m_leptonicProcess;
+        Process_Group m_group;
         bool m_fill{false};
         std::unique_ptr<NuclearModel> m_nuclear{};
 };

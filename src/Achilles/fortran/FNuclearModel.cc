@@ -5,8 +5,10 @@
 using achilles::NuclearModel;
 using achilles::FortranModel;
 
-FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor, FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
-        : NuclearModel(form_factor, builder) {
+FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
+                           const std::shared_ptr<Nucleus> &nuc,
+                           FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
+        : NuclearModel(form_factor, nuc, builder) {
     // Setup fortran side
     auto modelname = config["NuclearModel"]["Name"].as<std::string>();
     size_t len_model = modelname.size();
@@ -32,18 +34,19 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
 
 std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &event,
                                                                const std::vector<FFInfoMap> &ff) const {
-    std::vector<NuclearModel::Currents> result(m_info.m_states.size());
+    std::vector<NuclearModel::Currents> result(m_group.processes.size());
 
     // Create momentum variables to pass to fortran
-    const size_t nin = m_info.m_states.begin()->first.size();
-    const size_t nout = m_info.m_states.begin()->second.size();
+    const size_t nin = m_group.nucleons_in;
+    const size_t nout = m_group.nucleons_out;
     std::vector<FourVector> moms;
     FourVector q;
 
     // Fill momentum
     // TODO: Make this cleaner, maybe pass FourVectors to fortran and use interface?
+    // TODO: Make less dependent on 0th process
     int lepton = 1;
-    auto ids = m_info.Ids();
+    auto ids = m_group.processes[0].Ids();
     for(size_t i = 0; i < ids.size(); ++i) {
         if(ParticleInfo(ids[i]).IsHadron()) {
             moms.push_back(event.Momentum()[i]);
@@ -60,7 +63,8 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
 
     // Loop over the allowed initial states
     auto ffVals = EvalFormFactor(-q.M2()/1.0_GeV/1.0_GeV);
-    for(size_t i = 0; i < m_info.m_states.size(); ++i) {
+    for(size_t i = 0; i < m_group.processes.size(); ++i) {
+        auto process = m_group.processes[i];
         // Loop over the pid of q
         for(const auto &ffinfo : ff[i]) {
             // Load the form factors to pass to fortran
@@ -73,12 +77,10 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
             size_t nff = formfactors.size();
             std::vector<long> pids_in;
             std::vector<long> pids_out;
-            for(const auto &state : m_info.m_states) {
-                for(const auto &pid : state.first)
-                    pids_in.push_back(pid);
-                for(const auto &pid : state.second)
-                    pids_out.push_back(pid);
-            }
+            for(const auto &pid : process.state.first)
+                pids_in.push_back(pid);
+            for(const auto &pid : process.state.second)
+                pids_out.push_back(pid);
             GetCurrents(pids_in.data(), pids_out.data(), moms.data(), nin, nout, &q,
                         formfactors.data(), nff, cur, NSpins(), 4);
 
@@ -105,7 +107,7 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
     return result;
 }
 
-std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
+std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config, const std::shared_ptr<Nucleus> &nuc) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<FortranModel>(config, form_factor);
+    return std::make_unique<FortranModel>(config, form_factor, nuc);
 }

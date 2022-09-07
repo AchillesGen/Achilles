@@ -126,15 +126,15 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // TODO: Handle the beam initial state better
     if(beam -> BeamIDs().size() > 1)
         throw std::runtime_error("Multiple processes are not implemented yet. Please use only one beam.");
-    leptonicProcess.m_ids.insert(leptonicProcess.m_ids.begin(),
-                                 beam -> BeamIDs().begin(), beam -> BeamIDs().end());
+    leptonicProcess.ids.insert(leptonicProcess.ids.begin(),
+                               beam -> BeamIDs().begin(), beam -> BeamIDs().end());
 
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
     const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
-    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config);
-    nuclear_model -> AllowedStates(leptonicProcess);
-    spdlog::debug("Process: {}", leptonicProcess);
+    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config, nucleus);
+    auto proc_group = nuclear_model -> AllowedStates(leptonicProcess);
+    spdlog::debug("Process Group: {}", proc_group);
 
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
@@ -146,24 +146,29 @@ achilles::EventGen::EventGen(const std::string &configFile,
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
     sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!sherpa -> InitializeProcess(leptonicProcess)) {
-        spdlog::error("Cannot initialize hard process");
-        exit(1);
+    for(auto &process : proc_group.processes) {
+        if(!sherpa -> InitializeProcess(process)) {
+            spdlog::error("Cannot initialize hard process");
+            exit(1);
+        }
+        process.m_mom_map = sherpa -> MomentumMap(process.Ids());
     }
-    leptonicProcess.m_mom_map = sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    shargs.size();
-    leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
-    leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
-    leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
-    leptonicProcess.m_mom_map[3] = leptonicProcess.Ids()[3];
+    if(shargs.size() != 0)
+        spdlog::warn("Sherpa arguments are being ignored since Achilles is not compiled with Sherpa support");
+    shargs.clear();
+    for(auto &process : proc_group.processes) {
+        for(size_t i = 0; i < process.Ids().size(); ++i) {
+            process.m_mom_map[i] = process.Ids()[i];
+        }
+    }
 #endif
 
     // Initialize hard cross-sections
     spdlog::debug("Initializing hard interaction");
     scattering = std::make_shared<HardScattering>();
-    scattering -> SetProcess(leptonicProcess);
+    scattering -> SetProcessGroup(proc_group);
 #ifdef ENABLE_BSM
     scattering -> SetSherpa(sherpa);
 #endif
@@ -171,7 +176,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
     // Setup channels
     spdlog::debug("Initializing phase space");
-    std::vector<double> masses = scattering -> Process().Masses();
+    // TODO: Take into account all processes in a process group
+    std::vector<double> masses = scattering -> ProcessGroup().processes[0].Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
@@ -189,11 +195,12 @@ achilles::EventGen::EventGen(const std::string &configFile,
             throw std::runtime_error(error);
         }
 #else
-        auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
+        // TODO: Take into account all processes in a process group
+        auto channels = sherpa -> GenerateChannels(scattering -> ProcessGroup().processes[0].Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
-                                                          scattering -> Process().m_ids.size(), 2,
+                                                          scattering -> ProcessGroup().processes[0].ids.size(), 2,
                                                           beam, std::move(chan), masses);
             integrand.AddChannel(std::move(channel));
             spdlog::info("Adding Channel{}", count++);
@@ -295,7 +302,8 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     Event event(nucleus, mom, wgt);
 
     // Initialize the particle ids for the processes
-    const auto pids = scattering -> Process().m_ids;
+    // TODO: Take into account all processes within the group
+    const auto pids = scattering -> ProcessGroup().processes[0].ids;
 
     // Setup flux value
     event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
@@ -316,7 +324,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     spdlog::debug("Filling the event");
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
-            event.SetMEWeight(0);
+            event.CalcTotalCrossSection({0});
             event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
@@ -356,7 +364,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // We want Vegas to adapt to avoid these points, i.e.,
             // the integrand should be interpreted as zero in this region
             if(outputEvents) {
-                event.SetMEWeight(0);
+                event.CalcTotalCrossSection({0});
                 event.CalcWeight();
                 writer -> Write(event);
                 // Update number of calls needed to ensure the number of generated events
@@ -404,15 +412,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
-            if(!unweighter->AcceptEvent(event)) {
+            if(!unweighter->AcceptEvent(event.Weight())) {
                 // Update number of calls needed to ensure the number of generated events
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
             writer -> Write(event);
         }
-        } else {
-            unweighter->AddEvent(event);
+    } else {
+        unweighter->AddEvent(event.Weight());
     }
 
     // Always return the weight when the event passes the initial hard cut.

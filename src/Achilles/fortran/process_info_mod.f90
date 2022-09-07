@@ -11,7 +11,6 @@ module libprocess_info
         type(c_ptr), pointer :: ptr
     contains
         procedure :: self => get_ptr
-        procedure :: model => process_model 
         procedure :: ids => process_ids 
         procedure :: multiplicity => process_multiplicity 
         procedure :: masses => process_masses 
@@ -36,15 +35,6 @@ contains
         class(process_info), intent(in) :: this
         type(c_ptr) :: get_ptr
         get_ptr = this%ptr
-    end function
-
-    function process_model(this)
-        use libutilities
-        implicit none
-        class(process_info), intent(in) :: this
-        character(len=:), allocatable :: process_model
-
-        process_model = c2fstring(process_model_c(this%ptr))
     end function
 
     subroutine process_ids(this, ids, len)

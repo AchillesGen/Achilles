@@ -9,21 +9,62 @@
 #pragma GCC diagnostic pop
 
 namespace achilles {
-    using nuclear_map = std::map<std::vector<achilles::PID>, std::vector<achilles::PID>>;
-    using nuclear_pair = std::pair<const std::vector<achilles::PID>, std::vector<achilles::PID>>;
+    using nuclear_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
+
+class Beam;
+
+struct Process_Info {
+    std::vector<achilles::PID> ids{};
+    nuclear_state state{};
+    std::map<size_t, long> m_mom_map{};
+
+    Process_Info(std::vector<achilles::PID> _ids={}) 
+        : ids(std::move(_ids)) {}
+    size_t Multiplicity() const;
+    std::vector<double> Masses() const;
+    std::vector<long> Ids() const;
+
+    bool operator==(const Process_Info &other) const {
+        return ids == other.ids && state == other.state;
+    }
+
+    template<typename OStream>
+    friend OStream& operator<<(OStream &os, const Process_Info &info) {
+        os << fmt::format("Process_Info(PIDs = [{}], ",
+                          fmt::join(info.ids.begin(), info.ids.end(), ", "));
+        os << fmt::format("State = [{}])", info.state);
+        return os;
+    }
+};
+
+struct Process_Group {
+    std::string model{};
+    size_t Multiplicity() const;
+    std::vector<Process_Info> processes;
+    size_t nucleons_in, nucleons_out, leptons_out;
+
+    template<typename OStream>
+    friend OStream& operator<<(OStream &os, const Process_Group &group) {
+        os << fmt::format("Process_Group(Model = {}, Processes = [{}])",
+                          group.model,
+                          fmt::join(group.processes.begin(), group.processes.end(), ", "));
+        return os;
+    }
+};
+
 }
 
 namespace fmt {
 
 template<>
-struct formatter<achilles::nuclear_pair> {
+struct formatter<achilles::nuclear_state> {
     template<typename ParseContext>
     constexpr auto parse(ParseContext &ctx) {
         return ctx.begin();
     }
 
     template<typename FormatContext>
-    auto format(const achilles::nuclear_pair &npair, FormatContext &ctx) {
+    auto format(const achilles::nuclear_state &npair, FormatContext &ctx) {
         return format_to(ctx.out(), "[{}] -> [{}]",
                          join(npair.first.begin(), npair.first.end(), ", "),
                          join(npair.second.begin(), npair.second.end(), ", "));
@@ -31,46 +72,30 @@ struct formatter<achilles::nuclear_pair> {
 };
 
 template<>
-struct formatter<achilles::nuclear_map> {
+struct formatter<achilles::Process_Info> {
     template<typename ParseContext>
     constexpr auto parse(ParseContext &ctx) {
         return ctx.begin();
     }
 
     template<typename FormatContext>
-    auto format(const achilles::nuclear_map &nmap, FormatContext &ctx) {
-        return format_to(ctx.out(), "{{{}}}", join(nmap.begin(), nmap.end(), ", ")); 
+    auto format(const achilles::Process_Info &info, FormatContext &ctx) {
+        return format_to(ctx.out(), "Process_Info(PIDs = [{}], States = [{}])",
+                         fmt::join(info.ids.begin(), info.ids.end(), ", "));
     }
 };
 
-}
-
-namespace achilles {
-
-class Beam;
-
-struct Process_Info {
-    std::string m_model{};
-    std::vector<achilles::PID> m_ids{};
-    nuclear_map m_states{};
-    Process_Info() = default;
-    Process_Info(std::string model, std::vector<achilles::PID> ids={}) 
-        : m_model(std::move(model)), m_ids(std::move(ids)) {}
-    size_t Multiplicity() const;
-    std::vector<double> Masses() const;
-    std::vector<long> Ids() const;
-    std::map<size_t, long> m_mom_map;
-
-    bool operator==(const Process_Info &other) const {
-        return m_model == other.m_model && m_ids == other.m_ids && m_states == other.m_states;
+template<>
+struct formatter<achilles::Process_Group> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
     }
 
-    template<typename OStream>
-    friend OStream& operator<<(OStream &os, const Process_Info &info) {
-        os << fmt::format("Process_Info({}, PIDs = [{}], ",
-                          info.m_model, fmt::join(info.m_ids.begin(), info.m_ids.end(), ", "));
-        os << fmt::format("States = [{}])", info.m_states);
-        return os;
+    template<typename FormatContext>
+    auto format(const achilles::Process_Group &group, FormatContext &ctx) {
+        return format_to(ctx.out(), "Process_Group(Model = {}, Processes = [{}])",
+                         group.model, fmt::join(group.processes.begin(), group.processes.end(), ", "));
     }
 };
 
@@ -85,7 +110,7 @@ struct convert<achilles::Process_Info> {
         if(!node["Model"].IsScalar()) return false;
         std::string model = node["Model"].as<std::string>();
         if(!node["Final States"].IsSequence()) return false;
-        info = achilles::Process_Info(model, node["Final States"].as<std::vector<achilles::PID>>());
+        info = achilles::Process_Info(node["Final States"].as<std::vector<achilles::PID>>());
         return true;
     }
 };

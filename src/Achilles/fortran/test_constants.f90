@@ -13,6 +13,7 @@ program test_constants
     type(particle) :: part1
     type(interp1d) :: interp
     type(interp2d) :: interp2
+    double precision :: charge
     double precision, dimension(10), parameter :: x = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     double precision, dimension(10), parameter :: y = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     double precision, dimension(3), parameter :: x1 = [1, 2, 3]
@@ -33,6 +34,7 @@ program test_constants
     print*, vec1*vec1 
 
     info = pinfo(2212)
+    charge = info%charge()
     call logger%info(info%name())
     call logger%warn("test")
 

@@ -340,6 +340,20 @@ struct formatter<achilles::PID> {
     }
 };
 
+template<>
+struct formatter<std::vector<achilles::PID>> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
+
+    template<typename FormatContext>
+    auto format(const std::vector<achilles::PID> &pids, FormatContext &ctx) {
+        return format_to(ctx.out(), "[{}]",
+                         join(pids.begin(), pids.end(), ", "));
+    }
+};
+
 }
 
 #endif

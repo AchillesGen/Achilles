@@ -17,8 +17,8 @@ class Unweighter {
         Unweighter& operator=(const Unweighter&) = default;
         Unweighter& operator=(Unweighter&&) = default;
 
-        virtual void AddEvent(const Event&) = 0;
-        virtual bool AcceptEvent(Event&) = 0;
+        virtual void AddEvent(const double&) = 0;
+        virtual bool AcceptEvent(double&) = 0;
 
         double Efficiency() const { return static_cast<double>(m_accepted) / static_cast<double>(m_total); }
         size_t Accepted() const { return m_accepted; }
@@ -34,8 +34,8 @@ using UnweighterFactory = Factory<Unweighter, const YAML::Node&>;
 class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
     public:
         NoUnweighter(const YAML::Node&) {}
-        void AddEvent(const Event&) override {}
-        bool AcceptEvent(Event&) override { m_accepted++; m_total++; return true; }
+        void AddEvent(const double&) override {}
+        bool AcceptEvent(double&) override { m_accepted++; m_total++; return true; }
 
         // Required factory methods
         static std::unique_ptr<Unweighter> Construct(const YAML::Node &node) {
@@ -47,8 +47,8 @@ class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
 class PercentileUnweighter : public Unweighter, RegistrableUnweighter<PercentileUnweighter> {
     public:
         PercentileUnweighter(const YAML::Node&);
-        void AddEvent(const Event&) override;
-        bool AcceptEvent(Event&) override;
+        void AddEvent(const double&) override;
+        bool AcceptEvent(double&) override;
 
         // Required factory methods
         static std::unique_ptr<Unweighter> Construct(const YAML::Node&);
