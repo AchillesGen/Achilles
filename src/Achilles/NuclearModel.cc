@@ -523,7 +523,7 @@ std::vector<achilles::ProcessInfo> Coherent::AllowedStates(const ProcessInfo &in
 
 std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<Coherent>(config, form_factor);
+    return std::make_unique<Coherent>(config, form_factor, nuc);
 }
 
 std::string Coherent::PhaseSpace(PID nuc_id) const {
@@ -597,7 +597,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
 
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<QESpectral>(config, form_factor);
+    return std::make_unique<QESpectral>(config, form_factor, nuc);
 }
 
 double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,

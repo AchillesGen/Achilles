@@ -155,7 +155,7 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in,
 
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<FortranModel>(config, form_factor);
+    return std::make_unique<FortranModel>(config, form_factor, nuc);
 }
 
 // Return name of initial state phase space needed

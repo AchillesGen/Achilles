@@ -50,7 +50,7 @@ std::vector<long> achilles::ProcessInfo::Ids() const {
     // Get remaining hadronic ids
     for(const auto &part : m_hadronic.second) ids.push_back(part.AsInt());
 
-    return ids;
+    return ids_;
 }
 
 int achilles::ProcessInfo::LeptonicCharge() const {
