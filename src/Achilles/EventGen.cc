@@ -184,14 +184,15 @@ achilles::EventGen::EventGen(const std::string &configFile,
         integrand.AddChannel(std::move(channel));
     } else {
 #ifndef ENABLE_BSM
-        if(scattering -> Process().Multiplicity() == 4) {
+        if(scattering -> ProcessGroup().Multiplicity() == 4) {
             Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(scattering -> Nuclear(), 2, 2,
                                                                        beam, masses);
             integrand.AddChannel(std::move(channel0));
         } else {
-            const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+            const std::string error = fmt::format("Can only handle 2->2 processes without "
                                                   "BSM being enabled. "
-                                                  "Got a 2->{} process", leptonicProcess.m_ids.size());
+                                                  "Got a 2->{} process",
+                                                  scattering -> ProcessGroup().Multiplicity()-2);
             throw std::runtime_error(error);
         }
 #else
