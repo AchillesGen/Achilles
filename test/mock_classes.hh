@@ -38,6 +38,8 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     MAKE_CONST_MOCK1(Rho, double(const double&), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(GetPotential, std::shared_ptr<achilles::Potential>(), noexcept override);
+    IMPLEMENT_MOCK1(SelectNucleon);
+    IMPLEMENT_CONST_MOCK0(ID);
 };
 
 class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearModel> {
@@ -45,9 +47,7 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK0(Mode);
     IMPLEMENT_CONST_MOCK0(PhaseSpace);
     IMPLEMENT_CONST_MOCK2(CalcCurrents);
-    IMPLEMENT_CONST_MOCK1(AllowedStates);
     IMPLEMENT_CONST_MOCK0(NSpins);
-    IMPLEMENT_CONST_MOCK2(FillNucleus);
 };
 
 class MockSherpaME : public trompeloeil::mock_interface<achilles::SherpaMEs> {

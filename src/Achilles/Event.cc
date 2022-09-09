@@ -76,7 +76,7 @@ void Event::InitializeHadrons(const Process_Info &process) {
     for(const auto &elm : process.m_mom_map) {
         if(!ParticleInfo(elm.second).IsHadron()) continue;
         if(elm.first < nhin) {
-            auto part = m_nuc -> SelectNucleon(elm.second);
+            auto &part = m_nuc -> SelectNucleon(elm.second);
             part.Status() = ParticleStatus::initial_state;
             part.Momentum() = m_mom[elm.first];
             position = part.Position();

@@ -4,8 +4,8 @@
 #include <sstream>
 
 TEST_CASE("ProcessInfo", "[ProcessInfo]") {
-    achilles::Process_Info info("SM", {achilles::PID::electron(), achilles::PID::electron()});
-    info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
+    achilles::Process_Info info({achilles::PID::electron(), achilles::PID::electron()});
+    info.state = {{achilles::PID::proton()}, {achilles::PID::proton()}};
 
     SECTION("Multiplicity is correct") {
         CHECK(info.Multiplicity() == 4);
@@ -25,7 +25,7 @@ TEST_CASE("ProcessInfo", "[ProcessInfo]") {
     }
 
     SECTION("Output correct") {
-        std::string expected = "Process_Info(SM, PIDs = [11, 11], States = [{[2212] -> [2212]}])";
+        std::string expected = "Process_Info(PIDs = [11, 11], State = [[2212] -> [2212]])";
         std::stringstream output;
         output << info;
 
@@ -41,6 +41,5 @@ TEST_CASE("ProcessInfo YAML", "[ProcessInfo]") {
 
     auto info = node.as<achilles::Process_Info>();
 
-    CHECK(info.m_model == "SM");
-    CHECK(info.m_ids == std::vector<achilles::PID>{14, 11, -11});
+    CHECK(info.ids == std::vector<achilles::PID>{14, 11, -11});
 }

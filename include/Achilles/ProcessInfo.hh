@@ -9,8 +9,8 @@
 #pragma GCC diagnostic pop
 
 namespace achilles {
-    using nuclear_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
 
+using nuclear_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
 class Beam;
 
 struct Process_Info {

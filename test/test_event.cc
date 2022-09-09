@@ -17,12 +17,9 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
 
     std::vector<achilles::FourVector> moms = {hadron0, lepton0, lepton1, hadron1};
-    achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
+    achilles::Particles particles = {{achilles::PID::proton(), hadron0, {}}};
 
     REQUIRE_CALL(*nuc, GenerateConfig())
-        .TIMES(1);
-    REQUIRE_CALL(*nuc, NNucleons())
-        .LR_RETURN((12UL))
         .TIMES(1);
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
@@ -37,11 +34,14 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     SECTION("Initialize Particles") {
         REQUIRE_CALL(*nuc, Nucleons())
             .LR_RETURN((particles))
-            .TIMES(5);
+            .TIMES(4);
+        REQUIRE_CALL(*nuc, SelectNucleon(achilles::PID::proton()))
+            .LR_RETURN((particles[0]))
+            .TIMES(1);
 
         achilles::Process_Info info;
-        info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
-        info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
+        info.ids = {achilles::PID::electron(), achilles::PID::electron()};
+        info.state = {{achilles::PID::proton()}, {achilles::PID::proton()}};
         info.m_mom_map = {{0, achilles::PID::proton().AsInt()},
                           {1, achilles::PID::electron().AsInt()},
                           {2, achilles::PID::electron().AsInt()},
@@ -75,11 +75,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     }
 
     SECTION("Weight is correct") {
-        for(auto &me : event.MatrixElementWgts()) {
-            me = 10;
-        }
-
-        event.TotalCrossSection();
+        std::vector<double> xsec(12, 10);
+        event.CalcTotalCrossSection(xsec);
         event.CalcWeight();
         CHECK(event.Weight() == 1200);
         

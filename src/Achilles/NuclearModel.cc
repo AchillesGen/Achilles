@@ -307,7 +307,6 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
             for(auto &subcur : current) {
                 for(auto &val : subcur) {
                     // TODO: Move this to phase space 
-                    // TODO: Move normalization to spectral function definition
                     val *= sqrt(spectral[i]);
                 }
                 // Correct the Ward identity

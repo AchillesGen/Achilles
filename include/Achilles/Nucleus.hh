@@ -103,7 +103,7 @@ class Nucleus {
         
         /// Return the nuclear PID
         ///@return PID: The pid for the given nucleus
-        PID ID() const { return m_pid; }
+        MOCK PID ID() const { return m_pid; }
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus

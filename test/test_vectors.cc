@@ -68,7 +68,6 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
         CHECK(p[0] == 1);
         CHECK(p[1] == 2);
         CHECK(p[2] == 3);
-        CHECK_THROWS_AS(p[3], std::range_error);
     }
 
     SECTION("Four Vector access") {
@@ -77,7 +76,6 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
         CHECK(p[1] == 2);
         CHECK(p[2] == 3);
         CHECK(p[3] == 4);
-        CHECK_THROWS_AS(p[4], std::range_error);
     }
 }
 
