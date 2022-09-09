@@ -152,7 +152,10 @@ void HardScattering::SetProcessGroup(const Process_Group &process_group) {
     spdlog::debug("Adding Process Group: {}", process_group);
     m_group = process_group;
 #ifndef ENABLE_BSM
-    m_current.Initialize(process_group);
+    // TODO: Handle this correctly for different leptonic initial states
+    //       This is probably only an issue when including masses,
+    //       but those should probably be in a different process group
+    m_current.Initialize(process_group.processes[0]);
     SMFormFactor = m_current.GetFormFactor();
 #endif
 }
