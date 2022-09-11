@@ -40,3 +40,21 @@ std::vector<long> achilles::Process_Info::Ids() const {
 
     return ids_;
 }
+
+size_t achilles::Process_Group::Multiplicity() const {
+    return nucleons_in + leptons_in + nucleons_out + leptons_out; 
+}
+
+void achilles::Process_Group::AddProcess(const Process_Info &info) {
+    if(processes.size() == 0) {
+        nucleons_in = info.state.first.size();
+        nucleons_out = info.state.second.size();
+        leptons_out = info.ids.size()-1;
+    } else {
+        if(nucleons_in != info.state.first.size()
+                || nucleons_out != info.state.second.size()
+                || leptons_out != info.ids.size()-1)
+            throw std::runtime_error("Process_Group: Trying to add process inconsistent with group");
+    }
+    processes.push_back(info);
+}

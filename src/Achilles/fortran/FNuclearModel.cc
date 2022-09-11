@@ -34,7 +34,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
 
 std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &event,
                                                                const std::vector<FFInfoMap> &ff) const {
-    std::vector<NuclearModel::Currents> result(m_group.processes.size());
+    std::vector<NuclearModel::Currents> result(m_group.Processes().size());
 
     // Create momentum variables to pass to fortran
     const size_t nin = m_group.nucleons_in;
@@ -46,7 +46,7 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
     // TODO: Make this cleaner, maybe pass FourVectors to fortran and use interface?
     // TODO: Make less dependent on 0th process
     int lepton = 1;
-    auto ids = m_group.processes[0].Ids();
+    auto ids = m_group.Processes()[0].Ids();
     for(size_t i = 0; i < ids.size(); ++i) {
         if(ParticleInfo(ids[i]).IsHadron()) {
             moms.push_back(event.Momentum()[i]);
@@ -63,8 +63,8 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
 
     // Loop over the allowed initial states
     auto ffVals = EvalFormFactor(-q.M2()/1.0_GeV/1.0_GeV);
-    for(size_t i = 0; i < m_group.processes.size(); ++i) {
-        auto process = m_group.processes[i];
+    for(size_t i = 0; i < m_group.Processes().size(); ++i) {
+        auto process = m_group.Process(i);
         // Loop over the pid of q
         for(const auto &ffinfo : ff[i]) {
             // Load the form factors to pass to fortran

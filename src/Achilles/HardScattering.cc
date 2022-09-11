@@ -155,7 +155,7 @@ void HardScattering::SetProcessGroup(const Process_Group &process_group) {
     // TODO: Handle this correctly for different leptonic initial states
     //       This is probably only an issue when including masses,
     //       but those should probably be in a different process group
-    m_current.Initialize(process_group.processes[0]);
+    m_current.Initialize(process_group.Processes()[0]);
     SMFormFactor = m_current.GetFormFactor();
 #endif
 }
@@ -166,7 +166,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<int> pids;
-    for(const auto &elm : m_group.processes[0].m_mom_map) {
+    for(const auto &elm : m_group.Processes()[0].m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
         mom[elm.first] = (p[elm.first]/1_GeV).Momentum();
         spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
@@ -198,10 +198,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     // TODO: Move this to initialization to remove check each time
     static std::vector<NuclearModel::FFInfoMap> ffInfo;
     if(ffInfo.empty()) {
-        ffInfo.resize(m_group.processes.size());
+        ffInfo.resize(m_group.Processes().size());
         for(const auto &current : leptonCurrent) {
             size_t idx = 0;
-            for(const auto &process : m_group.processes) {
+            for(const auto &process : m_group.Processes()) {
 #ifdef ENABLE_BSM
                 // TODO: Handle MEC
                 ffInfo[idx++][current.first] = p_sherpa -> FormFactors(process.state.first[0], current.first);
@@ -237,14 +237,14 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
 
     double spin_avg = 1;
-    if(!ParticleInfo(m_group.processes[0].ids[0]).IsNeutrino()) spin_avg *= 2;
+    if(!ParticleInfo(m_group.Processes()[0].ids[0]).IsNeutrino()) spin_avg *= 2;
     if(m_nuclear -> NSpins() > 1) spin_avg *= 2;
 
     static constexpr double to_nb = 1e6;
-    std::vector<double> xsecs(m_group.processes.size());
-    for(size_t i = 0; i < m_group.processes.size(); ++i) {
+    std::vector<double> xsecs(m_group.Processes().size());
+    for(size_t i = 0; i < m_group.Processes().size(); ++i) {
         // TODO: Handle the case for MEC
-        double mass = ParticleInfo(m_group.processes[i].state.first[0]).Mass();
+        double mass = ParticleInfo(m_group.Processes()[i].state.first[0]).Mass();
         double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
         // TODO: Correct this flux
         // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 
@@ -262,7 +262,7 @@ bool HardScattering::FillEvent(Event& event, const std::vector<double> &xsecs) c
         return false;
 
     auto idx = Random::Instance().SelectIndex(xsecs);
-    auto process = m_group.processes[idx];
+    auto process = m_group.Processes()[idx];
    
     event.InitializeLeptons(process);
     event.InitializeHadrons(process);

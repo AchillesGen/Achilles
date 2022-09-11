@@ -146,7 +146,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
     sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    for(auto &process : proc_group.processes) {
+    for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
+        auto process = proc_group.Process(i);
         if(!sherpa -> InitializeProcess(process)) {
             spdlog::error("Cannot initialize hard process");
             exit(1);
@@ -158,9 +159,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
     if(shargs.size() != 0)
         spdlog::warn("Sherpa arguments are being ignored since Achilles is not compiled with Sherpa support");
     shargs.clear();
-    for(auto &process : proc_group.processes) {
-        for(size_t i = 0; i < process.Ids().size(); ++i) {
-            process.m_mom_map[i] = process.Ids()[i];
+    for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
+        auto process = proc_group.Process(i);
+        for(size_t j = 0; j < process.Ids().size(); ++j) {
+            process.m_mom_map[j] = process.Ids()[j];
         }
     }
 #endif
@@ -177,7 +179,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // Setup channels
     spdlog::debug("Initializing phase space");
     // TODO: Take into account all processes in a process group
-    std::vector<double> masses = scattering -> ProcessGroup().processes[0].Masses();
+    std::vector<double> masses = scattering -> ProcessGroup().Processes()[0].Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
@@ -197,11 +199,11 @@ achilles::EventGen::EventGen(const std::string &configFile,
         }
 #else
         // TODO: Take into account all processes in a process group
-        auto channels = sherpa -> GenerateChannels(scattering -> ProcessGroup().processes[0].Ids());
+        auto channels = sherpa -> GenerateChannels(scattering -> ProcessGroup().Processes()[0].Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
-                                                          scattering -> ProcessGroup().processes[0].ids.size(), 2,
+                                                          scattering -> ProcessGroup().Processes()[0].ids.size(), 2,
                                                           beam, std::move(chan), masses);
             integrand.AddChannel(std::move(channel));
             spdlog::info("Adding Channel{}", count++);
@@ -304,7 +306,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Initialize the particle ids for the processes
     // TODO: Take into account all processes within the group
-    const auto pids = scattering -> ProcessGroup().processes[0].ids;
+    const auto pids = scattering -> ProcessGroup().Processes()[0].ids;
 
     // Setup flux value
     event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);

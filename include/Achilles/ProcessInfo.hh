@@ -40,8 +40,14 @@ struct Process_Info {
 struct Process_Group {
     std::string model{};
     size_t Multiplicity() const;
-    std::vector<Process_Info> processes;
-    size_t nucleons_in, nucleons_out, leptons_out;
+    size_t nucleons_in{}, nucleons_out{}, leptons_out{};
+    static constexpr size_t leptons_in = 1;
+    void AddProcess(const Process_Info &info);
+    const std::vector<Process_Info> &Processes() const { return processes; }
+    Process_Info& Process(size_t idx) { return processes[idx]; }
+    const Process_Info& Process(size_t idx) const { return processes[idx]; }
+    Process_Info& back() { return processes.back(); }
+    Process_Info& front() { return processes.front(); }
 
     template<typename OStream>
     friend OStream& operator<<(OStream &os, const Process_Group &group) {
@@ -50,6 +56,9 @@ struct Process_Group {
                           fmt::join(group.processes.begin(), group.processes.end(), ", "));
         return os;
     }
+
+    private:
+        std::vector<Process_Info> processes;
 };
 
 }
@@ -95,7 +104,7 @@ struct formatter<achilles::Process_Group> {
     template<typename FormatContext>
     auto format(const achilles::Process_Group &group, FormatContext &ctx) {
         return format_to(ctx.out(), "Process_Group(Model = {}, Processes = [{}])",
-                         group.model, fmt::join(group.processes.begin(), group.processes.end(), ", "));
+                         group.model, fmt::join(group.Processes().begin(), group.Processes().end(), ", "));
     }
 };
 

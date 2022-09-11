@@ -75,8 +75,8 @@ achilles::Process_Group NuclearModel::AllowedStates(const Process_Info &info) {
             if(charge != 0)
                 throw std::runtime_error(fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
             
-            m_group.processes.push_back(info);
-            m_group.processes.back().state = {{m_nucleus->ID()}, {m_nucleus->ID()}};
+            m_group.AddProcess(info);
+            m_group.back().state = {{m_nucleus->ID()}, {m_nucleus->ID()}};
             break;
         case NuclearMode::Quasielastic:
             if(std::abs(charge) > 1)
@@ -84,18 +84,18 @@ achilles::Process_Group NuclearModel::AllowedStates(const Process_Info &info) {
             
             switch(charge) {
                 case -1: // Final state has less charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron()}, {PID::proton()}}; 
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron()}, {PID::proton()}}; 
                     break; 
                 case 0: // Same charge in inital and final
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton()}, {PID::proton()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron()}, {PID::neutron()}}; 
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton()}, {PID::proton()}}; 
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron()}, {PID::neutron()}}; 
                     break;
                 case 1: // Final state has more charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton()}, {PID::neutron()}}; 
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton()}, {PID::neutron()}}; 
                     break;
             }
             break;
@@ -106,55 +106,55 @@ achilles::Process_Group NuclearModel::AllowedStates(const Process_Info &info) {
             
             switch(charge) {
                 case -2: // Final state has less charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::neutron()},
                                                       {PID::proton(), PID::proton()}}; 
                     break;
                 case -1: // Final state has less charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::proton()},
                                                       {PID::proton(), PID::proton()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::neutron()},
                                                       {PID::proton(), PID::proton()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::neutron()},
                                                       {PID::proton(), PID::neutron()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::neutron()},
                                                       {PID::neutron(), PID::proton()}}; 
                     break; 
                 case 0: // Same charge in inital and final
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::neutron()},
                                                       {PID::neutron(), PID::neutron()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::neutron()},
                                                       {PID::proton(), PID::neutron()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::proton()},
                                                       {PID::neutron(), PID::proton()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::proton()},
                                                       {PID::proton(), PID::proton()}}; 
                     break;
                 case 1: // Final state has more charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::neutron()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::neutron()},
                                                       {PID::neutron(), PID::neutron()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::neutron(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::neutron(), PID::proton()},
                                                       {PID::neutron(), PID::neutron()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::proton()},
                                                       {PID::neutron(), PID::proton()}}; 
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::proton()},
                                                       {PID::proton(), PID::neutron()}}; 
                     break;
                 case 2: // Final state has more charge than initial
-                    m_group.processes.push_back(info);
-                    m_group.processes.back().state = {{PID::proton(), PID::proton()},
+                    m_group.AddProcess(info);
+                    m_group.back().state = {{PID::proton(), PID::proton()},
                                                       {PID::neutron(), PID::neutron()}}; 
                     break;
             }
@@ -173,10 +173,10 @@ achilles::Process_Group NuclearModel::AllowedStates(const Process_Info &info) {
 size_t NuclearModel::NSpins() const {
     size_t nspins = 1;
     // TODO: Make less dependent on process 0
-    for(const auto &init_state : m_group.processes[0].state.first) {
+    for(const auto &init_state : m_group.Processes()[0].state.first) {
         nspins *= ParticleInfo(init_state).NSpins();
     }
-    for(const auto &final_state : m_group.processes[0].state.second) {
+    for(const auto &final_state : m_group.Processes()[0].state.second) {
         nspins *= ParticleInfo(final_state).NSpins();
     }
     return nspins;
