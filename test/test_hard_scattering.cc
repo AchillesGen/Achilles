@@ -14,7 +14,7 @@ TEST_CASE("CrossSection", "[HardScattering]") {
                       {2, achilles::PID::electron().AsInt()},
                       {3, achilles::PID::proton().AsInt()}};
     achilles::Process_Group group;
-    group.processes.push_back(info);
+    group.AddProcess(info);
     std::vector<achilles::FourVector> momentum = {{100, 0, 0, 100}, {100, 0, 0, -100},
                                                 {100, 50, 0, 50}, {100, -50, 0, -50}};
     std::vector<achilles::NuclearModel::Currents> hCurrent(1);
@@ -63,7 +63,7 @@ TEST_CASE("FillEvent", "[HardScattering]") {
     info.ids = {achilles::PID::electron(), achilles::PID::electron()};
     info.state = {{achilles::PID::proton()}, {achilles::PID::proton()}};
     achilles::Process_Group group;
-    group.processes.push_back(info);
+    group.AddProcess(info);
     std::vector<double> xsecs{10};
     MockEvent event; 
     REQUIRE_CALL(event, InitializeLeptons(info)).TIMES(1);

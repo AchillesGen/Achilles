@@ -55,7 +55,7 @@ Nucleus:
         achilles::Process_Info info;
         info.ids = {achilles::PID::electron(), achilles::PID::electron()};
         auto group = model.AllowedStates(info);
-        CHECK(group.processes[0].state == achilles::nuclear_state{{achilles::PID::carbon()}, {achilles::PID::carbon()}});
+        CHECK(group.Process(0).state == achilles::nuclear_state{{achilles::PID::carbon()}, {achilles::PID::carbon()}});
 
         achilles::Process_Info invalid;
         invalid.ids = {achilles::PID::electron(), achilles::PID::nu_electron()};
@@ -144,22 +144,22 @@ NuclearModel:
             achilles::Process_Info info;
             info.ids = {achilles::PID::electron(), achilles::PID::electron()};
             auto group = model.AllowedStates(info);
-            CHECK(group.processes[0].state == achilles::nuclear_state{{achilles::PID::proton()}, {achilles::PID::proton()}});
-            CHECK(group.processes[1].state == achilles::nuclear_state{{achilles::PID::neutron()}, {achilles::PID::neutron()}});
+            CHECK(group.Process(0).state == achilles::nuclear_state{{achilles::PID::proton()}, {achilles::PID::proton()}});
+            CHECK(group.Process(1).state == achilles::nuclear_state{{achilles::PID::neutron()}, {achilles::PID::neutron()}});
         }
 
         SECTION("-1 Nuclear Charge") {
             achilles::Process_Info info;
             info.ids = {-achilles::PID::nu_electron(), -achilles::PID::electron()};
             auto group = model.AllowedStates(info);
-            CHECK(group.processes[0].state == achilles::nuclear_state{{achilles::PID::proton()}, {achilles::PID::neutron()}});
+            CHECK(group.Process(0).state == achilles::nuclear_state{{achilles::PID::proton()}, {achilles::PID::neutron()}});
         }
 
         SECTION("+1 Nuclear Charge") {
             achilles::Process_Info info;
             info.ids = {achilles::PID::nu_electron(), achilles::PID::electron()};
             auto group = model.AllowedStates(info);
-            CHECK(group.processes[0].state == achilles::nuclear_state{{achilles::PID::neutron()}, {achilles::PID::proton()}});
+            CHECK(group.Process(0).state == achilles::nuclear_state{{achilles::PID::neutron()}, {achilles::PID::proton()}});
         }
 
         SECTION("-2 Nuclear Charge") {
