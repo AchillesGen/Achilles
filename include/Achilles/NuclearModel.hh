@@ -69,7 +69,7 @@ class NuclearModel {
         virtual NuclearMode Mode() const = 0;
         virtual std::string PhaseSpace() const = 0;
         virtual std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const = 0;
-        Process_Group AllowedStates(const Process_Info&);
+        Process_Group AllowedStates(Process_Info);
         virtual size_t NSpins() const;
 
         static std::string Name() { return "Nuclear Model"; }

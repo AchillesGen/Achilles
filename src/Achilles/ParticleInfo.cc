@@ -83,7 +83,7 @@ bool ParticleInfo::IsCHadron() const noexcept {
 
 size_t ParticleInfo::NSpins() const noexcept {
     if(IsFermion()) {
-        if(IntSpin() == 2) return 2;
+        if(IntSpin() == 1) return 2;
         else return 4;
     } else {
         if(IsVector())

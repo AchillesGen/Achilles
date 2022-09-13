@@ -57,10 +57,6 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
         }
     }
 
-    // Ensure the momentum vector is the right size
-    if(moms.size() != nin + nout)
-        throw std::runtime_error("FortranModel: Invalid number of hadrons in event.");
-
     // Loop over the allowed initial states
     auto ffVals = EvalFormFactor(-q.M2()/1.0_GeV/1.0_GeV);
     for(size_t i = 0; i < m_group.Processes().size(); ++i) {
@@ -83,12 +79,6 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
                 pids_out.push_back(pid);
             GetCurrents(pids_in.data(), pids_out.data(), moms.data(), nin, nout, &q,
                         formfactors.data(), nff, cur, NSpins(), 4);
-
-            for(size_t j = 0; j < NSpins(); ++j) {
-                for(size_t k = 0; k < 4; ++k) {
-                    spdlog::info("cur({}, {}) = {}", j, k, cur[j + NSpins()*k]);
-                }
-            }
 
             // Convert from array to Current
             for(size_t j = 0; j < NSpins(); ++j) {

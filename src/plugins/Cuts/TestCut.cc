@@ -11,9 +11,4 @@ bool TestCut::MakeCut(const FourVector&) const {
     return true;
 }
 
-void __attribute__((destructor)) CleanUp() {
-    spdlog::debug("Destructor called!");
-    CutFactory<OneParticleCut>::Deregister("Test");
-}
-
 }

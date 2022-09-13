@@ -147,7 +147,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
-        auto process = proc_group.Process(i);
+        auto &process = proc_group.Process(i);
         if(!sherpa -> InitializeProcess(process)) {
             spdlog::error("Cannot initialize hard process");
             exit(1);
@@ -160,7 +160,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
         spdlog::warn("Sherpa arguments are being ignored since Achilles is not compiled with Sherpa support");
     shargs.clear();
     for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
-        auto process = proc_group.Process(i);
+        auto &process = proc_group.Process(i);
         for(size_t j = 0; j < process.Ids().size(); ++j) {
             process.m_mom_map[j] = process.Ids()[j];
         }

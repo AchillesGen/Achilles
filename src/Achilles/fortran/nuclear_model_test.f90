@@ -51,7 +51,7 @@ contains
     function test_mode(self)
         class(test), intent(inout) :: self
         integer :: test_mode
-        test_mode = -1
+        test_mode = 1
     end function
 
     function test_ps(self)
