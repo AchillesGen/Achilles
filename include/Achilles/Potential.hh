@@ -57,20 +57,20 @@ class Potential {
 
         virtual ~Potential() = default;
         virtual std::string GetReference() const = 0;
-        virtual PotentialVals operator()(const double&, const double&) const = 0;
+        virtual PotentialVals operator()(const Nucleus*, double, double) const = 0;
 
-        PotentialVals derivative_p(double p, double r, double h=step) const {
-            auto fp = [&](double x){ return this -> operator()(x, r); };
+        PotentialVals derivative_p(const Nucleus *nuc, double p, double r, double h=step) const {
+            auto fp = [&](double x){ return this -> operator()(nuc, x, r); };
             return stencil5(fp, p, h);
         }
 
-        PotentialVals derivative2_p(double p, double r, double h=step) const {
-            auto fp = [&](double x){ return this -> operator()(x, r); };
+        PotentialVals derivative2_p(const Nucleus *nuc, double p, double r, double h=step) const {
+            auto fp = [&](double x){ return this -> operator()(nuc, x, r); };
             return stencil5second(fp, p, h);
         }
 
-        PotentialVals derivativen_p(size_t n, double p, double r, double h=step) const {
-            auto fp = [&](double x) { return this -> operator()(x, r); };
+        PotentialVals derivativen_p(const Nucleus *nuc, size_t n, double p, double r, double h=step) const {
+            auto fp = [&](double x) { return this -> operator()(nuc, x, r); };
             PotentialVals deriv{};
             for(size_t i = 0; i <= n; ++i) {
                 auto vals = fp(p + static_cast<double>(i)*h);
@@ -90,55 +90,55 @@ class Potential {
             return deriv;
         }
 
-        PotentialVals derivative_r(double p, double r, double h=step) const {
-            auto fr = [&](double x){ return this -> operator()(p, x); };
+        PotentialVals derivative_r(const Nucleus *nuc, double p, double r, double h=step) const {
+            auto fr = [&](double x){ return this -> operator()(nuc, p, x); };
             return stencil5(fr, r, h);
         }
 
-        PotentialVals derivative2_r(double p, double r, double h=step) const {
-            auto fr = [&](double x){ return this -> operator()(p, x); };
+        PotentialVals derivative2_r(const Nucleus *nuc, double p, double r, double h=step) const {
+            auto fr = [&](double x){ return this -> operator()(nuc, p, x); };
             return stencil5second(fr, r, h);
         }
 
-        virtual double Hamiltonian(double p, double q) const {
-            auto vals = this -> operator()(p, q);
+        virtual double Hamiltonian(const Nucleus *nuc, double p, double q) const {
+            auto vals = this -> operator()(nuc, p, q);
             auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
             return sqrt(p*p + pow(mass_eff, 2)).real() + vals.rvector;
         }
 
-        double BindingMomentum(double r) const {
+        double BindingMomentum(const Nucleus *nuc, double r) const {
             auto func = [&](double p) {
-                return Hamiltonian(p, r) - Constant::mN;
+                return Hamiltonian(nuc, p, r) - Constant::mN;
             };
             Brent brent(func);
             return brent.CalcRoot(0, 1000);
         }
 
-	    double EnergySpectrum(double r, double p) const {
-            return Hamiltonian(p, r) - Constant::mN;
+	    double EnergySpectrum(const Nucleus *nuc, double r, double p) const {
+            return Hamiltonian(nuc, p, r) - Constant::mN;
         }
 
-        bool IsCaptured(double r, double mom) const {
-            return Hamiltonian(mom, r) <= Constant::mN;
+        bool IsCaptured(const Nucleus *nuc, double r, double mom) const {
+            return Hamiltonian(nuc, mom, r) <= Constant::mN;
         }
 
         virtual bool IsRelativistic() const { return false; }
 
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
-        double Mstar(double p, double m, double r) const {
-            return p/(p/m + derivative_p(p, r).rvector);
+        double Mstar(const Nucleus *nuc, double p, double m, double r) const {
+            return p/(p/m + derivative_p(nuc, p, r).rvector);
         }
 
         // NOTE: Calculates in the non-relativistic limit
         // TODO: Modify to include scalar potential
-        double InMediumCorrectionNonRel(FourVector p1, FourVector p2, double m, double r1, double r2=-1, double r3=-1) const {
+        double InMediumCorrectionNonRel(const Nucleus *nuc, FourVector p1, FourVector p2, double m, double r1, double r2=-1, double r3=-1) const {
             if(r2 < 0) r2 = r1;
             if(r3 < 0) r3 = r1;
-            double m1Star = Mstar(p1.P(), m, r1);
-            double m2Star = Mstar(p2.P(), m, r2);
+            double m1Star = Mstar(nuc, p1.P(), m, r1);
+            double m2Star = Mstar(nuc, p2.P(), m, r2);
             double p12 = sqrt((p1.P2() + p2.P2())/2);
-            double m12Star = Mstar(p12, m, r3);
+            double m12Star = Mstar(nuc, p12, m, r3);
 
             return (p1 - p2).P()/m/(p1/m1Star - p2/m2Star).P()*m12Star/m;
         }
@@ -153,8 +153,8 @@ class Potential {
 };
 
 template<typename Derived>
-using RegistrablePotential = Registrable<Potential, Derived, std::shared_ptr<Nucleus>&, const YAML::Node&>;
-using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus>&, const YAML::Node&>;
+using RegistrablePotential = Registrable<Potential, Derived, const YAML::Node&>;
+using PotentialFactory = Factory<Potential, const YAML::Node&>;
 
 /*class SquareWellPotential : public Potential, RegistrablePotential<SquareWellPotential> {
     public:
@@ -172,9 +172,8 @@ using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus>&, const YAM
 
 class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential> {
     public:
-        WiringaPotential(std::shared_ptr<Nucleus> nucleus,
-                         const double &rho0=0.16)
-                         : m_nucleus{std::move(nucleus)}, m_rho0{rho0}, m_ref{"article", "PhysRevC.38.2967"} {
+        WiringaPotential(const double &rho0=0.16)
+                : m_rho0{rho0}, m_ref{"article", "PhysRevC.38.2967"} {
             m_ref.AddField("title", "{Single-particle potential in dense nuclear matter}");
             m_ref.AddField("author", "{Wiringa, R. B.}");
             m_ref.AddField("journal", "{Phys. Rev. C}");
@@ -186,32 +185,30 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
             m_ref.AddField("month", "{Dec}");
             m_ref.AddField("publisher", "{American Physical Society}");
             m_ref.AddField("doi", "{10.1103/PhysRevC.38.2967}");
-            m_ref.AddField("url", "{https://link.aps.org/doi/10.1103/PhysRevC.38.2967");
+            m_ref.AddField("url", "{https://link.aps.org/doi/10.1103/PhysRevC.38.2967}");
         }
 
         static std::string Name() { return "Wiringa"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(const YAML::Node&);
 
-        double Hamiltonian(double p, double q) const override {
-            auto vals = this -> operator()(p, q);
+        double Hamiltonian(const Nucleus *nuc, double p, double q) const override {
+            auto vals = this -> operator()(nuc, p, q);
             return Constant::mN + p*p/(2*Constant::mN) + vals.rvector;
         }
 
         std::string GetReference() const override { return m_ref.GetReference(); }
         double Rho0() const { return m_rho0; }
 
-        PotentialVals operator()(const double &plab, const double &radius) const override;
+        PotentialVals operator()(const Nucleus*, double, double) const override;
 
     private:
-        std::shared_ptr<Nucleus> m_nucleus;
         double m_rho0;
         Reference m_ref;
 };
 
 class CooperPotential : public Potential, RegistrablePotential<CooperPotential> {
     public:
-        CooperPotential(std::shared_ptr<Nucleus> nucleus)
-                : m_nucleus{std::move(nucleus)}, m_ref{"article", "PhysRevC.80.034605"} {
+        CooperPotential() : m_ref{"article", "PhysRevC.80.034605"} {
             m_ref.AddField("title", "{Global Dirac optical potential from helium to lead}");
             m_ref.AddField("author", "{Cooper, E. D. and Hama, S. and Clark, B. C.}");
             m_ref.AddField("journal", "{Phys. Rev. C}");
@@ -235,19 +232,16 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
         }
 
         static std::string Name() { return "Cooper"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(const YAML::Node&);
 
         std::string GetReference() const override { return m_ref.GetReference(); }
         bool IsRelativistic() const override { return true; }
 
-        PotentialVals operator()(const double &plab, const double &radius) const override {
-            return evaluate(plab, radius);
+        PotentialVals operator()(const Nucleus *nuc, double plab, double radius) const override {
+            return evaluate(nuc, plab, radius);
         }
 
-        PotentialVals evaluate(const double &plab, const double &radius) const;
-
-    protected:
-        std::shared_ptr<Nucleus> m_nucleus;
+        PotentialVals evaluate(const Nucleus *nuc, double, double) const;
 
     private:
         Reference m_ref;
@@ -323,16 +317,15 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
 
 class SchroedingerPotential: public CooperPotential, RegistrablePotential<SchroedingerPotential> {
     public:
-        SchroedingerPotential(std::shared_ptr<Nucleus> nucleus, size_t mode) 
-            : CooperPotential(nucleus), m_mode{mode} {}
+        SchroedingerPotential(size_t mode) : m_mode{mode} {}
 
         static std::string Name() { return "Schroedinger"; }
-        static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
+        static std::unique_ptr<Potential> Construct(const YAML::Node&);
 
-        PotentialVals operator()(const double &plab, const double &radius) const override;
+        PotentialVals operator()(const Nucleus*, double, double) const override;
 
-        double Hamiltonian(double p, double q) const override {
-            auto vals = this -> operator()(p, q);
+        double Hamiltonian(const Nucleus *nuc, double p, double q) const override {
+            auto vals = this -> operator()(nuc, p, q);
             return Constant::mN + p*p/(2*Constant::mN) + vals.rvector;
         }
 

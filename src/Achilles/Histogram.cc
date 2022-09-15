@@ -71,7 +71,7 @@ double Histogram::Integral(size_t lower, size_t upper) const {
     if(upper > binvals.size())
         throw std::runtime_error("Invalid range for histogram integration");
 
-    for(size_t i = lower; i <= upper; ++i) {
+    for(size_t i = lower; i < upper; ++i) {
         const auto mean = binvals[i];
         result += mean*(binedges[i+1]-binedges[i]);
     }

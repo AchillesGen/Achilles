@@ -102,7 +102,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         auto p2 = particles[idxSame].Momentum();
         double fact = 1.0;
         if(m_medium == InMedium::NonRelativistic)
-            fact = localNucleus -> GetPotential() -> InMediumCorrectionNonRel(p1, p2, mass, position);
+            fact = localNucleus -> InMediumCorrectionNonRel(p1, p2, mass, position);
 
         xsecSame = GetXSec(kickedPart, particles[idxSame])*fact;
     }
@@ -121,7 +121,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         auto p2 = particles[idxSame].Momentum();
         double fact = 1.0;
         if(m_medium == InMedium::NonRelativistic)
-            fact = localNucleus -> GetPotential() -> InMediumCorrectionNonRel(p1, p2, mass, position);
+            fact = localNucleus -> InMediumCorrectionNonRel(p1, p2, mass, position);
 
         xsecDiff = GetXSec(kickedPart, particles[idxDiff])*fact;
     }
@@ -173,8 +173,8 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
     std::vector<size_t> notCaptured{};
     for(auto idx : kickedIdxs) {
         if(m_potential_prop
-           && localNucleus -> GetPotential() -> Hamiltonian(particles[idx].Momentum().P(),
-                                                            particles[idx].Position().P()) < Constant::mN) {
+           && localNucleus -> Hamiltonian(particles[idx].Momentum().P(),
+                                          particles[idx].Position().P()) < Constant::mN) {
             particles[idx].Status() = ParticleStatus::captured;
         } else {
             AddIntegrator(idx, particles[idx]);
@@ -225,15 +225,15 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
 
             if(hit) {
                 if(m_potential_prop
-                   && localNucleus -> GetPotential() -> Hamiltonian(kickNuc -> Momentum().P(),
-                                                                    kickNuc -> Position().P()) < Constant::mN) {
+                   && localNucleus -> Hamiltonian(kickNuc -> Momentum().P(),
+                                                  kickNuc -> Position().P()) < Constant::mN) {
                     kickNuc -> Status() = ParticleStatus::captured;
                 } else {
                     newKicked.push_back(idx);
                 }
                 if(m_potential_prop
-                   && localNucleus -> GetPotential() -> Hamiltonian(hitNuc -> Momentum().P(),
-                                                                    hitNuc -> Position().P()) < Constant::mN) {
+                   && localNucleus -> Hamiltonian(hitNuc -> Momentum().P(),
+                                                  hitNuc -> Position().P()) < Constant::mN) {
                     hitNuc -> Status() = ParticleStatus::captured;
                 } else {
                     newKicked.push_back(hitIdx);
@@ -268,18 +268,20 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
 
 void Cascade::AddIntegrator(size_t idx, const Particle &part) {
     static constexpr double omega = 20;
-    auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p, std::shared_ptr<Potential> potential) {
-        auto vals = potential -> operator()(p.P(), q.P());
-        auto dpot_dp = potential -> derivative_p(p.P(), q.P());
+    auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p) {
+        auto potential = localNucleus -> GetPotential();
+        auto vals = potential -> operator()(localNucleus.get(), p.P(), q.P());
+        auto dpot_dp = potential -> derivative_p(localNucleus.get(), p.P(), q.P());
 
         auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
         double numerator = (vals.rscalar + achilles::Constant::mN)*dpot_dp.rscalar + p.P();
         double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
         return numerator/denominator * p/p.P() + dpot_dp.rvector * p/p.P();
     };
-    auto dHamiltonian_dp = [&](const ThreeVector &q, const ThreeVector &p, std::shared_ptr<Potential> potential) {
-        auto vals = potential -> operator()(p.P(), q.P());
-        auto dpot_dp = potential -> derivative_p(p.P(), q.P());
+    auto dHamiltonian_dp = [&](const ThreeVector &q, const ThreeVector &p) {
+        auto potential = localNucleus -> GetPotential();
+        auto vals = potential -> operator()(localNucleus.get(), p.P(), q.P());
+        auto dpot_dp = potential -> derivative_p(localNucleus.get(), p.P(), q.P());
 
         auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
         double numerator = (vals.rscalar + achilles::Constant::mN)*dpot_dp.rscalar + p.P();
@@ -287,7 +289,6 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
         return numerator/denominator * p/p.P() + dpot_dp.rvector * p/p.P();
     };
     integrators[idx] = SymplecticIntegrator(part.Position(), part.Momentum().Vec3(),
-                                            localNucleus -> GetPotential(),
                                             dHamiltonian_dr, dHamiltonian_dp,
                                             omega);
 }
@@ -322,8 +323,8 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
     std::vector<size_t> notCaptured{};
     for(auto idx : kickedIdxs) {
         if(m_potential_prop
-           && localNucleus -> GetPotential() -> Hamiltonian(particles[idx].Momentum().P(),
-                                                            particles[idx].Position().P()) < Constant::mN) {
+           && localNucleus -> Hamiltonian(particles[idx].Momentum().P(),
+                                          particles[idx].Position().P()) < Constant::mN) {
             particles[idx].Status() = ParticleStatus::captured;
         } else {
             AddIntegrator(idx, particles[idx]);
@@ -366,15 +367,15 @@ void Cascade::NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxStep
 
             if(hit) {
                 if(m_potential_prop
-                   && localNucleus -> GetPotential() -> Hamiltonian(kickNuc -> Momentum().P(),
-                                                                    kickNuc -> Position().P()) < Constant::mN) {
+                   && localNucleus -> Hamiltonian(kickNuc -> Momentum().P(),
+                                                  kickNuc -> Position().P()) < Constant::mN) {
                     kickNuc -> Status() = ParticleStatus::captured;
                 } else {
                     newKicked.push_back(idx);
                 }
                 if(m_potential_prop
-                   && localNucleus -> GetPotential() -> Hamiltonian(hitNuc -> Momentum().P(),
-                                                                    hitNuc -> Position().P()) < Constant::mN) {
+                   && localNucleus -> Hamiltonian(hitNuc -> Momentum().P(),
+                                                  hitNuc -> Position().P()) < Constant::mN) {
                     hitNuc -> Status() = ParticleStatus::captured;
                 } else {
                     newKicked.push_back(hitIdx);
@@ -471,8 +472,8 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
     // Initialize symplectic integrator
     AddIntegrator(idx, particles[idx]);
     if(m_potential_prop
-       && localNucleus -> GetPotential() -> Hamiltonian(kickNuc->Momentum().P(),
-                                                        kickNuc->Position().P()) < Constant::mN) {
+       && localNucleus -> Hamiltonian(kickNuc->Momentum().P(),
+                                      kickNuc->Position().P()) < Constant::mN) {
         kickNuc -> Status() = ParticleStatus::captured;
         nucleus -> Nucleons() = particles;
         Reset();
@@ -631,7 +632,7 @@ double Cascade::GetXSec(const Particle& particle1, const Particle& particle2) co
     double position3 = (pos_p1 + pos_p2).Magnitude();
     double fact = 1.0;
     if(m_medium == InMedium::NonRelativistic)
-          fact = localNucleus -> GetPotential() -> InMediumCorrectionNonRel(p1, p2, mass, position1, position2, position3);
+          fact = localNucleus -> InMediumCorrectionNonRel(p1, p2, mass, position1, position2, position3);
 
     return m_interactions -> CrossSection(particle1, particle2) * fact;
 }

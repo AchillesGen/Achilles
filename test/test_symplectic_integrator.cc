@@ -63,16 +63,16 @@ double dPotential_dr(double p, double r, double rho0) {
 }
 
 double Hamiltonian(const achilles::ThreeVector &q, const achilles::ThreeVector &p,
-                   std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential -> operator()(p.P(), q.P());
+                   const achilles::Nucleus *nuc, achilles::Potential* potential) {
+    auto vals = potential -> operator()(nuc, p.P(), q.P());
     auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
     return sqrt(p.P2() + pow(mass_eff, 2)).real() + vals.rvector;
 }
 
 achilles::ThreeVector dHamiltonian_dp(const achilles::ThreeVector &q, const achilles::ThreeVector &p,
-                                    std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential -> operator()(p.P(), q.P());
-    auto dpot_dp = potential -> derivative_p(p.P(), q.P());
+                                      const achilles::Nucleus *nuc, achilles::Potential* potential) {
+    auto vals = potential -> operator()(nuc, p.P(), q.P());
+    auto dpot_dp = potential -> derivative_p(nuc, p.P(), q.P());
 
     auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
     double numerator = (vals.rscalar + achilles::Constant::mN)*dpot_dp.rscalar + p.P();
@@ -81,9 +81,9 @@ achilles::ThreeVector dHamiltonian_dp(const achilles::ThreeVector &q, const achi
 }
 
 achilles::ThreeVector dHamiltonian_dr(const achilles::ThreeVector &q, const achilles::ThreeVector &p,
-                                    std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential -> operator()(p.P(), q.P());
-    auto dpot_dr = potential -> derivative_r(p.P(), q.P());
+                                      const achilles::Nucleus *nuc, achilles::Potential* potential) {
+    auto vals = potential -> operator()(nuc, p.P(), q.P());
+    auto dpot_dr = potential -> derivative_r(nuc, p.P(), q.P());
 
     auto mass_eff = achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1)*vals.iscalar;
     double numerator = (vals.rscalar + achilles::Constant::mN)*dpot_dr.rscalar;
@@ -92,11 +92,12 @@ achilles::ThreeVector dHamiltonian_dr(const achilles::ThreeVector &q, const achi
 }
 
 template<typename T>
-std::shared_ptr<T> MakePotential(std::shared_ptr<achilles::Nucleus> nuc) {
-    return std::make_shared<T>(nuc);
+std::unique_ptr<T> MakePotential() {
+    return std::make_unique<T>();
 }
 
 TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPotential, achilles::WiringaPotential) {
+    using achilles::ThreeVector;
     constexpr double r0 = -1;
     constexpr double pmag = 275;
     achilles::ThreeVector q{r0, 0, 0};
@@ -111,27 +112,36 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         .LR_RETURN((AA));
     ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(0)))
         .LR_RETURN((Rho(_1)));
-    auto potential = MakePotential<TestType>(nucleus);
+    auto potential_ptr = MakePotential<TestType>();
+    auto potential = potential_ptr.get();
 
-    achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr, dHamiltonian_dp, omega);
+    auto dHamiltonian_dr_func = [&](const ThreeVector &p_, const ThreeVector &q_) -> ThreeVector {
+        return dHamiltonian_dr(p_, q_, nucleus.get(), potential);
+    };
+
+    auto dHamiltonian_dp_func = [&](const ThreeVector &p_, const ThreeVector &q_) -> ThreeVector {
+        return dHamiltonian_dp(p_, q_, nucleus.get(), potential);
+    };
+
+    achilles::SymplecticIntegrator si(q, p, dHamiltonian_dr_func, dHamiltonian_dp_func, omega);
 
     SECTION("Order 2") {
         std::ofstream out("symplectic2_" + potential -> Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
+        const double E0 = Hamiltonian(q, p, nucleus.get(), potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, nucleus.get(), potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<2>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        const double Ef2 = Hamiltonian(si.State().x, si.State().y, potential);
+        const double Ef = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+        const double Ef2 = Hamiltonian(si.State().x, si.State().y, nucleus.get(), potential);
         spdlog::info("Final Hamiltonian Value: {}, {}, {}, {}",
-                Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0, Ef2, std::abs(Ef2-E0)/E0);
+                Hamiltonian(si.Q(), si.P(), nucleus.get(), potential), std::abs(Ef-E0)/E0, Ef2, std::abs(Ef2-E0)/E0);
         spdlog::info("Final Position: {}, {}, {}", si.Q(), si.State().x, (si.Q() - si.State().x).P()/si.Q().P());
         spdlog::info("Final Momentum: {}, {}, {}", si.P(), si.State().y, (si.P() - si.State().y).P()/si.P().P());
         out.close();
@@ -139,19 +149,19 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
 
     SECTION("Order 4") {
         std::ofstream out("symplectic4_" + potential -> Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
+        const double E0 = Hamiltonian(q, p, nucleus.get(), potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, nucleus.get(), potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<4>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0);
+        const double Ef = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), nucleus.get(), potential), std::abs(Ef-E0)/E0);
         spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
         spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
         out.close();
@@ -159,19 +169,19 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
 
     SECTION("Order 6") {
         std::ofstream out("symplectic6_" + potential -> Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
+        const double E0 = Hamiltonian(q, p, nucleus.get(), potential);
+        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, nucleus.get(), potential));
         out << "X,Y,Z,Px,Py,Pz,E\n";
         out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<6>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef-E0)/E0);
+        const double Ef = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), nucleus.get(), potential), std::abs(Ef-E0)/E0);
         spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
         spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
         out.close();

@@ -25,9 +25,9 @@ void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
     YAML::Node particleYAML = YAML::LoadFile(datafile);
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
-        auto entry = std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());
-        particleDB.emplace(entry -> id, entry);
-        nameToPID.emplace(entry -> idname, entry -> id);
+        auto entry = particle["Particle"].as<ParticleInfoEntry>();
+        nameToPID.emplace(entry.idname, entry.id);
+        particleDB.emplace(entry.id, entry);
     }
     PrintDatabase();
 }
@@ -36,7 +36,7 @@ void achilles::ParticleInfo::PrintDatabase() {
     fmt::print("{:>10s} {:<20s} {:<20s} {:^10s}    {:^10s}\n",
                "PID", "Name", "Anti-name", "Mass (MeV)", "Width (MeV)");
     for(const auto &part : particleDB) {
-        std::cout <<  *(part.second) << "\n";
+        std::cout <<  part.second << "\n";
     }
 }
 
@@ -99,9 +99,9 @@ double ParticleInfo::GenerateLifeTime() const {
 }
 
 bool ParticleInfo::IsStable() const noexcept {
-    if(info -> stable == 0) return false;
-    if(info -> stable == 1) return true;
-    if(info -> stable == 2 && !IsAnti()) return true;
-    if(info -> stable == 3 && IsAnti()) return true;
+    if(info.stable == 0) return false;
+    if(info.stable == 1) return true;
+    if(info.stable == 2 && !IsAnti()) return true;
+    if(info.stable == 3 && IsAnti()) return true;
     return false;
 }

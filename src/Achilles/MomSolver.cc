@@ -4,6 +4,7 @@
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/Nucleus.hh"
 
 #include "spdlog/spdlog.h"
 
@@ -38,17 +39,18 @@ std::pair<double, double> achilles::FindMomentumRange(const achilles::FourVector
 }
 
 achilles::FourVector achilles::SolveDeltaWithPotential(const achilles::FourVector &q,
+                                                       Nucleus *nuc,
                                                        const Potential& potential,
                                                        double m3, double m4,
                                                        double p3Mag, double phi,
                                                        double radius3, double radius4) {
-    auto potential3 = potential(p3Mag, radius3);
+    auto potential3 = potential(nuc, p3Mag, radius3);
     const double energy = sqrt(p3Mag*p3Mag + pow(m3 + potential3.rscalar, 2)) + potential3.rvector;
     auto _func = [&](double cosTheta) {
         double sinTheta = sqrt(1-cosTheta*cosTheta);
         FourVector p3 = {energy, p3Mag*sinTheta*cos(phi), p3Mag*sinTheta*sin(phi), p3Mag*cosTheta};
         auto p4 = q - p3;
-        auto potential4 = potential(p4.P(), radius4);
+        auto potential4 = potential(nuc, p4.P(), radius4);
         p4.E() = sqrt(p4.P2() + pow(m4 + potential4.rscalar, 2)) + potential4.rvector;
         return q.E() - p3.E() - p4.E();
     };

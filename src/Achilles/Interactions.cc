@@ -87,8 +87,8 @@ double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noe
 }
 
 achilles::Interactions::MomentumPair Interactions::FinalizeMomentum(const Particle &particle1,
-                                                                  const Particle &particle2,
-                                                                  std::shared_ptr<Potential>) const {
+                                                                    const Particle &particle2,
+                                                                    Potential*) const {
 
 //    if(pot -> IsRelativistic())
 //        throw std::runtime_error(fmt::format("{} is not compatible with a relativistic potential.",

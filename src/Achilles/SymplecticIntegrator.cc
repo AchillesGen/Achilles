@@ -7,13 +7,13 @@ void SI::Initialize(const ThreeVector &q, const ThreeVector &p) {
 }
 
 void SI::HamiltonianA(double time_step) {
-    m_state.p -= time_step*m_dHdr(m_state.q, m_state.y, m_pot);
-    m_state.x += time_step*m_dHdp(m_state.q, m_state.y, m_pot);
+    m_state.p -= time_step*m_dHdr(m_state.q, m_state.y);
+    m_state.x += time_step*m_dHdp(m_state.q, m_state.y);
 }
 
 void SI::HamiltonianB(double time_step) {
-    m_state.q += time_step*m_dHdp(m_state.x, m_state.p, m_pot);
-    m_state.y -= time_step*m_dHdr(m_state.x, m_state.p, m_pot);
+    m_state.q += time_step*m_dHdp(m_state.x, m_state.p);
+    m_state.y -= time_step*m_dHdr(m_state.x, m_state.p);
 }
 
 void SI::Coupling(double time_step) {

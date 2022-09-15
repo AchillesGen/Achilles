@@ -87,14 +87,13 @@ PotentialVals achilles::SquareWellPotential::operator()(const double&, const dou
 }
 */
 
-std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr<Nucleus>& nuc,
-                                                                 const YAML::Node &node) {
+std::unique_ptr<Potential> achilles::WiringaPotential::Construct(const YAML::Node &node) {
     double r0 = node["r0"].as<double>();
-    return std::make_unique<WiringaPotential>(nuc, r0);
+    return std::make_unique<WiringaPotential>(r0);
 }
 
-PotentialVals achilles::WiringaPotential::operator()(const double &plab, const double &radius) const {
-    const double rho = m_nucleus -> Rho(radius);
+PotentialVals achilles::WiringaPotential::operator()(const Nucleus *nuc, double plab, double radius) const {
+    const double rho = nuc -> Rho(radius);
     const double rho_ratio = rho/m_rho0;
     const double alpha = 15.52*rho_ratio + 24.93*pow(rho_ratio, 2);
     const double beta = -116*rho_ratio;
@@ -105,14 +104,13 @@ PotentialVals achilles::WiringaPotential::operator()(const double &plab, const d
     return results;
 }
 
-std::unique_ptr<Potential> CooperPotential::Construct(std::shared_ptr<Nucleus>& nuc,
-                                                      const YAML::Node&) {
-    return std::make_unique<CooperPotential>(nuc);
+std::unique_ptr<Potential> CooperPotential::Construct(const YAML::Node&) {
+    return std::make_unique<CooperPotential>();
 }
 
-PotentialVals CooperPotential::evaluate(const double &plab, const double &radius) const {
+PotentialVals CooperPotential::evaluate(const Nucleus *nuc, double plab, double radius) const {
     const auto tplab = sqrt(plab*plab + pow(achilles::Constant::mN, 2)) - achilles::Constant::mN;
-    const auto aa = static_cast<double>(m_nucleus -> NNucleons());
+    const auto aa = static_cast<double>(nuc -> NNucleons());
     const auto wt = aa * achilles::Constant::AMU;
     const auto ee = tplab;
     const auto acb = cbrt(aa);
@@ -187,14 +185,13 @@ PotentialVals CooperPotential::evaluate(const double &plab, const double &radius
     return {rva1, rsa1, rva2, rsa2};
 }
 
-std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucleus>& nuc,
-                                                            const YAML::Node &node) {
+std::unique_ptr<Potential> SchroedingerPotential::Construct(const YAML::Node &node) {
     size_t mode = node["Mode"].as<size_t>();
-    return std::make_unique<SchroedingerPotential>(nuc, mode);
+    return std::make_unique<SchroedingerPotential>(mode);
 }
 
-achilles::PotentialVals SchroedingerPotential::operator()(const double &plab, const double &radius) const {
-    auto potential = stencil5all([&](double r){ return evaluate(plab, r); }, radius, 0.01);
+achilles::PotentialVals SchroedingerPotential::operator()(const Nucleus *nuc, double plab, double radius) const {
+    auto potential = stencil5all([&](double r){ return evaluate(nuc, plab, r); }, radius, 0.01);
     const double u1 = potential[0].rscalar;
     const double w1 = potential[0].iscalar;
     const double u2 = potential[0].rvector;
@@ -209,7 +206,7 @@ achilles::PotentialVals SchroedingerPotential::operator()(const double &plab, co
     const double wdd2 = potential[2].ivector;
 
     const auto tplab = sqrt(plab*plab + pow(achilles::Constant::mN, 2)) - achilles::Constant::mN;
-    const auto aa = static_cast<double>(m_nucleus -> NNucleons());
+    const auto aa = static_cast<double>(nuc -> NNucleons());
     const auto wt = aa * achilles::Constant::AMU;
     const auto ee = tplab;
     const auto el = ee+wp;

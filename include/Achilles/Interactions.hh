@@ -63,7 +63,7 @@ class Interactions {
         using MomentumPair = std::pair<FourVector, FourVector>;
         virtual MomentumPair FinalizeMomentum(const Particle&,
                                               const Particle&,
-                                              std::shared_ptr<Potential>) const;
+                                              Potential*) const;
         virtual std::string Name() const = 0;
     protected:
         double CrossSectionLab(bool, const double&) const noexcept;

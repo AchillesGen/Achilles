@@ -44,19 +44,18 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_shared<MockPotential>();
+        auto potential = std::make_unique<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(), hadrons[0].Position().P()))
+        REQUIRE_CALL(*potential, Hamiltonian(nucleus.get(), hadrons[0].Momentum().P(),
+                                             hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
 
+        nucleus -> SetPotential(std::move(potential));
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
@@ -67,14 +66,11 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     SECTION("Large Formation Zone") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_shared<MockPotential>();
+        auto potential = std::make_unique<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
@@ -104,9 +100,6 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
@@ -126,9 +119,6 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
@@ -149,9 +139,6 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
@@ -182,19 +169,17 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_shared<MockPotential>();
+        auto potential = std::make_unique<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(), hadrons[0].Position().P()))
+        REQUIRE_CALL(*potential, Hamiltonian(nucleus.get(), hadrons[0].Momentum().P(), hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
 
+        nucleus -> SetPotential(std::move(potential));
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(nucleus);
@@ -207,14 +192,11 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     SECTION("Large Formation Zone") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_shared<MockPotential>();
+        auto potential = std::make_unique<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(2)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
@@ -284,9 +266,6 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     //     REQUIRE_CALL(*nucleus, Nucleons())
     //         .TIMES(2)
     //         .LR_RETURN((hadrons));
-    //     REQUIRE_CALL(*nucleus, GetPotential())
-    //         .TIMES(1)
-    //         .RETURN(nullptr);
 
     //     REQUIRE_CALL(*nucleus, Radius())
     //         .TIMES(AT_LEAST(1))
@@ -334,9 +313,6 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons())
             .TIMES(1)
             .LR_RETURN((hadrons));
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(1);
@@ -351,9 +327,6 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Radius())
             .TIMES(AT_LEAST(1))
             .RETURN(radius);
-        REQUIRE_CALL(*nucleus, GetPotential())
-            .TIMES(1)
-            .RETURN(nullptr);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);

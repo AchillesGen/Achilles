@@ -150,7 +150,20 @@ class Nucleus {
 
         /// Return the phenomenological potential
 	    ///@return std::shared_ptr<Potential>: The potential of the nucleus
-        MOCK std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
+        MOCK Potential* GetPotential() const noexcept { return potential.get(); }
+
+        /// Calculate in-medium corrections based on potential
+        ///@return double: the correction factor
+        double InMediumCorrectionNonRel(const FourVector &p1, const FourVector &p2, double mass,
+                                        double r1, double r2=-1, double r3=-1) const {
+            return potential -> InMediumCorrectionNonRel(this, p1, p2, mass, r1, r2, r3);
+        }
+
+        /// Calculate the Hamiltonian based on the potential
+        ///@return double: the value for the Hamiltonian
+        double Hamiltonian(double p, double x) const {
+            return potential -> Hamiltonian(this, p, x);
+        }
 
         /// Return the radius cutoff of the nucleus used for the cascade
         ///@return double: The radius in femtometers
@@ -250,7 +263,7 @@ class Nucleus {
         PID m_pid;
 
         FourVector m_recoil{};
-        std::shared_ptr<Potential> potential;
+        std::unique_ptr<Potential> potential;
 };
 
 }

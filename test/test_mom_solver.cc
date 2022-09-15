@@ -59,10 +59,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
             .LR_RETURN((rho0))
             .TIMES(AT_LEAST(4));
 
-        achilles::WiringaPotential potential(nucleus, rho0);
+        achilles::WiringaPotential potential(rho0);
 
-        auto potential1 = potential(p1.P(), r1);
-        auto potential2 = potential(p2.P(), r2);
+        auto potential1 = potential(nucleus.get(), p1.P(), r1);
+        auto potential2 = potential(nucleus.get(), p2.P(), r2);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1+p2;
@@ -81,7 +81,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
                 double p3Mag = dp3*m_dist(m_rand) + range.first;
 
                 // Solve for p3 and rotate back and calculate p4
-                p3 = achilles::SolveDeltaWithPotential(q, potential, achilles::Constant::mN, achilles::Constant::mN,
+                p3 = achilles::SolveDeltaWithPotential(q, nucleus.get(), potential,
+                                                       achilles::Constant::mN, achilles::Constant::mN,
                                                        p3Mag, phi, r1, r2);
                 break;
             } catch (const std::domain_error &e) {
@@ -105,10 +106,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
             .LR_RETURN((AA))
             .TIMES(AT_LEAST(4));
 
-        achilles::CooperPotential potential(nucleus);
+        achilles::CooperPotential potential;
 
-        auto potential1 = potential(p1.P(), 1);
-        auto potential2 = potential(p2.P(), 1);
+        auto potential1 = potential(nucleus.get(), p1.P(), 1);
+        auto potential2 = potential(nucleus.get(), p2.P(), 1);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1+p2;
@@ -127,8 +128,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
                 double p3Mag = dp3*m_dist(m_rand) + range.first;
 
                 // Solve for p3 and rotate back and calculate p4
-                p3 = achilles::SolveDeltaWithPotential(q, potential, achilles::Constant::mN, achilles::Constant::mN,
-                                                       p3Mag, phi, 1, 1);
+                p3 = achilles::SolveDeltaWithPotential(q, nucleus.get(), potential, achilles::Constant::mN,
+                                                       achilles::Constant::mN, p3Mag, phi, 1, 1);
                 break;
             } catch (const std::domain_error &e) {
                 continue;

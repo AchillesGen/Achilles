@@ -109,8 +109,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // Set potential for the nucleus
     auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
     auto potential = achilles::PotentialFactory::Initialize(potential_name,
-                                                          nucleus,
-                                                          config["Nucleus"]["Potential"]);
+                                                            config["Nucleus"]["Potential"]);
     nucleus -> SetPotential(std::move(potential));
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());

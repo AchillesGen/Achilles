@@ -7,10 +7,11 @@
 namespace achilles {
     class FourVector;
     class Potential;
+    class Nucleus;
 
     FourVector SolveDelta(const FourVector&, const FourVector&, double, double, double, double);
     std::pair<double, double> FindMomentumRange(const FourVector&, double rangeExtend = 1.05);
-    FourVector SolveDeltaWithPotential(const FourVector&, const Potential&,
+    FourVector SolveDeltaWithPotential(const FourVector&, Nucleus*, const Potential&,
                                        double, double, double, double, double, double);
 }
 
