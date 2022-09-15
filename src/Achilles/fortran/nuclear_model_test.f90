@@ -59,6 +59,16 @@ contains
         spectral_n = spectral_function(string)
 
         test_init = .true.
+
+        open(unit=read_unit, file=trim(filename), iostat=ios)
+        if( ios /= 0 ) stop "Error opening file"
+
+        read(read_unit, '(A)', iostat=ios) string
+        spectral_p = spectral_function(string)
+
+        read(read_unit, '(A)', iostat=ios) string
+        spectral_n = spectral_function(string)
+
     end function
 
     function build_test()
