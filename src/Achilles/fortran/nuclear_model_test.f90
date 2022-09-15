@@ -2,9 +2,12 @@ module nuclear_model_test
     use iso_c_binding
     use nuclear_model_interface
     use nuclear_model
+    use libspectral_function
     implicit none
     private
     public :: test, register
+
+    type(spectral_function) :: spectral_p, spectral_n
 
     type, extends(model) :: test
         contains
@@ -34,9 +37,22 @@ contains
     function test_init(self, filename)
         use libutilities
         class(test), intent(inout) :: self
+        integer :: ios, i
         character(len=*), intent(in) :: filename
+        character(len=200) :: string
+        integer, parameter :: read_unit = 99
         logical :: test_init
         test_init = .true.
+
+        open(unit=read_unit, file=trim(filename), iostat=ios)
+        if( ios /= 0 ) stop "Error opening file"
+
+        read(read_unit, '(A)', iostat=ios) string
+        spectral_p = spectral_function(string)
+
+        read(read_unit, '(A)', iostat=ios) string
+        spectral_n = spectral_function(string)
+
     end function
 
     function build_test()

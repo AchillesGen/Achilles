@@ -15,6 +15,7 @@ add_library(fortran_interface SHARED
     nuclear_model_factory.f90
     nuclear_model_interface.f90
     process_info_mod.f90
+    spectral_function_mod.f90
     OneBody/pke_read_xsec.f90
     OneBody/contract.f90
     OneBody/currents.f90
@@ -37,6 +38,7 @@ add_library(fortran_interface SHARED
     FNucleus.cc
     FProcessInfo.cc
     FNuclearModel.cc
+    FSpectralFunction.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
                                         PUBLIC physics nuclear_models)
