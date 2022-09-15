@@ -61,7 +61,10 @@ contains
         test_init = .true.
 
         open(unit=read_unit, file=trim(filename), iostat=ios)
-        if( ios /= 0 ) stop "Error opening file"
+        if( ios /= 0 ) then
+            test_init = .false.
+            return
+        endif
 
         read(read_unit, '(A)', iostat=ios) string
         spectral_p = spectral_function(string)
@@ -69,6 +72,7 @@ contains
         read(read_unit, '(A)', iostat=ios) string
         spectral_n = spectral_function(string)
 
+        test_init = .true.
     end function
 
     function build_test()
