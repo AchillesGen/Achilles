@@ -56,7 +56,7 @@ achilles::FourVector achilles::SolveDeltaWithPotential(const achilles::FourVecto
         FourVector p3 = {energy, p3Mag * sinTheta * cos(phi), p3Mag * sinTheta * sin(phi),
                          p3Mag * cosTheta};
         auto p4 = q - p3;
-        auto potential4 = potential(p4.P(), radius4);
+        auto potential4 = potential(nuc, p4.P(), radius4);
         p4.E() = sqrt(p4.P2() + pow(m4 + potential4.rscalar, 2)) + potential4.rvector;
         return q.E() - p3.E() - p4.E();
     };

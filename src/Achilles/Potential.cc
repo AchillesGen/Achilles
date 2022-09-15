@@ -106,7 +106,7 @@ pow(m_nucleus->FermiMomentum(r), 2))
 std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr<Nucleus> &nuc,
                                                                  const YAML::Node &node) {
     double r0 = node["r0"].as<double>();
-    return std::make_unique<WiringaPotential>(nuc, r0);
+    return std::make_unique<WiringaPotential>(r0);
 }
 
 PotentialVals achilles::WiringaPotential::operator()(double plab, double radius) const {
@@ -221,7 +221,7 @@ PotentialVals CooperPotential::evaluate(const double &plab, const double &radius
 std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucleus> &nuc,
                                                             const YAML::Node &node) {
     size_t mode = node["Mode"].as<size_t>();
-    return std::make_unique<SchroedingerPotential>(nuc, mode);
+    return std::make_unique<SchroedingerPotential>(mode);
 }
 
 achilles::PotentialVals SchroedingerPotential::operator()(double plab, double radius) const {
