@@ -13,18 +13,9 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ComplexFmt.hh"
 #include "Achilles/Units.hh"
-
-// TODO: Turn this into a factory to reduce the number of includes
-#include "Achilles/PhaseSpaceBuilder.hh"
-#include "Achilles/BeamMapper.hh"
-#include "Achilles/HadronicMapper.hh"
-#include "Achilles/FinalStateMapper.hh"
-#include "Achilles/PhaseSpaceMapper.hh"
-#include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Channels.hh"
 
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/Channels1.hh"
-#include "plugins/Sherpa/Channels3.hh"
 #include "plugins/Sherpa/SherpaMEs.hh"
 #endif
 
@@ -33,57 +24,6 @@
 #endif
 
 #include "yaml-cpp/yaml.h"
-
-achilles::Channel<achilles::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<achilles::Beam> beam) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = std::make_unique<achilles::QuasielasticTestMapper>(node, beam);
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, {});
-    return channel;
-}
-
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                 std::shared_ptr<achilles::Beam> beam,
-                                                 const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .FinalState(T::Name(), masses).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-#ifdef ENABLE_BSM
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannelSherpa(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                       std::shared_ptr<achilles::Beam> beam,
-                                                       const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    auto massesGeV = masses;
-    for(auto &mass : massesGeV) mass /= (1000*1000);
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .SherpaFinalState(T::Name(), massesGeV).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                    std::shared_ptr<achilles::Beam> beam,
-                                                    std::unique_ptr<PHASIC::Channels> final_state,
-                                                    const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .GenFinalState(std::move(final_state)).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-#endif
 
 achilles::EventGen::EventGen(const std::string &configFile,
                              std::vector<std::string> shargs) {

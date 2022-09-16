@@ -23,6 +23,7 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Utilities.hh"
 #include "plugins/Sherpa/Channels.hh"
+#include "plugins/Sherpa/AchillesReader.hh"
 #include <bitset>
 
 using namespace SHERPA;

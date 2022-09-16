@@ -10,6 +10,16 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Random.hh"
 
+#ifdef ENABLE_BSM
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#include "METOOLS/Main/Spin_Structure.H"
+#pragma GCC diagnostic pop
+#endif
+
 // Aliases for most common types
 using achilles::Particles;
 using achilles::HardScattering;
@@ -216,7 +226,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     const size_t nhad_spins = m_nuclear -> NSpins();
 
 #ifdef ENABLE_BSM
-    std::vector<Spin_Amplitudes> spin_amps;
+    std::vector<METOOLS::Spin_Amplitudes> spin_amps;
     p_sherpa -> FillAmplitudes(spin_amps);
     for(auto &amp : spin_amps) 
         for(auto &elm : amp) elm=0;

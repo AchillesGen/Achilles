@@ -57,6 +57,7 @@ add_library(physics SHARED
     Interactions.cc
     InteractionsFactory.cc
     SpectralFunction.cc
+    Channels.cc
 )
 target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 set(physics_libs "")

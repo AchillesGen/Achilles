@@ -3,18 +3,6 @@
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/ParticleInfo.hh"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wsign-conversion"
-#pragma GCC diagnostic ignored "-Wfloat-conversion"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Woverloaded-virtual"
-#pragma GCC diagnostic ignored "-Wignored-qualifiers"
-#pragma GCC diagnostic ignored "-Wuseless-cast"
-#include "COMIX/Main/Single_Process.H"
-#include "plugins/Sherpa/AchillesReader.hh"
-#pragma GCC diagnostic pop
 
 #include <complex>
 #include <array>
@@ -27,11 +15,14 @@ namespace PHASIC {
     class Channels;
 }
 namespace SHERPA { class Sherpa; }
+namespace COMIX { class Single_Process; }
+namespace METOOLS { class Spin_Amplitudes; }
 
 namespace achilles {
 
 struct Process_Info;
 struct FormFactorInfo;
+class Achilles_Reader;
 
 class SherpaMEs {
 private:
@@ -64,7 +55,7 @@ public:
   (const std::vector<int> &fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2);
-  void FillAmplitudes(std::vector<Spin_Amplitudes> &amps);
+  void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 
   MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;
   double Coupling(const std::string&) const;
