@@ -220,22 +220,24 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     p_sherpa -> FillAmplitudes(spin_amps);
     for(auto &amp : spin_amps) 
         for(auto &elm : amp) elm=0;
+#else 
+    std::vector<std::vector<std::complex<double>>> spin_amps;
+    spin_amps.resize(1);
+    spin_amps[0].resize(nlep_spins*nhad_spins);
 #endif
 
-    for(size_t j = 0; j < nhad_spins; ++j) {
-        for(size_t i = 0; i  < nlep_spins; ++i) {
+    for(size_t i = 0; i  < nlep_spins; ++i) {
+        const size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
+        for(size_t j = 0; j < nhad_spins; ++j) {
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {
                 for(const auto &lcurrent : leptonCurrent) {
                     auto boson = lcurrent.first;
-                    const size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()) {
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
-#ifdef ENABLE_BSM
                             spin_amps[0][idx] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
-#endif
                         }
                     }
                 }
