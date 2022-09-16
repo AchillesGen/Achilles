@@ -9,6 +9,7 @@
 #include "MODEL/Main/Model_Base.H"
 #include "MODEL/Main/Single_Vertex.H"
 #include "METOOLS/Explicit/Color_Calculator.H"
+#include "METOOLS/Main/Spin_Structure.H"
 #include "ATOOLS/Org/Library_Loader.H"
 #include "ATOOLS/Org/MyStrStream.H"
 #include "ATOOLS/Org/My_File.H"
@@ -65,7 +66,7 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   p_sherpa = new Sherpa(1);
   std::vector<char*> argv;
   addParameter(argv,"Sherpa");
-  addParameter(argv,"EVENTS=0");
+  addParameter(argv,"EVENTS=1");
   addParameter(argv,"INIT_ONLY=6");
   int level(SherpaVerbosity(spdlog::get("achilles")->level()));
   addParameter(argv,"OUTPUT="+ToString(level));
@@ -90,6 +91,11 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   // TODO: Make this something that is passed in
   addParameter(argv,"PRIORITY[1000060120]=99");
   addParameter(argv,"MASSIVE[15]=1");
+  addParameter(argv,"STABLE[15]=0");
+  addParameter(argv,"DECAY_TAU_HARD=1");
+  addParameter(argv,"HARD_DECAYS=1");
+  addParameter(argv,"SHOWER_HANDLER=None");
+  addParameter(argv,"FRAGMENTATION=Off");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
@@ -126,6 +132,7 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
     if (Flavour(kf_jet).Includes(fl)) fl=Flavour(kf_jet);
     pi.m_fi.m_ps.emplace_back(fl,"","");
   }
+  pi.m_hdf5 = "Achilles";
   msg_Info()<<"SherpaMEs::getProcess: Initializing process ";
   Process_Base* proc = p_sherpa->GetInitHandler()->
     GetMatrixElementHandler()->Generators()->InitializeProcess(pi,false);
@@ -300,7 +307,7 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const
 achilles::SherpaMEs::LeptonCurrents SherpaMEs::Calc
 (const std::vector<int> &_fl,
  const std::vector<std::array<double, 4> > &p,
- const double &mu2) const
+ const double &mu2) 
 {
   Cluster_Amplitude *ampl(Cluster_Amplitude::New());
   for (size_t i(0);i<_fl.size();++i) {
@@ -319,13 +326,19 @@ achilles::SherpaMEs::LeptonCurrents SherpaMEs::Calc
   std::string name(Process_Base::GenerateName(ampl));
   if (pm->find(name)==pm->end())
     THROW(fatal_error,"Process not found: "+name);
-  Process_Base *proc(pm->find(name)->second);
+  Process_Base *proc = pm->find(name)->second;
+  auto reader = dynamic_cast<Achilles_Reader*>(proc -> EventReader());
+  reader -> SetAmpl(ampl);
   // return differntial xs for now
   double res(proc->Differential(*ampl,1|2|4));
-  ampl->Delete();
 
-  auto *singleProcess = proc->Get<COMIX::Single_Process>();
+  singleProcess = proc->Get<COMIX::Single_Process>();
   return singleProcess -> LeptonicCurrent();
+}
+
+void achilles::SherpaMEs::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {
+  std::vector<std::vector<Complex>> cols;
+  singleProcess -> FillAmplitudes(amps, cols);
 }
 
 std::vector<FormFactorInfo> achilles::SherpaMEs::FormFactors(int hpid, int vpid) const {

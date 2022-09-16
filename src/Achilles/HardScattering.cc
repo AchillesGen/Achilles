@@ -214,16 +214,28 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     std::vector<double> amps2(hadronCurrent.size());
     const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
-    for(size_t i = 0; i  < nlep_spins; ++i) {
-        for(size_t j = 0; j < nhad_spins; ++j) {
+
+#ifdef ENABLE_BSM
+    std::vector<Spin_Amplitudes> spin_amps;
+    p_sherpa -> FillAmplitudes(spin_amps);
+    for(auto &amp : spin_amps) 
+        for(auto &elm : amp) elm=0;
+#endif
+
+    for(size_t j = 0; j < nhad_spins; ++j) {
+        for(size_t i = 0; i  < nlep_spins; ++i) {
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {
                 for(const auto &lcurrent : leptonCurrent) {
                     auto boson = lcurrent.first;
+                    const size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()) {
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+#ifdef ENABLE_BSM
+                            spin_amps[0][idx] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+#endif
                         }
                     }
                 }
@@ -233,6 +245,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 amps2[k] += std::norm(amps[k]);
         }
     }
+
+#ifdef ENABLE_BSM
+    p_sherpa -> FillAmplitudes(spin_amps);
+#endif
 
     std::map<std::pair<PID, PID>, std::vector<std::array<std::complex<double>, 16>>> hadronTensor;
 
@@ -271,45 +287,47 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 
     // Calculate PL and PT
     FourVector kin = event.Momentum()[1];
-    ThreeVector kout = event.Momentum()[1].Vec3();
-    ThreeVector khat = event.Momentum()[1].Vec3().Unit();
+    ThreeVector kout = event.Momentum()[3].Vec3();
+    // ThreeVector khat = event.Momentum()[1].Vec3().Unit();
     ThreeVector kphat = event.Momentum()[3].Vec3().Unit();
     double ml = event.Momentum()[3].M();
     FourVector hl{event.Momentum()[3].E()*kphat/ml, kout.Magnitude()/ml};
-    FourVector ht = {kphat.Cross(kphat.Cross(khat)), 0};
-    double coupl2 = pow(Constant::ee/(Constant::sw*sqrt(2)), 2);
+    FourVector ht = {kin.Vec3().Cross(kout).Cross(kout).Unit(), 0};
+    double coupl2 = 2*pow(Constant::ee/(Constant::sw*sqrt(2)), 2);
     double prefact = coupl2/pow(Constant::MW, 4);
     std::complex<double> ci{0, 1};
     std::vector<double> PL(hadronCurrent.size()), PT(hadronCurrent.size());
     double sign;
+    double anti = m_leptonicProcess.m_ids[0] < PID::undefined() ? 1 : -1;
+    auto boson_pair = (*hadronTensor.begin()).first;
     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
         std::complex<double> num_L = 0;
         std::complex<double> num_T = 0;
         for(size_t mu = 0; mu < 4; ++mu) {
             int metric = mu == 0 ? 1 : -1;
-            num_L -= metric*(kin*hl)*hadronTensor[{24,24}][k][4*mu+mu];
-            num_T -= metric*(kin*ht)*hadronTensor[{24,24}][k][4*mu+mu];
+            num_L -= metric*(kin*hl)*hadronTensor[boson_pair][k][4*mu+mu];
+            num_T -= metric*(kin*ht)*hadronTensor[boson_pair][k][4*mu+mu];
             for(size_t nu = 0; nu < 4; ++nu) {
                 if((mu == 0 && nu != 0) || (mu != 0 && nu == 0)) sign = -1;
                 else sign = 1;
-                num_L += sign*(hl[mu]*kin[nu]+kin[mu]*hl[nu])*hadronTensor[{24,24}][k][4*mu+nu];
-                num_T += sign*(ht[mu]*kin[nu]+kin[mu]*ht[nu])*hadronTensor[{24,24}][k][4*mu+nu];
+                num_L += sign*(hl[mu]*kin[nu]+kin[mu]*hl[nu])*hadronTensor[boson_pair][k][4*mu+nu];
+                num_T += sign*(ht[mu]*kin[nu]+kin[mu]*ht[nu])*hadronTensor[boson_pair][k][4*mu+nu];
                 for(size_t alpha = 0; alpha < 4; ++alpha) {
                     for(size_t beta = 0; beta < 4; ++beta) {
                         int i{static_cast<int>(mu)};
                         int j{static_cast<int>(nu)};
                         int l{static_cast<int>(alpha)};
                         int m{static_cast<int>(beta)};
-                        num_L += ci*(LeviCivita(i, j, l, m)*hl[alpha]*kin[beta]*hadronTensor[{24,24}][k][4*mu+nu]);
-                        num_T -= ci*(LeviCivita(i, j, l, m)*ht[alpha]*kin[beta]*hadronTensor[{24,24}][k][4*mu+nu]);
+                        num_L -= anti*ci*(LeviCivita(i, j, l, m)*hl[alpha]*kin[beta]*hadronTensor[boson_pair][k][4*mu+nu]);
+                        num_T -= anti*ci*(LeviCivita(i, j, l, m)*ht[alpha]*kin[beta]*hadronTensor[boson_pair][k][4*mu+nu]);
                     }
                 }
             }
         }
-        PL[k] = (num_L*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
-        PT[k] = (num_T*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
-        spdlog::trace("k = {}, num_L = {}, num_T = {}, xsec = {}",
-                      k, PL[k], PT[k], xsecs[k]);
+        PL[k] = anti*(num_L*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
+        PT[k] = anti*(num_T*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
+        spdlog::trace("k = {}, num_L = {}, num_T = {}, xsec = {}, factor = {}",
+                      k, PL[k], PT[k], xsecs[k], Constant::HBARC2/spin_avg/flux*to_nb);
     }
     event.Polarization(0) = PL[0] + PL[1];
     event.Polarization(1) = PT[0] + PT[1];

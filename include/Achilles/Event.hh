@@ -73,6 +73,7 @@ class Event {
                 && m_leptons == other.m_leptons;
         }
         double& Polarization(size_t idx) { return m_polarization[idx]; }
+        const double& Polarization(size_t idx) const { return m_polarization[idx]; }
 
     private:
         std::vector<double> EventProbs() const;

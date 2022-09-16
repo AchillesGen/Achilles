@@ -387,10 +387,12 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
+            event.Polarization(0) *= wgt*6;
+            event.Polarization(1) *= wgt*6;
             writer -> Write(event);
-            polarization0 += event.Polarization(0)*wgt*6;
-            polarization1 += event.Polarization(1)*wgt*6;
-            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0)*wgt*6 << "," << event.Polarization(1)*wgt*6 << "," << event.Weight() << std::endl;
+            polarization0 += event.Polarization(0);
+            polarization1 += event.Polarization(1);
+            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0) << "," << event.Polarization(1) << "," << event.Weight() << std::endl;
             // File: events_enu_{Enu}.txt
             // Event: q0 = E_nu - E_tau
             // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()

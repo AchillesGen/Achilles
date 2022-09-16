@@ -3,6 +3,18 @@
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/ParticleInfo.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+#pragma GCC diagnostic ignored "-Wignored-qualifiers"
+#pragma GCC diagnostic ignored "-Wuseless-cast"
+#include "COMIX/Main/Single_Process.H"
+#include "plugins/Sherpa/AchillesReader.hh"
+#pragma GCC diagnostic pop
 
 #include <complex>
 #include <array>
@@ -30,6 +42,9 @@ private:
   int SherpaVerbosity(int loglevel) const;
 
   PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude* const ampl);
+  COMIX::Single_Process *singleProcess;
+
+  achilles::Achilles_Reader *reader;
 
 public:
 
@@ -48,7 +63,8 @@ public:
   MOCK LeptonCurrents Calc
   (const std::vector<int> &fl,
    const std::vector<std::array<double, 4> > &p,
-   const double &mu2) const;
+   const double &mu2);
+  void FillAmplitudes(std::vector<Spin_Amplitudes> &amps);
 
   MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;
   double Coupling(const std::string&) const;
