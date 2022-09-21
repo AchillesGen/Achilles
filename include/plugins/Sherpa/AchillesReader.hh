@@ -18,7 +18,10 @@ namespace achilles {
   public:
 
     Achilles_Reader(const Event_Reader_Key &key):
-      Event_Reader(key), p_ampl(NULL) {}
+      Event_Reader(key), p_ampl(NULL) 
+    {
+      m_compute = false;
+    }
 
     ~Achilles_Reader() {}
 
@@ -33,19 +36,3 @@ namespace achilles {
   };// end of class Achilles_Reader
   
 }// end of namespace achilles
-
-using namespace achilles;
-
-DECLARE_GETTER(Achilles_Reader,"Achilles",Event_Reader,Event_Reader_Key);
-
-Event_Reader *ATOOLS::Getter<Event_Reader,Event_Reader_Key,Achilles_Reader>::
-operator()(const Event_Reader_Key &args) const
-{
-  return new Achilles_Reader(args);
-}
-
-void ATOOLS::Getter<Event_Reader,Event_Reader_Key,Achilles_Reader>::
-PrintInfo(std::ostream &str,const size_t width) const
-{
-  str<<"Achilles reader";
-}

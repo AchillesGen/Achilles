@@ -12,7 +12,6 @@
 #ifdef ENABLE_BSM
 #include "plugins/Sherpa/Channels1.hh"
 #include "plugins/Sherpa/Channels3.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
 #endif
 
 namespace achilles {

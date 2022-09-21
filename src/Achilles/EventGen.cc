@@ -16,7 +16,7 @@
 #include "Achilles/Channels.hh"
 
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #endif
 
 #ifdef ENABLE_HEPMC3
@@ -74,19 +74,24 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
-    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    p_sherpa = new achilles::SherpaInterface();
     std::string model = config["Process"]["Model"].as<std::string>();
     std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    int qed = 0;
+    if(config["Process"]["QEDShower"])
+        if(config["Process"]["QEDShower"].as<bool>())
+            qed = 1;
+    shargs.push_back(fmt::format("ME_QED={}", qed));
     if(model == "SM") model = "SM_Nuc";
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    sherpa -> Initialize(shargs);
+    p_sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!sherpa -> InitializeProcess(leptonicProcess)) {
+    if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
-    leptonicProcess.m_mom_map = sherpa -> MomentumMap(leptonicProcess.Ids());
+    leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
     shargs.size();
@@ -101,7 +106,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     scattering = std::make_shared<HardScattering>();
     scattering -> SetProcess(leptonicProcess);
 #ifdef ENABLE_BSM
-    scattering -> SetSherpa(sherpa);
+    scattering -> SetSherpa(p_sherpa);
 #endif
     scattering -> SetNuclear(std::move(nuclear_model));
 
@@ -125,7 +130,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
             throw std::runtime_error(error);
         }
 #else
-        auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
+        auto channels = p_sherpa -> GenerateChannels(scattering -> Process().Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
@@ -299,6 +304,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         }
     }
 
+    // TODO: Move to after unweighting?
     // Run the cascade if needed
     if(runCascade) {
         spdlog::debug("Runnning cascade");
@@ -313,6 +319,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Write out events
     if(outputEvents) {
+#ifdef ENABLE_BSM
+        // Running Sherpa interface if requested
+        // Only needed when generating events and not optimizing the multichannel
+        // TODO: Move to after unweighting?
+        if(runDecays && event.Weight() > 0) {
+            p_sherpa -> GenerateEvent(event);
+        }
+#endif
+
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)
             Rotate(event);
