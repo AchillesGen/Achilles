@@ -237,7 +237,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 #endif
 
     for(size_t i = 0; i  < nlep_spins; ++i) {
-        const size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
+        // TODO: Fix this to be correct!!!
+        size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
+        idx = idx == 2 ? 10 : 2;
+        // idx = 2
         for(size_t j = 0; j < nhad_spins; ++j) {
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
@@ -259,6 +262,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
 
 #ifdef ENABLE_BSM
+    for(const auto &amp : spin_amps) spdlog::trace("\n{}", amp);
     p_sherpa -> FillAmplitudes(spin_amps);
 #endif
 

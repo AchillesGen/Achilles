@@ -88,6 +88,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     const std::vector<achilles::Particle> leptons = event.Leptons();
     // TODO: Get nucleus mass from the nucleus object
     const HepMC3::FourVector initMass{0, 0, 0, 12000};
+    // TODO: Fix initial nucleus in the event object
     GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, event.CurrentNucleus()->ID(), 4);
     HepMC3::FourVector hardVertexPos;
     GenParticlePtr nucleon;
@@ -120,7 +121,9 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     for(size_t i = 1; i < leptons.size(); ++i) {
         const auto currPart = leptons[i];
         const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
-        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
+        int status = 1;
+        if(currPart.Status() == ParticleStatus::decayed) status=2;
+        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), status);
         v2->add_particle_out(p);
         recoilMom -= currPart.Momentum();
     }
