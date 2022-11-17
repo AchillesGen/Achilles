@@ -76,6 +76,12 @@ inline std::string ToString(EventHistoryNode::StatusCode code) {
     return "UNKOWN";
 }
 
+class HistoryVisitor {
+    public:
+        virtual ~HistoryVisitor() = default;
+        virtual void visit(EventHistoryNode*) = 0;
+};
+
 class EventHistory {
     public:
         using StatusCode = EventHistoryNode::StatusCode;
@@ -103,6 +109,8 @@ class EventHistory {
         EventHistoryNode* Primary() const { return GetUniqueNode(StatusCode::primary); }
         EventHistoryNode* Beam() const { return GetUniqueNode(StatusCode::beam); }
         EventHistoryNode* Target() const { return GetUniqueNode(StatusCode::target); }
+
+        void WalkHistory(HistoryVisitor&) const;
  
     private:
         EventHistoryNode* FindNode(bool, const Particle&) const;
