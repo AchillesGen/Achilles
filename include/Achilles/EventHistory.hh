@@ -19,8 +19,7 @@ class EventHistoryNode {
             primary = 0,
             beam = 1,
             target = 2,
-            external = 3,
-            decay = 4,
+            decay = 3,
         };
 
         EventHistoryNode(size_t idx, StatusCode status = StatusCode::cascade) : m_idx{idx}, m_status{status} {}
@@ -68,8 +67,6 @@ inline std::string ToString(EventHistoryNode::StatusCode code) {
             return "beam";
         case StatusCode::target:
             return "target";
-        case StatusCode::external:
-            return "external";
         case StatusCode::decay:
             return "decay";
     }

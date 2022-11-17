@@ -1,5 +1,7 @@
 #include "Achilles/EventHistory.hh"
 
+#include <queue>
+
 using achilles::EventHistoryNode;
 using achilles::EventHistory;
 
@@ -81,4 +83,35 @@ EventHistoryNode* EventHistory::FindNode(bool incoming, const Particle &part) co
         }
     }
     return nullptr;
+}
+
+void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {
+    // Start at primary interaction
+    auto *primary = Primary();
+
+    std::vector<size_t> visited;
+    size_t current = primary -> Index();
+    std::queue<size_t> to_visit;
+
+    to_visit.push(current);
+
+    while(!to_visit.empty()) {
+        current = to_visit.front();
+        to_visit.pop();
+
+        // Ensure it hasn't been visited
+        if(std::find(visited.begin(), visited.end(), current) != visited.end())
+            continue;
+
+        auto *node = Node(current);
+        visitor.visit(node);
+
+        for(const auto &child : Children(node))
+            to_visit.push(child -> Index());
+
+        for(const auto &parent : Parents(node))
+            to_visit.push(parent -> Index());
+
+        visited.push_back(current);
+    }
 }

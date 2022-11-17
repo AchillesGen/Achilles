@@ -292,5 +292,23 @@ class Particle {
 };
 
 }
+namespace fmt {
+
+template<>
+struct formatter<achilles::Particle> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext &ctx) {
+        return ctx.begin();
+    }
+
+    template<typename FormatContext>
+    auto format(const achilles::Particle &particle, FormatContext &ctx) {
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]",
+                         particle.ID(), particle.Status(), particle.Momentum(), particle.Position());
+    }
+};
+
+}
+
 
 #endif // end of include guard: PARTICLE_HH
