@@ -548,6 +548,10 @@ void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs,
     }
 }
 
+achilles::EventHistory achilles::SherpaInterface::ToAchilles(ATOOLS::Blob *blob) {
+    return {};
+}
+
 using namespace achilles;
 
 DECLARE_GETTER(Achilles_Reader, "Achilles", Event_Reader, Event_Reader_Key);

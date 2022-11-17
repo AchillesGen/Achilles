@@ -10,6 +10,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/PDFBase.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PDFBase.hh"
 
 namespace achilles {
 
@@ -122,6 +123,18 @@ class FlatFlux : public FluxType {
 
   private:
     double m_min_energy, m_max_energy;
+};
+
+class PDFBeam : public FluxType {
+    public:
+        PDFBeam(const YAML::Node&);
+        int NVariables() const override { return 1; }
+        FourVector Flux(const std::vector<double>&) const override;
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        std::string Type() const override { return "PDFBeam"; }
+
+    private:
+        std::unique_ptr<PDFBase> p_pdf;
 };
 
 class Beam {
