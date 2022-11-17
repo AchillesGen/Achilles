@@ -20,7 +20,7 @@ TEST_CASE("CrossSection", "[HardScattering]") {
     std::vector<int> pids = {11, 2212, 11, 2212};
     std::vector<std::array<double, 4>> mom = {{0.1, 0, 0, 0.1}, {0.1, 0, 0, -0.1},
                                               {0.1, 0.05, 0, 0.05}, {0.1, -0.05, 0, -0.05}};
-    achilles::SherpaMEs::LeptonCurrents lCurrent;
+    achilles::SherpaInterface::LeptonCurrents lCurrent;
 
     lCurrent[23] = {{10, 10, 10, 10}};
     hCurrent[0][23] = {{10, 10, 10, 10}};
@@ -42,7 +42,7 @@ TEST_CASE("CrossSection", "[HardScattering]") {
         .TIMES(2)
         .LR_RETURN((nspins));
 
-    auto sherpa = new MockSherpaME;
+    auto sherpa = new MockSherpaInterface;
     REQUIRE_CALL(*sherpa, Calc(pids, mom, 100))
         .TIMES(1)
         .LR_RETURN((lCurrent));

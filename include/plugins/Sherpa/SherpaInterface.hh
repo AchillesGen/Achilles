@@ -3,11 +3,17 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wuseless-cast"
+#include "ATOOLS/Phys/Blob.H"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
 #include "Achilles/Achilles.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/EventHistory.hh"
 
 #include <complex>
 #include <array>
@@ -42,6 +48,8 @@ private:
   int SherpaVerbosity(int loglevel) const;
   static FourVector ToAchilles(const ATOOLS::Vec4D&);
   static Particle ToAchilles(ATOOLS::Particle*);
+  static EventHistory ToAchilles(ATOOLS::Blob*);
+  static ATOOLS::Blob FromAchilles(EventHistory);
 
   PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude* const ampl);
   COMIX::Single_Process *singleProcess;

@@ -13,7 +13,29 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
+
+#ifdef ENABLE_BSM
+#include "plugins/Sherpa/SherpaInterface.hh"
+#else
+
+#include <map>
+#include <vector>
+#include <complex> 
+
+namespace achilles {
+
+struct FormFactorInfo;
+class SherpaInterface {
+    public:
+        using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+        virtual ~SherpaInterface() = default;
+        virtual LeptonCurrents Calc(const std::vector<int>&, const std::vector<std::array<double, 4>>&,
+                                    const double&) = 0;
+        virtual std::vector<FormFactorInfo> FormFactors(int, int) const;
+};
+
+}
+#endif
 
 class MockDensity : public trompeloeil::mock_interface<achilles::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -50,9 +72,9 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK2(FillNucleus);
 };
 
-class MockSherpaME : public trompeloeil::mock_interface<achilles::SherpaMEs> {
+class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK3(Calc);
+    IMPLEMENT_MOCK3(Calc);
     IMPLEMENT_CONST_MOCK2(FormFactors);
 };
 
