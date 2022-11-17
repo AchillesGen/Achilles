@@ -37,8 +37,8 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
 
     // TODO: Define couplings correctly
     if(charged_current) {
-        pid = init_neutrino ? (process.m_ids[0].AsInt() < 0 ? -24 : 24)
-                            : (process.m_ids[0].AsInt() < 0 ? 24 : -24);
+        pid = init_neutrino ? (process.m_ids[0].AsInt() < 0 ? 24 : -24)
+                            : (process.m_ids[0].AsInt() < 0 ? -24 : 24);
         coupl_right = 0;
         coupl_left = ee*i/(sw*sqrt(2));
         mass = Constant::MW;
@@ -132,10 +132,10 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
         pUBar = p.back();
     }
     std::array<Spinor, 2> ubar, u;
-    ubar[0] = UBarSpinor(-1, pUBar);
-    ubar[1] = UBarSpinor(1, pUBar);
-    u[0] = USpinor(-1, pU);
-    u[1] = USpinor(1, pU);
+    ubar[0] = UBarSpinor(1, pUBar);
+    ubar[1] = UBarSpinor(-1, pUBar);
+    u[0] = USpinor(1, pU);
+    u[1] = USpinor(-1, pU);
 
     // Calculate currents
     Current result;
@@ -190,6 +190,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
             }
         }
     }
+
     return currents;
 #else
     return m_current.CalcCurrents(p, mu2);
@@ -239,9 +240,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     for(size_t i = 0; i  < nlep_spins; ++i) {
         // TODO: Fix this to be correct!!!
         size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
-        idx = idx == 2 ? 10 : 2;
-        // idx = 2
+        // idx = idx == 2 ? 10 : 2;
+        // idx = 10;
         for(size_t j = 0; j < nhad_spins; ++j) {
+            // idx += ((j&~1ul)<<3)+((j&1ul));
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {

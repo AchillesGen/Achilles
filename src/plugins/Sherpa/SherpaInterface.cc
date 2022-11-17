@@ -75,10 +75,10 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   int level(SherpaVerbosity(spdlog::get("achilles")->level()));
   addParameter(argv,"OUTPUT="+ToString(level));
   // Set beams and PDFs.
+  // addParameter(argv,"BEAM_1=11");
   addParameter(argv,"BEAM_1=2212");
-  addParameter(argv,"BEAM_2=11");
+  // addParameter(argv,"BEAM_ENERGY_1=100");
   addParameter(argv,"BEAM_ENERGY_1=100");
-  addParameter(argv,"BEAM_ENERGY_2=100");
   // addParameter(argv,"PDF_SET=None");
   // addParameter(argv,"PDF_LIBRARY=None");
   addParameter(argv,"ME_SIGNAL_GENERATOR=Comix");
@@ -98,11 +98,14 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"STABLE[15]=0");
   addParameter(argv,"HARD_SPIN_CORRELATIONS=1");
   addParameter(argv,"SOFT_SPIN_CORRELATIONS=1");
-  addParameter(argv,"SHOWER_GENERATOR=None");
+  addParameter(argv,"SHOWER_GENERATOR=CSS");
   addParameter(argv,"FRAGMENTATION=Ahadic");
   addParameter(argv,"DECAYS=Hadrons");
   addParameter(argv,"BEAM_REMNANTS=0");
   addParameter(argv,"EVENT_GENERATION_MODE=W");
+  addParameter(argv,"ME_QED=Off");
+  addParameter(argv,"CSS_FS_PT2MIN=0.001");
+  addParameter(argv,"CSS_IS_PT2MIN=0.001");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
@@ -184,7 +187,7 @@ bool SherpaInterface::InitializeProcess(const Process_Info &info)
   }
   for (size_t i(0);i<info.m_ids.size();++i) {
     ampl->CreateLeg(Vec4D(),i<1?Flavour(info.m_ids[i]).Bar():
-		    Flavour(info.m_ids[i]));
+            Flavour(info.m_ids[i]));
   } 
   for (const auto &final : info.m_states.begin()->second) {
     ampl->CreateLeg(Vec4D(),Flavour(final));
@@ -199,6 +202,7 @@ bool SherpaInterface::InitializeProcess(const Process_Info &info)
   if (pm->find(name)==pm->end()) getProcess(ampl);
   Process_Base* proc(pm->find(name)->second);
   if (proc==nullptr) return false;
+  proc->SetShower(p_sherpa->GetInitHandler()->GetShowerHandlers().at(PDF::isr::hard_process)->GetShower());
   return true;
 }
 
@@ -324,7 +328,7 @@ achilles::SherpaInterface::LeptonCurrents SherpaInterface::Calc
 {
   Cluster_Amplitude *ampl(Cluster_Amplitude::New());
   for (size_t i(0);i<_fl.size();++i) {
-    Vec4D cp(p[i][0],p[i][1],p[i][2],p[i][3]);
+    Vec4D cp(p[i][0],-p[i][1],-p[i][2],-p[i][3]);
     Flavour fl(Flavour((long int)(_fl[i])));
     ampl->CreateLeg(i<2?-cp:cp,i<2?fl.Bar():fl,ColorID(0,0));
   }
@@ -403,16 +407,21 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
 {
   DEBUG_FUNC("");
   singleProcess->Integrator()->SetMax(event.Weight());
+  // Update blobs to contain cascade information
+  auto blob = p_sherpa->GetEventHandler()->GetBlobs();
   bool res(p_sherpa->GetEventHandler()->GenerateEvent(SHERPA::eventtype::StandardPerturbative));
 
   auto bl = p_sherpa->GetEventHandler()->GetBlobs();
   auto pl = bl->ExtractParticles(1);
 
+  // std::cout << *bl << std::endl;
+
   // TODO: Figure out how to do this more efficiently
   for(auto particle : pl) {
     if(particle->Info() == 'F') continue;
     event.Leptons().push_back(ToAchilles(particle));
-    for(auto prod : particle -> ProductionBlob()->GetInParticles()) {
+    if(!particle -> ProductionBlob()) continue;
+    for(auto prod : particle -> ProductionBlob() -> GetInParticles()) {
       for(auto &part : event.Leptons()) {
         if(int(part.ID()) == prod -> Flav() //&& part.Momentum() == ToAchilles(prod -> Momentum())
              && part.Status() != achilles::ParticleStatus::decayed) {
@@ -439,6 +448,10 @@ achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part)
   out.Status() = status == ATOOLS::part_status::active ? achilles::ParticleStatus::final_state
                                                        : achilles::ParticleStatus::decayed;
   return out;
+}
+
+achilles::EventHistory achilles::SherpaInterface::ToAchilles(ATOOLS::Blob *blob) {
+    return {};
 }
 
 using namespace achilles;

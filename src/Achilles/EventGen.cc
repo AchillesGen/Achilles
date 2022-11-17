@@ -80,11 +80,13 @@ achilles::EventGen::EventGen(const std::string &configFile,
     int qed = 0;
     if(config["Process"]["QEDShower"])
         if(config["Process"]["QEDShower"].as<bool>())
-            qed = 1;
-    shargs.push_back(fmt::format("ME_QED={}", qed));
+            qed = 3;
+    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
     if(model == "SM") model = "SM_Nuc";
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
+    shargs.push_back(fmt::format("BEAM_2={}", 11));
+    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
     p_sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     if(!p_sherpa -> InitializeProcess(leptonicProcess)) {

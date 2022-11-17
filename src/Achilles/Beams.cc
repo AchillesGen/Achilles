@@ -6,6 +6,7 @@
 #include <fstream>
 
 using achilles::Spectrum;
+using achilles::PDFBeam;
 
 Spectrum::Spectrum(const YAML::Node &node) {
     if(node["Histogram"]) {
@@ -177,6 +178,20 @@ double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran
             break;
     }
     return (m_delta_energy*m_flux(beam.E()))*scale;
+}
+
+PDFBeam::PDFBeam(const YAML::Node&) {
+    throw std::runtime_error("PDFBeam: Not implemented yet!");
+}
+
+achilles::FourVector PDFBeam::Flux(const std::vector<double>&) const {
+    throw std::runtime_error("PDFBeam: Not implemented yet!");
+    return {};
+}
+
+double PDFBeam::GenerateWeight(const FourVector&, std::vector<double>&) const {
+    throw std::runtime_error("PDFBeam: Not implemented yet!");
+    return {};
 }
 
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {

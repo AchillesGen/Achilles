@@ -40,7 +40,8 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config={std::string(filename),"1.0",std::string("Run card")};
     run->tools().push_back(config);
-    run->set_weight_names({"Default", "PL", "PT"});
+    // run->set_weight_names({"Default", "PL", "PT"});
+    run->set_weight_names({"Default"});
 
     file.set_run_info(run);
     file.write_run_info();
@@ -75,8 +76,8 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
     evt.add_attribute("GenCrossSection", cross_section);
     evt.weight("Default") = event.Weight()*nb_to_pb;
-    evt.weight("PL") = event.Polarization(0)*nb_to_pb;
-    evt.weight("PT") = event.Polarization(1)*nb_to_pb;
+    // evt.weight("PL") = event.Polarization(0)*nb_to_pb;
+    // evt.weight("PT") = event.Polarization(1)*nb_to_pb;
 
     // TODO: once we have a detector to simulate interaction location
     // Event position

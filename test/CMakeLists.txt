@@ -42,9 +42,10 @@ add_executable(achilles-testsuite
     test_quasielastic_mapper.cc
     test_beam_mapper.cc
     test_ps_mapper.cc
+    test_event_history.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
-                                         PUBLIC physics mappers event_gen)
+    PUBLIC physics mappers event_gen) # -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg)
 
 # enable_language(Fortran)
 # add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
