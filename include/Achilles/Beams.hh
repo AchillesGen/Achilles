@@ -132,6 +132,7 @@ class PDFBeam : public FluxType {
         FourVector Flux(const std::vector<double>&) const override;
         double GenerateWeight(const FourVector&, std::vector<double>&) const override;
         std::string Type() const override { return "PDFBeam"; }
+        double MaxEnergy() const override { return 0; }
 
     private:
         std::unique_ptr<PDFBase> p_pdf;

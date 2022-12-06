@@ -548,8 +548,69 @@ void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs,
     }
 }
 
-achilles::EventHistory achilles::SherpaInterface::ToAchilles(ATOOLS::Blob *blob) {
-    return {};
+void achilles::SherpaInterface::AddHistoryNode(ATOOLS::Blob* blob, EventHistory &history,
+                                               EventHistory::StatusCode status) {
+    auto sherpa_in = blob -> GetInParticles();
+    auto sherpa_out = blob -> GetOutParticles();
+    std::vector<achilles::Particle> achilles_in, achilles_out;
+    for(const auto &part : sherpa_in) achilles_in.push_back(ToAchilles(part, true));
+    for(const auto &part : sherpa_out) achilles_out.push_back(ToAchilles(part, false));
+    history.AddVertex({}, achilles_in, achilles_out, status);
+}
+
+void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs, achilles::EventHistory &history) {
+    // Collect primary vertex
+    auto blob = blobs -> FindFirst(btp::code::Signal_Process);
+    AddHistoryNode(blob, history, EventHistory::StatusCode::primary);
+
+    // Add in any existing shower vetrices
+    // auto shower_list = blobs -> Find(btp::code::Shower);
+    // for(const auto &shower : shower_list) {
+    //     AddHistoryNode(shower, history, EventHistory::StatusCode::shower);
+    // }
+
+    // Add in any decay vertices
+    auto decay_list = blobs -> Find(btp::code::Hadron_Decay);
+    for(const auto &decay : decay_list) {
+        AddHistoryNode(decay, history, EventHistory::StatusCode::decay);
+
+        // Update status of particle to be decayed in previous node
+        auto decay_part = history.Node(history.size()-1) -> ParticlesIn()[0];
+        auto to_update = history.FindNodeOut(decay_part);
+        // Handle case where momentum is not within 1e-10
+        // TODO: Discuss with Stefan why this happens
+        if(!to_update) {
+            // Find particle with same PID and closest momentum
+            PIDLocator visitor(decay_part.ID(), 1);
+            history.WalkHistory(visitor);
+            double min_diff = std::numeric_limits<double>::max();
+            size_t index = -1;
+            for(size_t i = 0; i < visitor.particles.size(); ++i) {
+                auto diff_mom = decay_part.Momentum() - visitor.particles[i].Momentum();
+                auto diff = std::abs(diff_mom.E()) + std::abs(diff_mom.Px()) + std::abs(diff_mom.Py()) + std::abs(diff_mom.Pz());
+                if(diff < min_diff) {
+                    index = i;
+                    min_diff = diff;
+                }
+            }
+            to_update = history.FindNodeOut(visitor.particles[index]);
+            auto compare = compare_momentum(visitor.particles[index]);
+            for(auto &particle : to_update -> ParticlesOut()) {
+                if(compare(particle)) {
+                    particle = decay_part;
+                    break;
+                }
+            }
+        }
+
+        auto compare = compare_momentum(decay_part);
+        for(auto &particle : to_update -> ParticlesOut()) {
+            if(compare(particle)) {
+                particle = decay_part;
+                break;
+            }
+        }
+    }
 }
 
 using namespace achilles;

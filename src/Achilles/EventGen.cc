@@ -322,6 +322,17 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // Running Sherpa interface if requested
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
+        // TODO: Get remnant working
+        // Setup remnant in history
+        // auto recoilMom = init_nuc.Momentum();
+        // for(size_t i = 1; i < event.Leptons().size(); ++i) {
+        //     recoilMom -= event.Leptons()[i].Momentum();
+        // }
+        // for(size_t i = 1; i < event.Hadrons().size(); ++i) {
+        //     recoilMom -= event.Hadrons()[i].Momentum();
+        // }
+        // auto remnant = Particle(event.Remnant().PID(), recoilMom); 
+        // event.History().Primary()->AddOutgoing(remnant);
 
     writer->Write(event);
     return true;

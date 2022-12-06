@@ -31,6 +31,17 @@ void EventHistory::AddVertex(ThreeVector position, const Particles &in, const Pa
     for(auto &part : out) { AddParticleOut(m_history.size() - 1, part); }
 }
 
+void EventHistory::AddVertex(ThreeVector position, const std::vector<Particle> &in,
+                             const std::vector<Particle> &out, StatusCode status) {
+    m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, status));
+    for(const auto &part : in) {
+        m_history.back() -> AddIncoming(part);
+    }
+    for(const auto &part : out) {
+        m_history.back() -> AddOutgoing(part);
+    }
+}
+
 void EventHistory::AddParticleIn(size_t idx, const Particle &part) {
     m_history[idx]->AddIncoming(part);
     UpdatePrevNode(part);
