@@ -103,7 +103,14 @@ class Nucleus {
         
         /// Return the nuclear PID
         ///@return PID: The pid for the given nucleus
-        PID ID() const;
+        PID ID() const { return m_pid; }
+
+        /// Return a particle with initial momentum for at rest nucleus and correct PID
+        ///@return Particle: Particle representing the initial nucleus
+        Particle InitParticle() const {
+            double mass = ParticleInfo(ID()).Mass();
+            return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
+        }
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
@@ -248,6 +255,7 @@ class Nucleus {
 
         FourVector m_recoil{};
         std::shared_ptr<Potential> potential;
+        PID m_pid;
 };
 
 }

@@ -73,7 +73,7 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"EVENTS=1");
   addParameter(argv,"INIT_ONLY=6");
   int level(SherpaVerbosity(spdlog::get("achilles")->level()));
-  addParameter(argv,"OUTPUT="+ToString(level));
+  addParameter(argv,"OUTPUT="+std::to_string(level));
   // Set beams and PDFs.
   // addParameter(argv,"BEAM_1=11");
   addParameter(argv,"BEAM_1=2212");
@@ -328,7 +328,7 @@ achilles::SherpaInterface::LeptonCurrents SherpaInterface::Calc
 {
   Cluster_Amplitude *ampl(Cluster_Amplitude::New());
   for (size_t i(0);i<_fl.size();++i) {
-    Vec4D cp(p[i][0],-p[i][1],-p[i][2],-p[i][3]);
+    Vec4D cp(p[i][0],p[i][1],p[i][2],p[i][3]);
     Flavour fl(Flavour((long int)(_fl[i])));
     ampl->CreateLeg(i<2?-cp:cp,i<2?fl.Bar():fl,ColorID(0,0));
   }
@@ -411,47 +411,103 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
   auto blob = p_sherpa->GetEventHandler()->GetBlobs();
   bool res(p_sherpa->GetEventHandler()->GenerateEvent(SHERPA::eventtype::StandardPerturbative));
 
+  // Extract all active particles in the event
   auto bl = p_sherpa->GetEventHandler()->GetBlobs();
-  auto pl = bl->ExtractParticles(1);
-
-  // std::cout << *bl << std::endl;
-
-  // TODO: Figure out how to do this more efficiently
-  for(auto particle : pl) {
-    if(particle->Info() == 'F') continue;
-    event.Leptons().push_back(ToAchilles(particle));
-    if(!particle -> ProductionBlob()) continue;
-    for(auto prod : particle -> ProductionBlob() -> GetInParticles()) {
-      for(auto &part : event.Leptons()) {
-        if(int(part.ID()) == prod -> Flav() //&& part.Momentum() == ToAchilles(prod -> Momentum())
-             && part.Status() != achilles::ParticleStatus::decayed) {
-          part.Status() = achilles::ParticleStatus::decayed;
-        }
-      }
-    }
-  }
+  ToAchilles(bl, event.History());
 
   p_sherpa->GetEventHandler()->Reset();
 }
 
 achilles::FourVector achilles::SherpaInterface::ToAchilles(const ATOOLS::Vec4D &mom) {
-    // Convert from Sherpa to Achilles. NOTE: Sherpa is in GeV and Achilles is in MeV
+    // Convert from Sherpa to Achilles.
+    // NOTE: Sherpa is in GeV and Achilles is in MeV
+    // NOTE: The momentum setup in Sherpa is rotated by Pi around the x-axis, so we have to unrotate it
     return {mom[0]*1000, mom[1]*1000, mom[2]*1000, mom[3]*1000};
 }
 
-achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part) {
-  auto status = part -> Status(); 
+achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part, bool in) {
+  auto status = part -> Info(); 
   auto flavor = static_cast<long>(part -> Flav());
   auto mom = ToAchilles(part -> Momentum());
   achilles::Particle out(flavor, mom);
   // TODO: Fix this to be more general
-  out.Status() = status == ATOOLS::part_status::active ? achilles::ParticleStatus::final_state
-                                                       : achilles::ParticleStatus::decayed;
+  switch(status) {
+    case 'G':
+        out.Status() = achilles::ParticleStatus::initial_state;
+        break;
+    case 'H':
+        out.Status() = achilles::ParticleStatus::final_state;
+        break;
+    case 'D':
+        out.Status() = in ? achilles::ParticleStatus::decayed : achilles::ParticleStatus::final_state;
+        break;
+  }
   return out;
 }
 
-achilles::EventHistory achilles::SherpaInterface::ToAchilles(ATOOLS::Blob *blob) {
-    return {};
+void achilles::SherpaInterface::AddHistoryNode(ATOOLS::Blob* blob, EventHistory &history,
+                                               EventHistory::StatusCode status) {
+    auto sherpa_in = blob -> GetInParticles();
+    auto sherpa_out = blob -> GetOutParticles();
+    std::vector<achilles::Particle> achilles_in, achilles_out;
+    for(const auto &part : sherpa_in) achilles_in.push_back(ToAchilles(part, true));
+    for(const auto &part : sherpa_out) achilles_out.push_back(ToAchilles(part, false));
+    history.AddVertex({}, achilles_in, achilles_out, status);
+}
+
+void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs, achilles::EventHistory &history) {
+    // Collect primary vertex
+    auto blob = blobs -> FindFirst(btp::code::Signal_Process);
+    AddHistoryNode(blob, history, EventHistory::StatusCode::primary);
+
+    // Add in any existing shower vetrices
+    // auto shower_list = blobs -> Find(btp::code::Shower);
+    // for(const auto &shower : shower_list) {
+    //     AddHistoryNode(shower, history, EventHistory::StatusCode::shower);
+    // }
+
+    // Add in any decay vertices
+    auto decay_list = blobs -> Find(btp::code::Hadron_Decay);
+    for(const auto &decay : decay_list) {
+        AddHistoryNode(decay, history, EventHistory::StatusCode::decay);
+
+        // Update status of particle to be decayed in previous node
+        auto decay_part = history.Node(history.size()-1) -> ParticlesIn()[0];
+        auto to_update = history.FindNodeOut(decay_part);
+        // Handle case where momentum is not within 1e-10
+        // TODO: Discuss with Stefan why this happens
+        if(!to_update) {
+            // Find particle with same PID and closest momentum
+            PIDLocator visitor(decay_part.ID(), 1);
+            history.WalkHistory(visitor);
+            double min_diff = std::numeric_limits<double>::max();
+            size_t index = -1;
+            for(size_t i = 0; i < visitor.particles.size(); ++i) {
+                auto diff_mom = decay_part.Momentum() - visitor.particles[i].Momentum();
+                auto diff = std::abs(diff_mom.E()) + std::abs(diff_mom.Px()) + std::abs(diff_mom.Py()) + std::abs(diff_mom.Pz());
+                if(diff < min_diff) {
+                    index = i;
+                    min_diff = diff;
+                }
+            }
+            to_update = history.FindNodeOut(visitor.particles[index]);
+            auto compare = compare_momentum(visitor.particles[index]);
+            for(auto &particle : to_update -> ParticlesOut()) {
+                if(compare(particle)) {
+                    particle = decay_part;
+                    break;
+                }
+            }
+        }
+
+        auto compare = compare_momentum(decay_part);
+        for(auto &particle : to_update -> ParticlesOut()) {
+            if(compare(particle)) {
+                particle = decay_part;
+                break;
+            }
+        }
+    }
 }
 
 using namespace achilles;

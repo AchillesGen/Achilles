@@ -13,7 +13,7 @@
 
 namespace achilles {
 
-// TODO: Reorganize to match HepMC3 standard
+// TODO: Reorganize to match NuHepMC3 standard
 enum class ParticleStatus : int {
     internal_test = -3,
     external_test = -2,
@@ -24,6 +24,8 @@ enum class ParticleStatus : int {
     escaped = 3,
     captured = 4,
     decayed = 5,
+    beam = 6,
+    target = 7,
 };
 
 /// The Particle class provides a container to handle information about the particle.

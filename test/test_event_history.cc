@@ -9,18 +9,6 @@ class MockVisitor : public trompeloeil::mock_interface<achilles::HistoryVisitor>
     IMPLEMENT_MOCK1(visit);
 };
 
-struct PrintVisitor : public achilles::HistoryVisitor {
-    std::string data;
-    void visit(achilles::EventHistoryNode *node) {
-        data += fmt::format("Node({}, {{{}}} -> {{{}}})\n",
-                            achilles::ToString(node -> Status()),
-                            fmt::join(node -> ParticlesIn().begin(),
-                                      node -> ParticlesIn().end(), ", "),
-                            fmt::join(node -> ParticlesOut().begin(),
-                                      node -> ParticlesOut().end(), ", "));
-    }
-};
-
 TEST_CASE("EventHistoryNode", "[EventHistory]") {
     achilles::EventHistoryNode node(0);
     achilles::Particle part1(achilles::PID::proton(), {achilles::Constant::mN, 0, 0, 0});
@@ -122,6 +110,21 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK_THAT(parents, Catch::Matchers::Equals(expected_parents));
     }
 
+    SECTION("Insert Shower Vertex") {
+        achilles::Particle neutrino2(achilles::PID::nu_muon(),
+                                    {5.6983343748755351e3, 0, 0, 5.6983343748755351e3});
+        auto mom = neutrino2.Momentum() - neutrino.Momentum();
+        achilles::Particle zd(achilles::PID::Zboson(), mom);
+        history.InsertShowerVert(neutrino.Position(), neutrino, neutrino, neutrino2, {zd});
+        auto children0 = history.Children(1ul);
+        CHECK(children0.size() == 1);
+        CHECK(children0[0] == history.Node(3));
+
+        auto children1 = history.Children(3ul);
+        auto children2 = history.Children(0ul);
+        CHECK_THAT(children1, Catch::Matchers::Equals(children2));
+    }
+
     SECTION("Primary Vertex") {
         CHECK(history.Primary() == history.Node(2));
 
@@ -189,7 +192,7 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
                       {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::primary);
 
     SECTION("Expected output") {
-        PrintVisitor visitor;
+        achilles::PrintVisitor visitor;
         history.WalkHistory(visitor);
 
         std::string expected1 = R"exp(Node(primary, {Particle[2112, 0, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0, 0, 0)], Particle[14, 0, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0, 0, 0)]} -> {Particle[2212, 0, FourVector(9.63180946e+02, -1.87021024e+02, -4.70962283e+01, 1.03337393e+02), ThreeVector(0, 0, 0)], Particle[13, 0, FourVector(5.35316004e+03, 2.10606858e+02, 1.32428614e+02, 5.34737597e+03), ThreeVector(0, 0, 0)]}))exp";

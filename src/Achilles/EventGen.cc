@@ -321,6 +321,24 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Write out events
     if(outputEvents) {
+        // TODO: Handle MEC case
+        // Setup target nucleus in history
+        auto init_nuc = event.CurrentNucleus()->InitParticle();
+        Particle init_had;
+        for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+            if(nucleon.Status() == ParticleStatus::initial_state) {
+                init_had = nucleon;
+                break;
+            }
+        }
+        event.History().AddVertex(init_had.Position(), {init_nuc}, {init_had}, EventHistory::StatusCode::target);
+        // Setup beam in history
+        auto init_lep = event.Leptons()[0];
+        auto init_beam = init_lep;
+        init_beam.Status() = ParticleStatus::beam;
+        const double max_energy = beam->MaxEnergy();
+        init_beam.Momentum() = {max_energy, 0, 0, max_energy};
+        event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 #ifdef ENABLE_BSM
         // Running Sherpa interface if requested
         // Only needed when generating events and not optimizing the multichannel
@@ -329,6 +347,17 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             p_sherpa -> GenerateEvent(event);
         }
 #endif
+        // TODO: Get remnant working
+        // Setup remnant in history
+        // auto recoilMom = init_nuc.Momentum();
+        // for(size_t i = 1; i < event.Leptons().size(); ++i) {
+        //     recoilMom -= event.Leptons()[i].Momentum();
+        // }
+        // for(size_t i = 1; i < event.Hadrons().size(); ++i) {
+        //     recoilMom -= event.Hadrons()[i].Momentum();
+        // }
+        // auto remnant = Particle(event.Remnant().PID(), recoilMom); 
+        // event.History().Primary()->AddOutgoing(remnant);
 
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)

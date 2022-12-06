@@ -7,7 +7,7 @@
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wconversion"
 #pragma GCC diagnostic ignored "-Wuseless-cast"
-#include "ATOOLS/Phys/Blob.H"
+#include "ATOOLS/Phys/Blob_List.H"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
 #include "Achilles/Achilles.hh"
@@ -47,9 +47,10 @@ private:
   void addParameter(std::vector<char*>& argv,const std::string& val) const;
   int SherpaVerbosity(int loglevel) const;
   static FourVector ToAchilles(const ATOOLS::Vec4D&);
-  static Particle ToAchilles(ATOOLS::Particle*);
-  static EventHistory ToAchilles(ATOOLS::Blob*);
-  static ATOOLS::Blob FromAchilles(EventHistory);
+  static Particle ToAchilles(ATOOLS::Particle*, bool);
+  static void AddHistoryNode(ATOOLS::Blob* blob, EventHistory &history, EventHistory::StatusCode);
+  static void ToAchilles(ATOOLS::Blob_List*, EventHistory&);
+  static ATOOLS::Blob_List FromAchilles(EventHistory);
 
   PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude* const ampl);
   COMIX::Single_Process *singleProcess;

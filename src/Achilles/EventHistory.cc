@@ -5,12 +5,41 @@
 using achilles::EventHistoryNode;
 using achilles::EventHistory;
 
+void EventHistory::AddVertex(ThreeVector position, const std::vector<Particle> &in,
+                             const std::vector<Particle> &out, StatusCode status) {
+    m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, status));
+    for(const auto &part : in) {
+        m_history.back() -> AddIncoming(part);
+    }
+    for(const auto &part : out) {
+        m_history.back() -> AddOutgoing(part);
+    }
+}
+
 void EventHistory::AddParticleIn(size_t idx, const Particle &part) {
     m_history[idx] -> AddIncoming(part);
 }
 
 void EventHistory::AddParticleOut(size_t idx, const Particle &part) {
     m_history[idx] -> AddOutgoing(part);
+}
+
+void EventHistory::InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,
+                                    const Particle &out_org, const std::vector<Particle> &other) {
+    // Create shower node
+    m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, StatusCode::shower));
+    m_history.back() -> AddIncoming(in);
+    m_history.back() -> AddOutgoing(out_org);
+    for(const auto &part : other)
+        m_history.back() -> AddOutgoing(part);
+
+    // Insert in where original particle is located
+    auto node_in = FindNodeIn(org);
+    auto node_out = FindNodeOut(org);
+    auto it = std::find(node_in -> ParticlesIn().begin(), node_in -> ParticlesIn().end(), org);
+    *it = out_org;
+    it = std::find(node_out -> ParticlesOut().begin(), node_out -> ParticlesOut().end(), org);
+    *it = in;
 }
 
 std::vector<EventHistoryNode*> EventHistory::Children(size_t idx) const {
@@ -109,8 +138,9 @@ void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {
         for(const auto &child : Children(node))
             to_visit.push(child -> Index());
 
-        for(const auto &parent : Parents(node))
+        for(const auto &parent : Parents(node)) {
             to_visit.push(parent -> Index());
+        }
 
         visited.push_back(current);
     }

@@ -25,6 +25,7 @@ class FluxType {
         virtual FourVector Flux(const std::vector<double>&) const = 0;
         virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
         virtual std::string Type() const = 0;
+        virtual double MaxEnergy() const = 0;
 };
 
 class Monochromatic : public FluxType {
@@ -38,6 +39,7 @@ class Monochromatic : public FluxType {
             return 1;
         }
         std::string Type() const override { return "Monochromatic"; }
+        double MaxEnergy() const override { return m_energy; }
 
     private:
         double m_energy;
@@ -71,7 +73,7 @@ class Spectrum : public FluxType {
         std::string Type() const override { return "Spectrum"; }
         std::string Format() const;
         double MinEnergy() const { return m_min_energy; }
-        double MaxEnergy() const { return m_max_energy; }
+        double MaxEnergy() const override { return m_max_energy; }
 
     private:
         void AchillesHeader(std::ifstream&);
@@ -98,6 +100,7 @@ class PDFBeam : public FluxType {
         FourVector Flux(const std::vector<double>&) const override;
         double GenerateWeight(const FourVector&, std::vector<double>&) const override;
         std::string Type() const override { return "PDFBeam"; }
+        double MaxEnergy() const override { return 0; }
 
     private:
         std::unique_ptr<PDFBase> p_pdf;
@@ -124,6 +127,7 @@ class Beam {
         }
         size_t NBeams() const { return m_beams.size(); }
         MOCK const std::set<PID>& BeamIDs() const { return m_pids; }
+        double MaxEnergy() const;
 
         // Accessors
         std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }

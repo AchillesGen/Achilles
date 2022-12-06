@@ -205,3 +205,11 @@ achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
         m_pids.insert(beam.first);
     }
 }
+
+double achilles::Beam::MaxEnergy() const {
+    double max = 0;
+    for(const auto &beam : m_beams) {
+        if(beam.second -> MaxEnergy() > max) max = beam.second -> MaxEnergy();
+    }
+    return max;
+}
