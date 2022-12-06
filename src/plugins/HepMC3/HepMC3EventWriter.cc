@@ -60,9 +60,9 @@ int ToHepMC3(achilles::ParticleStatus status) {
             return 3;
         case achilles::ParticleStatus::final_state:
         case achilles::ParticleStatus::escaped:
-            return 2;
-        case achilles::ParticleStatus::decayed:
             return 1;
+        case achilles::ParticleStatus::decayed:
+            return 2;
         case achilles::ParticleStatus::beam:
         case achilles::ParticleStatus::target:
             return 4;
