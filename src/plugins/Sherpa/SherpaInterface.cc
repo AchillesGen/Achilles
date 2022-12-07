@@ -441,6 +441,10 @@ achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part,
     case 'D':
         out.Status() = in ? achilles::ParticleStatus::decayed : achilles::ParticleStatus::final_state;
         break;
+    // TODO: Figure out what takes this path
+    default:
+        out.Status() = in ? achilles::ParticleStatus::decayed : achilles::ParticleStatus::final_state;
+        break;
   }
   return out;
 }
