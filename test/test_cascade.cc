@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 #include "catch_utils.hh"
 #include "mock_classes.hh"
+#include "catch_utils.hh"
 
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
