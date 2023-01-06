@@ -227,8 +227,8 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 #endif
         }
     }
-    auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
 
+    auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
     std::vector<double> amps2(hadronCurrent.size());
     const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
@@ -245,12 +245,9 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 #endif
 
     for(size_t i = 0; i  < nlep_spins; ++i) {
-        // TODO: Fix this to be correct!!!
-        size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1);
-        // idx = idx == 2 ? 10 : 2;
-        // idx = 10;
         for(size_t j = 0; j < nhad_spins; ++j) {
-            // idx += ((j&~1ul)<<3)+((j&1ul));
+            // TODO: Fix this to be correct!!!
+            size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1) + ((j&~1ul))+((j&1ul));
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {
@@ -305,8 +302,10 @@ bool HardScattering::FillEvent(Event& event, const std::vector<double> &xsecs) c
     if(!m_nuclear -> FillNucleus(event, xsecs))
         return false;
    
-    event.InitializeLeptons(m_leptonicProcess);
-    event.InitializeHadrons(m_leptonicProcess);
+
+    // REMOVE:
+    // event.InitializeLeptons(m_leptonicProcess);
+    // event.InitializeHadrons(m_leptonicProcess);
 
     return true;
 }

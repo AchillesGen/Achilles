@@ -113,6 +113,7 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   p_sherpa->InitializeTheEventHandler();
   m_pmap[nlo_type::lo] = new StringProcess_Map();
   RegisterParticles();
+  ATOOLS::Spinor<double>::SetDefaultGauge(0);
 
   // Clean up memory
   for(auto & arg : argv) delete arg;
@@ -345,7 +346,7 @@ achilles::SherpaInterface::LeptonCurrents SherpaInterface::Calc
   if (pm->find(name)==pm->end())
     THROW(fatal_error,"Process not found: "+name);
   Process_Base *proc = pm->find(name)->second;
-  auto reader = dynamic_cast<Achilles_Reader*>(proc -> EventReader());
+  reader = dynamic_cast<Achilles_Reader*>(proc -> EventReader());
   reader -> SetAmpl(ampl);
   // return differntial xs for now
   double res(proc->Differential(*ampl,1|2|4));
@@ -409,6 +410,13 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
   singleProcess->Integrator()->SetMax(event.Weight());
   // Update blobs to contain cascade information
   auto blob = p_sherpa->GetEventHandler()->GetBlobs();
+  // auto legs = reader -> GetAmpl() -> Legs();
+  // for(auto &leg : legs) {
+  //   auto mom = leg -> Mom();
+  //   mom[2] = -mom[2];
+  //   mom[3] = -mom[3];
+  //   leg -> SetMom(mom);
+  // }
   bool res(p_sherpa->GetEventHandler()->GenerateEvent(SHERPA::eventtype::StandardPerturbative));
 
   // Extract all active particles in the event

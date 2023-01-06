@@ -47,8 +47,6 @@ class Nucleus {
         ///@param A: The number of nucleons
         ///@param binding: The binding energy of the nucleus
         ///@param densityFile: The file containing density information for Pauli Blocking
-        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
-        ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
         Nucleus() = default;
@@ -227,8 +225,6 @@ class Nucleus {
         ///@param name: Nucleus in format discussed above
         ///@param binding: The binding energy of the nucleus
         ///@param densityFile: The file containing density information for Pauli Blocking
-        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
-        ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&, const double&,
                                    const std::string&, const FermiGasType&,

@@ -16,6 +16,14 @@
 
 #ifdef ENABLE_BSM
 #include "plugins/Sherpa/SherpaInterface.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#undef THROW
+#include "METOOLS/Main/Spin_Structure.H"
+#undef THROW
+#define THROW TROMPELOEIL_THROW
+#pragma GCC diagnostic pop
 #else
 
 #include <map>
@@ -25,6 +33,9 @@
 namespace achilles {
 
 struct FormFactorInfo;
+namespace METOOLS {
+using Spin_Amplitudes = std::vector<std::complex<double>>;
+}
 class SherpaInterface {
     public:
         using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
@@ -32,6 +43,7 @@ class SherpaInterface {
         virtual LeptonCurrents Calc(const std::vector<int>&, const std::vector<std::array<double, 4>>&,
                                     const double&) = 0;
         virtual std::vector<FormFactorInfo> FormFactors(int, int) const;
+        virtual void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 };
 
 }
@@ -76,6 +88,7 @@ class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaI
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK3(Calc);
     IMPLEMENT_CONST_MOCK2(FormFactors);
+    IMPLEMENT_MOCK1(FillAmplitudes);
 };
 
 class MockInteraction : public trompeloeil::mock_interface<achilles::Interactions> {

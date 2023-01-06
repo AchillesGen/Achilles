@@ -33,6 +33,8 @@ namespace achilles {
         p_ampl = ampl;
         // std::swap<Cluster_Leg*>(p_ampl->Legs()[0], p_ampl->Legs()[1]);
     }
+
+    Cluster_Amplitude* GetAmpl() { return p_ampl; }
     
   };// end of class Achilles_Reader
   

@@ -42,6 +42,11 @@ TEST_CASE("CrossSection", "[HardScattering]") {
         .TIMES(2)
         .LR_RETURN((nspins));
 
+    trompeloeil::sequence seq;
+
+    std::vector<METOOLS::Spin_Amplitudes> spin_amps;
+    spin_amps.emplace_back(std::vector<int>{2, 2, 2, 2}, 0);
+    spin_amps[0][0] = {-0.2, 0};
     auto sherpa = new MockSherpaInterface;
     REQUIRE_CALL(*sherpa, Calc(pids, mom, 100))
         .TIMES(1)
@@ -55,6 +60,13 @@ TEST_CASE("CrossSection", "[HardScattering]") {
     REQUIRE_CALL(*sherpa, FormFactors(achilles::PID::carbon(), 23))
         .TIMES(1)
         .LR_RETURN((ffInfo[2].at(23)));
+    REQUIRE_CALL(*sherpa, FillAmplitudes(trompeloeil::_))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_SIDE_EFFECT(_1.emplace_back(std::vector<int>{2, 2, 2, 2}, 0););
+    REQUIRE_CALL(*sherpa, FillAmplitudes(spin_amps))
+        .TIMES(1)
+        .IN_SEQUENCE(seq);
 
     achilles::HardScattering scattering;
     scattering.SetSherpa(sherpa);

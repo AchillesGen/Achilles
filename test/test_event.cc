@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
+#include "catch_utils.hh"
 
 #include "Achilles/Beams.hh"
 #include "Achilles/Event.hh"

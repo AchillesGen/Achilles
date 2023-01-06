@@ -56,7 +56,6 @@ private:
   COMIX::Single_Process *singleProcess;
   achilles::Achilles_Reader *reader;
 
-
 public:
 
   using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
@@ -75,7 +74,7 @@ public:
   (const std::vector<int> &fl,
    const std::vector<std::array<double, 4> > &p,
    const double &mu2);
-  void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
+  MOCK void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 
   MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;
   double Coupling(const std::string&) const;
