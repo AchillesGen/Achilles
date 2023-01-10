@@ -302,10 +302,8 @@ bool HardScattering::FillEvent(Event& event, const std::vector<double> &xsecs) c
     if(!m_nuclear -> FillNucleus(event, xsecs))
         return false;
    
-
-    // REMOVE:
-    // event.InitializeLeptons(m_leptonicProcess);
-    // event.InitializeHadrons(m_leptonicProcess);
+    event.InitializeLeptons(m_leptonicProcess);
+    event.InitializeHadrons(m_leptonicProcess);
 
     return true;
 }

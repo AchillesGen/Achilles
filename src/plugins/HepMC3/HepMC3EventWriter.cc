@@ -160,6 +160,6 @@ void HepMC3Writer::Write(const achilles::Event &event) {
    
     // Walk the history and add to file
     event.History().WalkHistory(visitor);
-    visitor.evt.add_tree(visitor.beamparticles);
+    // visitor.evt.add_tree(visitor.beamparticles);
     file.write_event(visitor.evt);
 }

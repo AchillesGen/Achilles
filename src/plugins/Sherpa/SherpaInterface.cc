@@ -94,6 +94,8 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"PRIORITY[2212]=99");
   // TODO: Make this something that is passed in
   addParameter(argv,"PRIORITY[1000060120]=99");
+  addParameter(argv,"MASSIVE[11]=1");
+  addParameter(argv,"MASSIVE[13]=1");
   addParameter(argv,"MASSIVE[15]=1");
   addParameter(argv,"STABLE[15]=0");
   addParameter(argv,"HARD_SPIN_CORRELATIONS=1");
@@ -103,14 +105,19 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args)
   addParameter(argv,"DECAYS=Hadrons");
   addParameter(argv,"BEAM_REMNANTS=0");
   addParameter(argv,"EVENT_GENERATION_MODE=W");
-  addParameter(argv,"ME_QED=Off");
+  // addParameter(argv,"ME_QED=Off");
   addParameter(argv,"CSS_FS_PT2MIN=0.001");
   addParameter(argv,"CSS_IS_PT2MIN=0.001");
+  addParameter(argv,"CSS_ENHANCE=S{a}{e+}{e-} 0");
+  addParameter(argv,"CSS_ENHANCE=S{a}{e-}{e+} 0");
+  addParameter(argv,"NLO_SUBTRACTION_SCHEME=2");
   // add additional commandline parameters
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
   p_sherpa->InitializeTheEventHandler();
+  auto pbeam = rpa -> gen.PBeam(1);
+  rpa -> gen.SetPBeam(1, Vec4D({pbeam[0], 0, 0, -pbeam[3]}));
   m_pmap[nlo_type::lo] = new StringProcess_Map();
   RegisterParticles();
   ATOOLS::Spinor<double>::SetDefaultGauge(0);
