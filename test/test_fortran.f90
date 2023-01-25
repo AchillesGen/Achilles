@@ -8,6 +8,7 @@ program fortran_test
   implicit none
 
   type(test_suite_type) :: test_suite
+  double precision :: norm, val
 
   ! example with specific suite
   call test_suite_init('Achilles Fortran Test Suite', test_suite)

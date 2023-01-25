@@ -1,4 +1,5 @@
 #include "Achilles/SpectralFunction.hh"
+#include <memory>
 
 extern "C" {
 achilles::SpectralFunction *LoadSpectralFunction(char *filename) {
