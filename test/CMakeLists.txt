@@ -46,16 +46,18 @@ add_executable(achilles-testsuite
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
                                          PUBLIC physics mappers event_gen)
 
-# enable_language(Fortran)
-# add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
-# target_link_libraries(achilles-fortran-yaml PUBLIC yaml::fortran)
-# 
-# set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
-# add_executable(achilles-fortran-testsuite
-#     test_fortran.f90
-# )
-# target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
-#     PUBLIC physics fortran_interface FUT::FUT)
+add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
+target_link_libraries(achilles-fortran-yaml PUBLIC yaml::fortran)
+
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
+add_executable(achilles-fortran-testsuite
+    test_fortran.f90
+    test_spectral_interface.f90
+)
+message(STATUS ${CMAKE_Fortran_MODULE_DIRECTORY})
+target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
+target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
+    PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
 # add_test(NAME fortran-testsuite

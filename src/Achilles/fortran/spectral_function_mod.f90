@@ -14,6 +14,7 @@ module libspectral_function
 
         procedure :: normalization => spectral_normalization
         procedure :: call => spectral_call
+        procedure :: self => spectral_self
     end type
 
     interface spectral_function
@@ -39,16 +40,24 @@ contains
         call delete_spectral_function_c(self%ptr)
     end subroutine
 
-    function spectral_normalization(self)
+    function spectral_self(self)
         implicit none
         class(spectral_function), intent(inout) :: self
+        type(c_ptr) :: spectral_self
+
+        spectral_self = self%ptr
+    end function
+
+    function spectral_normalization(self)
+        implicit none
+        class(spectral_function), intent(in) :: self
         double precision :: spectral_normalization
         spectral_normalization = spectral_normalization_c(self%ptr)
     end function
 
     function spectral_call(self, p, e)
         implicit none
-        class(spectral_function), intent(inout) :: self
+        class(spectral_function), intent(in) :: self
         double precision, intent(in), value :: p, e
         double precision :: spectral_call
         spectral_call = spectral_call_c(self%ptr, p, e)

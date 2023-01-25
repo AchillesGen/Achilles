@@ -88,7 +88,7 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 37 
+        VERSION 43 
     )
 
     # Fortran Unit Tests
