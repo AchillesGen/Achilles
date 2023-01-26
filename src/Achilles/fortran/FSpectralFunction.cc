@@ -1,5 +1,4 @@
 #include "Achilles/SpectralFunction.hh"
-#include <memory>
 
 extern "C" {
     std::shared_ptr<achilles::SpectralFunction> LoadSpectralFunction(char *filename, size_t len) {
@@ -8,13 +7,15 @@ extern "C" {
         return spectral;
     }
 
-    void DeleteSpectralFunction(std::shared_ptr<achilles::SpectralFunction> spectral) { }
+    void DeleteSpectralFunction(achilles::SpectralFunction *spectral) {
+        delete spectral;
+    }
 
-    double SpectralNormalization(std::shared_ptr<achilles::SpectralFunction> spectral) {
+    double SpectralNormalization(achilles::SpectralFunction *spectral) {
         return spectral -> Normalization();
     }
 
-    double SpectralFunction(std::shared_ptr<achilles::SpectralFunction> spectral, double p, double E) {
+    double SpectralFunction(achilles::SpectralFunction *spectral, double p, double E) {
         return spectral -> operator()(p, E);
     }
 }

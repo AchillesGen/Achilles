@@ -1,6 +1,9 @@
 module nuclear_model_interface
     use nuclear_model_factory
     use nuclear_model
+    use qe_spectral_model_test
+
+
     implicit none
 
     public
@@ -14,7 +17,7 @@ contains
     subroutine register_all() bind(C, name="RegisterAll")
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
-        ! call factory%register_model("test", build_test)
+        call factory%register_model("QE_Spectral_Func", build_qe_spec)
         call factory%init()
     end subroutine
 

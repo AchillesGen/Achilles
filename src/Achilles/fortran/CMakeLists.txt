@@ -16,11 +16,14 @@ add_library(fortran_interface SHARED
     nuclear_model_interface.f90
     process_info_mod.f90
     spectral_function_mod.f90
-    OneBody/pke_read_xsec.f90
-    OneBody/contract.f90
-    OneBody/currents.f90
-    OneBody/nform.f90
-    OneBody/mathtool.f90
+    qe_spectral_model.f90
+    #OneBody/xsec_fact_new.f90
+    OneBody/currents_opt_v1.f90
+    #OneBody/pke_read_xsec.f90
+    #OneBody/contract.f90
+    #OneBody/currents.f90
+    #OneBody/nform.f90
+    #OneBody/mathtool.f90
     # )
     # target_link_libraries(fortran_interface_f PRIVATE project_options
     #                                           PUBLIC physics)

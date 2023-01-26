@@ -6,7 +6,6 @@
 using achilles::SpectralFunction;
 
 SpectralFunction::SpectralFunction(const std::string &filename) {
-    spdlog::debug("Reading spectral function from: {}", filename);
     std::ifstream data(filename);
     size_t ne{}, np{};
     data >> ne >> np;
