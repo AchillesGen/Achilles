@@ -41,6 +41,14 @@ contains
         call delete_spectral_function_c(self%ptr)
     end subroutine
 
+    function spectral_self(self)
+        implicit none
+        class(spectral_function), intent(inout) :: self
+        type(c_ptr) :: spectral_self
+
+        spectral_self = self%ptr
+    end function
+
     function spectral_normalization(self)
         implicit none
         class(spectral_function), intent(inout) :: self
