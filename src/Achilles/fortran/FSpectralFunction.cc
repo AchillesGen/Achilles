@@ -1,9 +1,10 @@
 #include "Achilles/SpectralFunction.hh"
 
 extern "C" {
-    achilles::SpectralFunction* LoadSpectralFunction(char *filename, size_t len) {
-        std::string filename_str(filename, filename+len); 
-        return new achilles::SpectralFunction(filename_str);
+    achilles::SpectralFunction* LoadSpectralFunction(char *filename) {
+        std::string filename_str(filename); 
+        auto spectral = new achilles::SpectralFunction(filename_str);
+        return spectral;
     }
 
     void DeleteSpectralFunction(achilles::SpectralFunction *spectral) {

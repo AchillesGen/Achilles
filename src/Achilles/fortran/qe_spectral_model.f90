@@ -61,7 +61,7 @@ contains
         
         qe_spec_init = .true.
         write(6,*) 'prova', spectral_n%normalization()
-        write(6,*) 'prova1', spectral_p%call(10.0d0,10.0d0)
+        write(6,*) 'prova1', spectral_p%call(10.0d0,22.5d0)
  
 
         !....does it go here?
