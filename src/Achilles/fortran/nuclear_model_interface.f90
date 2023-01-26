@@ -3,7 +3,6 @@ module nuclear_model_interface
     use nuclear_model
     use qe_spectral_model_test
 
-
     implicit none
 
     public
@@ -52,7 +51,6 @@ contains
         character(len=:), allocatable :: fname
 
         fname = c2fstring(name)
-
         init_model = model_ptr%init(fname)
     end function
 

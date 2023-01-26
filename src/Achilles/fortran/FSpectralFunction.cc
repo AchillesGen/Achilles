@@ -1,10 +1,9 @@
 #include "Achilles/SpectralFunction.hh"
 
 extern "C" {
-    std::shared_ptr<achilles::SpectralFunction> LoadSpectralFunction(char *filename, size_t len) {
+    achilles::SpectralFunction* LoadSpectralFunction(char *filename, size_t len) {
         std::string filename_str(filename, filename+len); 
-        auto spectral =  std::make_shared<achilles::SpectralFunction>(filename_str);
-        return spectral;
+        return new achilles::SpectralFunction(filename_str);
     }
 
     void DeleteSpectralFunction(achilles::SpectralFunction *spectral) {

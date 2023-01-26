@@ -194,7 +194,6 @@ std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event
     for(const auto &formFactor : ff[2]) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::trace("fcoh = {}", ffVal[3]);
-		
         Current current;
         std::vector<std::complex<double>> subcur(4);
         for(size_t i = 0; i < subcur.size(); ++i) {
@@ -374,12 +373,9 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
             std::vector<std::complex<double>> subcur(4);
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*gamma[mu]*u[j];
-		//spdlog::info("current {}",subcur[mu]);
-
             }
             result.push_back(subcur);
         }
     }
-    //exit(1);
     return result;
 }

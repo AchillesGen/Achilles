@@ -37,9 +37,7 @@ Cascade:
   Probability: Cylinder
 
 NuclearModel:
-  Model: FortranModel
-  Name: QE_Spectral_Func
-  ConfigFile: data/info_pke.data  
+  Model: QESpectral
   FormFactorFile: "FormFactors.yml"
   SpectralP: data/pke12_tot.data
   SpectralN: data/pke12_tot.data

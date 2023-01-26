@@ -56,6 +56,7 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
             lepton = -1;
         }
     }
+
     // Loop over the allowed initial states
     auto ffVals = EvalFormFactor(-q.M2()/1.0_GeV/1.0_GeV);
     for(size_t i = 0; i < m_group.Processes().size(); ++i) {
@@ -84,14 +85,12 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
                 std::vector<std::complex<double>> tmp(4);
                 for(size_t k = 0; k < tmp.size(); ++k) {
                     tmp[k] = cur[j + NSpins()*k];
-		    //spdlog::info("current {}, index {}",cur[j + NSpins()*k],j + NSpins()*k);
                 }
                 result[i][ffinfo.first].push_back(tmp);
             }
 
             delete[] cur;
             cur = nullptr;
-	    //exit(1);
         }
     }
 
