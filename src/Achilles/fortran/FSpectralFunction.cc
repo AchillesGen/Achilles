@@ -2,8 +2,8 @@
 #include <memory>
 
 extern "C" {
-    std::shared_ptr<achilles::SpectralFunction> LoadSpectralFunction(const char *filename) {
-        std::string filename_str(filename); 
+    std::shared_ptr<achilles::SpectralFunction> LoadSpectralFunction(char *filename, size_t len) {
+        std::string filename_str(filename, filename+len); 
         auto spectral =  std::make_shared<achilles::SpectralFunction>(filename_str);
         return spectral;
     }
