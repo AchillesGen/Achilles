@@ -493,8 +493,7 @@ void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs, achilles::E
         // Update status of particle to be decayed in previous node
         auto decay_part = history.Node(history.size()-1) -> ParticlesIn()[0];
         auto to_update = history.FindNodeOut(decay_part);
-        // Handle case where momentum is not within 1e-10
-        // TODO: Discuss with Stefan why this happens
+        // Handle case where momentum is not within 1e-10 (from BW mass shift)
         if(!to_update) {
             // Find particle with same PID and closest momentum
             PIDLocator visitor(decay_part.ID(), 1);

@@ -247,7 +247,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     for(size_t i = 0; i  < nlep_spins; ++i) {
         for(size_t j = 0; j < nhad_spins; ++j) {
             // TODO: Fix this to be correct!!!
-            size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1) + ((j&~1ul))+((j&1ul));
+            size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1); // + ((j&~1ul)<<1)+((j&1ul));
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {
