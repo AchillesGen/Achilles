@@ -90,6 +90,13 @@ CPMFindPackage(
       "HEPMC3_INSTALL_INTERFACES OFF"
       "HEPMC3_BUILD_STATIC_LIBS OFF"
 )
+# TODO Make this cleaner
+if(NOT TARGET HepMC3)
+    find_package(HepMC3 QUIET)
+    add_library(HepMC3 INTERFACE)
+    target_include_directories(HepMC3 INTERFACE ${HEPMC3_INCLUDE_DIR})
+    target_link_libraries(HepMC3 INTERFACE ${HEPMC3_LIBRARIES})
+endif()
 
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)

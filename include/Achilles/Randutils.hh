@@ -466,9 +466,9 @@ class auto_seeded : public SeedSeq {
 
         // The heap can vary from run to run as well.
         void* malloc_addr = malloc(sizeof(int));
-        free(malloc_addr);
         auto heap  = hash(malloc_addr);
         auto stack = hash(&malloc_addr);
+        free(malloc_addr);
 
         // Every call, we increment our random int.  We don't care about race
         // conditons.  The more, the merrier.
