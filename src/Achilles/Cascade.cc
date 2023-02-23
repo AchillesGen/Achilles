@@ -435,7 +435,7 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t& 
 
         // Are we already outside nucleus?
         if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
-            kickNuc -> Status() = ParticleStatus::escaped;
+            kickNuc -> Status() = ParticleStatus::final_state;
             break;
         }
         AdaptiveStep(particles, distance);
@@ -490,7 +490,7 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus,
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Are we already outside nucleus?
         if (kickNuc -> Position().Magnitude() >= nucleus -> Radius()) {
-            kickNuc -> Status() = ParticleStatus::escaped;
+            kickNuc -> Status() = ParticleStatus::final_state;
             break;
         }
         //AdaptiveStep(particles, distance);
@@ -528,7 +528,7 @@ void Cascade::Escaped(Particles &particles) {
         const double energy = particle -> Momentum().E() - Constant::mN - potential;
         if(particle -> Position().Magnitude2() > pow(radius, 2)
            && particle -> Status() != ParticleStatus::external_test) {
-            if(energy > 0) particle -> Status() = ParticleStatus::escaped;
+            if(energy > 0) particle -> Status() = ParticleStatus::final_state;
             else particle -> Status() = ParticleStatus::background;
             it = kickedIdxs.erase(it);
         } else if(particle -> Status() == ParticleStatus::external_test

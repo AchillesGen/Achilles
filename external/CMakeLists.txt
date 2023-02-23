@@ -72,6 +72,25 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
+CPMFindPackage(
+    NAME HepMC3
+    VERSION 3.2.5
+    GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
+    GIT_TAG 3.2.5
+    OPTIONS
+      "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
+      "HEPMC3_ENABLE_SEARCH OFF"
+      "HEPMC3_ENABLE_ROOTIO ${USE_ROOT}"
+      "HEPMC3_ENABLE_PROTOBUFIO OFF"
+      "HEPMC3_ENABLE_PYTHON OFF"
+      "HEPMC3_BUILD_DOCS OFF"
+      "HEPMC3_BUILD_EXAMPLES OFF"
+      "HEPMC3_INSTALL_EXAMPLES OFF"
+      "HEPMC3_ENABLE_TEST OFF"
+      "HEPMC3_INSTALL_INTERFACES OFF"
+      "HEPMC3_BUILD_STATIC_LIBS OFF"
+)
+
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
     # Catch2

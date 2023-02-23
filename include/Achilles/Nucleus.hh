@@ -248,10 +248,10 @@ class Nucleus {
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
+        PID m_pid;
 
         FourVector m_recoil{};
         std::shared_ptr<Potential> potential;
-        PID m_pid;
 };
 
 }

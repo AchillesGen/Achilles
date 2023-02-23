@@ -39,7 +39,7 @@ option(ENABLE_GZIP "Enable compression of event files" ON)
 option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
 option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
 option(ENABLE_BSM "Enable the generation of BSM events (Requires Sherap)" ON) 
-option(ENABLE_HEPMC3 "Enable the HepMC3 output format" ON)
+SET(ENABLE_HEPMC3 TRUE)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
@@ -68,9 +68,11 @@ find_package(SHERPA REQUIRED)
 find_package(ZLIB REQUIRED)
 endif()
 
-if(ENABLE_HEPMC3)
-# Find HepMC3
-find_package(HepMC3 REQUIRED)
+# Find ROOT if needed
+option(USE_ROOT "Enable reading of ROOT flux files" OFF)
+if(USE_ROOT)
+    MESSAGE(STATUS "Building with ROOT flux files")
+    find_package(ROOT REQUIRED)
 endif()
 
 # Add dependencies

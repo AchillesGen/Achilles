@@ -1,7 +1,6 @@
 # Load Catch2 information into variables
 include(FetchContent)
 FetchContent_GetProperties(catch2)
-include(${catch2_SOURCE_DIR}/contrib/Catch.cmake)
 
 add_library(catch_main STATIC catch_main.cpp)
 target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
@@ -43,6 +42,7 @@ add_executable(achilles-testsuite
     test_beam_mapper.cc
     test_ps_mapper.cc
     test_event_history.cc
+    test_poincare.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
     PUBLIC physics mappers event_gen)

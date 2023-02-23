@@ -14,10 +14,10 @@ TEST_CASE("QuasielasticTestMapper", "[PhaseSpace]") {
     REQUIRE_CALL(*beam, BeamIDs())
         .TIMES(2)
         .LR_RETURN((beam_ids));
-    REQUIRE_CALL(*beam, Flux(electron, beam_rans))
+    REQUIRE_CALL(*beam, Flux(electron, beam_rans, 0))
         .TIMES(1)
         .LR_RETURN((beam_mom));
-    REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_))
+    REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_, 0))
         .TIMES(1)
         .RETURN(1.0);
     REQUIRE_CALL(*beam, NVariables())

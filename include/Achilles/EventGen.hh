@@ -7,6 +7,7 @@
 #include "Achilles/QuasielasticTestMapper.hh"
 #include "Achilles/Vegas.hh"
 #include "Achilles/MultiChannel.hh"
+#include "Achilles/Unweighter.hh"
 
 #include <memory>
 #include <vector>
@@ -59,6 +60,7 @@ class EventGen {
         std::shared_ptr<EventWriter> writer;
         StatsData polarization0, polarization1;
         SherpaInterface *p_sherpa;
+        std::unique_ptr<Unweighter> unweighter;
 };
 
 }

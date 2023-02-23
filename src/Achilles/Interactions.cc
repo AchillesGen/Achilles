@@ -10,7 +10,6 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ThreeVector.hh"
-#include "Achilles/FourVector.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/Random.hh"
 
@@ -108,8 +107,8 @@ achilles::Interactions::MomentumPair Interactions::FinalizeMomentum(const Partic
     Random::Instance().Generate(rans, 0.0, 1.0);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
-    FourVector p1Out = FourVector(momentum[0], momentum[1], momentum[2], p1CM.E());
-    FourVector p2Out = FourVector(-momentum[0], -momentum[1], -momentum[2], p1CM.E());
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
 
     // Boost back to lab frame
     p1Out = p1Out.Boost(boostCM);

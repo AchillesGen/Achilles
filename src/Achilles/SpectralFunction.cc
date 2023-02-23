@@ -54,5 +54,6 @@ double SpectralFunction::operator()(double p, double E) const {
     if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back())
         return 0;
 
-    return func(p, E);
+    auto result = func(p, E);
+    return result > 0 ? result : 0;
 }
