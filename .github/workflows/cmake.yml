@@ -33,14 +33,14 @@ jobs:
     #         }
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Install dependencies
       run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
 
     - name: Set up cache
       id: cache-cpm
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/cpm-cache
         key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
@@ -63,7 +63,7 @@ jobs:
         message("::set-output name=timestamp::${current_date}")
 
     - name: ccache cache files 
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: .ccache
         key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
