@@ -70,6 +70,17 @@ CPMAddPackage(
         "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
+CPMAddPackage(
+    NAME HighFive
+    VERSION 2.6.2
+    GITHUB_REPOSITORY BlueBrain/HighFive
+    OPTIONS
+        "HIGHFIVE_USE_BOOST OFF"
+        "HIGHFIVE_EXAMPLES OFF"
+        "HIGHFIVE_BUILD_DOCS OFF"
+        "HIGHFIVE_UNIT_TESTS OFF"
+)
+
 # Install testing framework
 if(ACHILLES_ENABLE_TESTING)
     # Catch2
