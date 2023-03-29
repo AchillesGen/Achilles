@@ -16,6 +16,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wuseless-cast"
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "highfive/H5File.hpp"
 #pragma GCC diagnostic pop
 
