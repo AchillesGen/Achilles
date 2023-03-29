@@ -10,7 +10,13 @@
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Interpolation.hh"
 
-#include "H5Cpp.h"
+// #include "H5Cpp.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wuseless-cast"
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#include "highfive/H5Group.hpp"
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -166,7 +172,7 @@ class GeantInteractions : public Interactions {
     private:
         // Functions
         double CrossSectionAngle(bool, const double&, const double&) const;
-        void LoadData(bool, const H5::Group&);
+        void LoadData(bool, const HighFive::Group&);
 
         // Variables
         std::vector<double> m_theta, m_cdf;

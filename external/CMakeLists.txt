@@ -72,7 +72,7 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME HepMC3
     VERSION 3.2.5
     GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
@@ -89,6 +89,17 @@ CPMFindPackage(
       "HEPMC3_ENABLE_TEST OFF"
       "HEPMC3_INSTALL_INTERFACES OFF"
       "HEPMC3_BUILD_STATIC_LIBS OFF"
+)
+
+CPMAddPackage(
+    NAME HighFive
+    VERSION 2.6.2
+    GITHUB_REPOSITORY BlueBrain/HighFive
+    OPTIONS
+        "HIGHFIVE_USE_BOOST OFF"
+        "HIGHFIVE_EXAMPLES OFF"
+        "HIGHFIVE_BUILD_DOCS OFF"
+        "HIGHFIVE_UNIT_TESTS OFF"
 )
 
 # Install testing framework
