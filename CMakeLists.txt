@@ -76,7 +76,7 @@ if(USE_ROOT)
     list(GET VERSION_LIST 1 ROOT_MINOR_VERSION)
     if(${ROOT_MINOR_VERSION} LESS 14)
         # ROOT targets are missing includes and flags in ROOT 6.10 and 6.12
-        set_property(TARGET ROOT::Core Property
+        set_property(TARGET ROOT::Core PROPERTY
                      INTERFACE_INCLUDE_DIRECTORIES "${ROOT_INCLUDE_DIRS}")
 
         # Early ROOT does not include the flags required on targets
