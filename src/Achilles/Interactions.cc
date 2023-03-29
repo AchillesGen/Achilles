@@ -13,8 +13,14 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/Random.hh"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wuseless-cast"
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#include "highfive/H5File.hpp"
+#pragma GCC diagnostic pop
+
 using namespace achilles;
-using namespace H5;
 
 REGISTER_INTERACTION(GeantInteractions);
 // REGISTER_INTERACTION(GeantInteractionsDt);
@@ -133,50 +139,35 @@ GeantInteractions::GeantInteractions(const YAML::Node& node) {
 
     // Read in the Geant4 hdf5 file and get the np and pp groups
     spdlog::info("GeantInteractions: Loading Geant4 data from {0}.", filename);
-    H5File file(filename, H5F_ACC_RDONLY);
-    Group dataNP(file.openGroup("np")); 
-    Group dataPP(file.openGroup("pp"));
+    HighFive::File file(filename, HighFive::File::ReadOnly);
+    HighFive::Group dataNP(file.getGroup("np")); 
+    HighFive::Group dataPP(file.getGroup("pp"));
 
     // Get the datasets for np and load into local variables
     LoadData(false, dataNP);
 
     // Get the datasets for pp and load into local variables
     LoadData(true, dataPP);
-
-    // Clean-up
-    dataNP.close();
-    dataPP.close();
-    file.close();
-    H5Library::close();
 }
 
-void GeantInteractions::LoadData(bool samePID, const Group& group) {
+void GeantInteractions::LoadData(bool samePID, const HighFive::Group& group) {
     // Load datasets
-    DataSet pcm(group.openDataSet("pcm"));
-    DataSet sigTot(group.openDataSet("sigtot"));
-    DataSet sig(group.openDataSet("sig"));
+    HighFive::DataSet pcm(group.getDataSet("pcm"));
+    HighFive::DataSet sigTot(group.getDataSet("sigtot"));
+    HighFive::DataSet sig(group.getDataSet("sig"));
   
     // Get data for center of momentum
-    DataSpace pcmSpace = pcm.getSpace();
-    std::array<hsize_t, 1> dimPcm{};
-    pcmSpace.getSimpleExtentDims(dimPcm.data(), nullptr);
-    std::vector<double> pcmVec(dimPcm[0]);
-    pcm.read(pcmVec.data(), PredType::NATIVE_DOUBLE, pcmSpace, pcmSpace);
+    std::vector<double> pcmVec;
+    pcm.read(pcmVec);
 
     // Get data for total cross-section
-    DataSpace sigTotSpace = sigTot.getSpace();
-    std::array<hsize_t, 1> dimSigTot{};
-    sigTotSpace.getSimpleExtentDims(dimSigTot.data(), nullptr);
-    std::vector<double> sigTotVec(dimSigTot[0]);
-    sigTot.read(sigTotVec.data(), PredType::NATIVE_DOUBLE, sigTotSpace, sigTotSpace);
+    std::vector<double> sigTotVec;
+    sigTot.read(sigTotVec);
 
     // Get data for angular cross-section
-    DataSpace sigSpace = sig.getSpace();
-    std::array<hsize_t, 2> dimSig{};
-    sigSpace.getSimpleExtentDims(dimSig.data(), nullptr);
-    hsize_t dims = dimSig[0] * dimSig[1];
-    std::vector<double> sigAngular(dims);
-    sig.read(sigAngular.data(), PredType::NATIVE_DOUBLE, sigSpace, sigSpace);
+    auto dims = sig.getDimensions();
+    std::vector<double> sigAngular(dims[0]*dims[1]);
+    sig.read(sigAngular.data());
 
     // Perform interpolation for angles
     achilles::Interp2D interp(pcmVec, m_theta, sigAngular);
@@ -216,14 +207,6 @@ void GeantInteractions::LoadData(bool samePID, const Group& group) {
         m_thetaDistNP.SetData(pcmVec, m_cdf, theta);
         m_thetaDistNP.BicubicSpline();
     }
-
-    // Clean-up
-    pcmSpace.close();
-    sigTotSpace.close();
-    sigSpace.close();
-    pcm.close();
-    sigTot.close();
-    sig.close();
 }
 
 double GeantInteractions::CrossSection(const Particle& particle1,

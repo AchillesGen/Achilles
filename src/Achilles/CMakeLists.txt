@@ -59,7 +59,7 @@ add_library(physics SHARED
     InteractionsFactory.cc
     SpectralFunction.cc
 )
-target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+# target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 set(physics_libs "")
 if(ENABLE_GZIP)
     list(APPEND achilles_targets gzstream)
@@ -76,7 +76,7 @@ if(USE_ROOT)
     target_compile_definitions(physics PUBLIC -DUSE_ROOT)
 endif()
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities cuts ${HDF5_CXX_LIBRARIES})
+                      PUBLIC utilities cuts HighFive)
 list(APPEND achilles_targets physics)
 
 add_library(mappers SHARED
@@ -162,7 +162,6 @@ install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interf
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${HDF5_INCLUDE_DIRS}
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

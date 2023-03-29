@@ -54,7 +54,7 @@ endif()
 # find_package(Python REQUIRED COMPONENTS Development)
 
 # Find HDF5
-find_package(HDF5 REQUIRED COMPONENTS CXX)
+# find_package(HDF5 REQUIRED COMPONENTS CXX)
 
 # Find ZLIB to read gzip files
 if(ENABLE_GZIP)
