@@ -124,10 +124,10 @@ TEST_CASE("Vector", "[FormFactor]") {
         auto ff = achilles::ArringtonHill::Construct(achilles::FFType::vector, node);
         achilles::FormFactor::Values vals;
         ff -> Evaluate(1, vals);
-        CHECK(vals.Gep == Approx(13)); 
-        CHECK(vals.Gen == Approx(13)); 
-        CHECK(vals.Gmp == Approx(13)); 
-        CHECK(vals.Gmn == Approx(13)); 
+        CHECK(vals.Gep == Approx(13));
+        CHECK(vals.Gen == Approx(13));
+        CHECK(vals.Gmp == Approx(13));
+        CHECK(vals.Gmn == Approx(13));
     }
 }
 
@@ -141,6 +141,24 @@ TEST_CASE("Axial", "[FormFactor]") {
         ff -> Evaluate(1, vals);
         CHECK(vals.FA == Approx(-0.25));
         CHECK(vals.FAs == Approx(-0.25));
+    }
+    SECTION("AxialZExpansion") {
+        YAML::Node node = YAML::Load(R"node(
+            tcut: 1
+            t0: 1
+            CC Params: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+            Strange Params: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+            )node");
+        CHECK_THROWS_WITH(achilles::AxialZExpansion::Construct(achilles::FFType::vector, node),
+            "FormFactor: Expected type axial, got type vector");
+        auto ff = achilles::AxialZExpansion::Construct(achilles::FFType::axial, node);
+        achilles::FormFactor::Values vals;
+        ff -> Evaluate(1, vals);
+        CHECK(vals.Gep == Approx(9));
+        CHECK(vals.Gen == Approx(9));
+        CHECK(vals.Gmp == Approx(9));
+        CHECK(vals.Gmn == Approx(9));
+
     }
 }
 

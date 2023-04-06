@@ -36,7 +36,7 @@ struct FormFactorInfo {
 class FormFactor {
     public:
         struct Values {
-            double Gep{}, Gen{}, Gmp{}, Gmn{}; 
+            double Gep{}, Gen{}, Gmp{}, Gmn{};
             double F1p{}, F2p{}, F1n{}, F2n{};
             double FA{}, FAs{};
             double Fcoh{};
@@ -92,7 +92,7 @@ class FormFactorBuilder {
         }
         MOCK ~FormFactorBuilder() = default;
         MOCK FormFactorBuilder& Vector(const std::string&, const YAML::Node&);
-        MOCK FormFactorBuilder& AxialVector(const std::string&, const YAML::Node&); 
+        MOCK FormFactorBuilder& AxialVector(const std::string&, const YAML::Node&);
         MOCK FormFactorBuilder& Coherent(const std::string&, const YAML::Node&);
 
         MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
@@ -117,10 +117,10 @@ class FormFactorImpl {
     protected:
         void Fill(double, FormFactor::Values&) const;
         template<typename Derived>
-        static void Validate(FFType other) { 
+        static void Validate(FFType other) {
             if(Derived::Type() != other)
                 throw std::runtime_error(fmt::format("FormFactor: Expected type {}, got type {}",
-                                                     FFTypeToString(Derived::Type()), FFTypeToString(other))); 
+                                                     FFTypeToString(Derived::Type()), FFTypeToString(other)));
         }
 };
 
@@ -150,6 +150,29 @@ class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
         double MA, gan1, gans;
 };
 
+class AxialZExpansion : public FormFactorImpl, RegistrableFormFactor<AxialZExpansion> {
+    public:
+        AxialZExpansion(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "AxialZExpansion"; }
+        static FFType Type() { return FFType::axial; }
+    private:
+        double tcut, t0;
+        std::vector<double> cc_params{}, strange_params{};
+        double ZExpand(std::vector<double> A, double z) const {
+            // Compute the z-expansion, \sum{i=0}^{i_max} a_i z^i
+            double result = 0;
+            for(size_t i = A.size()-1; i > 0; --i) {
+                result += A[i];
+                result *= z;
+            }
+            return result + A[0];
+        }
+};
+
 class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
     public:
         Kelly(const YAML::Node&);
@@ -167,7 +190,7 @@ class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
         std::array<double, 4> termsMn{};
 
         double Parameterization(std::array<double, 4> A, double x) const {
-            return (1 + A[0]*x)/(1 + A[1]*x + A[2]*x*x + A[3]*x*x*x); 
+            return (1 + A[0]*x)/(1 + A[1]*x + A[2]*x*x + A[3]*x*x*x);
         }
 };
 
