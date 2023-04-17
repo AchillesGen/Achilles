@@ -1,5 +1,7 @@
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#ifdef GZIP
 #include "gzstream/gzstream.h"
+#endif
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenVertex.h"
 #include "HepMC3/GenParticle.h"
@@ -15,14 +17,15 @@ using namespace HepMC3;
 
 std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename, bool zipped) {
     std::shared_ptr<std::ostream> output = nullptr;
+#ifdef GZIP
     if(zipped) {
         std::string zipname = filename;
         if(filename.substr(filename.size() - 3) != ".gz")
             zipname += std::string(".gz");
         output = std::make_shared<ogzstream>(zipname.c_str());
-    } else {
+    } else
+#endif
         output = std::make_shared<std::ofstream>(filename);
-    }
 
     return output;
 }
@@ -37,7 +40,7 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config={std::string(filename),"1.0",std::string("Run card")};
     run->tools().push_back(config);
-    run->set_weight_names({"Default"});
+    run->set_weight_names({"Default", "PL", "PT"});
 
     file.set_run_info(run);
     file.write_run_info();
@@ -131,7 +134,9 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     for(size_t i = 1; i < leptons.size(); ++i) {
         const auto currPart = leptons[i];
         const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
-        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
+        int status = 1;
+        if(currPart.Status() == ParticleStatus::decayed) status=2;
+        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), status);
         v2->add_particle_out(p);
         recoilMom -= currPart.Momentum();
     }

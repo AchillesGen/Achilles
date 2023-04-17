@@ -13,6 +13,7 @@
 
 namespace achilles {
 
+// TODO: Reorganize to match HepMC3 standard
 enum class ParticleStatus : int {
     internal_test = -3,
     external_test = -2,
@@ -21,7 +22,8 @@ enum class ParticleStatus : int {
     initial_state = 1,
     final_state = 2,
     escaped = 3,
-    captured = 4
+    captured = 4,
+    decayed = 5,
 };
 
 /// The Particle class provides a container to handle information about the particle.
@@ -77,7 +79,7 @@ class Particle {
                       status(std::move(_status)), mothers(std::move(_mothers)),
                       daughters(std::move(_daughters)) { formationZone = 0;}
 
-        Particle(const Particle &other) : info{ParticleInfo(other.info.ID())},
+        Particle(const Particle &other) : info{other.info},
             momentum{other.momentum},
             position{other.position}, status{other.status}, mothers{other.mothers},
             formationZone{other.formationZone} {}
@@ -145,7 +147,7 @@ class Particle {
 
         /// Return the pid of the particle
         ///@return int: PID of the particle
-        PID ID() const noexcept { return info.ID(); }
+        PID ID() const noexcept { return info.IntID(); }
 
         ParticleInfo Info() const noexcept { return info; }
 

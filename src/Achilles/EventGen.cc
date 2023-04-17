@@ -13,19 +13,10 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ComplexFmt.hh"
 #include "Achilles/Units.hh"
-
-// TODO: Turn this into a factory to reduce the number of includes
-#include "Achilles/PhaseSpaceBuilder.hh"
-#include "Achilles/BeamMapper.hh"
-#include "Achilles/HadronicMapper.hh"
-#include "Achilles/FinalStateMapper.hh"
-#include "Achilles/PhaseSpaceMapper.hh"
-#include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Channels.hh"
 
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/Channels1.hh"
-#include "plugins/Sherpa/Channels3.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #endif
 
 #ifdef ENABLE_HEPMC3
@@ -33,57 +24,6 @@
 #endif
 
 #include "yaml-cpp/yaml.h"
-
-achilles::Channel<achilles::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<achilles::Beam> beam) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = std::make_unique<achilles::QuasielasticTestMapper>(node, beam);
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, {});
-    return channel;
-}
-
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                 std::shared_ptr<achilles::Beam> beam,
-                                                 const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .FinalState(T::Name(), masses).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-#ifdef ENABLE_BSM
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannelSherpa(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                       std::shared_ptr<achilles::Beam> beam,
-                                                       const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    auto massesGeV = masses;
-    for(auto &mass : massesGeV) mass /= (1000*1000);
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .SherpaFinalState(T::Name(), massesGeV).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                    std::shared_ptr<achilles::Beam> beam,
-                                                    std::unique_ptr<PHASIC::Channels> final_state,
-                                                    const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .GenFinalState(std::move(final_state)).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-#endif
 
 achilles::EventGen::EventGen(const std::string &configFile,
                              std::vector<std::string> shargs) {
@@ -138,19 +78,24 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
-    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    p_sherpa = new achilles::SherpaInterface();
     std::string model = config["Process"]["Model"].as<std::string>();
     std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    int qed = 0;
+    if(config["Process"]["QEDShower"])
+        if(config["Process"]["QEDShower"].as<bool>())
+            qed = 1;
+    shargs.push_back(fmt::format("ME_QED={}", qed));
     if(model == "SM") model = "SM_Nuc";
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    sherpa -> Initialize(shargs);
+    p_sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!sherpa -> InitializeProcess(leptonicProcess)) {
+    if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
-    leptonicProcess.m_mom_map = sherpa -> MomentumMap(leptonicProcess.Ids());
+    leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
     (void)shargs;
@@ -165,7 +110,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     scattering = std::make_shared<HardScattering>();
     scattering -> SetProcess(leptonicProcess);
 #ifdef ENABLE_BSM
-    scattering -> SetSherpa(sherpa);
+    scattering -> SetSherpa(p_sherpa);
 #endif
     scattering -> SetNuclear(std::move(nuclear_model));
 
@@ -189,7 +134,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
             throw std::runtime_error(error);
         }
 #else
-        auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
+        auto channels = p_sherpa -> GenerateChannels(scattering -> Process().Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
@@ -276,14 +221,23 @@ void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
     integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
+    std::string filename = fmt::format("events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
+    outputfile.open(filename);
     integrator(integrand);
     fmt::print("\n");
     auto result = integrator.Summary();
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
+<<<<<<< HEAD
     fmt::print("Unweighting efficiency: {:^8.5e} %\n",
                unweighter->Efficiency() * 100);
+||||||| 7ef3dbc
+=======
+    fmt::print("Polarization = {:^8.5e} +/- {:^8.5e}, {:^8.5e} +/- {:^8.5e}\n",
+                polarization0.Mean(), polarization0.Error(),
+                polarization1.Mean(), polarization1.Error());
+>>>>>>> tau_polarization
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
@@ -325,9 +279,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
+<<<<<<< HEAD
             // Update number of calls needed to ensure the number of generated events
             // is the same as that requested by the user
             integrator.Parameters().ncalls++;
+||||||| 7ef3dbc
+=======
+            polarization0 += 0;
+            polarization1 += 0;
+>>>>>>> tau_polarization
         }
         return 0;
     }
@@ -372,6 +332,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         }
     }
 
+    // TODO: Move to after unweighting?
     // Run the cascade if needed
     if(runCascade) {
         spdlog::trace("Hadrons:");
@@ -400,6 +361,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Write out events
     if(outputEvents) {
+#ifdef ENABLE_BSM
+        // Running Sherpa interface if requested
+        // Only needed when generating events and not optimizing the multichannel
+        // TODO: Move to after unweighting?
+        if(runDecays && event.Weight() > 0) {
+            p_sherpa -> GenerateEvent(event);
+        }
+#endif
+
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)
             Rotate(event);
@@ -413,12 +383,31 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
+<<<<<<< HEAD
             if(!unweighter->AcceptEvent(event)) {
                 // Update number of calls needed to ensure the number of generated events
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
+||||||| 7ef3dbc
+=======
+            event.Polarization(0) *= wgt*6;
+            event.Polarization(1) *= wgt*6;
+>>>>>>> tau_polarization
             writer -> Write(event);
+            polarization0 += event.Polarization(0);
+            polarization1 += event.Polarization(1);
+            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0) << "," << event.Polarization(1) << "," << event.Weight() << std::endl;
+            // File: events_enu_{Enu}.txt
+            // Event: q0 = E_nu - E_tau
+            // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()
+            //
+            // total cross section = mean(event.Weight())
+            //
+            // Python: 
+            // Figure 5: Histogram in q0 (cut on 15 < theta_tau < 17) PL_num/(total cross section), PT_num/(total cross section)
+            // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
+            // New Fig: Total cross section for tau neutrino vs Enu
         }
         } else {
             unweighter->AddEvent(event);
