@@ -29,16 +29,17 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
     using namespace achilles::Constant;
     const std::complex<double> i(0, 1);
     // Determine process
-    bool init_neutrino = ParticleInfo(process.m_ids[0]).IsNeutrino();
-    bool neutral_current = NeutralCurrent(process.m_ids[0], process.m_ids[1]);
-    bool charged_current = ChargedCurrent(init_neutrino, process.m_ids[0], process.m_ids[1]);
+    bool init_neutrino = ParticleInfo(process.m_leptonic.first).IsNeutrino();
+    bool neutral_current = NeutralCurrent(process.m_leptonic.first, process.m_leptonic.second[0]);
+    bool charged_current = ChargedCurrent(init_neutrino, process.m_leptonic.first,
+                                          process.m_leptonic.second[0]);
     if(!neutral_current && !charged_current) 
         throw std::runtime_error("HardScattering: Invalid process");
 
     // TODO: Define couplings correctly
     if(charged_current) {
-        pid = init_neutrino ? (process.m_ids[0].AsInt() < 0 ? 24 : -24)
-                            : (process.m_ids[0].AsInt() < 0 ? -24 : 24);
+        pid = init_neutrino ? (process.m_leptonic.first.AsInt() < 0 ? 24 : -24)
+                            : (process.m_leptonic.first.AsInt() < 0 ? -24 : 24);
         coupl_right = 0;
         coupl_left = ee*i/(sw*sqrt(2));
         mass = Constant::MW;
@@ -56,7 +57,7 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
             pid = 22;
         }
     }
-    anti = process.m_ids[0].AsInt() < 0;
+    anti = process.m_leptonic.first.AsInt() < 0;
 }
 
 bool LeptonicCurrent::NeutralCurrent(achilles::PID initial, achilles::PID final) const {
@@ -286,13 +287,14 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
 
     double spin_avg = 1;
-    if(!ParticleInfo(m_leptonicProcess.m_ids[0]).IsNeutrino()) spin_avg *= 2;
+    if(!ParticleInfo(m_leptonicProcess.m_leptonic.first).IsNeutrino()) spin_avg *= 2;
     if(m_nuclear -> NSpins() > 1) spin_avg *= 2;
 
     // TODO: Correct this flux
     // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 
     //                      - event.Momentum()[0].M2()*event.Momentum()[1].M2());
-    double mass = ParticleInfo(m_leptonicProcess.m_states.begin()->first[0]).Mass();
+    // TODO: Handle multiple hadron initial states
+    double mass = ParticleInfo(m_leptonicProcess.m_hadronic.first[0]).Mass();
     double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
     static constexpr double to_nb = 1e6;
     std::vector<double> xsecs(hadronCurrent.size());

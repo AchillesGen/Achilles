@@ -38,7 +38,7 @@ void Event::InitializeLeptons(const Process_Info &process) {
 
 void Event::InitializeHadrons(const Process_Info &process) {
     // Coherent scattering is handled inside the coherent class
-    if(ParticleInfo(process.m_states.begin()->first[0]).IsNucleus())
+    if(ParticleInfo(process.m_hadronic.first[0]).IsNucleus())
         return;
 
     // Get all hadronic momenta
@@ -49,17 +49,17 @@ void Event::InitializeHadrons(const Process_Info &process) {
         }
     }
 
-    // TODO: Update to handle multiple initial and final state particles
+    // TODO: Refactor to use the process / process_group structure
     // Initial state setup
-    size_t idx = SelectNucleon();
-    Particle &initial = m_nuc -> Nucleons()[idx];
-    initial.Momentum() = mom.front();
-    initial.Status() = ParticleStatus::initial_state;
+    // size_t idx = SelectNucleon();
+    // Particle &initial = m_nuc -> Nucleons()[idx];
+    // initial.Momentum() = mom.front();
+    // initial.Status() = ParticleStatus::initial_state;
 
-    // Final state setup
-    Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
-                   initial.Position(), ParticleStatus::propagating);
-    m_nuc -> Nucleons().push_back(final);
+    // // Final state setup
+    // Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
+    //                initial.Position(), ParticleStatus::propagating);
+    // m_nuc -> Nucleons().push_back(final);
 }
 
 void Event::Finalize() {

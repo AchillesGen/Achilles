@@ -7,8 +7,8 @@
 
 TEST_CASE("CrossSection", "[HardScattering]") {
     achilles::Process_Info info; 
-    info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
-    info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
+    info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
     info.m_mom_map = {{0, achilles::PID::electron().AsInt()},
                       {1, achilles::PID::proton().AsInt()},
                       {2, achilles::PID::electron().AsInt()},
@@ -66,8 +66,8 @@ TEST_CASE("CrossSection", "[HardScattering]") {
 
 TEST_CASE("FillEvent", "[HardScattering]") {
     achilles::Process_Info info; 
-    info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
-    info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
+    info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
     std::vector<double> xsecs;
     MockEvent event; 
     REQUIRE_CALL(event, InitializeLeptons(info)).TIMES(1);

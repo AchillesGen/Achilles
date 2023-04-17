@@ -1,22 +1,20 @@
 #include "Achilles/ProcessInfo.hh"
 
 size_t achilles::Process_Info::Multiplicity() const {
-    return m_ids.size() + m_states.begin() -> first.size() + m_states.begin() -> second.size();
+    return 1+m_leptonic.second.size() + m_hadronic.first.size() + m_hadronic.second.size();
 }
 
 std::vector<double> achilles::Process_Info::Masses() const {
     std::vector<double> masses;
 
     // Get Hadronic current masses
-    for(size_t i = 0; i < m_states.begin() -> second.size(); ++i) {
-        spdlog::trace("Mass[{}] = {}", m_states.begin() -> second[i], ParticleInfo(m_states.begin() -> second[i]).Mass());
-        masses.push_back(pow(ParticleInfo(m_states.begin() -> second[i]).Mass(), 2));
+    for(const auto &part : m_hadronic.second) {
+        masses.push_back(pow(ParticleInfo(part).Mass(), 2));
     }
 
     // Get Leptonic current masses
-    for(size_t i = 1; i < m_ids.size(); ++i) {
-        spdlog::trace("Mass[{}, {}] = {}", m_ids[i], ParticleInfo(m_ids[i]).Name(), ParticleInfo(m_ids[i]).Mass());
-        masses.push_back(pow(ParticleInfo(m_ids[i]).Mass(), 2));
+    for(const auto &part : m_leptonic.second) {
+        masses.push_back(pow(ParticleInfo(part).Mass(), 2));
     }
 
     return masses;
@@ -25,19 +23,28 @@ std::vector<double> achilles::Process_Info::Masses() const {
 std::vector<long> achilles::Process_Info::Ids() const {
     std::vector<long> ids;
 
-    // Get initial hadronic id
-    ids.push_back(m_states.begin() -> first[0].AsInt());
+    // Get initial hadronic ids
+    for(const auto &part : m_hadronic.first)
+        ids.push_back(part.AsInt());
 
     // Get inital lepton id
-    ids.push_back(m_ids[0].AsInt());
+    ids.push_back(m_leptonic.first.AsInt());
 
     // Get remaining hadronic ids
-    for(size_t i = 0; i < m_states.begin() -> second.size(); ++i)
-        ids.push_back(m_states.begin() -> second[i].AsInt());
+    for(const auto &part : m_hadronic.second)
+        ids.push_back(part.AsInt());
 
     // Get remaining leptonic ids
-    for(size_t i = 1; i < m_ids.size(); ++i)
-        ids.push_back(m_ids[i].AsInt());
+    for(const auto &part : m_leptonic.second)
+        ids.push_back(part.AsInt());
 
     return ids;
+}
+
+int achilles::Process_Info::LeptonicCharge() const {
+    int charge = -ParticleInfo(m_leptonic.first).IntCharge();
+    for(const auto &part : m_leptonic.second) {
+        charge += ParticleInfo(part).IntCharge();
+    }
+    return charge/3;
 }

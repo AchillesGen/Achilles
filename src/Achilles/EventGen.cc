@@ -66,8 +66,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // TODO: Handle the beam initial state better
     if(beam -> BeamIDs().size() > 1)
         throw std::runtime_error("Multiple processes are not implemented yet. Please use only one beam.");
-    leptonicProcess.m_ids.insert(leptonicProcess.m_ids.begin(),
-                                 beam -> BeamIDs().begin(), beam -> BeamIDs().end());
+    leptonicProcess.m_leptonic.first = *beam -> BeamIDs().begin();
 
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
@@ -138,7 +137,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
-                                                          scattering -> Process().m_ids.size(), 2,
+                                                          scattering -> Process().m_leptonic.second.size()+1, 2,
                                                           beam, std::move(chan), masses);
             integrand.AddChannel(std::move(channel));
             spdlog::info("Adding Channel{}", count++);
@@ -254,7 +253,8 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     Event event(nucleus, mom, wgt);
 
     // Initialize the particle ids for the processes
-    const auto pids = scattering -> Process().m_ids;
+    auto pids = scattering -> Process().m_leptonic.second;
+    pids.insert(pids.begin(), scattering -> Process().m_leptonic.first);
 
     // Setup flux value
     event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);

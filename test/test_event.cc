@@ -40,8 +40,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
             .TIMES(5);
 
         achilles::Process_Info info;
-        info.m_ids = {achilles::PID::electron(), achilles::PID::electron()};
-        info.m_states = {{{achilles::PID::proton()}, {achilles::PID::proton()}}};
+        info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+        info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
         info.m_mom_map = {{0, achilles::PID::proton().AsInt()},
                           {1, achilles::PID::electron().AsInt()},
                           {2, achilles::PID::electron().AsInt()},

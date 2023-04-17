@@ -98,18 +98,16 @@ std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event
     return results;
 }
 
+// TODO: Should return a process group
 void Coherent::AllowedStates(Process_Info &info) const {
     // Check for charge conservation
-    int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
-    for(size_t i = 1; i < info.m_ids.size(); ++i) {
-        charge += ParticleInfo(info.m_ids[i]).IntCharge();
-    }
-    charge /= 3;
+    const auto charge = info.LeptonicCharge();
     spdlog::debug("Charge = {}", charge);
     if(charge != 0)
         throw std::runtime_error(fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
 
-    info.m_states[{nucleus_pid}] = {nucleus_pid}; 
+    // FIXME: refactor to process group
+    // info.m_states[{nucleus_pid}] = {nucleus_pid}; 
 }
 
 bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
@@ -198,28 +196,26 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     return results;
 }
 
+// TODO: Should return a process group
 void QESpectral::AllowedStates(Process_Info &info) const {
     // Check for charge conservation
-    int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
-    for(size_t i = 1; i < info.m_ids.size(); ++i) {
-        charge += ParticleInfo(info.m_ids[i]).IntCharge();
-    }
-    charge /= 3;
+    const auto charge = info.LeptonicCharge();
     if(std::abs(charge) > 1)
         throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
 
-    switch(charge) {
-        case -1: // Final state has less charge than initial
-            info.m_states[{PID::neutron()}] = {PID::proton()}; 
-            break; 
-        case 0: // Same charge in inital and final
-            info.m_states[{PID::proton()}] = {PID::proton()}; 
-            info.m_states[{PID::neutron()}] = {PID::neutron()}; 
-            break;
-        case 1: // Final state has more charge than initial
-            info.m_states[{PID::proton()}] = {PID::neutron()}; 
-            break;
-    }
+    // FIXME: Should create a process group
+    // switch(charge) {
+    //     case -1: // Final state has less charge than initial
+    //         info.m_states[{PID::neutron()}] = {PID::proton()}; 
+    //         break; 
+    //     case 0: // Same charge in inital and final
+    //         info.m_states[{PID::proton()}] = {PID::proton()}; 
+    //         info.m_states[{PID::neutron()}] = {PID::neutron()}; 
+    //         break;
+    //     case 1: // Final state has more charge than initial
+    //         info.m_states[{PID::proton()}] = {PID::neutron()}; 
+    //         break;
+    // }
 }
 
 bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
