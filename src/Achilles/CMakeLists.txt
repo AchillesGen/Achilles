@@ -100,9 +100,9 @@ add_library(event_gen SHARED
     EventWriter.cc
 )
 if(ENABLE_HEPMC3)
-list(APPEND achilles_targets hepmc3)
+list(APPEND achilles_targets hepmc3 nuhepmc3)
 target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
-target_link_libraries(event_gen PUBLIC hepmc3)
+target_link_libraries(event_gen PUBLIC hepmc3 nuhepmc3)
 endif()
 target_link_libraries(event_gen PRIVATE project_options project_warnings
                                 PUBLIC physics mappers) #fortran_interface
