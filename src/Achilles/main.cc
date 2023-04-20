@@ -9,7 +9,7 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/NuclearModel.hh"
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #include "plugins/Sherpa/Channels.hh"
 #endif // ENABLE_BSM
 

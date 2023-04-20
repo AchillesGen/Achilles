@@ -1,6 +1,6 @@
 Main:
   NEvents: 100000
-  HardCuts: true
+  HardCuts: false
   EventCuts: false
   DoRotate: false
   Output:
@@ -10,7 +10,7 @@ Main:
 
 Process:
   Model: DarkNeutrinoPortal_Dirac_UFO
-  Final States: [11]
+  Final States: [15]
   ParamCard: parameters.dat
 
 Initialize:
@@ -23,7 +23,7 @@ Unweighting:
 
 Beams:
   - Beam:
-      PID: 11
+      PID: 16
       Beam Params:
         Type: Monochromatic
         Energy: 1300

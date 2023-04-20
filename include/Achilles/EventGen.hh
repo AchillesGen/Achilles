@@ -28,7 +28,7 @@ class Cascade;
 class HardScattering;
 class EventWriter;
 
-class SherpaMEs;
+class SherpaInterface;
 
 class EventGen {
     public:
@@ -38,6 +38,7 @@ class EventGen {
 
     private:
         bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
+        bool runDecays{true};
         bool doRotate{false};
         double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
@@ -54,7 +55,10 @@ class EventGen {
         Integrand<FourVector> integrand;
         YAML::Node config;
 
+        std::ofstream outputfile;
+
         std::shared_ptr<EventWriter> writer;
+        SherpaInterface *p_sherpa;
         std::unique_ptr<Unweighter> unweighter;
 };
 
