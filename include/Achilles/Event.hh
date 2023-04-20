@@ -89,8 +89,6 @@ class Event {
                 && m_me == other.m_me && m_vWgt == other.m_meWgt
                 && m_leptons == other.m_leptons;
         }
-        double& Polarization(size_t idx) { return m_polarization[idx]; }
-        const double& Polarization(size_t idx) const { return m_polarization[idx]; }
 
     private:
         static bool MatrixCompare(const MatrixElementStruct&, double);
@@ -107,7 +105,6 @@ class Event {
         double m_vWgt{}, m_meWgt{}, m_wgt{-1};
         vParticles m_leptons{};
         EventHistory m_history{};
-        vParticles m_history{};
         double flux;
 };
 

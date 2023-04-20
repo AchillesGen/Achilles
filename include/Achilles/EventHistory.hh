@@ -11,7 +11,7 @@ namespace achilles {
 class Nucleus;
 class NuclearRemnant;
 
-struct compare_momentum : public std::unary_function<Particle, bool> {
+struct compare_momentum {
     explicit compare_momentum(const Particle &particle, double _eps = 1e-10) : self(particle), eps(_eps) {}
     bool operator()(const Particle &other) {
         return self.Momentum().Approx(other.Momentum(), eps) && self.ID() == other.ID();

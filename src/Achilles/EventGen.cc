@@ -377,6 +377,16 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(runDecays && event.Weight() > 0) {
             p_sherpa -> GenerateEvent(event);
         }
+#else
+        if(event.Weight() > 0) {
+            // TODO: Properly build history including the cascade
+            std::vector<Particle> final;
+            for(const auto &part : event.Particles()) {
+                if(part.IsFinal()) final.push_back(part);
+            }
+            event.History().AddVertex(init_had.Position(), {init_had, init_lep}, {final},
+                                      EventHistory::StatusCode::primary); 
+        }
 #endif
         // TODO: Get remnant working
         // Setup remnant in history
@@ -410,22 +420,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 integrator.Parameters().ncalls++;
             }
             writer -> Write(event);
-            polarization0 += event.Polarization(0);
-            polarization1 += event.Polarization(1);
-            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0) << "," << event.Polarization(1) << "," << event.Weight() << std::endl;
-            // File: events_enu_{Enu}.txt
-            // Event: q0 = E_nu - E_tau
-            // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()
-            //
-            // total cross section = mean(event.Weight())
-            //
-            // Python: 
-            // Figure 5: Histogram in q0 (cut on 15 < theta_tau < 17) PL_num/(total cross section), PT_num/(total cross section)
-            // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
-            // New Fig: Total cross section for tau neutrino vs Enu
         }
-        } else {
-            unweighter->AddEvent(event);
+    } else {
+        unweighter->AddEvent(event);
     }
 
     // Always return the weight when the event passes the initial hard cut.

@@ -415,15 +415,8 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
 {
   DEBUG_FUNC("");
   singleProcess->Integrator()->SetMax(event.Weight());
-  // Update blobs to contain cascade information
+  // TODO: Update blobs to contain cascade information
   auto blob = p_sherpa->GetEventHandler()->GetBlobs();
-  // auto legs = reader -> GetAmpl() -> Legs();
-  // for(auto &leg : legs) {
-  //   auto mom = leg -> Mom();
-  //   mom[2] = -mom[2];
-  //   mom[3] = -mom[3];
-  //   leg -> SetMom(mom);
-  // }
   bool res(p_sherpa->GetEventHandler()->GenerateEvent(SHERPA::eventtype::StandardPerturbative));
 
   // Extract all active particles in the event
@@ -436,7 +429,6 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
 achilles::FourVector achilles::SherpaInterface::ToAchilles(const ATOOLS::Vec4D &mom) {
     // Convert from Sherpa to Achilles.
     // NOTE: Sherpa is in GeV and Achilles is in MeV
-    // NOTE: The momentum setup in Sherpa is rotated by Pi around the x-axis, so we have to unrotate it
     return {mom[0]*1000, mom[1]*1000, mom[2]*1000, mom[3]*1000};
 }
 
