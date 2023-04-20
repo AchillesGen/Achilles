@@ -129,10 +129,11 @@ class PDFBeam : public FluxType {
     public:
         PDFBeam(const YAML::Node&);
         int NVariables() const override { return 1; }
-        FourVector Flux(const std::vector<double>&) const override;
-        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        FourVector Flux(const std::vector<double>&, double) const override;
+        double GenerateWeight(const FourVector&, std::vector<double>&, double) const override;
         std::string Type() const override { return "PDFBeam"; }
         double MaxEnergy() const override { return 0; }
+        double EvaluateFlux(const FourVector&) const override;
 
     private:
         std::unique_ptr<PDFBase> p_pdf;
