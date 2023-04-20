@@ -42,24 +42,26 @@ class Oset:
     def beta(self, x):
         return -0.038*x**2 + 0.204*x + 0.613
 
-    def __call__(self, radius, ppi):
-        rho = self.density(radius)
-        kf = (3*np.pi**2*rho*self.N/self.A)**(1/3)*HBARC
-        ef = np.sqrt(kf**2 + self.m_n**2)
+    def __call__(self, cos_piN,kf, radius, ppi,flag):
+        rhop=self.density_p(radius,self.Z,self.N)
+        rhon=self.density_p(radius,self.Z,self.N)/self.Z*self.N
 
+        rho = (rhop+rhon)*0.5
+        ef = np.sqrt(kf**2 + self.m_n**2)
         # Absorption
         wqa = ppi.energy()
         if(ppi.energy() - ppi.mass() > 0.5*HBARC):
             wqa = self.m_pi + 0.5*HBARC 
-
-        abs_swave = 4*np.pi/ppi.p()*(1+wqa/(2*self.m_n))*self.imb0*rho*rho
+        # Eq. 3.13         
+        #abs_swave = 4*np.pi/ppi.p()*(1+wqa/(2*self.m_n))*self.imb0*rho*rho
+        abs_swave = 4*np.pi/wqa*(1+wqa/(2*self.m_n))*self.imb0*rho*rho
         # Convert to fm^-1
         abs_swave *= HBARC**5
 
         # Delta kinematics
-        p2 = ppi.p2() + 0.6*kf**2
+        p2 = ppi.p2() + kf**2 +2.0*ppi.p()*kf*cos_piN
         p = np.sqrt(p2)
-        edelta = ppi.energy() + np.sqrt(0.6*kf**2+self.m_n**2)
+        edelta = ppi.energy() + np.sqrt(kf**2+self.m_n**2)
         s = edelta*edelta - p2
         sqrts = np.sqrt(s)
 
@@ -70,7 +72,7 @@ class Oset:
 
         # Nucleon CM energy
         en = sqrts - wcm
-
+        # eq 2.13
         mu0 = (edelta*en - ef*sqrts)/(p*pcm)
         if(mu0 < -1):
             mu0 = -1
@@ -86,7 +88,7 @@ class Oset:
         gamma_free = self.ax3*pcm*pcm2/sqrts
         gamma = gamma_free*pauli
         x = (ppi.energy()-ppi.mass())/self.m_pi
-
+        # eq 2.21
         rho_ratio = rho/self.rho0
         alpha = self.alpha(x)
         gamma_cq = self.cq(x)*rho_ratio**alpha
@@ -101,16 +103,16 @@ class Oset:
             gamma_ca3 = 0
         gamma_tot = gamma + gamma_cq + gamma_ca2 + gamma_ca3
         prop2 = 1/((sqrts - self.m_delta)**2 + gamma_tot**2)
-
+        # Eq 2.24
         abs_pwave = self.ax2*pcm2/ppi.p()*rho*(gamma_ca2+gamma_ca3)*prop2
         # Convert to fm^-1
         abs_pwave *= HBARC**2
 
         # Quasielastic
-        qel_pwave = self.ax2*pcm2/ppi.p()*rho*gamma*prop2
+        qel_pwave = self.ax2*pcm2/ppi.p()*rho*(gamma)*prop2
         # Convert to fm^-1
         qel_pwave *= HBARC**2
-
+        # Eq. 3.10 mu_cm+1/2
         pauli_swave = 1 - (p*pcm-edelta*en+ef*sqrts)/(2*p*pcm)
         if(pauli_swave < 0):
             pauli_swave = 0
@@ -119,6 +121,7 @@ class Oset:
         wswave = sqrts
         if(sqrts > 6.76*HBARC):
             wswave = 6.76*HBARC
+        # Eq 3.7 and 3.8    
         xi = (wswave - self.m_n - self.m_pi)/self.m_pi
         bxi = 0.21972+0.066025*xi-0.018665*xi**2
         dxi = -0.03130+0.370625*xi-0.08229*xi**2
@@ -127,17 +130,36 @@ class Oset:
         sigma = 0.19753+0.06899*xi-0.01334*xi*xi
         # convert sigma to MeV^2
         sigma = sigma/self.m_pi**2
+        # Eq. 3.1 
         qel_swave = rho*sigma*pauli_swave
         # Convert to fm^-1
         qel_swave *= HBARC**2
 
-        quasielastic = qel_swave + qel_pwave
-        absorption = abs_swave + abs_pwave
+        quasielastic = (qel_pwave + qel_swave)*2*np.pi*kf**2
+        absorption = (abs_pwave + abs_swave)*2*np.pi*kf**2 
+        #absorption*=(self.A-1)*(self.A-2)/(self.A)**2
+        #quasielastic*=(self.A-1)/(self.A)
+        if(flag==1):
+            res=absorption
+        else:
+            res=quasielastic
 
-        return absorption, quasielastic
+        return res #absorption#, quasielastic
 
     def density(self, radius):
         return self.rho0/(1+np.exp((radius-3.971)/0.5935))
+
+    def density_p(self, radius, Z, A):
+        rr_e=3.971#4.05
+        rr2_p=0.69
+        a_p=0.5935
+        rr=rr_e+(5.0*rr2_p*rr_e)/(15*rr_e**2+7*np.pi**2*a_p**2)
+        a=np.sqrt((rr_e**3+np.pi**2*a_p**2*rr-rr**3)/(np.pi**2*rr))
+        rhop=self.rho0/(1+np.exp((radius-rr)/a))
+        return rhop
+    #self.rho0/(1+np.exp((radius-rr)/a))
+    #self.rho0*(1+a*(radius/rr)**2)*np.exp(-(radius/rr)**2)
+
 
 
 def fit(x, a, b, c):
@@ -151,7 +173,8 @@ def test(k):
 if __name__ == '__main__':
     import pandas as pd
     from scipy.optimize import curve_fit
-    from scipy.integrate import quad, dblquad
+    from scipy.integrate import quad, dblquad,nquad
+    from scipy.integrate import simps
 
     result = quad(test, 0, 225)
     print((3*np.pi**2/2*result[0])**(1/3))
@@ -161,17 +184,37 @@ if __name__ == '__main__':
     tpi = 165
     epi = tpi+m_pi
     ppi = physics.Vector4(0, 0, np.sqrt(epi**2-m_pi**2), epi)
+    q=np.sqrt(epi**2-m_pi**2)/HBARC
 
     oset = Oset(26, 30)
+    #oset = Oset(20, 20)
 
-    radii = np.linspace(0, 7, 100)
-    rho = oset.density(radii)*(HBARC/m_pi)**3
+    
+
+    radii = np.linspace(0.05, 8, 20)
+
+    rho = oset.density_p(radii,26,30)*(HBARC/m_pi)**3
     scatter = []
     absorbed = []
+    scatter_p= []
+    absorbed_p=[]
+    #cos_piN=-0.95
     for radius in radii:
-        absorption, interact = oset(radius, ppi)
-        absorbed.append(absorption)
-        scatter.append(interact)
+        rhop=oset.density_p(radius,26,30)
+        kf=(3*np.pi**2*rhop)**(1/3)*HBARC
+        absorption, err_abs = nquad(oset,[[-1.0,1.0],[0.0,kf]], args=(radius, ppi,1))
+        print(absorption*3/4/np.pi/kf**3,radius,kf)  
+        interact, err_int = nquad(oset,[[-1.0,1.0],[0.0,kf]], args=(radius, ppi,2))
+        print(interact*3/4/np.pi/kf**3,radius,kf) 
+        absorbed.append(absorption*3/4/np.pi/kf**3)
+        scatter.append(interact*3/4/np.pi/kf**3)
+    for i in range (20):
+        scatter_p.append(np.trapz(radii/radii[i]*np.sqrt(q**2/2/np.pi)*(np.exp(-(radii[i]-radii)**2*q**2/2.0)-
+            np.exp(-(radii[i]+radii)**2*q**2/2.0))*scatter,radii))
+        absorbed_p.append(np.trapz(radii/radii[i]*np.sqrt(q**2/2/np.pi)*(np.exp(-(radii[i]-radii)**2*q**2/2.0)-
+            np.exp(-(radii[i]+radii)**2*q**2/2.0))*absorbed,radii))
+
+        print("scatter", absorbed_p[i], absorbed[i])    
 
     oset_data = pd.read_csv('oset.csv',
                             names=['Qx', 'Qy', 'Ax', 'Ay', 'rhox', 'rhoy'])
@@ -180,7 +223,9 @@ if __name__ == '__main__':
 
     # Plot Oset data
     plt.plot(radii, scatter, color='tab:red')
+    plt.plot(radii,scatter_p, color='tab:red', ls='-.')
     plt.plot(radii, absorbed, color='tab:blue')
+    plt.plot(radii,absorbed_p, color='tab:blue', ls='-.')    
     plt.plot(radii, rho, color='tab:green')
 
     # Plot our calculation
@@ -189,5 +234,5 @@ if __name__ == '__main__':
     plt.plot(oset_data['rhox'], oset_data['rhoy'], color='tab:green', ls='--')
 
     plt.xlim([0,7])
-    plt.ylim([0,0.8])
+    plt.ylim([0,1.0])
     plt.show()
