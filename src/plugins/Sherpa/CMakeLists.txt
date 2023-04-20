@@ -1,5 +1,5 @@
 add_library(sherpa SHARED
-    SherpaMEs.cc
+    SherpaInterface.cc
     Channels3.cc
     Channels1.cc
 )

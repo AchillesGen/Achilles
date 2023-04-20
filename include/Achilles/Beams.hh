@@ -6,13 +6,9 @@
 #include <set>
 #include <memory>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#include "yaml-cpp/yaml.h"
-#pragma GCC diagnostic pop
-
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PDFBase.hh"
 
 namespace achilles {
 
@@ -29,6 +25,7 @@ class FluxType {
         virtual FourVector Flux(const std::vector<double>&) const = 0;
         virtual double GenerateWeight(const FourVector&, std::vector<double>&) const = 0;
         virtual std::string Type() const = 0;
+        virtual double MaxEnergy() const = 0;
 };
 
 class Monochromatic : public FluxType {
@@ -42,6 +39,7 @@ class Monochromatic : public FluxType {
             return 1;
         }
         std::string Type() const override { return "Monochromatic"; }
+        double MaxEnergy() const override { return m_energy; }
 
     private:
         double m_energy;
@@ -75,7 +73,7 @@ class Spectrum : public FluxType {
         std::string Type() const override { return "Spectrum"; }
         std::string Format() const;
         double MinEnergy() const { return m_min_energy; }
-        double MaxEnergy() const { return m_max_energy; }
+        double MaxEnergy() const override { return m_max_energy; }
 
     private:
         void AchillesHeader(std::ifstream&);
@@ -93,6 +91,19 @@ class Spectrum : public FluxType {
         double m_delta_energy{};
         flux_units m_units;
         FluxFormat m_format;
+};
+
+class PDFBeam : public FluxType {
+    public:
+        PDFBeam(const YAML::Node&);
+        int NVariables() const override { return 1; }
+        FourVector Flux(const std::vector<double>&) const override;
+        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        std::string Type() const override { return "PDFBeam"; }
+        double MaxEnergy() const override { return 0; }
+
+    private:
+        std::unique_ptr<PDFBase> p_pdf;
 };
 
 class Beam {
@@ -116,6 +127,7 @@ class Beam {
         }
         size_t NBeams() const { return m_beams.size(); }
         MOCK const std::set<PID>& BeamIDs() const { return m_pids; }
+        double MaxEnergy() const;
 
         // Accessors
         std::shared_ptr<FluxType> operator[](const PID pid) { return m_beams[pid]; }
@@ -128,68 +140,6 @@ class Beam {
         int n_vars;
         std::set<PID> m_pids;
         BeamMap m_beams;
-};
-
-}
-
-namespace YAML {
-
-template<>
-struct convert<std::shared_ptr<achilles::FluxType>> {
-    // FIXME: How to encode a generic flux
-    static Node encode(const std::shared_ptr<achilles::FluxType> &rhs) {
-        Node node;
-        node["Type"] = rhs -> Type();
-
-        return node;
-    }
-
-    static bool decode(const Node &node, std::shared_ptr<achilles::FluxType> &rhs) {
-        // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
-        if(node["Type"].as<std::string>() == "Monochromatic") {
-            auto energy = node["Energy"].as<double>();
-            rhs = std::make_shared<achilles::Monochromatic>(energy);
-            return true;
-        } else if(node["Type"].as<std::string>() == "Spectrum") {
-            rhs = std::make_shared<achilles::Spectrum>(node);
-            return true;
-        }
-
-        return false;
-    }
-};
-
-template<>
-struct convert<achilles::Beam> {
-    // TODO: Implement encoding
-    static Node encode(const achilles::Beam &rhs) {
-        Node node;
-
-        for(const auto &beam : rhs.m_beams) {
-            Node subnode;
-            subnode["Beam"]["PID"] = static_cast<int>(beam.first);
-            subnode["Beam"]["Beam Params"] = beam.second;
-            node.push_back(subnode);
-        }
-
-        return node;
-    } 
-
-    static bool decode(const Node &node, achilles::Beam &rhs) {
-        achilles::Beam::BeamMap beams; 
-
-        for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
-            YAML::Node beamNode = *it;
-            auto pid = achilles::PID(beamNode["Beam"]["PID"].as<int>());
-            auto beam = beamNode["Beam"]["Beam Params"].as<std::shared_ptr<achilles::FluxType>>();
-            if(beams.find(pid) != beams.end())
-                throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(pid)));
-            beams[pid] = beam;
-        } 
-
-        rhs = achilles::Beam(beams);
-        return true;
-    }
 };
 
 }

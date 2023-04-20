@@ -10,6 +10,7 @@
 #include "Achilles/HardScatteringEnum.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/ProcessInfo.hh"
+#include "Achilles/EventHistory.hh"
 
 namespace achilles {
 
@@ -44,6 +45,9 @@ class Event {
 
         MOCK const vMomentum &Momentum() const { return m_mom; }
         MOCK vMomentum &Momentum() { return m_mom; }
+
+        const EventHistory &History() const { return m_history; }
+        EventHistory &History() { return m_history; }
 
         const double &MatrixElementWgt(size_t i) const { return m_me[i]; }
         double &MatrixElementWgt(size_t i) { return m_me[i]; }
@@ -87,8 +91,8 @@ class Event {
         std::vector<double> m_me;
         double m_vWgt{}, m_meWgt{};
         vParticles m_leptons{};
-        vParticles m_history{};
         std::array<double, 2> m_polarization{};
+        EventHistory m_history{};
 };
 
 }

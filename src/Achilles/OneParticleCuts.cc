@@ -12,6 +12,7 @@ bool achilles::MomentumCut::MakeCut(const FourVector &mom) const {
 }
 
 bool achilles::AngleThetaCut::MakeCut(const FourVector &mom) const {
+    spdlog::trace("Theta = {}, Cut Result = {}", mom.Theta()/1.0_deg, CheckCut(mom.Theta()/1.0_deg));
     return CheckCut(mom.Theta()/1.0_deg);
 }
 
