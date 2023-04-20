@@ -299,6 +299,7 @@ NuclearModel:
         std::vector<double> xsecs = {10, 20};
         auto pass = model.FillNucleus(event, xsecs);
         CHECK(pass == true);
+        event.CalcWeight();
         CHECK(event.Weight() == xsecs[0] + xsecs[1]);
     }
 }

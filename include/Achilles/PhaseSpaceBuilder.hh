@@ -17,7 +17,7 @@ class PSBuilder {
         PSBuilder(size_t nlep=2, size_t nhad=2) 
             : m_nlep{nlep}, m_nhad{nhad} { phase_space = std::make_unique<PSMapper>(nlep, nhad); }
         MOCK ~PSBuilder() = default;
-        MOCK PSBuilder& Beam(std::shared_ptr<Beam>, size_t=1);
+        MOCK PSBuilder& Beam(std::shared_ptr<Beam>, const std::vector<double>&, size_t=1);
         MOCK PSBuilder& Hadron(const std::string&, const std::vector<double>&, size_t=0);
         MOCK PSBuilder& FinalState(const std::string&, const std::vector<double>&);
 #ifdef ENABLE_BSM

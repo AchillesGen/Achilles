@@ -100,9 +100,9 @@ class MockInteraction : public trompeloeil::mock_interface<achilles::Interaction
 };
 
 class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
-    IMPLEMENT_CONST_MOCK2(Flux); 
+    IMPLEMENT_CONST_MOCK3(Flux); 
     IMPLEMENT_CONST_MOCK0(BeamIDs);
-    IMPLEMENT_CONST_MOCK3(GenerateWeight);
+    IMPLEMENT_CONST_MOCK4(GenerateWeight);
     IMPLEMENT_CONST_MOCK0(NVariables);
 };
 
@@ -116,7 +116,8 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     MAKE_MOCK0(Momentum, std::vector<achilles::FourVector>&());
     IMPLEMENT_CONST_MOCK0(Particles);
     IMPLEMENT_CONST_MOCK0(Remnant);
-    IMPLEMENT_CONST_MOCK0(Weight);
+    MAKE_CONST_MOCK0(Weight, const double&());
+    MAKE_MOCK0(Weight, double&());
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {
@@ -145,7 +146,7 @@ class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<achilles:
 
 class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK2(Beam);
+    IMPLEMENT_MOCK3(Beam);
     IMPLEMENT_MOCK3(Hadron);
     IMPLEMENT_MOCK2(FinalState);
 };

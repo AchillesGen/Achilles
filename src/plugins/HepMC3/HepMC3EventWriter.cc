@@ -151,6 +151,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     auto cross_section = std::make_shared<GenCrossSection>();
     cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
     visitor.evt.add_attribute("GenCrossSection", cross_section);
+    visitor.evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
     visitor.evt.weight("Default") = event.Weight()*nb_to_pb;
 
     // TODO: once we have a detector to simulate interaction location

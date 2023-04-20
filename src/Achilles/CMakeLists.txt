@@ -19,6 +19,7 @@ add_library(utilities SHARED
     Spinor.cc
     ProcessInfo.cc
     Poincare.cc
+    Unweighter.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
@@ -61,7 +62,7 @@ add_library(physics SHARED
     ElectronPDF.cc
     EventHistory.cc
 )
-target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
+# target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 set(physics_libs "")
 if(ENABLE_GZIP)
     list(APPEND achilles_targets gzstream)
@@ -73,8 +74,15 @@ if(ENABLE_BSM)
     target_compile_definitions(physics PUBLIC ENABLE_BSM)
     target_link_libraries(physics PUBLIC sherpa)
 endif()
+if(USE_ROOT)
+    target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
+    target_compile_definitions(physics PUBLIC -DUSE_ROOT)
+    if(${ROOT_MINOR_VERSION} LESS 16)
+        target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
+    endif()
+endif()
 target_link_libraries(physics PRIVATE project_options project_warnings
-                              PUBLIC utilities cuts ${HDF5_CXX_LIBRARIES})
+                      PUBLIC utilities cuts HighFive)
 list(APPEND achilles_targets physics)
 
 add_library(mappers SHARED
@@ -156,15 +164,14 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 include(GNUInstallDirs)
 
 install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
-        EXPORT achilles-targets
+        # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${HDF5_INCLUDE_DIRS}
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-install(EXPORT achilles-targets
-    FILE achilles-targets.cmake
-    NAMESPACE achilles::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles)
+# install(EXPORT achilles-targets
+#     FILE achilles-targets.cmake
+#     NAMESPACE achilles::
+#     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles)

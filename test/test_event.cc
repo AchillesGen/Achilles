@@ -81,6 +81,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
         }
 
         event.TotalCrossSection();
+        event.CalcWeight();
         CHECK(event.Weight() == 1200);
         
         // TODO: Rewrite this to match new framework

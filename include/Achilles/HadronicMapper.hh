@@ -45,13 +45,6 @@ class QESpectralMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMa
         void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
         double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
         size_t NDims() const override { return 4; }
-        double Smin() const {
-            double smin = 0;
-            for(const auto &mass : Masses()) {
-                smin += sqrt(mass);
-            }
-            return smin*smin;
-        }
 
     private:
         // static constexpr double dCos = 2;

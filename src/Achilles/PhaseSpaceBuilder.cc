@@ -11,8 +11,9 @@
 
 using achilles::PSBuilder;
 
-PSBuilder& PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, size_t idx) {
+PSBuilder& PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, const std::vector<double> &masses, size_t idx) {
     phase_space->lbeam = std::make_shared<BeamMapper>(idx, beam); 
+    phase_space->lbeam->SetMasses(masses);
     return *this;
 }
 

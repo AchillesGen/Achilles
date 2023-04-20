@@ -25,6 +25,7 @@
 
 #include "yaml-cpp/yaml.h"
 
+
 achilles::EventGen::EventGen(const std::string &configFile,
                              std::vector<std::string> shargs) {
     config = YAML::LoadFile(configFile);
@@ -36,6 +37,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
             seed = config["Initialize"]["Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
+
+    // Setup unweighter
+    unweighter = UnweighterFactory::Initialize(config["Unweighting"]["Name"].as<std::string>(),
+                                               config["Unweighting"]);
 
     // Load initial state, massess
     spdlog::trace("Initializing the beams");
@@ -96,7 +101,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    shargs.size();
+    (void)shargs;
     leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
     leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
     leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
@@ -227,17 +232,17 @@ void achilles::EventGen::GenerateEvents() {
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
-    fmt::print("Polarization = {:^8.5e} +/- {:^8.5e}, {:^8.5e} +/- {:^8.5e}\n",
-                polarization0.Mean(), polarization0.Error(),
-                polarization1.Mean(), polarization1.Error());
+    fmt::print("Unweighting efficiency: {:^8.5e} %\n",
+               unweighter->Efficiency() * 100);
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     if(outputEvents) {
-        static size_t ievent = 0;
-        constexpr size_t statusUpdate = 10000;
-        if(++ievent % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", ievent, config["Main"]["NEvents"].as<size_t>());
+        static constexpr size_t statusUpdate = 1000;
+        if(unweighter->Accepted() % statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r",
+                       unweighter->Accepted(),
+                       config["Main"]["NEvents"].as<size_t>());
         }
     }
     // Initialize the event, which generates the nuclear configuration
@@ -246,6 +251,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Initialize the particle ids for the processes
     const auto pids = scattering -> Process().m_ids;
+
+    // Setup flux value
+    event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
 
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
@@ -260,13 +268,17 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     auto xsecs = scattering -> CrossSection(event);
 
     // Initialize the event
+    spdlog::debug("Filling the event");
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
+            event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
-            polarization0 += 0;
-            polarization1 += 0;
+
+            // Update number of calls needed to ensure the number of generated events
+            // is the same as that requested by the user
+            integrator.Parameters().ncalls++;
         }
         return 0;
     }
@@ -283,6 +295,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
 
+    event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
     // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
@@ -300,7 +313,11 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // the integrand should be interpreted as zero in this region
             if(outputEvents) {
                 event.SetMEWeight(0);
+                event.CalcWeight();
                 writer -> Write(event);
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
             }
             return 0;
         }
@@ -309,8 +326,22 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     // TODO: Move to after unweighting?
     // Run the cascade if needed
     if(runCascade) {
+        spdlog::trace("Hadrons:");
+        idx = 0;
+        for(const auto &particle : event.Hadrons()) {
+            if(particle.Status() == ParticleStatus::initial_state
+                && particle.ID() == PID::proton())
+                spdlog::trace("\t{}: {}", idx, particle);
+            ++idx;
+        }
         spdlog::debug("Runnning cascade");
         cascade -> Evolve(&event);
+
+        spdlog::trace("Hadrons (Post Cascade):");
+        idx = 0;
+        for(const auto &particle : event.Hadrons()) {
+            spdlog::trace("\t{}: {}", ++idx, particle);
+        }
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
@@ -362,7 +393,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)
             Rotate(event);
-
         // Perform event-level final cuts before writing
         bool outputCurrentEvent = true;
         // if(doEventCuts){
@@ -373,8 +403,12 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
-            event.Polarization(0) *= wgt*6;
-            event.Polarization(1) *= wgt*6;
+
+            if(!unweighter->AcceptEvent(event)) {
+                // Update number of calls needed to ensure the number of generated events
+                // is the same as that requested by the user
+                integrator.Parameters().ncalls++;
+            }
             writer -> Write(event);
             polarization0 += event.Polarization(0);
             polarization1 += event.Polarization(1);
@@ -390,6 +424,8 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
             // New Fig: Total cross section for tau neutrino vs Enu
         }
+        } else {
+            unweighter->AddEvent(event);
     }
 
     // Always return the weight when the event passes the initial hard cut.
