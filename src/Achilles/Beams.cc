@@ -242,12 +242,17 @@ PDFBeam::PDFBeam(const YAML::Node&) {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
 }
 
-achilles::FourVector PDFBeam::Flux(const std::vector<double>&) const {
+achilles::FourVector PDFBeam::Flux(const std::vector<double>&, double) const {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
     return {};
 }
 
-double PDFBeam::GenerateWeight(const FourVector&, std::vector<double>&) const {
+double PDFBeam::GenerateWeight(const FourVector&, std::vector<double>&, double) const {
+    throw std::runtime_error("PDFBeam: Not implemented yet!");
+    return {};
+}
+
+double PDFBeam::EvaluateFlux(const FourVector&) const {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
     return {};
 }

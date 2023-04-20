@@ -76,7 +76,7 @@ class Spectrum : public FluxType {
         std::string Type() const override { return "Spectrum"; }
         std::string Format() const;
         double MinEnergy() const { return m_min_energy; }
-        double MaxEnergy() const { return m_max_energy; }
+        double MaxEnergy() const override { return m_max_energy; }
         double EvaluateFlux(const FourVector&) const override;
 
     private:
@@ -103,10 +103,11 @@ class PDFBeam : public FluxType {
     public:
         PDFBeam(const YAML::Node&);
         int NVariables() const override { return 1; }
-        FourVector Flux(const std::vector<double>&) const override;
-        double GenerateWeight(const FourVector&, std::vector<double>&) const override;
+        FourVector Flux(const std::vector<double>&, double) const override;
+        double GenerateWeight(const FourVector&, std::vector<double>&, double) const override;
         std::string Type() const override { return "PDFBeam"; }
         double MaxEnergy() const override { return 0; }
+        double EvaluateFlux(const FourVector&) const override;
 
     private:
         std::unique_ptr<PDFBase> p_pdf;
