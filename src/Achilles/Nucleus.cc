@@ -45,10 +45,6 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     nucleons.resize(A);
     protons.resize(Z);
     neutrons.resize(A-Z);
-    // TODO: Refactor elsewhere in the code, maybe make dynamic?
-    // spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
-    // constexpr double nucDensity = 0.16;
-    // radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
     std::ifstream densityFile(densityFilename);
     if(!densityFile.is_open())

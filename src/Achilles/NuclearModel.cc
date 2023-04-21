@@ -158,8 +158,9 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     std::vector<Currents> results(2);
     // TODO: Move to the phase space definition
     std::vector<double> spectral(2);
-    spectral[0] = spectral_proton(pIn.P(), removal_energy);
-    spectral[1] = spectral_neutron(pIn.P(), removal_energy);
+    // Ensure that spectral functions are normalized to 1
+    spectral[0] = spectral_proton(pIn.P(), removal_energy)/spectral_proton.Normalization();
+    spectral[1] = spectral_neutron(pIn.P(), removal_energy)/spectral_neutron.Normalization();
     spdlog::debug("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
                   removal_energy, pIn.P(), spectral[0],
                   removal_energy, pIn.P(), spectral[1]);
@@ -181,8 +182,7 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
             for(auto &subcur : current) {
                 for(auto &val : subcur) {
                     // TODO: Move this to phase space 
-                    // TODO: Move normalization to spectral function definition
-                    val *= sqrt(spectral[i]/6);
+                    val *= sqrt(spectral[i]);
                 }
                 // Correct the Ward identity
                 if(b_ward) subcur[3] = omega/qVec.P()*subcur[0];

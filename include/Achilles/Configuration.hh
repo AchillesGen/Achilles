@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "Achilles/Interpolation.hh"
 
 namespace achilles {
 
@@ -33,6 +34,15 @@ class DensityConfiguration : public Density {
         size_t m_nconfigs, m_nnucleons;
         double m_maxWgt, m_minWgt;
         std::vector<Configuration> m_configurations;
+};
+
+class DensityRandom : public Density {
+    public:
+        DensityRandom(Interp1D);
+        std::vector<Particle> GetConfiguration() override;
+
+    private:
+        Interp1D m_density;
 };
 
 }
