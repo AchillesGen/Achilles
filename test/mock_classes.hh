@@ -13,7 +13,20 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
+
+#ifdef ACHILLES_SHERPA_INTERFACE
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#undef THROW
+#include "METOOLS/Main/Spin_Structure.H"
+#undef THROW
+#define THROW TROMPELOEIL_THROW
+#pragma GCC diagnostic pop
+#endif
 
 class MockDensity : public trompeloeil::mock_interface<achilles::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -50,10 +63,11 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK2(FillNucleus);
 };
 
-class MockSherpaME : public trompeloeil::mock_interface<achilles::SherpaMEs> {
+class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK3(Calc);
+    IMPLEMENT_MOCK3(Calc);
     IMPLEMENT_CONST_MOCK2(FormFactors);
+    IMPLEMENT_MOCK1(FillAmplitudes);
 };
 
 class MockInteraction : public trompeloeil::mock_interface<achilles::Interactions> {
