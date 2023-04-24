@@ -15,6 +15,7 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/HardScatteringEnum.hh"
 #include "Achilles/Histogram.hh"
+#include "Achilles/LeptonicCurrent.hh"
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/RunModes.hh"
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -30,25 +31,8 @@ class Event;
 class NuclearModel;
 
 using Particles = std::vector<Particle>;
-using Current = std::vector<std::vector<std::complex<double>>>;
 using Currents = std::map<int, Current>;
 using FFDictionary = std::map<std::pair<PID, PID>, std::vector<FormFactorInfo>>;
-
-class LeptonicCurrent {
-  public:
-    LeptonicCurrent() = default;
-    void Initialize(const Process_Info &);
-    FFDictionary GetFormFactor();
-    Currents CalcCurrents(const std::vector<FourVector> &, const double &) const;
-
-  private:
-    bool NeutralCurrent(PID, PID) const;
-    bool ChargedCurrent(bool, PID, PID) const;
-    std::complex<double> coupl_left{}, coupl_right{};
-    double mass{}, width{};
-    int pid{};
-    bool anti{};
-};
 
 class HardScattering {
   public:
@@ -67,8 +51,8 @@ class HardScattering {
     size_t SelectMatrixElement(Event &) const;
 
     // Process accessors
-    void SetProcess(const Process_Info &);
-    Process_Info Process() const { return m_leptonicProcess; }
+    void SetProcess(const ProcessInfo &);
+    ProcessInfo Process() const { return m_leptonicProcess; }
 
     // Pointer operations
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -78,14 +62,13 @@ class HardScattering {
     NuclearModel *Nuclear() { return m_nuclear.get(); }
 
   private:
-    Currents LeptonicCurrents(const std::vector<FourVector> &, const double &) const;
     FFDictionary SMFormFactor;
 
 #ifdef ACHILLES_SHERPA_INTERFACE
     SherpaInterface *p_sherpa{nullptr};
 #endif
     LeptonicCurrent m_current{};
-    Process_Info m_leptonicProcess;
+    ProcessInfo m_leptonicProcess;
     bool m_fill{false};
     std::unique_ptr<NuclearModel> m_nuclear{};
 };
