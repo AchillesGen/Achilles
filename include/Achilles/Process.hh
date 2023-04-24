@@ -36,6 +36,7 @@ class ProcessGroup {
         const Process& GetProcess(size_t i) const { return m_processes[i]; }
         Process& GetProcess(size_t i) { return m_processes[i]; }
         void AddProcess(Process process) { m_processes.push_back(std::move(process)); }
+        const std::vector<Process>& Processes() const { return m_processes; }
 
         // Handling physics objects
         NuclearModel* GetNuclearModel() { return m_nuc_model.get(); }

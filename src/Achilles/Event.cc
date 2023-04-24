@@ -51,15 +51,15 @@ void Event::InitializeHadrons(const Process_Info &process) {
 
     // TODO: Refactor to use the process / process_group structure
     // Initial state setup
-    // size_t idx = SelectNucleon();
-    // Particle &initial = m_nuc -> Nucleons()[idx];
-    // initial.Momentum() = mom.front();
-    // initial.Status() = ParticleStatus::initial_state;
+    size_t idx = SelectNucleon();
+    Particle &initial = m_nuc -> Nucleons()[idx];
+    initial.Momentum() = mom.front();
+    initial.Status() = ParticleStatus::initial_state;
 
-    // // Final state setup
-    // Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
-    //                initial.Position(), ParticleStatus::propagating);
-    // m_nuc -> Nucleons().push_back(final);
+    // Final state setup
+    Particle final(process.m_hadronic.second[0], mom.back(),
+                   initial.Position(), ParticleStatus::propagating);
+    m_nuc -> Nucleons().push_back(final);
 }
 
 void Event::Finalize() {
