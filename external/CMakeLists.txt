@@ -25,7 +25,7 @@ add_library(docopt::docopt ALIAS docopt)
 
 CPMAddPackage(
     NAME yaml-cpp
-    GITHUB_REPOSITORY jxi24/yaml-cpp
+    GITHUB_REPOSITORY jbeder/yaml-cpp
     GIT_TAG master
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
