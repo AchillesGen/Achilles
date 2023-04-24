@@ -1,0 +1,13 @@
+﻿---
+BasedOnStyle: LLVM
+AlignEscapedNewlines: Left
+AllowShortBlocksOnASingleLine: 'true'
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: Inline
+IndentWidth: '4'
+KeepEmptyLinesAtTheStartOfBlocks: 'false'
+Standard: Auto
+UseTab: Never
+
+...
