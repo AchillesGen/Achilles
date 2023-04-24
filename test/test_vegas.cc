@@ -1,9 +1,9 @@
-#include "catch2/catch.hpp"
 #include "Achilles/Vegas.hh"
+#include "catch2/catch.hpp"
 #include "catch_utils.hh"
 
 double test_func(const std::vector<double> &x, double wgt) {
-    return 3.0/2.0*(x[0]*x[0] + x[1]*x[1])*wgt;
+    return 3.0 / 2.0 * (x[0] * x[0] + x[1] * x[1]) * wgt;
 }
 
 double test_func2(const std::vector<double> &x, double wgt) {
@@ -13,9 +13,7 @@ double test_func2(const std::vector<double> &x, double wgt) {
     double sms0 = s - s0;
     double wgt3 = 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
     // double wgt2 = std::acos(-1.0)/pow(cos(std::acos(-1.0)*(x[0] - 0.5)), 2);
-    return (std::exp(-sms0 * sms0) )
-          / std::sqrt(std::acos(-1.0)) * wgt / wgt3;
-
+    return (std::exp(-sms0 * sms0)) / std::sqrt(std::acos(-1.0)) * wgt / wgt3;
 }
 
 TEST_CASE("YAML encoding / decoding vegas summary", "[vegas]") {
@@ -50,7 +48,7 @@ TEST_CASE("Vegas Integration", "[vegas]") {
         vegas.Optimize(test_func2);
         auto results = vegas.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
         CHECK(results.results.size() >= nitn_min);
     }
 
@@ -63,9 +61,9 @@ TEST_CASE("Vegas Integration", "[vegas]") {
         vegas.Optimize(test_func);
         auto results = vegas.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
         CHECK(results.sum_results.Error() < atol);
-        CHECK(results.sum_results.Error()/results.sum_results.Mean() < rtol);
+        CHECK(results.sum_results.Error() / results.sum_results.Mean() < rtol);
     }
 }
 

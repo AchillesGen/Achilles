@@ -1,5 +1,5 @@
-#include "catch2/catch.hpp"
 #include "Achilles/MultiChannel.hh"
+#include "catch2/catch.hpp"
 #include "catch_utils.hh"
 
 constexpr double s0 = -10.0;
@@ -8,34 +8,37 @@ constexpr double s1 = 10.0;
 double test_func_exp(const std::vector<double> &x, double wgt) {
     double sms0 = x[0] - s0;
     double sms1 = x[0] - s1;
-    return (2.0 * std::exp(-sms0 * sms0) + std::exp(-sms1 * sms1))
-        / std::sqrt(std::acos(-1.0)) / 3.0 * wgt;
+    return (2.0 * std::exp(-sms0 * sms0) + std::exp(-sms1 * sms1)) / std::sqrt(std::acos(-1.0)) /
+           3.0 * wgt;
 }
 
 class DoubleMapper : public achilles::Mapper<double> {
-    public:
-        DoubleMapper(size_t channel) : m_channel{std::move(channel)} {}
-        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
-            double s = std::tan(std::acos(-1.0) * (rans[0] - 0.5));
-            if(m_channel == 0) s += s0;
-            else s += s1;
-            point[0] = s;
+  public:
+    DoubleMapper(size_t channel) : m_channel{std::move(channel)} {}
+    void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
+        double s = std::tan(std::acos(-1.0) * (rans[0] - 0.5));
+        if(m_channel == 0)
+            s += s0;
+        else
+            s += s1;
+        point[0] = s;
+    }
+    double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
+        const double sms0 = point[0] - s0;
+        const double sms1 = point[0] - s1;
+        rans.resize(1);
+        if(m_channel == 1) {
+            rans[0] = std::atan(sms1) / std::acos(-1.0) + 0.5;
+            return 1.0 / (1.0 + sms1 * sms1) / std::acos(-1.0);
         }
-        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
-            const double sms0 = point[0] - s0;
-            const double sms1 = point[0] - s1;
-            rans.resize(1);
-            if(m_channel == 1) {
-                rans[0] = std::atan(sms1)/std::acos(-1.0) + 0.5;
-                return 1.0 / (1.0 + sms1 * sms1) / std::acos(-1.0);
-            }
-            rans[0] = std::atan(sms0)/std::acos(-1.0) + 0.5;
-            return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
-        }
-        size_t NDims() const override { return 1; }
-        YAML::Node ToYAML() const override { return YAML::Node(); }
-    private:
-        size_t m_channel;
+        rans[0] = std::atan(sms0) / std::acos(-1.0) + 0.5;
+        return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
+    }
+    size_t NDims() const override { return 1; }
+    YAML::Node ToYAML() const override { return YAML::Node(); }
+
+  private:
+    size_t m_channel;
 };
 
 TEST_CASE("YAML encoding / decoding Multichannel Summary", "[multichannel]") {
@@ -59,7 +62,7 @@ TEST_CASE("YAML encoding / decoding Multichannel Summary", "[multichannel]") {
     auto summary2 = node["Summary"].as<achilles::MultiChannelSummary>();
 
     CHECK(summary.results.size() == summary2.results.size());
-    for(size_t i = 0; i < summary.results.size(); ++i) 
+    for(size_t i = 0; i < summary.results.size(); ++i)
         CHECK(summary.results[i] == summary2.results[i]);
     CHECK(summary.Result() == summary2.Result());
 
@@ -87,7 +90,7 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
     for(size_t i = 0; i < 2; ++i) {
         achilles::Channel<double> channel;
         channel.mapping = std::make_unique<DoubleMapper>(i);
-        achilles::AdaptiveMap map(channel.mapping -> NDims(), 50);
+        achilles::AdaptiveMap map(channel.mapping->NDims(), 50);
         channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
@@ -101,10 +104,9 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
         CHECK(results.results.size() >= nitn_min);
     }
-
 
     SECTION("Runs to desired precision") {
         static constexpr size_t nitn_min = 2;
@@ -114,8 +116,8 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         integrator.Optimize(integrand);
         auto results = integrator.Summary();
 
-        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma*results.sum_results.Error());
-        CHECK(results.sum_results.Error()/results.sum_results.Mean() < rtol);
+        CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
+        CHECK(results.sum_results.Error() / results.sum_results.Mean() < rtol);
     }
 }
 
@@ -141,13 +143,13 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
     auto integrator2 = node["Multichannel"].as<achilles::MultiChannel>();
     auto results2 = integrator2.Summary();
     auto params = integrator2.Parameters();
-   
+
     // Check integrator
     CHECK(integrator.Dimensions() == integrator2.Dimensions());
     CHECK(integrator.NChannels() == integrator2.NChannels());
 
     // Check parameters
-    CHECK(params.ncalls == ncalls*(1 << nitn_min));
+    CHECK(params.ncalls == ncalls * (1 << nitn_min));
     CHECK(params.rtol == rtol);
     CHECK(params.niterations == nitn_min);
 

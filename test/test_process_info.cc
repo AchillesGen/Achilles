@@ -12,8 +12,9 @@ TEST_CASE("ProcessInfo", "[ProcessInfo]") {
     }
 
     SECTION("Masses are correct") {
-        std::vector<double> expected{pow(achilles::ParticleInfo(achilles::PID::proton()).Mass(), 2),
-                                     pow(achilles::ParticleInfo(achilles::PID::electron()).Mass(), 2)};
+        std::vector<double> expected{
+            pow(achilles::ParticleInfo(achilles::PID::proton()).Mass(), 2),
+            pow(achilles::ParticleInfo(achilles::PID::electron()).Mass(), 2)};
 
         CHECK(info.Masses() == expected);
     }

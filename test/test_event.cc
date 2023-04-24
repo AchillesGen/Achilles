@@ -19,11 +19,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     std::vector<achilles::FourVector> moms = {hadron0, lepton0, lepton1, hadron1};
     achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(*nuc, GenerateConfig())
-        .TIMES(1);
-    REQUIRE_CALL(*nuc, NNucleons())
-        .LR_RETURN((12UL))
-        .TIMES(1);
+    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1);
+    REQUIRE_CALL(*nuc, NNucleons()).LR_RETURN((12UL)).TIMES(1);
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 
@@ -35,9 +32,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     }
 
     SECTION("Initialize Particles") {
-        REQUIRE_CALL(*nuc, Nucleons())
-            .LR_RETURN((particles))
-            .TIMES(5);
+        REQUIRE_CALL(*nuc, Nucleons()).LR_RETURN((particles)).TIMES(5);
 
         achilles::Process_Info info;
         info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
@@ -51,8 +46,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
 
         auto leptons = event.Leptons();
         CHECK(leptons.size() == 2);
-        CHECK(leptons[0].Momentum() == moms[1]); 
-        CHECK(leptons[1].Momentum() == moms[2]); 
+        CHECK(leptons[0].Momentum() == moms[1]);
+        CHECK(leptons[1].Momentum() == moms[2]);
         CHECK(leptons[0].ID() == achilles::PID::electron());
         CHECK(leptons[1].ID() == achilles::PID::electron());
         CHECK(leptons[0].Status() == achilles::ParticleStatus::initial_state);
@@ -60,8 +55,8 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
 
         auto hadrons = event.Hadrons();
         CHECK(hadrons.size() == 2);
-        CHECK(hadrons[0].Momentum() == moms[0]); 
-        CHECK(hadrons[1].Momentum() == moms[3]); 
+        CHECK(hadrons[0].Momentum() == moms[0]);
+        CHECK(hadrons[1].Momentum() == moms[3]);
         CHECK(hadrons[0].ID() == achilles::PID::proton());
         CHECK(hadrons[1].ID() == achilles::PID::proton());
         CHECK(hadrons[0].Status() == achilles::ParticleStatus::initial_state);
@@ -75,14 +70,12 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     }
 
     SECTION("Weight is correct") {
-        for(auto &me : event.MatrixElementWgts()) {
-            me = 10;
-        }
+        for(auto &me : event.MatrixElementWgts()) { me = 10; }
 
         event.TotalCrossSection();
         event.CalcWeight();
         CHECK(event.Weight() == 1200);
-        
+
         // TODO: Rewrite this to match new framework
         // auto probs = event.EventProbs();
         // CHECK(probs.size() == 11);
@@ -95,25 +88,24 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
 
     SECTION("Event can be finalized") {
         // Dummy carbon event
-        achilles::Particles final = {{achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
-                                     {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
-                                     {achilles::PID::proton(), hadron0},
-                                     {achilles::PID::proton(), hadron0},
-                                     {achilles::PID::proton(), hadron0},
-                                     {achilles::PID::proton(), hadron0},
-                                     {achilles::PID::proton(), hadron0},
-                                     {achilles::PID::neutron(), hadron0},
-                                     {achilles::PID::neutron(), hadron0},
-                                     {achilles::PID::neutron(), hadron0},
-                                     {achilles::PID::neutron(), hadron0},
-                                     {achilles::PID::neutron(), hadron0},
-                                     {achilles::PID::neutron(), hadron0}};
-        REQUIRE_CALL(*nuc, Nucleons())
-            .LR_RETURN((final))
-            .TIMES(AT_LEAST(13));
+        achilles::Particles final = {
+            {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
+            {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
+            {achilles::PID::proton(), hadron0},
+            {achilles::PID::proton(), hadron0},
+            {achilles::PID::proton(), hadron0},
+            {achilles::PID::proton(), hadron0},
+            {achilles::PID::proton(), hadron0},
+            {achilles::PID::neutron(), hadron0},
+            {achilles::PID::neutron(), hadron0},
+            {achilles::PID::neutron(), hadron0},
+            {achilles::PID::neutron(), hadron0},
+            {achilles::PID::neutron(), hadron0},
+            {achilles::PID::neutron(), hadron0}};
+        REQUIRE_CALL(*nuc, Nucleons()).LR_RETURN((final)).TIMES(AT_LEAST(13));
 
         event.Finalize();
         CHECK(event.Remnant().PID() == 1000050110);
-        CHECK(event.Remnant().Mass() == 11*achilles::Constant::mN);
+        CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
     }
 }

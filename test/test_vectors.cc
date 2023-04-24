@@ -57,7 +57,7 @@ TEST_CASE("Four Vector is constructed properly", "[Vectors]") {
         CHECK(p1.Px() == 1);
         CHECK(p1.Py() == 2);
         CHECK(p1.Pz() == 3);
-        CHECK(p1.E() == sqrt(1+4+9));
+        CHECK(p1.E() == sqrt(1 + 4 + 9));
         CHECK(p1.M() == 0);
     }
 }
@@ -84,7 +84,7 @@ TEST_CASE("Accessors work as expected", "[Vectors]") {
 TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
     SECTION("Addition") {
         achilles::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(2, 4, 6);
-        CHECK(p1+p2 == p3);
+        CHECK(p1 + p2 == p3);
 
         p1 += p2;
         CHECK(p1 == p3);
@@ -92,7 +92,7 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
 
     SECTION("Subtraction and Negation") {
         achilles::ThreeVector p1(1, 2, 3), p2(1, 2, 3), p3(0, 0, 0), p4(-1, -2, -3);
-        CHECK(p1-p2 == p3);
+        CHECK(p1 - p2 == p3);
         CHECK(-p1 == p4);
 
         p1 -= p2;
@@ -103,8 +103,8 @@ TEST_CASE("Three Vector Overloaded Operators work as expected", "[Vectors]") {
         achilles::ThreeVector p1(1, 2, 3), p2(3, 6, 9);
         constexpr double scalar1 = 3, scalar2 = 14;
 
-        CHECK(p1*p1 == scalar2);
-        CHECK(p1*p1 == p1.Dot(p1));
+        CHECK(p1 * p1 == scalar2);
+        CHECK(p1 * p1 == p1.Dot(p1));
         CHECK(scalar1 * p1 == p1 * scalar1);
         CHECK(scalar1 * p1 == p2);
 
@@ -131,7 +131,7 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
         CHECK(p1.Magnitude2() == magnitude);
         CHECK(p1.P2() == magnitude);
         CHECK(p1.Magnitude() == sqrt(magnitude));
-        CHECK(p1.P() == sqrt(magnitude)); 
+        CHECK(p1.P() == sqrt(magnitude));
     }
 
     SECTION("Transverse momentum and Angles") {
@@ -153,19 +153,19 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Unit Vector") {
-        achilles::ThreeVector p1(3, 3, 3), p2(1.0/sqrt(3), 1.0/sqrt(3), 1.0/sqrt(3));
+        achilles::ThreeVector p1(3, 3, 3), p2(1.0 / sqrt(3), 1.0 / sqrt(3), 1.0 / sqrt(3));
         auto p1Unit = p1.Unit();
 
-        CHECK((p1Unit[0] == Approx(p2[0]) && p1Unit[1] == Approx(p2[1])
-               && p1Unit[2] == Approx(p2[2])));
-        CHECK(p1/p1.Magnitude() == p1.Unit());
+        CHECK((p1Unit[0] == Approx(p2[0]) && p1Unit[1] == Approx(p2[1]) &&
+               p1Unit[2] == Approx(p2[2])));
+        CHECK(p1 / p1.Magnitude() == p1.Unit());
     }
 }
 
 TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
     SECTION("Addition") {
         achilles::FourVector p1(1, 2, 3, 4), p2(4, 3, 2, 1), p3(5, 5, 5, 5);
-        CHECK(p1+p2 == p3);
+        CHECK(p1 + p2 == p3);
 
         p1 += p2;
         CHECK(p1 == p3);
@@ -173,7 +173,7 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
 
     SECTION("Subtraction and Negation") {
         achilles::FourVector p1(1, 2, 3, 4), p2(1, 2, 3, 4), p3(0, 0, 0, 0), p4(-1, -2, -3, -4);
-        CHECK(p1-p2 == p3);
+        CHECK(p1 - p2 == p3);
         CHECK(-p1 == p4);
 
         p1 -= p2;
@@ -182,10 +182,10 @@ TEST_CASE("Four Vector Overloaded Operators work as expected", "[Vectors]") {
 
     SECTION("Multiplication") {
         achilles::FourVector p1(4, 1, 2, 3), p2(12, 3, 6, 9);
-        constexpr double scalar1 = 3, scalar2 = 16-9-4-1;
+        constexpr double scalar1 = 3, scalar2 = 16 - 9 - 4 - 1;
 
-        CHECK(p1*p1 == scalar2);
-        CHECK(p1*p1 == p1.Dot(p1));
+        CHECK(p1 * p1 == scalar2);
+        CHECK(p1 * p1 == p1.Dot(p1));
         CHECK(scalar1 * p1 == p1 * scalar1);
         CHECK(scalar1 * p1 == p2);
 
@@ -212,7 +212,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK(p.Magnitude2() == mass);
         CHECK(p.M2() == mass);
         CHECK(p.Magnitude() == sqrt(mass));
-        CHECK(p.M() == sqrt(mass)); 
+        CHECK(p.M() == sqrt(mass));
     }
 
     SECTION("Momentum and Transverse Momentum") {
@@ -232,7 +232,7 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         CHECK(p1.Theta() == 0);
         CHECK(p1.Phi() == 0);
         CHECK(p2.Phi() == M_PI_4);
-        CHECK(p3.Phi() == 7*M_PI_4);
+        CHECK(p3.Phi() == 7 * M_PI_4);
     }
 
     SECTION("Cross Product") {
@@ -250,10 +250,10 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         auto p4 = p1.Boost(beta).Boost(-beta.Px(), -beta.Py(), -beta.Pz());
 
         CHECK(partway != p1);
-        CHECK((p3[0] == Approx(p1[0]) && p3[1] == Approx(p1[1])
-               && p3[2] == Approx(p1[2]) && p3[3] == Approx(p1[3])));
-        CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1])
-               && p4[2] == Approx(p1[2]) && p4[3] == Approx(p1[3])));
+        CHECK((p3[0] == Approx(p1[0]) && p3[1] == Approx(p1[1]) && p3[2] == Approx(p1[2]) &&
+               p3[3] == Approx(p1[3])));
+        CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1]) && p4[2] == Approx(p1[2]) &&
+               p4[3] == Approx(p1[3])));
 
         achilles::FourVector pMass(sqrt(100 + 4), 0, 0, 2);
         beta = pMass.BoostVector();
@@ -268,18 +268,18 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
     }
 
     SECTION("Angle between vectors") {
-        achilles::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1); 
+        achilles::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1);
         double t1 = p1.Theta(), t2 = p2.Theta();
 
-        CHECK(std::cos(t1-t2) == Approx(p1.CosAngle(p2)));
-        CHECK(std::abs(t1-t2) == Approx(p1.Angle(p2)));
+        CHECK(std::cos(t1 - t2) == Approx(p1.CosAngle(p2)));
+        CHECK(std::abs(t1 - t2) == Approx(p1.Angle(p2)));
     }
-    
+
     SECTION("DeltaR") {
         achilles::FourVector p1(4, 1, 2, 3), p2(4, 3, 2, 1);
         double DEta = p1.Rapidity() - p2.Rapidity();
         double DPhi = p1.Phi() - p2.Phi();
-        double DR = sqrt(DEta*DEta + DPhi*DPhi);
+        double DR = sqrt(DEta * DEta + DPhi * DPhi);
 
         CHECK(p1.DeltaR(p2) == p2.DeltaR(p1));
         CHECK(p1.DeltaR(p2) == DR);
@@ -309,11 +309,11 @@ TEST_CASE("Rotations", "[Vectors]") {
         rotX = x.Rotate(x.AlignZ());
         CHECK(rotX == z);
 
-        constexpr std::array<double, 3> angles{0, 0, M_PI/4};
+        constexpr std::array<double, 3> angles{0, 0, M_PI / 4};
         rotX = x.Rotate(angles);
         spdlog::info("rotX: {}", rotX);
-        CHECK(rotX[0] == Approx(1.0/sqrt(2.0)).margin(eps));
-        CHECK(rotX[1] == Approx(1.0/sqrt(2.0)).margin(eps));
+        CHECK(rotX[0] == Approx(1.0 / sqrt(2.0)).margin(eps));
+        CHECK(rotX[1] == Approx(1.0 / sqrt(2.0)).margin(eps));
         CHECK(rotX[2] == Approx(0.0).margin(eps));
     }
 }

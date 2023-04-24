@@ -63,12 +63,11 @@ Beams:
       PID: 13
       Beam Params:
         Type: Monochromatic
-        Energy: 200)beam"
-        );
-    
+        Energy: 200)beam");
+
         auto beam = beams["Beams"].as<achilles::Beam>();
 
-        CHECK(beam.NBeams() == 2); 
+        CHECK(beam.NBeams() == 2);
         CHECK(beam.BeamIDs() == std::set<achilles::PID>{12, 13});
         CHECK(beam.at(achilles::PID(12)) == beam[achilles::PID(12)]);
         CHECK(beam.Flux(achilles::PID(12), {}, 0) == achilles::FourVector(100, 0, 0, 100));
@@ -91,9 +90,8 @@ Beams:
       PID: 12
       Beam Params:
         Type: Monochromatic
-        Energy: 100)beam"
-        );
-    
+        Energy: 100)beam");
+
         CHECK_THROWS_WITH(beams["Beams"].as<achilles::Beam>(), "Multiple beams exist for PID: 12");
     }
 }
