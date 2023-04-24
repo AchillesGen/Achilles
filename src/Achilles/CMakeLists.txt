@@ -59,6 +59,8 @@ add_library(physics SHARED
     FormFactorBuilder.cc
     Beams.cc
     HardScattering.cc
+    LeptonicCurrent.cc
+    XSecBackend.cc
     Configuration.cc
     Event.cc
     Interactions.cc

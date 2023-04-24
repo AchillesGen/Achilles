@@ -6,6 +6,7 @@
 #include "ATOOLS/Org/MyStrStream.H"
 #include "ATOOLS/Org/My_File.H"
 #include "ATOOLS/Org/Run_Parameter.H"
+#include "Achilles/Current.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Logging.hh"
@@ -169,7 +170,7 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     return proc;
 }
 
-bool SherpaInterface::InitializeProcess(const Process_Info &info) {
+bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
     Cluster_Amplitude *ampl = Cluster_Amplitude::New();
     int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
     for(const auto &initial : info.m_hadronic.first) {
@@ -331,7 +332,11 @@ SherpaInterface::Calc(const std::vector<int> &_fl, const std::vector<std::array<
     p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
 
     singleProcess = proc->Get<COMIX::Single_Process>();
-    return singleProcess->LeptonicCurrent();
+    std::map<int, std::vector<VCurrent>> results;
+    for(const auto &current : singleProcess->LeptonicCurrent()) {
+        results[current.first] = achilles::ToCurrentVector(current.second);
+    }
+    return results;
 }
 
 void achilles::SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {

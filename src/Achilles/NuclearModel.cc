@@ -68,28 +68,28 @@ Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
     nucleus_pid = config["Nucleus"].as<Nucleus>().ID();
 }
 
-std::vector<achilles::NuclearModel::Currents>
-Coherent::CalcCurrents(const Event &event, const std::vector<FFInfoMap> &ff) const {
-    auto pIn = event.Momentum().front();
-    auto pOut = event.Momentum()[2];
-    auto qVec = event.Momentum()[1];
-    for(size_t i = 3; i < event.Momentum().size(); ++i) { qVec -= event.Momentum()[i]; }
+achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<FourVector> &had_in,
+                                                        const std::vector<FourVector> &had_out,
+                                                        const FourVector &qVec,
+                                                        const FFInfoMap &ff) const {
+    auto pIn = had_in[0];
+    auto pOut = had_out[0];
 
     auto ffVals = EvalFormFactor(-qVec.M2());
 
     // Calculate coherent contributions
-    std::vector<Currents> results(1);
-    for(const auto &formFactor : ff[2]) {
+    Currents results;
+    for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::trace("fcoh = {}", ffVal[Type::FCoh]);
 
         Current current;
-        std::vector<std::complex<double>> subcur(4);
+        VCurrent subcur;
         for(size_t i = 0; i < subcur.size(); ++i) {
             subcur[i] = (pIn[i] + pOut[i]) * ffVal[Type::FCoh];
         }
         current.push_back(subcur);
-        results[0][formFactor.first] = current;
+        results[formFactor.first] = current;
         spdlog::trace("HadronicCurrent[{}] = [{}, {}, {}, {}]", formFactor.first, subcur[0],
                       subcur[1], subcur[2], subcur[3]);
     }
@@ -98,7 +98,7 @@ Coherent::CalcCurrents(const Event &event, const std::vector<FFInfoMap> &ff) con
 }
 
 // TODO: Should return a process group
-void Coherent::AllowedStates(Process_Info &info) const {
+void Coherent::AllowedStates(ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
     spdlog::debug("Charge = {}", charge);
@@ -143,19 +143,19 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
     b_ward = config["NuclearModel"]["Ward"].as<bool>();
 }
 
-std::vector<NuclearModel::Currents>
-QESpectral::CalcCurrents(const Event &event, const std::vector<FFInfoMap> &ff) const {
-    auto pIn = event.Momentum().front();
-    auto pOut = event.Momentum()[2];
-    auto qVec = event.Momentum()[1];
-    for(size_t i = 3; i < event.Momentum().size(); ++i) { qVec -= event.Momentum()[i]; }
+NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<FourVector> &had_in,
+                                                const std::vector<FourVector> &had_out,
+                                                const FourVector &q, const FFInfoMap &ff) const {
+    auto pIn = had_in[0];
+    auto pOut = had_out[0];
+    auto qVec = q;
     auto removal_energy = Constant::mN - pIn.E();
     auto free_energy = sqrt(pIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     auto omega = qVec.E();
     qVec.E() = qVec.E() + pIn.E() - free_energy;
 
-    std::vector<Currents> results(2);
+    Currents results;
     // TODO: Move to the phase space definition
     std::vector<double> spectral(2);
     spectral[0] = spectral_proton(pIn.P(), removal_energy);
@@ -170,31 +170,27 @@ QESpectral::CalcCurrents(const Event &event, const std::vector<FFInfoMap> &ff) c
     u[0] = USpinor(-1, -pIn);
     u[1] = USpinor(1, -pIn);
 
-    // Loop over proton and neutron
-    for(size_t i = 0; i < results.size(); ++i) {
-        // Calculate nucleon contributions
-        for(const auto &formFactor : ff[i]) {
-            auto ffVal = CouplingsFF(ffVals, formFactor.second);
-            spdlog::debug("{}: f1 = {}, f2 = {}, fa = {}", i, ffVal[Type::F1], ffVal[Type::F2],
-                          ffVal[Type::FA]);
-            auto current = HadronicCurrent(ubar, u, qVec, ffVal);
-            for(auto &subcur : current) {
-                for(auto &val : subcur) {
-                    // TODO: Move this to phase space
-                    // TODO: Move normalization to spectral function definition
-                    val *= sqrt(spectral[i] / 6);
-                }
-                // Correct the Ward identity
-                if(b_ward) subcur[3] = omega / qVec.P() * subcur[0];
-            }
-            results[i][formFactor.first] = current;
+    // Calculate nucleon contributions
+    for(const auto &formFactor : ff) {
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
+                      ffVal[Type::FA]);
+        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        for(auto &subcur : current) {
+            // FIXME: Handle this in the correct place
+            // for(auto &val : subcur) {
+            //     val *= sqrt(spectral[i] / 6);
+            // }
+            // Correct the Ward identity
+            if(b_ward) subcur[3] = omega / qVec.P() * subcur[0];
         }
+        results[formFactor.first] = current;
     }
     return results;
 }
 
 // TODO: Should return a process group
-void QESpectral::AllowedStates(Process_Info &info) const {
+void QESpectral::AllowedStates(ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
     if(std::abs(charge) > 1)
@@ -259,7 +255,7 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
 
     for(size_t i = 0; i < 2; ++i) {
         for(size_t j = 0; j < 2; ++j) {
-            std::vector<std::complex<double>> subcur(4);
+            VCurrent subcur;
             for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
             result.push_back(subcur);
         }

@@ -1,6 +1,7 @@
 #ifndef NUCLEAR_MODEL_HH
 #define NUCLEAR_MODEL_HH
 
+#include "Achilles/Current.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/FormFactor.hh"
@@ -30,7 +31,7 @@ enum class NuclearMode {
 
 class NuclearModel {
   public:
-    using Current = std::vector<std::vector<std::complex<double>>>;
+    using Current = std::vector<VCurrent>;
     using Currents = std::map<int, Current>;
     using FFInfoMap = std::map<int, std::vector<FormFactorInfo>>;
     using FormFactorMap = std::map<FormFactorInfo::Type, std::complex<double>>;
@@ -45,9 +46,9 @@ class NuclearModel {
 
     virtual NuclearMode Mode() const = 0;
     virtual std::string PhaseSpace() const = 0;
-    virtual std::vector<Currents> CalcCurrents(const Event &,
-                                               const std::vector<FFInfoMap> &) const = 0;
-    virtual void AllowedStates(Process_Info &) const = 0;
+    virtual Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+                                  const FourVector &, const FFInfoMap &) const = 0;
+    virtual void AllowedStates(ProcessInfo &) const = 0;
     virtual size_t NSpins() const = 0;
     virtual bool FillNucleus(Event &, const std::vector<double> &) const = 0;
 
@@ -73,9 +74,9 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
 
     NuclearMode Mode() const override { return NuclearMode::Coherent; }
     std::string PhaseSpace() const override { return Name(); }
-    std::vector<Currents> CalcCurrents(const Event &,
-                                       const std::vector<FFInfoMap> &) const override;
-    void AllowedStates(Process_Info &) const override;
+    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+                          const FourVector &, const FFInfoMap &) const override;
+    void AllowedStates(ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
     bool FillNucleus(Event &, const std::vector<double> &) const override;
 
@@ -93,9 +94,9 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
 
     NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
     std::string PhaseSpace() const override { return Name(); }
-    std::vector<Currents> CalcCurrents(const Event &,
-                                       const std::vector<FFInfoMap> &) const override;
-    void AllowedStates(Process_Info &) const override;
+    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+                          const FourVector &, const FFInfoMap &) const override;
+    void AllowedStates(ProcessInfo &) const override;
     size_t NSpins() const override { return 4; }
     bool FillNucleus(Event &, const std::vector<double> &) const override;
 
