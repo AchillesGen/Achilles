@@ -6,7 +6,7 @@
 #include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 using ATOOLS::Vec4D;
 using achilles::SherpaMapper;
 #endif
@@ -69,7 +69,7 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
     return wgt;
 }
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     std::vector<Vec4D> mom(point.size());
     mom[0] = Vec4D(point[0][0]/1_GeV, point[0][1]/1_GeV, point[0][2]/1_GeV, point[0][3]/1_GeV);

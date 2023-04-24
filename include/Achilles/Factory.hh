@@ -26,8 +26,10 @@ class Factory {
 
         template<class Derived>
         static void Register(const std::string &name) {
-            if(IsRegistered(name)) 
+            if(IsRegistered(name)) {
                 spdlog::error("{} is already registered!", name);
+                return;
+            }
             spdlog::trace("Registering {}", name);
             Registry()[name] = Derived::Construct;
         }

@@ -11,13 +11,13 @@ Channel<FourVector> achilles::BuildChannelTest(const YAML::Node &node, std::shar
     return channel;
 }
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 Channel<FourVector> achilles::BuildGenChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                               std::shared_ptr<Beam> beam,
                                               std::unique_ptr<PHASIC::Channels> final_state,
                                               const std::vector<double> &masses) {
     Channel<FourVector> channel;
-    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, 1)
+    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                            .Hadron(model -> PhaseSpace(), masses)
                                            .GenFinalState(std::move(final_state)).build();
     AdaptiveMap map(channel.mapping -> NDims(), 2);

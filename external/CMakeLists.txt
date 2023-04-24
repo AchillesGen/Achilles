@@ -1,12 +1,3 @@
-#pybind11
-# CPMAddPackage(
-#     NAME pybind11
-#     GITHUB_REPOSITORY pybind/pybind11
-#     GIT_TAG v2.4.3
-#     PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch"
-# )
-# add_library(pybind11::pybind11 ALIAS pybind11)
-
 CPMFindPackage(
     NAME fmt
     GIT_TAG 7.1.3
@@ -24,28 +15,6 @@ CPMFindPackage(
         "SPDLOG_BUILD_SHARED ON"
 )
 add_library(spdlog::spdlog ALIAS spdlog)
-
-if(AUTODIFF)
-CPMFindPackage(
-    NAME eigen3
-    GIT_TAG "3.4"
-    GIT_REPOSITORY "https://gitlab.com/libeigen/eigen"
-    OPTIONS
-        "BUILD_TESTING OFF"
-)
-
-CPMFindPackage(
-    NAME autodiff
-    GIT_TAG "v0.6.1"
-    GITHUB_REPOSITORY autodiff/autodiff
-    OPTIONS
-        "AUTODIFF_BUILD_TESTS OFF"
-        "AUTODIFF_BUILD_PYTHON OFF"
-        "AUTODIFF_BUILD_EXAMPLES OFF"
-        "AUTODIFF_BUILD_DOCS OFF"
-)
-add_library(autodiff::autodiff ALIAS autodiff)
-endif()
 
 CPMAddPackage(
     NAME docopt
@@ -80,7 +49,7 @@ CPMAddPackage(
     OPTIONS
       "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
       "HEPMC3_ENABLE_SEARCH OFF"
-      "HEPMC3_ENABLE_ROOTIO ${USE_ROOT}"
+      "HEPMC3_ENABLE_ROOTIO ${ACHILLES_ENABLE_ROOT}"
       "HEPMC3_ENABLE_PROTOBUFIO OFF"
       "HEPMC3_ENABLE_PYTHON OFF"
       "HEPMC3_BUILD_DOCS OFF"
@@ -103,7 +72,7 @@ CPMAddPackage(
 )
 
 # Install testing framework
-if(ENABLE_TESTING OR ENABLE_FUZZING)
+if(ACHILLES_ENABLE_TESTING)
     # Catch2
     CPMAddPackage(
         NAME catch2

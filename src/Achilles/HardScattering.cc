@@ -10,7 +10,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Random.hh"
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -162,7 +162,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
 void HardScattering::SetProcess(const Process_Info &process) {
     spdlog::debug("Adding Process: {}", process);
     m_leptonicProcess = process;
-#ifndef ENABLE_BSM
+#ifndef ACHILLES_SHERPA_INTERFACE
     m_current.Initialize(process);
     SMFormFactor = m_current.GetFormFactor();
 #endif
@@ -170,7 +170,7 @@ void HardScattering::SetProcess(const Process_Info &process) {
 
 achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector> &p,
                                                     const double &mu2) const {
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<int> pids;
@@ -208,7 +208,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     if(ffInfo.empty()) {
         ffInfo.resize(3);
         for(const auto &current : leptonCurrent) {
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
             ffInfo[0][current.first] = p_sherpa -> FormFactors(PID::proton(), current.first);
             ffInfo[1][current.first] = p_sherpa -> FormFactors(PID::neutron(), current.first);
             ffInfo[2][current.first] = p_sherpa -> FormFactors(PID::carbon(), current.first);
@@ -226,7 +226,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
     std::vector<METOOLS::Spin_Amplitudes> spin_amps;
     p_sherpa -> FillAmplitudes(spin_amps);
     for(auto &amp : spin_amps) 
@@ -262,29 +262,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         }
     }
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
     for(const auto &amp : spin_amps) spdlog::trace("\n{}", amp);
     p_sherpa -> FillAmplitudes(spin_amps);
 #endif
-
-    std::map<std::pair<PID, PID>, std::vector<std::array<std::complex<double>, 16>>> hadronTensor;
-
-    for(size_t mu = 0; mu < 4; ++mu) {
-        for(size_t nu = 0; nu < 4; ++nu) {
-            for(const auto &lcurrent : leptonCurrent) {
-                auto boson1 = lcurrent.first;
-                for(const auto &lcurrent2 : leptonCurrent) {
-                    auto boson2 = lcurrent2.first;
-                    hadronTensor[{boson1, boson2}].resize(hadronCurrent.size());
-                    for(size_t i = 0; i < nhad_spins; ++i) {
-                        for(size_t k = 0; k < hadronCurrent.size(); ++k) {
-                            hadronTensor[{boson1, boson2}][k][4*mu + nu] += hadronCurrent[k][boson1][i][mu] * std::conj(hadronCurrent[k][boson2][i][nu]);
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     double spin_avg = 1;
     if(!ParticleInfo(m_leptonicProcess.m_leptonic.first).IsNeutrino()) spin_avg *= 2;
@@ -302,53 +283,6 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
-
-    // Calculate PL and PT
-    FourVector kin = event.Momentum()[1];
-    ThreeVector kout = event.Momentum()[3].Vec3();
-    // ThreeVector khat = event.Momentum()[1].Vec3().Unit();
-    ThreeVector kphat = event.Momentum()[3].Vec3().Unit();
-    double ml = event.Momentum()[3].M();
-    FourVector hl{event.Momentum()[3].E()*kphat/ml, kout.Magnitude()/ml};
-    FourVector ht = {kin.Vec3().Cross(kout).Cross(kout).Unit(), 0};
-    double coupl2 = 2*pow(Constant::ee/(Constant::sw*sqrt(2)), 2);
-    double prefact = coupl2/pow(Constant::MW, 4);
-    std::complex<double> ci{0, 1};
-    std::vector<double> PL(hadronCurrent.size()), PT(hadronCurrent.size());
-    double sign;
-    double anti = m_leptonicProcess.m_ids[0] < PID::undefined() ? 1 : -1;
-    auto boson_pair = (*hadronTensor.begin()).first;
-    for(size_t k = 0; k < hadronCurrent.size(); ++k) {
-        std::complex<double> num_L = 0;
-        std::complex<double> num_T = 0;
-        for(size_t mu = 0; mu < 4; ++mu) {
-            int metric = mu == 0 ? 1 : -1;
-            num_L -= metric*(kin*hl)*hadronTensor[boson_pair][k][4*mu+mu];
-            num_T -= metric*(kin*ht)*hadronTensor[boson_pair][k][4*mu+mu];
-            for(size_t nu = 0; nu < 4; ++nu) {
-                if((mu == 0 && nu != 0) || (mu != 0 && nu == 0)) sign = -1;
-                else sign = 1;
-                num_L += sign*(hl[mu]*kin[nu]+kin[mu]*hl[nu])*hadronTensor[boson_pair][k][4*mu+nu];
-                num_T += sign*(ht[mu]*kin[nu]+kin[mu]*ht[nu])*hadronTensor[boson_pair][k][4*mu+nu];
-                for(size_t alpha = 0; alpha < 4; ++alpha) {
-                    for(size_t beta = 0; beta < 4; ++beta) {
-                        int i{static_cast<int>(mu)};
-                        int j{static_cast<int>(nu)};
-                        int l{static_cast<int>(alpha)};
-                        int m{static_cast<int>(beta)};
-                        num_L -= anti*ci*(LeviCivita(i, j, l, m)*hl[alpha]*kin[beta]*hadronTensor[boson_pair][k][4*mu+nu]);
-                        num_T -= anti*ci*(LeviCivita(i, j, l, m)*ht[alpha]*kin[beta]*hadronTensor[boson_pair][k][4*mu+nu]);
-                    }
-                }
-            }
-        }
-        PL[k] = anti*(num_L*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
-        PT[k] = anti*(num_T*ml*prefact*Constant::HBARC2/spin_avg/flux*to_nb).real();
-        spdlog::trace("k = {}, num_L = {}, num_T = {}, xsec = {}, factor = {}",
-                      k, PL[k], PT[k], xsecs[k], Constant::HBARC2/spin_avg/flux*to_nb);
-    }
-    event.Polarization(0) = PL[0] + PL[1];
-    event.Polarization(1) = PT[0] + PT[1];
 
     return xsecs;
 }

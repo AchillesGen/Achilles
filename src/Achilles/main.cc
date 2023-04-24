@@ -8,10 +8,10 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/NuclearModel.hh"
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
 #include "plugins/Sherpa/Channels.hh"
-#endif // ENABLE_BSM
+#endif // ACHILLES_SHERPA_INTERFACE
 
 #include "docopt.h"
 
@@ -123,9 +123,9 @@ int main(int argc, char *argv[]) {
     if(args["--display-ps"].asBool()) {
         achilles::PSFactory<achilles::HadronicBeamMapper, size_t>::DisplayPhaseSpaces();
         achilles::PSFactory<achilles::FinalStateMapper, std::vector<double>>::DisplayPhaseSpaces();
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
         achilles::PSFactory<PHASIC::Channels, std::vector<double>>::DisplayPhaseSpaces();
-#endif // ENABLE_BSM
+#endif // ACHILLES_SHERPA_INTERFACE
         return 0;
     }
 

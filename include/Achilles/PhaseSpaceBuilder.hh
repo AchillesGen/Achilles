@@ -20,10 +20,10 @@ class PSBuilder {
         MOCK PSBuilder& Beam(std::shared_ptr<Beam>, const std::vector<double>&, size_t=1);
         MOCK PSBuilder& Hadron(const std::string&, const std::vector<double>&, size_t=0);
         MOCK PSBuilder& FinalState(const std::string&, const std::vector<double>&);
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
         MOCK PSBuilder& SherpaFinalState(const std::string&, const std::vector<double>&);
         MOCK PSBuilder& GenFinalState(std::unique_ptr<PHASIC::Channels>);
-#endif // ENABLE_BSM
+#endif // ACHILLES_SHERPA_INERFACE
 
         MOCK std::unique_ptr<PSMapper> build() { return std::move(phase_space); }
 

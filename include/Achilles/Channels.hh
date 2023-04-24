@@ -9,7 +9,7 @@
 #include "Achilles/PhaseSpaceMapper.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/Channels1.hh"
 #include "plugins/Sherpa/Channels3.hh"
 #endif
@@ -23,7 +23,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                  std::shared_ptr<Beam> beam,
                                  const std::vector<double> &masses) {
     Channel<FourVector> channel;
-    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, 1)
+    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                            .Hadron(model -> PhaseSpace(), masses)
                                            .FinalState(T::Name(), masses).build();
     AdaptiveMap map(channel.mapping -> NDims(), 2);
@@ -31,7 +31,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
     return channel;
 }
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 Channel<FourVector> BuildGenChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                     std::shared_ptr<Beam> beam,
                                     std::unique_ptr<PHASIC::Channels> final_state,

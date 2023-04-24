@@ -15,11 +15,11 @@
 #include "Achilles/Units.hh"
 #include "Achilles/Channels.hh"
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
 #endif
 
-#ifdef ENABLE_HEPMC3
+#ifdef ACHILLES_ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
 #endif
 
@@ -75,7 +75,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     nuclear_model -> AllowedStates(leptonicProcess);
     spdlog::debug("Process: {}", leptonicProcess);
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
     // Initialize sherpa processes
     p_sherpa = new achilles::SherpaInterface();
     std::string model = config["Process"]["Model"].as<std::string>();
@@ -108,7 +108,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Initializing hard interaction");
     scattering = std::make_shared<HardScattering>();
     scattering -> SetProcess(leptonicProcess);
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
     scattering -> SetSherpa(p_sherpa);
 #endif
     scattering -> SetNuclear(std::move(nuclear_model));
@@ -121,7 +121,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
-#ifndef ENABLE_BSM
+#ifndef ACHILLES_SHERPA_INTERFACE
         if(scattering -> Process().Multiplicity() == 4) {
             Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(scattering -> Nuclear(), 2, 2,
                                                                        beam, masses);
@@ -129,7 +129,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
         } else {
             const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 processes without "
                                                   "BSM being enabled. "
-                                                  "Got a 2->{} process", leptonicProcess.m_ids.size());
+                                                  "Got a 2->{} process", leptonicProcess.Ids().size());
             throw std::runtime_error(error);
         }
 #else
@@ -172,7 +172,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
     if(output["Format"].as<std::string>() == "Achilles") {
         writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
-#ifdef ENABLE_HEPMC3
+#ifdef ACHILLES_ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
 #endif
@@ -228,15 +228,8 @@ void achilles::EventGen::GenerateEvents() {
     fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
                result.results.back().Mean(), result.results.back().Error(),
                result.results.back().Error() / result.results.back().Mean()*100);
-<<<<<<< HEAD
     fmt::print("Unweighting efficiency: {:^8.5e} %\n",
                unweighter->Efficiency() * 100);
-||||||| 7ef3dbc
-=======
-    fmt::print("Polarization = {:^8.5e} +/- {:^8.5e}, {:^8.5e} +/- {:^8.5e}\n",
-                polarization0.Mean(), polarization0.Error(),
-                polarization1.Mean(), polarization1.Error());
->>>>>>> tau_polarization
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
@@ -279,15 +272,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
-<<<<<<< HEAD
             // Update number of calls needed to ensure the number of generated events
             // is the same as that requested by the user
             integrator.Parameters().ncalls++;
-||||||| 7ef3dbc
-=======
-            polarization0 += 0;
-            polarization1 += 0;
->>>>>>> tau_polarization
         }
         return 0;
     }
@@ -361,7 +348,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Write out events
     if(outputEvents) {
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
         // Running Sherpa interface if requested
         // Only needed when generating events and not optimizing the multichannel
         // TODO: Move to after unweighting?
@@ -383,34 +370,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
-<<<<<<< HEAD
             if(!unweighter->AcceptEvent(event)) {
                 // Update number of calls needed to ensure the number of generated events
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
-||||||| 7ef3dbc
-=======
-            event.Polarization(0) *= wgt*6;
-            event.Polarization(1) *= wgt*6;
->>>>>>> tau_polarization
             writer -> Write(event);
-            polarization0 += event.Polarization(0);
-            polarization1 += event.Polarization(1);
-            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0) << "," << event.Polarization(1) << "," << event.Weight() << std::endl;
-            // File: events_enu_{Enu}.txt
-            // Event: q0 = E_nu - E_tau
-            // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()
-            //
-            // total cross section = mean(event.Weight())
-            //
-            // Python: 
-            // Figure 5: Histogram in q0 (cut on 15 < theta_tau < 17) PL_num/(total cross section), PT_num/(total cross section)
-            // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
-            // New Fig: Total cross section for tau neutrino vs Enu
-        }
         } else {
             unweighter->AddEvent(event);
+        }
     }
 
     // Always return the weight when the event passes the initial hard cut.

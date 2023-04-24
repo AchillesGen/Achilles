@@ -5,7 +5,7 @@
 #include "Achilles/HadronicMapper.hh"
 #include "Achilles/FinalStateMapper.hh"
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/Channels.hh"
 #endif
 
@@ -28,7 +28,7 @@ PSBuilder& PSBuilder::FinalState(const std::string &channel, const std::vector<d
     return *this;
 }
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 PSBuilder& PSBuilder::SherpaFinalState(const std::string &channel, const std::vector<double> &masses2) {
     auto sherpaMap = PSFactory<PHASIC::Channels, std::vector<double>>::Build(channel, masses2);
     phase_space->main = std::make_unique<SherpaMapper>(m_nlep+m_nhad-2, std::move(sherpaMap));

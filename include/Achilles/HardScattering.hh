@@ -17,7 +17,7 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Histogram.hh"
 #include "Achilles/ProcessInfo.hh"
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
 #endif
 
@@ -71,7 +71,7 @@ class HardScattering {
         Process_Info Process() const { return m_leptonicProcess; }
 
         // Pointer operations
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
         void SetSherpa(SherpaInterface *const _sherpa) { p_sherpa = _sherpa; }
 #endif
         void SetNuclear(std::unique_ptr<NuclearModel> model) { m_nuclear = std::move(model); }
@@ -82,7 +82,7 @@ class HardScattering {
                                   const double&) const;
         FFDictionary SMFormFactor;
 
-#ifdef ENABLE_BSM
+#ifdef ACHILLES_SHERPA_INTERFACE
         SherpaInterface *p_sherpa{nullptr};
 #endif
         LeptonicCurrent m_current{};
