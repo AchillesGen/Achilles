@@ -60,7 +60,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Initialize the lepton final states
     spdlog::debug("Initializing the leptonic final states");
-    auto leptonicProcess = config["Process"].as<achilles::Process_Info>();
+    auto leptonicProcess = config["Process"].as<achilles::ProcessInfo>();
     // TODO: Handle the beam initial state better
     if(beam->BeamIDs().size() > 1)
         throw std::runtime_error("Multiple processes are not implemented yet. "

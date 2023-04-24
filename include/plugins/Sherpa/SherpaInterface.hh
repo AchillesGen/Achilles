@@ -1,6 +1,7 @@
 #ifndef achilles__plugins__SherpaInterface_hh
 #define achilles__plugins__SherpaInterface_hh
 
+#include "Achilles/Current.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #include "ATOOLS/Math/Vector.H"
@@ -34,7 +35,7 @@ class Spin_Amplitudes;
 
 namespace achilles {
 
-struct Process_Info;
+struct ProcessInfo;
 struct FormFactorInfo;
 class Achilles_Reader;
 class Event;
@@ -53,14 +54,14 @@ class SherpaInterface {
     achilles::Achilles_Reader *reader;
 
   public:
-    using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+    using LeptonCurrents = std::map<int, std::vector<VCurrent>>;
 
     SherpaInterface() = default;
 
     MOCK ~SherpaInterface();
 
     bool Initialize(const std::vector<std::string> &args);
-    bool InitializeProcess(const Process_Info &info);
+    bool InitializeProcess(const ProcessInfo &info);
 
     std::vector<std::unique_ptr<PHASIC::Channels>>
     GenerateChannels(const std::vector<long> &fl) const;

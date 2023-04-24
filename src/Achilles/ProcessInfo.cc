@@ -1,10 +1,10 @@
 #include "Achilles/ProcessInfo.hh"
 
-size_t achilles::Process_Info::Multiplicity() const {
+size_t achilles::ProcessInfo::Multiplicity() const {
     return 1 + m_leptonic.second.size() + m_hadronic.first.size() + m_hadronic.second.size();
 }
 
-std::vector<double> achilles::Process_Info::Masses() const {
+std::vector<double> achilles::ProcessInfo::Masses() const {
     std::vector<double> masses;
 
     // Get Hadronic current masses
@@ -20,7 +20,7 @@ std::vector<double> achilles::Process_Info::Masses() const {
     return masses;
 }
 
-std::vector<long> achilles::Process_Info::Ids() const {
+std::vector<long> achilles::ProcessInfo::Ids() const {
     std::vector<long> ids;
 
     // Get initial hadronic ids
@@ -38,7 +38,7 @@ std::vector<long> achilles::Process_Info::Ids() const {
     return ids;
 }
 
-int achilles::Process_Info::LeptonicCharge() const {
+int achilles::ProcessInfo::LeptonicCharge() const {
     int charge = -ParticleInfo(m_leptonic.first).IntCharge();
     for(const auto &part : m_leptonic.second) { charge += ParticleInfo(part).IntCharge(); }
     return charge / 3;

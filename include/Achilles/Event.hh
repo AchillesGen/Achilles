@@ -43,8 +43,8 @@ class Event {
     MOCK ~Event() = default;
 
     void SetHardScatteringType(HardScatteringType type) { m_type = type; }
-    MOCK void InitializeLeptons(const Process_Info &);
-    MOCK void InitializeHadrons(const Process_Info &);
+    MOCK void InitializeLeptons(const ProcessInfo &);
+    MOCK void InitializeHadrons(const ProcessInfo &);
     void Finalize();
 
     MOCK const NuclearRemnant &Remnant() const { return m_remnant; }

@@ -20,7 +20,7 @@ Event::Event(std::shared_ptr<Nucleus> nuc, std::vector<FourVector> mom, double v
 // }
 
 // TODO: Make this cleaner and handle multiple nucleons in initial state
-void Event::InitializeLeptons(const Process_Info &process) {
+void Event::InitializeLeptons(const ProcessInfo &process) {
     // Setup leptons
     bool initial_state = true;
     for(const auto &elm : process.m_mom_map) {
@@ -36,7 +36,7 @@ void Event::InitializeLeptons(const Process_Info &process) {
     }
 }
 
-void Event::InitializeHadrons(const Process_Info &process) {
+void Event::InitializeHadrons(const ProcessInfo &process) {
     // Coherent scattering is handled inside the coherent class
     if(ParticleInfo(process.m_hadronic.first[0]).IsNucleus()) return;
 

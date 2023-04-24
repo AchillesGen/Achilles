@@ -4,7 +4,7 @@
 #include <sstream>
 
 TEST_CASE("ProcessInfo", "[ProcessInfo]") {
-    achilles::Process_Info info({achilles::PID::electron(), achilles::PID::electron()});
+    achilles::ProcessInfo info({achilles::PID::electron(), achilles::PID::electron()});
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
 
     SECTION("Multiplicity is correct") {
@@ -39,7 +39,7 @@ TEST_CASE("ProcessInfo YAML", "[ProcessInfo]") {
         Leptons: [14, 14, 11, -11]
     )node");
 
-    auto info = node.as<achilles::Process_Info>();
+    auto info = node.as<achilles::ProcessInfo>();
 
     CHECK(info.m_leptonic.first == achilles::PID{14});
     CHECK(info.m_leptonic.second == std::vector<achilles::PID>{14, 11, -11});

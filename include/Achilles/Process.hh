@@ -14,15 +14,15 @@ class Nucleus;
 
 class Process {
   public:
-    Process(Process_Info info) : m_info{std::move(info)} {}
+    Process(ProcessInfo info) : m_info{std::move(info)} {}
     double TotalCrossSection() const { return m_xsec.Mean(); }
-    Process_Info &Info() { return m_info; }
-    const Process_Info &Info() const { return m_info; }
+    ProcessInfo &Info() { return m_info; }
+    const ProcessInfo &Info() const { return m_info; }
     double CrossSection(const Event &, NuclearModel *);
     void SelectInitialState(Event &) const;
 
   private:
-    Process_Info m_info;
+    ProcessInfo m_info;
     StatsData m_xsec{};
 };
 

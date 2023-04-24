@@ -34,7 +34,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     SECTION("Initialize Particles") {
         REQUIRE_CALL(*nuc, Nucleons()).LR_RETURN((particles)).TIMES(5);
 
-        achilles::Process_Info info;
+        achilles::ProcessInfo info;
         info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
         info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
         info.m_mom_map = {{0, achilles::PID::proton().AsInt()},

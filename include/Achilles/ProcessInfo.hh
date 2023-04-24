@@ -17,10 +17,10 @@ namespace achilles {
 
 class PID;
 
-struct Process_Info {
+struct ProcessInfo {
     using leptonic_state = std::pair<achilles::PID, std::vector<achilles::PID>>;
     using hadronic_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
-    Process_Info(std::vector<achilles::PID> leptons = {}) {
+    ProcessInfo(std::vector<achilles::PID> leptons = {}) {
         if(leptons.size() < 2) return;
         m_leptonic.first = leptons[0];
         m_leptonic.second.assign(leptons.begin() + 1, leptons.end());
@@ -34,11 +34,11 @@ struct Process_Info {
     std::map<size_t, long> m_mom_map;
     int LeptonicCharge() const;
 
-    bool operator==(const Process_Info &other) const {
+    bool operator==(const ProcessInfo &other) const {
         return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic;
     }
 
-    template <typename OStream> friend OStream &operator<<(OStream &os, const Process_Info &info) {
+    template <typename OStream> friend OStream &operator<<(OStream &os, const ProcessInfo &info) {
         os << fmt::format(
             "Process_Info([{}, {}] -> [{}, {}])", info.m_leptonic.first,
             fmt::join(info.m_hadronic.first.begin(), info.m_hadronic.first.end(), ", "),
@@ -52,11 +52,11 @@ struct Process_Info {
 
 namespace YAML {
 
-template <> struct convert<achilles::Process_Info> {
-    static bool decode(const Node &node, achilles::Process_Info &info) {
+template <> struct convert<achilles::ProcessInfo> {
+    static bool decode(const Node &node, achilles::ProcessInfo &info) {
         if(!node.IsMap()) return false;
         if(!node["Leptons"].IsSequence()) return false;
-        info = achilles::Process_Info(node["Leptons"].as<std::vector<achilles::PID>>());
+        info = achilles::ProcessInfo(node["Leptons"].as<std::vector<achilles::PID>>());
         return true;
     }
 };
