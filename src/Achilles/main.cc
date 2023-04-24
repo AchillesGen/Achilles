@@ -1,16 +1,16 @@
 #include "Achilles/EventGen.hh"
 #include "Achilles/FinalStateMapper.hh"
-#include "Achilles/HadronicMapper.hh"
 #include "Achilles/FormFactor.hh"
-#include "Achilles/Version.hh"
-#include "Achilles/System.hh"
-#include "Achilles/Logging.hh"
+#include "Achilles/HadronicMapper.hh"
 #include "Achilles/Interactions.hh"
-#include "Achilles/Particle.hh"
+#include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/System.hh"
+#include "Achilles/Version.hh"
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
 #include "plugins/Sherpa/Channels.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #endif // ACHILLES_SHERPA_INTERFACE
 
 #include "docopt.h"
@@ -21,7 +21,6 @@ using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
 
 void Splash() {
-
     fmt::print(R"splash(
 +=====================================================================+
 |                                                                     | 
@@ -73,11 +72,12 @@ void Splash() {
 |        Diego Lopez Gutierrez, Sherry Wang, Russell Farnsworth       |
 |                                                                     |
 +=====================================================================+
-)splash", ACHILLES_VERSION);
+)splash",
+               ACHILLES_VERSION);
 }
 
 static const std::string USAGE =
-R"(
+    R"(
     Usage:
       achilles [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
@@ -107,12 +107,11 @@ void GenerateEvents(const std::string &runcard, const std::vector<std::string> &
 }
 
 int main(int argc, char *argv[]) {
-
     Splash();
-    std::map<std::string, docopt::value> args = docopt::docopt(USAGE,
-                                                    { argv + 1, argv + argc },
-                                                    true, // show help if requested
-                                                    fmt::format("achilles {}", ACHILLES_VERSION)); //version string
+    std::map<std::string, docopt::value> args =
+        docopt::docopt(USAGE, {argv + 1, argv + argc},
+                       true,                                          // show help if requested
+                       fmt::format("achilles {}", ACHILLES_VERSION)); // version string
 
     if(args["--display-cuts"].asBool()) {
         achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
@@ -146,7 +145,7 @@ int main(int argc, char *argv[]) {
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
-    
+
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
 
@@ -156,12 +155,10 @@ int main(int argc, char *argv[]) {
     if(!handle) {
         name = buildLibs + lib;
         handle = dlopen(name.c_str(), RTLD_NOW);
-        if(!handle) {
-            spdlog::warn("Cannot open HardScattering: {}", dlerror());
-        }
+        if(!handle) { spdlog::warn("Cannot open HardScattering: {}", dlerror()); }
     }
     std::vector<std::string> shargs;
-    if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
+    if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
     GenerateEvents(runcard, shargs);
 

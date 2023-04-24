@@ -33,7 +33,7 @@ bool AdaptiveMap::Serialize(std::ostream &out) const {
 size_t AdaptiveMap::FindBin(size_t dim, double x) const {
     const auto edges = Edges(dim);
     auto it = std::lower_bound(edges.begin(), edges.end(), x);
-    return static_cast<size_t>(std::distance(edges.begin(), it))-1;
+    return static_cast<size_t>(std::distance(edges.begin(), it)) - 1;
 }
 
 double AdaptiveMap::operator()(std::vector<double> &rans) {
@@ -108,9 +108,9 @@ void AdaptiveMap::Adapt(const double &alpha, const std::vector<double> &data) {
 
         // Adjust boundaries
         for(size_t nbin = 1; nbin < m_bins; ++nbin) {
-            for(; cbin < average_bin; ++ibin) cbin += tmp[ibin]; 
+            for(; cbin < average_bin; ++ibin) cbin += tmp[ibin];
 
-            const double prev = lower_edge(i, ibin-1);
+            const double prev = lower_edge(i, ibin - 1);
             const double curr = lower_edge(i, ibin);
 
             cbin -= average_bin;
@@ -130,13 +130,13 @@ void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {
     } else if(split == AdaptiveMapSplit::third) {
         nsplit = 3;
     } else if(split == AdaptiveMapSplit::quarter) {
-        nsplit = 4; 
+        nsplit = 4;
     } else {
         throw std::logic_error("Invalid histogram splitting");
     }
 
     // Create temporary histogram to store new histogram
-    std::vector<double> hist(m_dims*(nsplit*m_bins + 1));
+    std::vector<double> hist(m_dims * (nsplit * m_bins + 1));
 
     // Split the histogram into new binnings
     for(size_t d = 0; d < m_dims; ++d) {
@@ -145,17 +145,17 @@ void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {
             const double size = width(d, bin);
 
             for(size_t i = 0; i < nsplit; ++i) {
-                const size_t idx = d*(nsplit*m_bins+1) + bin*nsplit + i;
-                hist[idx] = curr + static_cast<double>(i)*size/static_cast<double>(nsplit);
+                const size_t idx = d * (nsplit * m_bins + 1) + bin * nsplit + i;
+                hist[idx] = curr + static_cast<double>(i) * size / static_cast<double>(nsplit);
             }
         }
         // Add the endpoint
-        hist[(d+1)*(nsplit*m_bins)+d] = 1.0;
+        hist[(d + 1) * (nsplit * m_bins) + d] = 1.0;
     }
 
     // Store the new histogram information
     spdlog::trace("Old Hist: [{}]", fmt::join(m_hist.begin(), m_hist.end(), ", "));
     spdlog::trace("New Hist: [{}]", fmt::join(hist.begin(), hist.end(), ", "));
-    m_bins = nsplit*m_bins;
+    m_bins = nsplit * m_bins;
     m_hist = hist;
 }

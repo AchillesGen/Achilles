@@ -1,19 +1,18 @@
 #include "Achilles/EventGen.hh"
-#include "Achilles/Event.hh"
-#include "Achilles/EventWriter.hh"
-#include "Achilles/HardScatteringFactory.hh"
-#include "Achilles/HardScattering.hh"
-#include "Achilles/Logging.hh"
-#include "Achilles/Nucleus.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
-#include "Achilles/Particle.hh"
-#include "Achilles/Units.hh"
-#include "Achilles/ProcessInfo.hh"
-#include "Achilles/NuclearModel.hh"
-#include "Achilles/ComplexFmt.hh"
-#include "Achilles/Units.hh"
 #include "Achilles/Channels.hh"
+#include "Achilles/ComplexFmt.hh"
+#include "Achilles/Event.hh"
+#include "Achilles/EventWriter.hh"
+#include "Achilles/HardScattering.hh"
+#include "Achilles/HardScatteringFactory.hh"
+#include "Achilles/Logging.hh"
+#include "Achilles/NuclearModel.hh"
+#include "Achilles/Nucleus.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/ProcessInfo.hh"
+#include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
@@ -25,12 +24,12 @@
 
 #include "yaml-cpp/yaml.h"
 
-achilles::EventGen::EventGen(const std::string &configFile,
-                             std::vector<std::string> shargs) {
+achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs) {
     config = YAML::LoadFile(configFile);
 
     // Setup random number generator
-    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed = static_cast<unsigned int>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config["Initialize"]["Seed"])
         if(config["Initialize"]["Seed"].as<int>() > 0)
             seed = config["Initialize"]["Seed"].as<unsigned int>();
@@ -48,10 +47,9 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
     // Set potential for the nucleus
     auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
-    auto potential = achilles::PotentialFactory::Initialize(potential_name,
-                                                          nucleus,
-                                                          config["Nucleus"]["Potential"]);
-    nucleus -> SetPotential(std::move(potential));
+    auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
+                                                            config["Nucleus"]["Potential"]);
+    nucleus->SetPotential(std::move(potential));
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
     if(config["Cascade"]["Run"].as<bool>()) {
@@ -64,15 +62,16 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Initializing the leptonic final states");
     auto leptonicProcess = config["Process"].as<achilles::Process_Info>();
     // TODO: Handle the beam initial state better
-    if(beam -> BeamIDs().size() > 1)
-        throw std::runtime_error("Multiple processes are not implemented yet. Please use only one beam.");
-    leptonicProcess.m_leptonic.first = *beam -> BeamIDs().begin();
+    if(beam->BeamIDs().size() > 1)
+        throw std::runtime_error("Multiple processes are not implemented yet. "
+                                 "Please use only one beam.");
+    leptonicProcess.m_leptonic.first = *beam->BeamIDs().begin();
 
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
     const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
     auto nuclear_model = NuclearModelFactory::Initialize(model_name, config);
-    nuclear_model -> AllowedStates(leptonicProcess);
+    nuclear_model->AllowedStates(leptonicProcess);
     spdlog::debug("Process: {}", leptonicProcess);
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -82,19 +81,18 @@ achilles::EventGen::EventGen(const std::string &configFile,
     std::string param_card = config["Process"]["ParamCard"].as<std::string>();
     int qed = 0;
     if(config["Process"]["QEDShower"])
-        if(config["Process"]["QEDShower"].as<bool>())
-            qed = 1;
+        if(config["Process"]["QEDShower"].as<bool>()) qed = 1;
     shargs.push_back(fmt::format("ME_QED={}", qed));
     if(model == "SM") model = "SM_Nuc";
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    p_sherpa -> Initialize(shargs);
+    p_sherpa->Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
+    if(!p_sherpa->InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
-    leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
+    leptonicProcess.m_mom_map = p_sherpa->MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
     (void)shargs;
@@ -107,38 +105,40 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // Initialize hard cross-sections
     spdlog::debug("Initializing hard interaction");
     scattering = std::make_shared<HardScattering>();
-    scattering -> SetProcess(leptonicProcess);
+    scattering->SetProcess(leptonicProcess);
 #ifdef ACHILLES_SHERPA_INTERFACE
-    scattering -> SetSherpa(p_sherpa);
+    scattering->SetSherpa(p_sherpa);
 #endif
-    scattering -> SetNuclear(std::move(nuclear_model));
+    scattering->SetNuclear(std::move(nuclear_model));
 
     // Setup channels
     spdlog::debug("Initializing phase space");
-    std::vector<double> masses = scattering -> Process().Masses();
+    std::vector<double> masses = scattering->Process().Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
 #ifndef ACHILLES_SHERPA_INTERFACE
-        if(scattering -> Process().Multiplicity() == 4) {
-            Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(scattering -> Nuclear(), 2, 2,
-                                                                       beam, masses);
+        if(scattering->Process().Multiplicity() == 4) {
+            Channel<FourVector> channel0 =
+                BuildChannel<TwoBodyMapper>(scattering->Nuclear(), 2, 2, beam, masses);
             integrand.AddChannel(std::move(channel0));
         } else {
-            const std::string error = fmt::format("Leptonic Tensor can only handle 2->2 processes without "
-                                                  "BSM being enabled. "
-                                                  "Got a 2->{} process", leptonicProcess.Ids().size());
+            const std::string error =
+                fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+                            "BSM being enabled. "
+                            "Got a 2->{} process",
+                            leptonicProcess.Ids().size());
             throw std::runtime_error(error);
         }
 #else
-        auto channels = p_sherpa -> GenerateChannels(scattering -> Process().Ids());
+        auto channels = p_sherpa->GenerateChannels(scattering->Process().Ids());
         size_t count = 0;
-        for(auto & chan : channels) {
-            Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
-                                                          scattering -> Process().m_leptonic.second.size()+1, 2,
-                                                          beam, std::move(chan), masses);
+        for(auto &chan : channels) {
+            Channel<FourVector> channel = BuildGenChannel(
+                scattering->Nuclear(), scattering->Process().m_leptonic.second.size() + 1, 2, beam,
+                std::move(chan), masses);
             integrand.AddChannel(std::move(channel));
             spdlog::info("Adding Channel{}", count++);
         }
@@ -150,12 +150,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
     integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 2});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
-    if(config["Main"]["DoRotate"])
-        doRotate = config["Main"]["DoRotate"].as<bool>();
+    if(config["Main"]["DoRotate"]) doRotate = config["Main"]["DoRotate"].as<bool>();
 
     // Setup Cuts
-    if(config["Main"]["HardCuts"])
-        doHardCuts = config["Main"]["HardCuts"].as<bool>();
+    if(config["Main"]["HardCuts"]) doHardCuts = config["Main"]["HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
 
@@ -167,8 +165,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // Setup outputs
     auto output = config["Main"]["Output"];
     bool zipped = true;
-    if(output["Zipped"])
-        zipped = output["Zipped"].as<bool>();
+    if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
     spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
     if(output["Format"].as<std::string>() == "Achilles") {
         writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
@@ -181,7 +178,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
                                       output["Format"].as<std::string>());
         throw std::runtime_error(msg);
     }
-    writer -> WriteHeader(configFile);
+    writer->WriteHeader(configFile);
 }
 
 void achilles::EventGen::Initialize() {
@@ -199,20 +196,20 @@ void achilles::EventGen::Initialize() {
     //     results["Channels"] = integrand;
     //     integrand.Function() = func;
     // } catch(const YAML::BadFile &e) {
-        spdlog::info("Initializing integrator.");
-        integrand.Function() = func;
-        if(config["Initialize"]["Accuracy"])
-            integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
-        integrator.Optimize(integrand);
-        integrator.Summary();
+    spdlog::info("Initializing integrator.");
+    integrand.Function() = func;
+    if(config["Initialize"]["Accuracy"])
+        integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
+    integrator.Optimize(integrand);
+    integrator.Summary();
 
-        YAML::Node results;
-        results["Multichannel"] = integrator;
-        results["Channels"] = integrand;
+    YAML::Node results;
+    results["Multichannel"] = integrator;
+    results["Channels"] = integrand;
 
-        std::ofstream fresults("results.yml");
-        fresults << results;
-        fresults.close();
+    std::ofstream fresults("results.yml");
+    fresults << results;
+    fresults.close();
     // }
 }
 
@@ -220,24 +217,23 @@ void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
     integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
-    std::string filename = fmt::format("events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
+    std::string filename = fmt::format(
+        "events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
     outputfile.open(filename);
     integrator(integrand);
     fmt::print("\n");
     auto result = integrator.Summary();
-    fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n",
-               result.results.back().Mean(), result.results.back().Error(),
-               result.results.back().Error() / result.results.back().Mean()*100);
-    fmt::print("Unweighting efficiency: {:^8.5e} %\n",
-               unweighter->Efficiency() * 100);
+    fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n", result.results.back().Mean(),
+               result.results.back().Error(),
+               result.results.back().Error() / result.results.back().Mean() * 100);
+    fmt::print("Unweighting efficiency: {:^8.5e} %\n", unweighter->Efficiency() * 100);
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     if(outputEvents) {
         static constexpr size_t statusUpdate = 1000;
         if(unweighter->Accepted() % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r",
-                       unweighter->Accepted(),
+            fmt::print("Generated {} / {} events\r", unweighter->Accepted(),
                        config["Main"]["NEvents"].as<size_t>());
         }
     }
@@ -246,11 +242,11 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     Event event(nucleus, mom, wgt);
 
     // Initialize the particle ids for the processes
-    auto pids = scattering -> Process().m_leptonic.second;
-    pids.insert(pids.begin(), scattering -> Process().m_leptonic.first);
+    auto pids = scattering->Process().m_leptonic.second;
+    pids.insert(pids.begin(), scattering->Process().m_leptonic.first);
 
     // Setup flux value
-    event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
+    event.Flux() = beam->EvaluateFlux(pids[0], mom[1]);
 
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
@@ -261,19 +257,19 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     // Calculate the hard cross sections and select one for initial state
     spdlog::debug("Calculating cross section");
 
-    // Obtain the cross section for the event 
-    auto xsecs = scattering -> CrossSection(event);
+    // Obtain the cross section for the event
+    auto xsecs = scattering->CrossSection(event);
 
     // Initialize the event
     spdlog::debug("Filling the event");
-    if(!scattering -> FillEvent(event, xsecs)) {
+    if(!scattering->FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
             event.CalcWeight();
             spdlog::trace("Outputting the event");
-            writer -> Write(event);
-            // Update number of calls needed to ensure the number of generated events
-            // is the same as that requested by the user
+            writer->Write(event);
+            // Update number of calls needed to ensure the number of generated
+            // events is the same as that requested by the user
             integrator.Parameters().ncalls++;
         }
         return 0;
@@ -281,15 +277,11 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     spdlog::trace("Leptons:");
     idx = 0;
-    for(const auto &particle : event.Leptons()) {
-        spdlog::trace("\t{}: {}", ++idx, particle);
-    }
+    for(const auto &particle : event.Leptons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
 
     spdlog::trace("Hadrons:");
     idx = 0;
-    for(const auto &particle : event.Hadrons()) {
-        spdlog::trace("\t{}: {}", ++idx, particle);
-    }
+    for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
 
     event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
@@ -310,9 +302,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             if(outputEvents) {
                 event.SetMEWeight(0);
                 event.CalcWeight();
-                writer -> Write(event);
-                // Update number of calls needed to ensure the number of generated events
-                // is the same as that requested by the user
+                writer->Write(event);
+                // Update number of calls needed to ensure the number of
+                // generated events is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
             return 0;
@@ -325,21 +317,18 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         spdlog::trace("Hadrons:");
         idx = 0;
         for(const auto &particle : event.Hadrons()) {
-            if(particle.Status() == ParticleStatus::initial_state
-                && particle.ID() == PID::proton())
+            if(particle.Status() == ParticleStatus::initial_state && particle.ID() == PID::proton())
                 spdlog::trace("\t{}: {}", idx, particle);
             ++idx;
         }
         spdlog::debug("Runnning cascade");
-        cascade -> Evolve(&event);
+        cascade->Evolve(&event);
 
         spdlog::trace("Hadrons (Post Cascade):");
         idx = 0;
-        for(const auto &particle : event.Hadrons()) {
-            spdlog::trace("\t{}: {}", ++idx, particle);
-        }
+        for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
     } else {
-        for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
+        for(auto &nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
                 nucleon.Status() = ParticleStatus::final_state;
             }
@@ -350,16 +339,14 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     if(outputEvents) {
 #ifdef ACHILLES_SHERPA_INTERFACE
         // Running Sherpa interface if requested
-        // Only needed when generating events and not optimizing the multichannel
+        // Only needed when generating events and not optimizing the
+        // multichannel
         // TODO: Move to after unweighting?
-        if(runDecays && event.Weight() > 0) {
-            p_sherpa -> GenerateEvent(event);
-        }
+        if(runDecays && event.Weight() > 0) { p_sherpa->GenerateEvent(event); }
 #endif
 
         // Rotate cuts into plane of outgoing electron before writing
-        if (doRotate)
-            Rotate(event);
+        if(doRotate) Rotate(event);
         // Perform event-level final cuts before writing
         bool outputCurrentEvent = true;
         // if(doEventCuts){
@@ -371,11 +358,11 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // Keep a running total of the number of surviving events
             event.Finalize();
             if(!unweighter->AcceptEvent(event)) {
-                // Update number of calls needed to ensure the number of generated events
-                // is the same as that requested by the user
+                // Update number of calls needed to ensure the number of
+                // generated events is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
-            writer -> Write(event);
+            writer->Write(event);
         } else {
             unweighter->AddEvent(event);
         }
@@ -418,16 +405,13 @@ bool achilles::EventGen::MakeEventCuts(Event &event) {
 void achilles::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron
     double phi = 0.0;
-    for(const auto & particle : event.Particles()){
-        if(particle.ID() == PID::electron() && particle.IsFinal()){
+    for(const auto &particle : event.Particles()) {
+        if(particle.ID() == PID::electron() && particle.IsFinal()) {
             phi = particle.Momentum().Phi();
         }
     }
     // Rotate the coordiantes of particles so that all azimuthal angles phi are
     // measured with respect to the leptonic plane
-    std::array<double, 9> rotation = {
-        cos(phi),  sin(phi), 0,
-        -sin(phi), cos(phi), 0,
-        0,         0,        1};
+    std::array<double, 9> rotation = {cos(phi), sin(phi), 0, -sin(phi), cos(phi), 0, 0, 0, 1};
     event.Rotate(rotation);
 }

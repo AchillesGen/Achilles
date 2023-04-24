@@ -6,14 +6,14 @@
 using achilles::PercentileUnweighter;
 
 PercentileUnweighter::PercentileUnweighter(const YAML::Node &node)
-    : m_percentile{node["percentile"].as<double>()/100} {}
+    : m_percentile{node["percentile"].as<double>() / 100} {}
 
 void PercentileUnweighter::AddEvent(const achilles::Event &event) {
     m_percentile.Add(event.Weight());
 }
 
 bool PercentileUnweighter::AcceptEvent(achilles::Event &event) {
-    double max_wgt = m_percentile.Get(); 
+    double max_wgt = m_percentile.Get();
     double prob = event.Weight() / max_wgt;
     m_total++;
 

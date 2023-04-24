@@ -1,7 +1,7 @@
 #include "Achilles/SpectralFunction.hh"
 #include "spdlog/spdlog.h"
-#include <fstream>
 #include <cmath>
+#include <fstream>
 
 using achilles::SpectralFunction;
 
@@ -11,33 +11,27 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     data >> ne >> np;
     mom.resize(np);
     energy.resize(ne);
-    spectral.resize(ne*np);
+    spectral.resize(ne * np);
     std::vector<double> dp_p(np);
     for(size_t j = 0; j < np; ++j) {
         data >> mom[j];
-        for(size_t i = 0; i < ne; ++i) {
-            data >> energy[i] >> spectral[j*ne+i];
-        }
+        for(size_t i = 0; i < ne; ++i) { data >> energy[i] >> spectral[j * ne + i]; }
     }
     data.close();
 
     double hp = mom[1] - mom[0];
     double he = energy[1] - energy[0];
     for(size_t i = 0; i < np; ++i) {
-        for(size_t j = 0; j < ne; ++j) {
-            dp_p[i] += spectral[i*ne+j]*he;
-        }
+        for(size_t j = 0; j < ne; ++j) { dp_p[i] += spectral[i * ne + j] * he; }
     }
-    for(size_t i = 0; i < np; ++i) {
-        norm += mom[i]*mom[i]*dp_p[i]*4*M_PI*hp;
-    }
+    for(size_t i = 0; i < np; ++i) { norm += mom[i] * mom[i] * dp_p[i] * 4 * M_PI * hp; }
     spdlog::debug("Spectral function normalization: {}", norm);
 
     // Find maximums for each p
     std::vector<double> maxS(np);
     for(size_t i = 0; i < np; ++i) {
         for(size_t j = 0; j < ne; ++j) {
-            if(maxS[i] < spectral[i*ne+j]) maxS[i] = spectral[i*ne+j];
+            if(maxS[i] < spectral[i * ne + j]) maxS[i] = spectral[i * ne + j];
         }
     }
 
@@ -51,8 +45,7 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
 }
 
 double SpectralFunction::operator()(double p, double E) const {
-    if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back())
-        return 0;
+    if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back()) return 0;
 
     auto result = func(p, E);
     return result > 0 ? result : 0;

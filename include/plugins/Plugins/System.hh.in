@@ -5,7 +5,7 @@
 #if __cplusplus == 201402L
 #include <experimental/filesystem>
 namespace fs = std::experimental::filesystem;
-#else //if __cplusplus == 201703L
+#else // if __cplusplus == 201703L
 #include <filesystem>
 namespace fs = std::filesystem;
 #endif
@@ -13,10 +13,10 @@ namespace fs = std::filesystem;
 namespace achilles {
 
 namespace SystemVariables {
-    const std::string libraryPrefix = "@LIBPREFIX@";
-    const std::string librarySuffix = "@LIBSUFFIX@";
-}
+const std::string libraryPrefix = "@LIBPREFIX@";
+const std::string librarySuffix = "@LIBSUFFIX@";
+} // namespace SystemVariables
 
-}
+} // namespace achilles
 
 #endif

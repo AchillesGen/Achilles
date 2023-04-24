@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <map>
 
 #include "Achilles/Potential.hh"
@@ -9,9 +9,9 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Random.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
-#include "Achilles/Random.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -27,80 +27,70 @@ REGISTER_INTERACTION(GeantInteractions);
 REGISTER_INTERACTION(NasaInteractions);
 REGISTER_INTERACTION(ConstantInteractions);
 
-const std::map<std::string, double> HZETRN = {
-    {"a", 5.0_MeV},
-    {"b", 0.199/sqrt(1_MeV)},
-    {"c", 0.451 * pow(1_MeV, -0.258)},
-    {"d", 25.0_MeV},
-    {"e", 134.0_MeV},
-    {"f", 1.187 * pow(1_MeV, -0.35)},
-    {"g", 0.1_MeV},
-    {"h", 0.282_MeV}
-};
+const std::map<std::string, double> HZETRN = {{"a", 5.0_MeV},
+                                              {"b", 0.199 / sqrt(1_MeV)},
+                                              {"c", 0.451 * pow(1_MeV, -0.258)},
+                                              {"d", 25.0_MeV},
+                                              {"e", 134.0_MeV},
+                                              {"f", 1.187 * pow(1_MeV, -0.35)},
+                                              {"g", 0.1_MeV},
+                                              {"h", 0.282_MeV}};
 
 const std::map<std::string, double> PDG = {
-    {"Zpp", 33.45_mb},  
-    {"Zpn", 35.80_mb},  
-    {"Y1pp", 42.53_mb}, 
-    {"Y1pn", 40.15_mb}, 
-    {"Y2pp", 33.34_mb}, 
-    {"Y2pn", 30.00_mb}, 
-    {"B", 0.308_mb},    
-    {"s1", 1.0 * pow(1_GeV, 2)},
-    {"s0", pow(5.38_GeV, 2)},
-    {"n1", 0.458},
-    {"n2", 0.545}
-};
+    {"Zpp", 33.45_mb},        {"Zpn", 35.80_mb},  {"Y1pp", 42.53_mb}, {"Y1pn", 40.15_mb},
+    {"Y2pp", 33.34_mb},       {"Y2pn", 30.00_mb}, {"B", 0.308_mb},    {"s1", 1.0 * pow(1_GeV, 2)},
+    {"s0", pow(5.38_GeV, 2)}, {"n1", 0.458},      {"n2", 0.545}};
 
-const std::map<std::string, double> JWN = {
-    {"gamma", 52.5 * pow(1_GeV, 0.16)}, //mb
-    {"alpha", 0.00369 / 1_MeV},
-    {"beta", 0.00895741 * pow(1_MeV, -0.8)}
-};
+const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, // mb
+                                           {"alpha", 0.00369 / 1_MeV},
+                                           {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
-double Interactions::CrossSectionLab(bool samePID, const double& pLab) const noexcept {
+double Interactions::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
     const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
         if(pLab < 1.8_GeV) {
             if(tLab >= 25_MeV)
-                return (1.0+HZETRN.at("a")/tLab) * (40+109.0*std::cos(HZETRN.at("b")*sqrt(tLab))
-                        * exp(-HZETRN.at("c")*pow(tLab-HZETRN.at("d"), 0.258)));
+                return (1.0 + HZETRN.at("a") / tLab) *
+                       (40 + 109.0 * std::cos(HZETRN.at("b") * sqrt(tLab)) *
+                                 exp(-HZETRN.at("c") * pow(tLab - HZETRN.at("d"), 0.258)));
             else
-                return exp(6.51*exp(-pow(tLab/HZETRN.at("e"), 0.7)));
+                return exp(6.51 * exp(-pow(tLab / HZETRN.at("e"), 0.7)));
         } else if(pLab <= 4.7_GeV) {
-            return JWN.at("gamma")/pow(pLab, 0.16);
+            return JWN.at("gamma") / pow(pLab, 0.16);
         } else {
-            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
-            return PDG.at("Zpp") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
-                + PDG.at("Y1pp")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
-                - PDG.at("Y2pp")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
+            double ecm2 =
+                2 * Constant::mN * (Constant::mN + sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
+            return PDG.at("Zpp") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
+                   PDG.at("Y1pp") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
+                   PDG.at("Y2pp") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));
         }
     } else {
         if(pLab < 0.5_GeV) {
             if(tLab >= 0.1_MeV)
-                return 38.0 + 12500.0*exp(-HZETRN.at("f")*pow(tLab-HZETRN.at("g"), 0.35));
+                return 38.0 + 12500.0 * exp(-HZETRN.at("f") * pow(tLab - HZETRN.at("g"), 0.35));
             else
-                return 26000 * exp(-pow(tLab/HZETRN.at("h"), 0.3));
+                return 26000 * exp(-pow(tLab / HZETRN.at("h"), 0.3));
         } else if(pLab <= 2.0_GeV) {
-            return 40 + 10*cos(JWN.at("alpha")*pLab - 0.943)
-                * exp(-JWN.at("beta")*pow(pLab, 0.8)+2);
+            return 40 + 10 * cos(JWN.at("alpha") * pLab - 0.943) *
+                            exp(-JWN.at("beta") * pow(pLab, 0.8) + 2);
         } else {
-            double ecm2 = 2*Constant::mN*(Constant::mN+sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
-            return PDG.at("Zpn") + PDG.at("B")*pow(log(ecm2/PDG.at("s0")), 2)
-                + PDG.at("Y1pn")*pow(PDG.at("s1")/ecm2, PDG.at("n1"))
-                - PDG.at("Y2pn")*pow(PDG.at("s1")/ecm2, PDG.at("n2"));
+            double ecm2 =
+                2 * Constant::mN * (Constant::mN + sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
+            return PDG.at("Zpn") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
+                   PDG.at("Y1pn") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
+                   PDG.at("Y2pn") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));
         }
     }
 }
 
-achilles::Interactions::MomentumPair Interactions::FinalizeMomentum(const Particle &particle1,
-                                                                  const Particle &particle2,
-                                                                  std::shared_ptr<Potential>) const {
+achilles::Interactions::MomentumPair
+Interactions::FinalizeMomentum(const Particle &particle1, const Particle &particle2,
+                               std::shared_ptr<Potential>) const {
+    //    if(pot -> IsRelativistic())
+    //        throw std::runtime_error(fmt::format("{} is not compatible with a
+    //        relativistic potential.",
+    //                                             Name()));
 
-//    if(pot -> IsRelativistic())
-//        throw std::runtime_error(fmt::format("{} is not compatible with a relativistic potential.",
-//                                             Name()));
-   
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
@@ -123,7 +113,7 @@ achilles::Interactions::MomentumPair Interactions::FinalizeMomentum(const Partic
     return {p1Out, p2Out};
 }
 
-GeantInteractions::GeantInteractions(const YAML::Node& node) {
+GeantInteractions::GeantInteractions(const YAML::Node &node) {
     auto filename = node["GeantData"].as<std::string>();
 
     // Initialize theta vector
@@ -140,7 +130,7 @@ GeantInteractions::GeantInteractions(const YAML::Node& node) {
     // Read in the Geant4 hdf5 file and get the np and pp groups
     spdlog::info("GeantInteractions: Loading Geant4 data from {0}.", filename);
     HighFive::File file(filename, HighFive::File::ReadOnly);
-    HighFive::Group dataNP(file.getGroup("np")); 
+    HighFive::Group dataNP(file.getGroup("np"));
     HighFive::Group dataPP(file.getGroup("pp"));
 
     // Get the datasets for np and load into local variables
@@ -150,12 +140,12 @@ GeantInteractions::GeantInteractions(const YAML::Node& node) {
     LoadData(true, dataPP);
 }
 
-void GeantInteractions::LoadData(bool samePID, const HighFive::Group& group) {
+void GeantInteractions::LoadData(bool samePID, const HighFive::Group &group) {
     // Load datasets
     HighFive::DataSet pcm(group.getDataSet("pcm"));
     HighFive::DataSet sigTot(group.getDataSet("sigtot"));
     HighFive::DataSet sig(group.getDataSet("sig"));
-  
+
     // Get data for center of momentum
     std::vector<double> pcmVec;
     pcm.read(pcmVec);
@@ -166,29 +156,29 @@ void GeantInteractions::LoadData(bool samePID, const HighFive::Group& group) {
 
     // Get data for angular cross-section
     auto dims = sig.getDimensions();
-    std::vector<double> sigAngular(dims[0]*dims[1]);
+    std::vector<double> sigAngular(dims[0] * dims[1]);
     sig.read(sigAngular.data());
 
     // Perform interpolation for angles
     achilles::Interp2D interp(pcmVec, m_theta, sigAngular);
     interp.BicubicSpline();
 
-    std::vector<double> theta(pcmVec.size()*m_cdf.size());
+    std::vector<double> theta(pcmVec.size() * m_cdf.size());
     constexpr double accuracy = 1E-6;
     for(size_t i = 0; i < pcmVec.size(); ++i) {
         for(size_t j = 0; j < m_cdf.size(); ++j) {
-            auto func = [interp, pcmVec, this, i, j](double x){
-                return interp(pcmVec[i], x) - this -> m_cdf[j];
+            auto func = [interp, pcmVec, this, i, j](double x) {
+                return interp(pcmVec[i], x) - this->m_cdf[j];
             };
             achilles::Brent brent(func, accuracy);
-            if(j != m_cdf.size() - 1)
-                try{
-                    theta[i*m_cdf.size() + j] = brent.CalcRoot(m_theta.front(), m_theta.back());
-                } catch (std::domain_error &e) {
-                    theta[i*m_cdf.size() + j] = m_theta.front()/sigAngular[i*180 + j]*m_cdf[j];
+            if(j != m_cdf.size() - 1) try {
+                    theta[i * m_cdf.size() + j] = brent.CalcRoot(m_theta.front(), m_theta.back());
+                } catch(std::domain_error &e) {
+                    theta[i * m_cdf.size() + j] =
+                        m_theta.front() / sigAngular[i * 180 + j] * m_cdf[j];
                 }
             else
-                theta[i*m_cdf.size() + j] = m_theta.back();
+                theta[i * m_cdf.size() + j] = m_theta.back();
         }
     }
 
@@ -209,8 +199,7 @@ void GeantInteractions::LoadData(bool samePID, const HighFive::Group& group) {
     }
 }
 
-double GeantInteractions::CrossSection(const Particle& particle1,
-                                       const Particle& particle2) const {
+double GeantInteractions::CrossSection(const Particle &particle1, const Particle &particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(); //, p2Lab = particle2.Momentum();
@@ -220,38 +209,39 @@ double GeantInteractions::CrossSection(const Particle& particle1,
 
     try {
         if(samePID) {
-            return m_crossSectionPP(pcm/1_GeV);
+            return m_crossSectionPP(pcm / 1_GeV);
         } else {
-            return m_crossSectionNP(pcm/1_GeV);
+            return m_crossSectionNP(pcm / 1_GeV);
         }
-    } catch (std::domain_error &e) {
+    } catch(std::domain_error &e) {
         spdlog::trace("Using Nasa Interaction");
         // double s = (p1Lab+p2Lab).M2();
-        double s = (particle1.Momentum()+particle2.Momentum()).M2();
+        double s = (particle1.Momentum() + particle2.Momentum()).M2();
         double smin = pow(particle1.Mass(), 2) + pow(particle2.Mass(), 2);
-        double plab = sqrt(pow(s, 2)/smin - s);
+        double plab = sqrt(pow(s, 2) / smin - s);
         return Interactions::CrossSectionLab(samePID, plab);
     }
 }
 
-ThreeVector GeantInteractions::MakeMomentum(bool samePID,
-                                            const double& pcm,
-                                            const std::array<double, 2>& rans) const {
+ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double &pcm,
+                                            const std::array<double, 2> &rans) const {
     double pR = pcm;
-    double pTheta = CrossSectionAngle(samePID, pcm/1_GeV, rans[0]);
-    double pPhi = 2*M_PI*rans[1];
+    double pTheta = CrossSectionAngle(samePID, pcm / 1_GeV, rans[0]);
+    double pPhi = 2 * M_PI * rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-double GeantInteractions::CrossSectionAngle(bool samePID, const double& energy,
-                                            const double& ran) const {
-    try{
-        if(samePID) return m_thetaDistPP(energy, ran);
-        else return m_thetaDistNP(energy, ran);
+double GeantInteractions::CrossSectionAngle(bool samePID, const double &energy,
+                                            const double &ran) const {
+    try {
+        if(samePID)
+            return m_thetaDistPP(energy, ran);
+        else
+            return m_thetaDistNP(energy, ran);
     } catch(std::domain_error &e) {
         spdlog::trace("Using flat angular distribution");
-        return acos(2*ran-1);
+        return acos(2 * ran - 1);
     }
 }
 
@@ -261,12 +251,11 @@ GeantInteractionsDt::GeantInteractionsDt(const YAML::Node& node) {
     auto filename_np = node["GeantDataNP"].as<std::string>();
 
     // Read in the Geant4 dsigma/dt files
-    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_pp data from {0}.", filename_pp);
-    LoadData(true, filename_pp);
+    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_pp data from
+{0}.", filename_pp); LoadData(true, filename_pp);
 
-    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_np data from {0}.", filename_np);
-    LoadData(false, filename_np);
-    throw;
+    spdlog::info("GeantInteractionsDt: Loading Geant4 dsigma/dt_np data from
+{0}.", filename_np); LoadData(false, filename_np); throw;
 }
 
 void GeantInteractionsDt::LoadData(bool samePID, const std::string &filename) {
@@ -323,12 +312,9 @@ void GeantInteractionsDt::LoadData(bool samePID, const std::string &filename) {
     }
 }
 
-std::vector<double> GeantInteractionsDt::ReadBlock(std::ifstream &file, size_t nlines) const {
-    std::string line{};
-    std::vector<std::string> tokens;
-    for(size_t i = 0; i < nlines; ++i) {
-        std::getline(file, line);
-        tokenize(line, tokens);
+std::vector<double> GeantInteractionsDt::ReadBlock(std::ifstream &file, size_t
+nlines) const { std::string line{}; std::vector<std::string> tokens; for(size_t
+i = 0; i < nlines; ++i) { std::getline(file, line); tokenize(line, tokens);
     }
     std::vector<double> results;
     for(const auto& token : tokens)
@@ -339,8 +325,9 @@ std::vector<double> GeantInteractionsDt::ReadBlock(std::ifstream &file, size_t n
 
 double GeantInteractionsDt::CrossSection(const Particle &particle1,
                                          const Particle &particle2) const {
-    bool samePID = particle1.ID() == particle2.ID(); 
-    const double ecm2 = (particle1.Momentum() + particle2.Momentum()).M2()/1_GeV/1_GeV;
+    bool samePID = particle1.ID() == particle2.ID();
+    const double ecm2 = (particle1.Momentum() +
+particle2.Momentum()).M2()/1_GeV/1_GeV;
 
     try{
         if(samePID) {
@@ -355,20 +342,20 @@ double GeantInteractionsDt::CrossSection(const Particle &particle1,
 }
 
 // TODO: Finish implementing this function
-achilles::Interactions::MomentumPair GeantInteractionsDt::FinalizeMomentum(const Particle &particle1,
-                                                                         const Particle &particle2,
-                                                                         std::shared_ptr<Potential> pot) const {
+achilles::Interactions::MomentumPair GeantInteractionsDt::FinalizeMomentum(const
+Particle &particle1, const Particle &particle2, std::shared_ptr<Potential> pot)
+const {
     // Generate outgoing momentum
     // bool samePID = particle1.ID() == particle2.ID();
     // const double ecm2 = (particle1.Momentum() + particle2.Momentum()).M2();
     // const double tmin = 2*particle1.Mass() + 2*particle2.Mass() - ecm2;
-    auto p1 = particle1.Momentum(); 
+    auto p1 = particle1.Momentum();
     auto p2 = particle2.Momentum();
     // auto q_free = p1 + p2;
     p1.E() = pot->Hamiltonian(p1.P(), particle1.Radius());
     p2.E() = pot->Hamiltonian(p2.P(), particle2.Radius());
     // auto q = p1+p2;
-    
+
     // Rotate so (p1 + p2) is along the z-axis
     // auto rotation  = q.AlignZ();
     // q = q.Rotate(rotation);
@@ -388,27 +375,27 @@ achilles::Interactions::MomentumPair GeantInteractionsDt::FinalizeMomentum(const
 // TODO: Finish implementing this function
 //ThreeVector GeantInteractionsDt::MakeMomentum(bool samePID,
 //                                              const double &pcm,
-//                                              const std::array<double, 2> &rans) const {
+//                                              const std::array<double, 2>
+&rans) const {
 //    double pR = pcm;
 //}
 */
 
-double NasaInteractions::CrossSection(const Particle& particle1,
-                                      const Particle& particle2) const {
+double NasaInteractions::CrossSection(const Particle &particle1, const Particle &particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
-    double s = (p1Lab+p2Lab).M2();
+    double s = (p1Lab + p2Lab).M2();
     double smin = pow(particle1.Mass() + particle2.Mass(), 2);
-    double plab = sqrt(pow(s,2)/smin-s);
-    return CrossSectionLab(samePID,plab); 
+    double plab = sqrt(pow(s, 2) / smin - s);
+    return CrossSectionLab(samePID, plab);
 }
 
-ThreeVector NasaInteractions::MakeMomentum(bool, const double& pcm,
-                                           const std::array<double, 2>& rans) const {
+ThreeVector NasaInteractions::MakeMomentum(bool, const double &pcm,
+                                           const std::array<double, 2> &rans) const {
     double pR = pcm;
-    double pTheta = acos(2*rans[0]-1);
-    double pPhi = 2*M_PI*rans[1];
+    double pTheta = acos(2 * rans[0] - 1);
+    double pPhi = 2 * M_PI * rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }

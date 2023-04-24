@@ -1,22 +1,24 @@
+#include "Achilles/FourVector.hh"
 #include "Achilles/PyBindings.hh"
 #include "Achilles/ThreeVector.hh"
-#include "Achilles/FourVector.hh"
 
 // Convience names
-using achilles::ThreeVector;
 using achilles::FourVector;
+using achilles::ThreeVector;
 
 void VectorModule(py::module &m) {
     py::class_<ThreeVector, std::shared_ptr<ThreeVector>>(m, "Vector3", py::module_local())
         .def(py::init<>())
-        .def(py::init<const std::array<double, 3>&>())
-        .def(py::init<const double&, const double&, const double&>())
-        .def(py::init<const ThreeVector&>())
+        .def(py::init<const std::array<double, 3> &>())
+        .def(py::init<const double &, const double &, const double &>())
+        .def(py::init<const ThreeVector &>())
         // Setters
-        .def("set_xyz", overload_cast_<const std::array<double, 3>&>()(&ThreeVector::SetXYZ))
-        .def("set_xyz", overload_cast_<const double&, const double&, const double&>()(&ThreeVector::SetXYZ))
+        .def("set_xyz", overload_cast_<const std::array<double, 3> &>()(&ThreeVector::SetXYZ))
+        .def("set_xyz",
+             overload_cast_<const double &, const double &, const double &>()(&ThreeVector::SetXYZ))
         .def("set_pxpypz", overload_cast_<const std::array<double, 3>>()(&ThreeVector::SetPxPyPz))
-        .def("set_pxpypz", overload_cast_<const double&, const double&, const double&>()(&ThreeVector::SetPxPyPz))
+        .def("set_pxpypz", overload_cast_<const double &, const double &, const double &>()(
+                               &ThreeVector::SetPxPyPz))
         .def("set_x", &ThreeVector::SetX)
         .def("set_y", &ThreeVector::SetY)
         .def("set_z", &ThreeVector::SetZ)
@@ -52,9 +54,9 @@ void VectorModule(py::module &m) {
         // NOTE: There is a clang bug that creates a warning for the line below
         //.def(py::self -= py::self)
         // Therefore, we have to do the following as a workaround
-        .def("__isub__", [](ThreeVector &a, const ThreeVector &b) {
-                return a -= b;
-            }, py::is_operator())
+        .def(
+            "__isub__", [](ThreeVector &a, const ThreeVector &b) { return a -= b; },
+            py::is_operator())
         .def(float() * py::self)
         .def(py::self * float())
         .def(py::self *= float())
@@ -64,21 +66,23 @@ void VectorModule(py::module &m) {
         .def(py::self == py::self)
         .def(py::self != py::self)
         // Access Operators
-        .def("__setitem__", overload_cast_<const std::size_t&>()(&ThreeVector::operator[]))
-        .def("__getitem__", overload_cast_<const std::size_t&>()(&ThreeVector::operator[]))
+        .def("__setitem__", overload_cast_<const std::size_t &>()(&ThreeVector::operator[]))
+        .def("__getitem__", overload_cast_<const std::size_t &>()(&ThreeVector::operator[]))
         // String methods
         .def("__str__", &ThreeVector::ToString)
         .def("__repr__", &ThreeVector::ToString);
 
     py::class_<FourVector, std::shared_ptr<FourVector>>(m, "Vector4", py::module_local())
         .def(py::init<>())
-        .def(py::init<const std::array<double, 4>&>())
-        .def(py::init<const double&, const double&, const double&, const double&>())
-        .def(py::init<const ThreeVector&, const double&>())
-        .def(py::init<const FourVector&>())
+        .def(py::init<const std::array<double, 4> &>())
+        .def(py::init<const double &, const double &, const double &, const double &>())
+        .def(py::init<const ThreeVector &, const double &>())
+        .def(py::init<const FourVector &>())
         // Setters
         .def("set_pxpypze", overload_cast_<const std::array<double, 4>>()(&FourVector::SetPxPyPzE))
-        .def("set_pxpypze", overload_cast_<const double&, const double&, const double&, const double&>()(&FourVector::SetPxPyPzE))
+        .def("set_pxpypze",
+             overload_cast_<const double &, const double &, const double &, const double &>()(
+                 &FourVector::SetPxPyPzE))
         .def("set_px", &FourVector::SetPx)
         .def("set_py", &FourVector::SetPy)
         .def("set_pz", &FourVector::SetPz)
@@ -105,8 +109,9 @@ void VectorModule(py::module &m) {
         .def("vec3", &FourVector::Vec3)
         // Functions
         .def("dot", &FourVector::Dot)
-        .def("boost", overload_cast_<const ThreeVector&>()(&FourVector::Boost, py::const_))
-        .def("boost", overload_cast_<const double&, const double&, const double&>()(&FourVector::Boost, py::const_))
+        .def("boost", overload_cast_<const ThreeVector &>()(&FourVector::Boost, py::const_))
+        .def("boost", overload_cast_<const double &, const double &, const double &>()(
+                          &FourVector::Boost, py::const_))
         .def("cross", &FourVector::Cross)
         .def("boost_vector", &FourVector::BoostVector)
         // Operator Overloads
@@ -118,9 +123,9 @@ void VectorModule(py::module &m) {
         // NOTE: There is a clang bug that creates a warning for the line below
         //.def(py::self -= py::self)
         // Therefore, we have to do the following as a workaround
-        .def("__isub__", [](FourVector &a, const FourVector &b) {
-                return a -= b;
-            }, py::is_operator())
+        .def(
+            "__isub__", [](FourVector &a, const FourVector &b) { return a -= b; },
+            py::is_operator())
         .def(float() * py::self)
         .def(py::self * float())
         .def(py::self *= float())
@@ -130,8 +135,8 @@ void VectorModule(py::module &m) {
         .def(py::self == py::self)
         .def(py::self != py::self)
         // Access Operators
-        .def("__setitem__", overload_cast_<const std::size_t&>()(&FourVector::operator[]))
-        .def("__getitem__", overload_cast_<const std::size_t&>()(&FourVector::operator[]))
+        .def("__setitem__", overload_cast_<const std::size_t &>()(&FourVector::operator[]))
+        .def("__getitem__", overload_cast_<const std::size_t &>()(&FourVector::operator[]))
         // String methods
         .def("__str__", &FourVector::ToString)
         .def("__repr__", &FourVector::ToString);

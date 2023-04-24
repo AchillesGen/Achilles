@@ -4,20 +4,19 @@
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
-
 achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     Values results;
-    if(vector) vector -> Evaluate(Q2, results);
-    if(axial) axial -> Evaluate(Q2, results);
-    if(coherent) coherent -> Evaluate(Q2, results);
+    if(vector) vector->Evaluate(Q2, results);
+    if(axial) axial->Evaluate(Q2, results);
+    if(coherent) coherent->Evaluate(Q2, results);
     return results;
 }
 
 void achilles::FormFactorImpl::Fill(double tau, FormFactor::Values &result) const {
-    result.F1p = (result.Gep + tau*result.Gmp)/(1+tau);
-    result.F1n = (result.Gen + tau*result.Gmn)/(1+tau);
-    result.F2p = (result.Gmp - result.Gep)/(1+tau);
-    result.F2n = (result.Gmn - result.Gen)/(1+tau);
+    result.F1p = (result.Gep + tau * result.Gmp) / (1 + tau);
+    result.F1n = (result.Gen + tau * result.Gmn) / (1 + tau);
+    result.F2p = (result.Gmp - result.Gep) / (1 + tau);
+    result.F2n = (result.Gmn - result.Gen) / (1 + tau);
 }
 
 // Vector Dipole Form Factor
@@ -27,19 +26,20 @@ achilles::VectorDipole::VectorDipole(const YAML::Node &config) {
     muN = config["Mu Neutron"].as<double>();
 }
 
-std::unique_ptr<achilles::FormFactorImpl> achilles::VectorDipole::Construct(achilles::FFType type,
-                                                                        const YAML::Node &node) {
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::VectorDipole::Construct(achilles::FFType type, const YAML::Node &node) {
     Validate<VectorDipole>(type);
     return std::make_unique<VectorDipole>(node);
 }
 
 void achilles::VectorDipole::Evaluate(double Q2, FormFactor::Values &result) const {
-    result.Gep = 1.0/pow(1.0+Q2/lambda/lambda, 2);
-    result.Gen = -muN*Q2*result.Gep/(1+5.6*Q2/pow(Constant::mp/1_GeV, 2))/(4*pow(Constant::mp/1_GeV, 2));
-    result.Gmp = muP*result.Gep;
-    result.Gmn = muN*result.Gep;
+    result.Gep = 1.0 / pow(1.0 + Q2 / lambda / lambda, 2);
+    result.Gen = -muN * Q2 * result.Gep / (1 + 5.6 * Q2 / pow(Constant::mp / 1_GeV, 2)) /
+                 (4 * pow(Constant::mp / 1_GeV, 2));
+    result.Gmp = muP * result.Gep;
+    result.Gmn = muN * result.Gep;
 
-    double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
+    double tau = Q2 / 4 / pow(Constant::mp / 1_GeV, 2);
     Fill(tau, result);
 }
 
@@ -57,8 +57,8 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDipole::Construct(achil
 }
 
 void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) const {
-    result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
-    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
+    result.FA = -gan1 / pow(1.0 + Q2 / MA / MA, 2);
+    result.FAs = -gans / pow(1.0 + Q2 / MA / MA, 2);
 }
 
 // Kelly Form Factor
@@ -79,12 +79,12 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::Kelly::Construct(achilles::F
 }
 
 void achilles::Kelly::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
+    double tau = Q2 / 4 / pow(Constant::mp / 1_GeV, 2);
 
     result.Gep = Parameterization(termsEp, tau);
-    result.Gen = 1.0/pow(1+Q2/lambdasq, 2)*termsEn[0]*tau/(1 + termsEn[1]*tau);
-    result.Gmp = muP*Parameterization(termsMp, tau);
-    result.Gmn = muN*Parameterization(termsMn, tau);
+    result.Gen = 1.0 / pow(1 + Q2 / lambdasq, 2) * termsEn[0] * tau / (1 + termsEn[1] * tau);
+    result.Gmp = muP * Parameterization(termsMp, tau);
+    result.Gmn = muN * Parameterization(termsMn, tau);
 
     Fill(tau, result);
 }
@@ -111,12 +111,12 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::BBBA::Construct(achilles::FF
 }
 
 void achilles::BBBA::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
+    double tau = Q2 / 4 / pow(Constant::mp / 1_GeV, 2);
 
-    result.Gep = Numerator(numEp, tau)/Denominator(denEp, tau);
-    result.Gen = Numerator(numEn, tau)/Denominator(denEn, tau);
-    result.Gmp = muP*Numerator(numMp, tau)/Denominator(denMp, tau);
-    result.Gmn = muN*Numerator(numMn, tau)/Denominator(denMn, tau);
+    result.Gep = Numerator(numEp, tau) / Denominator(denEp, tau);
+    result.Gen = Numerator(numEn, tau) / Denominator(denEn, tau);
+    result.Gmp = muP * Numerator(numMp, tau) / Denominator(denMp, tau);
+    result.Gmn = muN * Numerator(numMn, tau) / Denominator(denMn, tau);
 
     Fill(tau, result);
 }
@@ -135,16 +135,16 @@ achilles::ArringtonHill::ArringtonHill(const YAML::Node &config) {
     mnParams = config["Gmn Params"].as<std::array<double, 13>>();
 }
 
-std::unique_ptr<achilles::FormFactorImpl> achilles::ArringtonHill::Construct(achilles::FFType type,
-                                                                             const YAML::Node &node) {
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::ArringtonHill::Construct(achilles::FFType type, const YAML::Node &node) {
     Validate<ArringtonHill>(type);
     return std::make_unique<ArringtonHill>(node);
 }
 
 void achilles::ArringtonHill::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
+    double tau = Q2 / 4 / pow(Constant::mp / 1_GeV, 2);
 
-    double z = (sqrt(tcut+Q2)-sqrt(tcut-t0))/(sqrt(tcut+Q2)+sqrt(tcut-t0));
+    double z = (sqrt(tcut + Q2) - sqrt(tcut - t0)) / (sqrt(tcut + Q2) + sqrt(tcut - t0));
 
     result.Gep = ZExpand(epParams, z);
     result.Gen = ZExpand(enParams, z);
@@ -158,19 +158,20 @@ void achilles::ArringtonHill::Evaluate(double Q2, FormFactor::Values &result) co
 achilles::HelmFormFactor::HelmFormFactor(const YAML::Node &config) {
     s = config["s"].as<double>();
     auto A = config["A"].as<double>();
-    const double R = 1.2*std::cbrt(A);
-    r = sqrt(R*R - 5*s*s);
+    const double R = 1.2 * std::cbrt(A);
+    r = sqrt(R * R - 5 * s * s);
 }
 
-std::unique_ptr<achilles::FormFactorImpl> achilles::HelmFormFactor::Construct(achilles::FFType type,
-                                                                              const YAML::Node &node) {
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::HelmFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
     Validate<HelmFormFactor>(type);
     return std::make_unique<HelmFormFactor>(node);
 }
 
 void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
-    double kappa = sqrt(Q2)/Constant::HBARC;
-    result.Fcoh = 3*exp(-kappa*kappa*s*s/2)*(sin(kappa*r)-kappa*r*cos(kappa*r))/pow(kappa*r, 3);
+    double kappa = sqrt(Q2) / Constant::HBARC;
+    result.Fcoh = 3 * exp(-kappa * kappa * s * s / 2) *
+                  (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
 }
 
 // Lovato Form Factor
@@ -179,14 +180,17 @@ achilles::LovatoFormFactor::LovatoFormFactor(const YAML::Node &config) {
     c = config["c"].as<std::array<double, 5>>();
 }
 
-std::unique_ptr<achilles::FormFactorImpl> achilles::LovatoFormFactor::Construct(achilles::FFType type,
-                                                                                const YAML::Node &node) {
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::LovatoFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
     Validate<LovatoFormFactor>(type);
     return std::make_unique<LovatoFormFactor>(node);
 }
 
 void achilles::LovatoFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
     spdlog::trace("LovatoFormFactor: Q2 = {}", Q2);
-    double x = sqrt(Q2)/Constant::HBARC;
-    result.Fcoh = exp(-0.5*pow(b*x, 2))*(c[0]+c[1]*b*x+c[2]*pow(b*x, 2)+c[3]*pow(b*x, 3)+c[4]*pow(b*x, 4))/6.0;
+    double x = sqrt(Q2) / Constant::HBARC;
+    result.Fcoh =
+        exp(-0.5 * pow(b * x, 2)) *
+        (c[0] + c[1] * b * x + c[2] * pow(b * x, 2) + c[3] * pow(b * x, 3) + c[4] * pow(b * x, 4)) /
+        6.0;
 }
