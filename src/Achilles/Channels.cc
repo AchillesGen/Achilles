@@ -17,7 +17,7 @@ Channel<FourVector> achilles::BuildGenChannel(NuclearModel *model, size_t nlep, 
                                               std::unique_ptr<PHASIC::Channels> final_state,
                                               const std::vector<double> &masses) {
     Channel<FourVector> channel;
-    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, 1, masses)
+    channel.mapping = PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                            .Hadron(model -> PhaseSpace(), masses)
                                            .GenFinalState(std::move(final_state)).build();
     AdaptiveMap map(channel.mapping -> NDims(), 2);
