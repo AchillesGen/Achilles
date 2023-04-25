@@ -46,6 +46,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
      *   Continue outputting to std::cout either way. */
     // if(config.Exists("Main/LogFile")) { (change logger) }
 
+    // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly working in SHERPA.
+    runDecays = false;
+
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
