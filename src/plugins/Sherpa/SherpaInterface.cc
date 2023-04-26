@@ -319,10 +319,15 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaInterface::GenerateChannels
     size_t lid = (1 << _fl.size()) - 2, rid = 2;
     if(channelComponents.find(lid) == channelComponents.end()) throw;
     std::vector<std::unique_ptr<PHASIC::Channels>> channels;
+    std::set<size_t> encoded_channels;
     for(const auto &cur : channelComponents[lid]) {
       auto channel = std::make_unique<GenChannel>(_fl.size(), s);
       channel -> InitializeChannel(cur);
-      spdlog::debug("{}", channel -> ToString());
+      auto encoding = std::hash<std::string>{}(channel -> ToString());
+      if(encoded_channels.find(encoding) != encoded_channels.end())
+          continue;
+      spdlog::info("{}", channel -> ToString());
+      encoded_channels.insert(encoding);
       channels.push_back(std::move(channel));
     }
 
