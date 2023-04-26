@@ -158,6 +158,7 @@ void achilles::ArringtonHill::Evaluate(double Q2, FormFactor::Values &result) co
 achilles::HelmFormFactor::HelmFormFactor(const YAML::Node &config) {
     s = config["s"].as<double>();
     auto A = config["A"].as<double>();
+    // Expressions taken from https://arxiv.org/pdf/1202.6073.pdf (below eq 3)
     const double R = 1.2*std::cbrt(A);
     r = sqrt(R*R - 5*s*s);
 }
