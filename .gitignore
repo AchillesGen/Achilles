@@ -33,3 +33,4 @@ tmp/
 .vimspector.json
 coverage.info
 .sherpa
+.vscode
