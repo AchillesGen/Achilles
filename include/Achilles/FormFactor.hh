@@ -243,7 +243,7 @@ class HelmFormFactor : public FormFactorImpl, RegistrableFormFactor<HelmFormFact
         static std::string Name() { return "Helm"; }
         static FFType Type() { return FFType::coherent; }
     private:
-        double s, r, coh_enhance;
+        double s, r;
 };
 
 class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoFormFactor> {
