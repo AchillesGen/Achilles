@@ -159,6 +159,9 @@ TEST_CASE("Coherent", "[FormFactor]") {
         const double kappa = 1.0/achilles::Constant::HBARC;
         const double result = 3*exp(-kappa*kappa*0.2*0.2/2)*(sin(kappa*r) - kappa*r*cos(kappa*r))/pow(kappa*r, 3);
         CHECK(vals.Fcoh == Approx(result));
+        // Check behavior at Q2=0 (should be 1)
+        ff -> Evaluate(0, vals);
+        CHECK(vals.Fcoh == Approx(1.0));
     }
 
     SECTION("Lovato") {
