@@ -158,8 +158,11 @@ void achilles::ArringtonHill::Evaluate(double Q2, FormFactor::Values &result) co
 achilles::HelmFormFactor::HelmFormFactor(const YAML::Node &config) {
     s = config["s"].as<double>();
     auto A = config["A"].as<double>();
+    auto Z = config["Z"].as<double>();
+    // Expressions taken from https://arxiv.org/pdf/1202.6073.pdf (below eq 3)
     const double R = 1.2*std::cbrt(A);
     r = sqrt(R*R - 5*s*s);
+    coh_enhance = Z*(1-4*Constant::sin2w)+(A-Z);
 }
 
 std::unique_ptr<achilles::FormFactorImpl> achilles::HelmFormFactor::Construct(achilles::FFType type,
@@ -170,7 +173,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::HelmFormFactor::Construct(ac
 
 void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
     double kappa = sqrt(Q2)/Constant::HBARC;
-    result.Fcoh = 3*exp(-kappa*kappa*s*s/2)*(sin(kappa*r)-kappa*r*cos(kappa*r))/pow(kappa*r, 3);
+    result.Fcoh = pow(coh_enhance, 2)*3*exp(-kappa*kappa*s*s/2)*(sin(kappa*r)-kappa*r*cos(kappa*r))/pow(kappa*r, 3);
 }
 
 // Lovato Form Factor
