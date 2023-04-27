@@ -4,6 +4,11 @@ size_t achilles::ProcessInfo::Multiplicity() const {
     return 1 + m_leptonic.second.size() + m_hadronic.first.size() + m_hadronic.second.size();
 }
 
+size_t achilles::ProcessInfo::NInitialStates(size_t nprotons, size_t nneutrons) const {
+    // TODO: Work out the case for multiple hadrons in initial state
+    return m_hadronic.first[0] == PID::proton() ? nprotons : nneutrons;
+}
+
 std::vector<double> achilles::ProcessInfo::Masses() const {
     std::vector<double> masses;
 
