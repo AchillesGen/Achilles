@@ -52,6 +52,14 @@ double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
     return initial_wgt;
 }
 
+double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
+                                       const std::vector<FourVector> &p_in,
+                                       const ProcessInfo &process_info) const {
+    auto nstates = static_cast<double>(process_info.NInitialStates(nprotons, nneutrons));
+    auto initial_wgt = m_model->InitialStateWeight(process_info.m_hadronic.first, p_in);
+    return nstates * initial_wgt;
+}
+
 achilles::DefaultBackend::DefaultBackend() {}
 
 double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
@@ -188,6 +196,23 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
             BuildChannel<ThreeBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
+}
+
+void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
+                                             std::shared_ptr<Beam> beam,
+                                             Integrand<FourVector> &integrand) {
+    auto masses = process_info.Masses();
+    if(process_info.Multiplicity() != 4) {
+        const std::string error =
+            fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+                        "BSM being enabled. "
+                        "Got a 2->{} process",
+                        process_info.Multiplicity() - 2);
+        throw std::runtime_error(error);
+    }
+
+    Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses);
+    integrand.AddChannel(std::move(channel0));
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -369,6 +394,21 @@ void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {
                   .Coherent(coherentFF, config[coherentFF])
                   .build();
     FormFactorInterface::SetFormFactor(std::move(ff));
+}
+
+void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
+                                            std::shared_ptr<Beam> beam,
+                                            Integrand<FourVector> &integrand) {
+    auto masses = process_info.Masses();
+    auto channels = p_sherpa->GenerateChannels(process_info.Ids());
+    size_t count = 0;
+    for(auto &chan : channels) {
+        Channel<FourVector> channel =
+            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1, 2,
+                                      beam, std::move(chan), masses);
+        integrand.AddChannel(std::move(channel));
+        spdlog::info("Adding Channel{}", count++);
+    }
 }
 #endif
 
