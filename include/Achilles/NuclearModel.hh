@@ -51,6 +51,8 @@ class NuclearModel {
     virtual void AllowedStates(ProcessInfo &) const = 0;
     virtual size_t NSpins() const = 0;
     virtual bool FillNucleus(Event &, const std::vector<double> &) const = 0;
+    virtual double InitialStateWeight(const std::vector<PID> &,
+                                      const std::vector<FourVector> &) const = 0;
 
     static std::string Name() { return "Nuclear Model"; }
 
@@ -64,6 +66,7 @@ class NuclearModel {
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
 };
 
+using NuclearModelMap = std::unordered_map<NuclearMode, std::shared_ptr<NuclearModel>>;
 template <typename Derived>
 using RegistrableNuclearModel = Registrable<NuclearModel, Derived, const YAML::Node &>;
 using NuclearModelFactory = Factory<NuclearModel, const YAML::Node &>;
@@ -79,6 +82,10 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     void AllowedStates(ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
     bool FillNucleus(Event &, const std::vector<double> &) const override;
+    double InitialStateWeight(const std::vector<PID> &,
+                              const std::vector<FourVector> &) const override {
+        return 1;
+    }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -99,6 +106,8 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     void AllowedStates(ProcessInfo &) const override;
     size_t NSpins() const override { return 4; }
     bool FillNucleus(Event &, const std::vector<double> &) const override;
+    double InitialStateWeight(const std::vector<PID> &,
+                              const std::vector<FourVector> &) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
