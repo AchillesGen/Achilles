@@ -32,6 +32,10 @@ class Random {
         return m_rng->variate<std::size_t, std::discrete_distribution>(array);
     }
 
+    template <typename T> void Shuffle(std::vector<T> &vec) {
+        return m_rng->shuffle(vec.begin(), vec.end());
+    }
+
     std::size_t SelectIndex(const std::vector<double> &array) {
         return m_rng->variate<std::size_t, std::discrete_distribution>(array.begin(), array.end());
     }
