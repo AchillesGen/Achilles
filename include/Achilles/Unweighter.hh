@@ -17,8 +17,8 @@ class Unweighter {
     Unweighter &operator=(const Unweighter &) = default;
     Unweighter &operator=(Unweighter &&) = default;
 
-    virtual void AddEvent(const Event &) = 0;
-    virtual bool AcceptEvent(Event &) = 0;
+    virtual void AddEvent(double) = 0;
+    virtual double AcceptEvent(double) = 0;
     virtual double MaxValue() = 0;
 
     double Efficiency() const {
@@ -37,11 +37,11 @@ using UnweighterFactory = Factory<Unweighter, const YAML::Node &>;
 class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
   public:
     NoUnweighter(const YAML::Node &) {}
-    void AddEvent(const Event &) override {}
-    bool AcceptEvent(Event &) override {
+    void AddEvent(double) override {}
+    double AcceptEvent(double weight) override {
         m_accepted++;
         m_total++;
-        return true;
+        return weight;
     }
     double MaxValue() override { return 1; }
 
@@ -55,8 +55,8 @@ class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
 class PercentileUnweighter : public Unweighter, RegistrableUnweighter<PercentileUnweighter> {
   public:
     PercentileUnweighter(const YAML::Node &);
-    void AddEvent(const Event &) override;
-    bool AcceptEvent(Event &) override;
+    void AddEvent(double) override;
+    double AcceptEvent(double) override;
     double MaxValue() override { return m_percentile.Get(); }
 
     // Required factory methods
