@@ -144,6 +144,7 @@ class NuclearModel {
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
 };
 
+using NuclearModelMap = std::unordered_map<NuclearMode, std::shared_ptr<NuclearModel>>;
 template <typename Derived>
 using RegistrableNuclearModel = Registrable<NuclearModel, Derived, const YAML::Node &>;
 using NuclearModelFactory = Factory<NuclearModel, const YAML::Node &>;
