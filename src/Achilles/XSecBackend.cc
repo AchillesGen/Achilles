@@ -281,8 +281,13 @@ XSecBuilder &XSecBuilder::AddSherpa(achilles::SherpaInterface *sherpa) {
     return *this;
 }
 
-XSecBuilder &XSecBuilder::AddNuclearModel(std::shared_ptr<NuclearModel> model) {
-    m_backend->SetNuclearModel(model);
+XSecBuilder &XSecBuilder::AddProcess(Process &process) {
+    m_backend->AddProcess(process);
+    return *this;
+}
+
+XSecBuilder &XSecBuilder::AddNuclearModel(std::unique_ptr<NuclearModel> model) {
+    m_backend->AddNuclearModel(std::move(model));
     return *this;
 }
 

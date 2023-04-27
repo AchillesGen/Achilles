@@ -40,10 +40,8 @@ class Process {
 
 class ProcessGroup {
   public:
-    ProcessGroup(std::shared_ptr<NuclearModel> nuc_model, std::shared_ptr<Beam> beam,
-                 std::shared_ptr<Nucleus> nucleus)
-        : m_nuc_model{std::move(nuc_model)}, m_beam{std::move(beam)},
-          m_nucleus{std::move(nucleus)} {}
+    ProcessGroup(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus)
+        : m_beam{std::move(beam)}, m_nucleus{std::move(nucleus)} {}
     double CrossSection(Event &, std::optional<size_t>);
     size_t SelectProcess() const;
 
@@ -54,14 +52,12 @@ class ProcessGroup {
     const std::vector<Process> &Processes() const { return m_processes; }
 
     // Handling physics objects
-    NuclearModel *GetNuclearModel() { return m_nuc_model.get(); }
     Beam *GetBeam() { return m_beam.get(); }
     Nucleus *GetNucleus() { return m_nucleus.get(); }
-    void SetupBackend(const YAML::Node &, SherpaInterface *);
+    void SetupBackend(const YAML::Node &, std::unique_ptr<NuclearModel>, SherpaInterface *);
 
     // Initialize processes and process groups
-    static std::map<size_t, ProcessGroup> ConstructProcessGroups(const YAML::Node &,
-                                                                 std::shared_ptr<NuclearModel>,
+    static std::map<size_t, ProcessGroup> ConstructProcessGroups(const YAML::Node &, NuclearModel *,
                                                                  std::shared_ptr<Beam>,
                                                                  std::shared_ptr<Nucleus>);
 
@@ -76,19 +72,18 @@ class ProcessGroup {
   private:
     // Physics components
     std::vector<Process> m_processes;
-    std::shared_ptr<NuclearModel> m_nuc_model;
     std::shared_ptr<Beam> m_beam;
     std::shared_ptr<Nucleus> m_nucleus;
+    std::unique_ptr<XSecBackend> m_backend;
 
     // Numerical components
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
-    std::unique_ptr<XSecBackend> m_backend;
 
     // Parameters
     std::vector<double> m_process_weights;
-    double m_maxweight;
-    bool b_optimize;
+    double m_maxweight{};
+    bool b_optimize{};
 };
 
 } // namespace achilles

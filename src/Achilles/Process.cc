@@ -9,7 +9,10 @@
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
 #else
-#include "Achilles/DummySherpa.hh"
+// Create dummy class
+namespace achilles {
+class SherpaInterface {};
+} // namespace achilles
 #endif
 
 using achilles::Process;
@@ -130,7 +133,7 @@ size_t ProcessGroup::SelectProcess() const {
 }
 
 std::map<size_t, ProcessGroup>
-ProcessGroup::ConstructProcessGroups(const YAML::Node &node, std::shared_ptr<NuclearModel> model,
+ProcessGroup::ConstructProcessGroups(const YAML::Node &node, NuclearModel *model,
                                      std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus) {
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : node["Processes"]) {
@@ -141,21 +144,22 @@ ProcessGroup::ConstructProcessGroups(const YAML::Node &node, std::shared_ptr<Nuc
         Process process(process_info, std::move(unweighter));
         const auto multiplicity = process_info.Multiplicity();
         if(groups.find(multiplicity) == groups.end()) {
-            groups[multiplicity] = ProcessGroup(model, beam, nucleus);
+            groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
         }
-        groups[multiplicity].AddProcess(std::move(process));
+        groups.at(multiplicity).AddProcess(std::move(process));
     }
 
     return groups;
 }
 
-void ProcessGroup::SetupBackend(const YAML::Node &node, SherpaInterface *sherpa) {
+void ProcessGroup::SetupBackend(const YAML::Node &node, std::unique_ptr<NuclearModel> model,
+                                SherpaInterface *sherpa) {
     auto backend_name = node["Backend"]["Name"].as<std::string>();
     auto &backend_builder = XSecBuilder(backend_name)
                                 .AddOptions(node["Backend"]["Options"])
-                                .AddNuclearModel(m_nuc_model)
+                                .AddNuclearModel(std::move(model))
                                 .AddSherpa(sherpa);
-    for(const auto &process : m_processes) {
+    for(auto &process : m_processes) {
         backend_builder = std::move(backend_builder.AddProcess(process));
     }
     m_backend = backend_builder.build();
@@ -165,10 +169,10 @@ void ProcessGroup::SetupIntegration(const YAML::Node &config) {
     if(m_processes.size() == 0)
         throw std::runtime_error("ProcessGroup: Number of processes found is zero!");
 
-    m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand)
+    m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand);
 
-        // TODO: Fix scaling to be consistent with Chili paper
-        m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
+    // TODO: Fix scaling to be consistent with Chili paper
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
     if(config["Initialize"]["Accuracy"])
         m_integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
 }

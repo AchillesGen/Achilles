@@ -21,9 +21,12 @@ class XSecBackend {
     virtual double CrossSection(const Event &event, const Process &process) const = 0;
     virtual void SetOptions(const YAML::Node &) {}
     virtual void SetSherpa(SherpaInterface *) {}
-    virtual void SetNuclearModel(std::shared_ptr<NuclearModel> model) { m_model = model; }
+    virtual void AddNuclearModel(std::unique_ptr<NuclearModel> model) {
+        m_model = std::move(model);
+    }
+    virtual NuclearModel *GetNuclearModel() { return m_model.get(); }
     virtual void AddProcess(Process &process) = 0;
-    virtual bool Validate() { return m_model.use_count() > 0; }
+    virtual bool Validate() { return m_model != nullptr; }
     virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,
                                Integrand<FourVector> &) = 0;
 
@@ -32,7 +35,7 @@ class XSecBackend {
     double InitialStateFactor(size_t, size_t, const std::vector<FourVector> &,
                               const ProcessInfo &) const;
 
-    std::shared_ptr<NuclearModel> m_model = nullptr;
+    std::unique_ptr<NuclearModel> m_model = nullptr;
 };
 
 template <typename Derived> using RegistrableBackend = Registrable<XSecBackend, Derived>;
@@ -96,9 +99,9 @@ class XSecBuilder {
   public:
     XSecBuilder(const std::string &);
     XSecBuilder &AddOptions(const YAML::Node &node);
-    XSecBuilder &AddProcess(const Process &process);
+    XSecBuilder &AddProcess(Process &process);
     XSecBuilder &AddSherpa(SherpaInterface *sherpa);
-    XSecBuilder &AddNuclearModel(std::shared_ptr<NuclearModel> model);
+    XSecBuilder &AddNuclearModel(std::unique_ptr<NuclearModel> model);
     std::unique_ptr<XSecBackend> build();
 
   private:

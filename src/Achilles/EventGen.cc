@@ -11,6 +11,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/Units.hh"
 
@@ -36,11 +37,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    // Setup unweighter
-    unweighter = UnweighterFactory::Initialize(config["Unweighting"]["Name"].as<std::string>(),
-                                               config["Unweighting"]);
-
-    // Load initial state, massess
+    // Load initial beam and nucleus
+    // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
@@ -50,6 +48,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
                                                             config["Nucleus"]["Potential"]);
     nucleus->SetPotential(std::move(potential));
+
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
     if(config["Cascade"]["Run"].as<bool>()) {
@@ -58,58 +57,39 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         cascade = nullptr;
     }
 
-    // Initialize the lepton final states
-    spdlog::debug("Initializing the leptonic final states");
-    auto leptonicProcess = config["Process"].as<achilles::ProcessInfo>();
-    // TODO: Handle the beam initial state better
-    if(beam->BeamIDs().size() > 1)
-        throw std::runtime_error("Multiple processes are not implemented yet. "
-                                 "Please use only one beam.");
-    leptonicProcess.m_leptonic.first = *beam->BeamIDs().begin();
+    // Initialize the Nuclear models
+    spdlog::debug("Initializing nuclear models");
+    auto models = LoadModels(config);
 
-    // Initialize the nuclear model
-    spdlog::debug("Initializing nuclear model");
-    const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
-    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config);
-    nuclear_model->AllowedStates(leptonicProcess);
-    spdlog::debug("Process: {}", leptonicProcess);
-
+    // Initialize Sherpa
 #ifdef ACHILLES_SHERPA_INTERFACE
-    // Initialize sherpa processes
     p_sherpa = new achilles::SherpaInterface();
-    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string model_name = config["Process"]["Model"].as<std::string>();
     std::string param_card = config["Process"]["ParamCard"].as<std::string>();
     int qed = 0;
     if(config["Process"]["QEDShower"])
         if(config["Process"]["QEDShower"].as<bool>()) qed = 1;
     shargs.push_back(fmt::format("ME_QED={}", qed));
-    if(model == "SM") model = "SM_Nuc";
-    shargs.push_back("MODEL=" + model);
+    if(model_name == "SM") model_name = "SM_Nuc";
+    shargs.push_back("MODEL=" + model_name);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
     p_sherpa->Initialize(shargs);
-    spdlog::debug("Initializing leptonic currents");
-    if(!p_sherpa->InitializeProcess(leptonicProcess)) {
-        spdlog::error("Cannot initialize hard process");
-        exit(1);
-    }
-    leptonicProcess.m_mom_map = p_sherpa->MomentumMap(leptonicProcess.Ids());
-#else
-    // Dummy call to remove unused error
-    (void)shargs;
-    leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
-    leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
-    leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
-    leptonicProcess.m_mom_map[3] = leptonicProcess.Ids()[3];
 #endif
 
-    // Initialize hard cross-sections
-    spdlog::debug("Initializing hard interaction");
-    scattering = std::make_shared<HardScattering>();
-    scattering->SetProcess(leptonicProcess);
-#ifdef ACHILLES_SHERPA_INTERFACE
-    scattering->SetSherpa(p_sherpa);
-#endif
-    scattering->SetNuclear(std::move(nuclear_model));
+    // Initialize the Processes
+    spdlog::debug("Initializing processes");
+    if(beam->BeamIDs().size() > 1)
+        throw std::runtime_error("Multiple processes are not implemented yet. "
+                                 "Please use only one beam.");
+    std::vector<ProcessGroup> process_groups;
+    for(auto &model : models) {
+        auto groups =
+            ProcessGroup::ConstructProcessGroups(config, model.second.get(), beam, nucleus);
+        for(auto &group : groups) {
+            group.second.SetupBackend(config, std::move(model.second), p_sherpa);
+            process_groups.push_back(std::move(group.second));
+        }
+    }
 
     // Setup channels
     spdlog::debug("Initializing phase space");
@@ -357,14 +337,14 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
-            if(!unweighter->AcceptEvent(event)) {
+            if(!unweighter->AcceptEvent(event.Weight())) {
                 // Update number of calls needed to ensure the number of
                 // generated events is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
             writer->Write(event);
         } else {
-            unweighter->AddEvent(event);
+            unweighter->AddEvent(event.Weight());
         }
     }
 

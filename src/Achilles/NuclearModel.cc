@@ -61,6 +61,31 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
 }
 
+NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
+    NuclearModel::ModelMap models;
+
+    std::set<std::string> model_names;
+    for(const auto &model_config : node["NuclearModels"]) {
+        const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
+        if(model_names.find(name) != model_names.end()) {
+            auto msg = fmt::format(
+                "NuclearModels: Multiple definitions for model {}, skipping second model", name);
+            spdlog::warn(msg);
+            continue;
+        }
+        model_names.insert(name);
+        auto model = NuclearModelFactory::Initialize(name, model_config);
+        if(models.find(model->Mode()) != models.end()) {
+            auto msg = fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
+                                   ToString(model->Mode()));
+            throw std::runtime_error(msg);
+        }
+        models[model->Mode()] = std::move(model);
+    }
+
+    return models;
+}
+
 // TODO: Clean this up such that the nucleus isn't loaded twice
 Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
                    FormFactorBuilder &builder = FormFactorBuilder::Instance())

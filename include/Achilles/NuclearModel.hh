@@ -11,6 +11,7 @@
 #include "yaml-cpp/node/node.h"
 
 #include <complex>
+#include <stdexcept>
 
 namespace achilles {
 
@@ -29,12 +30,36 @@ enum class NuclearMode {
     DeepInelastic
 };
 
+inline std::string ToString(NuclearMode mode) {
+    switch(mode) {
+    case NuclearMode::None:
+        return "None";
+    case NuclearMode::Coherent:
+        return "Coherent";
+    case NuclearMode::Quasielastic:
+        return "Quasielastic";
+    case NuclearMode::MesonExchangeCurrent:
+        return "MesonExchangeCurrent";
+    case NuclearMode::Interference_QE_MEC:
+        return "Interference_QE_MEC";
+    case NuclearMode::Resonance:
+        return "Resonance";
+    case NuclearMode::ShallowInelastic:
+        return "ShallowInelastic";
+    case NuclearMode::DeepInelastic:
+        return "DeepInelastic";
+    }
+
+    throw std::runtime_error("Invalid NuclearMode");
+}
+
 class NuclearModel {
   public:
     using Current = std::vector<VCurrent>;
     using Currents = std::map<int, Current>;
     using FFInfoMap = std::map<int, std::vector<FormFactorInfo>>;
     using FormFactorMap = std::map<FormFactorInfo::Type, std::complex<double>>;
+    using ModelMap = std::unordered_map<NuclearMode, std::unique_ptr<NuclearModel>>;
 
     NuclearModel() = default;
     NuclearModel(const YAML::Node &, FormFactorBuilder &);
@@ -66,10 +91,11 @@ class NuclearModel {
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
 };
 
-using NuclearModelMap = std::unordered_map<NuclearMode, std::shared_ptr<NuclearModel>>;
 template <typename Derived>
 using RegistrableNuclearModel = Registrable<NuclearModel, Derived, const YAML::Node &>;
 using NuclearModelFactory = Factory<NuclearModel, const YAML::Node &>;
+
+NuclearModel::ModelMap LoadModels(const YAML::Node &);
 
 class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
   public:
@@ -107,7 +133,9 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     size_t NSpins() const override { return 4; }
     bool FillNucleus(Event &, const std::vector<double> &) const override;
     double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override;
+                              const std::vector<FourVector> &) const override {
+        throw std::runtime_error("IMPLEMENT THIS!!");
+    }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
