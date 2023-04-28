@@ -96,7 +96,7 @@ add_library(event_gen SHARED
 )
 if(ACHILLES_ENABLE_HEPMC3)
 list(APPEND achilles_targets hepmc3)
-target_compile_definitions(physics PUBLIC ACHILLES_HEPMC3)
+target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC hepmc3)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings

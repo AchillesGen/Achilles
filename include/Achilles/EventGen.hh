@@ -5,6 +5,7 @@
 #include "Achilles/Histogram.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Vegas.hh"
@@ -47,6 +48,7 @@ class EventGen {
     std::shared_ptr<Nucleus> nucleus;
     std::shared_ptr<Cascade> cascade;
     std::shared_ptr<HardScattering> scattering;
+    std::vector<ProcessGroup> process_groups;
     CutCollection hard_cuts{};
     // CutCollection event_cuts{};
     MultiChannel integrator;

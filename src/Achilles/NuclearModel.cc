@@ -222,19 +222,19 @@ void QESpectral::AllowedStates(ProcessInfo &info) const {
         throw std::runtime_error(fmt::format(
             "Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
 
-    // FIXME: Should create a process group
-    // switch(charge) {
-    //     case -1: // Final state has less charge than initial
-    //         info.m_states[{PID::neutron()}] = {PID::proton()};
-    //         break;
-    //     case 0: // Same charge in inital and final
-    //         info.m_states[{PID::proton()}] = {PID::proton()};
-    //         info.m_states[{PID::neutron()}] = {PID::neutron()};
-    //         break;
-    //     case 1: // Final state has more charge than initial
-    //         info.m_states[{PID::proton()}] = {PID::neutron()};
-    //         break;
-    // }
+    // FIXME: Should return a vector of process infos
+    switch(charge) {
+    case -1: // Final state has less charge than initial
+        info.m_hadronic = {{PID::neutron()}, {PID::proton()}};
+        break;
+    case 0: // Same charge in inital and final
+        info.m_hadronic = {{PID::proton()}, {PID::proton()}};
+        info.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
+        break;
+    case 1: // Final state has more charge than initial
+        info.m_hadronic = {{PID::proton()}, {PID::neutron()}};
+        break;
+    }
 }
 
 bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {

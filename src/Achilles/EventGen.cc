@@ -11,12 +11,14 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Process.hh"
-#include "Achilles/ProcessInfo.hh"
 #include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
+#else
+namespace achilles {
+class SherpaInterface {};
+} // namespace achilles
 #endif
 
 #ifdef ACHILLES_ENABLE_HEPMC3
@@ -62,13 +64,13 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto models = LoadModels(config);
 
     // Initialize Sherpa
-#ifdef ACHILLES_SHERPA_INTERFACE
     p_sherpa = new achilles::SherpaInterface();
-    std::string model_name = config["Process"]["Model"].as<std::string>();
-    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+#ifdef ACHILLES_SHERPA_INTERFACE
+    auto model_name = config["SherpaOptions"]["Model"].as<std::string>();
+    auto param_card = config["SherpaOptions"]["ParamCard"].as<std::string>();
     int qed = 0;
-    if(config["Process"]["QEDShower"])
-        if(config["Process"]["QEDShower"].as<bool>()) qed = 1;
+    if(config["SherpaOptions"]["QEDShower"])
+        if(config["SherpaOptions"]["QEDShower"].as<bool>()) qed = 1;
     shargs.push_back(fmt::format("ME_QED={}", qed));
     if(model_name == "SM") model_name = "SM_Nuc";
     shargs.push_back("MODEL=" + model_name);
@@ -81,53 +83,20 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     if(beam->BeamIDs().size() > 1)
         throw std::runtime_error("Multiple processes are not implemented yet. "
                                  "Please use only one beam.");
-    std::vector<ProcessGroup> process_groups;
     for(auto &model : models) {
         auto groups =
             ProcessGroup::ConstructProcessGroups(config, model.second.get(), beam, nucleus);
+        std::cout << groups.size() << std::endl;
         for(auto &group : groups) {
+            for(const auto &process : group.second.Processes())
+                spdlog::info("Found Process: {}", process.Info());
             group.second.SetupBackend(config, std::move(model.second), p_sherpa);
             process_groups.push_back(std::move(group.second));
         }
     }
 
-    // Setup channels
-    spdlog::debug("Initializing phase space");
-    std::vector<double> masses = scattering->Process().Masses();
-    spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
-    if(config["TestingPS"]) {
-        Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
-        integrand.AddChannel(std::move(channel));
-    } else {
-#ifndef ACHILLES_SHERPA_INTERFACE
-        if(scattering->Process().Multiplicity() == 4) {
-            Channel<FourVector> channel0 =
-                BuildChannel<TwoBodyMapper>(scattering->Nuclear(), 2, 2, beam, masses);
-            integrand.AddChannel(std::move(channel0));
-        } else {
-            const std::string error =
-                fmt::format("Leptonic Tensor can only handle 2->2 processes without "
-                            "BSM being enabled. "
-                            "Got a 2->{} process",
-                            leptonicProcess.Ids().size());
-            throw std::runtime_error(error);
-        }
-#else
-        auto channels = p_sherpa->GenerateChannels(scattering->Process().Ids());
-        size_t count = 0;
-        for(auto &chan : channels) {
-            Channel<FourVector> channel = BuildGenChannel(
-                scattering->Nuclear(), scattering->Process().m_leptonic.second.size() + 1, 2, beam,
-                std::move(chan), masses);
-            integrand.AddChannel(std::move(channel));
-            spdlog::info("Adding Channel{}", count++);
-        }
-#endif
-    }
-
-    // Setup Multichannel integrator
-    // auto params = config["Integration"]["Params"].as<MultiChannelParams>();
-    integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 2});
+    // Setup Multichannel integrators
+    for(auto &group : process_groups) { group.SetupIntegration(config); }
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"]) doRotate = config["Main"]["DoRotate"].as<bool>();
@@ -136,11 +105,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     if(config["Main"]["HardCuts"]) doHardCuts = config["Main"]["HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
-
-    // if(config["Main"]["EventCuts"])
-    //     doEventCuts = config["Main"]["EventCuts"].as<bool>();
-    // spdlog::info("Apply event cuts? {}", doEventCuts);
-    // event_cuts = config["EventCuts"].as<achilles::CutCollection>();
 
     // Setup outputs
     auto output = config["Main"]["Output"];
@@ -162,35 +126,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 }
 
 void achilles::EventGen::Initialize() {
-    // TODO: Clean up loading of previous results
-    auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
-        return GenerateEvent(mom, wgt);
-    };
-    // TODO: Loading the saved data is broken
-    // try {
-    //     YAML::Node old_results = YAML::LoadFile("results.yml");
-    //     integrator = old_results["Multichannel"].as<MultiChannel>();
-    //     integrand = old_results["Channels"].as<Integrand<FourVector>>();
-    //     YAML::Node results;
-    //     results["Multichannel"] = integrator;
-    //     results["Channels"] = integrand;
-    //     integrand.Function() = func;
-    // } catch(const YAML::BadFile &e) {
-    spdlog::info("Initializing integrator.");
-    integrand.Function() = func;
-    if(config["Initialize"]["Accuracy"])
-        integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
-    integrator.Optimize(integrand);
-    integrator.Summary();
-
-    YAML::Node results;
-    results["Multichannel"] = integrator;
-    results["Channels"] = integrand;
-
-    std::ofstream fresults("results.yml");
-    fresults << results;
-    fresults.close();
-    // }
+    // TODO: Save trained integrators
+    spdlog::info("Starting optimization runs");
+    for(auto &process : process_groups) { process.Optimize(); }
 }
 
 void achilles::EventGen::GenerateEvents() {

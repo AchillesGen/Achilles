@@ -94,6 +94,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event, const Process 
 
 void achilles::DefaultBackend::AddProcess(Process &process) {
     const auto &process_info = process.Info();
+    spdlog::debug("Adding process: {}", process.Info());
     if(process_info.m_leptonic.second.size() != 1)
         throw std::runtime_error("Achilles::DefaultBackend: Can only handle "
                                  "single lepton final states");

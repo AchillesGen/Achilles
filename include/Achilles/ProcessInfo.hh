@@ -20,11 +20,8 @@ class PID;
 struct ProcessInfo {
     using leptonic_state = std::pair<achilles::PID, std::vector<achilles::PID>>;
     using hadronic_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
-    ProcessInfo(std::vector<achilles::PID> leptons = {}) {
-        if(leptons.size() < 2) return;
-        m_leptonic.first = leptons[0];
-        m_leptonic.second.assign(leptons.begin() + 1, leptons.end());
-    }
+    ProcessInfo() = default;
+    ProcessInfo(leptonic_state leptons) : m_leptonic{leptons} {}
 
     leptonic_state m_leptonic{};
     hadronic_state m_hadronic{};
@@ -57,7 +54,9 @@ template <> struct convert<achilles::ProcessInfo> {
     static bool decode(const Node &node, achilles::ProcessInfo &info) {
         if(!node.IsMap()) return false;
         if(!node["Leptons"].IsSequence()) return false;
-        info = achilles::ProcessInfo(node["Leptons"].as<std::vector<achilles::PID>>());
+        const auto initial = node["Leptons"][0].as<achilles::PID>();
+        const auto final = node["Leptons"][1].as<std::vector<achilles::PID>>();
+        info = achilles::ProcessInfo({initial, final});
         return true;
     }
 };

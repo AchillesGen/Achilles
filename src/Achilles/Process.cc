@@ -155,14 +155,13 @@ ProcessGroup::ConstructProcessGroups(const YAML::Node &node, NuclearModel *model
 void ProcessGroup::SetupBackend(const YAML::Node &node, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {
     auto backend_name = node["Backend"]["Name"].as<std::string>();
-    auto &backend_builder = XSecBuilder(backend_name)
-                                .AddOptions(node["Backend"]["Options"])
-                                .AddNuclearModel(std::move(model))
-                                .AddSherpa(sherpa);
-    for(auto &process : m_processes) {
-        backend_builder = std::move(backend_builder.AddProcess(process));
-    }
-    m_backend = backend_builder.build();
+    m_backend = XSecBuilder(backend_name)
+                    .AddOptions(node["Backend"]["Options"])
+                    .AddNuclearModel(std::move(model))
+                    .AddSherpa(sherpa)
+                    .build();
+
+    for(auto &process : m_processes) m_backend->AddProcess(process);
 }
 
 void ProcessGroup::SetupIntegration(const YAML::Node &config) {
@@ -180,12 +179,14 @@ void ProcessGroup::SetupIntegration(const YAML::Node &config) {
 void ProcessGroup::Optimize() {
     b_optimize = true;
 
+    spdlog::info("Optimizing process group: Nuclear Model = {}, Multiplicity = {}",
+                 m_processes[0].Info().Multiplicity(), m_backend->GetNuclearModel()->Name());
+
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
     };
     m_integrand.Function() = func;
     m_integrator.Optimize(m_integrand);
-    m_integrator.Summary();
 
     // Store max weight and weight vector
     for(size_t i = 0; i < m_processes.size(); ++i) {
