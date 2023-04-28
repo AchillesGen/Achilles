@@ -67,8 +67,10 @@ class SherpaInterface {
     GenerateChannels(const std::vector<long> &fl) const;
     std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
 
-    MOCK LeptonCurrents Calc(const std::vector<int> &fl,
-                             const std::vector<std::array<double, 4>> &p, const double &mu2);
+    MOCK LeptonCurrents CalcCurrent(const std::vector<int> &fl,
+                                    const std::vector<std::array<double, 4>> &p, const double &mu2);
+    MOCK double CalcDifferential(const std::vector<int> &fl,
+                                 const std::vector<std::array<double, 4>> &p, const double &mu2);
     MOCK void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 
     MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;

@@ -13,6 +13,7 @@
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wconversion"
 #include "METOOLS/Main/Spin_Structure.H"
+#include "plugins/Sherpa/FormFactors.hh"
 #pragma GCC diagnostic pop
 #endif
 
@@ -207,7 +208,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
-    auto currents = p_sherpa->Calc(pids, mom, mu2);
+    auto currents = p_sherpa->CalcCurrent(pids, mom, mu2);
 
     for(auto &current : currents) {
         spdlog::trace("Current for {}", current.first);
@@ -248,9 +249,24 @@ void achilles::SherpaBackend::AddProcess(Process &process) {
     process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
-double achilles::SherpaBackend::CrossSection(const Event &, const Process &) const {
-    throw std::runtime_error("SherpaBackend: Currently not implemented");
-    return 0;
+double achilles::SherpaBackend::CrossSection(const Event &event, const Process &process) const {
+    auto p = event.Momentum();
+    auto info = process.Info();
+    // TODO: Move adapter code into Sherpa interface code
+    std::vector<std::array<double, 4>> mom(p.size());
+    std::vector<int> pids;
+    for(const auto &elm : info.m_mom_map) {
+        pids.push_back(static_cast<int>(elm.second));
+        mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
+        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(), mom[elm.first][0],
+                      mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]);
+    }
+    // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
+    static constexpr double mu2 = 100;
+    auto amp2 = p_sherpa->CalcDifferential(pids, mom, mu2) /
+                pow(1_GeV, 2 * static_cast<double>(mom.size() - 4));
+    spdlog::trace("|M|^2 = {}", amp2);
+    return amp2;
 }
 
 void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
@@ -266,6 +282,19 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
+}
+
+void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {
+    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    const auto vectorFF = config["vector"].as<std::string>();
+    const auto axialFF = config["axial"].as<std::string>();
+    const auto coherentFF = config["coherent"].as<std::string>();
+    auto ff = FormFactorBuilder()
+                  .Vector(vectorFF, config[vectorFF])
+                  .AxialVector(axialFF, config[axialFF])
+                  .Coherent(coherentFF, config[coherentFF])
+                  .build();
+    FormFactorInterface::SetFormFactor(std::move(ff));
 }
 #endif
 

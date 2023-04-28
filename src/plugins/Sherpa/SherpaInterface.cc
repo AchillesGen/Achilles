@@ -100,8 +100,8 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     addParameter(argv, "HARD_SPIN_CORRELATIONS=1");
     addParameter(argv, "SOFT_SPIN_CORRELATIONS=1");
     addParameter(argv, "SHOWER_GENERATOR=None");
-    addParameter(argv, "FRAGMENTATION=Ahadic");
-    addParameter(argv, "DECAYS=Hadrons");
+    // addParameter(argv, "FRAGMENTATION=Ahadic");
+    // addParameter(argv, "DECAYS=Hadrons");
     addParameter(argv, "BEAM_REMNANTS=0");
     addParameter(argv, "EVENT_GENERATION_MODE=W");
     // add additional commandline parameters
@@ -113,8 +113,8 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     RegisterParticles();
 
     // Clean up memory
-    for(auto &arg : argv) delete arg;
-    argv.resize(0);
+    // for(auto &arg : argv) delete arg;
+    // argv.resize(0);
     return true;
 }
 
@@ -144,6 +144,7 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     Process_Base *proc =
         p_sherpa->GetInitHandler()->GetMatrixElementHandler()->Generators()->InitializeProcess(
             pi, false);
+    if(!proc) return nullptr;
     proc->SetupEventReader("Achilles");
     proc->Get<COMIX::Single_Process>()->Tests();
     Selector_Key skey(NULL, new Data_Reader(), true);
@@ -305,8 +306,8 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
 }
 
 achilles::SherpaInterface::LeptonCurrents
-SherpaInterface::Calc(const std::vector<int> &_fl, const std::vector<std::array<double, 4>> &p,
-                      const double &mu2) {
+SherpaInterface::CalcCurrent(const std::vector<int> &_fl,
+                             const std::vector<std::array<double, 4>> &p, const double &mu2) {
     Cluster_Amplitude *ampl(Cluster_Amplitude::New());
     for(size_t i(0); i < _fl.size(); ++i) {
         Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
@@ -337,6 +338,33 @@ SherpaInterface::Calc(const std::vector<int> &_fl, const std::vector<std::array<
         results[current.first] = achilles::ToCurrentVector(current.second);
     }
     return results;
+}
+
+double SherpaInterface::CalcDifferential(const std::vector<int> &_fl,
+                                         const std::vector<std::array<double, 4>> &p,
+                                         const double &mu2) {
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for(size_t i(0); i < _fl.size(); ++i) {
+        Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
+        Flavour fl(Flavour((long int)(_fl[i])));
+        ampl->CreateLeg(i < 2 ? -cp : cp, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    ampl->SetMuQ2(mu2);
+    ampl->SetMuF2(mu2);
+    ampl->SetMuR2(mu2);
+    ampl->SetLKF(1.);
+    Process_Base::SortFlavours(ampl);
+    StringProcess_Map *pm(m_pmap[nlo_type::lo]);
+    std::string name(Process_Base::GenerateName(ampl));
+    if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);
+    Process_Base *proc = pm->find(name)->second;
+    auto reader = dynamic_cast<Achilles_Reader *>(proc->EventReader());
+    reader->SetAmpl(ampl);
+    // return differntial xs for now
+    return proc->Differential(*ampl, 1 | 2 | 4);
 }
 
 void achilles::SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {
@@ -439,6 +467,7 @@ DECLARE_GETTER(Achilles_Reader, "Achilles", Event_Reader, Event_Reader_Key);
 
 Event_Reader *ATOOLS::Getter<Event_Reader, Event_Reader_Key, Achilles_Reader>::operator()(
     const Event_Reader_Key &args) const {
+    std::cout << "Getting Achilles" << std::endl;
     return new Achilles_Reader(args);
 }
 

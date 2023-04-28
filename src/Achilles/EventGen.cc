@@ -64,7 +64,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto models = LoadModels(config);
 
     // Initialize Sherpa
-    p_sherpa = new achilles::SherpaInterface();
+    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos)
+        p_sherpa = new achilles::SherpaInterface();
+    else
+        p_sherpa = nullptr;
 #ifdef ACHILLES_SHERPA_INTERFACE
     auto model_name = config["SherpaOptions"]["Model"].as<std::string>();
     auto param_card = config["SherpaOptions"]["ParamCard"].as<std::string>();
