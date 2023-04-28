@@ -138,15 +138,17 @@ ProcessGroup::ConstructProcessGroups(const YAML::Node &node, NuclearModel *model
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : node["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
-        model->AllowedStates(process_info);
+        auto infos = model->AllowedStates(process_info);
         const auto unweight_name = node["Unweighting"]["Name"].as<std::string>();
         auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
-        Process process(process_info, std::move(unweighter));
-        const auto multiplicity = process_info.Multiplicity();
-        if(groups.find(multiplicity) == groups.end()) {
-            groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
+        for(auto &info : infos) {
+            Process process(info, std::move(unweighter));
+            const auto multiplicity = info.Multiplicity();
+            if(groups.find(multiplicity) == groups.end()) {
+                groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
+            }
+            groups.at(multiplicity).AddProcess(std::move(process));
         }
-        groups.at(multiplicity).AddProcess(std::move(process));
     }
 
     return groups;

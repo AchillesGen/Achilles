@@ -123,7 +123,7 @@ achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<FourVe
 }
 
 // TODO: Should return a process group
-void Coherent::AllowedStates(ProcessInfo &info) const {
+std::vector<achilles::ProcessInfo> Coherent::AllowedStates(const ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
     spdlog::debug("Charge = {}", charge);
@@ -131,8 +131,9 @@ void Coherent::AllowedStates(ProcessInfo &info) const {
         throw std::runtime_error(
             fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
 
-    // FIXME: refactor to process group
-    // info.m_states[{nucleus_pid}] = {nucleus_pid};
+    auto result = info;
+    result.m_hadronic = {{nucleus_pid}, {nucleus_pid}};
+    return {result};
 }
 
 bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
@@ -215,26 +216,34 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<FourVector> &h
 }
 
 // TODO: Should return a process group
-void QESpectral::AllowedStates(ProcessInfo &info) const {
+std::vector<achilles::ProcessInfo> QESpectral::AllowedStates(const ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
     if(std::abs(charge) > 1)
         throw std::runtime_error(fmt::format(
             "Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
 
-    // FIXME: Should return a vector of process infos
+    std::vector<ProcessInfo> results;
+    auto local = info;
     switch(charge) {
     case -1: // Final state has less charge than initial
-        info.m_hadronic = {{PID::neutron()}, {PID::proton()}};
+        local.m_hadronic = {{PID::neutron()}, {PID::proton()}};
+        results.push_back(local);
         break;
     case 0: // Same charge in inital and final
-        info.m_hadronic = {{PID::proton()}, {PID::proton()}};
-        info.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
+        // FIXME: Sherpa can only handle proton initial and final states right now
+        // local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
+        // results.push_back(local);
+        local.m_hadronic = {{PID::proton()}, {PID::proton()}};
+        results.push_back(local);
         break;
     case 1: // Final state has more charge than initial
-        info.m_hadronic = {{PID::proton()}, {PID::neutron()}};
+        local.m_hadronic = {{PID::proton()}, {PID::neutron()}};
+        results.push_back(local);
         break;
     }
+
+    return results;
 }
 
 bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
