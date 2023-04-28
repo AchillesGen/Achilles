@@ -16,7 +16,7 @@ Processes:
 
 Beams:
   - Beam:
-      PID: 16
+      PID: 11
       Beam Params:
         Type: Monochromatic
         Energy: 1108
