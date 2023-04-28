@@ -8,10 +8,12 @@ Main:
       Name: electron_1300_37.hepmc
       Zipped: True
 
-Process:
+SherpaOptions:
   Model: DarkNeutrinoPortal_Dirac_UFO
-  Final States: [15]
   ParamCard: parameters.dat
+
+Processes:
+  - Leptons: [11, [11]]
 
 Initialize:
   Seed: 12345678
@@ -23,7 +25,7 @@ Unweighting:
 
 Beams:
   - Beam:
-      PID: 16
+      PID: 11
       Beam Params:
         Type: Monochromatic
         Energy: 1300
@@ -36,12 +38,13 @@ Cascade:
   Step: 0.04
   Probability: Cylinder
 
-NuclearModel:
-  Model: QESpectral
-  FormFactorFile: "FormFactors.yml"
-  SpectralP: data/pke12_tot.data
-  SpectralN: data/pke12_tot.data
-  Ward: False
+NuclearModels:
+  - NuclearModel:
+      Model: QESpectral
+      FormFactorFile: "FormFactors.yml"
+      SpectralP: data/pke12_tot.data
+      SpectralN: data/pke12_tot.data
+      Ward: False
 
 Nucleus:
   Name: 12C
@@ -62,3 +65,7 @@ HardCuts:
   - Type: AngleTheta
     PIDs: 11
     range: [35, 39]
+
+Backend:
+  Name: Default
+  Options: []
