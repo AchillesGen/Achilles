@@ -410,6 +410,19 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
         spdlog::info("Adding Channel{}", count++);
     }
 }
+
+void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {
+    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    const auto vectorFF = config["vector"].as<std::string>();
+    const auto axialFF = config["axial"].as<std::string>();
+    const auto coherentFF = config["coherent"].as<std::string>();
+    auto ff = FormFactorBuilder()
+                  .Vector(vectorFF, config[vectorFF])
+                  .AxialVector(axialFF, config[axialFF])
+                  .Coherent(coherentFF, config[coherentFF])
+                  .build();
+    FormFactorInterface::SetFormFactor(std::move(ff));
+}
 #endif
 
 XSecBuilder::XSecBuilder(const std::string &name)
