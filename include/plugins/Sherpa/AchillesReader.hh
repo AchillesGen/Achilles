@@ -11,13 +11,8 @@ using namespace ATOOLS;
 namespace achilles {
 
 class Achilles_Reader : public Event_Reader {
-  private:
-    Cluster_Amplitude *p_ampl;
-
   public:
-    Achilles_Reader(const Event_Reader_Key &key) : Event_Reader(key), p_ampl(NULL) {
-        m_compute = false;
-    }
+    Achilles_Reader(const Event_Reader_Key &key) : Event_Reader(key) { m_compute = false; }
 
     ~Achilles_Reader() {}
 
