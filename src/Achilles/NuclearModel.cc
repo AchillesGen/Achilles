@@ -599,6 +599,13 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<QESpectral>(config, form_factor);
 }
+    
+double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
+                                      const std::vector<FourVector> &mom) const {
+    const double removal_energy = Constant::mN - mom[0].E();
+    return nucleons[0] == PID::proton() ? spectral_proton(mom[0].P(), removal_energy)
+                                        : spectral_neutron(mom[0].P(), removal_energy);
+}
 
 double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
                                       const std::vector<Particle> &, size_t nprotons,
