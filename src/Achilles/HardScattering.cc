@@ -123,11 +123,6 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     return xsecs;
 }
 
-bool HardScattering::FillEvent(Event &event, const std::vector<double> &xsecs) const {
-    if(!m_nuclear->FillNucleus(event, xsecs)) return false;
-
-    event.InitializeLeptons(m_leptonicProcess);
-    event.InitializeHadrons(m_leptonicProcess);
-
+bool HardScattering::FillEvent(Event &, const std::vector<double> &) const {
     return true;
 }

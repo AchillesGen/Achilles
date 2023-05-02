@@ -90,6 +90,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event, const Process 
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
     return amps2 * flux * initial_wgt;
 }
 
@@ -113,6 +114,7 @@ void achilles::DefaultBackend::AddProcess(Process &process) {
 
     // TODO: Clean up how the form factors are loaded. Make part of the backend?
     if(form_factors.size() == 0) form_factors = current.GetFormFactor();
+    m_currents[leptons] = current;
 }
 
 void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
@@ -246,7 +248,6 @@ void achilles::SherpaBackend::AddProcess(Process &process) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
-    process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
 double achilles::SherpaBackend::CrossSection(const Event &event, const Process &process) const {
@@ -254,34 +255,51 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     auto info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<int> pids;
-    for(const auto &elm : info.m_mom_map) {
-        pids.push_back(static_cast<int>(elm.second));
-        mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
-        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(), mom[elm.first][0],
-                      mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]);
-    }
+    std::vector<long> pids = process.Info().Ids();
+    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = (p[i] / 1_GeV).Momentum(); }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
-    auto amp2 = p_sherpa->CalcDifferential(pids, mom, mu2) /
-                pow(1_GeV, 2 * static_cast<double>(mom.size() - 4));
-    spdlog::trace("|M|^2 = {}", amp2);
-    return amp2;
+    auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
+    spdlog::trace("|M|^2 = {}", amps2);
+
+    FourVector lepton_momentum_in;
+    std::vector<FourVector> hadron_momentum_in, hadron_momentum_out, lepton_momentum_out;
+    process.ExtractMomentum(event, lepton_momentum_in, hadron_momentum_in, lepton_momentum_out,
+                            hadron_momentum_out);
+    auto flux = FluxFactor(lepton_momentum_in, hadron_momentum_in[0], info);
+    size_t nprotons = event.CurrentNucleus()->NProtons();
+    size_t nneutrons = event.CurrentNucleus()->NNeutrons();
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, info);
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
+    return amps2 * flux * initial_wgt;
 }
 
 void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
                                             std::shared_ptr<Beam> beam,
                                             Integrand<FourVector> &integrand) {
     auto masses = process_info.Masses();
-    auto channels = p_sherpa->GenerateChannels(process_info.Ids());
-    size_t count = 0;
-    for(auto &chan : channels) {
-        Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1, 2,
-                                      beam, std::move(chan), masses);
-        integrand.AddChannel(std::move(channel));
-        spdlog::info("Adding Channel{}", count++);
+    if(process_info.Multiplicity() != 4) {
+        const std::string error =
+            fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+                        "BSM being enabled. "
+                        "Got a 2->{} process",
+                        process_info.Multiplicity() - 2);
+        throw std::runtime_error(error);
     }
+
+    Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses);
+    integrand.AddChannel(std::move(channel0));
+    // auto masses = process_info.Masses();
+    // auto channels = p_sherpa->GenerateChannels(process_info.Ids());
+    // size_t count = 0;
+    // for(auto &chan : channels) {
+    //     Channel<FourVector> channel =
+    //         achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
+    //         2,
+    //                                   beam, std::move(chan), masses);
+    //     integrand.AddChannel(std::move(channel));
+    //     spdlog::info("Adding Channel{}", count++);
+    // }
 }
 
 void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {

@@ -64,22 +64,22 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto models = LoadModels(config);
 
     // Initialize Sherpa
-    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos)
+    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos) {
         p_sherpa = new achilles::SherpaInterface();
-    else
-        p_sherpa = nullptr;
 #ifdef ACHILLES_SHERPA_INTERFACE
-    auto model_name = config["SherpaOptions"]["Model"].as<std::string>();
-    auto param_card = config["SherpaOptions"]["ParamCard"].as<std::string>();
-    int qed = 0;
-    if(config["SherpaOptions"]["QEDShower"])
-        if(config["SherpaOptions"]["QEDShower"].as<bool>()) qed = 1;
-    shargs.push_back(fmt::format("ME_QED={}", qed));
-    if(model_name == "SM") model_name = "SM_Nuc";
-    shargs.push_back("MODEL=" + model_name);
-    shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    p_sherpa->Initialize(shargs);
+        auto model_name = config["SherpaOptions"]["Model"].as<std::string>();
+        auto param_card = config["SherpaOptions"]["ParamCard"].as<std::string>();
+        int qed = 0;
+        if(config["SherpaOptions"]["QEDShower"])
+            if(config["SherpaOptions"]["QEDShower"].as<bool>()) qed = 1;
+        shargs.push_back(fmt::format("ME_QED={}", qed));
+        if(model_name == "SM") model_name = "SM_Nuc";
+        shargs.push_back("MODEL=" + model_name);
+        shargs.push_back("UFO_PARAM_CARD=" + param_card);
+        p_sherpa->Initialize(shargs);
 #endif
+    } else
+        p_sherpa = nullptr;
 
     // Initialize the Processes
     spdlog::debug("Initializing processes");
@@ -108,6 +108,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     if(config["Main"]["HardCuts"]) doHardCuts = config["Main"]["HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
+    for(auto &group : process_groups) group.SetCuts(hard_cuts);
 
     // Setup outputs
     auto output = config["Main"]["Output"];
@@ -131,23 +132,60 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 void achilles::EventGen::Initialize() {
     // TODO: Save trained integrators
     spdlog::info("Starting optimization runs");
-    for(auto &process : process_groups) { process.Optimize(); }
+    for(auto &group : process_groups) {
+        group.Optimize();
+        m_group_weights.push_back(group.MaxWeight());
+        m_max_weight += group.MaxWeight();
+        std::cout << "Estimated unweighting eff for this group: ";
+        for(auto &process : group.Processes()) std::cout << process.UnweightEff() << " ";
+        std::cout << std::endl;
+    }
+    for(auto &wgt : m_group_weights) wgt /= m_max_weight;
+    spdlog::info("Finished optimization");
 }
 
 void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
-    std::string filename = fmt::format(
-        "events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
-    outputfile.open(filename);
-    integrator(integrand);
-    fmt::print("\n");
-    auto result = integrator.Summary();
-    fmt::print("Integral = {:^8.5e} +/- {:^8.5e} ({:^8.5e} %)\n", result.results.back().Mean(),
-               result.results.back().Error(),
-               result.results.back().Error() / result.results.back().Mean() * 100);
-    fmt::print("Unweighting efficiency: {:^8.5e} %\n", unweighter->Efficiency() * 100);
+    const auto nevents = config["Main"]["NEvents"].as<size_t>();
+    size_t accepted = 0;
+    while(accepted < nevents) {
+        static constexpr size_t statusUpdate = 1000;
+        if(accepted % statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r", accepted, nevents);
+        }
+        if(GenerateSingleEvent()) accepted++;
+    }
+}
+
+bool achilles::EventGen::GenerateSingleEvent() {
+    // Select the process group and generate an event
+    auto &group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
+    auto event = group.GenerateEvent();
+    if(event.Weight() == 0) {
+        writer->Write(event);
+        return false;
+    }
+    if(spdlog::get_level() == spdlog::level::trace) event.Display();
+
+    // TODO: Determine if cascade or Sherpa Decays go first
+    // Cascade the nucleus
+    if(runCascade) {
+        spdlog::debug("Runnning cascade");
+        cascade->Evolve(&event);
+
+        spdlog::trace("Hadrons (Post Cascade):");
+        size_t idx = 0;
+        for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    }
+
+#ifdef ACHILLES_SHERPA_INTERFACE
+    // Running Sherpa interface if requested
+    if(runDecays) { p_sherpa->GenerateEvent(event); }
+#endif
+
+    writer->Write(event);
+    return true;
 }
 
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
@@ -185,8 +223,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     spdlog::debug("Filling the event");
     if(!scattering->FillEvent(event, xsecs)) {
         if(outputEvents) {
-            event.SetMEWeight(0);
-            event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer->Write(event);
             // Update number of calls needed to ensure the number of generated
@@ -204,7 +240,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     idx = 0;
     for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
 
-    event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
     // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
@@ -221,8 +256,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // We want Vegas to adapt to avoid these points, i.e.,
             // the integrand should be interpreted as zero in this region
             if(outputEvents) {
-                event.SetMEWeight(0);
-                event.CalcWeight();
                 writer->Write(event);
                 // Update number of calls needed to ensure the number of
                 // generated events is the same as that requested by the user
@@ -278,11 +311,9 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
-            if(!unweighter->AcceptEvent(event.Weight())) {
-                // Update number of calls needed to ensure the number of
-                // generated events is the same as that requested by the user
-                integrator.Parameters().ncalls++;
-            }
+            // Update number of calls needed to ensure the number of
+            // generated events is the same as that requested by the user
+            integrator.Parameters().ncalls++;
             writer->Write(event);
         } else {
             unweighter->AddEvent(event.Weight());

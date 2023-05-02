@@ -36,6 +36,8 @@ class EventGen {
     void GenerateEvents();
 
   private:
+    bool GenerateSingleEvent();
+
     bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
     bool runDecays{true};
     bool doRotate{false};
@@ -54,8 +56,8 @@ class EventGen {
     MultiChannel integrator;
     Integrand<FourVector> integrand;
     YAML::Node config;
-
-    std::ofstream outputfile;
+    std::vector<double> m_group_weights{};
+    double m_max_weight{};
 
     std::shared_ptr<EventWriter> writer;
     std::unique_ptr<Unweighter> unweighter;

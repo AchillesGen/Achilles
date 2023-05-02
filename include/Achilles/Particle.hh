@@ -160,6 +160,7 @@ class Particle {
 
     /// Returns the position of the particle
     ///@return ThreeVector: The position of the particle
+    ThreeVector &Position() noexcept { return position; }
     const ThreeVector &Position() const noexcept { return position; }
 
     /// Returns the momentum of the particle
