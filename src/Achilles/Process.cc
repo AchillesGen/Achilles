@@ -57,20 +57,22 @@ void Process::SelectInitialState(Event &event) const {
         return;
     }
 
+    // TODO: Optimize selection of nucleons.
+    //       Using pick doesn't ensure uniqueness and sample is extremely slow
     // TODO: Handle position dependent probabilities
     auto protons = event.CurrentNucleus()->ProtonsIDs();
     auto neutrons = event.CurrentNucleus()->NeutronsIDs();
-    Random::Instance().Shuffle(protons);
-    Random::Instance().Shuffle(neutrons);
-    std::vector<size_t> indices(had_in.size());
+    std::vector<size_t> indices;
+    // size_t nprotons = 0, nneutrons = 0;
     for(size_t i = 0; i < had_in.size(); ++i) {
         if(m_info.m_hadronic.first[i] == PID::proton()) {
-            indices[i] = protons.back();
-            protons.pop_back();
+            indices.push_back(Random::Instance().Pick(protons));
         } else {
-            indices[i] = neutrons.back();
-            neutrons.pop_back();
+            indices.push_back(Random::Instance().Pick(neutrons));
         }
+    }
+    // Random::Instance().Sample(nprotons, protons, indices);
+    // Random::Instance().Sample(nneutrons, neutrons, indices);
 
         auto &initial = event.CurrentNucleus()->Nucleons()[indices[i]];
         initial.Momentum() = had_in[i];

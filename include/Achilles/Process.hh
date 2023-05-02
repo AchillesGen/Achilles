@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Achilles/CombinedCuts.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -55,6 +56,7 @@ class ProcessGroup {
     Beam *GetBeam() { return m_beam.get(); }
     Nucleus *GetNucleus() { return m_nucleus.get(); }
     void SetupBackend(const YAML::Node &, std::unique_ptr<NuclearModel>, SherpaInterface *);
+    void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
 
     // Initialize processes and process groups
     static std::map<size_t, ProcessGroup> ConstructProcessGroups(const YAML::Node &, NuclearModel *,
@@ -75,6 +77,7 @@ class ProcessGroup {
     std::shared_ptr<Beam> m_beam;
     std::shared_ptr<Nucleus> m_nucleus;
     std::unique_ptr<XSecBackend> m_backend;
+    CutCollection m_cuts;
 
     // Numerical components
     MultiChannel m_integrator;
