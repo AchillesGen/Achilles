@@ -41,11 +41,14 @@ std::vector<long> achilles::ProcessInfo::Ids() const {
     // Get remaining leptonic ids
     for(const auto &part : m_leptonic.second) ids.push_back(part.AsInt());
 
-    // Get remaining hadronic ids
-    for(const auto &part : m_hadronic.second) ids.push_back(part.AsInt());
+    // Get initial hadronic ids
+    for(const auto &part : m_hadronic.first) ids.push_back(part.AsInt());
 
     // Get spectator ids
     for(const auto &part : m_spectator) ids.push_back(part.AsInt());
+
+    // Get remaining hadronic ids
+    for(const auto &part : m_hadronic.second) ids.push_back(part.AsInt());
 
     return ids;
 }
