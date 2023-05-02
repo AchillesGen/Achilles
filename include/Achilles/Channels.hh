@@ -23,7 +23,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                  std::shared_ptr<Beam> beam, const std::vector<double> &masses) {
     Channel<FourVector> channel;
     channel.mapping = PSBuilder(nlep, nhad)
-                          .Beam(beam, masses, 1)
+                          .Beam(beam, masses)
                           .Hadron(model->PhaseSpace(), masses)
                           .FinalState(T::Name(), masses)
                           .build();
