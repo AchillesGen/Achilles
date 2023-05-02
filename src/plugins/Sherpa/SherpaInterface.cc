@@ -130,6 +130,7 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     // pi.m_ntchan = 3;
     // pi.m_mtchan = 3;
     pi.m_gpath = "Diagrams";
+    pi.m_sort = 0;
     for(size_t i(0); i < ampl->NIn(); ++i) {
         Flavour fl(ampl->Leg(i)->Flav().Bar());
         if(Flavour(kf_jet).Includes(fl)) fl = Flavour(kf_jet);
@@ -174,17 +175,17 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
 bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
     Cluster_Amplitude *ampl = Cluster_Amplitude::New();
     int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
+    ampl->CreateLeg(Vec4D(), Flavour(info.m_leptonic.first).Bar());
     for(const auto &initial : info.m_hadronic.first) {
         ampl->CreateLeg(Vec4D(), Flavour(initial).Bar());
     }
-    ampl->CreateLeg(Vec4D(), Flavour(info.m_leptonic.first).Bar());
     for(const auto &part : info.m_leptonic.second) { ampl->CreateLeg(Vec4D(), Flavour(part)); }
     for(const auto &final : info.m_hadronic.second) { ampl->CreateLeg(Vec4D(), Flavour(final)); }
     ampl->SetNIn(info.m_hadronic.first.size() + 1);
     ampl->SetOrderQCD(0);
     ampl->SetOrderEW(info.m_leptonic.second.size() - 1);
     // TODO: Need to fix this later
-    Process_Base::SortFlavours(ampl);
+    // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     if(pm->find(name) == pm->end()) getProcess(ampl);
@@ -226,7 +227,7 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
     ampl->SetNIn(2);
     ampl->SetOrderQCD(0);
     ampl->SetOrderEW(ampl->Legs().size() - 2);
-    Process_Base::SortFlavours(ampl);
+    // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     spdlog::info("Looking for process");
@@ -340,7 +341,7 @@ SherpaInterface::CalcCurrent(const std::vector<int> &_fl,
     return results;
 }
 
-double SherpaInterface::CalcDifferential(const std::vector<int> &_fl,
+double SherpaInterface::CalcDifferential(const std::vector<long> &_fl,
                                          const std::vector<std::array<double, 4>> &p,
                                          const double &mu2) {
     Cluster_Amplitude *ampl(Cluster_Amplitude::New());
@@ -356,7 +357,8 @@ double SherpaInterface::CalcDifferential(const std::vector<int> &_fl,
     ampl->SetMuF2(mu2);
     ampl->SetMuR2(mu2);
     ampl->SetLKF(1.);
-    Process_Base::SortFlavours(ampl);
+    // Process_Base::SortFlavours(ampl);
+    ATOOLS::Spinor<double>::SetGauge(0);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);

@@ -69,7 +69,7 @@ class SherpaInterface {
 
     MOCK LeptonCurrents CalcCurrent(const std::vector<int> &fl,
                                     const std::vector<std::array<double, 4>> &p, const double &mu2);
-    MOCK double CalcDifferential(const std::vector<int> &fl,
+    MOCK double CalcDifferential(const std::vector<long> &fl,
                                  const std::vector<std::array<double, 4>> &p, const double &mu2);
     MOCK void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 
