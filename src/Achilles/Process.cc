@@ -216,11 +216,18 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
 
+    // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
+    SetupLeptons(event);
+    if(!m_cuts.EvaluateCuts(event.Particles())) {
+        event.Weight() = 0;
+        return event;
+    }
+
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     event.Weight() *= CrossSection(event, process_opt);
 
-    // If training the integrator, we can stop here
-    if(b_optimize) return event;
+    // If training the integrator or weight is zero, we can stop here
+    if(b_optimize || event.Weight() == 0) return event;
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];

@@ -23,7 +23,7 @@ class CombinedOneParticleCut {
 
   private:
     std::set<PID> m_pids;
-    std::vector<std::unique_ptr<OneParticleCut>> m_cuts;
+    std::vector<std::shared_ptr<OneParticleCut>> m_cuts;
 };
 
 class CombinedTwoParticleCut {
@@ -42,7 +42,7 @@ class CombinedTwoParticleCut {
 
   private:
     std::set<PID> m_pids;
-    std::vector<std::unique_ptr<TwoParticleCut>> m_cuts;
+    std::vector<std::shared_ptr<TwoParticleCut>> m_cuts;
 };
 
 class CutCollection {
