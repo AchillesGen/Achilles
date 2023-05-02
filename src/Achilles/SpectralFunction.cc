@@ -47,6 +47,6 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
 double SpectralFunction::operator()(double p, double E) const {
     if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back()) return 0;
 
-    auto result = func(p, E);
+    auto result = func(p, E) / norm;
     return result > 0 ? result : 0;
 }

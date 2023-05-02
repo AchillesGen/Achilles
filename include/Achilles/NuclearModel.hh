@@ -75,7 +75,6 @@ class NuclearModel {
                                   const FourVector &, const FFInfoMap &) const = 0;
     virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const = 0;
     virtual size_t NSpins() const = 0;
-    virtual bool FillNucleus(Event &, const std::vector<double> &) const = 0;
     virtual double InitialStateWeight(const std::vector<PID> &,
                                       const std::vector<FourVector> &) const = 0;
 
@@ -107,7 +106,6 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
-    bool FillNucleus(Event &, const std::vector<double> &) const override;
     double InitialStateWeight(const std::vector<PID> &,
                               const std::vector<FourVector> &) const override {
         return 1;
@@ -131,11 +129,8 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 4; }
-    bool FillNucleus(Event &, const std::vector<double> &) const override;
     double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override {
-        throw std::runtime_error("IMPLEMENT THIS!!");
-    }
+                              const std::vector<FourVector> &) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

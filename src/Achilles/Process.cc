@@ -18,22 +18,11 @@ class SherpaInterface {};
 using achilles::Process;
 using achilles::ProcessGroup;
 
-void Process::SelectInitialState(Event &event) const {
+void Process::SetupHadrons(Event &event) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out;
     ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
     std::vector<Particle> leptons, hadrons;
-
-    // Setup leptons
-    leptons.emplace_back(m_info.m_leptonic.first, lep_in);
-    leptons.back().Status() = ParticleStatus::initial_state;
-    if(lep_out.size() != m_info.m_leptonic.second.size())
-        throw std::runtime_error(
-            "Process: Number of lepton momenta does not match number of leptons in event");
-    for(size_t i = 0; i < lep_out.size(); ++i) {
-        leptons.emplace_back(m_info.m_leptonic.second[i], lep_out[i]);
-        leptons.back().Status() = ParticleStatus::final_state;
-    }
 
     // Setup hadrons
     if(had_in.size() != m_info.m_hadronic.first.size() ||
@@ -54,6 +43,7 @@ void Process::SelectInitialState(Event &event) const {
         Particle final(id_out, had_out[0]);
         final.Status() = ParticleStatus::final_state;
         event.CurrentNucleus()->Nucleons().push_back(final);
+
         return;
     }
 
@@ -74,25 +64,24 @@ void Process::SelectInitialState(Event &event) const {
     // Random::Instance().Sample(nprotons, protons, indices);
     // Random::Instance().Sample(nneutrons, neutrons, indices);
 
+    // TODO: Propagate deltas away from interaction point
+    // TODO: Handle something like MEC+pion???
+    for(size_t i = 0; i < had_in.size(); ++i) {
         auto &initial = event.CurrentNucleus()->Nucleons()[indices[i]];
         initial.Momentum() = had_in[i];
         initial.Status() = ParticleStatus::initial_state;
     }
 
-    // TODO: Propagate deltas away from interaction point
-    // TODO: Handle something like MEC+pion???
-    ThreeVector position;
     size_t cur_idx = 0;
+    ThreeVector position;
     for(size_t i = 0; i < had_out.size(); ++i) {
-        Particle part;
+        Particle part(m_info.m_hadronic.second[i]);
         if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
-            part = event.CurrentNucleus()->Nucleons()[indices[cur_idx++]];
-        } else {
-            part = Particle(m_info.m_hadronic.second[i]);
+            position = event.CurrentNucleus()->Nucleons()[indices[cur_idx++]].Position();
         }
         part.Status() = ParticleStatus::propagating;
         part.Momentum() = had_out[i];
-        position = part.Position();
+        part.Position() = position;
         event.CurrentNucleus()->Nucleons().push_back(part);
     }
 }
@@ -111,6 +100,28 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                                       momentum.begin() + static_cast<int>(lepton_end_idx));
     had_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(lepton_end_idx),
                                       momentum.end());
+}
+
+void ProcessGroup::SetupLeptons(Event &event) const {
+    FourVector lep_in;
+    std::vector<FourVector> had_in, lep_out, had_out;
+    auto &process = m_processes[0];
+    process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
+    std::vector<Particle> leptons;
+
+    // Setup leptons
+    const auto &info = process.Info();
+    leptons.emplace_back(info.m_leptonic.first, lep_in);
+    leptons.back().Status() = ParticleStatus::initial_state;
+    if(lep_out.size() != info.m_leptonic.second.size())
+        throw std::runtime_error(
+            "Process: Number of lepton momenta does not match number of leptons in event");
+    for(size_t i = 0; i < lep_out.size(); ++i) {
+        leptons.emplace_back(info.m_leptonic.second[i], lep_out[i]);
+        leptons.back().Status() = ParticleStatus::final_state;
+    }
+
+    event.Leptons() = leptons;
 }
 
 double ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
@@ -142,8 +153,8 @@ ProcessGroup::ConstructProcessGroups(const YAML::Node &node, NuclearModel *model
         auto process_info = process_node.as<ProcessInfo>();
         auto infos = model->AllowedStates(process_info);
         const auto unweight_name = node["Unweighting"]["Name"].as<std::string>();
-        auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
         for(auto &info : infos) {
+            auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
             Process process(info, std::move(unweighter));
             const auto multiplicity = info.Multiplicity();
             if(groups.find(multiplicity) == groups.end()) {
@@ -193,6 +204,7 @@ void ProcessGroup::Optimize() {
     m_integrator.Optimize(m_integrand);
 
     // Store max weight and weight vector
+    m_process_weights.resize(m_processes.size());
     for(size_t i = 0; i < m_processes.size(); ++i) {
         m_process_weights[i] = m_processes[i].MaxWeight();
         m_maxweight += m_process_weights[i];
@@ -234,18 +246,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
-    process.SelectInitialState(event);
-
-    spdlog::trace("Leptons:");
-    idx = 0;
-    for(const auto &particle : event.Leptons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
-
-    spdlog::trace("Hadrons:");
-    idx = 0;
-    for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
-
-    event.CalcWeight();
-    spdlog::trace("Weight: {}", event.Weight());
+    process.SetupHadrons(event);
 
     return event;
 }

@@ -136,25 +136,6 @@ std::vector<achilles::ProcessInfo> Coherent::AllowedStates(const ProcessInfo &in
     return {result};
 }
 
-bool Coherent::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
-    // Calculate total cross section
-    if(xsecs[0] == 0) return false;
-    event.SetMEWeight(xsecs[0]);
-
-    // Remove all nucleons
-    event.CurrentNucleus()->Nucleons().clear();
-
-    // Setup initial and final state nucleus
-    Particle initial = Particle(nucleus_pid, event.Momentum().front());
-    initial.Status() = ParticleStatus::initial_state;
-    event.CurrentNucleus()->Nucleons().push_back(initial);
-    Particle final(nucleus_pid, event.Momentum()[2]);
-    final.Status() = ParticleStatus::final_state;
-    event.CurrentNucleus()->Nucleons().push_back(final);
-
-    return true;
-}
-
 std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<Coherent>(config, form_factor);
@@ -246,24 +227,16 @@ std::vector<achilles::ProcessInfo> QESpectral::AllowedStates(const ProcessInfo &
     return results;
 }
 
-bool QESpectral::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
-    // Calculate total cross section
-    for(size_t i = 0; i < event.CurrentNucleus()->Nucleons().size(); ++i) {
-        auto current_nucleon = event.CurrentNucleus()->Nucleons()[i];
-        if(current_nucleon.ID() == PID::proton()) {
-            event.MatrixElementWgt(i) = xsecs[0];
-        } else {
-            event.MatrixElementWgt(i) = xsecs[1];
-        }
-    }
-    if(!event.TotalCrossSection()) return false;
-
-    return true;
-}
-
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<QESpectral>(config, form_factor);
+}
+    
+double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
+                                      const std::vector<FourVector> &mom) const {
+    const double removal_energy = Constant::mN - mom[0].E();
+    return nucleons[0] == PID::proton() ? spectral_proton(mom[0].P(), removal_energy)
+                                        : spectral_neutron(mom[0].P(), removal_energy);
 }
 
 NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,

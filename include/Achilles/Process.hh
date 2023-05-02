@@ -26,12 +26,16 @@ class Process {
     ProcessInfo &Info() { return m_info; }
     const ProcessInfo &Info() const { return m_info; }
     size_t NInitialStates(Nucleus *) const;
-    void SelectInitialState(Event &) const;
-    void AddWeight(double weight) { m_unweighter->AddEvent(weight); }
+    void SetupHadrons(Event &) const;
+    void AddWeight(double weight) {
+        m_unweighter->AddEvent(weight);
+        m_xsec += weight;
+    }
     double Unweight(double weight) { return m_unweighter->AcceptEvent(weight); }
     double MaxWeight() { return m_unweighter->MaxValue(); }
     void ExtractMomentum(const Event &, FourVector &, std::vector<FourVector> &,
                          std::vector<FourVector> &, std::vector<FourVector> &) const;
+    double UnweightEff() const { return m_xsec.Mean() / m_unweighter->MaxValue(); }
 
   private:
     ProcessInfo m_info;
@@ -57,6 +61,7 @@ class ProcessGroup {
     Nucleus *GetNucleus() { return m_nucleus.get(); }
     void SetupBackend(const YAML::Node &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
+    void SetupLeptons(Event &) const;
 
     // Initialize processes and process groups
     static std::map<size_t, ProcessGroup> ConstructProcessGroups(const YAML::Node &, NuclearModel *,
@@ -70,6 +75,7 @@ class ProcessGroup {
     void Summary() const;
     Event GenerateEvent();
     Event SingleEvent(const std::vector<FourVector> &, double);
+    double MaxWeight() const { return m_maxweight; }
 
   private:
     // Physics components
