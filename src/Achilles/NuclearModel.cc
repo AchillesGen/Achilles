@@ -20,6 +20,7 @@ NuclearModel::NuclearModel(const YAML::Node &config,
                         .AxialVector(axialFF, config[axialFF])
                         .Coherent(coherentFF, config[coherentFF])
                         .build();
+    ffbuilder.Reset();
 }
 
 NuclearModel::FormFactorMap
@@ -90,7 +91,7 @@ NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
 Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
                    FormFactorBuilder &builder = FormFactorBuilder::Instance())
     : NuclearModel(form_factor, builder) {
-    nucleus_pid = config["Nucleus"].as<Nucleus>().ID();
+    nucleus_pid = config["NuclearModel"]["Nucleus"].as<PID>();
 }
 
 achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<FourVector> &had_in,
@@ -184,10 +185,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<FourVector> &h
                       ffVal[Type::FA]);
         auto current = HadronicCurrent(ubar, u, qVec, ffVal);
         for(auto &subcur : current) {
-            // FIXME: Handle this in the correct place
-            // for(auto &val : subcur) {
-            //     val *= sqrt(spectral[i] / 6);
-            // }
+            // FIXME: This assumes that the q vector is along the z-axis
             // Correct the Ward identity
             if(b_ward) subcur[3] = omega / qVec.P() * subcur[0];
         }
@@ -212,9 +210,8 @@ std::vector<achilles::ProcessInfo> QESpectral::AllowedStates(const ProcessInfo &
         results.push_back(local);
         break;
     case 0: // Same charge in inital and final
-        // FIXME: Sherpa can only handle proton initial and final states right now
-        // local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
-        // results.push_back(local);
+        local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
+        results.push_back(local);
         local.m_hadronic = {{PID::proton()}, {PID::proton()}};
         results.push_back(local);
         break;
@@ -231,7 +228,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<QESpectral>(config, form_factor);
 }
-    
+
 double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
                                       const std::vector<FourVector> &mom) const {
     const double removal_energy = Constant::mN - mom[0].E();

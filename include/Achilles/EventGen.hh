@@ -39,7 +39,7 @@ class EventGen {
     bool GenerateSingleEvent();
 
     bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
-    bool runDecays{true};
+    bool runDecays{false};
     bool doRotate{false};
     double GenerateEvent(const std::vector<FourVector> &, const double &);
     bool MakeCuts(Event &);

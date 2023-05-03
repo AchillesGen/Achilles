@@ -59,6 +59,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         cascade = nullptr;
     }
 
+    // Initialize decays
+    runDecays = config["Main"]["RunDecays"].as<bool>();
+
     // Initialize the Nuclear models
     spdlog::debug("Initializing nuclear models");
     auto models = LoadModels(config);
@@ -136,11 +139,15 @@ void achilles::EventGen::Initialize() {
         group.Optimize();
         m_group_weights.push_back(group.MaxWeight());
         m_max_weight += group.MaxWeight();
+        spdlog::info("Group weights: {} / {}",
+                     fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "), m_max_weight);
         std::cout << "Estimated unweighting eff for this group: ";
         for(auto &process : group.Processes()) std::cout << process.UnweightEff() << " ";
         std::cout << std::endl;
     }
     for(auto &wgt : m_group_weights) wgt /= m_max_weight;
+    spdlog::info("Group weights: {}",
+                 fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "));
     spdlog::info("Finished optimization");
 }
 

@@ -124,7 +124,7 @@ void ProcessGroup::SetupLeptons(Event &event) const {
     event.Leptons() = leptons;
 }
 
-double ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
+void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
     if(!process_idx) {
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
@@ -132,12 +132,11 @@ double ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_id
             m_processes[i].AddWeight(process_weight);
             weight += process_weight;
         }
-        return weight;
+        event.Weight() = weight;
     } else {
         auto &process = m_processes[process_idx.value()];
         auto weight = m_backend->CrossSection(event, process);
-        weight = process.Unweight(weight);
-        return weight;
+        event.Weight() = process.Unweight(weight);
     }
 }
 
@@ -208,7 +207,10 @@ void ProcessGroup::Optimize() {
     for(size_t i = 0; i < m_processes.size(); ++i) {
         m_process_weights[i] = m_processes[i].MaxWeight();
         m_maxweight += m_process_weights[i];
+        spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
     }
+    spdlog::info("Process weights: {} / {}",
+                 fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
     b_optimize = false;
 }
@@ -238,7 +240,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     }
 
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
-    event.Weight() *= CrossSection(event, process_opt);
+    CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
     if(b_optimize || event.Weight() == 0) return event;

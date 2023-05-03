@@ -87,6 +87,7 @@ class FormFactorBuilder {
         return instance;
     }
     MOCK ~FormFactorBuilder() = default;
+    MOCK void Reset() { form_factor = std::make_unique<FormFactor>(); }
     MOCK FormFactorBuilder &Vector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &AxialVector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &Coherent(const std::string &, const YAML::Node &);

@@ -47,7 +47,7 @@ class ProcessGroup {
   public:
     ProcessGroup(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus)
         : m_beam{std::move(beam)}, m_nucleus{std::move(nucleus)} {}
-    double CrossSection(Event &, std::optional<size_t>);
+    void CrossSection(Event &, std::optional<size_t>);
     size_t SelectProcess() const;
 
     // Handling individual processes
