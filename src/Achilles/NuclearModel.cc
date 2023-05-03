@@ -599,7 +599,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<QESpectral>(config, form_factor);
 }
-    
+
 double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
                                       const std::vector<FourVector> &mom) const {
     const double removal_energy = Constant::mN - mom[0].E();
