@@ -23,13 +23,17 @@ using achilles::XSecBackend;
 using achilles::XSecBackendFactory;
 using achilles::XSecBuilder;
 
-double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_in,
-                               const ProcessInfo &process_info) const {
+double XSecBackend::SpinAvg(const ProcessInfo &process_info) const {
     double spin_avg = 1;
     if(!ParticleInfo(process_info.m_leptonic.first).IsNeutrino()) spin_avg *= 2;
     // TODO: Handle MEC correctly
     if(m_model->NSpins() > 1) spin_avg *= 2;
 
+    return 1.0 / spin_avg;
+}
+
+double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_in,
+                               const ProcessInfo &process_info) const {
     // TODO: Correct this flux
     // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2)
     //                      -
@@ -38,7 +42,7 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
     double mass = ParticleInfo(process_info.m_hadronic.first[0]).Mass();
     double flux = 2 * lep_in.E() * 2 * sqrt(had_in.P2() + mass * mass);
     static constexpr double to_nb = 1e6;
-    return Constant::HBARC2 / spin_avg / flux * to_nb;
+    return Constant::HBARC2 / flux * to_nb;
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
@@ -85,13 +89,15 @@ double achilles::DefaultBackend::CrossSection(const Event &event, const Process 
             }
         }
     }
+    if(std::isnan(amps2)) amps2 = 0;
 
     auto flux = FluxFactor(lepton_momentum_in, hadron_momentum_in[0], process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
-    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
-    return amps2 * flux * initial_wgt;
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
+                  amps2 * SpinAvg(process_info));
+    return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
 void achilles::DefaultBackend::AddProcess(Process &process) {
@@ -194,7 +200,7 @@ double achilles::BSMBackend::CrossSection(const Event &event, const Process &pro
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
-    return amps2 * flux * initial_wgt;
+    return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
 achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<FourVector> &p,
@@ -261,6 +267,7 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     static constexpr double mu2 = 100;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
     spdlog::trace("|M|^2 = {}", amps2);
+    if(std::isnan(amps2)) amps2 = 0;
 
     FourVector lepton_momentum_in;
     std::vector<FourVector> hadron_momentum_in, hadron_momentum_out, lepton_momentum_out;
@@ -271,7 +278,7 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, info);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
-    return amps2 * flux * initial_wgt;
+    return amps2 * flux * initial_wgt * event.Weight();
 }
 
 void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,

@@ -34,6 +34,7 @@ class XSecBackend {
     double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
     double InitialStateFactor(size_t, size_t, const std::vector<FourVector> &,
                               const ProcessInfo &) const;
+    double SpinAvg(const ProcessInfo &) const;
 
     std::unique_ptr<NuclearModel> m_model = nullptr;
 };

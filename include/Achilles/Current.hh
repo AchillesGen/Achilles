@@ -25,6 +25,14 @@ class VCurrent {
     constexpr auto begin() { return m_current.begin(); }
     constexpr auto end() { return m_current.end(); }
 
+    VCurrent operator+=(const VCurrent &other) {
+        m_current[0] += other.m_current[0];
+        m_current[1] += other.m_current[1];
+        m_current[2] += other.m_current[2];
+        m_current[3] += other.m_current[3];
+        return *this;
+    }
+
   private:
     std::array<std::complex<double>, 4> m_current;
 };
