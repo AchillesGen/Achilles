@@ -336,23 +336,22 @@ class FourVector {
     ///@return bool: False, if the vectors are equal otherwise True
     bool operator!=(const FourVector &other) const noexcept { return !(*this == other); }
 
+    // Determine if two four vectors are approximately equal
+    ///@param other: The vector to compare against
+    ///@return bool: True, if the vectors are equal otherwise False
+    bool Approx(const FourVector &, double eps = 1e-8) const noexcept;
+
     // Access Operators
 
     /// Access a given index from the vector
     ///@param idx: Index to access
     ///@return double: The value of the vector at the given index
-    double &operator[](const std::size_t &idx) {
-        if(idx > 3) throw std::range_error("Max value is 3.");
-        return vec[idx];
-    }
+    double &operator[](const std::size_t &idx) { return vec[idx]; }
 
     /// Access a given index from the vector
     ///@param idx: Index to access
     ///@return double: The value of the vector at the given index
-    const double &operator[](const std::size_t &idx) const {
-        if(idx > 3) throw std::range_error("Max value is 3.");
-        return vec[idx];
-    }
+    const double &operator[](const std::size_t &idx) const { return vec[idx]; }
     /// @}
 
     ///@name Stream Operators

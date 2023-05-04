@@ -4,9 +4,15 @@
 #include "Achilles/Current.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#pragma GCC diagnostic ignored "-Wuseless-cast"
 #include "ATOOLS/Math/Vector.H"
+#include "ATOOLS/Phys/Blob_List.H"
 #pragma GCC diagnostic pop
 #include "Achilles/Achilles.hh"
+#include "Achilles/EventHistory.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
 
@@ -43,6 +49,7 @@ class Event;
 class SherpaInterface {
   private:
     SHERPA::Sherpa *p_sherpa{};
+    achilles::Achilles_Reader *reader;
 
     void addParameter(std::vector<char *> &argv, const std::string &val) const;
     int SherpaVerbosity(int loglevel) const;
@@ -51,13 +58,15 @@ class SherpaInterface {
 
     PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude *const ampl);
     COMIX::Single_Process *singleProcess;
-    achilles::Achilles_Reader *reader;
+    static Particle ToAchilles(ATOOLS::Particle *, bool);
+    static void AddHistoryNode(ATOOLS::Blob *blob, EventHistory &history, EventHistory::StatusCode);
+    static void ToAchilles(ATOOLS::Blob_List *, EventHistory &);
+    static ATOOLS::Blob_List FromAchilles(EventHistory);
 
   public:
     using LeptonCurrents = std::map<int, std::vector<VCurrent>>;
 
     SherpaInterface() = default;
-
     MOCK ~SherpaInterface();
 
     bool Initialize(const std::vector<std::string> &args);

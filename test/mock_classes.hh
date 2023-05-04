@@ -13,9 +13,9 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
 #include "Achilles/Potential.hh"
-#include "plugins/Sherpa/SherpaInterface.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
+#include "plugins/Sherpa/SherpaInterface.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -26,6 +26,29 @@
 #undef THROW
 #define THROW TROMPELOEIL_THROW
 #pragma GCC diagnostic pop
+#else
+
+#include <complex>
+#include <map>
+#include <vector>
+
+namespace achilles {
+
+struct FormFactorInfo;
+namespace METOOLS {
+using Spin_Amplitudes = std::vector<std::complex<double>>;
+}
+class SherpaInterface {
+  public:
+    using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+    virtual ~SherpaInterface() = default;
+    virtual LeptonCurrents Calc(const std::vector<int> &,
+                                const std::vector<std::array<double, 4>> &, const double &) = 0;
+    virtual std::vector<FormFactorInfo> FormFactors(int, int) const;
+    virtual void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
+};
+
+} // namespace achilles
 #endif
 
 class MockDensity : public trompeloeil::mock_interface<achilles::Density> {

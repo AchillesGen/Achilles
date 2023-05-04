@@ -87,7 +87,7 @@ if(ACHILLES_ENABLE_TESTING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 44
+        VERSION 44 
     )
 
     # Fortran Unit Tests

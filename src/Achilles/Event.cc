@@ -9,7 +9,16 @@ using achilles::Event;
 Event::Event(std::shared_ptr<Nucleus> nuc, std::vector<FourVector> mom, double vwgt)
     : m_nuc{std::move(nuc)}, m_mom{std::move(mom)}, m_wgt{std::move(vwgt)} {
     m_nuc->GenerateConfig();
-    m_me.resize(m_nuc->NNucleons());
+}
+
+Event::Event(const Event &other) {
+    m_nuc = other.m_nuc;
+    m_remnant = other.m_remnant;
+    m_mom = other.m_mom;
+    m_wgt = other.m_wgt;
+    m_leptons = other.m_leptons;
+    m_history = other.m_history;
+    flux = other.flux;
 }
 
 void Event::Finalize() {

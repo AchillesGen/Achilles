@@ -224,7 +224,7 @@ achilles::Event ProcessGroup::GenerateEvent() {
 }
 
 achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
-    Event event(m_nucleus, mom, ps_wgt);
+    Event event = Event(m_nucleus, mom, ps_wgt);
 
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;

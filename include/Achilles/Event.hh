@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "Achilles/Achilles.hh"
-#include "Achilles/HardScatteringEnum.hh"
+#include "Achilles/EventHistory.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/ProcessInfo.hh"
 
@@ -27,9 +27,9 @@ class Event {
   public:
     Event(double vWgt = 0) : m_wgt{vWgt} {}
     Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
+    Event(const Event &);
     MOCK ~Event() = default;
 
-    void SetHardScatteringType(HardScatteringType type) { m_type = type; }
     void Finalize();
 
     MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
@@ -53,20 +53,21 @@ class Event {
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
+    const EventHistory &History() const { return m_history; }
+    EventHistory &History() { return m_history; }
+
     bool operator==(const Event &other) const {
-        return m_type == other.m_type && m_nuc == other.m_nuc && m_remnant == other.m_remnant &&
-               m_mom == other.m_mom && m_me == other.m_me && m_leptons == other.m_leptons;
+        return m_nuc == other.m_nuc && m_remnant == other.m_remnant && m_mom == other.m_mom &&
+               m_leptons == other.m_leptons;
     }
 
   private:
-    HardScatteringType m_type{HardScatteringType::None};
     std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};
     vMomentum m_mom{};
-    std::vector<double> m_me;
     double m_wgt{};
     vParticles m_leptons{};
-    vParticles m_history{};
+    EventHistory m_history{};
     double flux;
 };
 

@@ -24,7 +24,6 @@ class Event;
 class Beam;
 class Nucleus;
 class Cascade;
-class HardScattering;
 class EventWriter;
 
 class SherpaInterface;
@@ -41,7 +40,6 @@ class EventGen {
     bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
     bool runDecays{false};
     bool doRotate{false};
-    double GenerateEvent(const std::vector<FourVector> &, const double &);
     bool MakeCuts(Event &);
     // bool MakeEventCuts(Event&);
     void Rotate(Event &);
@@ -49,7 +47,6 @@ class EventGen {
     std::shared_ptr<Beam> beam;
     std::shared_ptr<Nucleus> nucleus;
     std::shared_ptr<Cascade> cascade;
-    std::shared_ptr<HardScattering> scattering;
     std::vector<ProcessGroup> process_groups;
     CutCollection hard_cuts{};
     // CutCollection event_cuts{};

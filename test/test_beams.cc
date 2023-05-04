@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "Achilles/Beams.hh"
+#include "Achilles/YAML/Beams.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <iostream>

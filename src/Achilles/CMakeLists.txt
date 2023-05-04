@@ -58,7 +58,6 @@ add_library(physics SHARED
     FormFactor.cc
     FormFactorBuilder.cc
     Beams.cc
-    HardScattering.cc
     LeptonicCurrent.cc
     XSecBackend.cc
     Process.cc
@@ -68,6 +67,8 @@ add_library(physics SHARED
     InteractionsFactory.cc
     SpectralFunction.cc
     Channels.cc
+    ElectronPDF.cc
+    EventHistory.cc
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)

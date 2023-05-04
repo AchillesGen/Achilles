@@ -12,6 +12,8 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
+#include "Achilles/YAML/Beams.hh"
+
 namespace achilles {
 
 template <typename T> class Mapper {
