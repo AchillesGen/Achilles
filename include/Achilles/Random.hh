@@ -41,9 +41,9 @@ class Random {
         return m_rng->variate<std::size_t, std::discrete_distribution>(array.begin(), array.end());
     }
 
-    template <typename T> void Sample(size_t n, const std::vector<T> &array, std::vector<T> &result) {
-        std::sample(array.begin(), array.end(), std::back_inserter(result),
-                    n, m_rng->engine()); 
+    template <typename T>
+    void Sample(size_t n, const std::vector<T> &array, std::vector<T> &result) {
+        std::sample(array.begin(), array.end(), std::back_inserter(result), n, m_rng->engine());
     }
 
   private:

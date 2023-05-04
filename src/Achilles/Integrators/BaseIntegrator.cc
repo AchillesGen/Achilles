@@ -7,15 +7,13 @@ BaseIntegrator::BaseIntegrator(bool cache) : m_cache(cache) {
     m_funcVec = nullptr;
 }
 
-BaseIntegrator::BaseIntegrator(FunctionS func, bool cache) 
-    : m_func(std::move(func)), m_cache(cache){
-    
+BaseIntegrator::BaseIntegrator(FunctionS func, bool cache)
+    : m_func(std::move(func)), m_cache(cache) {
     m_funcVec = nullptr;
 }
 
-BaseIntegrator::BaseIntegrator(FunctionV funcVec, bool cache) 
-    : m_funcVec(std::move(funcVec)), m_cache(cache){
-
+BaseIntegrator::BaseIntegrator(FunctionV funcVec, bool cache)
+    : m_funcVec(std::move(funcVec)), m_cache(cache) {
     m_func = nullptr;
 }
 
@@ -55,4 +53,3 @@ void BaseIntegrator::ClearCache() {
     m_cacheFunc.clear();
     m_cacheFuncVec.clear();
 }
-

@@ -11,12 +11,11 @@
 
 namespace YAML {
 
-template<>
-struct convert<std::shared_ptr<achilles::FluxType>> {
+template <> struct convert<std::shared_ptr<achilles::FluxType>> {
     // FIXME: How to encode a generic flux
     static Node encode(const std::shared_ptr<achilles::FluxType> &rhs) {
         Node node;
-        node["Type"] = rhs -> Type();
+        node["Type"] = rhs->Type();
 
         return node;
     }
@@ -38,8 +37,7 @@ struct convert<std::shared_ptr<achilles::FluxType>> {
     }
 };
 
-template<>
-struct convert<achilles::Beam> {
+template <> struct convert<achilles::Beam> {
     // TODO: Implement encoding
     static Node encode(const achilles::Beam &rhs) {
         Node node;
@@ -52,10 +50,10 @@ struct convert<achilles::Beam> {
         }
 
         return node;
-    } 
+    }
 
     static bool decode(const Node &node, achilles::Beam &rhs) {
-        achilles::Beam::BeamMap beams; 
+        achilles::Beam::BeamMap beams;
 
         for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
             YAML::Node beamNode = *it;
@@ -64,13 +62,13 @@ struct convert<achilles::Beam> {
             if(beams.find(pid) != beams.end())
                 throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(pid)));
             beams[pid] = beam;
-        } 
+        }
 
         rhs = achilles::Beam(beams);
         return true;
     }
 };
 
-}
+} // namespace YAML
 
 #endif
