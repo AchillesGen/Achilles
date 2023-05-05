@@ -88,11 +88,12 @@ class ProcessGroup {
     // Numerical components
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
+    StatsData m_xsec;
 
     // Parameters
     std::vector<double> m_process_weights;
     double m_maxweight{};
-    bool b_optimize{};
+    bool b_optimize{}, b_calc_weights{};
 };
 
 } // namespace achilles

@@ -129,10 +129,11 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
             auto process_weight = m_backend->CrossSection(event, m_processes[i]);
-            m_processes[i].AddWeight(process_weight);
+            if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
         }
         event.Weight() = weight;
+        if(b_calc_weights) m_xsec += weight;
     } else {
         auto &process = m_processes[process_idx.value()];
         auto weight = m_backend->CrossSection(event, process);
@@ -202,6 +203,12 @@ void ProcessGroup::Optimize() {
     m_integrand.Function() = func;
     m_integrator.Optimize(m_integrand);
 
+    b_calc_weights = true;
+    m_integrator.Parameters().ncalls = 100000;
+    for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
+    b_calc_weights = false;
+    b_optimize = false;
+
     // Store max weight and weight vector
     m_process_weights.resize(m_processes.size());
     for(size_t i = 0; i < m_processes.size(); ++i) {
@@ -214,7 +221,6 @@ void ProcessGroup::Optimize() {
     spdlog::info("Process weights: {} / {}",
                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
-    b_optimize = false;
 }
 
 void ProcessGroup::Summary() const {}
@@ -237,6 +243,11 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     SetupLeptons(event);
     if(!m_cuts.EvaluateCuts(event.Particles())) {
+        // Ensure process weights are tracked correctly
+        if(b_calc_weights) {
+            for(auto &process : m_processes) process.AddWeight(0);
+            m_xsec += 0;
+        }
         event.Weight() = 0;
         return event;
     }
