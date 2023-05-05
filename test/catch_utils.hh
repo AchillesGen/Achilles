@@ -3,16 +3,16 @@
 
 // Inspired from Catch2/examples/300-Gen-OwnGenerator.cpp
 
-#include <string>
-#include <random>
 #include "catch2/catch.hpp"
+#include <random>
+#include <string>
 
 #include "Achilles/FourVector.hh"
 
 static constexpr double nsigma = 3;
 
 class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string> {
-    static constexpr auto& chars = "abcdefghijklmnopqrstuvwxyz"
+    static constexpr auto &chars = "abcdefghijklmnopqrstuvwxyz"
                                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
     size_t m_max_nucleons;
@@ -21,24 +21,20 @@ class RandomNucleusGenerator : public Catch::Generators::IGenerator<std::string>
     std::uniform_int_distribution<size_t> m_dist_nucleons;
     std::string current_string;
 
-    public:
-        RandomNucleusGenerator(size_t max_nucleons):
-            m_max_nucleons{max_nucleons},
-            m_rand(std::random_device{}()),
-            m_dist(0, sizeof(chars) - 2),
-            m_dist_nucleons(1, m_max_nucleons) {
+  public:
+    RandomNucleusGenerator(size_t max_nucleons)
+        : m_max_nucleons{max_nucleons}, m_rand(std::random_device{}()),
+          m_dist(0, sizeof(chars) - 2), m_dist_nucleons(1, m_max_nucleons) {
+        static_cast<void>(next());
+    };
 
-            static_cast<void>(next());
-        };
-
-        std::string const& get() const override;
-        bool next() override {
-            current_string = "";
-            current_string += std::to_string(m_dist_nucleons(m_rand));
-            for(size_t i = 0; i < 2; ++i)
-                current_string += chars[m_dist(m_rand)];
-            return true;
-        }
+    std::string const &get() const override;
+    bool next() override {
+        current_string = "";
+        current_string += std::to_string(m_dist_nucleons(m_rand));
+        for(size_t i = 0; i < 2; ++i) current_string += chars[m_dist(m_rand)];
+        return true;
+    }
 };
 
 class RandomMomentumGenerator : public Catch::Generators::IGenerator<achilles::FourVector> {
@@ -48,38 +44,38 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<achilles::F
     std::uniform_real_distribution<double> m_dist;
     achilles::FourVector current_momentum{};
 
-    public:
-        RandomMomentumGenerator(double maxVal, double mass = 0):
-            m_maxVal{maxVal}, m_mass(mass),
-            m_rand(std::random_device{}()),
-            m_dist(0, m_maxVal) {
+  public:
+    RandomMomentumGenerator(double maxVal, double mass = 0)
+        : m_maxVal{maxVal}, m_mass(mass), m_rand(std::random_device{}()), m_dist(0, m_maxVal) {
+        static_cast<void>(next());
+    };
 
-            static_cast<void>(next());
-        };
-
-        achilles::FourVector const& get() const override;
-        bool next() override {
-            double pmag = m_dist(m_rand);
-            double cost = 2*m_dist(m_rand)/m_maxVal - 1;
-            double sint = sqrt(1-cost*cost);
-            double phi = 2*M_PI*m_dist(m_rand)/m_maxVal;
-            double e = sqrt(pmag*pmag+m_mass*m_mass);
-            double px = pmag*sint*cos(phi);
-            double py = pmag*sint*sin(phi);
-            double pz = pmag*cost;
-            current_momentum = achilles::FourVector(e, px, py, pz);
-            return true;
-        }
+    achilles::FourVector const &get() const override;
+    bool next() override {
+        double pmag = m_dist(m_rand);
+        double cost = 2 * m_dist(m_rand) / m_maxVal - 1;
+        double sint = sqrt(1 - cost * cost);
+        double phi = 2 * M_PI * m_dist(m_rand) / m_maxVal;
+        double e = sqrt(pmag * pmag + m_mass * m_mass);
+        double px = pmag * sint * cos(phi);
+        double py = pmag * sint * sin(phi);
+        double pz = pmag * cost;
+        current_momentum = achilles::FourVector(e, px, py, pz);
+        return true;
+    }
 };
 
-inline achilles::FourVector const& RandomMomentumGenerator::get() const {
+inline achilles::FourVector const &RandomMomentumGenerator::get() const {
     return current_momentum;
 }
 // This helper function provides a nicer UX when instantiating the generator
 // Notice that it returns an instance of GeneratorWrapper<std::string>, which
 // is a value-wrapper around std::unique_ptr<IGenerator<std::string>>.
-inline Catch::Generators::GeneratorWrapper<achilles::FourVector> randomMomentum(double max, double mass = 0) {
-    return Catch::Generators::GeneratorWrapper<achilles::FourVector>(std::unique_ptr<Catch::Generators::IGenerator<achilles::FourVector>>(new RandomMomentumGenerator(max, mass)));
+inline Catch::Generators::GeneratorWrapper<achilles::FourVector> randomMomentum(double max,
+                                                                                double mass = 0) {
+    return Catch::Generators::GeneratorWrapper<achilles::FourVector>(
+        std::unique_ptr<Catch::Generators::IGenerator<achilles::FourVector>>(
+            new RandomMomentumGenerator(max, mass)));
 }
 
 class RandomVectorGenerator : public Catch::Generators::IGenerator<std::vector<double>> {
@@ -90,31 +86,31 @@ class RandomVectorGenerator : public Catch::Generators::IGenerator<std::vector<d
     std::uniform_real_distribution<double> m_dist;
     std::vector<double> current_vector{};
 
-    public:
-        RandomVectorGenerator(size_t size, double minVal=0.0, double maxVal=1.0):
-            m_minVal{minVal}, m_maxVal{maxVal}, m_size{size},
-            m_rand(std::random_device{}()),
-            m_dist(m_minVal, m_maxVal) {
+  public:
+    RandomVectorGenerator(size_t size, double minVal = 0.0, double maxVal = 1.0)
+        : m_minVal{minVal}, m_maxVal{maxVal}, m_size{size}, m_rand(std::random_device{}()),
+          m_dist(m_minVal, m_maxVal) {
+        current_vector.resize(m_size);
+        static_cast<void>(next());
+    };
 
-            current_vector.resize(m_size);
-            static_cast<void>(next());
-        };
+    std::vector<double> const &get() const override;
+    bool next() override {
+        for(size_t i = 0; i < m_size; ++i) current_vector[i] = m_dist(m_rand);
 
-        std::vector<double> const& get() const override;
-        bool next() override {
-            for(size_t i = 0; i < m_size; ++i) current_vector[i] = m_dist(m_rand);
-
-            return true;
-        }
+        return true;
+    }
 };
 
-inline std::vector<double> const & RandomVectorGenerator::get() const {
+inline std::vector<double> const &RandomVectorGenerator::get() const {
     return current_vector;
 }
 
-inline Catch::Generators::GeneratorWrapper<std::vector<double>> randomVector(size_t size, double min=0, double max=1) {
-    return Catch::Generators::GeneratorWrapper<std::vector<double>>(std::unique_ptr<Catch::Generators::IGenerator<std::vector<double>>>(new RandomVectorGenerator(size, min, max)));
+inline Catch::Generators::GeneratorWrapper<std::vector<double>>
+randomVector(size_t size, double min = 0, double max = 1) {
+    return Catch::Generators::GeneratorWrapper<std::vector<double>>(
+        std::unique_ptr<Catch::Generators::IGenerator<std::vector<double>>>(
+            new RandomVectorGenerator(size, min, max)));
 }
-
 
 #endif
