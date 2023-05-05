@@ -98,7 +98,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     for(auto &model : models) {
         auto groups =
             ProcessGroup::ConstructProcessGroups(config, model.second.get(), beam, nucleus);
-        std::cout << groups.size() << std::endl;
         for(auto &group : groups) {
             for(const auto &process : group.second.Processes())
                 spdlog::info("Found Process: {}", process.Info());

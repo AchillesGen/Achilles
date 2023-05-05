@@ -285,28 +285,15 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
                                             std::shared_ptr<Beam> beam,
                                             Integrand<FourVector> &integrand) {
     auto masses = process_info.Masses();
-    if(process_info.Multiplicity() != 4) {
-        const std::string error =
-            fmt::format("Leptonic Tensor can only handle 2->2 processes without "
-                        "BSM being enabled. "
-                        "Got a 2->{} process",
-                        process_info.Multiplicity() - 2);
-        throw std::runtime_error(error);
+    auto channels = p_sherpa->GenerateChannels(process_info.Ids());
+    size_t count = 0;
+    for(auto &chan : channels) {
+        Channel<FourVector> channel =
+            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1, 2,
+                                      beam, std::move(chan), masses);
+        integrand.AddChannel(std::move(channel));
+        spdlog::info("Adding Channel{}", count++);
     }
-
-    Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses);
-    integrand.AddChannel(std::move(channel0));
-    // auto masses = process_info.Masses();
-    // auto channels = p_sherpa->GenerateChannels(process_info.Ids());
-    // size_t count = 0;
-    // for(auto &chan : channels) {
-    //     Channel<FourVector> channel =
-    //         achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
-    //         2,
-    //                                   beam, std::move(chan), masses);
-    //     integrand.AddChannel(std::move(channel));
-    //     spdlog::info("Adding Channel{}", count++);
-    // }
 }
 
 void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {

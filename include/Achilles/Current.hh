@@ -33,6 +33,8 @@ class VCurrent {
         return *this;
     }
 
+    bool operator==(const VCurrent &other) const { return m_current == other.m_current; }
+
   private:
     std::array<std::complex<double>, 4> m_current;
 };

@@ -78,6 +78,7 @@ class NuclearModel {
     virtual double InitialStateWeight(const std::vector<PID> &,
                                       const std::vector<FourVector> &) const = 0;
 
+    virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
 
   protected:
@@ -110,6 +111,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
                               const std::vector<FourVector> &) const override {
         return 1;
     }
+    std::string GetName() const override { return Coherent::Name(); }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -131,6 +133,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     size_t NSpins() const override { return 4; }
     double InitialStateWeight(const std::vector<PID> &,
                               const std::vector<FourVector> &) const override;
+    std::string GetName() const override { return QESpectral::Name(); }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

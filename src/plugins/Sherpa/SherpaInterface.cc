@@ -553,7 +553,6 @@ DECLARE_GETTER(Achilles_Reader, "Achilles", Event_Reader, Event_Reader_Key);
 
 Event_Reader *ATOOLS::Getter<Event_Reader, Event_Reader_Key, Achilles_Reader>::operator()(
     const Event_Reader_Key &args) const {
-    std::cout << "Getting Achilles" << std::endl;
     return new Achilles_Reader(args);
 }
 

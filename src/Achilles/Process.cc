@@ -194,7 +194,7 @@ void ProcessGroup::Optimize() {
     b_optimize = true;
 
     spdlog::info("Optimizing process group: Nuclear Model = {}, Multiplicity = {}",
-                 m_processes[0].Info().Multiplicity(), m_backend->GetNuclearModel()->Name());
+                 m_backend->GetNuclearModel()->GetName(), m_processes[0].Info().Multiplicity());
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
@@ -209,6 +209,8 @@ void ProcessGroup::Optimize() {
         m_maxweight += m_process_weights[i];
         spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
     }
+    spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
+                 m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }

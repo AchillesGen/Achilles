@@ -4,7 +4,7 @@
 #include <sstream>
 
 TEST_CASE("ProcessInfo", "[ProcessInfo]") {
-    achilles::ProcessInfo info({achilles::PID::electron(), achilles::PID::electron()});
+    achilles::ProcessInfo info({achilles::PID::electron(), {achilles::PID::electron()}});
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
 
     SECTION("Multiplicity is correct") {
