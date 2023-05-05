@@ -42,8 +42,12 @@ class SherpaInterface {
   public:
     using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
     virtual ~SherpaInterface() = default;
-    virtual LeptonCurrents Calc(const std::vector<int> &,
-                                const std::vector<std::array<double, 4>> &, const double &) = 0;
+    virtual LeptonCurrents CalcCurrent(const std::vector<int> &,
+                                       const std::vector<std::array<double, 4>> &,
+                                       const double &) = 0;
+    virtual LeptonCurrents CalcDifferential(const std::vector<int> &,
+                                            const std::vector<std::array<double, 4>> &,
+                                            const double &) = 0;
     virtual std::vector<FormFactorInfo> FormFactors(int, int) const;
     virtual void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 };
