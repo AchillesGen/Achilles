@@ -13,14 +13,14 @@ TEST_CASE("ProcessInfo", "[ProcessInfo]") {
 
     SECTION("Masses are correct") {
         std::vector<double> expected{
-            pow(achilles::ParticleInfo(achilles::PID::proton()).Mass(), 2),
-            pow(achilles::ParticleInfo(achilles::PID::electron()).Mass(), 2)};
+            pow(achilles::ParticleInfo(achilles::PID::electron()).Mass(), 2),
+            pow(achilles::ParticleInfo(achilles::PID::proton()).Mass(), 2)};
 
         CHECK(info.Masses() == expected);
     }
 
     SECTION("Ids are correct") {
-        std::vector<long> expected{2212, 11, 2212, 11};
+        std::vector<long> expected{11, 2212, 11, 2212};
 
         CHECK(info.Ids() == expected);
     }
@@ -36,7 +36,7 @@ TEST_CASE("ProcessInfo", "[ProcessInfo]") {
 
 TEST_CASE("ProcessInfo YAML", "[ProcessInfo]") {
     YAML::Node node = YAML::Load(R"node(
-        Leptons: [14, 14, 11, -11]
+        Leptons: [14, [14, 11, -11]]
     )node");
 
     auto info = node.as<achilles::ProcessInfo>();

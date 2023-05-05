@@ -75,18 +75,18 @@ NuclearModel:
         achilles::Coherent model(config, ff, builder);
 
         std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
-        info_map[2][achilles::PID::carbon()] = {
+        info_map[2][achilles::PID::photon()] = {
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FCoh, 1}};
         auto output = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
                                          info_map[2]);
         CHECK(output.size() == 1);
-        auto results = output[achilles::PID::carbon()];
+        auto results = output[achilles::PID::photon()];
         achilles::VCurrent expected;
         expected[0] = {momentum[1][0] + momentum[3][0], 0.0};
         expected[1] = {momentum[1][1] + momentum[3][1], 0.0};
         expected[2] = {momentum[1][2] + momentum[3][2], 0.0};
         expected[3] = {momentum[1][3] + momentum[3][3], 0.0};
-        CHECK(results.size() == 1);
+        CHECK(results.size() == model.NSpins());
         CHECK(results[0].size() == 4);
         CHECK_THAT(results[0][0].real(), Catch::Matchers::WithinAbs(expected[0].real(), 1e-8));
         CHECK_THAT(results[0][0].imag(), Catch::Matchers::WithinAbs(expected[0].imag(), 1e-8));
@@ -181,25 +181,18 @@ NuclearModel:
 
     SECTION("CalcCurrents") {
         std::vector<achilles::FourVector> momentum = {
-            {0.8334268643628409_GeV, 0.0841386014098756_GeV, 0.35434104526508325_GeV,
-             -0.25207280069997196_GeV},
-            {4_GeV, 0, 0, 4_GeV},
-            {3.9936896971024103_GeV, 0.8919304531816128_GeV, 0.5832575462220676_GeV,
-             3.732825216669567_GeV},
-            {0.8397371672604309_GeV, -0.8077918517717372_GeV, -0.22891650095698435_GeV,
-             0.01510198263046103_GeV}};
-        MockEvent e;
-        const MockEvent &event = e;
-        REQUIRE_CALL(event, Momentum()).TIMES(AT_LEAST(5)).LR_RETURN((momentum));
-
-        double Q2 = -(momentum[1] - momentum[3]).M2() / 1.0_GeV / 1.0_GeV;
+            {1.30000000e+03, 0.00000000e+00, 0.00000000e+00, 1.30000000e+03},
+            {6.61445463e+02, 5.72268451e+01, -5.50505424e+02, 1.44888604e+02},
+            {6.05909852e+02, -4.66914933e+01, -3.46184656e+02, 4.95078618e+02},
+            {1.35553561e+03, 1.03918338e+02, -2.04320768e+02, 9.49809986e+02}};
+        double Q2 = -(momentum[0] - momentum[2]).M2() / 1.0_GeV / 1.0_GeV;
         achilles::FormFactor::Values value;
         value.F1p = 1;
         value.F1n = 1;
         value.F2p = 1;
         value.F2n = 1;
         value.FA = 1;
-        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(1).LR_RETURN((value));
+        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(2).LR_RETURN((value));
 
         // Require to build here or else form_factor is moved before expectations are set in next
         // test
@@ -216,5 +209,18 @@ NuclearModel:
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
+        auto output_p = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
+                                           info_map[0]);
+        auto output_n = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
+                                           info_map[0]);
+        CHECK(output_p.size() == 1);
+        auto results_p = output_p[achilles::PID::photon()];
+        CHECK(results_p.size() == model.NSpins());
+        CHECK(results_p[0].size() == 4);
+        auto results_n = output_n[achilles::PID::photon()];
+        CHECK(results_n.size() == model.NSpins());
+        CHECK(results_n[0].size() == 4);
+
+        // TODO: Add more robust tests
     }
 }

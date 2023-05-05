@@ -21,7 +21,6 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
 
     REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1);
-    REQUIRE_CALL(*nuc, NNucleons()).LR_RETURN((12UL)).TIMES(1);
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 

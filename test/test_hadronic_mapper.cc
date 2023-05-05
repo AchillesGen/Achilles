@@ -18,8 +18,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             CHECK(ran == ran2);
         }
         SECTION("QESpectral") {
-            auto mapper = achilles::QESpectralMapper::Construct(0);
-            std::vector<achilles::FourVector> mom = {{}, {1000, 0, 0, 1000}};
+            auto mapper = achilles::QESpectralMapper::Construct(1);
+            std::vector<achilles::FourVector> mom = {{1000, 0, 0, 1000}, {}};
             std::vector<double> ran = {0.5, 0.5, 0.5, 0.5};
             mapper->SetMasses({0, 0, 0, 0});
             mapper->GeneratePoint(mom, ran);
@@ -42,7 +42,7 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             CHECK(mom == mom2);
         }
         SECTION("QESpectral") {
-            auto mapper = achilles::QESpectralMapper::Construct(0);
+            auto mapper = achilles::QESpectralMapper::Construct(1);
             std::vector<achilles::FourVector> mom = {
                 {1000, 0, 0, 1000},
                 {achilles::Constant::mN - 20, 400 * sin(M_PI / 4) * cos(M_PI / 6),

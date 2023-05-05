@@ -53,7 +53,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
     auto mapper = achilles::PSBuilder(2, 2)
-                      .Beam(beam, {achilles::Constant::mN2, 0.0}, 1)
+                      .Beam(beam, {achilles::Constant::mN2, 0.0}, 0)
                       .Hadron("Dummy", {achilles::Constant::mN2, 0.0})
                       .FinalState("Dummy", {achilles::Constant::mN2, 0.0})
                       .build();
