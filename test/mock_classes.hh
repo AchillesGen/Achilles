@@ -83,14 +83,15 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK4(CalcCurrents);
     IMPLEMENT_CONST_MOCK1(AllowedStates);
     IMPLEMENT_CONST_MOCK0(NSpins);
-    IMPLEMENT_CONST_MOCK2(FillNucleus);
+    IMPLEMENT_CONST_MOCK2(InitialStateWeight);
 };
 
 class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK3(Calc);
-    IMPLEMENT_CONST_MOCK2(FormFactors);
+    IMPLEMENT_MOCK3(CalcCurrent);
+    IMPLEMENT_MOCK3(CalcDifferential);
     IMPLEMENT_MOCK1(FillAmplitudes);
+    IMPLEMENT_CONST_MOCK2(FormFactors);
 };
 
 class MockInteraction : public trompeloeil::mock_interface<achilles::Interactions> {
@@ -110,14 +111,12 @@ class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
 
 class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK0(CurrentNucleus);
-    IMPLEMENT_MOCK0(Hadrons);
-    IMPLEMENT_MOCK1(InitializeLeptons);
-    IMPLEMENT_MOCK1(InitializeHadrons);
+    IMPLEMENT_CONST_MOCK0(Remnant);
     MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &());
     MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &());
+    IMPLEMENT_MOCK0(CurrentNucleus);
     IMPLEMENT_CONST_MOCK0(Particles);
-    IMPLEMENT_CONST_MOCK0(Remnant);
+    IMPLEMENT_MOCK0(Hadrons);
     MAKE_CONST_MOCK0(Weight, const double &());
     MAKE_MOCK0(Weight, double &());
 };
@@ -130,6 +129,7 @@ class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> 
 
 class MockFormFactorBuilder : public trompeloeil::mock_interface<achilles::FormFactorBuilder> {
     static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_MOCK0(Reset);
     IMPLEMENT_MOCK2(Vector);
     IMPLEMENT_MOCK2(AxialVector);
     IMPLEMENT_MOCK2(Coherent);
@@ -151,6 +151,7 @@ class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
     IMPLEMENT_MOCK3(Beam);
     IMPLEMENT_MOCK3(Hadron);
     IMPLEMENT_MOCK2(FinalState);
+    IMPLEMENT_MOCK0(build);
 };
 
 #endif

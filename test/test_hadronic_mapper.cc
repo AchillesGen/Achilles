@@ -44,19 +44,20 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
         SECTION("QESpectral") {
             auto mapper = achilles::QESpectralMapper::Construct(0);
             std::vector<achilles::FourVector> mom = {
+                {1000, 0, 0, 1000},
                 {achilles::Constant::mN - 20, 400 * sin(M_PI / 4) * cos(M_PI / 6),
                  400 * sin(M_PI / 4) * sin(M_PI / 6), 400 * cos(M_PI / 4)},
-                {1000, 0, 0, 1000}};
+            };
             std::vector<double> ran(4);
             mapper->SetMasses({0, 0, 0, 0});
             mapper->GenerateWeight(mom, ran);
             std::vector<achilles::FourVector> mom2(2);
-            mom2[1] = mom[1];
+            mom2[0] = mom[0];
             mapper->GeneratePoint(mom2, ran);
-            CHECK(mom[0].Px() == Approx(mom2[0].Px()));
-            CHECK(mom[0].Py() == Approx(mom2[0].Py()));
-            CHECK(mom[0].Pz() == Approx(mom2[0].Pz()));
-            CHECK(mom[0].E() == Approx(mom2[0].E()));
+            CHECK(mom[1].Px() == Approx(mom2[1].Px()));
+            CHECK(mom[1].Py() == Approx(mom2[1].Py()));
+            CHECK(mom[1].Pz() == Approx(mom2[1].Pz()));
+            CHECK(mom[1].E() == Approx(mom2[1].E()));
         }
     }
 }

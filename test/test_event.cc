@@ -17,7 +17,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
     static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
 
-    std::vector<achilles::FourVector> moms = {hadron0, lepton0, lepton1, hadron1};
+    std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
 
     REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1);
@@ -26,65 +26,10 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     achilles::Event event(nuc, moms, vegas_wgt);
 
     SECTION("Nucleus and Beam set correctly") {
-        CHECK(event.Momentum()[0] == hadron0);
-        CHECK(event.Momentum()[1] == lepton0);
+        CHECK(event.Momentum()[0] == lepton0);
+        CHECK(event.Momentum()[1] == hadron0);
         CHECK(event.Momentum()[2] == lepton1);
         CHECK(event.Momentum()[3] == hadron1);
-    }
-
-    SECTION("Initialize Particles") {
-        REQUIRE_CALL(*nuc, Nucleons()).LR_RETURN((particles)).TIMES(5);
-
-        achilles::ProcessInfo info;
-        info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
-        info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
-        info.m_mom_map = {{0, achilles::PID::proton().AsInt()},
-                          {1, achilles::PID::electron().AsInt()},
-                          {2, achilles::PID::electron().AsInt()},
-                          {3, achilles::PID::proton().AsInt()}};
-        event.InitializeLeptons(info);
-        event.InitializeHadrons(info);
-
-        auto leptons = event.Leptons();
-        CHECK(leptons.size() == 2);
-        CHECK(leptons[0].Momentum() == moms[1]);
-        CHECK(leptons[1].Momentum() == moms[2]);
-        CHECK(leptons[0].ID() == achilles::PID::electron());
-        CHECK(leptons[1].ID() == achilles::PID::electron());
-        CHECK(leptons[0].Status() == achilles::ParticleStatus::initial_state);
-        CHECK(leptons[1].Status() == achilles::ParticleStatus::final_state);
-
-        auto hadrons = event.Hadrons();
-        CHECK(hadrons.size() == 2);
-        CHECK(hadrons[0].Momentum() == moms[0]);
-        CHECK(hadrons[1].Momentum() == moms[3]);
-        CHECK(hadrons[0].ID() == achilles::PID::proton());
-        CHECK(hadrons[1].ID() == achilles::PID::proton());
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::initial_state);
-        CHECK(hadrons[1].Status() == achilles::ParticleStatus::propagating);
-
-        auto output = event.Particles();
-        CHECK(output[0] == hadrons[0]);
-        CHECK(output[1] == hadrons[1]);
-        CHECK(output[2] == leptons[0]);
-        CHECK(output[3] == leptons[1]);
-    }
-
-    SECTION("Weight is correct") {
-        for(auto &me : event.MatrixElementWgts()) { me = 10; }
-
-        event.TotalCrossSection();
-        event.CalcWeight();
-        CHECK(event.Weight() == 1200);
-
-        // TODO: Rewrite this to match new framework
-        // auto probs = event.EventProbs();
-        // CHECK(probs.size() == 11);
-        // size_t idx = 0;
-        // static constexpr double base_prob = 0.1;
-        // for(const auto &prob : probs) {
-        //     CHECK(prob == Approx(base_prob*static_cast<double>(idx++)));
-        // }
     }
 
     SECTION("Event can be finalized") {
