@@ -384,7 +384,7 @@ void ProcessGroup::Optimize() {
     b_optimize = true;
 
     spdlog::info("Optimizing process group: Nuclear Model = {}, Multiplicity = {}",
-                 m_processes[0].Info().Multiplicity(), m_backend->GetNuclearModel()->Name());
+                 m_backend->GetNuclearModel()->GetName(), m_processes[0].Info().Multiplicity());
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
