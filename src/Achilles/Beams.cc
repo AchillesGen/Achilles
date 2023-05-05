@@ -13,8 +13,10 @@
 using achilles::Spectrum;
 using achilles::PDFBeam;
 
-Spectrum::Spectrum(const YAML::Node &node) {
+Spectrum::Spectrum(const YAML::Node &beamNode) {
     spdlog::debug("Loading spectrum flux");
+    auto pid = beamNode["PID"].as<int>();
+    auto node = beamNode["Beam Params"];
     if(node["Histogram"]) {
         std::string filename = node["Histogram"].as<std::string>();
         std::ifstream hist(filename.c_str());
@@ -52,6 +54,36 @@ Spectrum::Spectrum(const YAML::Node &node) {
             elo_token = 1;
             ehi_token = 2;
             flux_token = 3;
+        } else if(line.find("G4LBNE") != std::string::npos) {
+            m_energy_units = 1.0/1.0_GeV;
+            m_format = FluxFormat::G4LBNE;
+            G4LBNEHeader(hist);
+            switch(pid) {
+                case 12:
+                    flux_token = 1;
+                    break;
+                case 14:
+                    flux_token = 2;
+                    break;
+                case 16:
+                    // TODO: Make it use the tau case when doing process groups
+                    flux_token = 2;
+                    break;
+                case -12:
+                    flux_token = 4;
+                    break;
+                case -14:
+                    flux_token = 5;
+                    break;
+                case -16:
+                    // TODO: Make it use the tau case when doing process groups
+                    flux_token = 5;
+                    break;
+                default:
+                    throw std::runtime_error("Beam:Spectrum: Invalid PID for given flux file");
+            }
+            elo_token = 0;
+            ehi_token = 0;
         } else {
             std::string msg = fmt::format("Beam::Spectrum: Invalid flux format from file {}", filename);
             throw std::runtime_error(msg);
@@ -59,7 +91,11 @@ Spectrum::Spectrum(const YAML::Node &node) {
 
         // Read in data
         std::vector<std::string> tokens;
-        std::vector<double> edges, heights;
+        std::vector<double> edges, heights, bin_centers;
+        double to_mev = 1;
+        if(m_format == FluxFormat::MiniBooNE || m_format == FluxFormat::T2K || m_units == flux_units::v_m2_POT_GeV) {
+            to_mev = 1000; 
+        }
         while(std::getline(hist, line)) {
             tokens.clear();
 
@@ -67,12 +103,40 @@ Spectrum::Spectrum(const YAML::Node &node) {
             edges.push_back(std::stod(tokens[elo_token]));
             heights.push_back(std::stod(tokens[flux_token]));
         }
-        edges.push_back(std::stod(tokens[ehi_token]));
+        if(ehi_token != elo_token) {
+            edges.push_back(std::stod(tokens[ehi_token]));
+
+            // Create interpolation function
+            bin_centers.push_back(edges[0]);
+            heights.insert(heights.begin(), heights[0]);
+            for(size_t i = 1; i < edges.size(); ++i)
+                bin_centers.push_back((edges[i] + edges[i-1])/2);
+            bin_centers.push_back(edges[edges.size()-1]);
+            heights.push_back(heights[heights.size()-1]);
+        } else {
+            bin_centers = edges; 
+
+            // Assume energy starts at 0
+            // TODO: Remove this assumption
+            edges.resize(bin_centers.size()+1);
+            edges[0] = 0;
+            for(size_t i = 0; i < bin_centers.size(); ++i) {
+                edges[i+1] = 2*bin_centers[i] - edges[i];
+            }
+            bin_centers.insert(bin_centers.begin(), edges[0]);
+            heights.insert(heights.begin(), heights[0]);
+            bin_centers.push_back(edges[edges.size()-1]);
+            heights.push_back(heights[heights.size()-1]);
+        }
 
         // Calculate Integral
         bool use_width{};
         switch(m_units) {
             case flux_units::v_m2_POT_500MeV:
+                m_energy_units = 1.0/1.0_GeV;
+                use_width = true;
+                break;
+            case flux_units::v_m2_POT_GeV:
                 m_energy_units = 1.0/1.0_GeV;
                 use_width = true;
                 break;
@@ -88,64 +152,58 @@ Spectrum::Spectrum(const YAML::Node &node) {
                 break;
         }
 
+        // Only include between Emin and Emax
+        m_min_energy = node["Emin"] ? node["Emin"].as<double>()/to_mev : edges.front();
+        m_max_energy = node["Emax"] ? node["Emax"].as<double>()/to_mev : edges.back();
         for(size_t i = 0; i < heights.size(); ++i) {
+            if(edges[i] < m_min_energy || edges[i] > m_max_energy) continue;
             double width = use_width ? edges[i+1] - edges[i] : 1;
             m_flux_integral += width*heights[i];
         }
-        spdlog::trace("Flux integral = {}", m_flux_integral);
-
-        // Create interpolation function
-        std::vector<double> bin_centers;
-        bin_centers.push_back(edges[0]);
-        heights.insert(heights.begin(), heights[0]);
-        for(size_t i = 1; i < edges.size(); ++i)
-            bin_centers.push_back((edges[i] + edges[i-1])/2);
-        bin_centers.push_back(edges[edges.size()-1]);
-        heights.push_back(heights[heights.size()-1]);
+        // TODO: Store this information in the output header
+        spdlog::info("Flux integral = {}", m_flux_integral);
 
         Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
         interp.SetPolyOrder(1);
 
         m_flux = [=](double x){ return interp(x); };
-        m_min_energy = edges.front();
-        m_max_energy = edges.back();
         m_delta_energy = m_max_energy - m_min_energy;
-        } else if(node["ROOTHist"]) {
+    } else if(node["ROOTHist"]) {
 #ifdef USE_ROOT
-            std::string filename = "flux/" + node["ROOTHist"]["File"].as<std::string>();
-            spdlog::trace("Reading flux file: {}", filename);
-            TFile *file = new TFile(filename.c_str());
-            TH1D *hist = static_cast<TH1D*>(file -> Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
-            bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
-            double norm = node["ROOTHist"]["Norm"].as<double>();
-            hist -> Scale(norm);
-            m_flux_integral = hist -> Integral(use_width ? "width" : "");
-            spdlog::trace("Flux Integral = {}", m_flux_integral);
-            std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
-            std::vector<double> heights; //(static_cast<size_t>(hist -> GetNbinsX())+2);
-            bin_centers.push_back(hist -> GetBinLowEdge(1));
-            heights.push_back(hist -> GetBinContent(1));
-            size_t i;
-            for(i = 1; i <= static_cast<size_t>(hist -> GetNbinsX()); ++i) {
-                double height = hist -> GetBinContent(static_cast<int>(i));
-                if(height == 0) break;
-                bin_centers.push_back(hist -> GetBinCenter(static_cast<int>(i)));
-                heights.push_back(hist -> GetBinContent(static_cast<int>(i)));
-            }
-            bin_centers.push_back(hist -> GetBinLowEdge(static_cast<int>(i))
-                                  + hist -> GetBinWidth(static_cast<int>(i))); 
-            heights.push_back(heights.back());
+        std::string filename = "flux/" + node["ROOTHist"]["File"].as<std::string>();
+        spdlog::trace("Reading flux file: {}", filename);
+        TFile *file = new TFile(filename.c_str());
+        TH1D *hist = static_cast<TH1D*>(file -> Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
+        bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
+        double norm = node["ROOTHist"]["Norm"].as<double>();
+        hist -> Scale(norm);
+        m_flux_integral = hist -> Integral(use_width ? "width" : "");
+        spdlog::trace("Flux Integral = {}", m_flux_integral);
+        std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
+        std::vector<double> heights; //(static_cast<size_t>(hist -> GetNbinsX())+2);
+        bin_centers.push_back(hist -> GetBinLowEdge(1));
+        heights.push_back(hist -> GetBinContent(1));
+        size_t i;
+        for(i = 1; i <= static_cast<size_t>(hist -> GetNbinsX()); ++i) {
+            double height = hist -> GetBinContent(static_cast<int>(i));
+            if(height == 0) break;
+            bin_centers.push_back(hist -> GetBinCenter(static_cast<int>(i)));
+            heights.push_back(hist -> GetBinContent(static_cast<int>(i)));
+        }
+        bin_centers.push_back(hist -> GetBinLowEdge(static_cast<int>(i))
+                              + hist -> GetBinWidth(static_cast<int>(i))); 
+        heights.push_back(heights.back());
 
-            Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
-            interp.SetPolyOrder(1);
+        Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
+        interp.SetPolyOrder(1);
 
-            m_flux = [=](double x){ return interp(x); };
-            m_min_energy = bin_centers.front();
-            m_max_energy = bin_centers.back();
-            m_delta_energy = m_max_energy - m_min_energy;
-            m_energy_units = 1.0/1.0_GeV;
+        m_flux = [=](double x){ return interp(x); };
+        m_min_energy = bin_centers.front();
+        m_max_energy = bin_centers.back();
+        m_delta_energy = m_max_energy - m_min_energy;
+        m_energy_units = 1.0/1.0_GeV;
 #else
-            throw std::runtime_error("Achilles has not been compiled with ROOT support");
+        throw std::runtime_error("Achilles has not been compiled with ROOT support");
 #endif
     } else {
         throw std::runtime_error("Spectrum: Only histogram fluxes are implemented");
@@ -208,6 +266,34 @@ void Spectrum::T2KHeader(std::ifstream &hist) {
     }
 }
 
+void Spectrum::G4LBNEHeader(std::ifstream &hist) {
+    // Parse experiment description
+    std::string line;
+    std::getline(hist, line);
+
+    // Parse units
+    std::getline(hist, line);
+    std::vector<std::string> tokens;
+    tokenize(line, tokens);
+    spdlog::debug("{}, {}", tokens[0], tokens[1]);
+    if(tokens[0] != "units:")
+        throw std::runtime_error("Beam::Spectrum: Invalid file format");
+    if(tokens[1] == "v/cm^2/POT/MeV") {
+        m_units = flux_units::v_cm2_POT_MeV;
+    } else if(tokens[1] == "v/cm^2/POT/50MeV") {
+        m_units = flux_units::v_cm2_POT_50MeV;
+    } else if(tokens[1] == "cm^{-2}/50MeV") {
+        m_units = flux_units::cm2_50MeV;
+    } else if(tokens[1] == "v/GeV/m^2/POT") {
+        m_units = flux_units::v_m2_POT_GeV;
+    } else {
+        throw std::runtime_error("Beam::Spectrum: Invalid flux units");
+    }
+
+    // Read in histogram header line
+    std::getline(hist, line);
+}
+
 std::string Spectrum::Format() const {
     switch(m_format) {
         case FluxFormat::Achilles:
@@ -216,6 +302,8 @@ std::string Spectrum::Format() const {
             return "MiniBooNE";
         case FluxFormat::T2K:
             return "T2K";
+        case FluxFormat::G4LBNE:
+            return "G4LBNE";
     }
     return "Undefined";
 }

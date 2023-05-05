@@ -3,6 +3,7 @@
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/Histogram.hh"
+#include <fstream>
 #include <set>
 #include <memory>
 
@@ -67,6 +68,7 @@ class Spectrum : public FluxType {
             Achilles,
             MiniBooNE,
             T2K,
+            G4LBNE,
         };
 
         Spectrum(const YAML::Node&);
@@ -83,12 +85,14 @@ class Spectrum : public FluxType {
         void AchillesHeader(std::ifstream&);
         void MiniBooNEHeader(std::ifstream&);
         void T2KHeader(std::ifstream&);
+        void G4LBNEHeader(std::ifstream&);
 
         enum class flux_units {
             v_m2_POT_500MeV,
             v_nb_POT_MeV,
             v_cm2_POT_MeV,
             v_cm2_POT_50MeV,
+            v_m2_POT_GeV,
             cm2_50MeV,
         };
         std::function<double(double)> m_flux{};

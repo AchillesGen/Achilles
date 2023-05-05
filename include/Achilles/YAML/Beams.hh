@@ -23,14 +23,15 @@ struct convert<std::shared_ptr<achilles::FluxType>> {
 
     static bool decode(const Node &node, std::shared_ptr<achilles::FluxType> &rhs) {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
-        if(node["Type"].as<std::string>() == "Monochromatic") {
+        std::string type = node["Beam Params"]["Type"].as<std::string>();
+        if(type == "Monochromatic") {
             auto energy = node["Energy"].as<double>();
             rhs = std::make_shared<achilles::Monochromatic>(energy);
             return true;
-        } else if(node["Type"].as<std::string>() == "Spectrum") {
+        } else if(type == "Spectrum") {
             rhs = std::make_shared<achilles::Spectrum>(node);
             return true;
-        } else if(node["Type"].as<std::string>() == "PDFBeam") {
+        } else if(type == "PDFBeam") {
             rhs = std::make_shared<achilles::PDFBeam>(node);
         }
 
@@ -60,7 +61,7 @@ struct convert<achilles::Beam> {
         for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
             YAML::Node beamNode = *it;
             auto pid = achilles::PID(beamNode["Beam"]["PID"].as<int>());
-            auto beam = beamNode["Beam"]["Beam Params"].as<std::shared_ptr<achilles::FluxType>>();
+            auto beam = beamNode["Beam"].as<std::shared_ptr<achilles::FluxType>>();
             if(beams.find(pid) != beams.end())
                 throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(pid)));
             beams[pid] = beam;
