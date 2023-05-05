@@ -1,9 +1,9 @@
 #include "Achilles/MultiChannel.hh"
 
-achilles::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_) 
-                                    : ndims{std::move(dims)}, params{std::move(params_)} {
+achilles::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_)
+    : ndims{std::move(dims)}, params{std::move(params_)} {
     for(size_t i = 0; i < nchannels; ++i) {
-        channel_weights.push_back(1.0/static_cast<double>(nchannels));
+        channel_weights.push_back(1.0 / static_cast<double>(nchannels));
     }
 }
 
@@ -55,9 +55,10 @@ void achilles::MultiChannel::MaxDifference(const std::vector<double> &train) {
 achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     summary.best_weights = best_weights;
     std::cout << "Final integral = "
-              << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)",
-                             summary.Result().Mean(), summary.Result().Error(),
-                             summary.Result().Error() / summary.Result().Mean()*100) << std::endl;
+              << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)", summary.Result().Mean(),
+                             summary.Result().Error(),
+                             summary.Result().Error() / summary.Result().Mean() * 100)
+              << std::endl;
     std::cout << "Channel weights:\n";
     for(size_t i = 0; i < best_weights.size(); ++i) {
         std::cout << "  alpha(" << i << ") = " << best_weights[i] << "\n";
@@ -67,6 +68,8 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
 
 void achilles::MultiChannel::PrintIteration() const {
     std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
-            summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-            summary.Result().Mean(), summary.Result().Error()) << std::endl;
+                             summary.results.size(), summary.results.back().Mean(),
+                             summary.results.back().Error(), summary.Result().Mean(),
+                             summary.Result().Error())
+              << std::endl;
 }

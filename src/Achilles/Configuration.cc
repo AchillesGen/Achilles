@@ -2,8 +2,8 @@
 
 #include "Achilles/Configuration.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/ThreeVector.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
 #ifdef GZIP
@@ -38,8 +38,8 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
             std::getline(configs, line);
             tokenize(line, tokens);
             auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
-            auto pos = ThreeVector(std::stod(tokens[1]), std::stod(tokens[2]),
-                                   std::stod(tokens[3]));
+            auto pos =
+                ThreeVector(std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3]));
             config.nucleons.emplace_back(pid, FourVector(), pos);
         }
         std::getline(configs, line);
@@ -56,17 +56,14 @@ std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration
     while(true) {
         config = Random::Instance().Pick(m_configurations);
 
-        if(config.wgt/m_maxWgt > Random::Instance().Uniform(0.0, 1.0))
-            break;
+        if(config.wgt / m_maxWgt > Random::Instance().Uniform(0.0, 1.0)) break;
     }
 
     std::array<double, 3> angles{};
-    Random::Instance().Generate(angles, 0.0, 2*M_PI);
+    Random::Instance().Generate(angles, 0.0, 2 * M_PI);
     angles[1] /= 2;
 
-    for(auto& part : config.nucleons) {
-        part.SetPosition(part.Position().Rotate(angles));
-    }
+    for(auto &part : config.nucleons) { part.SetPosition(part.Position().Rotate(angles)); }
 
     return config.nucleons;
 }

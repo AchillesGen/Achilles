@@ -22,68 +22,18 @@ add_library(utilities SHARED
     Unweighter.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
-target_link_libraries(utilities PRIVATE project_options project_warnings
-                                PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+target_link_libraries(utilities PRIVATE project_warnings
+                                PUBLIC project_options spdlog::spdlog yaml::cpp) #pybind11::pybind11 
 list(APPEND achilles_targets utilities)
-if(ENABLE_AUTODIFF)
-target_compile_definitions(utilities PUBLIC AUTODIFF)
-target_link_libraries(utilities PUBLIC autodiff::autodiff)
-endif()
-
-# add_library(interaction_plugin SHARED
-#     InteractionLoader.cc
-# )
-# target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
-#                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
-# )
 
 add_library(cuts SHARED
     OneParticleCuts.cc
     TwoParticleCuts.cc
     CombinedCuts.cc
 )
-target_link_libraries(cuts PRIVATE project_options project_warnings
+target_link_libraries(cuts PRIVATE project_warnings
                            PUBLIC utilities) #pybind11::pybind11 
 list(APPEND achilles_targets cuts)
-
-add_library(physics SHARED
-    Cascade.cc
-    Nucleus.cc
-    FormFactor.cc
-    FormFactorBuilder.cc
-    Beams.cc
-    HardScattering.cc
-    Configuration.cc
-    Event.cc
-    Interactions.cc
-    InteractionsFactory.cc
-    SpectralFunction.cc
-    Channels.cc
-    ElectronPDF.cc
-    EventHistory.cc
-)
-# target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
-set(physics_libs "")
-if(ENABLE_GZIP)
-    list(APPEND achilles_targets gzstream)
-    target_compile_definitions(physics PUBLIC GZIP)
-    target_link_libraries(physics PUBLIC gzstream)
-endif()
-if(ENABLE_BSM)
-    list(APPEND achilles_targets sherpa)
-    target_compile_definitions(physics PUBLIC ENABLE_BSM)
-    target_link_libraries(physics PUBLIC sherpa)
-endif()
-if(USE_ROOT)
-    target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
-    target_compile_definitions(physics PUBLIC -DUSE_ROOT)
-    if(${ROOT_MINOR_VERSION} LESS 16)
-        target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
-    endif()
-endif()
-target_link_libraries(physics PRIVATE project_options project_warnings
-                      PUBLIC utilities cuts HighFive)
-list(APPEND achilles_targets physics)
 
 add_library(mappers SHARED
     PhaseSpaceMapper.cc
@@ -93,9 +43,49 @@ add_library(mappers SHARED
     QuasielasticTestMapper.cc
     PhaseSpaceBuilder.cc
 )
-target_link_libraries(mappers PRIVATE project_options project_warnings
-                              PUBLIC physics)
+target_link_libraries(mappers PRIVATE project_warnings
+                              PUBLIC utilities)
+if(ACHILLES_ENABLE_SHERPA)
+    list(APPEND achilles_targets sherpa)
+    target_compile_definitions(mappers PUBLIC ACHILLES_SHERPA_INTERFACE)
+    target_link_libraries(mappers PUBLIC sherpa)
+endif()
 list(APPEND achilles_targets mappers)
+
+add_library(physics SHARED
+    Cascade.cc
+    Nucleus.cc
+    FormFactor.cc
+    FormFactorBuilder.cc
+    Beams.cc
+    LeptonicCurrent.cc
+    XSecBackend.cc
+    Process.cc
+    Configuration.cc
+    Event.cc
+    Interactions.cc
+    InteractionsFactory.cc
+    SpectralFunction.cc
+    Channels.cc
+    ElectronPDF.cc
+    EventHistory.cc
+)
+set(physics_libs "")
+if(ACHILLES_ENABLE_GZIP)
+    list(APPEND achilles_targets gzstream)
+    target_compile_definitions(physics PUBLIC GZIP)
+    target_link_libraries(physics PUBLIC gzstream)
+endif()
+if(ACHILLES_ENABLE_ROOT)
+    target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
+    target_compile_definitions(physics PUBLIC -DUSE_ROOT)
+    if(${ROOT_MINOR_VERSION} LESS 16)
+        target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
+    endif()
+endif()
+target_link_libraries(physics PRIVATE project_warnings
+                      PUBLIC utilities cuts HighFive mappers)
+list(APPEND achilles_targets physics)
 
 # add_subdirectory(fortran)
 
@@ -105,12 +95,12 @@ add_library(event_gen SHARED
     EventGen.cc
     EventWriter.cc
 )
-if(ENABLE_HEPMC3)
+if(ACHILLES_ENABLE_HEPMC3)
 list(APPEND achilles_targets hepmc3)
-target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
+target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC hepmc3)
 endif()
-target_link_libraries(event_gen PRIVATE project_options project_warnings
+target_link_libraries(event_gen PRIVATE project_warnings
                                 PUBLIC physics mappers) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
@@ -133,24 +123,24 @@ list(APPEND achilles_targets event_gen)
                             #     InteractionsModule.cc
                             #     CascadeModule.cc
                             # )
-                            # target_link_libraries(_achilles PRIVATE project_options project_warnings
+                            # target_link_libraries(_achilles PRIVATE project_warnings
                             #                               PUBLIC spdlog::spdlog utilities physics)
 
 add_executable(achilles main.cc)
-target_link_libraries(achilles PRIVATE project_options project_warnings
+target_link_libraries(achilles PRIVATE project_warnings
                                PUBLIC event_gen docopt::docopt dl)
 list(APPEND achilles_targets achilles)
 
-if(ENABLE_CASCADE_TEST)
+if(ACHILLES_ENABLE_CASCADE_TEST)
     add_executable(achilles-cascade CascadeMain.cc RunCascade.cc)
-    target_link_libraries(achilles-cascade PRIVATE project_options project_warnings
+    target_link_libraries(achilles-cascade PRIVATE project_warnings
                                          PUBLIC physics docopt::docopt)
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
-if(ENABLE_POTENTIAL_TEST)
+if(ACHILLES_ENABLE_POTENTIAL_TEST)
     add_executable(achilles-potential PotentialMain.cc RunPotential.cc)
-    target_link_libraries(achilles-potential PRIVATE project_options project_warnings
+    target_link_libraries(achilles-potential PRIVATE project_warnings
                                            PUBLIC physics docopt::docopt)
     list(APPEND achilles_targets achilles-potential)
 endif()

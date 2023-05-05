@@ -17,7 +17,7 @@ struct fconstants {
     double mqe = achilles::Constant::mN;
 };
 
-void init_ (fconstants &data) {
+void init_(fconstants &data) {
     data.c = achilles::Constant::C;
     data.hbarc = achilles::Constant::HBARC;
     data.hbarc2 = achilles::Constant::HBARC2;
@@ -25,5 +25,4 @@ void init_ (fconstants &data) {
     data.mn = achilles::Constant::mn;
     data.mqe = achilles::Constant::mN;
 }
-
 }

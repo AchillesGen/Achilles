@@ -11,11 +11,10 @@ bool achilles::CutCollection::EvaluateCuts(const std::vector<achilles::Particle>
         spdlog::trace("Making cut for {}", parts[i].ID());
         // Single Particle Cuts
         for(const auto &cut : one_part_cuts)
-            if(cut.Contains(parts[i].ID()))
-                result &= cut.MakeCut(parts[i].Momentum());
-        
+            if(cut.Contains(parts[i].ID())) result &= cut.MakeCut(parts[i].Momentum());
+
         // Two Particle Cuts
-        for(size_t j = i+1; j < parts.size(); ++j) {
+        for(size_t j = i + 1; j < parts.size(); ++j) {
             if(!parts[j].IsFinal() && !parts[i].IsPropagating()) continue;
             for(const auto &cut : two_part_cuts)
                 if(cut.Contains(parts[i].ID(), parts[j].ID()))
@@ -28,12 +27,13 @@ bool achilles::CutCollection::EvaluateCuts(const std::vector<achilles::Particle>
 }
 
 double achilles::CutCollection::CutEfficiency() const {
-    return static_cast<double>(npass)/static_cast<double>(ntot);
+    return static_cast<double>(npass) / static_cast<double>(ntot);
 }
 
-bool achilles::CutCollection::AddCut(const std::set<PID> &pids, std::unique_ptr<OneParticleCut> cut) {
+bool achilles::CutCollection::AddCut(const std::set<PID> &pids,
+                                     std::unique_ptr<OneParticleCut> cut) {
     bool combined = false;
-    for(auto & combined_cut : one_part_cuts) {
+    for(auto &combined_cut : one_part_cuts) {
         if(combined_cut.m_pids == pids) {
             combined_cut.m_cuts.push_back(std::move(cut));
             combined = true;
@@ -49,9 +49,10 @@ bool achilles::CutCollection::AddCut(const std::set<PID> &pids, std::unique_ptr<
     return true;
 }
 
-bool achilles::CutCollection::AddCut(const std::set<PID> &pids, std::unique_ptr<TwoParticleCut> cut) {
+bool achilles::CutCollection::AddCut(const std::set<PID> &pids,
+                                     std::unique_ptr<TwoParticleCut> cut) {
     bool combined = false;
-    for(auto & combined_cut : two_part_cuts) {
+    for(auto &combined_cut : two_part_cuts) {
         if(combined_cut.m_pids == pids) {
             combined_cut.m_cuts.push_back(std::move(cut));
             combined = true;

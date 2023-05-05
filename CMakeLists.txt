@@ -31,37 +31,22 @@ enable_sanitizers(project_options)
 
 # Allow for static analysis options
 include(CMake/StaticAnalyzers.cmake)
-
-option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" ON)
-option(ENABLE_TESTING "Enable Test Builds" OFF)
-option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
-option(ENABLE_GZIP "Enable compression of event files" ON)
-option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
-option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
-option(ENABLE_BSM "Enable the generation of BSM events (Requires Sherap)" ON) 
-SET(ENABLE_HEPMC3 TRUE)
+include(CMake/ProgramOptions.cmake)
 
 # Very basic PCH example
-option(ENABLE_PCH "Enable Precompiled Headers" OFF)
-if(ENABLE_PCH)
+if(ACHILLES_ENABLE_PCH)
     # This sets a global PCH parameter, each project will build its own PCH,
     # which is a good idea if any #define's change
     # These should be headers included in many places
     target_precompile_headers(project_options INTERFACE <vector> <string> <map>)
 endif()
 
-# Check for python development environment
-# find_package(Python REQUIRED COMPONENTS Development)
-
-# Find HDF5
-# find_package(HDF5 REQUIRED COMPONENTS CXX)
-
 # Find ZLIB to read gzip files
-if(ENABLE_GZIP)
+if(ACHILLES_ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
 endif()
 
-if(ENABLE_BSM)
+if(ACHILLES_ENABLE_SHERPA)
 # Find Sherpa
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 find_package(SHERPA REQUIRED)
@@ -69,8 +54,7 @@ find_package(ZLIB REQUIRED)
 endif()
 
 # Find ROOT if needed
-option(USE_ROOT "Enable reading of ROOT flux files" OFF)
-if(USE_ROOT)
+if(ACHILLES_ENABLE_ROOT)
     MESSAGE(STATUS "Building with ROOT flux files")
     find_package(ROOT 6 REQUIRED)
     string(REPLACE "." ";" VERSION_LIST ${ROOT_VERSION})
@@ -128,7 +112,7 @@ file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINA
 file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # Unzip if GZIP not turned on
-if(NOT ENABLE_GZIP)
+if(NOT ACHILLES_ENABLE_GZIP)
     file(GLOB zipfiles "${CMAKE_CURRENT_BINARY_DIR}/data/configurations/*.gz")
     MESSAGE(STATUS "Extracting configurations from zip files")
     foreach(file ${zipfiles})
@@ -141,8 +125,8 @@ endif()
 # add_subdirectory(src/Plugins)
 
 # Testing
-if(ENABLE_TESTING)
-    if(COVERAGE) 
+if(ACHILLES_ENABLE_TESTING)
+    if(ACHILLES_COVERAGE) 
         target_compile_options(project_options INTERFACE --coverage) 
         target_link_libraries(project_options INTERFACE gcov)
     endif()
@@ -150,13 +134,6 @@ if(ENABLE_TESTING)
     enable_testing()
     message(STATUS "Building Tests.")
     add_subdirectory(test)
-endif()
-
-if(ENABLE_FUZZING)
-    message(STATUS 
-        "Building Fuzz Tests, using fuzzing sanitizer https://www.llvm.org/docs/LibFuzzer.html"
-    )
-    add_subdirectory(fuzz_test)
 endif()
 
 # Main code

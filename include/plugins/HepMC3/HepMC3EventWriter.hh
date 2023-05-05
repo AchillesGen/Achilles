@@ -13,20 +13,20 @@
 namespace achilles {
 
 class HepMC3Writer : public EventWriter {
-    public:
-        HepMC3Writer(const std::string &filename, bool zipped=true) 
-            : file{InitializeStream(filename, zipped)} {}
-        ~HepMC3Writer() override = default;
+  public:
+    HepMC3Writer(const std::string &filename, bool zipped = true)
+        : file{InitializeStream(filename, zipped)} {}
+    ~HepMC3Writer() override = default;
 
-        void WriteHeader(const std::string&) override;
-        void Write(const Event&) override;
+    void WriteHeader(const std::string &) override;
+    void Write(const Event &) override;
 
-    private:
-        static std::shared_ptr<std::ostream> InitializeStream(const std::string&, bool);
-        HepMC3::WriterAscii file;
-        achilles::StatsData results;
+  private:
+    static std::shared_ptr<std::ostream> InitializeStream(const std::string &, bool);
+    HepMC3::WriterAscii file;
+    achilles::StatsData results;
 };
 
-}
+} // namespace achilles
 
 #endif

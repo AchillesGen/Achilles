@@ -12,8 +12,9 @@ bool achilles::MomentumCut::MakeCut(const FourVector &mom) const {
 }
 
 bool achilles::AngleThetaCut::MakeCut(const FourVector &mom) const {
-    spdlog::trace("Theta = {}, Cut Result = {}", mom.Theta()/1.0_deg, CheckCut(mom.Theta()/1.0_deg));
-    return CheckCut(mom.Theta()/1.0_deg);
+    spdlog::trace("Theta = {}, Cut Result = {}", mom.Theta() / 1.0_deg,
+                  CheckCut(mom.Theta() / 1.0_deg));
+    return CheckCut(mom.Theta() / 1.0_deg);
 }
 
 bool achilles::TransverseMomentumCut::MakeCut(const FourVector &mom) const {
@@ -21,5 +22,5 @@ bool achilles::TransverseMomentumCut::MakeCut(const FourVector &mom) const {
 }
 
 bool achilles::ETheta2Cut::MakeCut(const FourVector &mom) const {
-    return CheckCut(mom.E()*pow(mom.Theta(), 2));
+    return CheckCut(mom.E() * pow(mom.Theta(), 2));
 }

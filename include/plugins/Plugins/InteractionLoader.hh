@@ -23,19 +23,19 @@ class Interactions;
 class InteractionFactory;
 
 class InteractionLoader {
-    public:
-        InteractionLoader() = delete;
-        static bool LoadInteractions(const std::vector<std::string>&);
+  public:
+    InteractionLoader() = delete;
+    static bool LoadInteractions(const std::vector<std::string> &);
 
-    private:
-        void _registerInteraction();
-        void _loadInteractionPlugins();
+  private:
+    void _registerInteraction();
+    void _loadInteractionPlugins();
 
-        static bool m_init;
-        static std::vector<fs::path> plugins;
-        static std::set<Interactions*> loadedPlugins;
+    static bool m_init;
+    static std::vector<fs::path> plugins;
+    static std::set<Interactions *> loadedPlugins;
 };
 
-} // end achilles namespace
+} // namespace achilles
 
 #endif

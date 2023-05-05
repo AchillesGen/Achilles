@@ -1,15 +1,14 @@
+#include "Achilles/Particle.hh"
+#include "Achilles/Potential.hh"
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
-#include "Achilles/Potential.hh"
-#include "Achilles/Particle.hh"
 #include <iostream>
 
 double stencil5(std::function<double(double)> f, double x, double h) {
-    return (-f(x + 2*h) + 8*f(x+h) - 8*f(x-h) - f(x-2*h))/(12*h);
+    return (-f(x + 2 * h) + 8 * f(x + h) - 8 * f(x - h) - f(x - 2 * h)) / (12 * h);
 }
 
-template<typename T>
-T test_derivative(const T& x, const T& y, const T& z) {
+template <typename T> T test_derivative(const T &x, const T &y, const T &z) {
     return (x + y + z) * exp(x * y * z);
 }
 
@@ -23,20 +22,27 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         constexpr double rscalar = -384.29852972736001, iscalar = 89.69329129030613;
 
         auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons())
-            .LR_RETURN((AA))
-            .TIMES(AT_LEAST(1));
+        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
         achilles::CooperPotential potential(nucleus);
 
 #ifdef AUTODIFF
         autodiff::real r = 0.15;
-        autodiff::real plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
+        autodiff::real plab =
+            sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
-        auto func_rv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).rvector; };
-        auto func_iv = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).ivector; };
-        auto func_rs = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).rscalar; };
-        auto func_is = [&](const autodiff::real &x, const autodiff::real &y){ return potential.evaluate<autodiff::real>(x, y).iscalar; };
+        auto func_rv = [&](const autodiff::real &x, const autodiff::real &y) {
+            return potential.evaluate<autodiff::real>(x, y).rvector;
+        };
+        auto func_iv = [&](const autodiff::real &x, const autodiff::real &y) {
+            return potential.evaluate<autodiff::real>(x, y).ivector;
+        };
+        auto func_rs = [&](const autodiff::real &x, const autodiff::real &y) {
+            return potential.evaluate<autodiff::real>(x, y).rscalar;
+        };
+        auto func_is = [&](const autodiff::real &x, const autodiff::real &y) {
+            return potential.evaluate<autodiff::real>(x, y).iscalar;
+        };
         double drvdp = autodiff::derivative(func_rv, autodiff::wrt(plab), autodiff::at(plab, r));
         double drvdr = autodiff::derivative(func_rv, autodiff::wrt(r), autodiff::at(plab, r));
         double divdp = autodiff::derivative(func_iv, autodiff::wrt(plab), autodiff::at(plab, r));
@@ -96,10 +102,13 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 
         autodiff::dual u = test_derivative(x, y, z);
         meter.measure([&]() {
-                double dudx = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(x), autodiff::at(x, y, z));
-                double dudy = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(y), autodiff::at(x, y, z));
-                double dudz = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(z), autodiff::at(x, y, z));
-                return u + dudx + dudy + dudz;
+            double dudx = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(x),
+                                               autodiff::at(x, y, z));
+            double dudy = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(y),
+                                               autodiff::at(x, y, z));
+            double dudz = autodiff::derivative(test_derivative<autodiff::dual>, autodiff::wrt(z),
+                                               autodiff::at(x, y, z));
+            return u + dudx + dudy + dudz;
         });
     };
 #endif
@@ -114,10 +123,10 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto func_z = [&](double val) { return test_derivative(x, y, val); };
 
         meter.measure([&]() {
-                double dudx = stencil5(func_x, x, 0.01);
-                double dudy = stencil5(func_y, y, 0.01);
-                double dudz = stencil5(func_z, z, 0.01);
-                return dudx + dudy + dudz;
+            double dudx = stencil5(func_x, x, 0.01);
+            double dudy = stencil5(func_y, y, 0.01);
+            double dudz = stencil5(func_z, z, 0.01);
+            return dudx + dudy + dudz;
         });
     };
 
@@ -125,27 +134,34 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
     BENCHMARK_ADVANCED("Autodiff")(Catch::Benchmark::Chronometer meter) {
         autodiff::dual r = 0.15;
         auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons())
-            .LR_RETURN((AA))
-            .TIMES(AT_LEAST(1));
+        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
         achilles::CooperPotential potential(nucleus);
-        autodiff::dual plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
+        autodiff::dual plab =
+            sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
-        auto func_rv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).rvector; };
-        auto func_iv = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).ivector; };
-        auto func_rs = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).rscalar; };
-        auto func_is = [&](const autodiff::dual &x, const autodiff::dual &y){ return potential.evaluate<autodiff::dual>(x, y).iscalar; };
+        auto func_rv = [&](const autodiff::dual &x, const autodiff::dual &y) {
+            return potential.evaluate<autodiff::dual>(x, y).rvector;
+        };
+        auto func_iv = [&](const autodiff::dual &x, const autodiff::dual &y) {
+            return potential.evaluate<autodiff::dual>(x, y).ivector;
+        };
+        auto func_rs = [&](const autodiff::dual &x, const autodiff::dual &y) {
+            return potential.evaluate<autodiff::dual>(x, y).rscalar;
+        };
+        auto func_is = [&](const autodiff::dual &x, const autodiff::dual &y) {
+            return potential.evaluate<autodiff::dual>(x, y).iscalar;
+        };
 
         meter.measure([&]() {
-                // potential.evaluate<autodiff::dual>(plab, r);
-                autodiff::derivative(func_rv, autodiff::wrt(plab), autodiff::at(plab, r));
-                autodiff::derivative(func_rv, autodiff::wrt(r), autodiff::at(plab, r));
-                autodiff::derivative(func_iv, autodiff::wrt(plab), autodiff::at(plab, r));
-                autodiff::derivative(func_iv, autodiff::wrt(r), autodiff::at(plab, r));
-                autodiff::derivative(func_rs, autodiff::wrt(plab), autodiff::at(plab, r));
-                autodiff::derivative(func_rs, autodiff::wrt(r), autodiff::at(plab, r));
-                autodiff::derivative(func_is, autodiff::wrt(plab), autodiff::at(plab, r));
-                autodiff::derivative(func_is, autodiff::wrt(r), autodiff::at(plab, r));
+            // potential.evaluate<autodiff::dual>(plab, r);
+            autodiff::derivative(func_rv, autodiff::wrt(plab), autodiff::at(plab, r));
+            autodiff::derivative(func_rv, autodiff::wrt(r), autodiff::at(plab, r));
+            autodiff::derivative(func_iv, autodiff::wrt(plab), autodiff::at(plab, r));
+            autodiff::derivative(func_iv, autodiff::wrt(r), autodiff::at(plab, r));
+            autodiff::derivative(func_rs, autodiff::wrt(plab), autodiff::at(plab, r));
+            autodiff::derivative(func_rs, autodiff::wrt(r), autodiff::at(plab, r));
+            autodiff::derivative(func_is, autodiff::wrt(plab), autodiff::at(plab, r));
+            autodiff::derivative(func_is, autodiff::wrt(r), autodiff::at(plab, r));
         });
     };
 #endif
@@ -154,14 +170,12 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         double r = 0.15;
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
         auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons())
-            .LR_RETURN((AA))
-            .TIMES(AT_LEAST(1));
+        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
         achilles::CooperPotential potential(nucleus);
 
         meter.measure([&]() {
-                potential.derivative_p(plab, r);
-                potential.derivative_r(plab, r);
+            potential.derivative_p(plab, r);
+            potential.derivative_r(plab, r);
         });
     };
 
@@ -177,9 +191,7 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         constexpr double rvector = -27.159583, ivector = -11.257281;
 
         auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons())
-            .LR_RETURN((AA))
-            .TIMES(AT_LEAST(1));
+        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
         achilles::SchroedingerPotential potential(nucleus, 5);
 

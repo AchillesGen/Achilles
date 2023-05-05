@@ -5,17 +5,15 @@
 
 namespace Plugin {
 
-template<typename BaseClass>
-class Plugin {
-    public:
-        using 
+template <typename BaseClass> class Plugin {
+  public:
+    using
 };
 
-template<typename BaseClass>
-class PluginManager {
-    void registerPlugin(const std::string&);
+template <typename BaseClass> class PluginManager {
+    void registerPlugin(const std::string &);
 };
 
-}
+} // namespace Plugin
 
 #endif

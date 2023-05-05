@@ -34,7 +34,6 @@ add_executable(achilles-testsuite
     test_histogram.cc
     test_configuration.cc
     test_nuclear_model.cc
-    test_hard_scattering.cc
     test_event_writer.cc
     test_process_info.cc
     test_hadronic_mapper.cc

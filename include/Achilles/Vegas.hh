@@ -5,8 +5,8 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
-#include <future>
 #include <fstream>
+#include <future>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -14,8 +14,8 @@
 #include <vector>
 
 #include "Achilles/AdaptiveMap.hh"
-#include "Achilles/Statistics.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Statistics.hh"
 
 #include "spdlog/spdlog.h"
 
@@ -28,18 +28,21 @@ namespace achilles {
 
 using lim = std::numeric_limits<double>;
 
-class KBNSummation{
-    public:
-        KBNSummation() = default;
-        inline double GetSum() noexcept { return sum + correction; }
-        void AddTerm(double value) noexcept;
-        inline void Reset() noexcept { sum = 0; correction = 0; }
-    private:
-        double sum{}, correction{};
+class KBNSummation {
+  public:
+    KBNSummation() = default;
+    inline double GetSum() noexcept { return sum + correction; }
+    void AddTerm(double value) noexcept;
+    inline void Reset() noexcept {
+        sum = 0;
+        correction = 0;
+    }
+
+  private:
+    double sum{}, correction{};
 };
 
-template<typename T>
-using Func = std::function<double(const std::vector<T>&, const double&)>;
+template <typename T> using Func = std::function<double(const std::vector<T> &, const double &)>;
 
 struct VegasParams {
     size_t ncalls{ncalls_default}, nrefine{nrefine_default};
@@ -59,66 +62,65 @@ struct VegasSummary {
 };
 
 class Vegas {
-    public:
-        enum class Verbosity {
-            silent,
-            normal,
-            verbose,
-            very_verbose
-        };
+  public:
+    enum class Verbosity { silent, normal, verbose, very_verbose };
 
-        Vegas() = default;
-        Vegas(AdaptiveMap map, VegasParams _params) : grid{std::move(map)}, params{std::move(_params)} {}
+    Vegas() = default;
+    Vegas(AdaptiveMap map, VegasParams _params)
+        : grid{std::move(map)}, params{std::move(_params)} {}
 
-        // Utilities
-        void SetVerbosity(size_t v = 1) {
-            if(v == 0) verbosity = Verbosity::silent; 
-            else if(v == 1) verbosity = Verbosity::normal;
-            else if(v == 2) verbosity = Verbosity::verbose;
-            else if(v == 3) verbosity = Verbosity::very_verbose;
-            else throw std::runtime_error("Vegas: Invalid verbosity level");
-        }
-        AdaptiveMap Grid() const { return grid; }
-        AdaptiveMap &Grid() { return grid; }
-        // bool Serialize(std::ostream &out) const {
-        //     
-        // }
+    // Utilities
+    void SetVerbosity(size_t v = 1) {
+        if(v == 0)
+            verbosity = Verbosity::silent;
+        else if(v == 1)
+            verbosity = Verbosity::normal;
+        else if(v == 2)
+            verbosity = Verbosity::verbose;
+        else if(v == 3)
+            verbosity = Verbosity::very_verbose;
+        else
+            throw std::runtime_error("Vegas: Invalid verbosity level");
+    }
+    AdaptiveMap Grid() const { return grid; }
+    AdaptiveMap &Grid() { return grid; }
+    // bool Serialize(std::ostream &out) const {
+    //
+    // }
 
-        // Training the integratvegor
-        void operator()(const Func<double>&);
-        void Optimize(const Func<double>&);
-        double GenerateWeight(const std::vector<double>&) const;
-        void Adapt(const std::vector<double>&);
-        void Refine();
+    // Training the integratvegor
+    void operator()(const Func<double> &);
+    void Optimize(const Func<double> &);
+    double GenerateWeight(const std::vector<double> &) const;
+    void Adapt(const std::vector<double> &);
+    void Refine();
 
-        // Generating fixed number of events
+    // Generating fixed number of events
 
-        // Getting results
-        VegasSummary Summary() const; 
+    // Getting results
+    VegasSummary Summary() const;
 
-        // YAML interface
-        friend YAML::convert<achilles::Vegas>;
+    // YAML interface
+    friend YAML::convert<achilles::Vegas>;
 
-    private:
-        void PrintIteration() const;
+  private:
+    void PrintIteration() const;
 
-        AdaptiveMap grid;
-        VegasSummary summary;
-        VegasParams params{};
-        Verbosity verbosity{Verbosity::normal};
+    AdaptiveMap grid;
+    VegasSummary summary;
+    VegasParams params{};
+    Verbosity verbosity{Verbosity::normal};
 };
 
-}
+} // namespace achilles
 
 namespace YAML {
 
-template<>
-struct convert<achilles::VegasSummary> {
+template <> struct convert<achilles::VegasSummary> {
     static Node encode(const achilles::VegasSummary &rhs) {
         Node node;
         node["nentries"] = rhs.results.size();
-        for(const auto &entry : rhs.results)
-            node["entries"].push_back(entry);
+        for(const auto &entry : rhs.results) node["entries"].push_back(entry);
 
         return node;
     }
@@ -140,8 +142,7 @@ struct convert<achilles::VegasSummary> {
     }
 };
 
-template<>
-struct convert<achilles::Vegas> {
+template <> struct convert<achilles::Vegas> {
     static Node encode(const achilles::Vegas &rhs) {
         Node node;
         node["Grid"] = rhs.grid;
@@ -158,6 +159,6 @@ struct convert<achilles::Vegas> {
     }
 };
 
-}
+} // namespace YAML
 
 #endif
