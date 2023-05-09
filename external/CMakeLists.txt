@@ -74,9 +74,9 @@ add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMFindPackage(
     NAME HepMC3
-    VERSION 3.2.5
+    VERSION 3.2.6
     GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
-    GIT_TAG 3.2.5
+    GIT_TAG 3.2.6
     OPTIONS
       "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
       "HEPMC3_ENABLE_SEARCH OFF"
