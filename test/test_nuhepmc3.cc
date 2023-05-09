@@ -3,11 +3,11 @@
 
 #include <sstream>
 
-#include "plugins/NuHepMC3/NuHepMC3Writer.hh"
+#include "plugins/NuHepMC/NuHepMC3Writer.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
 
-TEST_CASE("Passes Validator", "[NuHepMC3]") {
+TEST_CASE("Passes Validator", "[NuHepMC]") {
     // Setup dummy event
     static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
     static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
