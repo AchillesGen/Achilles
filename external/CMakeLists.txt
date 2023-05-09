@@ -118,9 +118,9 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
 
-    # NuHepMC3 Reference Implementation
+    # NuHepMC Reference Implementation
     CPMAddPackage(
-        NAME NuHepMC3
+        NAME NuHepMC
         GITHUB_REPOSITORY NuHepMC/ReferenceImplementation
         GIT_TAG main
     )

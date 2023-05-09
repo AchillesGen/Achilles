@@ -43,7 +43,7 @@ add_executable(achilles-testsuite
     test_beam_mapper.cc
     test_ps_mapper.cc
     test_poincare.cc
-    test_nuhepmc3.cc
+    test_nuhepmc.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
                                          PUBLIC physics mappers event_gen)
