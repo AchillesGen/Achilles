@@ -144,21 +144,21 @@ TEST_CASE("Axial", "[FormFactor]") {
     }
     SECTION("AxialZExpansion") {
         YAML::Node node = YAML::Load(R"node(
-            tcut: 1
-            t0: 1
-            CC Params: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+            tcut: 0.1753180641  # [GeV^2] 9*mpi^2 = 9*(0.13957)^2
+            t0: -0.28 # [GeV^2]
+            CC Params: [-0.759, 2.30, -0.6, -3.8, 2.3, 2.16, -0.896, -1.58, 0.823]
             Strange Params: [1, 1, 1, 1, 1, 1, 1, 1, 1]
             )node");
         CHECK_THROWS_WITH(achilles::AxialZExpansion::Construct(achilles::FFType::vector, node),
             "FormFactor: Expected type axial, got type vector");
         auto ff = achilles::AxialZExpansion::Construct(achilles::FFType::axial, node);
         achilles::FormFactor::Values vals;
-        ff -> Evaluate(1, vals);
-        CHECK(vals.Gep == Approx(9));
-        CHECK(vals.Gen == Approx(9));
-        CHECK(vals.Gmp == Approx(9));
-        CHECK(vals.Gmn == Approx(9));
-
+        ff -> Evaluate(0, vals);
+        // fA(Q2=0) = gA = -1.27...
+        CHECK(vals.FA == Approx(-1.27).epsilon(1e-2));
+        // Q2=0 --> z=-0.234172
+        // \sum_{n=0}^{8} (-0.234172)^n \approx 0.810262
+        CHECK(vals.FAs == Approx(0.810262).epsilon(1e-6));
     }
 }
 
