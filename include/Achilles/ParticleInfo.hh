@@ -139,31 +139,31 @@ namespace achilles {
 
     class ParticleInfo {
         private:
-            using ParticleDB = std::map<PID, ParticleInfoEntry>;
+            using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
             static ParticleDB particleDB;
             static std::map<std::string, PID> nameToPID; 
             static void BuildDatabase(const std::string&);
 
         public:
-            ParticleInfo(ParticleInfoEntry info_, const bool &anti_=false)
-                : info(info_), anti(anti_) {
+            ParticleInfo(std::shared_ptr<ParticleInfoEntry> info_, const bool &anti_=false)
+                : info(std::move(info_)), anti(anti_) {
                 InitDatabase("data/Particles.yml");
-                if(particleDB.find(info.id) == particleDB.end())
-                    particleDB[info.id] = info;
-                if(anti && info.majorana == 0) anti = anti_;
+                if(particleDB.find(info->id) == particleDB.end())
+                    particleDB[info->id] = info;
+                if(anti && info->majorana == 0) anti = anti_;
             }
 
-            explicit ParticleInfo(const long int &id) : anti(false) {
+            explicit ParticleInfo(const long int &id) : info(nullptr), anti(false) {
                 InitDatabase("data/Particles.yml");
                 auto it(particleDB.find(static_cast<PID>(std::abs(id))));
                 if(it != particleDB.end()) 
                     info = it -> second;
                 else
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", id));
-                if(id < 0 && info.majorana == 0) anti = true;
+                if(id < 0 && info->majorana == 0) anti = true;
             }
 
-            ParticleInfo(PID id, const bool &anti_=false) : anti(anti_) {
+            ParticleInfo(PID id, const bool &anti_=false) : info(nullptr), anti(anti_) {
                 InitDatabase("data/Particles.yml");
                 if(id < PID::undefined()) {
                     id = -id;
@@ -173,7 +173,7 @@ namespace achilles {
                 if(it == particleDB.end())
                     throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
                 info = it -> second;
-                if(anti_ && info.majorana == 0) anti = anti_;
+                if(anti_ && info->majorana == 0) anti = anti_;
             }
 
             ParticleInfo(const ParticleInfo&) = default;
@@ -185,11 +185,11 @@ namespace achilles {
             ParticleInfo Anti() { return ParticleInfo(-IntID()); }
 
             // Property functions
-            std::string Name() const noexcept { return anti ? info.antiname : info.idname; }
-            PID ID() const noexcept { return info.id; }
-            int IntID() const noexcept { return anti ? -static_cast<int>(info.id) : static_cast<int>(info.id); }
+            std::string Name() const noexcept { return anti ? info->antiname : info->idname; }
+            PID ID() const noexcept { return info->id; }
+            int IntID() const noexcept { return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id); }
             bool IsBaryon() const noexcept;
-            bool IsHadron() const noexcept { return info.hadron; }
+            bool IsHadron() const noexcept { return info->hadron; }
             bool IsBHadron() const noexcept;
             bool IsCHadron() const noexcept;
             bool IsAnti() const noexcept { return anti; }
@@ -198,30 +198,30 @@ namespace achilles {
             bool IsScalar() const noexcept { return IntSpin() == 0; }
             bool IsVector() const noexcept { return IntSpin() == 2; }
             bool IsTensor() const noexcept { return IntSpin() == 4; }
-            bool IsPhoton() const noexcept { return info.id == PID::photon(); }
+            bool IsPhoton() const noexcept { return info->id == PID::photon(); }
             bool IsLepton() const noexcept { return std::abs(IntID()) > 10 && std::abs(IntID()) < 19; }
             bool IsQuark() const noexcept { return IntID() < 10; }
-            bool IsGluon() const noexcept { return info.id == PID::gluon(); }
+            bool IsGluon() const noexcept { return info->id == PID::gluon(); }
             bool IsNeutrino() const noexcept { return std::abs(IntID()) == 12 
                                                    || std::abs(IntID()) == 14
                                                    || std::abs(IntID()) == 16; }
             bool IsNucleus() const noexcept { return std::abs(IntID()) > 1000000000; }
 
             int IntCharge() const noexcept { 
-                int charge(info.icharge); 
+                int charge(info->icharge); 
                 return anti ? -charge : charge;
             }
             double Charge() const noexcept { return static_cast<double>(IntCharge()) / 3; }
-            int IntSpin() const noexcept { return info.spin; }
-            double Spin() const noexcept { return static_cast<double>(info.spin) / 2; }
+            int IntSpin() const noexcept { return info->spin; }
+            double Spin() const noexcept { return static_cast<double>(info->spin) / 2; }
             size_t NSpins() const noexcept;
-            bool SelfAnti() const noexcept { return info.majorana != 0; } 
-            bool Majorana() const noexcept { return info.majorana == 1; }
-            int Stable() const noexcept { return info.stable; }
+            bool SelfAnti() const noexcept { return info->majorana != 0; } 
+            bool Majorana() const noexcept { return info->majorana == 1; }
+            int Stable() const noexcept { return info->stable; }
             bool IsStable() const noexcept;
-            bool IsMassive() const noexcept { return info.mass != 0 ? info.massive : false; } 
-            double Mass() const noexcept { return info.massive ? info.mass : 0.0; }
-            double Width() const noexcept { return info.width; }
+            bool IsMassive() const noexcept { return info->mass != 0 ? info->massive : false; } 
+            double Mass() const noexcept { return info->massive ? info->mass : 0.0; }
+            double Width() const noexcept { return info->width; }
 
             double GenerateLifeTime() const;
 
@@ -233,7 +233,7 @@ namespace achilles {
             static ParticleDB& Database() { return particleDB; }
             static void InitDatabase(const std::string &filename) {
                 if(particleDB.size() == 0) {
-                    particleDB[PID::undefined()] =  ParticleInfoEntry();
+                    particleDB[PID::undefined()] =  std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
                     BuildDatabase(filename);
                 }
             }
@@ -241,7 +241,7 @@ namespace achilles {
             static const std::map<std::string, PID>& NameToPID() { return nameToPID; }
 
         private:
-            ParticleInfoEntry info;
+            std::shared_ptr<ParticleInfoEntry> info;
             bool anti;
     };
 

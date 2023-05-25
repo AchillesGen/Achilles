@@ -115,9 +115,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
         NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
         std::string PhaseSpace() const override { return Name(); }
         std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const override;
-        // void AllowedStates(Process_Info&) override;
         size_t NSpins() const override { return 4; }
-        // bool FillNucleus(Event&, const std::map<std::vector<PID>, double>&) const override;
 
         // Required factory methods
         static std::unique_ptr<NuclearModel> Construct(const YAML::Node&, const std::shared_ptr<Nucleus>&);
