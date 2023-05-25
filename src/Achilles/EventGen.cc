@@ -227,8 +227,6 @@ void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
     runCascade = config["Cascade"]["Run"].as<bool>();
     integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
-    std::string filename = fmt::format("events_{}.txt", config["Beams"][0]["Beam"]["Beam Params"]["Energy"].as<double>());
-    outputfile.open(filename);
     integrator(integrand);
     fmt::print("\n");
     auto result = integrator.Summary();
