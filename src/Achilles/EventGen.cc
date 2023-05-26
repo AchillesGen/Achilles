@@ -377,8 +377,18 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         // Running Sherpa interface if requested
         // Only needed when generating events and not optimizing the multichannel
         // TODO: Move to after unweighting?
-        if(runDecays && event.Weight() > 0) {
-            p_sherpa -> GenerateEvent(event);
+        if(event.Weight() > 0) {
+            if(runDecays)
+                p_sherpa -> GenerateEvent(event);
+            else {
+                // TODO: Properly build history including the cascade
+                std::vector<Particle> final;
+                for(const auto &part : event.Particles()) {
+                    if(part.IsFinal()) final.push_back(part);
+                }
+                event.History().AddVertex(init_had.Position(), {init_had, init_lep}, {final},
+                                          EventHistory::StatusCode::primary); 
+            }
         }
 #else
         if(event.Weight() > 0) {
