@@ -29,6 +29,18 @@ using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
 namespace fs = std::filesystem;
 
+void GitInformation() {
+    std::string msg;
+    if(git::IsPopulated()) {
+        spdlog::info("Achilles git information");
+        spdlog::info("    Commit: {}", git::CommitSHA1());
+        spdlog::info("    Branch: {}", git::Branch());
+        spdlog::info("    Local Changes: {}", git::AnyUncommittedChanges() ? "Yes" : "No");
+    } else { 
+        spdlog::warn("This is not a git repository version of Achilles");
+    }
+}
+
 static const std::string USAGE =
     R"(
     Usage:

@@ -81,6 +81,12 @@ CPMAddPackage(
         "HIGHFIVE_UNIT_TESTS OFF"
 )
 
+CPMAddPackage(
+    Name CmakeGitVersion
+    GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
+    GIT_TAG master
+)
+
 # Install testing framework
 if(ACHILLES_ENABLE_TESTING)
     # Catch2
