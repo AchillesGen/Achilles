@@ -3,7 +3,6 @@
 #include "Achilles/EventWriter.hh"
 #include "Achilles/HardScatteringFactory.hh"
 #include "Achilles/HardScattering.hh"
-#include "Achilles/Logging.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
@@ -346,12 +345,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
-
-    // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
-    //     spdlog::info("Mass issue");
-    //     spdlog::drop("achilles");
-    //     CreateLogger(0, 5);
-    // }
 
     // Perform hard cuts
     if(doHardCuts) {
