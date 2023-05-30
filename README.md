@@ -39,7 +39,7 @@ make -jN
 ```
 
 If the HepMC3 cmake files are not within the CMake module path, you can add the `-DHepMC3_DIR=/path/to/hepmc3/cmake/files`
-to the above `cmake` command. Additional details and optional dependencies can be found below.
+to the above `cmake` command. If HepMC3 is not present, Achilles will install HepMC3 for you. Additional details and optional dependencies can be found below.
 
 ### Optional Dependencies
 

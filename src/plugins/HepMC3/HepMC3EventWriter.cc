@@ -1,5 +1,7 @@
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#ifdef GZIP
 #include "gzstream/gzstream.h"
+#endif
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenVertex.h"
 #include "HepMC3/GenParticle.h"
@@ -15,14 +17,15 @@ using namespace HepMC3;
 
 std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename, bool zipped) {
     std::shared_ptr<std::ostream> output = nullptr;
+#ifdef GZIP
     if(zipped) {
         std::string zipname = filename;
         if(filename.substr(filename.size() - 3) != ".gz")
             zipname += std::string(".gz");
         output = std::make_shared<ogzstream>(zipname.c_str());
-    } else {
+    } else
+#endif
         output = std::make_shared<std::ofstream>(filename);
-    }
 
     return output;
 }
@@ -37,12 +40,89 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config={std::string(filename),"1.0",std::string("Run card")};
     run->tools().push_back(config);
+    // run->set_weight_names({"Default", "PL", "PT"});
     run->set_weight_names({"Default"});
 
     file.set_run_info(run);
     file.write_run_info();
     spdlog::trace("Finished writing Header");
 }
+
+int ToHepMC3(achilles::ParticleStatus status) {
+    switch(status) {
+        case achilles::ParticleStatus::internal_test:
+        case achilles::ParticleStatus::external_test:
+        case achilles::ParticleStatus::propagating:
+        case achilles::ParticleStatus::background:
+        case achilles::ParticleStatus::captured:
+            return 11;
+        case achilles::ParticleStatus::initial_state:
+            return 3;
+        case achilles::ParticleStatus::final_state:
+        case achilles::ParticleStatus::escaped:
+            return 1;
+        case achilles::ParticleStatus::decayed:
+            return 2;
+        case achilles::ParticleStatus::beam:
+        case achilles::ParticleStatus::target:
+            return 4;
+    }
+    return -1;
+}
+
+GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
+    HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
+    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()), ToHepMC3(particle.Status()));
+}
+
+struct HepMC3Visitor : achilles::HistoryVisitor {
+    static constexpr double to_mm = 1e-12;
+    GenEvent evt;
+    struct compare {
+        bool operator()(const achilles::Particle &a, const achilles::Particle &b) const {
+            if(achilles::compare_momentum(a, 1e-10)(b)) {
+                return a.Status() < b.Status();
+            }
+            return a.Momentum().Vec3().Magnitude() < b.Momentum().Vec3().Magnitude();
+        }
+    };
+    std::map<achilles::Particle, GenParticlePtr, HepMC3Visitor::compare> converted;
+    std::vector<GenParticlePtr> beamparticles;
+    HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
+    void visit(achilles::EventHistoryNode *node) {
+        auto position = node -> Position();
+        HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
+        vertex_pos *= to_mm;
+        GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
+        vertex->set_status(static_cast<int>(node->Status()));
+        for(const auto &part : node -> ParticlesIn()) {
+            GenParticlePtr particle;
+            if(converted.count(part) > 0) {
+                particle = converted[part];
+            } else {
+                particle = ToHepMC3(part);
+                converted[part] = particle;
+            }
+            if(node -> Status() == achilles::EventHistory::StatusCode::beam) {
+                beamparticles[0] = particle;
+            } else if (node -> Status() == achilles::EventHistory::StatusCode::target) {
+                beamparticles[1] = particle;
+            }
+            vertex -> add_particle_in(particle);
+        }
+        for(const auto &part : node -> ParticlesOut()) {
+            GenParticlePtr particle;
+            if(converted.count(part) > 0) {
+                particle = converted[part];
+            } else {
+                particle = ToHepMC3(part);
+                converted[part] = particle;
+            }
+            vertex -> add_particle_out(particle);
+        }
+        evt.add_vertex(vertex);
+    }
+};
 
 void HepMC3Writer::Write(const achilles::Event &event) {
     spdlog::debug("Writing out event");
@@ -58,105 +138,29 @@ void HepMC3Writer::Write(const achilles::Event &event) {
 
     // Setup event units
     spdlog::trace("Setting up units");
-    GenEvent evt(Units::MEV, Units::MM);
-    evt.set_run_info(file.run_info());
-    evt.set_event_number(results.Calls());
+    HepMC3Visitor visitor;
+    visitor.evt.set_run_info(file.run_info());
+    visitor.evt.set_event_number(results.Calls());
 
     // Interaction type
     // TODO: Add interaction type to the event, and have ids for different modes
-    evt.add_attribute("InteractionType", std::make_shared<IntAttribute>(1));
+    visitor.evt.add_attribute("InteractionType", std::make_shared<IntAttribute>(1));
 
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
     cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
-    evt.add_attribute("GenCrossSection", cross_section);
-    evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
-    evt.weight("Default") = event.Weight()*nb_to_pb;
+    visitor.evt.add_attribute("GenCrossSection", cross_section);
+    visitor.evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
+    visitor.evt.weight("Default") = event.Weight()*nb_to_pb;
 
     // TODO: once we have a detector to simulate interaction location
     // Event position
     // FourVector position{event.Position()};
     // evt.shift_position_to(position);
-
-    // Load in particle information
-    const std::vector<achilles::Particle> hadrons = event.Hadrons();
-    // spdlog::info("nhadrons = {}" , hadrons.size());
-    const std::vector<achilles::Particle> leptons = event.Leptons();
-    // TODO: Clean this up
-    const auto nuc_mass = achilles::ParticleInfo(event.CurrentNucleus() -> ID()).Mass();
-    const HepMC3::FourVector initMass{0, 0, 0, nuc_mass};
-    GenParticlePtr p1 = std::make_shared<GenParticle>(initMass, event.CurrentNucleus()->ID(), 4);
-    HepMC3::FourVector hardVertexPos;
-    GenParticlePtr nucleon;
-    achilles::FourVector recoilMom{nuc_mass, 0, 0, 0};
-    // TODO: Modify for MEC case
-    size_t idx = 0;
-    for(; idx < hadrons.size(); ++idx) {
-        if(hadrons[idx].Status() == ParticleStatus::initial_state)
-            break;
-    }
-    const auto initHadron = hadrons[idx];
-    HepMC3::FourVector p2Mom{initHadron.Px(), initHadron.Py(), initHadron.Pz(), initHadron.E()};
-    nucleon = std::make_shared<GenParticle>(p2Mom, int(initHadron.ID()), 3);
-
-    // Add vertex for hadrons from nucleus
-    const auto initPos = initHadron.Position();
-    hardVertexPos = {initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
-    GenVertexPtr v1 = std::make_shared<GenVertex>(hardVertexPos);
-    v1->add_particle_in(p1);
-    v1->add_particle_out(nucleon);
-    evt.add_vertex(v1);
-
-    // Add initial lepton
-    // TODO: Get maximum neutrino energy from the beam
-    const HepMC3::FourVector initBeam{0, 0, 10000, 10000};
-    GenParticlePtr p3In = std::make_shared<GenParticle>(initBeam, leptons[0].ID(), 4);
-    const auto initLepton = leptons[0];
-    const HepMC3::FourVector p3Mom{initLepton.Px(), initLepton.Py(), initLepton.Pz(), initLepton.E()};
-    GenParticlePtr p3 = std::make_shared<GenParticle>(p3Mom, int(initLepton.ID()), 4);
-    recoilMom += initLepton.Momentum();
-    // Add vertex for neutrino flux
-    GenVertexPtr vLepIn = std::make_shared<GenVertex>(hardVertexPos);
-    vLepIn->add_particle_in(p3In);
-    vLepIn->add_particle_out(p3);
-    evt.add_vertex(vLepIn);
-
-    // Add hard interaction vertex 
-    GenVertexPtr v2 = std::make_shared<GenVertex>(hardVertexPos);
-    v2->add_particle_in(nucleon);
-    v2->add_particle_in(p3);
-
-    // Add remaining leptons
-    for(size_t i = 1; i < leptons.size(); ++i) {
-        const auto currPart = leptons[i];
-        const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
-        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
-        v2->add_particle_out(p);
-        recoilMom -= currPart.Momentum();
-    }
-
-    // Add remaining hard interaction hadrons
-    for(size_t i = 0; i < hadrons.size(); ++i) {
-        if(i == idx) continue;
-        const auto currPart = hadrons[i];
-        const HepMC3::FourVector mom{currPart.Px(), currPart.Py(), currPart.Pz(), currPart.E()};
-        GenParticlePtr p = std::make_shared<GenParticle>(mom, int(currPart.ID()), 1);
-        v2->add_particle_out(p);
-        recoilMom -= currPart.Momentum();
-    }
-
-    // TODO: Add in cascade information if available
-
-    // Add in remnant Nucleus
-    // TODO: Get recoil momentum for the nucleus
-    // TODO: Move remnant to last cascade vertex???
-    if(event.Remnant().PID() != int(achilles::PID::dummyNucleus())) {
-        const HepMC3::FourVector recoil{recoilMom.Px(), recoilMom.Py(), recoilMom.Pz(), recoilMom.E()};
-        GenParticlePtr pRemnant = std::make_shared<GenParticle>(recoil, event.Remnant().PID(), 1);
-        v2->add_particle_out(pRemnant);
-    }
-    evt.add_vertex(v2);
-
-    file.write_event(evt);
+   
+    // Walk the history and add to file
+    event.History().WalkHistory(visitor);
+    // visitor.evt.add_tree(visitor.beamparticles);
+    file.write_event(visitor.evt);
 }
