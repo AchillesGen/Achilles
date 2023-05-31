@@ -281,6 +281,10 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             // is the same as that requested by the user
             integrator.Parameters().ncalls++;
         }
+
+#ifdef ENABLE_BSM
+        p_sherpa->Reset();
+#endif
         return 0;
     }
 
@@ -320,6 +324,10 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
+
+#ifdef ENABLE_BSM
+            p_sherpa->Reset();
+#endif
             return 0;
         }
     }
@@ -435,6 +443,10 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     } else {
         unweighter->AddEvent(event);
     }
+
+#ifdef ENABLE_BSM
+    p_sherpa->Reset();
+#endif
 
     // Always return the weight when the event passes the initial hard cut.
     // Even if events do not survive the final event-level cuts, Vegas should

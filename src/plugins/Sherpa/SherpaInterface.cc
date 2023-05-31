@@ -152,8 +152,16 @@ Process_Base* SherpaInterface::getProcess(Cluster_Amplitude* const ampl) {
     pi.m_fi.m_ps.emplace_back(fl,"","");
   }
   msg_Info()<<"SherpaInterface::getProcess: Initializing process ";
-  Process_Base* proc = p_sherpa->GetInitHandler()->
-    GetMatrixElementHandler()->Generators()->InitializeProcess(pi,false);
+  Process_Base *proc;
+  try {
+      proc =
+          p_sherpa->GetInitHandler()->GetMatrixElementHandler()->Generators()->InitializeProcess(
+                  pi, false);
+      if(!proc) return nullptr;
+  } catch(const ATOOLS::Exception &error) {
+      std::cout << error.Info() << std::endl;
+      exit(-1);
+  }
   proc->SetupEventReader("Achilles");
   proc->Get<COMIX::Single_Process>()->Tests();
   Selector_Key skey(NULL,new Data_Reader(),true);
@@ -361,7 +369,9 @@ achilles::SherpaInterface::LeptonCurrents SherpaInterface::Calc
     ->SetAllProcesses(Process_Vector{proc});
 
   singleProcess = proc->Get<COMIX::Single_Process>();
-  return singleProcess -> LeptonicCurrent();
+  auto result = singleProcess -> LeptonicCurrent();
+  ampl->Delete();
+  return result;
 }
 
 void achilles::SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {
@@ -422,7 +432,9 @@ void achilles::SherpaInterface::GenerateEvent(Event &event)
   // Extract all active particles in the event
   auto bl = p_sherpa->GetEventHandler()->GetBlobs();
   ToAchilles(bl, event.History());
+}
 
+void achilles::SherpaInterface::Reset() {
   p_sherpa->GetEventHandler()->Reset();
 }
 

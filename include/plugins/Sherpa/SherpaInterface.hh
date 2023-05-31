@@ -81,6 +81,7 @@ public:
   void RegisterParticles() const;
 
   void GenerateEvent(Event&);
+  void Reset();
 };// end of class SherpaInterface
 
 }// end namespace achilles
