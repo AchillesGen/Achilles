@@ -1,0 +1,92 @@
+#include "Achilles/Settings.hh"
+#include "Achilles/Utilities.hh"
+#include "spdlog/spdlog.h"
+#include <functional>
+#include <iostream>
+
+using achilles::Settings;
+
+Settings::Settings(const std::string &filename) {
+    m_settings = IncludeFile(filename);
+    CheckRequired();
+}
+
+void Settings::Print() const {
+    std::cout << m_settings << std::endl;
+}
+
+const YAML::Node Settings::operator[](const std::string_view &key) const {
+    auto paths = ParsePath(key); 
+    spdlog::trace("Settings: key = {}, parsed path = {}",
+                  key, fmt::join(paths.begin(), paths.end(), ", "));
+    if(paths.size() == 1) return m_settings[paths[0]];
+    try {
+        return seek(paths, m_settings);
+    } catch (const std::runtime_error &) {
+        auto msg = fmt::format("Settings: key {} can not be found", key);
+        throw std::runtime_error(msg);
+    }
+}
+
+YAML::Node Settings::operator[](const std::string_view &key) {
+    auto paths = ParsePath(key); 
+    if(paths.size() == 1) return m_settings[paths[0]];
+    spdlog::trace("Settings: key = {}, parsed path = {}",
+                  key, fmt::join(paths.begin(), paths.end(), ", "));
+    try {
+        return seek(paths, m_settings);
+    } catch (const std::runtime_error &) {
+        auto msg = fmt::format("Settings: key {} can not be found", key);
+        throw std::runtime_error(msg);
+    }
+}
+
+YAML::Node Settings::IncludeFile(const std::string &filename) {
+    YAML::Node node;
+    try {
+        node = YAML::LoadFile(filename);
+    } catch(const YAML::BadFile &e) {
+        spdlog::error("Settings: Trying to load file {}, file is not valid!",
+                      filename);
+        throw;
+    }
+
+    MutableYAMLVisitor([](YAML::Node scalar) {
+        if(scalar.Tag() == "!include") {
+            scalar = YAML::LoadFile(scalar.Scalar());
+        }
+    })(node);
+
+    return node;
+}
+
+void Settings::CheckRequired() const {
+    for(const auto &option : m_required_options) {
+        spdlog::trace("Looking for option {}", option);
+        if(!(*this)[option]) {
+            auto msg = fmt::format("Settings: Required option {} is not defined",
+                                   option);
+            throw std::runtime_error(msg);
+        }
+    }
+}
+
+std::vector<std::string> Settings::ParsePath(const std::string_view &keys) const {
+    std::vector<std::string> tokens;
+    tokenize(keys, tokens, "/");
+    std::reverse(tokens.begin(), tokens.end());
+    return tokens;
+}
+
+YAML::Node Settings::seek(std::vector<std::string> &keys, YAML::Node start) {
+    if(!start.IsMap()) throw std::runtime_error("Settings: Invalid node to seek");
+    auto key = keys.back();
+    keys.pop_back();
+    for(auto it = start.begin(); it != start.end(); ++it) {
+        if(it->first.Scalar() == key) {
+            if(keys.size() == 0) return it->second;
+            return seek(keys, it->second);
+        }
+    }
+    throw std::runtime_error("Key not found");
+}
