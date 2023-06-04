@@ -1,12 +1,18 @@
 #pragma once
 
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include "fmt/core.h"
 #include "yaml-cpp/yaml.h"
 
 namespace achilles {
+
+class SettingsError : public std::runtime_error {
+    public:
+        SettingsError(const std::string &what) : std::runtime_error(what) {}
+};
 
 template<bool is_const>
 class YAMLVisitor {
@@ -67,8 +73,10 @@ class Settings {
             }
         }
 
+        YAML::Node Root() const { return m_settings; }
         const YAML::Node operator[](const std::string_view &key) const;
         YAML::Node operator[](const std::string_view &key);
+        bool Exists(const std::string_view &key) const;
 
     private:
         static YAML::Node IncludeFile(const std::string &filename);

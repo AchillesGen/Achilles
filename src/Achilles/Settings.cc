@@ -22,9 +22,9 @@ const YAML::Node Settings::operator[](const std::string_view &key) const {
     if(paths.size() == 1) return m_settings[paths[0]];
     try {
         return seek(paths, m_settings);
-    } catch (const std::runtime_error &) {
+    } catch (const SettingsError &) {
         auto msg = fmt::format("Settings: key {} can not be found", key);
-        throw std::runtime_error(msg);
+        throw SettingsError(msg);
     }
 }
 
@@ -35,9 +35,17 @@ YAML::Node Settings::operator[](const std::string_view &key) {
                   key, fmt::join(paths.begin(), paths.end(), ", "));
     try {
         return seek(paths, m_settings);
-    } catch (const std::runtime_error &) {
+    } catch (const SettingsError &) {
         auto msg = fmt::format("Settings: key {} can not be found", key);
-        throw std::runtime_error(msg);
+        throw SettingsError(msg);
+    }
+}
+
+bool Settings::Exists(const std::string_view &key) const {
+    try {
+        return static_cast<bool>((*this)[key]);
+    } catch (const SettingsError &) {
+        return false;
     }
 }
 
@@ -66,7 +74,7 @@ void Settings::CheckRequired() const {
         if(!(*this)[option]) {
             auto msg = fmt::format("Settings: Required option {} is not defined",
                                    option);
-            throw std::runtime_error(msg);
+            throw SettingsError(msg);
         }
     }
 }
@@ -79,7 +87,7 @@ std::vector<std::string> Settings::ParsePath(const std::string_view &keys) const
 }
 
 YAML::Node Settings::seek(std::vector<std::string> &keys, YAML::Node start) {
-    if(!start.IsMap()) throw std::runtime_error("Settings: Invalid node to seek");
+    if(!start.IsMap()) throw SettingsError("Settings: Invalid node to seek");
     auto key = keys.back();
     keys.pop_back();
     for(auto it = start.begin(); it != start.end(); ++it) {
@@ -88,5 +96,5 @@ YAML::Node Settings::seek(std::vector<std::string> &keys, YAML::Node start) {
             return seek(keys, it->second);
         }
     }
-    throw std::runtime_error("Key not found");
+    throw SettingsError("Key not found");
 }

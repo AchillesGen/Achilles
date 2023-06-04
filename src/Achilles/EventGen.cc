@@ -27,22 +27,21 @@
 
 
 achilles::EventGen::EventGen(const std::string &configFile,
-                             std::vector<std::string> shargs) {
-    config = YAML::LoadFile(configFile);
+                             std::vector<std::string> shargs) : config{configFile} {
 
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly working in SHERPA.
     runDecays = false;
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config["Initialize"]["Seed"])
-        if(config["Initialize"]["Seed"].as<int>() > 0)
-            seed = config["Initialize"]["Seed"].as<unsigned int>();
+    if(config.Exists("Initialize/Seed"))
+        if(config["Initialize/Seed"].as<int>() > 0)
+            seed = config["Initialize/Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
     // Setup unweighter
-    unweighter = UnweighterFactory::Initialize(config["Unweighting"]["Name"].as<std::string>(),
+    unweighter = UnweighterFactory::Initialize(config["Unweighting/Name"].as<std::string>(),
                                                config["Unweighting"]);
 
     // Load initial state, massess
@@ -51,14 +50,14 @@ achilles::EventGen::EventGen(const std::string &configFile,
     nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
 
     // Set potential for the nucleus
-    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
+    auto potential_name = config["Nucleus/Potential/Name"].as<std::string>();
     auto potential = achilles::PotentialFactory::Initialize(potential_name,
                                                           nucleus,
-                                                          config["Nucleus"]["Potential"]);
+                                                          config["Nucleus/Potential"]);
     nucleus -> SetPotential(std::move(potential));
     // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
-    if(config["Cascade"]["Run"].as<bool>()) {
+    spdlog::debug("Cascade mode: {}", config["Cascade/Run"].as<bool>());
+    if(config["Cascade/Run"].as<bool>()) {
         cascade = std::make_unique<Cascade>(config["Cascade"].as<Cascade>());
     } else {
         cascade = nullptr;
@@ -75,8 +74,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
-    const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
-    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config);
+    const auto model_name = config["NuclearModel/Model"].as<std::string>();
+    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config.Root());
     nuclear_model -> AllowedStates(leptonicProcess);
     spdlog::debug("Process: {}", leptonicProcess);
 
@@ -124,7 +123,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Initializing phase space");
     std::vector<double> masses = scattering -> Process().Masses();
     spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
-    if(config["TestingPS"]) {
+    if(config.Exists("TestingPS")) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
@@ -157,12 +156,12 @@ achilles::EventGen::EventGen(const std::string &configFile,
     integrator = MultiChannel(integrand.NDims(), integrand.NChannels(), {1000, 2});
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
-    if(config["Main"]["DoRotate"])
-        doRotate = config["Main"]["DoRotate"].as<bool>();
+    if(config.Exists("Main/DoRotate"))
+        doRotate = config["Main/DoRotate"].as<bool>();
 
     // Setup Cuts
-    if(config["Main"]["HardCuts"])
-        doHardCuts = config["Main"]["HardCuts"].as<bool>();
+    if(config.Exists("Main/HardCuts"))
+        doHardCuts = config["Main/HardCuts"].as<bool>();
     spdlog::info("Apply hard cuts? {}", doHardCuts);
     hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
 
@@ -172,7 +171,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     // event_cuts = config["EventCuts"].as<achilles::CutCollection>();
 
     // Setup outputs
-    auto output = config["Main"]["Output"];
+    auto output = config["Main/Output"];
     bool zipped = true;
     if(output["Zipped"])
         zipped = output["Zipped"].as<bool>();
@@ -208,7 +207,7 @@ void achilles::EventGen::Initialize() {
     // } catch(const YAML::BadFile &e) {
         spdlog::info("Initializing integrator.");
         integrand.Function() = func;
-        if(config["Initialize"]["Accuracy"])
+        if(config.Exists("Initialize/Accuracy"))
             integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
         integrator.Optimize(integrand);
         integrator.Summary();
@@ -225,8 +224,8 @@ void achilles::EventGen::Initialize() {
 
 void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
-    runCascade = config["Cascade"]["Run"].as<bool>();
-    integrator.Parameters().ncalls = config["Main"]["NEvents"].as<size_t>();
+    runCascade = config["Cascade/Run"].as<bool>();
+    integrator.Parameters().ncalls = config["Main/NEvents"].as<size_t>();
     integrator(integrand);
     fmt::print("\n");
     auto result = integrator.Summary();
@@ -243,7 +242,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(unweighter->Accepted() % statusUpdate == 0) {
             fmt::print("Generated {} / {} events\r",
                        unweighter->Accepted(),
-                       config["Main"]["NEvents"].as<size_t>());
+                       config["Main/NEvents"].as<size_t>());
         }
     }
     // Initialize the event, which generates the nuclear configuration

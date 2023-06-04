@@ -5,6 +5,7 @@
 #include "Achilles/Histogram.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Vegas.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/Unweighter.hh"
@@ -53,7 +54,7 @@ class EventGen {
         // CutCollection event_cuts{};
         MultiChannel integrator;
         Integrand<FourVector> integrand;
-        YAML::Node config;
+        Settings config;
 
         std::ofstream outputfile;
 
