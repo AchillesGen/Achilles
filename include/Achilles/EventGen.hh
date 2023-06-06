@@ -38,7 +38,7 @@ class EventGen {
         void GenerateEvents();
 
     private:
-        bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
+        bool runCascade{false}, outputEvents{false}, doHardCuts{false};
         bool runDecays{true};
         bool doRotate{false};
         double GenerateEvent(const std::vector<FourVector>&, const double&);
@@ -59,8 +59,10 @@ class EventGen {
         std::ofstream outputfile;
 
         std::shared_ptr<EventWriter> writer;
-        SherpaInterface *p_sherpa;
         std::unique_ptr<Unweighter> unweighter;
+#ifdef ENABLE_BSM
+        SherpaInterface *p_sherpa;
+#endif
 };
 
 }

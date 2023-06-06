@@ -5,7 +5,11 @@
 #include <string>
 #include <string_view>
 #include "fmt/core.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 namespace achilles {
 
