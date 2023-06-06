@@ -163,7 +163,11 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
 
-    GenerateEvents(runcard, shargs);
+    try {
+        GenerateEvents(runcard, shargs);
+    } catch (const std::exception &error) {
+        spdlog::error(error.what());
+    }
 
     // Close dynamic libraries
     if(handle) dlclose(handle);

@@ -13,6 +13,8 @@
 
 namespace achilles {
 
+std::string demangle(const char *name);
+
 class SettingsError : public std::runtime_error {
     public:
         SettingsError(const std::string &what) : std::runtime_error(what) {}
@@ -67,13 +69,13 @@ class Settings {
         void Print() const;
 
         template<typename type>
-        type as(const std::string_view &key) const {
+        type GetAs(const std::string_view &key) const {
             try {
                 return (*this)[key].as<type>();
             } catch (const YAML::TypedBadConversion<type> &e) {
                 auto msg = fmt::format("Settings: Option {} is not of type {}",
-                                       key, typeid(type).name());
-                throw std::runtime_error(msg);
+                                       key, demangle(typeid(type).name()));
+                throw SettingsError(msg);
             }
         }
 

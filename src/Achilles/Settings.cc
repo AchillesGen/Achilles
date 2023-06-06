@@ -4,6 +4,21 @@
 #include <functional>
 #include <iostream>
 
+// Demangling taken from: https://stackoverflow.com/a/34916852
+#ifdef __GNUG__
+#include <cxxabi.h>
+std::string achilles::demangle(const char *name) {
+    int status = -4;
+    std::unique_ptr<char, void(*)(void*)> res {abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+
+    return status == 0 ? res.get() : name;
+}
+#else
+std::string achilles::demangle(const char *name) {
+    return name;
+}
+#endif
+
 using achilles::Settings;
 
 Settings::Settings(const std::string &filename) {
@@ -61,7 +76,7 @@ YAML::Node Settings::IncludeFile(const std::string &filename) {
 
     MutableYAMLVisitor([](YAML::Node scalar) {
         if(scalar.Tag() == "!include") {
-            scalar = YAML::LoadFile(scalar.Scalar());
+            scalar = IncludeFile(scalar.Scalar());
         }
     })(node);
 
