@@ -48,31 +48,10 @@ void HepMC3Writer::WriteHeader(const std::string &filename) {
     spdlog::trace("Finished writing Header");
 }
 
-int ToHepMC3(achilles::ParticleStatus status) {
-    switch(status) {
-        case achilles::ParticleStatus::internal_test:
-        case achilles::ParticleStatus::external_test:
-        case achilles::ParticleStatus::propagating:
-        case achilles::ParticleStatus::background:
-        case achilles::ParticleStatus::captured:
-            return 11;
-        case achilles::ParticleStatus::initial_state:
-            return 3;
-        case achilles::ParticleStatus::final_state:
-        case achilles::ParticleStatus::escaped:
-            return 1;
-        case achilles::ParticleStatus::decayed:
-            return 2;
-        case achilles::ParticleStatus::beam:
-        case achilles::ParticleStatus::target:
-            return 4;
-    }
-    return -1;
-}
-
 GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
     HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
-    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()), ToHepMC3(particle.Status()));
+    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()), 
+                                         static_cast<int>(particle.Status()));
 }
 
 struct HepMC3Visitor : achilles::HistoryVisitor {

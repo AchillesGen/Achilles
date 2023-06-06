@@ -82,11 +82,11 @@ namespace achilles {
                 return os;
             }
 
-        private:
             // Ensure id matches the numbering scheme defined at:
             // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
-            // TODO: Implement this function, may not be explicitly needed though
-            // bool valid(const long int&);
+            bool valid_nucleus() const;
+
+        private:
             long int id;
     };
 

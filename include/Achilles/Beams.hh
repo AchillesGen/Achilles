@@ -47,16 +47,6 @@ class Monochromatic : public FluxType {
         double m_energy;
 };
 
-
-// TODO: Figure out how to handle spectrums
-// How to handle this correctly?
-// 1. Generate the energy according to some distribution
-// 2. A. Multiply maximum energy by a fraction to get neutrino energy
-//    B. Calculate the probability for this energy
-// The first requires being able to appropriately sample from the distribution
-// (i.e. having a form for the inverse of the CDF). The second would take advantage
-// of the importance sampling of Vegas. Furthermore, the second would make it easier to
-// combine beams of different initial state particles in a straightforward manner
 class Spectrum : public FluxType {
     public:
         enum class Type {
