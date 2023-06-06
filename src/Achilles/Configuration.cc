@@ -52,21 +52,20 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
 }
 
 std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration() {
-    Configuration config;
     while(true) {
-        config = Random::Instance().Pick(m_configurations);
+        auto index = Random::Instance().Uniform<std::size_t>(0, m_configurations.size());
 
-        if(config.wgt/m_maxWgt > Random::Instance().Uniform(0.0, 1.0))
-            break;
+        if(m_configurations[index].wgt/m_maxWgt > Random::Instance().Uniform(0.0, 1.0)) {
+            Configuration &config = m_configurations[index];
+            std::array<double, 3> angles{};
+            Random::Instance().Generate(angles, 0.0, 2*M_PI);
+            angles[1] /= 2;
+
+            for(auto& part : config.nucleons) {
+                part.SetPosition(part.Position().Rotate(angles));
+            }
+
+            return config.nucleons;
+        }
     }
-
-    std::array<double, 3> angles{};
-    Random::Instance().Generate(angles, 0.0, 2*M_PI);
-    angles[1] /= 2;
-
-    for(auto& part : config.nucleons) {
-        part.SetPosition(part.Position().Rotate(angles));
-    }
-
-    return config.nucleons;
 }

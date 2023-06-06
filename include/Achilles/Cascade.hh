@@ -156,7 +156,7 @@ class Cascade {
         // Functions
         std::size_t GetInter(Particles&, const Particle&, double& stepDistance);
         void AdaptiveStep(const Particles&, const double&) noexcept;
-        bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
+        bool BetweenPlanes(const ThreeVector&, const ThreeVector&, const ThreeVector&, double) const noexcept;
         const ThreeVector Project(const ThreeVector&, const ThreeVector&, const ThreeVector&) const noexcept;
         const InteractionDistances AllowedInteractions(Particles&, const std::size_t&) const noexcept;
         double GetXSec(const Particle&, const Particle&) const;
