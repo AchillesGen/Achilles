@@ -72,6 +72,8 @@ void Settings::CheckRequired() const {
     for(const auto &option : m_required_options) {
         spdlog::trace("Looking for option {}", option);
         if(!(*this)[option]) {
+            spdlog::debug("Printing out processed run card");
+            if(spdlog::get_level() == spdlog::level::debug) Print();
             auto msg = fmt::format("Settings: Required option {} is not defined",
                                    option);
             throw SettingsError(msg);

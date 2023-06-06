@@ -34,15 +34,15 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config.Exists("Initialize/Seed"))
-        if(config["Initialize/Seed"].as<int>() > 0)
-            seed = config["Initialize/Seed"].as<unsigned int>();
+    if(config.Exists("Options/Initialize/Seed"))
+        if(config["Options/Initialize/Seed"].as<int>() > 0)
+            seed = config["Options/Initialize/Seed"].as<unsigned int>();
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
     // Setup unweighter
-    unweighter = UnweighterFactory::Initialize(config["Unweighting/Name"].as<std::string>(),
-                                               config["Unweighting"]);
+    unweighter = UnweighterFactory::Initialize(config["Options/Unweighting/Name"].as<std::string>(),
+                                               config["Options/Unweighting"]);
 
     // Load initial state, massess
     spdlog::trace("Initializing the beams");
