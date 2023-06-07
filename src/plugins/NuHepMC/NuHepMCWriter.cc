@@ -59,13 +59,17 @@ void NuHepMCWriter::WriteHeader(const std::string &filename) {
 
     // List all possible vertex status codes
     // TODO: Make this a conversion from enum of the EventHistory class?
-    std::vector<int> vertex_ids{1};
+    std::vector<int> vertex_ids{1,2};
     run->add_attribute("NuHepMC.VertexStatusIDs",
                        std::make_shared<HepMC3::VectorIntAttribute>(vertex_ids));
     run->add_attribute("NuHepMC.VertexStatusInfo[1].Name",
                        std::make_shared<HepMC3::StringAttribute>("Primary"));
     run->add_attribute("NuHepMC.VertexStatusInfo[1].Description",
                        std::make_shared<HepMC3::StringAttribute>("The main hard interaction"));
+    run->add_attribute("NuHepMC.VertexStatusInfo[2].Name",
+                       std::make_shared<HepMC3::StringAttribute>("Nucleus"));
+    run->add_attribute("NuHepMC.VertexStatusInfo[2].Description",
+                       std::make_shared<HepMC3::StringAttribute>("The vertex defining a nucleon in a nucleus"));
 
     // List all possible particle status codes
     // TODO: Make this a conversion from ParticleStatus enum
@@ -144,8 +148,10 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     // TODO: once we have a detector to simulate interaction location
     // Event position
     // FourVector position{event.Position()};
-    HepMC3::FourVector position{1, 1, 1, 1};
+    HepMC3::FourVector position{0, 0, 0, 0};
     evt.shift_position_to(position);
+    std::vector<double> labpos = {0, 0, 0, 0};
+    evt.add_attribute("LabPos", std::make_shared<VectorDoubleAttribute>(labpos));
 
     // Load in particle information
     const std::vector<achilles::Particle> hadrons = event.Hadrons();
@@ -171,6 +177,7 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     const auto initPos = initHadron.Position();
     hardVertexPos = {initPos.X()*to_mm, initPos.Y()*to_mm, initPos.Z()*to_mm, 0};
     GenVertexPtr v1 = std::make_shared<GenVertex>(hardVertexPos);
+    v1->set_status(2);
     v1->add_particle_in(p1);
     v1->add_particle_out(nucleon);
     evt.add_vertex(v1);
@@ -192,6 +199,7 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
 
     // Add hard interaction vertex 
     GenVertexPtr v2 = std::make_shared<GenVertex>(hardVertexPos);
+    v2->set_status(1);
     v2->add_particle_in(nucleon);
     v2->add_particle_in(p3);
 
