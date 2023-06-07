@@ -74,9 +74,9 @@ add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
     NAME HepMC3
-    VERSION 3.2.5
+    VERSION 3.2.6
     GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
-    GIT_TAG 3.2.5
+    GIT_TAG 3.2.6
     OPTIONS
       "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
       "HEPMC3_ENABLE_SEARCH OFF"
@@ -128,4 +128,11 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
         GIT_TAG master
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
+
+    # NuHepMC Reference Implementation
+    CPMAddPackage(
+        NAME NuHepMC
+        GITHUB_REPOSITORY NuHepMC/ReferenceImplementation
+        GIT_TAG main
+    )
 endif()
