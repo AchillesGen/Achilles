@@ -4,7 +4,6 @@
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
-
 achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     Values results;
     if(vector) vector -> Evaluate(Q2, results);
@@ -60,6 +59,36 @@ void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) cons
     result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
     result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 }
+
+// Axial Z-Expansion Form Factor
+achilles::AxialZExpansion::AxialZExpansion(const YAML::Node &config) {
+    tcut = config["tcut"].as<double>();
+    t0 = config["t0"].as<double>();
+    cc_params = config["CC Params"].as<std::vector<double>>();
+    strange_params = config["Strange Params"].as<std::vector<double>>();
+    spdlog::debug("Parameters for AxialZExpansion");
+    for(size_t i=0; i<cc_params.size(); i++) {
+        spdlog::debug("cc_params[{0}] = {1}", i, cc_params[i]);
+    }
+    for(size_t i=0; i<strange_params.size(); i++) {
+        spdlog::debug("strange_params[{0}] = {1}", i, strange_params[i]);
+    }
+}
+
+std::unique_ptr<achilles::FormFactorImpl> achilles::AxialZExpansion::Construct(achilles::FFType type,
+                                                                               const YAML::Node &node) {
+    Validate<AxialZExpansion>(type);
+    return std::make_unique<AxialZExpansion>(node);
+}
+
+void achilles::AxialZExpansion::Evaluate(double Q2, FormFactor::Values &result) const {
+    double z = (sqrt(tcut+Q2)-sqrt(tcut-t0))/(sqrt(tcut+Q2)+sqrt(tcut-t0));
+    // Charged-current axial form factor
+    result.FA = ZExpand(cc_params, z);
+    // Strange-quark axial form factor
+    result.FAs = ZExpand(strange_params, z);
+}
+
 
 // Kelly Form Factor
 achilles::Kelly::Kelly(const YAML::Node &config) {

@@ -58,6 +58,9 @@ add_library(physics SHARED
     Interactions.cc
     InteractionsFactory.cc
     SpectralFunction.cc
+    Channels.cc
+    ElectronPDF.cc
+    EventHistory.cc
 )
 # target_include_directories(physics SYSTEM PUBLIC ${HDF5_INCLUDE_DIRS})
 set(physics_libs "")
@@ -74,6 +77,9 @@ endif()
 if(USE_ROOT)
     target_link_libraries(physics PUBLIC ROOT::Core ROOT::Hist)
     target_compile_definitions(physics PUBLIC -DUSE_ROOT)
+    if(${ROOT_MINOR_VERSION} LESS 16)
+        target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
+    endif()
 endif()
 target_link_libraries(physics PRIVATE project_options project_warnings
                       PUBLIC utilities cuts HighFive)
