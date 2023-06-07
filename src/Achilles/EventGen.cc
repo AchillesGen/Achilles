@@ -105,7 +105,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    (void)shargs;
+    (void)shargs.size();
     leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
     leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
     leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
