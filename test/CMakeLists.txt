@@ -52,6 +52,12 @@ if(ENABLE_BSM)
     target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
 endif()
 
+set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
 
 # enable_language(Fortran)
 # add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
