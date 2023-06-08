@@ -37,10 +37,15 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
             tokens.clear();
             std::getline(configs, line);
             tokenize(line, tokens);
-            auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
-            auto pos = ThreeVector(std::stod(tokens[1]), std::stod(tokens[2]),
-                                   std::stod(tokens[3]));
-            config.nucleons.emplace_back(pid, FourVector(), pos);
+#ifdef ACHILLES_LOW_MEMORY
+            auto is_proton = tokens[0] == "1" ? true : false;
+            std::array<double, 3> pos{std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3])};
+            config.nucleons.emplace_back(is_proton, pos);
+#else
+            const auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
+            const ThreeVector position{std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3])}; 
+            config.nucleons.emplace_back(pid, FourVector{}, position);
+#endif
         }
         std::getline(configs, line);
         config.wgt = std::stod(line);
@@ -52,6 +57,9 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
 }
 
 std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration() {
+#ifdef ACHILLES_LOW_MEMORY
+    std::vector<achilles::Particle> particles;
+#endif
     while(true) {
         auto index = Random::Instance().Uniform<std::size_t>(0, m_configurations.size());
 
@@ -61,11 +69,21 @@ std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration
             Random::Instance().Generate(angles, 0.0, 2*M_PI);
             angles[1] /= 2;
 
+#ifdef ACHILLES_LOW_MEMORY
+            for(auto& part : config.nucleons) {
+                const auto pid = part.is_proton ? PID::proton() : PID::neutron();
+                const auto position = ThreeVector(part.position).Rotate(angles);
+                particles.emplace_back(pid, FourVector{}, position);
+            }
+
+            return particles;
+#else
             for(auto& part : config.nucleons) {
                 part.SetPosition(part.Position().Rotate(angles));
             }
 
             return config.nucleons;
+#endif
         }
     }
 }
