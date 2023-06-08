@@ -54,7 +54,7 @@ class Event {
         MOCK const vMomentum &Momentum() const { return m_mom; }
         MOCK vMomentum &Momentum() { return m_mom; }
 
-        const EventHistory &History() const { return m_history; }
+        MOCK const EventHistory &History() const { return m_history; }
         EventHistory &History() { return m_history; }
 
         const double &MatrixElementWgt(size_t i) const { return m_me[i]; }

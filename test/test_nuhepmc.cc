@@ -9,36 +9,38 @@
 
 TEST_CASE("Passes Validator", "[NuHepMC]") {
     // Setup dummy event
-    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
-    achilles::Particles hadrons = {
-        {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
-        {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
-    achilles::Particles leptons = {
-        {achilles::PID::electron(), hadron0, {}, achilles::ParticleStatus::initial_state},
-        {achilles::PID::electron(), hadron1, {}, achilles::ParticleStatus::final_state}};
-    achilles::NuclearRemnant remnant(11, 5);
+    achilles::Particle target(achilles::PID::carbon(),
+                              {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0});
+    achilles::Particle nuc_in(achilles::PID::neutron(),
+                              {918.00661011686168, 23.585833577703873,
+                               85.332385429710143, 52.378992899809319});
+    achilles::Particle beam(achilles::PID::nu_muon(),
+                            {1e4, 0, 0, 1e4});
+    achilles::Particle neutrino(achilles::PID::nu_muon(),
+                                {5.3983343748755351e3, 0, 0, 5.3983343748755351e3});
+    achilles::Particle nuc_out(achilles::PID::proton(),
+                               {9.6318094613481071e2, -1.8702102417549486e2,
+                                -4.7096228265225918e1, 1.0333739302250189e2});
+    achilles::Particle lepton(achilles::PID::muon(),
+                              {5.3531600388575862e3, 2.1060685775319874e2,
+                               1.3242861369493605e2, 5.3473759747528429e3});
+    // TODO: Figure out how to handle remnant
+    // achilles::Particle remnant(achilles::PID(1000060110));
+    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
 
-    auto nuc = std::make_shared<MockNucleus>();
-    auto id = achilles::PID::carbon();
-    REQUIRE_CALL(*nuc, ID())
-        .TIMES(AT_LEAST(1))
-        .LR_RETURN(id);
+    achilles::EventHistory history;
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::primary);
     
     const MockEvent event;
     double wgt = 1.0;
-    REQUIRE_CALL(event, Hadrons())
+    REQUIRE_CALL(event, History())
         .TIMES(1)
-        .LR_RETURN((hadrons));
-    REQUIRE_CALL(event, Leptons())
-        .TIMES(1)
-        .LR_RETURN((leptons));
-    REQUIRE_CALL(event, CurrentNucleus())
-        .TIMES(AT_LEAST(1))
-        .LR_RETURN((nuc));
-    REQUIRE_CALL(event, Remnant())
-        .TIMES(AT_LEAST(1))
-        .LR_RETURN((remnant));
+        .LR_RETURN((history));
     REQUIRE_CALL(event, Weight())
         .TIMES(AT_LEAST(1))
         .LR_RETURN((wgt));

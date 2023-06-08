@@ -123,6 +123,7 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     IMPLEMENT_CONST_MOCK0(Remnant);
     MAKE_CONST_MOCK0(Weight, const double&());
     MAKE_MOCK0(Weight, double&());
+    IMPLEMENT_CONST_MOCK0(History);
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {
