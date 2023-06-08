@@ -60,7 +60,7 @@ class Particle {
         ///@param mothers: The mother particles of the particle (default = Empty)
         ///@param daughters: The daughter particles of the particle (default = Empty)
         Particle(const PID& pid = PID{0}, FourVector mom = FourVector(),
-                 ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = static_cast<ParticleStatus>(0),
+                 ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = ParticleStatus::background,
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
             info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
