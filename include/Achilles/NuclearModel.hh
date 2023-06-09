@@ -53,6 +53,26 @@ inline std::string ToString(NuclearMode mode) {
     throw std::runtime_error("Invalid NuclearMode");
 }
 
+enum class WardGauge {
+    None = -1,
+    Coulomb,
+    Weyl,
+    Landau,
+};
+
+inline WardGauge ToEnum(const std::string &ward) {
+    if(ward == "None")
+        return WardGauge::None;
+    else if(ward == "Coulomb")
+        return WardGauge::Coulomb;
+    else if(ward == "Weyl")
+        return WardGauge::Weyl;
+    else if(ward == "Landau")
+        return WardGauge::Landau;
+    auto msg = fmt::format("WardGauge: Invalid option {}", ward);
+    throw std::runtime_error(msg);
+}
+
 class NuclearModel {
   public:
     using Current = std::vector<VCurrent>;
@@ -140,9 +160,13 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     static std::string Name() { return "QESpectral"; }
 
   private:
-    bool b_ward{};
+    void CoulombGauge(VCurrent &, const FourVector &, double) const;
+    void WeylGauge(VCurrent &, const FourVector &, double) const;
+    void LandauGauge(VCurrent &, const FourVector &) const;
     Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
                             const FourVector &, const FormFactorMap &) const;
+
+    const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
 };
 
