@@ -37,19 +37,24 @@ using UnweighterFactory = Factory<Unweighter, const YAML::Node &>;
 class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
   public:
     NoUnweighter(const YAML::Node &) {}
-    void AddEvent(double) override {}
+    void AddEvent(double weight) override {
+        if(weight > m_max_weight) m_max_weight = weight;
+    }
     double AcceptEvent(double weight) override {
         m_accepted++;
         m_total++;
         return weight;
     }
-    double MaxValue() override { return 1; }
+    double MaxValue() override { return m_max_weight; }
 
     // Required factory methods
     static std::unique_ptr<Unweighter> Construct(const YAML::Node &node) {
         return std::make_unique<NoUnweighter>(node);
     }
     static std::string Name() { return "None"; }
+
+  private:
+    double m_max_weight{};
 };
 
 class PercentileUnweighter : public Unweighter, RegistrableUnweighter<PercentileUnweighter> {
