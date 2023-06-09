@@ -69,7 +69,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto models = LoadModels(config);
 
     // Initialize Sherpa
-    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos) {
+    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos ||
+       config["Backend"]["Name"].as<std::string>().find("BSM") != std::string::npos) {
 #ifdef ACHILLES_SHERPA_INTERFACE
         p_sherpa = new achilles::SherpaInterface();
         std::string model_name = "SMnu";
@@ -97,8 +98,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         throw std::runtime_error("Multiple processes are not implemented yet. "
                                  "Please use only one beam.");
     for(auto &model : models) {
-        auto groups =
-            ProcessGroup::ConstructProcessGroups(config, model.second.get(), beam, nucleus);
+        auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
         for(auto &group : groups) {
             for(const auto &process : group.second.Processes())
                 spdlog::info("Found Process: {}", process.Info());

@@ -105,6 +105,7 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
 void ProcessGroup::SetupLeptons(Event &event) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out;
+    // NOTE: This assumes all processes have the same lepton content
     auto &process = m_processes[0];
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
     std::vector<Particle> leptons;
@@ -145,9 +146,10 @@ size_t ProcessGroup::SelectProcess() const {
     return Random::Instance().SelectIndex(m_process_weights);
 }
 
-std::map<size_t, ProcessGroup>
-ProcessGroup::ConstructProcessGroups(const YAML::Node &node, NuclearModel *model,
-                                     std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus) {
+std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &node,
+                                                             NuclearModel *model,
+                                                             std::shared_ptr<Beam> beam,
+                                                             std::shared_ptr<Nucleus> nucleus) {
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : node["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();

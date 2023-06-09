@@ -153,11 +153,18 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
         pi.m_fi.m_ps.emplace_back(fl, "", "");
     }
     msg_Info() << "SherpaInterface::getProcess: Initializing process ";
-    Process_Base *proc =
-        p_sherpa->GetInitHandler()->GetMatrixElementHandler()->Generators()->InitializeProcess(
-            pi, false);
-    if(!proc) return nullptr;
+    Process_Base *proc;
+    try {
+        proc =
+            p_sherpa->GetInitHandler()->GetMatrixElementHandler()->Generators()->InitializeProcess(
+                pi, false);
+        if(!proc) return nullptr;
+    } catch(const ATOOLS::Exception &error) {
+        std::cout << error.Info() << std::endl;
+        exit(-1);
+    }
     proc->SetupEventReader("Achilles");
+    // TODO: Figure out why the Tests cause a segfault
     proc->Get<COMIX::Single_Process>()->Tests();
     Selector_Key skey(NULL, new Data_Reader(), true);
     proc->SetSelector(skey);
@@ -216,7 +223,7 @@ std::map<size_t, long> SherpaInterface::MomentumMap(const std::vector<long> &_fl
     ampl->SetNIn(2);
     ampl->SetOrderQCD(0);
     ampl->SetOrderEW(ampl->Legs().size() - 2);
-    Process_Base::SortFlavours(ampl);
+    // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     spdlog::info("Looking for process");

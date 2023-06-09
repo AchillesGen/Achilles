@@ -64,6 +64,7 @@ class BSMBackend : public XSecBackend, RegistrableBackend<BSMBackend> {
   public:
     BSMBackend();
     void SetSherpa(SherpaInterface *sherpa) override { p_sherpa = sherpa; }
+    void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
     void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,

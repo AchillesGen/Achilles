@@ -208,6 +208,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<int> pids;
+    spdlog::debug("mom map: {}", info.m_mom_map.size());
     for(const auto &elm : info.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
         mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
@@ -243,6 +244,19 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
+}
+
+void achilles::BSMBackend::SetOptions(const YAML::Node &options) {
+    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    const auto vectorFF = config["vector"].as<std::string>();
+    const auto axialFF = config["axial"].as<std::string>();
+    const auto coherentFF = config["coherent"].as<std::string>();
+    auto ff = FormFactorBuilder()
+                  .Vector(vectorFF, config[vectorFF])
+                  .AxialVector(axialFF, config[axialFF])
+                  .Coherent(coherentFF, config[coherentFF])
+                  .build();
+    FormFactorInterface::SetFormFactor(std::move(ff));
 }
 
 achilles::SherpaBackend::SherpaBackend() {}
