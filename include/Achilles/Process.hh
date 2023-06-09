@@ -22,20 +22,23 @@ class Process {
   public:
     Process(ProcessInfo info, std::unique_ptr<Unweighter> unweighter)
         : m_info{std::move(info)}, m_unweighter{std::move(unweighter)} {}
+    Process(Process &&) = default;
+    MOCK ~Process() = default;
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
-    const ProcessInfo &Info() const { return m_info; }
+    MOCK const ProcessInfo &Info() const { return m_info; }
     size_t NInitialStates(Nucleus *) const;
     void SetupHadrons(Event &) const;
-    void AddWeight(double weight) {
+    MOCK void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
         m_xsec += weight;
     }
-    double Unweight(double weight) { return m_unweighter->AcceptEvent(weight); }
+    MOCK double Unweight(double weight) { return m_unweighter->AcceptEvent(weight); }
     double MaxWeight() { return m_unweighter->MaxValue(); }
-    void ExtractMomentum(const Event &, FourVector &, std::vector<FourVector> &,
-                         std::vector<FourVector> &, std::vector<FourVector> &) const;
+    MOCK void ExtractMomentum(const Event &, FourVector &, std::vector<FourVector> &,
+                              std::vector<FourVector> &, std::vector<FourVector> &) const;
     double UnweightEff() const { return m_xsec.Mean() / m_unweighter->MaxValue(); }
+    bool operator==(const Process &other) const { return m_info == other.m_info; }
 
   private:
     ProcessInfo m_info;
@@ -64,9 +67,9 @@ class ProcessGroup {
     void SetupLeptons(Event &) const;
 
     // Initialize processes and process groups
-    static std::map<size_t, ProcessGroup> ConstructProcessGroups(const YAML::Node &, NuclearModel *,
-                                                                 std::shared_ptr<Beam>,
-                                                                 std::shared_ptr<Nucleus>);
+    static std::map<size_t, ProcessGroup> ConstructGroups(const YAML::Node &, NuclearModel *,
+                                                          std::shared_ptr<Beam>,
+                                                          std::shared_ptr<Nucleus>);
 
     Integrand<FourVector> &GetIntegrand() { return m_integrand; }
     const Integrand<FourVector> &GetIntegrand() const { return m_integrand; }
@@ -76,6 +79,7 @@ class ProcessGroup {
     Event GenerateEvent();
     Event SingleEvent(const std::vector<FourVector> &, double);
     double MaxWeight() const { return m_maxweight; }
+    void SetOptimize(bool optimize) { b_optimize = optimize; }
 
   private:
     // Physics components

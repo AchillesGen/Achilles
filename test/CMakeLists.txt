@@ -43,6 +43,8 @@ add_executable(achilles-testsuite
     test_ps_mapper.cc
     test_event_history.cc
     test_poincare.cc
+    test_process.cc
+    test_process_group.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
     PUBLIC physics mappers event_gen)

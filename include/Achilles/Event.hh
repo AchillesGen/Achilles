@@ -47,7 +47,7 @@ class Event {
     const vParticles &Hadrons() const;
     MOCK vParticles &Hadrons();
     const vParticles &Leptons() const { return m_leptons; }
-    vParticles &Leptons() { return m_leptons; }
+    MOCK vParticles &Leptons() { return m_leptons; }
     MOCK const double &Weight() const { return m_wgt; }
     MOCK double &Weight() { return m_wgt; }
     void Rotate(const std::array<double, 9> &);

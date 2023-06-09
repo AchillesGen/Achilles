@@ -13,6 +13,8 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/Process.hh"
+#include "Achilles/Unweighter.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
@@ -78,6 +80,8 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     MAKE_CONST_MOCK1(Rho, double(const double &), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(GetPotential, std::shared_ptr<achilles::Potential>(), noexcept override);
+    MAKE_CONST_MOCK0(ProtonsIDs, std::vector<size_t>(), noexcept override);
+    MAKE_CONST_MOCK0(NeutronsIDs, std::vector<size_t>(), noexcept override);
 };
 
 class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearModel> {
@@ -88,6 +92,7 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK1(AllowedStates);
     IMPLEMENT_CONST_MOCK0(NSpins);
     IMPLEMENT_CONST_MOCK2(InitialStateWeight);
+    IMPLEMENT_CONST_MOCK0(GetName);
 };
 
 class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
@@ -111,18 +116,20 @@ class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
     IMPLEMENT_CONST_MOCK0(BeamIDs);
     IMPLEMENT_CONST_MOCK4(GenerateWeight);
     IMPLEMENT_CONST_MOCK0(NVariables);
+    IMPLEMENT_CONST_MOCK2(EvaluateFlux);
 };
 
 class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK0(Remnant);
-    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &());
-    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &());
+    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &(), override);
+    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &(), override);
     IMPLEMENT_MOCK0(CurrentNucleus);
     IMPLEMENT_CONST_MOCK0(Particles);
     IMPLEMENT_MOCK0(Hadrons);
-    MAKE_CONST_MOCK0(Weight, const double &());
-    MAKE_MOCK0(Weight, double &());
+    IMPLEMENT_MOCK0(Leptons);
+    MAKE_CONST_MOCK0(Weight, const double &(), override);
+    MAKE_MOCK0(Weight, double &(), override);
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {
@@ -156,6 +163,21 @@ class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
     IMPLEMENT_MOCK3(Hadron);
     IMPLEMENT_MOCK2(FinalState);
     IMPLEMENT_MOCK0(build);
+};
+
+class MockUnweighter : public trompeloeil::mock_interface<achilles::Unweighter> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_MOCK1(AddEvent);
+    IMPLEMENT_MOCK1(AcceptEvent);
+    IMPLEMENT_MOCK0(MaxValue);
+};
+
+class MockProcess : public trompeloeil::mock_interface<achilles::Process> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK0(Info);
+    IMPLEMENT_MOCK1(AddWeight);
+    IMPLEMENT_MOCK1(Unweight);
+    IMPLEMENT_CONST_MOCK5(ExtractMomentum);
 };
 
 #endif

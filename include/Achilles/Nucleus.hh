@@ -114,11 +114,11 @@ class Nucleus {
 
     /// Return a vector of the ids of the protons in the nucleus
     ///@return std::vector<size_t>: The current ids of protons in nucleon vector
-    std::vector<size_t> ProtonsIDs() noexcept { return protonLoc; }
+    MOCK std::vector<size_t> ProtonsIDs() const noexcept { return protonLoc; }
 
     /// Return a vector of the ids of the neutrons in the nucleus
     ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector
-    std::vector<size_t> NeutronsIDs() noexcept { return neutronLoc; }
+    MOCK std::vector<size_t> NeutronsIDs() const noexcept { return neutronLoc; }
 
     /// Return a vector of the current protons
     ///@return Particles: The current protons generated for the nucleus

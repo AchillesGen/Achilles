@@ -135,7 +135,7 @@ class Beam {
     size_t NBeams() const { return m_beams.size(); }
     MOCK const std::set<PID> &BeamIDs() const { return m_pids; }
     double MaxEnergy() const;
-    double EvaluateFlux(const PID pid, const FourVector &p) const {
+    MOCK double EvaluateFlux(const PID pid, const FourVector &p) const {
         return m_beams.at(pid)->EvaluateFlux(p);
     }
 
