@@ -3,7 +3,6 @@
 #include "Achilles/EventWriter.hh"
 #include "Achilles/HardScatteringFactory.hh"
 #include "Achilles/HardScattering.hh"
-#include "Achilles/Logging.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
@@ -13,81 +12,26 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ComplexFmt.hh"
 #include "Achilles/Units.hh"
-
-// TODO: Turn this into a factory to reduce the number of includes
-#include "Achilles/PhaseSpaceBuilder.hh"
-#include "Achilles/BeamMapper.hh"
-#include "Achilles/HadronicMapper.hh"
-#include "Achilles/FinalStateMapper.hh"
-#include "Achilles/PhaseSpaceMapper.hh"
-#include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Channels.hh"
 
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/Channels1.hh"
-#include "plugins/Sherpa/Channels3.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #endif
 
 #ifdef ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "yaml-cpp/yaml.h"
 
-achilles::Channel<achilles::FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<achilles::Beam> beam) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = std::make_unique<achilles::QuasielasticTestMapper>(node, beam);
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, {});
-    return channel;
-}
-
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                 std::shared_ptr<achilles::Beam> beam,
-                                                 const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .FinalState(T::Name(), masses).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-#ifdef ENABLE_BSM
-template<typename T>
-achilles::Channel<achilles::FourVector> BuildChannelSherpa(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                       std::shared_ptr<achilles::Beam> beam,
-                                                       const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    auto massesGeV = masses;
-    for(auto &mass : massesGeV) mass /= (1000*1000);
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .SherpaFinalState(T::Name(), massesGeV).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-
-achilles::Channel<achilles::FourVector> BuildGenChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
-                                                    std::shared_ptr<achilles::Beam> beam,
-                                                    std::unique_ptr<PHASIC::Channels> final_state,
-                                                    const std::vector<double> &masses) {
-    achilles::Channel<achilles::FourVector> channel;
-    channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
-                                                   .Hadron(model -> PhaseSpace(), masses)
-                                                   .GenFinalState(std::move(final_state)).build();
-    achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
-    channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
-    return channel;
-}
-#endif
 
 achilles::EventGen::EventGen(const std::string &configFile,
                              std::vector<std::string> shargs) {
     config = YAML::LoadFile(configFile);
+
+    // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly working in SHERPA.
+    runDecays = false;
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -138,22 +82,29 @@ achilles::EventGen::EventGen(const std::string &configFile,
 
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
-    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    p_sherpa = new achilles::SherpaInterface();
     std::string model = config["Process"]["Model"].as<std::string>();
     std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    int qed = 0;
+    if(config["Process"]["QEDShower"])
+        if(config["Process"]["QEDShower"].as<bool>())
+            qed = 3;
+    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
     if(model == "SM") model = "SM_Nuc";
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    sherpa -> Initialize(shargs);
+    shargs.push_back(fmt::format("BEAM_2={}", 11));
+    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
+    p_sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
-    if(!sherpa -> InitializeProcess(leptonicProcess)) {
+    if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
-    leptonicProcess.m_mom_map = sherpa -> MomentumMap(leptonicProcess.Ids());
+    leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    (void)shargs;
+    (void)shargs.size();
     leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
     leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
     leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
@@ -165,7 +116,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     scattering = std::make_shared<HardScattering>();
     scattering -> SetProcess(leptonicProcess);
 #ifdef ENABLE_BSM
-    scattering -> SetSherpa(sherpa);
+    scattering -> SetSherpa(p_sherpa);
 #endif
     scattering -> SetNuclear(std::move(nuclear_model));
 
@@ -189,7 +140,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
             throw std::runtime_error(error);
         }
 #else
-        auto channels = sherpa -> GenerateChannels(scattering -> Process().Ids());
+        auto channels = p_sherpa -> GenerateChannels(scattering -> Process().Ids());
         size_t count = 0;
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
@@ -231,6 +182,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
 #ifdef ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
 #endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}",
@@ -325,10 +278,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             event.CalcWeight();
             spdlog::trace("Outputting the event");
             writer -> Write(event);
+
             // Update number of calls needed to ensure the number of generated events
             // is the same as that requested by the user
             integrator.Parameters().ncalls++;
         }
+
+#ifdef ENABLE_BSM
+        p_sherpa->Reset();
+#endif
         return 0;
     }
 
@@ -347,12 +305,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
-    // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
-    //     spdlog::info("Mass issue");
-    //     spdlog::drop("achilles");
-    //     CreateLogger(0, 5);
-    // }
-
     // Perform hard cuts
     if(doHardCuts) {
         spdlog::debug("Making hard cuts");
@@ -368,10 +320,15 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
+
+#ifdef ENABLE_BSM
+            p_sherpa->Reset();
+#endif
             return 0;
         }
     }
 
+    // TODO: Move to after unweighting?
     // Run the cascade if needed
     if(runCascade) {
         spdlog::trace("Hadrons:");
@@ -400,6 +357,64 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     // Write out events
     if(outputEvents) {
+        // TODO: Handle MEC case
+        // Setup target nucleus in history
+        auto init_nuc = event.CurrentNucleus()->InitParticle();
+        Particle init_had;
+        for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+            if(nucleon.Status() == ParticleStatus::initial_state) {
+                init_had = nucleon;
+                break;
+            }
+        }
+        event.History().AddVertex(init_had.Position(), {init_nuc}, {init_had}, EventHistory::StatusCode::target);
+        // Setup beam in history
+        auto init_lep = event.Leptons()[0];
+        auto init_beam = init_lep;
+        init_beam.Status() = ParticleStatus::beam;
+        const double max_energy = beam->MaxEnergy();
+        init_beam.Momentum() = {max_energy, 0, 0, max_energy};
+        event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
+#ifdef ENABLE_BSM
+        // Running Sherpa interface if requested
+        // Only needed when generating events and not optimizing the multichannel
+        // TODO: Move to after unweighting?
+        if(event.Weight() > 0) {
+            if(runDecays)
+                p_sherpa -> GenerateEvent(event);
+            else {
+                // TODO: Properly build history including the cascade
+                std::vector<Particle> final;
+                for(const auto &part : event.Particles()) {
+                    if(part.IsFinal()) final.push_back(part);
+                }
+                event.History().AddVertex(init_had.Position(), {init_had, init_lep}, {final},
+                                          EventHistory::StatusCode::primary); 
+            }
+        }
+#else
+        if(event.Weight() > 0) {
+            // TODO: Properly build history including the cascade
+            std::vector<Particle> final;
+            for(const auto &part : event.Particles()) {
+                if(part.IsFinal()) final.push_back(part);
+            }
+            event.History().AddVertex(init_had.Position(), {init_had, init_lep}, {final},
+                                      EventHistory::StatusCode::primary); 
+        }
+#endif
+        // TODO: Get remnant working
+        // Setup remnant in history
+        // auto recoilMom = init_nuc.Momentum();
+        // for(size_t i = 1; i < event.Leptons().size(); ++i) {
+        //     recoilMom -= event.Leptons()[i].Momentum();
+        // }
+        // for(size_t i = 1; i < event.Hadrons().size(); ++i) {
+        //     recoilMom -= event.Hadrons()[i].Momentum();
+        // }
+        // auto remnant = Particle(event.Remnant().PID(), recoilMom); 
+        // event.History().Primary()->AddOutgoing(remnant);
+
         // Rotate cuts into plane of outgoing electron before writing
         if (doRotate)
             Rotate(event);
@@ -413,6 +428,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         if(outputCurrentEvent) {
             // Keep a running total of the number of surviving events
             event.Finalize();
+
             if(!unweighter->AcceptEvent(event)) {
                 // Update number of calls needed to ensure the number of generated events
                 // is the same as that requested by the user
@@ -420,9 +436,13 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
             }
             writer -> Write(event);
         }
-        } else {
-            unweighter->AddEvent(event);
+    } else {
+        unweighter->AddEvent(event);
     }
+
+#ifdef ENABLE_BSM
+    p_sherpa->Reset();
+#endif
 
     // Always return the weight when the event passes the initial hard cut.
     // Even if events do not survive the final event-level cuts, Vegas should

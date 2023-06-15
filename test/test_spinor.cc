@@ -47,6 +47,24 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
         CHECK(SpinMatrix::PL()*SpinMatrix::PR() == SpinMatrix());
     }
 
+    SECTION("Spinor inner product (massless)") {
+        achilles::FourVector mom{500, 0, 300, 400};
+        {
+            auto s1 = USpinor(1, mom);
+            auto s2 = UBarSpinor(1, mom);
+            for(size_t i = 0; i < 4; ++i) {
+                CHECK((s2*SpinMatrix::GammaMu(i)*s1).real() == Approx(2*mom[i]));
+            }
+        }
+        {
+            auto s1 = USpinor(-1, mom);
+            auto s2 = UBarSpinor(-1, mom);
+            for(size_t i = 0; i < 4; ++i) {
+                CHECK((s2*SpinMatrix::GammaMu(i)*s1).real() == Approx(2*mom[i]));
+            }
+        }
+    }
+
     SECTION("Spinor outer product (massless)") {
         achilles::FourVector mom{1000, 0, 0, 1000};
         SpinMatrix result;

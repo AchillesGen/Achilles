@@ -29,10 +29,10 @@ class FourVector {
         ///@param p: A std::array<double, 4> containing the values for the vector
         constexpr FourVector(std::array<double, 4> p) noexcept : vec(p) {}
         /// Create a FourVector object with values pX, pY, pZ, and E
+        ///@param E: The E value of the vector
         ///@param pX: The px value of the vector
         ///@param pY: The py value of the vector
         ///@param pZ: The pz value of the vector
-        ///@param E: The E value of the vector
         constexpr FourVector(double E, double pX, double pY, double pZ) noexcept 
             : vec({E, pX, pY, pZ}) {}
         /// Create a FourVector object from a ThreeVector and an energy
@@ -338,6 +338,11 @@ class FourVector {
         ///@param other: The vector to compare against
         ///@return bool: False, if the vectors are equal otherwise True
         bool operator!=(const FourVector& other) const noexcept {return !(*this == other);}
+
+        // Determine if two four vectors are approximately equal
+        ///@param other: The vector to compare against
+        ///@return bool: True, if the vectors are equal otherwise False
+        bool Approx(const FourVector&, double eps=1e-8) const noexcept;
 
         // Access Operators
 

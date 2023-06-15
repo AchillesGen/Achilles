@@ -47,8 +47,6 @@ class Nucleus {
         ///@param A: The number of nucleons
         ///@param binding: The binding energy of the nucleus
         ///@param densityFile: The file containing density information for Pauli Blocking
-        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
-        ///      passed in as an object
         ///@param density: A function that generates nucleon configurations according 
         ///                to the density profile
         Nucleus() = default;
@@ -103,7 +101,14 @@ class Nucleus {
         
         /// Return the nuclear PID
         ///@return PID: The pid for the given nucleus
-        PID ID() const { return m_pid; }
+        MOCK PID ID() const { return m_pid; }
+
+        /// Return a particle with initial momentum for at rest nucleus and correct PID
+        ///@return Particle: Particle representing the initial nucleus
+        Particle InitParticle() const {
+            double mass = ParticleInfo(ID()).Mass();
+            return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
+        }
 
         /// Return a vector of the current nucleons
         ///@return Particles: The current nucleons generated for the nucleus
@@ -220,8 +225,6 @@ class Nucleus {
         ///@param name: Nucleus in format discussed above
         ///@param binding: The binding energy of the nucleus
         ///@param densityFile: The file containing density information for Pauli Blocking
-        ///TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
-        ///      passed in as an object
         ///@param density: The density function to use to generate configurations with
         static Nucleus MakeNucleus(const std::string&, const double&, const double&,
                                    const std::string&, const FermiGasType&,
@@ -245,10 +248,10 @@ class Nucleus {
 
         static const std::map<std::size_t, std::string> ZToName;
         static std::size_t NameToZ(const std::string&);
-        PID m_pid;
 
         FourVector m_recoil{};
         std::shared_ptr<Potential> potential;
+        PID m_pid;
 };
 
 }

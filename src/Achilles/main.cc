@@ -8,8 +8,9 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/NuclearModel.hh"
+#include "git.h"
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #include "plugins/Sherpa/Channels.hh"
 #endif // ENABLE_BSM
 
@@ -76,6 +77,18 @@ void Splash() {
 )splash", ACHILLES_VERSION);
 }
 
+void GitInformation() {
+    std::string msg;
+    if(git::IsPopulated()) {
+        spdlog::info("Achilles git information");
+        spdlog::info("    Commit: {}", git::CommitSHA1());
+        spdlog::info("    Branch: {}", git::Branch());
+        spdlog::info("    Local Changes: {}", git::AnyUncommittedChanges() ? "Yes" : "No");
+    } else { 
+        spdlog::warn("This is not a git repository version of Achilles");
+    }
+}
+
 static const std::string USAGE =
 R"(
     Usage:
@@ -113,6 +126,10 @@ int main(int argc, char *argv[]) {
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
                                                     fmt::format("achilles {}", ACHILLES_VERSION)); //version string
+    
+    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
+    CreateLogger(verbosity, 5);
+    GitInformation();
 
     if(args["--display-cuts"].asBool()) {
         achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
@@ -146,9 +163,6 @@ int main(int argc, char *argv[]) {
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
-    
-    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
 
     const std::string lib = libPrefix + "fortran_interface" + libSuffix;
     std::string name = installLibs + lib;
