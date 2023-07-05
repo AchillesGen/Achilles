@@ -75,6 +75,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
             qed = 3;
     shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
     if(model == "SM") model = "SM_Nuc";
+    else {
+        shargs.push_back("HARD_DECAYS=1");
+        shargs.push_back("HDH_SET_WIDTHS=1");
+    }
     shargs.push_back("MODEL=" + model);
     shargs.push_back("UFO_PARAM_CARD=" + param_card);
     shargs.push_back(fmt::format("BEAM_2={}", 11));
