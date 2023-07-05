@@ -106,9 +106,9 @@ add_library(event_gen SHARED
     EventWriter.cc
 )
 if(ENABLE_HEPMC3)
-list(APPEND achilles_targets hepmc3)
+list(APPEND achilles_targets hepmc3 nuhepmc)
 target_compile_definitions(physics PUBLIC ENABLE_HEPMC3)
-target_link_libraries(event_gen PUBLIC hepmc3)
+target_link_libraries(event_gen PUBLIC hepmc3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_options project_warnings
                                 PUBLIC physics mappers) #fortran_interface
@@ -138,7 +138,7 @@ list(APPEND achilles_targets event_gen)
 
 add_executable(achilles main.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
-                               PUBLIC event_gen docopt::docopt dl)
+                               PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking)
 list(APPEND achilles_targets achilles)
 
 if(ENABLE_CASCADE_TEST)

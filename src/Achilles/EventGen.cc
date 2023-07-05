@@ -3,7 +3,6 @@
 #include "Achilles/EventWriter.hh"
 #include "Achilles/HardScatteringFactory.hh"
 #include "Achilles/HardScattering.hh"
-#include "Achilles/Logging.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
@@ -21,6 +20,7 @@
 
 #ifdef ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "yaml-cpp/yaml.h"
@@ -106,7 +106,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    (void)shargs;
+    (void)shargs.size();
     leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
     leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
     leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
@@ -184,6 +184,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
 #ifdef ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
 #endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}",
@@ -304,12 +306,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
 
     event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
-
-    // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
-    //     spdlog::info("Mass issue");
-    //     spdlog::drop("achilles");
-    //     CreateLogger(0, 5);
-    // }
 
     // Perform hard cuts
     if(doHardCuts) {

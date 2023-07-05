@@ -1,5 +1,6 @@
 vector: Kelly
-axial: AxialDipole
+#axial: AxialDipole
+axial: AxialZExpansion
 coherent: Helm
 # vector: VectorDummy
 # axial: AxialDummy
@@ -28,6 +29,13 @@ AxialDipole:
   MA: 1.000
   gan1: 1.2694
   gans: 0.08
+
+AxialZExpansion:
+  tcut: 0.1753180641  # [GeV^2] 9*mpi^2 = 9*(0.13957)^2
+  t0: 0  # [GeV^2]
+  # Compare with footnote 13 of https://arxiv.org/pdf/1603.03048.pdf
+  CC Params: [-0.759, 2.30, -0.6, -3.8, 2.3, 2.16, -0.896, -1.58, 0.823]
+  Strange Params: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 Kelly:
   lambdasq: 0.7174
@@ -58,7 +66,7 @@ ArringtonHill:
   Mu Neutron: -1.91315
   tcut: 0.0779191396
   t0: -0.7
-  Gep Params: [ 0.23916329807, -1.10985857441,  1.44438081306,  0.47956946560, 
+  Gep Params: [ 0.23916329807, -1.10985857441,  1.44438081306,  0.47956946560,
                -2.28689474187,  1.12663298498,  1.25061984354, -3.63102047159,
                 4.08221702379,  0.50409734650, -5.08512046051,  3.96774254395,
                -0.98152907110 ]
