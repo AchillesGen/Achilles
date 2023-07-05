@@ -64,6 +64,23 @@ achilles::EventGen::EventGen(const std::string &configFile,
         cascade = nullptr;
     }
 
+#ifdef ENABLE_BSM
+    // Initialize sherpa processes
+    p_sherpa = new achilles::SherpaInterface();
+    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    int qed = 0;
+    if(config["Process"]["QEDShower"])
+        if(config["Process"]["QEDShower"].as<bool>())
+            qed = 3;
+    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
+    if(model == "SM") model = "SM_Nuc";
+    shargs.push_back("MODEL=" + model);
+    shargs.push_back("UFO_PARAM_CARD=" + param_card);
+    shargs.push_back(fmt::format("BEAM_2={}", 11));
+    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
+    p_sherpa -> Initialize(shargs);
+#endif
     // Initialize the lepton final states
     spdlog::debug("Initializing the leptonic final states");
     auto leptonicProcess = config["Process"].as<achilles::Process_Info>();
@@ -81,21 +98,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Process: {}", leptonicProcess);
 
 #ifdef ENABLE_BSM
-    // Initialize sherpa processes
-    p_sherpa = new achilles::SherpaInterface();
-    std::string model = config["Process"]["Model"].as<std::string>();
-    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
-    int qed = 0;
-    if(config["Process"]["QEDShower"])
-        if(config["Process"]["QEDShower"].as<bool>())
-            qed = 3;
-    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
-    if(model == "SM") model = "SM_Nuc";
-    shargs.push_back("MODEL=" + model);
-    shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    shargs.push_back(fmt::format("BEAM_2={}", 11));
-    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
-    p_sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
