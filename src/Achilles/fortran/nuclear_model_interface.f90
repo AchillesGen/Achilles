@@ -2,6 +2,7 @@ module nuclear_model_interface
     use nuclear_model_factory
     use nuclear_model
     use qe_spectral_model_test
+    use res_spectral_model_test
 
     implicit none
 
@@ -17,6 +18,7 @@ contains
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
         call factory%register_model("QE_Spectral_Func", build_qe_spec)
+        call factory%register_model("RES_Spectral_Func", build_res_spec)
         call factory%init()
     end subroutine
 
@@ -51,6 +53,7 @@ contains
         character(len=:), allocatable :: fname
 
         fname = c2fstring(name)
+        write(6,*) fname
         init_model = model_ptr%init(fname)
     end function
 
@@ -112,6 +115,7 @@ contains
         type(fourvector) :: qvector
         integer(c_size_t) :: i
 
+
         do i=1,nin
             mom_in(i) = fourvector(moms(1, i), moms(2, i), moms(3, i), moms(4, i))
         enddo
@@ -121,6 +125,8 @@ contains
         enddo
 
         qvector = fourvector(qvec(1), qvec(2), qvec(3), qvec(4))
+
+         
 
         call model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, qvector, ff, len_ff, cur, nspin, nlorentz)
     end subroutine

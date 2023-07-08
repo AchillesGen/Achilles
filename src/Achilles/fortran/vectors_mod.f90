@@ -196,10 +196,13 @@ contains ! Implementation of functions
         class(fourvector), intent(in) :: this
         double precision, dimension(4) :: array4
 
-        array4(1) = this%get(0)
-        array4(2) = this%get(1)
-        array4(3) = this%get(2)
-        array4(4) = this%get(3)
+
+        array4(1) = get4(this,0)
+        array4(2) = get4(this,1)
+        array4(3) = get4(this,2)
+        array4(4) = get4(this,3)
+
+
     end function
 
     function create_threevector(x, y, z)

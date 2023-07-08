@@ -1,38 +1,38 @@
-module qe_spectral_model_test
+module res_spectral_model_test
     use iso_c_binding
     !use nuclear_model_interface
     use nuclear_model
-    use libspectral_function
+    use libspectral_function   !...spectral_function_mod.f90
     implicit none
     private
-    public :: qe_spec, build_qe_spec
+    public :: res_spec, build_res_spec
 
     type(spectral_function) :: spectral_p, spectral_n
 
-    type, extends(model) :: qe_spec
+    type, extends(model) :: res_spec
         contains
-            procedure :: init => qe_spec_init
+            procedure :: init => res_spec_init
 !            procedure :: fill_nucleus => qe_spec_fill
 !            procedure :: nspins => qe_spec_spins
 !            procedure :: states => qe_spec_states
-            procedure :: currents => qe_spec_currents
-            procedure :: ps_name => qe_spec_ps
-            procedure :: mode => qe_spec_mode
-            procedure :: cleanup => qe_spec_cleanup
+            procedure :: currents => res_spec_currents
+            procedure :: ps_name => res_spec_ps
+            procedure :: mode => res_spec_mode
+            procedure :: cleanup => res_spec_cleanup
     end type
 
 contains
 
-    function qe_spec_init(self, filename)
+    function res_spec_init(self, filename)
         use libutilities
-        use dirac_matrices
+        use dirac_matrices_pi
         
-        class(qe_spec), intent(inout) :: self
+        class(res_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
         character(len=200) :: string
         integer, parameter :: read_unit = 99
-        logical :: qe_spec_init
+        logical :: res_spec_init
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
 
@@ -41,7 +41,7 @@ contains
 
         open(unit=read_unit, file=trim(filename), iostat=ios)
         if( ios /= 0 ) then
-            qe_spec_init = .false.
+            res_spec_init = .false.
             return
         endif
 
@@ -59,50 +59,51 @@ contains
         
         spectral_n = spectral_function(trim_string)
         
-        qe_spec_init = .true.
-        write(6,*) 'prova', spectral_n%normalization()
-        write(6,*) 'prova1', spectral_p%call(10.0d0,22.5d0)
+        res_spec_init = .true.
+        !write(6,*) 'prova', spectral_n%normalization()
+        !write(6,*) 'prova1', spectral_p%call(10.0d0,22.5d0)
  
 
-        !....does it go here?
 
         call init(constants) ! load constants
-        call dirac_matrices_in(constants%mqe) 
+
+        call dirac_matrices_in(constants%mp,constants%mn,constants%meta,constants%mpi0,constants%mpip,constants%pi,constants%hbarc)
+       !call dirac_matrices_in(constants%mp,constants%mn,constants%mn,constants%mn,constants%mn,constants%pi,constants%hbarc)
 
     end function
 
-    function build_qe_spec() !..you register the different things that cAN BE CREATED
-        class(model), pointer :: build_qe_spec
-        allocate(qe_spec :: build_qe_spec)
-    end function build_qe_spec
+    function build_res_spec() !..you register the different things that cAN BE CREATED
+        class(model), pointer :: build_res_spec
+        allocate(res_spec :: build_res_spec)
+    end function build_res_spec
 
-    function qe_spec_mode(self) !..interaction mode: QE, MEC, RES
-        class(qe_spec), intent(inout) :: self
-        integer :: qe_spec_mode
-        qe_spec_mode = 1
+    function res_spec_mode(self) !..interaction mode: QE, MEC, RES..See NuclearModel.cc
+        class(res_spec), intent(inout) :: self
+        integer :: res_spec_mode
+        res_spec_mode = 4 !..see enum in NuclearModel.hh
     end function
 
-    function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
-        class(qe_spec), intent(inout) :: self
-        character(len=:), allocatable :: qe_spec_ps
-        qe_spec_ps = "QESpectral"
+    function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
+        class(res_spec), intent(inout) :: self
+        character(len=:), allocatable :: res_spec_ps
+        res_spec_ps = "QESpectral"
     end function
 
-    subroutine qe_spec_cleanup(self)
-        class(qe_spec), intent(inout) :: self
+    subroutine res_spec_cleanup(self)
+        class(res_spec), intent(inout) :: self
     end subroutine
 
 
 
 
-    subroutine qe_spec_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, len_ff, cur, nspin, nlorentz)
+    subroutine res_spec_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, len_ff, cur, nspin, nlorentz)
         use iso_c_binding
         use libvectors
-        use dirac_matrices
+        use dirac_matrices_pi
         use libutilities
         
         
-        class(qe_spec), intent(inout) :: self
+        class(res_spec), intent(inout) :: self
         integer(c_size_t), intent(in), value :: nin, nout, len_ff, nspin, nlorentz
         complex(c_double_complex), dimension(len_ff), intent(in) :: ff 
         type(fourvector) :: qvec
@@ -115,25 +116,22 @@ contains
         integer(c_size_t) :: i,j        
         complex(c_double_complex), dimension(2) :: ffa
         complex(c_double_complex) :: ff1,ff2
-        double precision, dimension(4) :: p4,pp4,q4
+        double precision, dimension(4) :: p4,pp4,kpi4,q4
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu
         double precision :: pmom, E, pke 
 
 
         p4=mom_in(1)%to_array()
         pp4=mom_out(1)%to_array()
+        kpi4=mom_out(2)%to_array()
+        
         q4=qvec%to_array()
         
-        call current_init_had(p4,pp4,q4) 
-        call define_spinors()
-        ff1=ff(1)
-        ff2=ff(2)
-        ffa(1)=ff(3)
-        ffa(2)=0.0d0
+        call current_init(p4,pp4,q4,kpi4) 
+       
+        !...check the order of the PID_out are correct in the fortran file
+        call hadr_curr_matrix_el(pids_in(1),pids_out(1),pids_out(2),J_mu)
 
- 
-        call det_Ja(ff1,ff2,ffa)
-        call hadr_curr_matrix_el(J_mu)
         cur=(0.0d0,0.0d0)
         pmom=sqrt(sum(p4(2:4)**2))
         
@@ -150,5 +148,6 @@ contains
     end subroutine
 
 
-end module qe_spectral_model_test
+end module res_spectral_model_test
+
 

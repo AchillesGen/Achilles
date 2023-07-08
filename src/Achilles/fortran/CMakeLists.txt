@@ -18,6 +18,9 @@ add_library(fortran_interface SHARED
     spectral_function_mod.f90
     qe_spectral_model.f90
     currents_opt_v1.f90
+    res_spectral_model.f90
+    currents_pi_dcc.f90
+    amp_dcc_sl_module.f
     # OneBody/pke_read_xsec.f90
     # OneBody/contract.f90
     # OneBody/currents.f90

@@ -93,6 +93,9 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
+ // p_sherpa->GetInitHandler()->GetMatrixElementHandler();
+  std::cout <<  p_sherpa->GetInitHandler()->GetMatrixElementHandler();
+
   m_pmap[nlo_type::lo] = new StringProcess_Map();
   RegisterParticles();
 
@@ -140,7 +143,7 @@ Process_Base* SherpaMEs::getProcess(Cluster_Amplitude* const ampl) {
   proc->SetSelector(Selector_Key(nullptr,new Data_Reader(),true));
   proc->SetScale(Scale_Setter_Arguments(MODEL::s_model,
     "VAR{100}{100}", "Alpha_QCD 1"));
-  proc->SetKFactor(KFactor_Setter_Arguments("None"));
+  //proc->SetKFactor(KFactor_Setter_Arguments("None"));
   msg_Info()<<"SherpaMEs::getProcess: Performing tests ";
   if (proc->Get<COMIX::Process_Base>())
     proc->Get<COMIX::Process_Base>()->Tests();

@@ -66,6 +66,7 @@ class CoherentMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapp
         size_t NDims() const override { return 0; }
 };
 
+
 }
 
 

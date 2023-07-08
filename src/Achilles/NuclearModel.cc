@@ -99,6 +99,39 @@ achilles::Process_Group NuclearModel::AllowedStates(Process_Info info) {
                     break;
             }
             break;
+
+	          case NuclearMode::Resonance:
+            if(std::abs(charge) > 1)
+                throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            
+            switch(charge) {
+                case -1: // Final state has less charge than initial
+                    info.state = {{PID::neutron()}, {PID::proton(),PID::pion0()}}; 
+                    m_group.AddProcess(info);
+		    info.state = {{PID::neutron()}, {PID::neutron(),PID::pionp()}}; 
+                    m_group.AddProcess(info);
+		    info.state = {{PID::proton()}, {PID::proton(),PID::pionp()}}; 
+                    m_group.AddProcess(info);
+                    break; 
+                case 0: // Same charge in inital and final
+                    info.state = {{PID::proton()}, {PID::proton(),PID::pion0()}}; 
+                    m_group.AddProcess(info);
+		    info.state = {{PID::proton()}, {PID::neutron(),PID::pionp()}}; 
+                    m_group.AddProcess(info);
+                    info.state = {{PID::neutron()}, {PID::neutron(),PID::pion0()}}; 
+                    m_group.AddProcess(info);
+		    info.state = {{PID::neutron()}, {PID::proton(),-PID::pionp()}}; 
+                    m_group.AddProcess(info);
+                    break;
+                case 1: // Final state has more charge than initial
+                    info.state = {{PID::proton()}, {PID::neutron(),PID::pion0()}};
+		    info.state = {{PID::proton()}, {PID::proton(),-PID::pionp()}};
+		    info.state = {{PID::neutron()}, {PID::neutron(),-PID::pionp()}};   
+		    m_group.AddProcess(info);
+                    break;
+            }
+            break;
+
         case NuclearMode::MesonExchangeCurrent:
             if(std::abs(charge) > 1)
                 throw std::runtime_error(fmt::format("{}: Requires |charge| < 2, but found |charge| {}",
@@ -151,7 +184,7 @@ achilles::Process_Group NuclearModel::AllowedStates(Process_Info info) {
             break;
         // TODO: Implement remaining cases
         case NuclearMode::Interference_QE_MEC:
-        case NuclearMode::Resonance:
+      //  case NuclearMode::Resonance:
         case NuclearMode::ShallowInelastic:
         case NuclearMode::DeepInelastic:
             throw std::runtime_error(fmt::format("NuclearModel: Allowed states for {} not implemented yet",
@@ -255,6 +288,8 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
           spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {
     b_ward = config["NuclearModel"]["Ward"].as<bool>();
 }
+
+
 
 std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
                                                              const std::vector<FFInfoMap> &ff) const {

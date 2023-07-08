@@ -22,6 +22,10 @@ namespace Constant {
     constexpr double mN = (mp + mn) / 2.0;
     constexpr double AMU = 931.49410248_MeV;
     constexpr double mN2 = mN*mN;
+    constexpr double mpip = 139.57018_MeV;
+    constexpr double mpi0 = 134.9764_MeV;
+    constexpr double meta = 548.0_MeV;
+    
 
     // EW parameters
     constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;

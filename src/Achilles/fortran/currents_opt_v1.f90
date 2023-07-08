@@ -115,7 +115,8 @@ subroutine current_init_had(p1_in,pp1_in,q_in)
     q=q_in
     w=q(1)
     q(1)=w+p1(1)
-    p1(1)=sqrt(sum(p1(2:4)**2)+xmn) !...check me
+    p1(1)=sqrt(p1(2)**2+p1(3)**2+p1(4)**2+xmn**2) !...check me
+    !write(6,*) 'energy here',p1(1:4)
     q(1)=q(1)-p1(1)
    
     return
