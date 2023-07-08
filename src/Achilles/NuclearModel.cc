@@ -408,6 +408,8 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
             std::vector<std::complex<double>> subcur(4);
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*gamma[mu]*u[j];
+		//spdlog::info("current {}",subcur[mu]);
+
             }
             result.push_back(subcur);
         }
