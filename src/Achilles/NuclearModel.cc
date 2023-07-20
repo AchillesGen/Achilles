@@ -157,19 +157,13 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<FourVector> &h
     auto pIn = had_in[0];
     auto pOut = had_out[0];
     auto qVec = q;
-    auto removal_energy = Constant::mN - pIn.E();
     auto free_energy = sqrt(pIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     auto omega = qVec.E();
     qVec.E() = qVec.E() + pIn.E() - free_energy;
 
     Currents results;
-    // TODO: Move to the phase space definition
-    std::vector<double> spectral(2);
-    spectral[0] = spectral_proton(pIn.P(), removal_energy);
-    spectral[1] = spectral_neutron(pIn.P(), removal_energy);
-    spdlog::debug("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}", removal_energy, pIn.P(),
-                  spectral[0], removal_energy, pIn.P(), spectral[1]);
+
     // Setup spinors
     pIn.E() = free_energy;
     std::array<Spinor, 2> ubar, u;

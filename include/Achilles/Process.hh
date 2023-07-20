@@ -80,6 +80,7 @@ class ProcessGroup {
     Event SingleEvent(const std::vector<FourVector> &, double);
     double MaxWeight() const { return m_maxweight; }
     void SetOptimize(bool optimize) { b_optimize = optimize; }
+    size_t Multiplicity() const { return m_processes[0].Info().Multiplicity(); }
 
   private:
     // Physics components
@@ -97,7 +98,7 @@ class ProcessGroup {
     // Parameters
     std::vector<double> m_process_weights;
     double m_maxweight{};
-    bool b_optimize{}, b_calc_weights{};
+    bool b_optimize{true}, b_calc_weights{};
 };
 
 } // namespace achilles

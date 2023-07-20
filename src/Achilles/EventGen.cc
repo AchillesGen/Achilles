@@ -3,6 +3,7 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/Channels.hh"
 #include "Achilles/ComplexFmt.hh"
+#include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Logging.hh"
@@ -139,6 +140,13 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 }
 
 void achilles::EventGen::Initialize() {
+    if(config["Backend"]["Options"]["DebugEvents"]) {
+        auto &group = process_groups[0];
+        DebugEvents events(config["Backend"]["Options"]["DebugEvents"].as<std::string>(),
+                           group.Multiplicity());
+        for(const auto &evt : events.events) { group.SingleEvent(evt, 1); }
+        exit(0);
+    }
     // TODO: Save trained integrators
     spdlog::info("Starting optimization runs");
     for(auto &group : process_groups) {

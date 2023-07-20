@@ -93,6 +93,7 @@ add_library(event_gen SHARED
     # TODO: Move to its own library
     NuclearModel.cc
     EventGen.cc
+    Debug.cc
     EventWriter.cc
 )
 if(ACHILLES_ENABLE_HEPMC3)

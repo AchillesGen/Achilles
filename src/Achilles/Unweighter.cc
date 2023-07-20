@@ -20,7 +20,7 @@ double PercentileUnweighter::AcceptEvent(double weight) {
     if(prob < achilles::Random::Instance().Uniform(0.0, 1.0)) { return 0; }
 
     m_accepted++;
-    return weight > max_wgt ? weight : max_wgt;
+    return weight > max_wgt ? weight / max_wgt : 1.0;
 }
 
 std::unique_ptr<achilles::Unweighter> PercentileUnweighter::Construct(const YAML::Node &node) {

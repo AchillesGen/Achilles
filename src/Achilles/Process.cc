@@ -262,6 +262,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];
+    event.Weight() *= MaxWeight();
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
     process.SetupHadrons(event);
 
