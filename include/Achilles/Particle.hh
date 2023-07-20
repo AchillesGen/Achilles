@@ -237,6 +237,10 @@ class Particle {
         return (status == ParticleStatus::escaped) || (status == ParticleStatus::final_state);
     }
 
+    /// Check to see if the particle is a final state particle
+    ///@return bool: True if a final state particle, False otherwise
+    bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
+
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
     void Propagate(const double &) noexcept;

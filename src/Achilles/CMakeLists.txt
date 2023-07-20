@@ -146,6 +146,13 @@ if(ACHILLES_ENABLE_POTENTIAL_TEST)
     list(APPEND achilles_targets achilles-potential)
 endif()
 
+if(ACHILLES_ENABLE_PRECOMPUTED)
+    add_executable(achilles-precomputed Precomputed.cc PrecomputedMain.cc)
+    target_link_libraries(achilles-precomputed PRIVATE project_warnings
+                                               PUBLIC physics event_gen docopt::docopt)
+    list(APPEND achilles_targets achilles-precomputed)
+endif()
+
 set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
     ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
