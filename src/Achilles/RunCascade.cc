@@ -1,350 +1,232 @@
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Cascade.hh"
-#include "Achilles/Histogram.hh"
+#include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
 
 #include "spdlog/spdlog.h"
-#include "yaml-cpp/yaml.h"
 
 #include <chrono>
 #include <fstream>
+#include <stdexcept>
 
-namespace achilles {
+using achilles::CascadeTest::CalcCrossSection;
+using achilles::CascadeTest::CalcCrossSectionMFP;
+using achilles::CascadeTest::CalcMeanFreePath;
+using achilles::CascadeTest::CalcTransparency;
+using achilles::CascadeTest::CalcTransparencyMFP;
 
-enum class CascadeMode {
-    CrossSection,
-    MeanFreePath,
-    Transparency,
-    CrossSectionMFP,
-    TransparencyMFP,
-};
+void CalcCrossSection::GenerateEvent(double mom) {
+    auto particles = m_nuc->Nucleons();
 
+    // Generate a point in the beam of a given radius
+    std::array<double, 2> beam_spot;
+    while(true) {
+        beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
+        beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
+        if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius) break;
+    }
+
+    // Add test particle from the beam coming in on the z-axis
+    // The test particle starts outside the nucleus by 5%
+    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
+    auto mass = achilles::ParticleInfo(m_pid).Mass();
+    FourVector momentum{0, 0, mom, sqrt(mom * mom + mass * mass)};
+    Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
+
+    // Cascade
+    m_cascade.SetKicked(particles.size());
+    particles.push_back(testPart);
+    m_nuc->SetNucleons(particles);
+    m_cascade.Evolve(m_nuc);
+
+    // Analyze output
+    spdlog::debug("Final Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
+
+    nevents++;
+    for(const auto &part : m_nuc->Nucleons()) {
+        if(part.Status() == ParticleStatus::escaped) {
+            nhits++;
+            break;
+        }
+    }
 }
 
-namespace YAML {
+void CalcCrossSection::PrintResults(std::ofstream &out) const {
+    double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
+    double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
+    fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
+    out << fmt::format("{},{}\n", xsec, error);
+}
 
-template <> struct convert<achilles::CascadeMode> {
-    static bool decode(const YAML::Node &node, achilles::CascadeMode &mode) {
-        std::string name = node.as<std::string>();
-        if(name == "CrossSection")
-            mode = achilles::CascadeMode::CrossSection;
-        else if(name == "MeanFreePath")
-            mode = achilles::CascadeMode::MeanFreePath;
-        else if(name == "Transparency")
-            mode = achilles::CascadeMode::Transparency;
-        else if(name == "CrossSectionMFP")
-            mode = achilles::CascadeMode::CrossSectionMFP;
-        else if(name == "TransparencyMFP")
-            mode = achilles::CascadeMode::TransparencyMFP;
-        else
-            return false;
+void CalcCrossSectionMFP::GenerateEvent(double mom) {
+    auto particles = m_nuc->Nucleons();
 
-        return true;
+    // Generate a point in the beam of a given radius
+    std::array<double, 2> beam_spot;
+    while(true) {
+        beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
+        beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
+        if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius) break;
     }
-};
 
-} // namespace YAML
+    // Add test particle from the beam coming in on the z-axis
+    // The test particle starts outside the nucleus by 5%
+    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
+    auto mass = achilles::ParticleInfo(m_pid).Mass();
+    FourVector momentum{0, 0, mom, sqrt(mom * mom + mass * mass)};
+    Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
 
-namespace achilles {
+    // Cascade
+    m_cascade.SetKicked(particles.size());
+    particles.push_back(testPart);
+    m_nuc->SetNucleons(particles);
+    m_cascade.NuWro(m_nuc);
 
-class RunMode {
-  public:
-    RunMode(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : m_nuc{nuc}, m_cascade{std::move(cascade)} {}
-    virtual ~RunMode() = default;
-    virtual void GenerateEvent(double) = 0;
-    virtual void PrintResults(std::ofstream &) const = 0;
-    virtual void Reset() = 0;
+    // Analyze output
+    spdlog::debug("Final Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
 
-  protected:
-    std::shared_ptr<Nucleus> m_nuc;
-    Cascade m_cascade;
-};
-
-class CalcCrossSection : public RunMode {
-  public:
-    CalcCrossSection(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade, double radius = 10)
-        : RunMode(nuc, std::move(cascade)), m_radius{std::move(radius)}, m_pid{pid} {}
-    void GenerateEvent(double mom) override {
-        auto particles = m_nuc->Nucleons();
-
-        // Generate a point in the beam of a given radius
-        std::array<double, 2> beam_spot;
-        while(true) {
-            beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-            beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-            if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius)
-                break;
-        }
-
-        // Add test particle from the beam coming in on the z-axis
-        // The test particle starts outside the nucleus by 5%
-        ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
-        auto mass = achilles::ParticleInfo(m_pid).Mass();
-        FourVector momentum{0, 0, mom, sqrt(mom * mom + mass * mass)};
-        Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
-
-        // Cascade
-        m_cascade.SetKicked(particles.size());
-        particles.push_back(testPart);
-        m_nuc->SetNucleons(particles);
-        m_cascade.Evolve(m_nuc);
-
-        // Analyze output
-        spdlog::debug("Final Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
-
-        nevents++;
-        for(const auto &part : m_nuc->Nucleons()) {
-            if(part.Status() == ParticleStatus::escaped) {
-                nhits++;
-                break;
-            }
+    nevents++;
+    for(const auto &part : m_nuc->Nucleons()) {
+        if(part.Status() == ParticleStatus::escaped) {
+            nhits++;
+            break;
         }
     }
-    void PrintResults(std::ofstream &out) const override {
-        double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
-        double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
-        fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
-        out << fmt::format("{},{}\n", xsec, error);
-    }
-    void Reset() override {
-        nevents = 0;
-        nhits = 0;
-    }
+}
 
-  private:
-    double m_radius;
-    int m_pid;
-    double nhits{}, nevents{};
-};
+void CalcCrossSectionMFP::PrintResults(std::ofstream &out) const {
+    double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
+    double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
+    fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
+    out << fmt::format("{},{}\n", xsec, error);
+}
 
-class CalcCrossSectionMFP : public RunMode {
-  public:
-    CalcCrossSectionMFP(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade, double radius = 10)
-        : RunMode(nuc, std::move(cascade)), m_radius{std::move(radius)}, m_pid{pid} {}
-    void GenerateEvent(double mom) override {
-        auto particles = m_nuc->Nucleons();
+CalcMeanFreePath::CalcMeanFreePath(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade)
+    : RunMode(nuc, std::move(cascade)), m_pid{pid} {
+    m_hist = Histogram(100, 0.0, 2 * m_nuc->Radius(), "mfp");
+}
 
-        // Generate a point in the beam of a given radius
-        std::array<double, 2> beam_spot;
-        while(true) {
-            beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-            beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-            if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius)
-                break;
-        }
-
-        // Add test particle from the beam coming in on the z-axis
-        // The test particle starts outside the nucleus by 5%
-        ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
-        auto mass = achilles::ParticleInfo(m_pid).Mass();
-        FourVector momentum{0, 0, mom, sqrt(mom * mom + mass * mass)};
-        Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
-
-        // Cascade
-        m_cascade.SetKicked(particles.size());
-        particles.push_back(testPart);
-        m_nuc->SetNucleons(particles);
-        m_cascade.NuWro(m_nuc);
-
-        // Analyze output
-        spdlog::debug("Final Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
-
-        nevents++;
-        for(const auto &part : m_nuc->Nucleons()) {
-            if(part.Status() == ParticleStatus::escaped) {
-                nhits++;
-                break;
-            }
+void CalcMeanFreePath::GenerateEvent(double kick_mom) {
+    double costheta = Random::Instance().Uniform(-1.0, 1.0);
+    double sintheta = sqrt(1 - costheta * costheta);
+    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
+    auto particles = m_nuc->Nucleons();
+    ThreeVector position{};
+    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
+                    kick_mom * costheta, sqrt(kick_mom * kick_mom + Constant::mN * Constant::mN)};
+    Particle testPart{m_pid, kick, position, ParticleStatus::internal_test};
+    m_cascade.SetKicked(particles.size());
+    particles.push_back(testPart);
+    m_nuc->SetNucleons(particles);
+    m_cascade.MeanFreePath(m_nuc);
+    for(const auto &part : m_nuc->Nucleons()) {
+        if(part.Status() == ParticleStatus::internal_test) {
+            m_hist.Fill(part.GetDistanceTraveled());
+            break;
         }
     }
-    void PrintResults(std::ofstream &out) const override {
-        double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
-        double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
-        fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
-        out << fmt::format("{},{}\n", xsec, error);
-    }
-    void Reset() override {
-        nevents = 0;
-        nhits = 0;
-    }
+}
 
-  private:
-    double m_radius;
-    int m_pid;
-    double nhits{}, nevents{};
-};
+void CalcMeanFreePath::PrintResults(std::ofstream &out) const {
+    m_hist.Save(&out);
+    fmt::print("  Histogram saved\n");
+}
 
-class CalcMeanFreePath : public RunMode {
-  public:
-    CalcMeanFreePath(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : RunMode(nuc, std::move(cascade)), m_pid{pid} {
-        m_hist = Histogram(100, 0.0, 2 * m_nuc->Radius(), "mfp");
-    }
-    void GenerateEvent(double kick_mom) override {
-        double costheta = Random::Instance().Uniform(-1.0, 1.0);
-        double sintheta = sqrt(1 - costheta * costheta);
-        double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
-        auto particles = m_nuc->Nucleons();
-        ThreeVector position{};
-        FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                        kick_mom * costheta,
-                        sqrt(kick_mom * kick_mom + Constant::mN * Constant::mN)};
-        Particle testPart{m_pid, kick, position, ParticleStatus::internal_test};
-        m_cascade.SetKicked(particles.size());
-        particles.push_back(testPart);
-        m_nuc->SetNucleons(particles);
-        m_cascade.MeanFreePath(m_nuc);
-        for(const auto &part : m_nuc->Nucleons()) {
-            if(part.Status() == ParticleStatus::internal_test) {
-                m_hist.Fill(part.GetDistanceTraveled());
-                break;
-            }
+void CalcTransparency::GenerateEvent(double kick_mom) {
+    double costheta = Random::Instance().Uniform(-1.0, 1.0);
+    double sintheta = sqrt(1 - costheta * costheta);
+    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
+    auto particles = m_nuc->Nucleons();
+    size_t idx = Random::Instance().Uniform(0ul, particles.size() - 1);
+    m_cascade.SetKicked(idx);
+    auto kicked_particle = &particles[idx];
+    auto mass = kicked_particle->Info().Mass();
+    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
+                    kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
+    kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
+    kicked_particle->Status() = ParticleStatus::internal_test;
+    kicked_particle->SetMomentum(kick);
+    m_nuc->SetNucleons(particles);
+
+    spdlog::debug("Initial Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
+
+    m_cascade.MeanFreePath(m_nuc);
+    nevents++;
+
+    spdlog::debug("Final Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
+
+    for(const auto &part : m_nuc->Nucleons()) {
+        if(part.Status() == ParticleStatus::internal_test) {
+            ninteract++;
+            distance += part.GetDistanceTraveled();
+        } else if(part.Status() == ParticleStatus::captured) {
+            ncaptured++;
+            ninteract++;
         }
     }
-    void PrintResults(std::ofstream &out) const override {
-        m_hist.Save(&out);
-        fmt::print("  Histogram saved\n");
-    }
+}
 
-    // TODO: Implement this!
-    void Reset() override {}
+void CalcTransparency::PrintResults(std::ofstream &out) const {
+    double transparency = 1 - ninteract / nevents;
+    double error = sqrt(ninteract / nevents / nevents);
+    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
+    out << fmt::format("{},{}\n", transparency, error);
+}
 
-  private:
-    int m_pid;
-    Histogram m_hist;
-};
+void CalcTransparencyMFP::GenerateEvent(double kick_mom) {
+    double costheta = Random::Instance().Uniform(-1.0, 1.0);
+    double sintheta = sqrt(1 - costheta * costheta);
+    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
+    auto particles = m_nuc->Nucleons();
+    size_t idx = Random::Instance().Uniform(0ul, particles.size() - 1);
+    m_cascade.SetKicked(idx);
+    auto kicked_particle = &particles[idx];
+    auto mass = kicked_particle->Info().Mass();
+    // auto mass = Constant::mN;
+    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
+                    kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
+    kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
+    kicked_particle->Status() = ParticleStatus::internal_test;
+    kicked_particle->SetMomentum(kick);
+    m_nuc->SetNucleons(particles);
 
-class CalcTransparency : public RunMode {
-  public:
-    CalcTransparency(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : RunMode(nuc, std::move(cascade)) {}
+    spdlog::debug("Initial Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
 
-    void GenerateEvent(double kick_mom) override {
-        double costheta = Random::Instance().Uniform(-1.0, 1.0);
-        double sintheta = sqrt(1 - costheta * costheta);
-        double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
-        auto particles = m_nuc->Nucleons();
-        size_t idx = Random::Instance().Uniform(0ul, particles.size() - 1);
-        m_cascade.SetKicked(idx);
-        auto kicked_particle = &particles[idx];
-        auto mass = kicked_particle->Info().Mass();
-        FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                        kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
-        kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
-        kicked_particle->Status() = ParticleStatus::internal_test;
-        kicked_particle->SetMomentum(kick);
-        m_nuc->SetNucleons(particles);
+    m_cascade.MeanFreePath_NuWro(m_nuc, 10000);
+    nevents++;
 
-        spdlog::debug("Initial Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
+    spdlog::debug("Final Nucleons:");
+    for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
 
-        m_cascade.MeanFreePath(m_nuc);
-        nevents++;
-
-        spdlog::debug("Final Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
-
-        for(const auto &part : m_nuc->Nucleons()) {
-            if(part.Status() == ParticleStatus::internal_test) {
-                ninteract++;
-                distance += part.GetDistanceTraveled();
-            } else if(part.Status() == ParticleStatus::captured) {
-                ncaptured++;
-                ninteract++;
-            }
+    for(const auto &part : m_nuc->Nucleons()) {
+        if(part.Status() == ParticleStatus::internal_test) {
+            ninteract++;
+            distance += part.GetDistanceTraveled();
+        } else if(part.Status() == ParticleStatus::captured) {
+            ncaptured++;
+            ninteract++;
         }
     }
-    void PrintResults(std::ofstream &out) const override {
-        double transparency = 1 - ninteract / nevents;
-        double error = sqrt(ninteract / nevents / nevents);
-        fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
-        fmt::print("  Average distance to interact: {}\n", distance / ninteract);
-        out << fmt::format("{},{}\n", transparency, error);
-    }
-    void Reset() override {
-        nevents = 0;
-        ninteract = 0;
-        ncaptured = 0;
-    }
+}
 
-  private:
-    double nevents{};
-    double ninteract{};
-    double distance{};
-    double ncaptured{};
-};
+void CalcTransparencyMFP::PrintResults(std::ofstream &out) const {
+    double transparency = 1 - ninteract / nevents;
+    double error = sqrt(ninteract / nevents / nevents);
+    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
+    fmt::print("  Number of captured nucleons: {}\n", ncaptured);
+    out << fmt::format("{},{}\n", transparency, error);
+}
 
-class CalcTransparencyMFP : public RunMode {
-  public:
-    CalcTransparencyMFP(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : RunMode(nuc, std::move(cascade)) {}
-
-    void GenerateEvent(double kick_mom) override {
-        double costheta = Random::Instance().Uniform(-1.0, 1.0);
-        double sintheta = sqrt(1 - costheta * costheta);
-        double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
-        auto particles = m_nuc->Nucleons();
-        size_t idx = Random::Instance().Uniform(0ul, particles.size() - 1);
-        m_cascade.SetKicked(idx);
-        auto kicked_particle = &particles[idx];
-        auto mass = kicked_particle->Info().Mass();
-        // auto mass = Constant::mN;
-        FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                        kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
-        kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
-        kicked_particle->Status() = ParticleStatus::internal_test;
-        kicked_particle->SetMomentum(kick);
-        m_nuc->SetNucleons(particles);
-
-        spdlog::debug("Initial Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
-
-        m_cascade.MeanFreePath_NuWro(m_nuc, 10000);
-        nevents++;
-
-        spdlog::debug("Final Nucleons:");
-        for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
-
-        for(const auto &part : m_nuc->Nucleons()) {
-            if(part.Status() == ParticleStatus::internal_test) {
-                ninteract++;
-                distance += part.GetDistanceTraveled();
-            } else if(part.Status() == ParticleStatus::captured) {
-                ncaptured++;
-                ninteract++;
-            }
-        }
-    }
-    void PrintResults(std::ofstream &out) const override {
-        double transparency = 1 - ninteract / nevents;
-        double error = sqrt(ninteract / nevents / nevents);
-        fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
-        fmt::print("  Average distance to interact: {}\n", distance / ninteract);
-        fmt::print("  Number of captured nucleons: {}\n", ncaptured);
-        out << fmt::format("{},{}\n", transparency, error);
-    }
-    void Reset() override {
-        nevents = 0;
-        ninteract = 0;
-        distance = 0;
-        ncaptured = 0;
-    }
-
-  private:
-    double nevents{};
-    double ninteract{};
-    double distance{};
-    double ncaptured{};
-};
-
-} // namespace achilles
-
-void achilles::RunCascade(const std::string &runcard) {
+void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     auto config = YAML::LoadFile(runcard);
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
