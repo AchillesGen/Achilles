@@ -119,7 +119,12 @@ void achilles::DefaultBackend::AddProcess(Process &process) {
     current.Initialize(process_info);
 
     // TODO: Clean up how the form factors are loaded. Make part of the backend?
-    if(form_factors.size() == 0) form_factors = current.GetFormFactor();
+    if(form_factors.size() == 0)
+        form_factors = current.GetFormFactor();
+    else {
+        auto tmp = current.GetFormFactor();
+        form_factors.insert(tmp.begin(), tmp.end());
+    }
     m_currents[leptons] = current;
 }
 

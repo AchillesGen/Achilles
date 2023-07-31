@@ -205,6 +205,7 @@ void ProcessGroup::Optimize() {
     m_integrand.Function() = func;
     m_integrator.Optimize(m_integrand);
 
+    spdlog::info("Calculating maximum weight");
     b_calc_weights = true;
     m_integrator.Parameters().ncalls = 100000;
     for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
