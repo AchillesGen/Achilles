@@ -270,7 +270,7 @@ template <> struct convert<achilles::Nucleus> {
         auto densityFile = node["Density"]["File"].as<std::string>();
 #ifdef GZIP
         auto configs = std::make_unique<achilles::DensityConfiguration>(
-            "data/configurations/QMC_configs.out.gz");
+            node["Density"]["Configs"].as<std::string>());
 #else
         auto configs =
             std::make_unique<achilles::DensityConfiguration>("data/configurations/QMC_configs.out");
