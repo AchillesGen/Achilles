@@ -22,6 +22,7 @@ class SherpaInterface {};
 
 #ifdef ACHILLES_ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "yaml-cpp/yaml.h"
@@ -130,6 +131,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 #ifdef ACHILLES_ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
 #endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}",

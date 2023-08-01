@@ -128,8 +128,8 @@ list(APPEND achilles_targets event_gen)
                             #                               PUBLIC spdlog::spdlog utilities physics)
 
 add_executable(achilles main.cc)
-target_link_libraries(achilles PRIVATE project_warnings
-                               PUBLIC event_gen docopt::docopt dl)
+target_link_libraries(achilles PRIVATE project_options project_warnings
+                               PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking)
 list(APPEND achilles_targets achilles)
 
 if(ACHILLES_ENABLE_CASCADE_TEST)

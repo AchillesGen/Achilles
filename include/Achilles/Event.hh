@@ -53,7 +53,7 @@ class Event {
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
-    const EventHistory &History() const { return m_history; }
+    MOCK const EventHistory &History() const { return m_history; }
     EventHistory &History() { return m_history; }
 
     bool operator==(const Event &other) const {

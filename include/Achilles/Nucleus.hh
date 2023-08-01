@@ -98,7 +98,7 @@ class Nucleus {
 
     /// Return the nuclear PID
     ///@return PID: The pid for the given nucleus
-    PID ID() const { return m_pid; }
+    MOCK PID ID() const { return m_pid; }
 
     /// Return a particle with initial momentum for at rest nucleus and correct PID
     ///@return Particle: Particle representing the initial nucleus

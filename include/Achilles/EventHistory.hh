@@ -23,14 +23,14 @@ struct compare_momentum {
 
 class EventHistoryNode {
   public:
-    enum class StatusCode {
+    enum class StatusCode : int {
         propagation = -2,
         cascade = -1,
-        primary = 0,
-        beam = 1,
-        target = 2,
-        decay = 3,
-        shower = 4,
+        primary = 1,
+        beam = 2,
+        target = 3,
+        decay = 4,
+        shower = 5,
     };
 
     EventHistoryNode(size_t idx, StatusCode status = StatusCode::cascade)

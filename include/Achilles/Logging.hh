@@ -20,6 +20,7 @@ inline void CreateLogger(int level, int flush_time) {
     spdlog::register_logger(logger);
     spdlog::set_default_logger(logger);
     spdlog::flush_every(std::chrono::seconds(flush_time));
+    spdlog::set_pattern("[%^%l%$] %v");
 }
 
 #endif

@@ -76,6 +76,7 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     static constexpr bool trompeloeil_movable_mock = true;
     MAKE_MOCK0(Nucleons, achilles::Particles &(), noexcept override);
     IMPLEMENT_MOCK0(GenerateConfig);
+    IMPLEMENT_CONST_MOCK0(ID);
     MAKE_CONST_MOCK0(Radius, const double &(), noexcept override);
     MAKE_CONST_MOCK1(Rho, double(const double &), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
@@ -121,15 +122,21 @@ class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
 
 class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK0(Remnant);
-    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &(), override);
-    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &(), override);
     IMPLEMENT_MOCK0(CurrentNucleus);
-    IMPLEMENT_CONST_MOCK0(Particles);
+    IMPLEMENT_CONST_MOCK0(CurrentNucleus);
     IMPLEMENT_MOCK0(Hadrons);
+    IMPLEMENT_CONST_MOCK0(Hadrons);
     IMPLEMENT_MOCK0(Leptons);
-    MAKE_CONST_MOCK0(Weight, const double &(), override);
-    MAKE_MOCK0(Weight, double &(), override);
+    IMPLEMENT_CONST_MOCK0(Leptons);
+    IMPLEMENT_MOCK1(InitializeLeptons);
+    IMPLEMENT_MOCK1(InitializeHadrons);
+    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &());
+    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &());
+    IMPLEMENT_CONST_MOCK0(Particles);
+    IMPLEMENT_CONST_MOCK0(Remnant);
+    MAKE_CONST_MOCK0(Weight, const double &());
+    MAKE_MOCK0(Weight, double &());
+    IMPLEMENT_CONST_MOCK0(History);
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {
