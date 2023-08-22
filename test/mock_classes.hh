@@ -225,4 +225,23 @@ class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
     static void SetSelf(std::unique_ptr<MockBackend> backend) { self = std::move(backend); }
 };
 
+class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
+                    RegistrableBackend<MockBackend> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK2(CrossSection);
+    IMPLEMENT_MOCK1(SetOptions);
+    IMPLEMENT_MOCK1(SetSherpa);
+    IMPLEMENT_MOCK1(AddNuclearModel);
+    IMPLEMENT_MOCK1(AddProcess);
+    IMPLEMENT_MOCK0(Validate);
+    IMPLEMENT_MOCK3(SetupChannels);
+    IMPLEMENT_MOCK0(GetNuclearModel);
+
+    // Required factory methods
+    static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }
+    static std::string Name() { return "Mock"; }
+    static std::unique_ptr<MockBackend> self;
+    static void SetSelf(std::unique_ptr<MockBackend> backend) { self = std::move(backend); }
+};
+
 #endif
