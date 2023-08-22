@@ -57,6 +57,9 @@ class SherpaInterface {
 } // namespace achilles
 #endif
 
+using achilles::RegistrableBackend;
+using achilles::XSecBackend;
+
 class MockDensity : public trompeloeil::mock_interface<achilles::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(GetConfiguration);
@@ -94,6 +97,7 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK0(NSpins);
     IMPLEMENT_CONST_MOCK2(InitialStateWeight);
     IMPLEMENT_CONST_MOCK0(GetName);
+    IMPLEMENT_CONST_MOCK0(InspireHEP);
 };
 
 class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
@@ -128,8 +132,6 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     IMPLEMENT_CONST_MOCK0(Hadrons);
     IMPLEMENT_MOCK0(Leptons);
     IMPLEMENT_CONST_MOCK0(Leptons);
-    IMPLEMENT_MOCK1(InitializeLeptons);
-    IMPLEMENT_MOCK1(InitializeHadrons);
     MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &());
     MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &());
     IMPLEMENT_CONST_MOCK0(Particles);
@@ -185,6 +187,25 @@ class MockProcess : public trompeloeil::mock_interface<achilles::Process> {
     IMPLEMENT_MOCK1(AddWeight);
     IMPLEMENT_MOCK1(Unweight);
     IMPLEMENT_CONST_MOCK5(ExtractMomentum);
+};
+
+class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
+                    RegistrableBackend<MockBackend> {
+    static constexpr bool trompeloeil_movable_mock = true;
+    IMPLEMENT_CONST_MOCK2(CrossSection);
+    IMPLEMENT_MOCK1(SetOptions);
+    IMPLEMENT_MOCK1(SetSherpa);
+    IMPLEMENT_MOCK1(AddNuclearModel);
+    IMPLEMENT_MOCK1(AddProcess);
+    IMPLEMENT_MOCK0(Validate);
+    IMPLEMENT_MOCK3(SetupChannels);
+    IMPLEMENT_MOCK0(GetNuclearModel);
+
+    // Required factory methods
+    static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }
+    static std::string Name() { return "Mock"; }
+    static std::unique_ptr<MockBackend> self;
+    static void SetSelf(std::unique_ptr<MockBackend> backend) { self = std::move(backend); }
 };
 
 #endif

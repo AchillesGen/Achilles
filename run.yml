@@ -3,8 +3,9 @@ Main:
   HardCuts: false
   EventCuts: false
   DoRotate: false
+  RunDecays: False
   Output:
-      Format: HepMC3
+      Format: NuHepMC
       Name: electron_1300_37.hepmc
       Zipped: True
 
@@ -13,7 +14,8 @@ SherpaOptions:
   ParamCard: parameters.dat
 
 Processes:
-  - Leptons: [11, [11]]
+  - Leptons: [14, [14]]
+  - Leptons: [14, [13]]
 
 Initialize:
   Seed: 12345678
@@ -25,18 +27,20 @@ Unweighting:
 
 Beams:
   - Beam:
-      PID: 11
+      PID: 14
       Beam Params:
         Type: Monochromatic
         Energy: 1300
 
 Cascade:
-  Run: False
+  Run: True
   Interaction:
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
   Step: 0.04
   Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
 
 NuclearModels:
   - NuclearModel:
@@ -44,17 +48,17 @@ NuclearModels:
       FormFactorFile: "FormFactors.yml"
       SpectralP: data/pke12_tot.data
       SpectralN: data/pke12_tot.data
-      Ward: False
+      Ward: Landau
 
 Nucleus:
-  Name: 12C
+  Name: 40Ar
   Binding: 8.6
   Fermi Momentum: 225
   Density:
     File: data/c12.prova.txt
     FilePotential: data/realOP_12C_EDAI.dat
     Function: configuration
-    Config Type: QMC
+    Configs: data/configurations/AR40_configs_RMF_achilles.out.gz
   FermiGas: Local
   Potential: 
     Name: Schroedinger

@@ -16,12 +16,14 @@
 #endif
 
 achilles::DensityConfiguration::DensityConfiguration(const std::string &filename) {
+    spdlog::debug("Loading density configurations from {}", filename);
     // Load configuration
 #ifdef GZIP
     igzstream configs(filename.c_str());
 #else
     std::ifstream configs(filename.c_str());
 #endif
+    if(!configs.good()) throw std::runtime_error("Invalid file " + filename);
     std::string line;
     std::getline(configs, line);
     std::vector<std::string> tokens;
@@ -30,6 +32,8 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
     m_nconfigs = std::stoul(tokens[1]);
     m_maxWgt = std::stod(tokens[2]);
     m_minWgt = std::stod(tokens[3]);
+
+    spdlog::trace("Loading {} configurations with {} nucleons", m_nconfigs, m_nnucleons);
 
     for(size_t iconfig = 0; iconfig < m_nconfigs; ++iconfig) {
         Configuration config;

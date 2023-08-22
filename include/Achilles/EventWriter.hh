@@ -1,6 +1,7 @@
 #ifndef EVENT_WRITER_HH
 #define EVENT_WRITER_HH
 
+#include "Achilles/Process.hh"
 #include <fstream>
 #include <ostream>
 #include <string>
@@ -26,7 +27,7 @@ class EventWriter {
     EventWriter &operator=(EventWriter &&) = default;
     virtual ~EventWriter() = default;
 
-    virtual void WriteHeader(const std::string &) = 0;
+    virtual void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) = 0;
     virtual void Write(const Event &) = 0;
 };
 
@@ -54,7 +55,7 @@ class AchillesWriter : public EventWriter {
         m_out = nullptr;
     }
 
-    void WriteHeader(const std::string &) override;
+    void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
     void Write(const Event &) override;
 
   private:

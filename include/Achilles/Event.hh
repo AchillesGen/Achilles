@@ -37,16 +37,16 @@ class Event {
     MOCK const vMomentum &Momentum() const { return m_mom; }
     MOCK vMomentum &Momentum() { return m_mom; }
 
-    const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
+    MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
 
     MOCK vParticles Particles() const;
-    const vParticles &Hadrons() const;
+    MOCK const vParticles &Hadrons() const;
     MOCK vParticles &Hadrons();
-    const vParticles &Leptons() const { return m_leptons; }
+    MOCK const vParticles &Leptons() const { return m_leptons; }
     MOCK vParticles &Leptons() { return m_leptons; }
     MOCK const double &Weight() const { return m_wgt; }
     MOCK double &Weight() { return m_wgt; }
@@ -61,6 +61,9 @@ class Event {
                m_leptons == other.m_leptons;
     }
 
+    int &ProcessId() { return m_process_id; }
+    const int &ProcessId() const { return m_process_id; }
+
   private:
     std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};
@@ -69,6 +72,7 @@ class Event {
     vParticles m_leptons{};
     EventHistory m_history{};
     double flux;
+    int m_process_id;
 };
 
 } // namespace achilles

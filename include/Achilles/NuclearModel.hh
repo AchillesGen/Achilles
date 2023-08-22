@@ -19,15 +19,15 @@ class PID;
 class PSBuilder;
 class Spinor;
 
-enum class NuclearMode {
+enum class NuclearMode : int {
     None = -1,
-    Coherent,
-    Quasielastic,
-    MesonExchangeCurrent,
-    Interference_QE_MEC,
-    Resonance,
-    ShallowInelastic,
-    DeepInelastic
+    Coherent = 1,
+    Quasielastic = 2,
+    MesonExchangeCurrent = 3,
+    Interference_QE_MEC = 7,
+    Resonance = 4,
+    ShallowInelastic = 5,
+    DeepInelastic = 6,
 };
 
 inline std::string ToString(NuclearMode mode) {
@@ -51,6 +51,11 @@ inline std::string ToString(NuclearMode mode) {
     }
 
     throw std::runtime_error("Invalid NuclearMode");
+}
+
+inline int ToID(const NuclearMode mode) {
+    if(mode == NuclearMode::None) throw std::runtime_error("Invalid nuclear mode");
+    return static_cast<int>(mode) * 100;
 }
 
 enum class WardGauge {
@@ -100,6 +105,7 @@ class NuclearModel {
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
+    virtual std::string InspireHEP() const = 0;
 
   protected:
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
@@ -132,6 +138,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
         return 1;
     }
     std::string GetName() const override { return Coherent::Name(); }
+    std::string InspireHEP() const override { return ""; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -154,6 +161,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     double InitialStateWeight(const std::vector<PID> &,
                               const std::vector<FourVector> &) const override;
     std::string GetName() const override { return QESpectral::Name(); }
+    std::string InspireHEP() const override { return ""; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

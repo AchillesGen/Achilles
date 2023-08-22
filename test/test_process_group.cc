@@ -8,25 +8,6 @@
 #include "trompeloeil.hpp"
 
 using achilles::RegistrableBackend;
-using achilles::XSecBackend;
-
-class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
-                    RegistrableBackend<MockBackend> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK2(CrossSection);
-    IMPLEMENT_MOCK1(SetOptions);
-    IMPLEMENT_MOCK1(SetSherpa);
-    IMPLEMENT_MOCK1(AddNuclearModel);
-    IMPLEMENT_MOCK1(AddProcess);
-    IMPLEMENT_MOCK0(Validate);
-    IMPLEMENT_MOCK3(SetupChannels);
-
-    // Required factory methods
-    static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }
-    static std::string Name() { return "Mock"; }
-    static std::unique_ptr<MockBackend> self;
-    static void SetSelf(std::unique_ptr<MockBackend> backend) { self = std::move(backend); }
-};
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
 
@@ -62,7 +43,7 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
         REQUIRE_CALL(event, Leptons()).TIMES(1).LR_RETURN(leptons);
 
-        group.SetupLeptons(event);
+        group.SetupLeptons(event, std::optional<size_t>(0));
 
         CHECK(leptons.size() == expected_leptons.size());
         CHECK(leptons[0] == expected_leptons[0]);
@@ -90,6 +71,8 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         infos.back().m_hadronic = {{achilles::PID::proton()},
                                    {achilles::PID::neutron(), achilles::PID::pionp()}};
         REQUIRE_CALL(model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
+        REQUIRE_CALL(model, Mode()).TIMES(2).RETURN(achilles::NuclearMode::Quasielastic);
+        REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Resonance);
         auto groups = achilles::ProcessGroup::ConstructGroups(config, &model, beam, nucleus);
         CHECK(groups.size() == 2);
         CHECK(groups.at(4).Processes().size() == 2);
@@ -225,6 +208,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         group.SetOptimize(optimize);
 
         static constexpr double expected_weight = 10;
+        group.MaxWeight() = 1; // Hack to ensure weight is not rescaled by 0
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
             .RETURN(expected_weight);

@@ -16,7 +16,8 @@ achilles::AchillesWriter::AchillesWriter(const std::string &filename, bool zip)
         m_out = new std::ofstream(filename);
 }
 
-void achilles::AchillesWriter::WriteHeader(const std::string &filename) {
+void achilles::AchillesWriter::WriteHeader(const std::string &filename,
+                                           const std::vector<ProcessGroup> &) {
     *m_out << fmt::format("Achilles Version: {}\n", ACHILLES_VERSION);
     *m_out << fmt::format("{0:-^40}\n\n", "");
 

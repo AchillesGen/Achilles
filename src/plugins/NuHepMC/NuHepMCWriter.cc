@@ -1,24 +1,25 @@
 #include "plugins/NuHepMC/NuHepMCWriter.hh"
-#include "gzstream/gzstream.h"
+#include "Achilles/Process.hh"
 #include "HepMC3/GenEvent.h"
-#include "HepMC3/GenVertex.h"
 #include "HepMC3/GenParticle.h"
+#include "HepMC3/GenVertex.h"
+#include "gzstream/gzstream.h"
 
 #include "Achilles/Event.hh"
-#include "Achilles/Version.hh"
-#include "Achilles/Particle.hh"
 #include "Achilles/Nucleus.hh"
+#include "Achilles/Particle.hh"
+#include "Achilles/Version.hh"
 #include "spdlog/spdlog.h"
 
 using achilles::NuHepMCWriter;
 using namespace HepMC3;
 
-std::shared_ptr<std::ostream> NuHepMCWriter::InitializeStream(const std::string &filename, bool zipped) {
+std::shared_ptr<std::ostream> NuHepMCWriter::InitializeStream(const std::string &filename,
+                                                              bool zipped) {
     std::shared_ptr<std::ostream> output = nullptr;
     if(zipped) {
         std::string zipname = filename;
-        if(filename.substr(filename.size() - 3) != ".gz")
-            zipname += std::string(".gz");
+        if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
         output = std::make_shared<ogzstream>(zipname.c_str());
     } else {
         output = std::make_shared<std::ofstream>(filename);
@@ -27,40 +28,39 @@ std::shared_ptr<std::ostream> NuHepMCWriter::InitializeStream(const std::string 
     return output;
 }
 
-void NuHepMCWriter::WriteHeader(const std::string &filename) {
+void NuHepMCWriter::WriteHeader(const std::string &filename,
+                                const std::vector<ProcessGroup> &groups) {
     // Setup generator information
     spdlog::trace("Writing Header");
-    auto run = std::make_shared<HepMC3::GenRunInfo>(); 
-    run->add_attribute("NuHepMC.Version.Major",
-                       std::make_shared<HepMC3::IntAttribute>(version[0]));
-    run->add_attribute("NuHepMC.Version.Minor",
-                       std::make_shared<HepMC3::IntAttribute>(version[1]));
-    run->add_attribute("NuHepMC.Version.Patch",
-                       std::make_shared<HepMC3::IntAttribute>(version[2]));
-                                                  
-    struct HepMC3::GenRunInfo::ToolInfo generator={std::string("Achilles"),
-                                                   std::string(ACHILLES_VERSION),
-                                                   std::string("Neutrino event generator")};
+    auto run = std::make_shared<HepMC3::GenRunInfo>();
+    run->add_attribute("NuHepMC.Version.Major", std::make_shared<HepMC3::IntAttribute>(version[0]));
+    run->add_attribute("NuHepMC.Version.Minor", std::make_shared<HepMC3::IntAttribute>(version[1]));
+    run->add_attribute("NuHepMC.Version.Patch", std::make_shared<HepMC3::IntAttribute>(version[2]));
+
+    struct HepMC3::GenRunInfo::ToolInfo generator = {std::string("Achilles"),
+                                                     std::string(ACHILLES_VERSION),
+                                                     std::string("Neutrino event generator")};
     run->tools().push_back(generator);
-    run->add_attribute("Achilles.RunCard",
-                       std::make_shared<HepMC3::StringAttribute>(filename));
+    run->add_attribute("Achilles.RunCard", std::make_shared<HepMC3::StringAttribute>(filename));
     run->set_weight_names({"CV"});
 
     // Add all possible processes
-    // TODO: Look up available processes and add bibtex info
-    std::vector<int> proc_ids{101};
+    std::vector<int> proc_ids = achilles::AllProcessIDs(groups);
     run->add_attribute("NuHepMC.ProcessIDs",
                        std::make_shared<HepMC3::VectorIntAttribute>(proc_ids));
-    run->add_attribute("NuHepMC.ProcessInfo[101].Name",
-                       std::make_shared<HepMC3::StringAttribute>("SpectralQE"));
-    run->add_attribute("NuHepMC.ProcessInfo[101].Description",
-                       std::make_shared<HepMC3::StringAttribute>("Spectral function Quasielastic"));
-    run->add_attribute("NuHepMC.ProcessInfo[101].Bibtex",
-                       std::make_shared<HepMC3::StringAttribute>("Rocco:xxxx"));
+    auto metadata = achilles::AllProcessMetadata(groups);
+    for(const auto data : metadata) {
+        run->add_attribute(fmt::format("NuHepMC.ProcessInfo[{}].Name", data.id),
+                           std::make_shared<HepMC3::StringAttribute>(data.name));
+        run->add_attribute(fmt::format("NuHepMC.ProcessInfo[{}].Description", data.id),
+                           std::make_shared<HepMC3::StringAttribute>(data.description));
+        run->add_attribute(fmt::format("NuHepMC.ProcessInfo[{}].InspireHEP", data.id),
+                           std::make_shared<HepMC3::StringAttribute>(data.inspireHEP));
+    }
 
     // List all possible vertex status codes
     // TODO: Make this a conversion from enum of the EventHistory class?
-    std::vector<int> vertex_ids{1,2,3,4,5};
+    std::vector<int> vertex_ids{1, 2, 3, 4, 5};
     run->add_attribute("NuHepMC.VertexStatusIDs",
                        std::make_shared<HepMC3::VectorIntAttribute>(vertex_ids));
     run->add_attribute("NuHepMC.VertexStatusInfo[1].Name",
@@ -70,11 +70,13 @@ void NuHepMCWriter::WriteHeader(const std::string &filename) {
     run->add_attribute("NuHepMC.VertexStatusInfo[2].Name",
                        std::make_shared<HepMC3::StringAttribute>("Beam"));
     run->add_attribute("NuHepMC.VertexStatusInfo[2].Description",
-                       std::make_shared<HepMC3::StringAttribute>("The vertex defining a beam particle from a flux"));
+                       std::make_shared<HepMC3::StringAttribute>(
+                           "The vertex defining a beam particle from a flux"));
     run->add_attribute("NuHepMC.VertexStatusInfo[3].Name",
                        std::make_shared<HepMC3::StringAttribute>("Nucleus"));
-    run->add_attribute("NuHepMC.VertexStatusInfo[3].Description",
-                       std::make_shared<HepMC3::StringAttribute>("The vertex defining a nucleon in a nucleus"));
+    run->add_attribute(
+        "NuHepMC.VertexStatusInfo[3].Description",
+        std::make_shared<HepMC3::StringAttribute>("The vertex defining a nucleon in a nucleus"));
     run->add_attribute("NuHepMC.VertexStatusInfo[4].Name",
                        std::make_shared<HepMC3::StringAttribute>("Decay"));
     run->add_attribute("NuHepMC.VertexStatusInfo[4].Description",
@@ -91,12 +93,14 @@ void NuHepMCWriter::WriteHeader(const std::string &filename) {
                        std::make_shared<HepMC3::VectorIntAttribute>(particle_status));
     run->add_attribute("NuHepMC.ParticleStatusInfo[1].Name",
                        std::make_shared<HepMC3::StringAttribute>("Undecayed physical particle"));
-    run->add_attribute("NuHepMC.ParticleStatusInfo[1].Description",
-                       std::make_shared<HepMC3::StringAttribute>("Final state \"stable\" particles"));
+    run->add_attribute(
+        "NuHepMC.ParticleStatusInfo[1].Description",
+        std::make_shared<HepMC3::StringAttribute>("Final state \"stable\" particles"));
     run->add_attribute("NuHepMC.ParticleStatusInfo[2].Name",
                        std::make_shared<HepMC3::StringAttribute>("Decayed physical particle"));
-    run->add_attribute("NuHepMC.ParticleStatusInfo[2].Description",
-                       std::make_shared<HepMC3::StringAttribute>("Particle that decayed during the generation"));
+    run->add_attribute(
+        "NuHepMC.ParticleStatusInfo[2].Description",
+        std::make_shared<HepMC3::StringAttribute>("Particle that decayed during the generation"));
     run->add_attribute("NuHepMC.ParticleStatusInfo[3].Name",
                        std::make_shared<HepMC3::StringAttribute>("Documentation line"));
     run->add_attribute("NuHepMC.ParticleStatusInfo[3].Description",
@@ -129,29 +133,30 @@ void NuHepMCWriter::WriteHeader(const std::string &filename) {
 
 int ToNuHepMC(achilles::ParticleStatus status) {
     switch(status) {
-        case achilles::ParticleStatus::internal_test:
-        case achilles::ParticleStatus::external_test:
-        case achilles::ParticleStatus::propagating:
-        case achilles::ParticleStatus::background:
-        case achilles::ParticleStatus::captured:
-            return 11;
-        case achilles::ParticleStatus::initial_state:
-            return 3;
-        case achilles::ParticleStatus::final_state:
-        case achilles::ParticleStatus::escaped:
-            return 1;
-        case achilles::ParticleStatus::decayed:
-            return 2;
-        case achilles::ParticleStatus::beam:
-        case achilles::ParticleStatus::target:
-            return 4;
+    case achilles::ParticleStatus::internal_test:
+    case achilles::ParticleStatus::external_test:
+    case achilles::ParticleStatus::propagating:
+    case achilles::ParticleStatus::background:
+    case achilles::ParticleStatus::captured:
+        return 11;
+    case achilles::ParticleStatus::initial_state:
+        return 3;
+    case achilles::ParticleStatus::final_state:
+    case achilles::ParticleStatus::escaped:
+        return 1;
+    case achilles::ParticleStatus::decayed:
+        return 2;
+    case achilles::ParticleStatus::beam:
+    case achilles::ParticleStatus::target:
+        return 4;
     }
     return -1;
 }
 
 GenParticlePtr ToNuHepMC(const achilles::Particle &particle) {
     HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
-    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()), ToNuHepMC(particle.Status()));
+    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()),
+                                         ToNuHepMC(particle.Status()));
 }
 
 struct NuHepMCVisitor : achilles::HistoryVisitor {
@@ -159,9 +164,7 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     GenEvent evt;
     struct compare {
         bool operator()(const achilles::Particle &a, const achilles::Particle &b) const {
-            if(achilles::compare_momentum(a, 1e-10)(b)) {
-                return a.Status() < b.Status();
-            }
+            if(achilles::compare_momentum(a, 1e-10)(b)) { return a.Status() < b.Status(); }
             return a.Momentum().Vec3().Magnitude() < b.Momentum().Vec3().Magnitude();
         }
     };
@@ -169,12 +172,12 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     std::vector<GenParticlePtr> beamparticles;
     NuHepMCVisitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
     void visit(achilles::EventHistoryNode *node) {
-        auto position = node -> Position();
+        auto position = node->Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
         vertex_pos *= to_mm;
         GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
         vertex->set_status(static_cast<int>(node->Status()));
-        for(const auto &part : node -> ParticlesIn()) {
+        for(const auto &part : node->ParticlesIn()) {
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -182,14 +185,14 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
                 particle = ToNuHepMC(part);
                 converted[part] = particle;
             }
-            if(node -> Status() == achilles::EventHistory::StatusCode::beam) {
+            if(node->Status() == achilles::EventHistory::StatusCode::beam) {
                 beamparticles[0] = particle;
-            } else if (node -> Status() == achilles::EventHistory::StatusCode::target) {
+            } else if(node->Status() == achilles::EventHistory::StatusCode::target) {
                 beamparticles[1] = particle;
             }
-            vertex -> add_particle_in(particle);
+            vertex->add_particle_in(particle);
         }
-        for(const auto &part : node -> ParticlesOut()) {
+        for(const auto &part : node->ParticlesOut()) {
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -197,7 +200,7 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
                 particle = ToNuHepMC(part);
                 converted[part] = particle;
             }
-            vertex -> add_particle_out(particle);
+            vertex->add_particle_out(particle);
         }
         evt.add_vertex(vertex);
     }
@@ -209,11 +212,9 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
-    results += event.Weight()*nb_to_pb;
+    results += event.Weight() * nb_to_pb;
     spdlog::trace("Event weight = {}", event.Weight());
-    if(event.Weight() == 0) {
-        return;
-    }
+    if(event.Weight() == 0) { return; }
 
     // Setup event units
     spdlog::trace("Setting up units");
@@ -222,16 +223,16 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     visitor.evt.set_event_number(results.Calls());
 
     // Interaction type
-    // TODO: Add interaction type to the event, and have ids for different modes
-    visitor.evt.add_attribute("ProcID", std::make_shared<IntAttribute>(101));
+    visitor.evt.add_attribute("ProcID", std::make_shared<IntAttribute>(event.ProcessId()));
 
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
-    cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(), results.Calls());
+    cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(),
+                                     results.Calls());
     visitor.evt.add_attribute("GenCrossSection", cross_section);
     visitor.evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
-    visitor.evt.weight("CV") = event.Weight()*nb_to_pb;
+    visitor.evt.weight("CV") = event.Weight() * nb_to_pb;
 
     // TODO: once we have a detector to simulate interaction location
     // Event position

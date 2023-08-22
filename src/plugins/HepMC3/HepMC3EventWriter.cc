@@ -30,7 +30,7 @@ std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &
     return output;
 }
 
-void HepMC3Writer::WriteHeader(const std::string &filename) {
+void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<ProcessGroup> &) {
     // Setup generator information
     spdlog::trace("Writing Header");
     auto run = std::make_shared<GenRunInfo>();

@@ -5,6 +5,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
 
@@ -87,7 +88,8 @@ achilles::Precomputed::RunCascade::RunCascade(const std::string &config_file) {
                                       output["Format"].as<std::string>());
         throw std::runtime_error(msg);
     }
-    writer->WriteHeader(config_file);
+    std::vector<ProcessGroup> dummy;
+    writer->WriteHeader(config_file, dummy);
     event_filename = config["Main"]["EventFile"].as<std::string>();
 }
 

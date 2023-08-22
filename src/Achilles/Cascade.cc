@@ -427,6 +427,10 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t &
     for(std::size_t step = 0; step < maxSteps; ++step) {
         AdaptiveStep(particles, distance);
 
+        // if(kickNuc->IsUnstable()) {
+        // Check if decay
+        // }
+
         if(kickNuc->InFormationZone()) {
             kickNuc->UpdateFormationZone(timeStep);
             kickNuc->Propagate(timeStep);
@@ -681,6 +685,7 @@ bool Cascade::FinalizeMomentum(Particle &particle1, Particle &particle2) noexcep
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
+    if(particle.ID() != PID::proton() || particle.ID() != PID::neutron()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < localNucleus->FermiMomentum(position);
 }

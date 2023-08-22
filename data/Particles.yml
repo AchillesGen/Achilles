@@ -17,6 +17,7 @@ Particles:
 
     # Nuclei
     - Particle: [1000060120, 11188, 0.0, 0, 0, 0, 1, 0, true, true, carbon, anticarbon]
+    - Particle: [1000180400, 37215.8, 0.0, 0, 0, 0, 1, 0, true, true, argon, antiargon]
 
     # Mesons
     - Particle: [111, 134.977,      0.0, 0, 0, 0, 1, 1, true, true, pion0, pion0]

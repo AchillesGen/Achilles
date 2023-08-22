@@ -139,7 +139,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
                                       output["Format"].as<std::string>());
         throw std::runtime_error(msg);
     }
-    writer->WriteHeader(configFile);
+    writer->WriteHeader(configFile, process_groups);
 }
 
 void achilles::EventGen::Initialize() {

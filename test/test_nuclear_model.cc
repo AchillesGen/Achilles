@@ -104,7 +104,7 @@ TEST_CASE("QESpectralModel", "[NuclearModel]") {
 NuclearModel:
   SpectralP: data/pke12_tot.data
   SpectralN: data/pke12_tot.data
-  Ward: false
+  Ward: Coulomb
 )config");
     YAML::Node ff = YAML::Load("vector: dummy\naxial: dummy\ncoherent: dummy\ndummy: dummy2");
 

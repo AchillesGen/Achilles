@@ -125,14 +125,16 @@ Spectrum::Spectrum(const YAML::Node &node) {
         spdlog::trace("Flux Integral = {}", m_flux_integral);
         std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
         std::vector<double> heights;     //(static_cast<size_t>(hist -> GetNbinsX())+2);
+        double width = hist->GetBinWidth(1);
         bin_centers.push_back(hist->GetBinLowEdge(1));
-        heights.push_back(hist->GetBinContent(1));
+        heights.push_back(hist->GetBinContent(1) / width);
         size_t i;
         for(i = 1; i <= static_cast<size_t>(hist->GetNbinsX()); ++i) {
-            double height = hist->GetBinContent(static_cast<int>(i));
+            width = hist->GetBinWidth(static_cast<int>(i));
+            double height = hist->GetBinContent(static_cast<int>(i)) / width;
             if(height == 0) break;
             bin_centers.push_back(hist->GetBinCenter(static_cast<int>(i)));
-            heights.push_back(hist->GetBinContent(static_cast<int>(i)));
+            heights.push_back(height);
         }
         bin_centers.push_back(hist->GetBinLowEdge(static_cast<int>(i)) +
                               hist->GetBinWidth(static_cast<int>(i)));
@@ -146,6 +148,11 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_max_energy = bin_centers.back();
         m_delta_energy = m_max_energy - m_min_energy;
         m_energy_units = 1.0 / 1.0_GeV;
+        spdlog::debug("Flux energy range: [{}, {}]", m_min_energy, m_max_energy);
+        spdlog::trace("Flux histogram:");
+        for(size_t j = 0; j < bin_centers.size(); ++j) {
+            spdlog::trace("  {} -> {}", bin_centers[j], heights[j]);
+        }
 #else
         throw std::runtime_error("Achilles has not been compiled with ROOT support");
 #endif

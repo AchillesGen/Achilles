@@ -102,11 +102,72 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                                       momentum.end());
 }
 
-void ProcessGroup::SetupLeptons(Event &event) const {
+void Process::SetID(achilles::NuclearModel *model) {
+    // Get range for interaction type
+    m_id = ToID(model->Mode());
+
+    // Get range for CC or NC
+    auto charge = m_info.LeptonicCharge();
+    if(std::abs(charge) == 0) { m_id += 50; }
+
+    // Add number of protons in initial state
+    for(const auto &nucleons : m_info.m_hadronic.first)
+        if(nucleons == PID::proton()) m_id++;
+
+    // Add number of pions in the final state
+    for(const auto &particle : m_info.m_hadronic.second)
+        if(particle == PID::pion0() || std::abs(particle.AsInt()) == PID::pionp().AsInt()) m_id++;
+}
+
+std::string Process::Name(achilles::XSecBackend *backend) const {
+    std::string name = backend->GetNuclearModel()->GetName();
+    name += (m_id % 100) / 50 == 0 ? "CC" : "NC";
+    // Add number of protons in initial state
+    int nprotons = 0;
+    for(const auto &nucleons : m_info.m_hadronic.first)
+        if(nucleons == PID::proton()) nprotons++;
+    // Add number of pions in the final state
+    int npions = 0;
+    for(const auto &particle : m_info.m_hadronic.second)
+        if(particle == PID::pion0() || std::abs(particle.AsInt()) == PID::pionp().AsInt()) npions++;
+    name += std::to_string(nprotons) + "p";
+    name += std::to_string(npions) + "pi";
+    return name;
+}
+
+std::string Process::Description(achilles::XSecBackend *backend) const {
+    std::string description = backend->GetNuclearModel()->GetName() + " ";
+    std::stringstream ss;
+    ss << m_info;
+    description += ss.str();
+
+    return description;
+}
+
+std::string Process::InspireHEP(achilles::XSecBackend *backend) const {
+    return backend->GetNuclearModel()->InspireHEP();
+}
+
+achilles::ProcessMetadata Process::Metadata(achilles::XSecBackend *backend) const {
+    return {ID(), Name(backend), Description(backend), ""};
+}
+
+std::vector<int> ProcessGroup::ProcessIds() const {
+    std::vector<int> data;
+    for(auto &process : m_processes) { data.push_back(process.ID()); }
+    return data;
+}
+
+std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
+    std::vector<achilles::ProcessMetadata> data;
+    for(auto &process : m_processes) { data.push_back(process.Metadata(m_backend.get())); }
+    return data;
+}
+
+void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out;
-    // NOTE: This assumes all processes have the same lepton content
-    auto &process = m_processes[0];
+    auto &process = m_processes[process_idx.value_or(0)];
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
     std::vector<Particle> leptons;
 
@@ -158,6 +219,7 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
         for(auto &info : infos) {
             auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
             Process process(info, std::move(unweighter));
+            process.SetID(model);
             const auto multiplicity = info.Multiplicity();
             if(groups.find(multiplicity) == groups.end()) {
                 groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
@@ -244,7 +306,8 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     }
 
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
-    SetupLeptons(event);
+    auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
+    SetupLeptons(event, process_opt);
     if(!m_cuts.EvaluateCuts(event.Particles())) {
         // Ensure process weights are tracked correctly
         if(b_calc_weights) {
@@ -255,7 +318,6 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
         return event;
     }
 
-    auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
@@ -265,7 +327,29 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     auto &process = m_processes[process_opt.value()];
     event.Weight() *= MaxWeight();
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
+    event.ProcessId() = process.ID();
     process.SetupHadrons(event);
 
     return event;
+}
+
+std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {
+    std::vector<int> ids;
+    for(const auto &group : groups) {
+        auto group_ids = group.ProcessIds();
+        ids.insert(ids.end(), group_ids.begin(), group_ids.end());
+    }
+
+    return ids;
+}
+
+std::vector<achilles::ProcessMetadata>
+achilles::AllProcessMetadata(const std::vector<ProcessGroup> &groups) {
+    std::vector<ProcessMetadata> data;
+    for(const auto &group : groups) {
+        auto group_data = group.Metadata();
+        data.insert(data.end(), group_data.begin(), group_data.end());
+    }
+
+    return data;
 }

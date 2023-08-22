@@ -97,7 +97,12 @@ double achilles::DefaultBackend::CrossSection(const Event &event, const Process 
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
-    return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
+    double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
+    if(std::isnan(xsec)) {
+        spdlog::warn("Got nan for xsec, setting to 0");
+        xsec = 0;
+    }
+    return xsec;
 }
 
 void achilles::DefaultBackend::AddProcess(Process &process) {

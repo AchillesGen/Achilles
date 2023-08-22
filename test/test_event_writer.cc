@@ -11,8 +11,9 @@ TEST_CASE("Builtin", "[EventWriter]") {
     SECTION("Write Header") {
         std::stringstream ss;
         achilles::AchillesWriter writer(&ss);
+        std::vector<achilles::ProcessGroup> group;
 
-        writer.WriteHeader("dummy.txt");
+        writer.WriteHeader("dummy.txt", group);
 
         std::string expected = fmt::format(R"result(Achilles Version: {0}
 {1:-^40}
