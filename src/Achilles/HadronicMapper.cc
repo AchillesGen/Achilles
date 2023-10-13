@@ -97,7 +97,7 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     // 2*point[1].E()*point[HadronIdx()].E() -
     // Smin())/(2*point[HadronIdx()].P()*point[1].P()); cosT_max = cosT_max > 1
     // ? 1 : cosT_max; const double dCos = (cosT_max + 1);
-    rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
+    // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
 
     double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi / dE;
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
