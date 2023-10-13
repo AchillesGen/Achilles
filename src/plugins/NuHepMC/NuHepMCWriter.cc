@@ -22,19 +22,19 @@ using namespace HepMC3;
 
 namespace NuHepMC {
 namespace VertexStatus {
-int const Propagation = 22;
-int const Cascade = 23;
-int const Beam = 24;
-int const Decay = 25;
-int const Shower = 26;
+static constexpr int Propagation = 22;
+static constexpr int Cascade = 23;
+static constexpr int Beam = 24;
+static constexpr int Decay = 25;
+static constexpr int Shower = 26;
 } // namespace VertexStatus
 
 namespace ParticleStatus {
-int const InternalTest = 22;
-int const ExternalTest = 23;
-int const Propagating = 24;
-int const Background = 25;
-int const Captured = 26;
+static constexpr int InternalTest = 22;
+static constexpr int ExternalTest = 23;
+static constexpr int Propagating = 24;
+static constexpr int Background = 25;
+static constexpr int Captured = 26;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
