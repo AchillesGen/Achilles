@@ -167,7 +167,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
         TFile *file = new TFile(filename.c_str());
         TH1D *hist =
             static_cast<TH1D *>(file->Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
-        bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
+        // BUG: Using widths here for the normalization of the integral breaks the normalization
+        // when dividing the bin widths bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
         double norm = node["ROOTHist"]["Norm"].as<double>();
         hist->Scale(norm);
         std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
