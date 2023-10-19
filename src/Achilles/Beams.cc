@@ -118,22 +118,17 @@ Spectrum::Spectrum(const YAML::Node &node) {
         TFile *file = new TFile(filename.c_str());
         TH1D *hist =
             static_cast<TH1D *>(file->Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
-        // BUG: Using widths here for the normalization of the integral breaks the normalization
-        // when dividing the bin widths bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
+        bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
         double norm = node["ROOTHist"]["Norm"].as<double>();
         hist->Scale(norm);
-        // BUG: Using widths here for the normalization of the integral breaks the normalization
-        // when dividing the bin widths
-        m_flux_integral = hist->Integral(); // use_width ? "width" : "");
-        spdlog::trace("Flux Integral = {}", m_flux_integral);
         std::vector<double> bin_centers; //(static_cast<size_t>(hist -> GetNbinsX())+2);
         std::vector<double> heights;     //(static_cast<size_t>(hist -> GetNbinsX())+2);
-        double width = hist->GetBinWidth(1);
+        double width = use_width ? hist->GetBinWidth(1) : 1;
         bin_centers.push_back(hist->GetBinLowEdge(1));
         heights.push_back(hist->GetBinContent(1) / width);
         size_t i;
         for(i = 1; i <= static_cast<size_t>(hist->GetNbinsX()); ++i) {
-            width = hist->GetBinWidth(static_cast<int>(i));
+            if(use_width) width = hist->GetBinWidth(static_cast<int>(i));
             double height = hist->GetBinContent(static_cast<int>(i)) / width;
             if(height == 0) break;
             bin_centers.push_back(hist->GetBinCenter(static_cast<int>(i)));
@@ -145,6 +140,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
 
         Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
         interp.SetPolyOrder(1);
+        m_flux_integral = interp.Integrate();
+        spdlog::trace("Flux Integral = {}", m_flux_integral);
 
         m_flux = [=](double x) { return interp(x); };
         m_min_energy = bin_centers.front();

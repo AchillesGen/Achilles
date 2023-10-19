@@ -3,9 +3,15 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Utilities.hh"
 #include "fmt/ostream.h"
+#include <iostream>
 
 double TestFunc(const double &x, size_t power) {
     return pow(x, static_cast<double>(power));
+}
+
+double TestFuncInt(double min, double max, size_t power) {
+    double exponent = static_cast<double>(power + 1);
+    return pow(max, exponent) / (exponent)-pow(min, exponent) / (exponent);
 }
 
 double TestFunc(const double &x, const double &y, size_t power) {
@@ -94,6 +100,8 @@ TEST_CASE("One Dimensional", "[Interp]") {
             double val = xi - x[idxLow] < x[idxHigh] - xi ? x[idxLow] : x[idxHigh];
             CHECK(interp(xi) == Approx(TestFunc(val, 1)).epsilon(acc));
         }
+
+        CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 1), 1e-4));
     }
 
     SECTION("Linear") {
@@ -103,6 +111,7 @@ TEST_CASE("One Dimensional", "[Interp]") {
         interp.SetPolyOrder(1);
 
         for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 1)).epsilon(acc)); }
+        CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 1), 1e-4));
     }
 
     SECTION("Quadratic") {
@@ -112,6 +121,7 @@ TEST_CASE("One Dimensional", "[Interp]") {
         interp.SetPolyOrder(2);
 
         for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 2)).epsilon(acc)); }
+        CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 2), 1e-4));
     }
 
     SECTION("Cubic") {
@@ -131,6 +141,7 @@ TEST_CASE("One Dimensional", "[Interp]") {
         interp.CubicSpline();
 
         for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 3)).epsilon(acc)); }
+        CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 3), 1e-4));
     }
 }
 

@@ -60,6 +60,16 @@ class Interp1D {
     ///@param x: Value to interpolate the function at
     ///@return double: The interpolated value of the function
     double operator()(const double &) const;
+
+    /// Function to estimate the integral of the interpolation function over a given range
+    ///@param a: Lower bound of integral
+    ///@param b: Upper bound of integral
+    ///@return double: The integration estimate
+    double Integrate(double a, double b) const;
+
+    /// Function to estimate the integral of the interpolation function over the full range
+    ///@return double: The integration estimate
+    double Integrate() const;
     ///@}
 
   private:

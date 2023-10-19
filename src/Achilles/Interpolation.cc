@@ -144,6 +144,57 @@ double Interp1D::operator()(const double &x) const {
     return result;
 }
 
+// double Interp1D::Integrate(double a, double b) const {
+//     if(a < knotX.front() || a > knotX.back() || b < knotX.front() || b > knotX.back())
+//         throw std::domain_error(
+//             fmt::format("Invalid integration region [{}, {}] for function defined on [{}, {}]",
+//                         a, b, knotX.front(), knotX.back()));
+//     if(b < a) return -Integrate(b, a);
+// }
+
+double Interp1D::Integrate() const {
+    double result = 0;
+    switch(kMode) {
+    case InterpolationType::NearestNeighbor:
+        for(size_t i = 0; i < knotX.size() - 1; ++i) {
+            double width = knotX[i + 1] - knotX[i];
+            result += width / 2 * (knotY[i] + knotY[i + 1]);
+        }
+        break;
+    case InterpolationType::Polynomial:
+        if(polyOrder == 2) {
+            for(size_t i = 0; i < knotX.size() - 1; ++i) {
+                double width = knotX[i + 1] - knotX[i];
+                result += width / 2 * (knotY[i] + knotY[i + 1]);
+            }
+        } else if(polyOrder == 3) {
+            for(size_t i = 0; i < knotX.size() - 2; i += 2) {
+                double h1 = knotX[i + 1] - knotX[i];
+                double h2 = knotX[i + 2] - knotX[i + 1];
+                double f0 = knotY[i];
+                double f1 = knotY[i + 1];
+                double f2 = knotY[i + 2];
+                result +=
+                    (h1 + h2) *
+                    (-f2 * h1 * (h1 - 2 * h2) + f0 * (2 * h1 - h2) * h2 + f1 * pow(h1 + h2, 2)) /
+                    (6 * h1 * h2);
+            }
+        } else {
+            throw std::runtime_error("Not Implemented!");
+        }
+        break;
+    case InterpolationType::CubicSpline:
+        for(size_t i = 0; i < knotX.size() - 1; ++i) {
+            result += -(knotX[i + 1] - knotX[i]) *
+                      ((derivs2[i + 1] + derivs2[i]) * pow(knotX[i + 1] - knotX[i], 2) -
+                       12 * (knotY[i + 1] + knotY[i])) /
+                      24.0;
+        }
+        break;
+    }
+    return result;
+}
+
 double Interp1D::PolynomialInterp(double x) const {
     auto idx = static_cast<size_t>(
         std::distance(knotX.begin(), std::lower_bound(knotX.begin(), knotX.end(), x)));
