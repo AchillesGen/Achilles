@@ -275,6 +275,14 @@ achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
                 fmt::format("Multiple beams exist for PID: {}", int(beam.first)));
         spdlog::debug("Beam with PID: {} created.", beam.first);
         m_pids.insert(beam.first);
+        if(m_beams.begin()->second->MinEnergy() != beam.second->MinEnergy())
+            throw std::logic_error(
+                fmt::format("Beams must have the same minimum energies. Got {} and {}",
+                            m_beams.begin()->second->MinEnergy(), beam.second->MinEnergy()));
+        if(m_beams.begin()->second->MaxEnergy() != beam.second->MaxEnergy())
+            throw std::logic_error(
+                fmt::format("Beams must have the same minimum energies. Got {} and {}",
+                            m_beams.begin()->second->MaxEnergy(), beam.second->MaxEnergy()));
     }
 }
 

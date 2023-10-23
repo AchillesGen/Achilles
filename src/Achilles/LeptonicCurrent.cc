@@ -48,7 +48,8 @@ bool LeptonicCurrent::NeutralCurrent(achilles::PID initial, achilles::PID final)
 
 bool LeptonicCurrent::ChargedCurrent(bool neutrino, achilles::PID initial,
                                      achilles::PID final) const {
-    return initial.AsInt() - (2 * neutrino - 1) == final.AsInt();
+    int sign = std::signbit(initial.AsInt()) ? -1 : 1;
+    return initial.AsInt() - sign * (2 * neutrino - 1) == final.AsInt();
 }
 
 achilles::FFDictionary LeptonicCurrent::GetFormFactor() {

@@ -96,9 +96,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Initialize the Processes
     spdlog::debug("Initializing processes");
-    if(beam->BeamIDs().size() > 1)
-        throw std::runtime_error("Multiple processes are not implemented yet. "
-                                 "Please use only one beam.");
+    // if(beam->BeamIDs().size() > 1)
+    //     throw std::runtime_error("Multiple processes are not implemented yet. "
+    //                              "Please use only one beam.");
     for(auto &model : models) {
         auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
         for(auto &group : groups) {

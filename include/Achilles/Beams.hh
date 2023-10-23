@@ -25,6 +25,7 @@ class FluxType {
     virtual FourVector Flux(const std::vector<double> &, double) const = 0;
     virtual double GenerateWeight(const FourVector &, std::vector<double> &, double) const = 0;
     virtual std::string Type() const = 0;
+    virtual double MinEnergy() const = 0;
     virtual double MaxEnergy() const = 0;
     virtual double EvaluateFlux(const FourVector &) const = 0;
 };
@@ -40,6 +41,7 @@ class Monochromatic : public FluxType {
         return 1;
     }
     std::string Type() const override { return "Monochromatic"; }
+    double MinEnergy() const override { return m_energy; }
     double MaxEnergy() const override { return m_energy; }
     double EvaluateFlux(const FourVector &) const override { return 1; }
 
@@ -74,7 +76,7 @@ class Spectrum : public FluxType {
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
     std::string Type() const override { return "Spectrum"; }
     std::string Format() const;
-    double MinEnergy() const { return m_min_energy; }
+    double MinEnergy() const override { return m_min_energy; }
     double MaxEnergy() const override { return m_max_energy; }
     double EvaluateFlux(const FourVector &) const override;
 
@@ -105,6 +107,7 @@ class PDFBeam : public FluxType {
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
     std::string Type() const override { return "PDFBeam"; }
+    double MinEnergy() const override { return 0; }
     double MaxEnergy() const override { return 0; }
     double EvaluateFlux(const FourVector &) const override;
 
