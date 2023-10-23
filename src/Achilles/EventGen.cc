@@ -208,6 +208,19 @@ bool achilles::EventGen::GenerateSingleEvent() {
     init_beam.Momentum() = {max_energy, 0, 0, max_energy};
     event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
+    // TODO: Figure out how to best handle tracking this with the cascade and decays
+    std::vector<Particle> primary_out, propagating;
+    for(const auto &part : event.Particles()) {
+        if(part.IsFinal()) primary_out.push_back(part);
+        if(part.IsPropagating()) {
+            primary_out.push_back(part);
+            propagating.push_back(part);
+        }
+    }
+    init_parts.push_back(init_lep);
+    event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
+                              EventHistory::StatusCode::primary);
+
     // TODO: Determine if cascade or Sherpa Decays go first
     // Cascade the nucleus
     if(runCascade) {
@@ -236,8 +249,8 @@ bool achilles::EventGen::GenerateSingleEvent() {
         if(part.IsFinal()) final_part.push_back(part);
     }
     init_parts.push_back(init_lep);
-    event.History().AddVertex(init_parts[0].Position(), init_parts, final_part,
-                              EventHistory::StatusCode::primary);
+    event.History().AddVertex(init_parts[0].Position(), propagating, final_part,
+                              EventHistory::StatusCode::cascade);
 
     writer->Write(event);
     return true;
