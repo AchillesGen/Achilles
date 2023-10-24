@@ -9,6 +9,7 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     spdlog::debug("Reading spectral function from: {}", filename);
     std::ifstream data(filename);
     size_t ne{}, np{};
+    
     data >> ne >> np;
     mom.resize(np);
     energy.resize(ne);
@@ -21,6 +22,28 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
         }
     }
     data.close();
+    
+
+    /*
+    data >> ne;
+    data >> np;
+    ne=400;
+    np=200;	    
+    mom.resize(np);
+    energy.resize(ne);
+    spectral.resize(ne*np);
+    std::vector<double> dp_p(np);
+
+    for (size_t j = 0; j < np; ++j) {
+        for (size_t i = 0; i < ne; ++i) {
+            data >> mom[j] >> energy[i] >> spectral[j*ne+i];
+        }
+    }
+
+
+    data.close();
+
+  */
 
     double hp = mom[1] - mom[0];
     double he = energy[1] - energy[0];
