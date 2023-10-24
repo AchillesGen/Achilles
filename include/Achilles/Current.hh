@@ -1,5 +1,7 @@
 #pragma once
 
+#include "achilles/ComplexFmt.hh"
+
 #include <array>
 #include <complex>
 #include <stdexcept>

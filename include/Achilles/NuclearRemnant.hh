@@ -29,4 +29,19 @@ class NuclearRemnant {
 
 } // namespace achilles
 
+namespace fmt {
+
+template <> struct formatter<achilles::NuclearRemnant> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(const achilles::NuclearRemnant &nucrem, FormatContext &ctx) const {
+        std::stringstream ss;
+        ss << nucrem;
+
+        return format_to(ctx.out(), ss.str());
+    }
+};
+
+} // namespace fmt
+
 #endif

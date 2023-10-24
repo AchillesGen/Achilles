@@ -319,7 +319,7 @@ namespace fmt {
 template <> struct formatter<achilles::PID> {
     template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(const achilles::PID &pid, FormatContext &ctx) {
+    template <typename FormatContext> auto format(const achilles::PID &pid, FormatContext &ctx) const {
         return format_to(ctx.out(), "{}", pid.AsInt());
     }
 };

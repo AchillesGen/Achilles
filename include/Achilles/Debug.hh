@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Achilles/FourVector.hh"
+
 #include <string>
+#include <vector>
 
 namespace achilles {
 

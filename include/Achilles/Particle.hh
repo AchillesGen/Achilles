@@ -313,9 +313,44 @@ template <> struct formatter<achilles::Particle> {
     template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const achilles::Particle &particle, FormatContext &ctx) {
+    auto format(const achilles::Particle &particle, FormatContext &ctx) const {
         return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
                          particle.Momentum(), particle.Position());
+    }
+};
+
+template <> struct formatter<achilles::ParticleStatus> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const achilles::ParticleStatus &status, FormatContext &ctx) const {
+        switch(status) {
+        case achilles::ParticleStatus::internal_test:
+            return format_to(ctx.out(), "internal_test({})", static_cast<int>(status));
+        case achilles::ParticleStatus::external_test:
+            return format_to(ctx.out(), "external_test({})", static_cast<int>(status));
+        case achilles::ParticleStatus::propagating:
+            return format_to(ctx.out(), "propagating({})", static_cast<int>(status));
+        case achilles::ParticleStatus::background:
+            return format_to(ctx.out(), "background({})", static_cast<int>(status));
+        case achilles::ParticleStatus::initial_state:
+            return format_to(ctx.out(), "initial_state({})", static_cast<int>(status));
+        case achilles::ParticleStatus::final_state:
+            return format_to(ctx.out(), "final_state({})", static_cast<int>(status));
+        case achilles::ParticleStatus::escaped:
+            return format_to(ctx.out(), "escaped({})", static_cast<int>(status));
+        case achilles::ParticleStatus::captured:
+            return format_to(ctx.out(), "captured({})", static_cast<int>(status));
+        case achilles::ParticleStatus::decayed:
+            return format_to(ctx.out(), "decayed({})", static_cast<int>(status));
+        case achilles::ParticleStatus::beam:
+            return format_to(ctx.out(), "beam({})", static_cast<int>(status));
+        case achilles::ParticleStatus::target:
+            return format_to(ctx.out(), "target({})", static_cast<int>(status));
+          default:
+            return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
+                             static_cast<int>(status));
+        }
     }
 };
 

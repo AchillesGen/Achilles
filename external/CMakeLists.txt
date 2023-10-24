@@ -1,13 +1,13 @@
-CPMFindPackage(
+CPMAddPackage(
     NAME fmt
-    GIT_TAG 7.1.3
+    GIT_TAG 10.1.1
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
 CPMFindPackage(
     NAME spdlog
-    GIT_TAG "v1.8.5"
+    GIT_TAG "v1.12.0"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS
         "SPDLOG_COMPILED_LIB ON"
@@ -42,22 +42,10 @@ CPMAddPackage(
 add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
-    NAME HepMC3
-    VERSION 3.2.6
-    GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
-    GIT_TAG 3.2.6
-    OPTIONS
-      "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
-      "HEPMC3_ENABLE_SEARCH OFF"
-      "HEPMC3_ENABLE_ROOTIO ${ACHILLES_ENABLE_ROOT}"
-      "HEPMC3_ENABLE_PROTOBUFIO OFF"
-      "HEPMC3_ENABLE_PYTHON OFF"
-      "HEPMC3_BUILD_DOCS OFF"
-      "HEPMC3_BUILD_EXAMPLES OFF"
-      "HEPMC3_INSTALL_EXAMPLES OFF"
-      "HEPMC3_ENABLE_TEST OFF"
-      "HEPMC3_INSTALL_INTERFACES OFF"
-      "HEPMC3_BUILD_STATIC_LIBS OFF"
+  NAME NuHepMC_CPPUtils
+  GIT_TAG main
+  GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
+  OPTIONS "BUILTIN_HEPMC3 ON"
 )
 
 CPMAddPackage(
