@@ -5,9 +5,9 @@
 #include "fmt/format.h"
 
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <sstream>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -69,7 +69,8 @@ namespace fmt {
 template <> struct formatter<achilles::ProcessInfo> {
     template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
 
-    template <typename FormatContext> auto format(const achilles::ProcessInfo &procinfo, FormatContext &ctx) const {
+    template <typename FormatContext>
+    auto format(const achilles::ProcessInfo &procinfo, FormatContext &ctx) const {
         std::stringstream ss;
         ss << procinfo;
 
