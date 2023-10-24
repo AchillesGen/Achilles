@@ -16,22 +16,24 @@ struct fmt::formatter<std::complex<T>, Char> : public fmt::formatter<T, Char> {
   public:
     template <typename ParseContext> FMT_CONSTEXPR auto parse(ParseContext &ctx) -> const Char * {
         auto it = ctx.begin();
-        if(it != ctx.end()) {
-            switch(*it) {
-            case '$':
-                style_ = style::expr;
-                ctx.advance_to(++it);
-                break;
-            case '*':
-                style_ = style::star;
-                ctx.advance_to(++it);
-                break;
-            case ',':
-                style_ = style::pair;
-                ctx.advance_to(++it);
-                break;
-            default:
-                break;
+        if (it != ctx.end())
+        {
+            switch (*it)
+            {
+                case '$':
+                    style_ = style::expr;
+                    ctx.advance_to(++it);
+                    break;
+                case '*':
+                    style_ = style::star;
+                    ctx.advance_to(++it);
+                    break;
+                case ',':
+                    style_ = style::pair;
+                    ctx.advance_to(++it);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -45,7 +47,8 @@ struct fmt::formatter<std::complex<T>, Char> : public fmt::formatter<T, Char> {
     FMT_CONSTEXPR auto format(const std::complex<T> &x, FormatContext &ctx) const
         -> decltype(ctx.out()) {
         format_to(ctx.out(), "(");
-        if(style_ == style::pair) {
+        if (style_ == style::pair)
+        {
             base::format(x.real(), ctx);
             format_to(ctx.out(), ",");
             base::format(x.imag(), ctx);
@@ -56,12 +59,13 @@ struct fmt::formatter<std::complex<T>, Char> : public fmt::formatter<T, Char> {
             if(bool(x.real()) && bool(x.imag() >= 0) && specs_.sign != sign::plus)
                 format_to(ctx.out(), "+");
             base::format(x.imag(), ctx);
-            if(style_ == style::star)
+            if (style_ == style::star)
                 format_to(ctx.out(), "*i");
             else
                 format_to(ctx.out(), "i");
-            if(std::is_same<typename std::decay<T>::type, float>::value) format_to(ctx.out(), "f");
-            if(std::is_same<typename std::decay<T>::type, long double>::value)
+            if (std::is_same<typename std::decay<T>::type, float>::value)
+                format_to(ctx.out(), "f");
+            if (std::is_same<typename std::decay<T>::type, long double>::value)
                 format_to(ctx.out(), "l");
         }
         return format_to(ctx.out(), ")");
