@@ -8,6 +8,9 @@
 #include <memory>
 
 #include "Achilles/Achilles.hh"
+
+#include "fmt/format.h"
+
 #include "yaml-cpp/node/node.h"
 
 namespace achilles {
@@ -287,5 +290,37 @@ class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoForm
 };
 
 } // namespace achilles
+
+namespace fmt {
+
+template <> struct formatter<achilles::FormFactorInfo::Type> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const achilles::FormFactorInfo::Type &ffit, FormatContext &ctx) const {
+        switch(ffit) {
+        case achilles::FormFactorInfo::Type::F1:
+            return format_to(ctx.out(), "F1({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::F2:
+            return format_to(ctx.out(), "F2({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::F1p:
+            return format_to(ctx.out(), "F1p({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::F1n:
+            return format_to(ctx.out(), "F1n({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::F2p:
+            return format_to(ctx.out(), "F2p({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::F2n:
+            return format_to(ctx.out(), "F2n({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FA:
+            return format_to(ctx.out(), "FA({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FCoh:
+            return format_to(ctx.out(), "FCoh({})", static_cast<int>(ffit));
+        default:
+            return format_to(ctx.out(), "Unknown achilles::FormFactorInfo::Type({}) ",
+                             static_cast<int>(ffit));
+        }
+    }
+};
+} // namespace fmt
 
 #endif

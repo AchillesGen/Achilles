@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <iosfwd>
+#include <sstream>
 
 #include "spdlog/fmt/ostr.h"
 
@@ -338,5 +339,20 @@ class ThreeVector {
 ThreeVector operator*(const double &, const ThreeVector &) noexcept;
 
 } // namespace achilles
+
+namespace fmt {
+
+template <> struct formatter<achilles::ThreeVector> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const achilles::ThreeVector &vec3, FormatContext &ctx) const {
+        std::stringstream ss;
+        ss << vec3;
+
+        return format_to(ctx.out(), ss.str());
+    }
+};
+} // namespace fmt
 
 #endif // end of include guard: THREEVECTOR_HH

@@ -5,6 +5,7 @@
 #include "fmt/format.h"
 
 #include <map>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -62,5 +63,21 @@ template <> struct convert<achilles::ProcessInfo> {
 };
 
 } // namespace YAML
+
+namespace fmt {
+
+template <> struct formatter<achilles::ProcessInfo> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const achilles::ProcessInfo &procinfo, FormatContext &ctx) const {
+        std::stringstream ss;
+        ss << procinfo;
+
+        return format_to(ctx.out(), ss.str());
+    }
+};
+
+} // namespace fmt
 
 #endif
