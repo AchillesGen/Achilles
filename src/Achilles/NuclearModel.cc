@@ -25,6 +25,11 @@ NuclearModel::NuclearModel(const YAML::Node& config,
 NuclearModel::FormFactorMap NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
                                                       const std::vector<FormFactorInfo> &ffInfo) const {
     FormFactorMap results{};
+    results[Type::F1] = 0;
+    results[Type::F2] = 0;
+    results[Type::FA] = 0;
+    results[Type::FAP] = 0;
+    results[Type::FCoh] = 0;
 
     for(const auto & ff : ffInfo) {
         spdlog::trace("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
@@ -42,7 +47,9 @@ NuclearModel::FormFactorMap NuclearModel::CouplingsFF(const FormFactor::Values &
                 results[Type::F2] += formFactors.F2n*ff.coupling;
                 break;
             case Type::FA:
+            case Type::FAP:
                 results[Type::FA] += formFactors.FA*ff.coupling;
+                results[Type::FAP] += formFactors.FAP*ff.coupling;
                 break;
             case Type::FCoh:
                 results[Type::FCoh] += formFactors.Fcoh*ff.coupling;
@@ -256,12 +263,10 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
                                                   const FormFactorMap &ffVal) const {
     Current result;
     std::array<SpinMatrix, 4> gamma{};
-    auto mpi2 = pow(ParticleInfo(211).Mass(), 2);
-    auto ffAP = 2.0*Constant::mN2/(-qVec.M2()+mpi2)*ffVal.at(Type::FA);
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal.at(Type::F1)*SpinMatrix::GammaMu(mu);
         gamma[mu] += ffVal.at(Type::FA)*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5();
-        gamma[mu] += ffAP*SpinMatrix::Gamma_5()*qVec[mu]/Constant::mN;
+        gamma[mu] += ffVal.at(Type::FAP)*SpinMatrix::Gamma_5()*qVec[mu]/Constant::mN;
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] += std::complex<double>(0, 1)*(ffVal.at(Type::F2)*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN));

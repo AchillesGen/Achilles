@@ -20,7 +20,7 @@ enum class ParticleStatus : int {
     decayed = 2,
     initial_state = 3,
     beam = 4,
-    target = 4,
+    target = 11,
     internal_test = 21,
     external_test = 22,
     propagating = 23,

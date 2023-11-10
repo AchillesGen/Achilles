@@ -24,6 +24,7 @@ struct FormFactorInfo {
         F2p,
         F2n,
         FA,
+        FAP,
         FCoh,
     };
 
@@ -40,7 +41,7 @@ class FormFactor {
         struct Values {
             double Gep{}, Gen{}, Gmp{}, Gmn{}; 
             double F1p{}, F2p{}, F1n{}, F2n{};
-            double FA{}, FAs{};
+            double FA{}, FAs{}, FAP{};
             double Fcoh{};
         };
 

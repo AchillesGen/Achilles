@@ -55,6 +55,7 @@ class Mapper {
         double Smin() const {
             double smin = 0;
             for(const auto &mass : Masses()) {
+                spdlog::trace("Add mass {}", mass);
                 smin += sqrt(mass);
             }
             return smin*smin;
