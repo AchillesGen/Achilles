@@ -16,7 +16,10 @@ namespace PathVariables {
     const std::string buildLibs = buildPath + "lib/";
     const std::string installLibs = installPath + "lib/";
     const std::string buildData = buildPath + "data/";
-    const std::string installData = installPath + "share/Achilles/data/";
+    const std::string buildFlux = buildPath + "flux/";
+    const std::string installShare = installPath + "share/Achilles/";
+    const std::string installFlux = installShare + "flux";
+    const std::string installData = installShare + "data";
 }
 
 }

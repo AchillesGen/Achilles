@@ -1,4 +1,5 @@
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/System.hh"
 
 #include <iostream>
 #include <memory>
@@ -29,7 +30,20 @@ bool PID::valid_nucleus() const {
 }
 
 void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
-    YAML::Node particleYAML = YAML::LoadFile(datafile);
+    YAML::Node particleYAML;
+    try {
+        particleYAML = YAML::LoadFile(datafile);
+    } catch(const YAML::BadFile &e) {
+        // Attempt to load from installed shared directory
+        spdlog::debug("ParticleInfo: Could not find {}, attempting to load from {}",
+                datafile, achilles::PathVariables::installShare);
+        try {
+            particleYAML = YAML::LoadFile(achilles::PathVariables::installShare + datafile);
+        } catch(const YAML::BadFile &) {
+            spdlog::error("ParticleInfo: Could not load particle database ({})", e.what());
+            throw;
+        }
+    }
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
         auto entry = std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());

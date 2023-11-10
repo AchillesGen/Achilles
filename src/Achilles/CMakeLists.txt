@@ -172,9 +172,8 @@ install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interf
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION include
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # install(EXPORT achilles-targets
 #     FILE achilles-targets.cmake
 #     NAMESPACE achilles::

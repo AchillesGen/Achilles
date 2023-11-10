@@ -1,6 +1,7 @@
 #ifndef NUCLEUS_HH
 #define NUCLEUS_HH
 
+#include <filesystem>
 #include <functional>
 #include <iosfwd>
 #include <map>
@@ -14,11 +15,14 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/System.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
+
+namespace fs = std::filesystem;
 
 namespace achilles {
 
@@ -272,11 +276,20 @@ struct convert<achilles::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
+        std::unique_ptr<achilles::DensityConfiguration> configs;
 #ifdef GZIP
-        auto configs = std::make_unique<achilles::DensityConfiguration>("data/configurations/QMC_configs.out.gz");
+        // TODO: Clean this up to make it work nicer and with new setup in process_grouping
+        std::string filename = "data/configurations/QMC_configs.out.gz";
 #else
-        auto configs = std::make_unique<achilles::DensityConfiguration>("data/configurations/QMC_configs.out");
+        std::string filename = "data/configurations/QMC_configs.out";
 #endif
+        if(fs::exists(filename)) configs = std::make_unique<achilles::DensityConfiguration>(filename);
+        else {
+            spdlog::debug("Nucleus: Could not find {}, attempting to load from {}",
+                    filename, achilles::PathVariables::installShare);
+            configs = std::make_unique<achilles::DensityConfiguration>(
+                    achilles::PathVariables::installShare + filename);
+        }
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;

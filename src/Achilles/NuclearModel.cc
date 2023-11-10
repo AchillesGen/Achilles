@@ -57,7 +57,14 @@ NuclearModel::FormFactorMap NuclearModel::CouplingsFF(const FormFactor::Values &
 }
 
 YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
-    return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
+    std::string filename = config["NuclearModel"]["FormFactorFile"].as<std::string>();
+    if(!fs::exists(filename)) {
+        spdlog::warn("NuclearModel: Could not find FormFactorFile {}, copying over default and using that one",
+                filename);
+        fs::copy(achilles::PathVariables::installData + "/default/FormFactors.yml", 
+                 filename);
+    }
+    return YAML::LoadFile(filename);
 }
 
 // TODO: Clean this up such that the nucleus isn't loaded twice

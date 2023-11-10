@@ -15,10 +15,12 @@
 
 #include "docopt.h"
 
+#include <filesystem>
 #include <dlfcn.h>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
+namespace fs = std::filesystem;
 
 void Splash() {
 
@@ -144,11 +146,26 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    std::string runcard = "run.yml";
-    if(args["<input>"].isString()) runcard = args["<input>"].asString();
-    
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
+
+    std::string runcard = "run.yml";
+    if(args["<input>"].isString()) runcard = args["<input>"].asString();
+    else {
+        // Ensure file exists, otherwise copy template file to current location
+        if(!fs::exists(runcard)) {
+            spdlog::debug("Achilles: Could not find \"run.yml\". Copying over default run card to this location");
+            if(!fs::exists(achilles::PathVariables::installData)) {
+                fs::copy(achilles::PathVariables::buildData/fs::path("default/run.yml"),
+                         fs::current_path());
+            } else {
+                fs::copy(achilles::PathVariables::installData/fs::path("default/run.yml"),
+                         fs::current_path());
+            }
+            return 1;
+        }
+    }
+    
 
     const std::string lib = libPrefix + "fortran_interface" + libSuffix;
     std::string name = installLibs + lib;
@@ -165,7 +182,7 @@ int main(int argc, char *argv[]) {
 
     try {
         GenerateEvents(runcard, shargs);
-    } catch (const std::exception &error) {
+    } catch (const std::runtime_error &error) {
         spdlog::error(error.what());
     }
 

@@ -1,4 +1,5 @@
 #include "Achilles/Settings.hh"
+#include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
 #include "spdlog/spdlog.h"
 #include <functional>
@@ -69,9 +70,16 @@ YAML::Node Settings::IncludeFile(const std::string &filename) {
     try {
         node = YAML::LoadFile(filename);
     } catch(const YAML::BadFile &e) {
-        spdlog::error("Settings: Trying to load file {}, file is not valid!",
-                      filename);
-        throw;
+        try {
+            // Attempt to load from installed shared directory
+            spdlog::debug("Settings: Could not find {}, attempting to load from {}",
+                    filename, achilles::PathVariables::installShare);
+            node = YAML::LoadFile(achilles::PathVariables::installShare + filename);
+        } catch(const YAML::BadFile &) {
+            spdlog::error("Settings: Trying to load file {}, file is not valid!",
+                          filename);
+            throw;
+        }
     }
 
     MutableYAMLVisitor([](YAML::Node scalar) {

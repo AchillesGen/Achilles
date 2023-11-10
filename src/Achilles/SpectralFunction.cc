@@ -1,12 +1,27 @@
 #include "Achilles/SpectralFunction.hh"
+#include "Achilles/System.hh"
 #include "spdlog/spdlog.h"
+#include <filesystem>
 #include <fstream>
 #include <cmath>
 
+namespace fs = std::filesystem;
 using achilles::SpectralFunction;
 
 SpectralFunction::SpectralFunction(const std::string &filename) {
-    std::ifstream data(filename);
+    // TODO: Refactor this logic into its own function since a similar approach is used in many places
+    std::string prefix = "";
+    if(!fs::exists(filename)) {
+        spdlog::debug("SpectralFunction: Could not find {}, attempting to load from {}",
+                filename, achilles::PathVariables::installShare);
+        prefix = achilles::PathVariables::installShare;
+        if(!fs::exists(prefix + filename)) {
+            spdlog::error("SpectralFunction: Could not find {} or {}",
+                    filename, prefix+filename);
+            throw;
+        }
+    }
+    std::ifstream data(prefix + filename);
     size_t ne{}, np{};
     data >> ne >> np;
     mom.resize(np);
