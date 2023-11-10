@@ -81,7 +81,7 @@ void Splash() {
 static const std::string USAGE =
 R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -92,6 +92,8 @@ R"(
 
     Options:
       -v[v]                                 Increase verbosity level.
+      -l[l]                                 Increase log verbosity 
+                                            (Note: Log verbosity is never lower than total level)
       -h --help                             Show this screen.
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
@@ -147,14 +149,15 @@ int main(int argc, char *argv[]) {
     }
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 5);
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
     else {
         // Ensure file exists, otherwise copy template file to current location
         if(!fs::exists(runcard)) {
-            spdlog::debug("Achilles: Could not find \"run.yml\". Copying over default run card to this location");
+            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to this location");
             if(!fs::exists(achilles::PathVariables::installData)) {
                 fs::copy(achilles::PathVariables::buildData/fs::path("default/run.yml"),
                          fs::current_path());
