@@ -18,6 +18,8 @@
 
 #include "fmt/core.h"
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
