@@ -1,3 +1,7 @@
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
@@ -36,7 +40,7 @@ NuclearModel::FormFactorMap NuclearModel::CouplingsFF(const FormFactor::Values &
     results[Type::FCoh] = 0;
 
     for(const auto & ff : ffInfo) {
-        spdlog::trace("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
+        SPDLOG_TRACE("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
         switch(ff.form_factor) {
             case Type::F1p:
                 results[Type::F1] += formFactors.F1p*ff.coupling;
@@ -101,7 +105,7 @@ std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event
     std::vector<Currents> results(1);
     for(const auto &formFactor : ff[2]) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::trace("fcoh = {}", ffVal[Type::FCoh]);
+        SPDLOG_TRACE("fcoh = {}", ffVal[Type::FCoh]);
 
         Current current;
         std::vector<std::complex<double>> subcur(4);
@@ -110,8 +114,8 @@ std::vector<achilles::NuclearModel::Currents> Coherent::CalcCurrents(const Event
         }
         current.push_back(subcur);
         results[0][formFactor.first] = current;
-        spdlog::trace("HadronicCurrent[{}] = [{}, {}, {}, {}]", formFactor.first,
-                      subcur[0], subcur[1], subcur[2], subcur[3]);
+        SPDLOG_TRACE("HadronicCurrent[{}] = [{}, {}, {}, {}]", formFactor.first,
+                     subcur[0], subcur[1], subcur[2], subcur[3]);
     }
 
     return results;
@@ -183,9 +187,9 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     std::vector<double> spectral(2);
     spectral[0] = spectral_proton(pIn.P(), removal_energy);
     spectral[1] = spectral_neutron(pIn.P(), removal_energy);
-    spdlog::debug("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
-                  removal_energy, pIn.P(), spectral[0],
-                  removal_energy, pIn.P(), spectral[1]);
+    SPDLOG_TRACE("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
+                 removal_energy, pIn.P(), spectral[0],
+                 removal_energy, pIn.P(), spectral[1]);
     // Setup spinors
     pIn.E() = free_energy;
     std::array<Spinor, 2> ubar, u;
@@ -199,8 +203,8 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
         // Calculate nucleon contributions
         for(const auto &formFactor : ff[i]) {
             auto ffVal = CouplingsFF(ffVals, formFactor.second);
-            spdlog::debug("{}: f1 = {}, f2 = {}, fa = {}",
-                          i, ffVal[Type::F1], ffVal[Type::F2], ffVal[Type::FA]);
+            SPDLOG_TRACE("{}: f1 = {}, f2 = {}, fa = {}",
+                         i, ffVal[Type::F1], ffVal[Type::F2], ffVal[Type::FA]);
             auto current = HadronicCurrent(ubar, u, qVec, ffVal);
             for(auto &subcur : current) {
                 for(auto &val : subcur) {

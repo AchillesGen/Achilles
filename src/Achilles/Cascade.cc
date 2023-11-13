@@ -194,7 +194,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
         std::vector<size_t> newKicked{};
         for(auto idx : kickedIdxs) {
             Particle* kickNuc = &particles[idx];
-            spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
+            spdlog::trace("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
             // Update formation zones
             if(kickNuc -> InFormationZone()) {
@@ -244,7 +244,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t& maxSte
                newKicked.push_back(idx);
             }
 
-            spdlog::debug("newKicked size = {}, {}", newKicked.size(), hit);
+            spdlog::trace("newKicked size = {}, {}", newKicked.size(), hit);
         }
 
         // Replace kicked indices with new list

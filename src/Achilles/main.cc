@@ -148,9 +148,15 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    // Install signal handlers
+    std::signal(SIGTERM, SignalHandler);
+    std::signal(SIGSEGV, SignalHandler);
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGABRT, SignalHandler);
+
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
-    CreateLogger(verbosity, log_verbosity, 5);
+    CreateLogger(verbosity, log_verbosity, 1);
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();

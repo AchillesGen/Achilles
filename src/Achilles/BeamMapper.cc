@@ -19,8 +19,10 @@ double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vec
     //       2. Replace the sqrt(Smin())-sqrt(Masses()[0]) with final state hadronic mass
     static constexpr double eps=5;
     auto wgt = m_beam -> GenerateWeight(beam_id, point[m_idx], rans, sqrt(Smin())-sqrt(Masses()[0])+eps);
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Beam weight = {}", wgt);
+#endif
     return 1.0/wgt;
 }
 

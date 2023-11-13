@@ -1,3 +1,7 @@
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
 #include <iostream>
 #include <utility>
 
@@ -142,14 +146,14 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
     Current result;
     double q2 = (p[1] - p.back()).M2();
     std::complex<double> prop = std::complex<double>(0, 1)/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
-    spdlog::trace("Calculating Current for {}", pid);
+    SPDLOG_TRACE("Calculating Current for {}", pid);
     for(size_t i = 0; i < 2; ++i) {
         for(size_t j = 0; j < 2; ++j) {
             std::vector<std::complex<double>> subcur(4);
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*(coupl_left*SpinMatrix::GammaMu(mu)*SpinMatrix::PL()
                                     + coupl_right*SpinMatrix::GammaMu(mu)*SpinMatrix::PR())*u[j]*prop;
-                spdlog::trace("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
+                SPDLOG_TRACE("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
             }
             result.push_back(subcur);
         }
@@ -177,8 +181,8 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
     for(const auto &elm : m_leptonicProcess.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
         mom[elm.first] = (p[elm.first]/1_GeV).Momentum();
-        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
-                      mom[elm.first][0], mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]); 
+        SPDLOG_TRACE("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
+                     mom[elm.first][0], mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]); 
     }
     auto currents = p_sherpa -> Calc(pids, mom, mu2);
 
@@ -187,7 +191,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
                 current.second[i][j] /= pow(1_GeV, static_cast<double>(mom.size())-3);
-                spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
+                SPDLOG_TRACE("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
     }
@@ -269,7 +273,9 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
 
 #ifdef ENABLE_BSM
+#ifdef ACHILLES_EVENT_DETAILS
     for(const auto &amp : spin_amps) spdlog::trace("\n{}", amp);
+#endif
     p_sherpa -> FillAmplitudes(spin_amps);
 #endif
 
@@ -286,7 +292,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     std::vector<double> xsecs(hadronCurrent.size());
     for(size_t i = 0; i < hadronCurrent.size(); ++i) {
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
-        spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
+        spdlog::trace("Xsec[{}] = {}", i, xsecs[i]);
     }
 
 #ifdef ENABLE_BSM

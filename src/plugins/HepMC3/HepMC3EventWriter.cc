@@ -104,7 +104,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
 };
 
 void HepMC3Writer::Write(const achilles::Event &event) {
-    spdlog::debug("Writing out event");
+    spdlog::trace("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
 

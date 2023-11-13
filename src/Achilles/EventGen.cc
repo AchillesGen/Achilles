@@ -255,20 +255,20 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     // Setup flux value
     event.Flux() = beam -> EvaluateFlux(pids[0], mom[1]);
 
-    spdlog::debug("Event Phase Space:");
+    spdlog::trace("Event Phase Space:");
     size_t idx = 0;
     for(const auto &momentum : event.Momentum()) {
-        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
+        spdlog::trace("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
 
     // Calculate the hard cross sections and select one for initial state
-    spdlog::debug("Calculating cross section");
+    spdlog::trace("Calculating cross section");
 
     // Obtain the cross section for the event 
     auto xsecs = scattering -> CrossSection(event);
 
     // Initialize the event
-    spdlog::debug("Filling the event");
+    spdlog::trace("Filling the event");
     if(!scattering -> FillEvent(event, xsecs)) {
         if(outputEvents) {
             event.SetMEWeight(0);
@@ -287,6 +287,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         return 0;
     }
 
+#ifdef ACHILLES_EVENT_DETAILS
     spdlog::trace("Leptons:");
     idx = 0;
     for(const auto &particle : event.Leptons()) {
@@ -298,19 +299,14 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     for(const auto &particle : event.Hadrons()) {
         spdlog::trace("\t{}: {}", ++idx, particle);
     }
+#endif
 
     event.CalcWeight();
     spdlog::trace("Weight: {}", event.Weight());
 
-    // if((event.Momentum()[3]+event.Momentum()[4]).M() < 400) {
-    //     spdlog::info("Mass issue");
-    //     spdlog::drop("achilles");
-    //     CreateLogger(0, 5);
-    // }
-
     // Perform hard cuts
     if(doHardCuts) {
-        spdlog::debug("Making hard cuts");
+        spdlog::trace("Making hard cuts");
         if(!MakeCuts(event)) {
             // Short-circuit the evaluation
             // We want Vegas to adapt to avoid these points, i.e.,
@@ -334,6 +330,7 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
     // TODO: Move to after unweighting?
     // Run the cascade if needed
     if(runCascade) {
+#ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons:");
         idx = 0;
         for(const auto &particle : event.Hadrons()) {
@@ -342,14 +339,17 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 spdlog::trace("\t{}: {}", idx, particle);
             ++idx;
         }
-        spdlog::debug("Runnning cascade");
+#endif
+        spdlog::trace("Runnning cascade");
         cascade -> Evolve(&event);
 
+#ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons (Post Cascade):");
         idx = 0;
         for(const auto &particle : event.Hadrons()) {
             spdlog::trace("\t{}: {}", ++idx, particle);
         }
+#endif
     } else {
         for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
