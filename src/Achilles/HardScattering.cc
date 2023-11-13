@@ -77,7 +77,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     static constexpr std::complex<double> i(0, 1);
     using namespace achilles::Constant;
     // TODO: Double check form factors
-    if(pid == 24) {
+    if(pid == -24) {
         const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F1n, -coupl},
@@ -86,7 +86,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
                                          {FormFactorInfo::Type::FA, coupl}};
         results[{PID::neutron(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
-    } else if(pid == -24) {
+    } else if(pid == 24) {
         const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},

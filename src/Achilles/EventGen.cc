@@ -3,7 +3,6 @@
 #include "Achilles/EventWriter.hh"
 #include "Achilles/HardScatteringFactory.hh"
 #include "Achilles/HardScattering.hh"
-#include "Achilles/Logging.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
@@ -21,6 +20,7 @@
 
 #ifdef ENABLE_HEPMC3
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "yaml-cpp/yaml.h"
@@ -63,6 +63,27 @@ achilles::EventGen::EventGen(const std::string &configFile,
         cascade = nullptr;
     }
 
+#ifdef ENABLE_BSM
+    // Initialize sherpa processes
+    p_sherpa = new achilles::SherpaInterface();
+    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    int qed = 0;
+    if(config["Process"]["QEDShower"])
+        if(config["Process"]["QEDShower"].as<bool>())
+            qed = 3;
+    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
+    if(model == "SM") model = "SM_Nuc";
+    else {
+        shargs.push_back("HARD_DECAYS=1");
+        shargs.push_back("HDH_SET_WIDTHS=1");
+    }
+    shargs.push_back("MODEL=" + model);
+    shargs.push_back("UFO_PARAM_CARD=" + param_card);
+    shargs.push_back(fmt::format("BEAM_2={}", 11));
+    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
+    p_sherpa -> Initialize(shargs);
+#endif
     // Initialize the lepton final states
     spdlog::debug("Initializing the leptonic final states");
     auto leptonicProcess = config.GetAs<achilles::Process_Info>("Process");
@@ -103,7 +124,7 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.m_mom_map = p_sherpa -> MomentumMap(leptonicProcess.Ids());
 #else
     // Dummy call to remove unused error
-    (void)shargs;
+    (void)shargs.size();
     leptonicProcess.m_mom_map[0] = leptonicProcess.Ids()[0];
     leptonicProcess.m_mom_map[1] = leptonicProcess.Ids()[1];
     leptonicProcess.m_mom_map[2] = leptonicProcess.Ids()[2];
@@ -182,6 +203,8 @@ achilles::EventGen::EventGen(const std::string &configFile,
 #ifdef ENABLE_HEPMC3
     } else if(format == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(config.GetAs<std::string>("Main/Output/Name"), zipped);
+    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(config.GetAs<std::string>("Main/Output/Name"), zipped);
 #endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);

@@ -54,7 +54,7 @@ class Event {
         MOCK const vMomentum &Momentum() const { return m_mom; }
         MOCK vMomentum &Momentum() { return m_mom; }
 
-        const EventHistory &History() const { return m_history; }
+        MOCK const EventHistory &History() const { return m_history; }
         EventHistory &History() { return m_history; }
 
         const double &MatrixElementWgt(size_t i) const { return m_me[i]; }
@@ -66,17 +66,17 @@ class Event {
         bool TotalCrossSection();
         size_t SelectNucleon() const;
 
-        const std::shared_ptr<Nucleus>& CurrentNucleus() const { return m_nuc; }
-        MOCK std::shared_ptr<Nucleus>& CurrentNucleus() { return m_nuc; }
+        MOCK const std::shared_ptr<Nucleus> CurrentNucleus() const { return m_nuc; }
+        MOCK std::shared_ptr<Nucleus> CurrentNucleus() { return m_nuc; }
 
         const double& Flux() const { return flux; }
         double& Flux() { return flux; }
 
         MOCK vParticles Particles() const;
-        const vParticles& Hadrons() const;
+        MOCK const vParticles& Hadrons() const;
         MOCK vParticles& Hadrons();
-        const vParticles& Leptons() const { return m_leptons; }
-        vParticles& Leptons() { return m_leptons; }
+        MOCK const vParticles& Leptons() const { return m_leptons; }
+        MOCK vParticles& Leptons() { return m_leptons; }
         void CalcWeight();
         MOCK const double& Weight() const { return m_wgt; }
         MOCK double& Weight() { return m_wgt; }

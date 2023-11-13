@@ -102,6 +102,12 @@ CPMAddPackage(
         "HIGHFIVE_UNIT_TESTS OFF"
 )
 
+CPMAddPackage(
+    Name CmakeGitVersion
+    GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
+    GIT_TAG master
+)
+
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
     # Catch2
@@ -128,4 +134,11 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
         GIT_TAG master
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
+
+    # NuHepMC Reference Implementation
+    CPMAddPackage(
+        NAME NuHepMC
+        GITHUB_REPOSITORY NuHepMC/ReferenceImplementation
+        GIT_TAG main
+    )
 endif()
