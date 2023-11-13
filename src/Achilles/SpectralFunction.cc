@@ -1,10 +1,8 @@
 #include "Achilles/SpectralFunction.hh"
 #include "Achilles/System.hh"
 #include "spdlog/spdlog.h"
-#include <filesystem>
 #include <fstream>
 
-namespace fs = std::filesystem;
 using achilles::SpectralFunction;
 
 SpectralFunction::SpectralFunction(const std::string &filename) {
