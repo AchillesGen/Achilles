@@ -304,6 +304,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     spdlog::trace("  emax = {}", emax);
     spdlog::trace("  s = {}", (point[0] + point[1]).M2());
     spdlog::trace("  s_min = {}", Smin());
+#endif
 }
 
 double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
@@ -353,6 +354,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     spdlog::trace("  dCos: {}", dCos);
     spdlog::trace("  dPhi: {}", dPhi);
     spdlog::trace("  dE: {}", dE);
+#endif
 
     return wgt;
 }
