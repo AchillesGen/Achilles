@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "spdlog/fmt/ostr.h"
+#include "fmt/core.h"
+#include "fmt/format.h"
 
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/FourVector.hh"
@@ -27,6 +29,7 @@ enum class ParticleStatus : int {
     background = 24,
     captured = 25,
 };
+inline auto format_as(achilles::ParticleStatus s) { return fmt::underlying(s); }
 
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
@@ -294,19 +297,19 @@ class Particle {
 };
 
 }
+
 namespace fmt {
 
 template<>
 struct formatter<achilles::Particle> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator{
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::Particle &particle, FormatContext &ctx) {
+    auto format(const achilles::Particle &particle, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "Particle[{}, {}, {}, {}]",
-                         particle.ID(), particle.Status(), particle.Momentum(), particle.Position());
+                         particle.ID(), particle.Status(),
+                         particle.Momentum(), particle.Position());
     }
 };
 

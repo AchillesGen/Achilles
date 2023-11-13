@@ -392,7 +392,7 @@ FourVector operator*(const double&, const FourVector&) noexcept;
 
 template<> struct fmt::formatter<achilles::FourVector> {
     char presentation = 'e';
-    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) {
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator {
         // Parse the presentation format and store it in the formatter:
         auto it = ctx.begin(), end = ctx.end();
         if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
@@ -405,8 +405,7 @@ template<> struct fmt::formatter<achilles::FourVector> {
         return it;
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::FourVector& p, FormatContext& ctx) -> decltype(ctx.out()) {
+    auto format(const achilles::FourVector& p, format_context& ctx) const -> format_context::iterator {
         // ctx.out() is an output iterator to write to
         return format_to(
                 ctx.out(),

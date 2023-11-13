@@ -10,6 +10,8 @@
 #include <utility>
 #include <functional>
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
@@ -328,13 +330,11 @@ namespace fmt {
 
 template<>
 struct formatter<achilles::PID> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::PID &pid, FormatContext &ctx) {
+    auto format(const achilles::PID &pid, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "{}", pid.AsInt());
     }
 };

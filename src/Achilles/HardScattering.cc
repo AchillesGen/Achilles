@@ -1,6 +1,7 @@
 #include <iostream>
 #include <utility>
 
+#include "Achilles/ComplexFmt.hh"
 #include "Achilles/HardScattering.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/NuclearModel.hh"

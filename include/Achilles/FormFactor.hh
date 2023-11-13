@@ -35,6 +35,7 @@ struct FormFactorInfo {
         return form_factor == other.form_factor && coupling == other.coupling;
     }
 };
+inline auto format_as(achilles::FormFactorInfo::Type t) { return fmt::underlying(t); }
 
 class FormFactor {
     public:
