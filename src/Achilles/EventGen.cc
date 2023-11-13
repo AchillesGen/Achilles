@@ -197,14 +197,15 @@ achilles::EventGen::EventGen(const std::string &configFile,
     if(config.Exists("Main/Output/Zipped"))
         zipped = config.GetAs<bool>("Main/Output/Zipped");
     auto format = config.GetAs<std::string>("Main/Output/Format");
+    auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);
     if(format == "Achilles") {
-        writer = std::make_unique<AchillesWriter>(config.GetAs<std::string>("Main/Output/Name"), zipped);
+        writer = std::make_unique<AchillesWriter>(name, zipped);
 #ifdef ENABLE_HEPMC3
     } else if(format == "HepMC3") {
-        writer = std::make_unique<HepMC3Writer>(config.GetAs<std::string>("Main/Output/Name"), zipped);
-    } else if(output["Format"].as<std::string>() == "NuHepMC") {
-        writer = std::make_unique<NuHepMCWriter>(config.GetAs<std::string>("Main/Output/Name"), zipped);
+        writer = std::make_unique<HepMC3Writer>(name, zipped);
+    } else if(format == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(name, zipped);
 #endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);

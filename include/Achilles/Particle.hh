@@ -18,7 +18,6 @@ namespace achilles {
 // The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
     final_state = 1,
-    escaped = 1,
     decayed = 2,
     initial_state = 3,
     beam = 4,
@@ -228,8 +227,7 @@ class Particle {
 
         /// Check to see if the particle is a final state particle
         ///@return bool: True if a final state particle, False otherwise
-        bool IsFinal() const noexcept {return (status == ParticleStatus::escaped)
-                                           || (status == ParticleStatus::final_state); }
+        bool IsFinal() const noexcept {return status == ParticleStatus::final_state; }
 
         /// Propagate the particle according to its momentum by a given time step
         ///@param timeStep: The amount of time to propagate the particle for

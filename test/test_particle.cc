@@ -43,7 +43,7 @@ TEST_CASE("Properties", "[Particle]") {
         part.Status() = achilles::ParticleStatus::propagating;
         CHECK(part.IsPropagating());
 
-        part.Status() = achilles::ParticleStatus::escaped;
+        part.Status() = achilles::ParticleStatus::final_state;
         CHECK(part.IsFinal());
     }
 

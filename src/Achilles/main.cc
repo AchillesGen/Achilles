@@ -130,9 +130,16 @@ int main(int argc, char *argv[]) {
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
                                                     fmt::format("achilles {}", ACHILLES_VERSION)); //version string
+
+    // Install signal handlers
+    std::signal(SIGTERM, SignalHandler);
+    std::signal(SIGSEGV, SignalHandler);
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGABRT, SignalHandler);
     
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 1);
     GitInformation();
 
     if(args["--display-cuts"].asBool()) {
@@ -165,16 +172,6 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    // Install signal handlers
-    std::signal(SIGTERM, SignalHandler);
-    std::signal(SIGSEGV, SignalHandler);
-    std::signal(SIGINT, SignalHandler);
-    std::signal(SIGABRT, SignalHandler);
-
-    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
-    CreateLogger(verbosity, log_verbosity, 1);
-
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
     else {
@@ -192,16 +189,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    const std::string lib = libPrefix + "fortran_interface" + libSuffix;
-    std::string name = installLibs / lib;
-    void *handle = dlopen(name.c_str(), RTLD_NOW);
-    if(!handle) {
-        name = buildLibs / lib;
-        handle = dlopen(name.c_str(), RTLD_NOW);
-        if(!handle) {
-            spdlog::warn("Cannot open HardScattering: {}", dlerror());
-        }
-    }
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
 
@@ -211,7 +198,5 @@ int main(int argc, char *argv[]) {
         spdlog::error(error.what());
     }
 
-    // Close dynamic libraries
-    if(handle) dlclose(handle);
     return 0;
 }
