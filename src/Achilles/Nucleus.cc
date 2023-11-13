@@ -52,15 +52,10 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     // constexpr double nucDensity = 0.16;
     // radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
-    std::string prefix = "";
-    if(!fs::exists(densityFilename)) {
-        spdlog::debug("Nucleus: Could not find {}, attempting to load from {}",
-                densityFilename, achilles::PathVariables::installShare);
-        prefix = achilles::PathVariables::installShare;
-    }
-    std::ifstream densityFile(prefix + densityFilename);
+    auto densityPathFile = Filesystem::FindFile(densityFilename, "Nucleus");
+    std::ifstream densityFile(densityPathFile);
     if(!densityFile.is_open())
-        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", prefix + densityFilename));
+        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", densityPathFile));
     std::string lineContent;
    
     constexpr size_t HeaderLength = 16;

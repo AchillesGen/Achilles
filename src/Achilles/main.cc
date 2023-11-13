@@ -171,10 +171,10 @@ int main(int argc, char *argv[]) {
     
 
     const std::string lib = libPrefix + "fortran_interface" + libSuffix;
-    std::string name = installLibs + lib;
+    std::string name = installLibs / lib;
     void *handle = dlopen(name.c_str(), RTLD_NOW);
     if(!handle) {
-        name = buildLibs + lib;
+        name = buildLibs / lib;
         handle = dlopen(name.c_str(), RTLD_NOW);
         if(!handle) {
             spdlog::warn("Cannot open HardScattering: {}", dlerror());

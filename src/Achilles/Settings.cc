@@ -66,21 +66,7 @@ bool Settings::Exists(const std::string_view &key) const {
 }
 
 YAML::Node Settings::IncludeFile(const std::string &filename) {
-    YAML::Node node;
-    try {
-        node = YAML::LoadFile(filename);
-    } catch(const YAML::BadFile &e) {
-        try {
-            // Attempt to load from installed shared directory
-            spdlog::debug("Settings: Could not find {}, attempting to load from {}",
-                    filename, achilles::PathVariables::installShare);
-            node = YAML::LoadFile(achilles::PathVariables::installShare + filename);
-        } catch(const YAML::BadFile &) {
-            spdlog::error("Settings: Trying to load file {}, file is not valid!",
-                          filename);
-            throw;
-        }
-    }
+    YAML::Node node = YAML::LoadFile(Filesystem::FindFile(filename, "Settings"));
 
     MutableYAMLVisitor([](YAML::Node scalar) {
         if(scalar.Tag() == "!include") {

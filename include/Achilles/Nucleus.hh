@@ -276,20 +276,14 @@ struct convert<achilles::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-        std::unique_ptr<achilles::DensityConfiguration> configs;
 #ifdef GZIP
         // TODO: Clean this up to make it work nicer and with new setup in process_grouping
         std::string filename = "data/configurations/QMC_configs.out.gz";
 #else
         std::string filename = "data/configurations/QMC_configs.out";
 #endif
-        if(fs::exists(filename)) configs = std::make_unique<achilles::DensityConfiguration>(filename);
-        else {
-            spdlog::debug("Nucleus: Could not find {}, attempting to load from {}",
-                    filename, achilles::PathVariables::installShare);
-            configs = std::make_unique<achilles::DensityConfiguration>(
-                    achilles::PathVariables::installShare + filename);
-        }
+        auto configs = std::make_unique<achilles::DensityConfiguration>(
+                achilles::Filesystem::FindFile(filename, "Nucleus"));
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
 
         return true;

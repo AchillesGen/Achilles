@@ -21,6 +21,7 @@ add_library(utilities SHARED
     Poincare.cc
     Unweighter.cc
     Settings.cc
+    System.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings

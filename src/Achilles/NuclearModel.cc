@@ -1,9 +1,13 @@
 #include "Achilles/NuclearModel.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Spinor.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/ComplexFmt.hh"
+
+#include "fmt/std.h"
 
 using achilles::NuclearModel;
 using achilles::Coherent;
@@ -65,13 +69,14 @@ NuclearModel::FormFactorMap NuclearModel::CouplingsFF(const FormFactor::Values &
 
 YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     std::string filename = config["NuclearModel"]["FormFactorFile"].as<std::string>();
-    if(!fs::exists(filename)) {
-        spdlog::warn("NuclearModel: Could not find FormFactorFile {}, copying over default and using that one",
-                filename);
-        fs::copy(achilles::PathVariables::installData + "/default/FormFactors.yml", 
-                 filename);
+    try {
+        return YAML::LoadFile(Filesystem::FindFile(filename, "NuclearModel"));
+    } catch(const AchillesLoadError &e) {
+        spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as FormFactorsDefault.yml",
+                PathVariables::installDefaults / "FormFactors.yml");
+        fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+        return YAML::LoadFile("FormFactorsDefault.yml");
     }
-    return YAML::LoadFile(filename);
 }
 
 // TODO: Clean this up such that the nucleus isn't loaded twice
