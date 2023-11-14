@@ -9,14 +9,14 @@
 
 CPMFindPackage(
     NAME fmt
-    GIT_TAG 7.1.3
+    GIT_TAG 10.1.1
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
 CPMFindPackage(
     NAME spdlog
-    GIT_TAG "v1.8.5"
+    GIT_TAG "v1.12.0"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS
         "SPDLOG_COMPILED_LIB ON"

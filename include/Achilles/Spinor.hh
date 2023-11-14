@@ -130,6 +130,13 @@ class SpinMatrix {
                      0, 0, 0, 1}};
         }
 
+        static constexpr SpinMatrix Zero() {
+            return {{0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0,
+                     0, 0, 0, 0}};
+        }
+
         static constexpr SpinMatrix Gamma_0() {
             return {{0, 0, 1, 0,
                      0, 0, 0, 1,
@@ -171,7 +178,7 @@ class SpinMatrix {
             else if(i == 2) return Gamma_2();
             else if(i == 3) return Gamma_3();
             else if(i == 5) return Gamma_5();
-            else throw std::runtime_error("Invalid Gamma Matrix: " + i);
+            else throw std::runtime_error("Invalid Gamma Matrix: " + std::to_string(i));
         }
 
         static SpinMatrix PL();

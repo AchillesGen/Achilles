@@ -138,7 +138,6 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         case achilles::ParticleStatus::initial_state:
             return 3;
         case achilles::ParticleStatus::final_state:
-        case achilles::ParticleStatus::escaped:
             return 1;
         case achilles::ParticleStatus::decayed:
             return 2;

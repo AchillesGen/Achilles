@@ -35,4 +35,3 @@ coverage.info
 .sherpa
 .vscode/c_cpp_properties.json
 .vscode/settings.json
-install*

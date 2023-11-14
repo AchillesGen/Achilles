@@ -117,8 +117,10 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
             std::make_move_iterator(momRans.end()));
     swap(rans, beamRans);
 
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  Weight: {}", wgt);
+#endif
 
     return wgt;
 }

@@ -39,6 +39,8 @@ option(ENABLE_GZIP "Enable compression of event files" ON)
 option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
 option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
 option(ENABLE_BSM "Enable the generation of BSM events (Requires Sherap)" ON) 
+option(ACHILLES_LOW_MEMORY "Reduce Achilles memory usage at cost of performance" OFF)
+option(ACHILLES_EVENT_DETAILS "Produces all event details when in trace mode" OFF)
 SET(ENABLE_HEPMC3 TRUE)
 
 # Very basic PCH example
@@ -122,10 +124,17 @@ configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include
 # Copy over data files
 file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/flux DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ACHILLES_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/data/default/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+# Setup RPATH to ensure the right libraries are used
+file(RELATIVE_PATH relative_rpath
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+)
+set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relative_rpath})
 
 # Unzip if GZIP not turned on
 if(NOT ENABLE_GZIP)
@@ -182,4 +191,11 @@ install(
         ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
         ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+)
+
+# Install the data files to be found
+install(DIRECTORY
+    ${CMAKE_BINARY_DIR}/data
+    ${CMAKE_BINARY_DIR}/flux
+    DESTINATION share/Achilles
 )

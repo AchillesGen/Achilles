@@ -6,7 +6,6 @@ bool achilles::CutCollection::EvaluateCuts(const std::vector<achilles::Particle>
     bool result = true;
     spdlog::trace("Evaluating Cuts");
     for(size_t i = 0; i < parts.size(); ++i) {
-        spdlog::trace("Making cut for {}, status = {}", parts[i].ID(), parts[i].Status());
         if(!parts[i].IsFinal() && !parts[i].IsPropagating()) continue;
         spdlog::trace("Making cut for {}", parts[i].ID());
         // Single Particle Cuts

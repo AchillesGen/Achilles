@@ -94,7 +94,7 @@ class CalcCrossSection : public RunMode {
 
             nevents++;
             for(const auto &part : m_nuc->Nucleons()) {
-                if(part.Status() == ParticleStatus::escaped) {
+                if(part.Status() == ParticleStatus::final_state) {
                     nhits++; 
                     break;
                 }
@@ -153,7 +153,7 @@ class CalcCrossSectionMFP : public RunMode {
 
             nevents++;
             for(const auto &part : m_nuc->Nucleons()) {
-                if(part.Status() == ParticleStatus::escaped) {
+                if(part.Status() == ParticleStatus::final_state) {
                     nhits++; 
                     break;
                 }

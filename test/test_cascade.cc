@@ -316,7 +316,6 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
 
     auto interaction = std::make_unique<MockInteraction>();
     auto nucleus = std::make_shared<MockNucleus>();
-    spdlog::info("Mode: {}", mode);
 
     SECTION("Must have exactly one kicked") {
         REQUIRE_CALL(*nucleus, Nucleons())

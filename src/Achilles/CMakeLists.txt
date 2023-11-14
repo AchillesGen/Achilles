@@ -20,15 +20,20 @@ add_library(utilities SHARED
     ProcessInfo.cc
     Poincare.cc
     Unweighter.cc
+    Settings.cc
+    System.cc
 )
 target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_options project_warnings
                                 PUBLIC spdlog::spdlog yaml::cpp) #pybind11::pybind11 
-list(APPEND achilles_targets utilities)
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
 endif()
+if(ACHILLES_EVENT_DETAILS)
+target_compile_definitions(utilities PUBLIC ACHILLES_EVENT_DETAILS)
+endif()
+list(APPEND achilles_targets utilities)
 
 # add_library(interaction_plugin SHARED
 #     InteractionLoader.cc
@@ -80,6 +85,9 @@ if(USE_ROOT)
     if(${ROOT_MINOR_VERSION} LESS 16)
         target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
     endif()
+endif()
+if(ACHILLES_LOW_MEMORY)
+    target_compile_definitions(physics PUBLIC -DACHILLES_LOW_MEMORY)
 endif()
 target_link_libraries(physics PRIVATE project_options project_warnings
                       PUBLIC utilities cuts HighFive)
@@ -168,9 +176,8 @@ install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interf
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION include
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # install(EXPORT achilles-targets
 #     FILE achilles-targets.cmake
 #     NAMESPACE achilles::
