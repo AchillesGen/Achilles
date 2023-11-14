@@ -93,7 +93,9 @@ void GenChannel::GeneratePoint(std::vector<ATOOLS::Vec4D> &p, const std::vector<
     for(size_t i = 2; i < m_n; ++i) {
         p[i] = m_p[1 << i];
     }
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper::Print(__PRETTY_FUNCTION__, p, rans);
+#endif
 }
 
 void GenChannel::BuildPoint(ChannelNode *cur, size_t lid, const std::vector<double> &rans, size_t depth) {
