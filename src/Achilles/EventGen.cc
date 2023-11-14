@@ -63,27 +63,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
         cascade = nullptr;
     }
 
-#ifdef ENABLE_BSM
-    // Initialize sherpa processes
-    p_sherpa = new achilles::SherpaInterface();
-    std::string model = config["Process"]["Model"].as<std::string>();
-    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
-    int qed = 0;
-    if(config["Process"]["QEDShower"])
-        if(config["Process"]["QEDShower"].as<bool>())
-            qed = 3;
-    shargs.push_back(fmt::format("CSS_EW_MODE={}", qed));
-    if(model == "SM") model = "SM_Nuc";
-    else {
-        shargs.push_back("HARD_DECAYS=1");
-        shargs.push_back("HDH_SET_WIDTHS=1");
-    }
-    shargs.push_back("MODEL=" + model);
-    shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    shargs.push_back(fmt::format("BEAM_2={}", 11));
-    shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
-    p_sherpa -> Initialize(shargs);
-#endif
     // Initialize the lepton final states
     spdlog::debug("Initializing the leptonic final states");
     auto leptonicProcess = config.GetAs<achilles::Process_Info>("Process");

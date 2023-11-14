@@ -70,7 +70,7 @@ TEST_CASE("Nucleus construction", "[nucleus]") {
         static constexpr std::size_t Z = 6, A = 12;
 
         CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermiGas, std::move(density)),
-                          "Nucleus: Density file dummy.txt does not exist.");
+                          "Achilles: Could not load dummy.txt");
     }
 
     SECTION("Density must produce correct number of protons and neutrons") {
@@ -180,6 +180,6 @@ TEST_CASE("Make Nucleus", "[Nucleus]") {
         }
         if(!bad_random) 
             CHECK_THROWS_WITH(achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, fermiGas, std::move(density)),
-                              fmt::format("Invalid nucleus: {} does not exist.", match[2]));
+                              fmt::format("Invalid nucleus: {} does not exist.", std::string(match[2])));
     }
 }
