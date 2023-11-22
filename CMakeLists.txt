@@ -38,10 +38,13 @@ option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
 option(ENABLE_GZIP "Enable compression of event files" ON)
 option(ENABLE_CASCADE_TEST "Enable executables for testing the cascade" OFF)
 option(ENABLE_POTENTIAL_TEST "Enable executables for testing the potential" OFF)
+
 option(ENABLE_BSM "Enable the generation of BSM events (Requires Sherap)" ON) 
 option(ACHILLES_LOW_MEMORY "Reduce Achilles memory usage at cost of performance" OFF)
 option(ACHILLES_EVENT_DETAILS "Produces all event details when in trace mode" OFF)
 SET(ENABLE_HEPMC3 TRUE)
+# Allow build to be made even if not a git repo
+SET(GIT_FAIL_IF_NONZERO_EXIT FALSE)
 
 # Very basic PCH example
 option(ENABLE_PCH "Enable Precompiled Headers" OFF)
