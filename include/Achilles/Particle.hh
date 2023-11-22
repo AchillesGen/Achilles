@@ -6,6 +6,8 @@
 #include <vector>
 
 #include "spdlog/fmt/ostr.h"
+#include "fmt/core.h"
+#include "fmt/format.h"
 
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/FourVector.hh"
@@ -13,16 +15,20 @@
 
 namespace achilles {
 
+// The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
-    internal_test = -3,
-    external_test = -2,
-    propagating = -1,
-    background = 0,
-    initial_state = 1,
-    final_state = 2,
-    escaped = 3,
-    captured = 4
+    final_state = 1,
+    decayed = 2,
+    initial_state = 3,
+    beam = 4,
+    target = 11,
+    internal_test = 21,
+    external_test = 22,
+    propagating = 23,
+    background = 24,
+    captured = 25,
 };
+inline auto format_as(achilles::ParticleStatus s) { return fmt::underlying(s); }
 
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
@@ -56,7 +62,7 @@ class Particle {
         ///@param mothers: The mother particles of the particle (default = Empty)
         ///@param daughters: The daughter particles of the particle (default = Empty)
         Particle(const PID& pid = PID{0}, FourVector mom = FourVector(),
-                 ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = static_cast<ParticleStatus>(0),
+                 ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = ParticleStatus::background,
                  std::vector<int>  _mothers = std::vector<int>(),
                  std::vector<int>  _daughters = std::vector<int>()) noexcept :
             info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
@@ -77,7 +83,7 @@ class Particle {
                       status(std::move(_status)), mothers(std::move(_mothers)),
                       daughters(std::move(_daughters)) { formationZone = 0;}
 
-        Particle(const Particle &other) : info{ParticleInfo(other.info.ID())},
+        Particle(const Particle &other) : info{other.info},
             momentum{other.momentum},
             position{other.position}, status{other.status}, mothers{other.mothers},
             formationZone{other.formationZone} {}
@@ -145,7 +151,7 @@ class Particle {
 
         /// Return the pid of the particle
         ///@return int: PID of the particle
-        PID ID() const noexcept { return info.ID(); }
+        PID ID() const noexcept { return info.IntID(); }
 
         ParticleInfo Info() const noexcept { return info; }
 
@@ -221,8 +227,7 @@ class Particle {
 
         /// Check to see if the particle is a final state particle
         ///@return bool: True if a final state particle, False otherwise
-        bool IsFinal() const noexcept {return (status == ParticleStatus::escaped)
-                                           || (status == ParticleStatus::final_state); }
+        bool IsFinal() const noexcept {return status == ParticleStatus::final_state; }
 
         /// Propagate the particle according to its momentum by a given time step
         ///@param timeStep: The amount of time to propagate the particle for
@@ -290,5 +295,23 @@ class Particle {
 };
 
 }
+
+namespace fmt {
+
+template<>
+struct formatter<achilles::Particle> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator{
+        return ctx.begin();
+    }
+
+    auto format(const achilles::Particle &particle, format_context &ctx) const -> format_context::iterator {
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]",
+                         particle.ID(), particle.Status(),
+                         particle.Momentum(), particle.Position());
+    }
+};
+
+}
+
 
 #endif // end of include guard: PARTICLE_HH

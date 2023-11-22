@@ -13,7 +13,41 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
-#include "plugins/Sherpa/SherpaMEs.hh"
+
+#ifdef ENABLE_BSM
+#include "plugins/Sherpa/SherpaInterface.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#undef THROW
+#include "METOOLS/Main/Spin_Structure.H"
+#undef THROW
+#define THROW TROMPELOEIL_THROW
+#pragma GCC diagnostic pop
+#else
+
+#include <map>
+#include <vector>
+#include <complex> 
+
+namespace achilles {
+
+struct FormFactorInfo;
+namespace METOOLS {
+using Spin_Amplitudes = std::vector<std::complex<double>>;
+}
+class SherpaInterface {
+    public:
+        using LeptonCurrents = std::map<int, std::vector<std::vector<std::complex<double>>>>;
+        virtual ~SherpaInterface() = default;
+        virtual LeptonCurrents Calc(const std::vector<int>&, const std::vector<std::array<double, 4>>&,
+                                    const double&) = 0;
+        virtual std::vector<FormFactorInfo> FormFactors(int, int) const;
+        virtual void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
+};
+
+}
+#endif
 
 class MockDensity : public trompeloeil::mock_interface<achilles::Density> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -34,6 +68,7 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     static constexpr bool trompeloeil_movable_mock = true;
     MAKE_MOCK0(Nucleons, achilles::Particles&(), noexcept override);
     IMPLEMENT_MOCK0(GenerateConfig);
+    IMPLEMENT_CONST_MOCK0(ID);
     MAKE_CONST_MOCK0(Radius, const double&(), noexcept override);
     MAKE_CONST_MOCK1(Rho, double(const double&), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
@@ -50,10 +85,11 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK2(FillNucleus);
 };
 
-class MockSherpaME : public trompeloeil::mock_interface<achilles::SherpaMEs> {
+class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaInterface> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK3(Calc);
+    IMPLEMENT_MOCK3(Calc);
     IMPLEMENT_CONST_MOCK2(FormFactors);
+    IMPLEMENT_MOCK1(FillAmplitudes);
 };
 
 class MockInteraction : public trompeloeil::mock_interface<achilles::Interactions> {
@@ -74,7 +110,11 @@ class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
 class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(CurrentNucleus);
+    IMPLEMENT_CONST_MOCK0(CurrentNucleus);
     IMPLEMENT_MOCK0(Hadrons);
+    IMPLEMENT_CONST_MOCK0(Hadrons);
+    IMPLEMENT_MOCK0(Leptons);
+    IMPLEMENT_CONST_MOCK0(Leptons);
     IMPLEMENT_MOCK1(InitializeLeptons);
     IMPLEMENT_MOCK1(InitializeHadrons);
     MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector>&());
@@ -83,6 +123,7 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     IMPLEMENT_CONST_MOCK0(Remnant);
     MAKE_CONST_MOCK0(Weight, const double&());
     MAKE_MOCK0(Weight, double&());
+    IMPLEMENT_CONST_MOCK0(History);
 };
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {

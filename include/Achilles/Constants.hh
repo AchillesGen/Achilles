@@ -1,6 +1,9 @@
 #ifndef CONSTANTS_HH
 #define CONSTANTS_HH
 
+// For Sherpa interface
+#undef GAMMA_E
+
 #include "Achilles/Units.hh"
 
 namespace achilles {
@@ -15,6 +18,7 @@ namespace Constant {
     constexpr double NAVOGADRO = 6.02214076e23; // mol^-1 
     // constexpr double HBARC = 197.3269804_fm * 1_MeV;
     // constexpr double HBARC2 = 0.3893793721_mb * 1_GeV * 1_GeV;
+    constexpr double GAMMA_E = 0.5772156649015328606;
 
     // Masses
     constexpr double mp = 938.27208816_MeV;
@@ -26,13 +30,16 @@ namespace Constant {
     // EW parameters
     constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
     constexpr double MZ = 91.1876_GeV;
-    constexpr double MW = 80.359_GeV;
+    constexpr double aEWM1 = 137; 
+    constexpr double aEW = 1.0/aEWM1;
+    // constexpr double MW = 80.359_GeV;
     constexpr double GAMZ = 2.4952_GeV;
     constexpr double GAMW = 2.0895_GeV;
-    constexpr double cos2w = MW*MW/MZ/MZ;
-    constexpr double sin2w = 1 - cos2w;
-    const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
-    const double ee = sqrt(4*M_PI*alpha);
+    const double MW = sqrt(((pow(MZ, 2)/2)+sqrt(((pow(MZ,4)/4)-(((aEW*M_PI)*pow(MZ,2))/(GF*sqrt(2.0)))))));
+    const double cos2w = MW*MW/MZ/MZ;
+    const double sin2w = 1 - cos2w;
+    // const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
+    const double ee = sqrt(4*M_PI*aEW);
     const double cw = sqrt(cos2w);
     const double sw = sqrt(sin2w);
 }

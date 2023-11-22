@@ -5,6 +5,7 @@
 #include "Achilles/Histogram.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Vegas.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/Unweighter.hh"
@@ -28,7 +29,7 @@ class Cascade;
 class HardScattering;
 class EventWriter;
 
-class SherpaMEs;
+class SherpaInterface;
 
 class EventGen {
     public:
@@ -37,7 +38,8 @@ class EventGen {
         void GenerateEvents();
 
     private:
-        bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
+        bool runCascade{false}, outputEvents{false}, doHardCuts{false};
+        bool runDecays{true};
         bool doRotate{false};
         double GenerateEvent(const std::vector<FourVector>&, const double&);
         bool MakeCuts(Event&);
@@ -52,10 +54,15 @@ class EventGen {
         // CutCollection event_cuts{};
         MultiChannel integrator;
         Integrand<FourVector> integrand;
-        YAML::Node config;
+        Settings config;
+
+        std::ofstream outputfile;
 
         std::shared_ptr<EventWriter> writer;
         std::unique_ptr<Unweighter> unweighter;
+#ifdef ENABLE_BSM
+        SherpaInterface *p_sherpa;
+#endif
 };
 
 }

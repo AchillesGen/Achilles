@@ -28,7 +28,7 @@ class Factory {
         static void Register(const std::string &name) {
             if(IsRegistered(name)) 
                 spdlog::error("{} is already registered!", name);
-            spdlog::trace("Registering {}", name);
+            spdlog::debug("Registering {}", name);
             Registry()[name] = Derived::Construct;
         }
 

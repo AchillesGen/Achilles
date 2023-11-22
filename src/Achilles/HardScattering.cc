@@ -1,6 +1,11 @@
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
 #include <iostream>
 #include <utility>
 
+#include "Achilles/ComplexFmt.hh"
 #include "Achilles/HardScattering.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/NuclearModel.hh"
@@ -9,6 +14,16 @@
 #include "Achilles/HardScatteringFactory.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Random.hh"
+
+#ifdef ENABLE_BSM
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wconversion"
+#include "METOOLS/Main/Spin_Structure.H"
+#pragma GCC diagnostic pop
+#endif
 
 // Aliases for most common types
 using achilles::Particles;
@@ -62,7 +77,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     static constexpr std::complex<double> i(0, 1);
     using namespace achilles::Constant;
     // TODO: Double check form factors
-    if(pid == 24) {
+    if(pid == -24) {
         const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F1n, -coupl},
@@ -71,7 +86,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
                                          {FormFactorInfo::Type::FA, coupl}};
         results[{PID::neutron(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
-    } else if(pid == -24) {
+    } else if(pid == 24) {
         const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},
@@ -122,23 +137,23 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
         pUBar = p.back();
     }
     std::array<Spinor, 2> ubar, u;
-    ubar[0] = UBarSpinor(-1, pUBar);
-    ubar[1] = UBarSpinor(1, pUBar);
-    u[0] = USpinor(-1, pU);
-    u[1] = USpinor(1, pU);
+    ubar[0] = UBarSpinor(1, pUBar);
+    ubar[1] = UBarSpinor(-1, pUBar);
+    u[0] = USpinor(1, pU);
+    u[1] = USpinor(-1, pU);
 
     // Calculate currents
     Current result;
     double q2 = (p[1] - p.back()).M2();
     std::complex<double> prop = std::complex<double>(0, 1)/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
-    spdlog::trace("Calculating Current for {}", pid);
+    SPDLOG_TRACE("Calculating Current for {}", pid);
     for(size_t i = 0; i < 2; ++i) {
         for(size_t j = 0; j < 2; ++j) {
             std::vector<std::complex<double>> subcur(4);
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*(coupl_left*SpinMatrix::GammaMu(mu)*SpinMatrix::PL()
                                     + coupl_right*SpinMatrix::GammaMu(mu)*SpinMatrix::PR())*u[j]*prop;
-                spdlog::trace("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
+                SPDLOG_TRACE("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
             }
             result.push_back(subcur);
         }
@@ -166,8 +181,8 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
     for(const auto &elm : m_leptonicProcess.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
         mom[elm.first] = (p[elm.first]/1_GeV).Momentum();
-        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
-                      mom[elm.first][0], mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]); 
+        SPDLOG_TRACE("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(),
+                     mom[elm.first][0], mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]); 
     }
     auto currents = p_sherpa -> Calc(pids, mom, mu2);
 
@@ -176,10 +191,11 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
                 current.second[i][j] /= pow(1_GeV, static_cast<double>(mom.size())-3);
-                spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
+                SPDLOG_TRACE("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
     }
+
     return currents;
 #else
     return m_current.CalcCurrents(p, mu2);
@@ -187,6 +203,13 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
 }
 
 std::vector<double> HardScattering::CrossSection(Event &event) const {
+#ifdef ENABLE_BSM
+    // Rotate momentum to make beamB the lepton
+    // for(auto &mom : event.Momentum()) {
+    //     mom.Py() = -mom.Py();
+    //     mom.Pz() = -mom.Pz();
+    // }
+#endif
     // Calculate leptonic currents
     auto leptonCurrent = LeptonicCurrents(event.Momentum(), 100);
 
@@ -209,21 +232,37 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
 #endif
         }
     }
-    auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
 
+    auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
     std::vector<double> amps2(hadronCurrent.size());
     const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
+
+#ifdef ENABLE_BSM
+    std::vector<METOOLS::Spin_Amplitudes> spin_amps;
+    p_sherpa -> FillAmplitudes(spin_amps);
+    for(auto &amp : spin_amps) 
+        for(auto &elm : amp) elm=0;
+#else 
+    std::vector<std::vector<std::complex<double>>> spin_amps;
+    spin_amps.resize(1);
+    spin_amps[0].resize(nlep_spins*nhad_spins);
+#endif
+
     for(size_t i = 0; i  < nlep_spins; ++i) {
         for(size_t j = 0; j < nhad_spins; ++j) {
+            // TODO: Fix this to be correct!!!
+            size_t idx = ((i&~1ul)<<2)+((i&1ul)<<1) + ((j&~1ul))+((j&1ul));
             double sign = 1.0;
             std::vector<std::complex<double>> amps(hadronCurrent.size());
             for(size_t mu = 0; mu < 4; ++mu) {
                 for(const auto &lcurrent : leptonCurrent) {
                     auto boson = lcurrent.first;
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
-                        if(hadronCurrent[k].find(boson) != hadronCurrent[k].end())
+                        if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()) {
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+                            spin_amps[0][idx] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+                        }
                     }
                 }
                 sign = -1.0;
@@ -232,6 +271,13 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 amps2[k] += std::norm(amps[k]);
         }
     }
+
+#ifdef ENABLE_BSM
+#ifdef ACHILLES_EVENT_DETAILS
+    for(const auto &amp : spin_amps) spdlog::trace("\n{}", amp);
+#endif
+    p_sherpa -> FillAmplitudes(spin_amps);
+#endif
 
     double spin_avg = 1;
     if(!ParticleInfo(m_leptonicProcess.m_ids[0]).IsNeutrino()) spin_avg *= 2;
@@ -246,9 +292,16 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     std::vector<double> xsecs(hadronCurrent.size());
     for(size_t i = 0; i < hadronCurrent.size(); ++i) {
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
-        spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
+        spdlog::trace("Xsec[{}] = {}", i, xsecs[i]);
     }
 
+#ifdef ENABLE_BSM
+    // Rotate momentum back
+    // for(auto &mom : event.Momentum()) {
+    //     mom.Py() = -mom.Py();
+    //     mom.Pz() = -mom.Pz();
+    // }
+#endif
     return xsecs;
 }
 

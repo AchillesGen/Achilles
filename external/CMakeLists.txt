@@ -9,14 +9,14 @@
 
 CPMFindPackage(
     NAME fmt
-    GIT_TAG 7.1.3
+    GIT_TAG 10.1.1
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
 CPMFindPackage(
     NAME spdlog
-    GIT_TAG "v1.8.5"
+    GIT_TAG "v1.12.0"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS
         "SPDLOG_COMPILED_LIB ON"
@@ -74,9 +74,9 @@ add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
     NAME HepMC3
-    VERSION 3.2.5
+    VERSION 3.2.6
     GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
-    GIT_TAG 3.2.5
+    GIT_TAG 3.2.6
     OPTIONS
       "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
       "HEPMC3_ENABLE_SEARCH OFF"
@@ -102,6 +102,12 @@ CPMAddPackage(
         "HIGHFIVE_UNIT_TESTS OFF"
 )
 
+CPMAddPackage(
+    Name CmakeGitVersion
+    GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
+    GIT_TAG master
+)
+
 # Install testing framework
 if(ENABLE_TESTING OR ENABLE_FUZZING)
     # Catch2
@@ -118,7 +124,7 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 37 
+        VERSION 44 
     )
 
     # Fortran Unit Tests
@@ -128,4 +134,11 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
         GIT_TAG master
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
+
+    # NuHepMC Reference Implementation
+    CPMAddPackage(
+        NAME NuHepMC
+        GITHUB_REPOSITORY NuHepMC/ReferenceImplementation
+        GIT_TAG main
+    )
 endif()

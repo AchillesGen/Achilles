@@ -10,6 +10,8 @@
 #include <utility>
 #include <functional>
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
@@ -82,11 +84,11 @@ namespace achilles {
                 return os;
             }
 
-        private:
             // Ensure id matches the numbering scheme defined at:
             // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
-            // TODO: Implement this function, may not be explicitly needed though
-            // bool valid(const long int&);
+            bool valid_nucleus() const;
+
+        private:
             long int id;
     };
 
@@ -328,13 +330,11 @@ namespace fmt {
 
 template<>
 struct formatter<achilles::PID> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::PID &pid, FormatContext &ctx) {
+    auto format(const achilles::PID &pid, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "{}", pid.AsInt());
     }
 };

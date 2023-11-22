@@ -47,6 +47,24 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
         CHECK(SpinMatrix::PL()*SpinMatrix::PR() == SpinMatrix());
     }
 
+    SECTION("Spinor inner product (massless)") {
+        achilles::FourVector mom{500, 0, 300, 400};
+        {
+            auto s1 = USpinor(1, mom);
+            auto s2 = UBarSpinor(1, mom);
+            for(size_t i = 0; i < 4; ++i) {
+                CHECK((s2*SpinMatrix::GammaMu(i)*s1).real() == Approx(2*mom[i]));
+            }
+        }
+        {
+            auto s1 = USpinor(-1, mom);
+            auto s2 = UBarSpinor(-1, mom);
+            for(size_t i = 0; i < 4; ++i) {
+                CHECK((s2*SpinMatrix::GammaMu(i)*s1).real() == Approx(2*mom[i]));
+            }
+        }
+    }
+
     SECTION("Spinor outer product (massless)") {
         achilles::FourVector mom{1000, 0, 0, 1000};
         SpinMatrix result;
@@ -89,9 +107,8 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
     SECTION("SigmaMuNu") {
         for(size_t mu = 0; mu < 4; ++mu) {
             for(size_t nu = 0; nu < 4; ++nu) {
-                double gmunu = mu == nu ? mu == 0 ? 1 : -1 : 0;
                 CHECK(SpinMatrix::SigmaMuNu(mu, nu) == -SpinMatrix::SigmaMuNu(nu, mu));
-                CHECK(SpinMatrix::SigmaMuNu(mu, nu) == std::complex<double>(0, 1)*(SpinMatrix::GammaMu(mu)*SpinMatrix::GammaMu(nu) - gmunu*SpinMatrix::Identity()));
+                CHECK(SpinMatrix::SigmaMuNu(mu, nu) == std::complex<double>(0, 1)/2.0*(SpinMatrix::GammaMu(mu)*SpinMatrix::GammaMu(nu) - SpinMatrix::GammaMu(nu)*SpinMatrix::GammaMu(mu)));
             }
         }
     }

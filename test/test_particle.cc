@@ -43,7 +43,7 @@ TEST_CASE("Properties", "[Particle]") {
         part.Status() = achilles::ParticleStatus::propagating;
         CHECK(part.IsPropagating());
 
-        part.Status() = achilles::ParticleStatus::escaped;
+        part.Status() = achilles::ParticleStatus::final_state;
         CHECK(part.IsFinal());
     }
 
@@ -76,7 +76,7 @@ TEST_CASE("I/O", "[Particle]") {
     achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}};
     achilles::Particle part2;
 
-    CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, 0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 0)");
+    CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, 0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 24)");
 
     std::stringstream ss;
     ss << part;

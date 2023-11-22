@@ -87,7 +87,23 @@ SpinMatrix SpinMatrix::Slashed(const FourVector &mom) {
 }
 
 SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {
-    return std::complex<double>(0, 1)/2.0*(GammaMu(mu)*GammaMu(nu) - GammaMu(nu)*GammaMu(mu));
+    if(mu == nu) return SpinMatrix::Zero();
+    int sign = 1;
+    if(mu > nu) {
+        sign = -1;
+        std::swap(mu, nu);
+    }
+    static constexpr std::complex<double> li(0, 1);
+    if(mu == 0) {
+        if(nu == 1) return sign*SpinMatrix({0, -li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, li, 0});
+        else if(nu == 2) return sign*SpinMatrix({0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0});
+        else return sign*SpinMatrix({-li, 0, 0, 0, 0, li, 0, 0, 0, 0, li, 0, 0, 0, 0, -li});
+    } else if(mu == 1) {
+        if(nu == 2) return sign*SpinMatrix({1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1});
+        else return sign*SpinMatrix({0, li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, -li, 0});
+    } else {
+        return sign*SpinMatrix({0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0});
+    }
 }
 
 Spinor achilles::operator*(const Spinor &lhs, const SpinMatrix &rhs) {

@@ -66,6 +66,7 @@ double AdaptiveMap::GenerateWeight(const std::vector<double> &rans) const {
 void AdaptiveMap::Adapt(const double &alpha, const std::vector<double> &data) {
     std::vector<double> tmp(m_bins);
     std::vector<double> new_hist(m_hist.size());
+    spdlog::trace("Starting Histogram: [{}]", fmt::join(m_hist.begin(), m_hist.end(), ", "));
 
     for(size_t i = 0; i < m_dims; ++i) {
         // Load data into tmp
@@ -121,6 +122,7 @@ void AdaptiveMap::Adapt(const double &alpha, const std::vector<double> &data) {
     }
 
     m_hist = new_hist;
+    spdlog::trace("Updated Histogram: [{}]", fmt::join(m_hist.begin(), m_hist.end(), ", "));
 }
 
 void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {

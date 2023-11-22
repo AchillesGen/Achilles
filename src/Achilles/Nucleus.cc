@@ -45,14 +45,17 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
     nucleons.resize(A);
     protons.resize(Z);
     neutrons.resize(A-Z);
+    protonLoc.resize(Z);
+    neutronLoc.resize(A-Z);
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     // spdlog::info("Nucleus: inferring nuclear radius using 0.16 nucleons/fm^3.");
     // constexpr double nucDensity = 0.16;
     // radius = std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
-    std::ifstream densityFile(densityFilename);
+    auto densityPathFile = Filesystem::FindFile(densityFilename, "Nucleus");
+    std::ifstream densityFile(densityPathFile);
     if(!densityFile.is_open())
-        throw std::runtime_error(fmt::format("Nucleus: Density file {} does not exist.", densityFilename));
+        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", densityPathFile));
     std::string lineContent;
    
     constexpr size_t HeaderLength = 16;
@@ -111,24 +114,18 @@ Nucleus::Nucleus(const std::size_t& Z, const std::size_t& A, const double& bEner
 // }
 
 void Nucleus::SetNucleons(Particles& _nucleons) noexcept {
-    nucleons = _nucleons;
+    std::swap(nucleons, _nucleons);
     std::size_t idx = 0;
     std::size_t proton_idx = 0;
     std::size_t neutron_idx = 0;
     for(auto particle : nucleons) {
         if(particle.ID() == PID::proton()) {
-            if(proton_idx >= protons.size()) {
-                protons.push_back(particle);
-                proton_idx++;
-            } else protons[proton_idx++] = particle;
-            protonLoc.push_back(idx++);
+            protons[proton_idx] = particle;
+            protonLoc[proton_idx++] = idx++;
         }
         else if(particle.ID() == PID::neutron()) {
-            if(neutron_idx >= neutrons.size()) {
-                neutrons.push_back(particle);
-                neutron_idx++;
-            } else neutrons[neutron_idx++] = particle;
-            neutronLoc.push_back(idx++);
+            neutrons[neutron_idx] = particle;
+            neutronLoc[neutron_idx++] = idx++;
         }
     }
 }

@@ -1,4 +1,5 @@
 #include "Achilles/SpectralFunction.hh"
+#include "Achilles/System.hh"
 #include "spdlog/spdlog.h"
 #include <fstream>
 #include <cmath>
@@ -6,7 +7,7 @@
 using achilles::SpectralFunction;
 
 SpectralFunction::SpectralFunction(const std::string &filename) {
-    std::ifstream data(filename);
+    std::ifstream data(Filesystem::FindFile(filename, "SpectralFunction"));
     size_t ne{}, np{};
     data >> ne >> np;
     mom.resize(np);

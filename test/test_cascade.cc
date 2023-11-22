@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
+#include "catch_utils.hh"
 
 #include "Achilles/Cascade.hh"
 #include "Achilles/Nucleus.hh"
@@ -315,7 +316,6 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
 
     auto interaction = std::make_unique<MockInteraction>();
     auto nucleus = std::make_shared<MockNucleus>();
-    spdlog::info("Mode: {}", mode);
 
     SECTION("Must have exactly one kicked") {
         REQUIRE_CALL(*nucleus, Nucleons())
