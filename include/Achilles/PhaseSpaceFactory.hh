@@ -28,7 +28,7 @@ class PSFactory {
         static void Register(std::string name) {
             if(IsRegistered(name))
                 spdlog::error("{} is already registered!", name);
-            spdlog::trace("Registering {} Phase Space", name);
+            spdlog::debug("Registering {} Phase Space", name);
             Registry()[name] = Derived::Construct;
         }
 

@@ -2,6 +2,8 @@
 
 #include "Achilles/FourVector.hh"
 
+#include <vector>
+
 namespace achilles {
 
   class Poincare {

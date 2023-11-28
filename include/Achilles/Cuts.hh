@@ -45,13 +45,13 @@ class CutBase {
                 throw std::runtime_error("CutRange: Invalid syntax. Missing cut values");
             }
             if(m_range.size() == 1) {
-                spdlog::trace("Found cut range: [{}, {}]", m_range[0].first, m_range[0].second);
+                spdlog::debug("Found cut range: [{}, {}]", m_range[0].first, m_range[0].second);
             } else {
                 std::string ranges{};
                 for(const auto &range : m_range) {
                     ranges += fmt::format("[{}, {}], ", range.first, range.second);
                 }
-                spdlog::trace("Found cut range: [{}]", ranges.substr(0, ranges.size()-2));
+                spdlog::debug("Found cut range: [{}]", ranges.substr(0, ranges.size()-2));
             }
         }
 
@@ -92,7 +92,7 @@ class CutFactory {
         static void Register(std::string name) {
             if(IsRegistered(name))
                 spdlog::error("{} is already registered!", name);
-            spdlog::trace("Registering {} Cut", name);
+            spdlog::debug("Registering {} Cut", name);
             Registry()[name] = Derived::Construct;
         }
 

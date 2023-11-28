@@ -100,7 +100,7 @@ void Event::CalcWeight() {
 
 bool Event::TotalCrossSection() {
     m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, std::plus<>());
-    spdlog::debug("Total xsec = {}", m_meWgt);
+    spdlog::trace("Total xsec = {}", m_meWgt);
     return m_meWgt > 0 ? true : false;
 }
 

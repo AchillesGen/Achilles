@@ -8,17 +8,20 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/NuclearModel.hh"
+#include "git.h"
 #ifdef ENABLE_BSM
-#include "plugins/Sherpa/SherpaMEs.hh"
+#include "plugins/Sherpa/SherpaInterface.hh"
 #include "plugins/Sherpa/Channels.hh"
 #endif // ENABLE_BSM
 
 #include "docopt.h"
 
+#include <filesystem>
 #include <dlfcn.h>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
+namespace fs = std::filesystem;
 
 void Splash() {
 
@@ -76,10 +79,22 @@ void Splash() {
 )splash", ACHILLES_VERSION);
 }
 
+void GitInformation() {
+    std::string msg;
+    if(git::IsPopulated()) {
+        spdlog::info("Achilles git information");
+        spdlog::info("    Commit: {}", git::CommitSHA1());
+        spdlog::info("    Branch: {}", git::Branch());
+        spdlog::info("    Local Changes: {}", git::AnyUncommittedChanges() ? "Yes" : "No");
+    } else { 
+        spdlog::warn("This is not a git repository version of Achilles");
+    }
+}
+
 static const std::string USAGE =
 R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -90,6 +105,8 @@ R"(
 
     Options:
       -v[v]                                 Increase verbosity level.
+      -l[l]                                 Increase log verbosity 
+                                            (Note: Log verbosity is never lower than total level)
       -h --help                             Show this screen.
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
@@ -113,6 +130,17 @@ int main(int argc, char *argv[]) {
                                                     { argv + 1, argv + argc },
                                                     true, // show help if requested
                                                     fmt::format("achilles {}", ACHILLES_VERSION)); //version string
+
+    // Install signal handlers
+    std::signal(SIGTERM, SignalHandler);
+    std::signal(SIGSEGV, SignalHandler);
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGABRT, SignalHandler);
+    
+    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 1);
+    GitInformation();
 
     if(args["--display-cuts"].asBool()) {
         achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
@@ -146,26 +174,29 @@ int main(int argc, char *argv[]) {
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
-    
-    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
-
-    const std::string lib = libPrefix + "fortran_interface" + libSuffix;
-    std::string name = installLibs + lib;
-    void *handle = dlopen(name.c_str(), RTLD_NOW);
-    if(!handle) {
-        name = buildLibs + lib;
-        handle = dlopen(name.c_str(), RTLD_NOW);
-        if(!handle) {
-            spdlog::warn("Cannot open HardScattering: {}", dlerror());
+    else {
+        // Ensure file exists, otherwise copy template file to current location
+        if(!fs::exists(runcard)) {
+            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to this location");
+            if(!fs::exists(achilles::PathVariables::installData)) {
+                fs::copy(achilles::PathVariables::buildData/fs::path("default/run.yml"),
+                         fs::current_path());
+            } else {
+                fs::copy(achilles::PathVariables::installData/fs::path("default/run.yml"),
+                         fs::current_path());
+            }
+            return 1;
         }
     }
+
     std::vector<std::string> shargs;
     if (args["--sherpa"].isStringList()) shargs=args["--sherpa"].asStringList();
 
-    GenerateEvents(runcard, shargs);
+    try {
+        GenerateEvents(runcard, shargs);
+    } catch (const std::runtime_error &error) {
+        spdlog::error(error.what());
+    }
 
-    // Close dynamic libraries
-    if(handle) dlclose(handle);
     return 0;
 }

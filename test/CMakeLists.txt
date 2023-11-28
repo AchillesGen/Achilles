@@ -42,10 +42,22 @@ add_executable(achilles-testsuite
     test_quasielastic_mapper.cc
     test_beam_mapper.cc
     test_ps_mapper.cc
+    test_event_history.cc
     test_poincare.cc
+    test_nuhepmc.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
-                                         PUBLIC physics mappers event_gen)
+    PUBLIC physics mappers event_gen)
+if(ENABLE_BSM)
+    target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
+endif()
+
+set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+  LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+)
+
 
 # enable_language(Fortran)
 # add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
@@ -61,4 +73,6 @@ target_link_libraries(achilles-testsuite PRIVATE project_options project_warning
 include(CTest)
 # add_test(NAME fortran-testsuite
 #          COMMAND achilles-fortran-testsuite)
-catch_discover_tests(achilles-testsuite)
+catch_discover_tests(achilles-testsuite
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)

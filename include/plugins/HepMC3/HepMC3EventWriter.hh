@@ -7,6 +7,10 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wconversion"
+#if defined(__clang__)
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
+#elif defined(__GNUC__) || defined(__GNUG__)
+#endif
 #include "HepMC3/WriterAscii.h"
 #pragma GCC diagnostic pop
 

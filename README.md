@@ -27,7 +27,7 @@ For further details and options, please refer to [build details](https://github.
 The Achilles code uses CMake as a means to provide a platform agnositic installation procedure.
 
 The default options for the building of Achilles requires HepMC3
-and Sherpa. The HepMC3 code provides a means to output events in the convention dictated by the [NuHepMC3](https://github.com/NuHepMC/Spec) standard.
+and Sherpa. The HepMC3 code provides a means to output events in the convention dictated by the [NuHepMC](https://github.com/NuHepMC/Spec) standard.
 The Sherpa interface allows for the simulation of beyond the Standard Model (BSM) processes. Details on obtaining
 these codes can be found in the next [section](#-optional-dependencies).
 
@@ -39,7 +39,7 @@ make -jN
 ```
 
 If the HepMC3 cmake files are not within the CMake module path, you can add the `-DHepMC3_DIR=/path/to/hepmc3/cmake/files`
-to the above `cmake` command. Additional details and optional dependencies can be found below.
+to the above `cmake` command. If HepMC3 is not present, Achilles will install HepMC3 for you. Additional details and optional dependencies can be found below.
 
 ### Optional Dependencies
 

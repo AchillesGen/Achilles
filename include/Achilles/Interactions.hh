@@ -13,7 +13,10 @@
 // #include "H5Cpp.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#if defined(__clang__)
+#elif defined(__GNUC__) || defined(__GNUG__)
 #pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "highfive/H5Group.hpp"
 #pragma GCC diagnostic pop

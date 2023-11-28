@@ -1,0 +1,7 @@
+Initialize:
+  Seed: 12345678
+  Accuracy: 1e-2
+
+Unweighting:
+  Name: Percentile
+  percentile: 99
