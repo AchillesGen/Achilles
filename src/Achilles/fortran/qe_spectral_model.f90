@@ -130,7 +130,6 @@ contains
         ff2=ff(2)
         ffa(1)=ff(3)
         ffa(2)=0.0d0
-
  
         call det_Ja(ff1,ff2,ffa)
         call hadr_curr_matrix_el(J_mu)

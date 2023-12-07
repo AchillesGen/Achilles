@@ -27,8 +27,8 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
 
     // TODO: Define couplings correctly
     if(charged_current) {
-        pid = init_neutrino ? (process.ids[0].AsInt() < 0 ? -24 : 24)
-                            : (process.ids[0].AsInt() < 0 ? 24 : -24);
+        pid = init_neutrino ? (process.ids[0].AsInt() < 0 ? 24 : -24)
+                            : (process.ids[0].AsInt() < 0 ? -24 : 24);
         coupl_right = 0;
         coupl_left = ee*i/(sw*sqrt(2));
         mass = Constant::MW;

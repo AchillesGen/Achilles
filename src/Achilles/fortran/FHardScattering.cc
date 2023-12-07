@@ -64,8 +64,9 @@ achilles::HCurrents achilles::FQESpectral::HadronicCurrents(Event &event,
     auto free_energy = sqrt(pNucleonIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2()/1.0_GeV/1.0_GeV);
     // TEST: Check the neutrino and anti-neutrion form factors
-    // auto q2 = 100*100;
-    // ffVals = EvalFormFactor(q2/1.0_GeV/1.0_GeV);
+     //auto q2 = 100*100;
+     //ffVals = EvalFormFactor(q2/1.0_GeV/1.0_GeV);
+     //spdlog::debug("Form factor = {}, {}, {}", ffVals)
     auto omega = qVec.E();
     qVec.E() = qVec.E() + pNucleonIn.E() - free_energy;
 
