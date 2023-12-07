@@ -1,8 +1,8 @@
 # <span style="font-variant:small-caps;">Achilles</span>
 
-[![CMake Build Matrix](https://github.com/jxi24/Achilles/actions/workflows/cmake.yml/badge.svg)](https://github.com/jxi24/Achilles/actions/workflows/cmake.yml)
+[![CMake Build Matrix](https://github.com/AchillesGen/Achilles/actions/workflows/cmake.yml/badge.svg)](https://github.com/AchillesGen/Achilles/actions/workflows/cmake.yml)
 
-[![codecov](https://codecov.io/gh/jxi24/Achilles/branch/main/graph/badge.svg?token=Xq2sJ4kv5L)](https://codecov.io/gh/jxi24/Achilles)
+[![codecov](https://codecov.io/gh/Achilles/AchillesGen/branch/main/graph/badge.svg?token=Xq2sJ4kv5L)](https://codecov.io/gh/AchillesGen/Achilles)
 
 ## Introduction
 
@@ -14,7 +14,7 @@ The design of the code is based on the following principles:
 3. Theory driven with appropriate uncertainties
 4. Provide automated BSM calculations for neutrino experiments
 
-Additional details can be found in the Achilles [wiki](https://github.com/jxi24/Achilles/wiki).
+Additional details can be found in the Achilles [wiki](https://github.com/AchillesGen/Achilles/wiki).
 
 ## Why a new generator?
 
@@ -23,7 +23,7 @@ TODO: Add details in this section
 ## Building Achilles
 
 In this section the basic method of building the Achilles code is provided.
-For further details and options, please refer to [build details](https://github.com/jxi24/Achilles/wiki/Build-Details).
+For further details and options, please refer to [build details](https://github.com/AchillesGen/Achilles/wiki/Build-Details).
 The Achilles code uses CMake as a means to provide a platform agnositic installation procedure.
 
 The default options for the building of Achilles requires HepMC3
@@ -123,7 +123,7 @@ Registered Two Particle cuts:
 ```
 
 These options for different cuts can be expressed in the run card as described [below](#-run-card), and
-in more details in the [wiki](https://github.com/jxi24/Achilles/wiki) and the manual.
+in more details in the [wiki](https://github.com/AchillesGen/Achilles/wiki) and the manual.
 
 ### Runtime Options 
 
@@ -142,7 +142,7 @@ These sections are:
 9. Any cuts to apply during the generation of the events
 
 Each of these sections are described below and in greater detail in the
-[wiki](https://github.com/jxi24/Achilles/wiki).
+[wiki](https://github.com/AchillesGen/Achilles/wiki).
 
 The _Main_ section contains options:
  - The number of events (`NEvents`)
@@ -163,19 +163,19 @@ The _Initialization_ section describes the initialization of the generator, and 
 
 The _Unweighting_ section sets up the methodology for unweighting the events. This has one required setting 
 as the `Name` of the unweighting procedure. Each unweighting procedure has their own set of options 
-described in detail in the [wiki](https://github.com/jxi24/Achilles/wiki/Unweighting).
+described in detail in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Unweighting).
 
 The _Beams_ section provides the means to setup all possible incoming neutrino fluxes.
 Currently, only a single flavor incoming beam is supported. The options available for the beam
 depends on the type of beam and are explained in detail
-in the [wiki](https://github.com/jxi24/Achilles/wiki/Beams).
+in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Beams).
 
 The _Cascade_ section determines the setup of the cascade. The options used to define the cascade are:
  - If the cascade should be ran (`Run`)
  - A sub-section on the calculation of particle interactions to use. This requires the `Name` of the 
    interaction model, which can be found using `./bin/achilles --display-int-models`. Additional details
    for the settings for each model can be found in
-   the [wiki](https://github.com/jxi24/Achilles/wiki/Cascade).
+   the [wiki](https://github.com/AchillesGen/Achilles/wiki/Cascade).
  - The maximum step size to take during the cascade 
  - The probability model for determining interactions.
    Currently, only `Cylinder` and `Gaussian` are implemented.
@@ -187,22 +187,22 @@ primary interaction is defined. The required options are:
  - The file to load the form factors from (`FormFactorFile`). Details of this file can be found in the following
    section.
  - Additional required options depend on the nuclear model used
-   and can be found in the [wiki](https://github.com/jxi24/Achilles/wiki/Nuclear-Models).
+   and can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nuclear-Models).
    
 The _Nucleus_ section defines the nucleus for interactions. Currently, only a single isotope and nucleus is
 supported to be run at a time. The required options are:
  - The name of the nucleus given as the number of nucleons followed by the chemical symbol (_i.e._ "12C").
  - The Fermi momentum is needed.
  - The setup for the density and configuration. 
-   Details can be found in the [wiki](https://github.com/jxi24/Achilles/wiki/Nucleus).
+   Details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nucleus).
  - The Fermi gas mode for the cascade. Current options are "Local" and "Global".
  - The nuclear potential to use. 
-   Details can be found in the [wiki](https://github.com/jxi24/Achilles/wiki/Nucleus).
+   Details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nucleus).
    
 The last section is the _Hard Cuts_ section and defines the cuts to be made on the particles after the
 generation of the phase space, but before the cascade. These are used for example to limit the phase
 space generated for electron scattering experiments like e4v to more efficiently generate events.
-The details of this section are laid out in the [wiki](https://github.com/jxi24/Achilles/wiki/Hard-Cuts).
+The details of this section are laid out in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Hard-Cuts).
 
 #### Form factors
 
@@ -219,7 +219,7 @@ parameterization. Currently, the form factors implemented are:
     - Helm
     - Lovato (Carbon only)
 
-For additional details on the parameters for each form factor, see the [wiki](https://github.com/jxi24/Achilles/wiki/Form-Factors).
+For additional details on the parameters for each form factor, see the [wiki](https://github.com/AchillesGen/Achilles/wiki/Form-Factors).
 
 ### Adding models to Achilles (via Sherpa)
 
@@ -227,7 +227,7 @@ The Beyond the Standard Model handling within Achilles is handled via an interfa
 Therefore, in order to add a model to Achilles, you have to process the UFO files through the Sherpa interface.
 This can be done with the command `Sherpa-generate-model`, which takes as an input the path to a UFO model 
 file. Additionally, the model needs to include modifications to handle the interactions with the nucleus which
-are currently not automated by FeynRules. Further details can be found in the [wiki](https://github.com/jxi24/Achilles/wiki/BSM).
+are currently not automated by FeynRules. Further details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/BSM).
 
 The UFO files for the Dark Neutrino portal model () are included in the repository in the folder `UFO`.
 To add this model to be available to Achilles, run the command `Sherpa-generate-model --ncore=N UFO/DarkNeutrinoPortal_Dirac_UFO`. An example run card and parameter card are also provided as `run_hnl.yml` and `hnl_parameters.dat`. Events can be generated with this example file using `./bin/achilles run_hnl.yml`.
