@@ -15,9 +15,6 @@ module nuclear_model
             procedure(nm_mode), deferred :: mode
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
-!            procedure(nm_states), deferred :: states
-!            procedure(nm_nspins), deferred :: nspins 
-!            procedure(nm_fill_nucleus), deferred :: fill_nucleus
     end type model
 
     abstract interface

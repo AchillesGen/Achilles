@@ -32,7 +32,6 @@ void init_ (fconstants &data) {
     data.mpi0 = achilles::Constant::mpi0;
     data.mpip = achilles::Constant::mpip;
     data.meta = achilles::Constant::meta;
-
 }
 
 }

@@ -19,10 +19,14 @@ program test_constants
     double precision, dimension(3), parameter :: x1 = [1, 2, 3]
     double precision, dimension(3), parameter :: x2 = [1, 2, 3]
     double precision, dimension(9), parameter :: z = [11, 12, 13, 21, 22, 23, 31, 32, 33]
+    double precision :: mass
+    character (len=:), allocatable :: name
 
     print*, constants%c, constants%hbarc, constants%hbarc2, constants%mp, constants%mn, constants%mqe
+
     call init(constants)
     print*, constants%c, constants%hbarc, constants%hbarc2, constants%mp, constants%mn, constants%mqe
+    print*, constants%meta
 
     vec1 = fourvector(1d0, 2d0, 3d0, 4d0)
     vec1 = vec1+vec1
@@ -34,7 +38,10 @@ program test_constants
     print*, vec1*vec1 
 
     info = pinfo(2212)
+    name = info%name()
     charge = info%charge()
+    mass = info%mass()
+
     call logger%info(info%name())
     call logger%warn("test")
 

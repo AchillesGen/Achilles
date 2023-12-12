@@ -93,9 +93,8 @@ bool SherpaMEs::Initialize(const std::vector<std::string> &args)
   for (const auto &arg: args) addParameter(argv,arg);
   // Initialise Sherpa and return.
   p_sherpa->InitializeTheRun(argv.size(),&argv[0]);
- // p_sherpa->GetInitHandler()->GetMatrixElementHandler();
+  // p_sherpa->GetInitHandler()->GetMatrixElementHandler();
   std::cout <<  p_sherpa->GetInitHandler()->GetMatrixElementHandler();
-
   m_pmap[nlo_type::lo] = new StringProcess_Map();
   RegisterParticles();
 
