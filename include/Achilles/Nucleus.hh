@@ -92,6 +92,10 @@ class Nucleus {
     /// @param radius: The radius to be set in fm
     void SetRadius(const double &_radius) noexcept { radius = _radius; }
 
+    /// Prepare nucleus to accept a hadronic probe
+    /// @param pid_probe: The PID of the particle that will interact
+    void PrepareReaction(const PID &pid_probe);
+    
     /// @name Getters
     /// @{
     /// These functions provide get specific features from the Nucleus object

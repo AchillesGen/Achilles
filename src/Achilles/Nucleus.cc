@@ -85,6 +85,8 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     m_pid = PID{ID};
 }
 
+
+
 // achilles::PID Nucleus::ID() const {
 //     // Output format based on PDG Monte-Carlo PIDs
 //     // Nuclear codes are given as a 10 digit number:
@@ -113,6 +115,19 @@ void Nucleus::SetNucleons(Particles &_nucleons) noexcept {
             neutrons[neutron_idx] = particle;
             neutronLoc[neutron_idx++] = idx++;
         }
+    }
+}
+
+void Nucleus::PrepareReaction(const PID &pid_probe) {
+
+    if (pid_probe == PID::proton()) {
+	std::size_t Z = protons.size();
+        protons.resize(Z+1);
+        protonLoc.resize(Z+1);
+    } else if (pid_probe == PID::neutron()) {
+	std::size_t N = neutrons.size();
+	neutrons.resize(N+1);
+	neutronLoc.resize(N+1);
     }
 }
 

@@ -32,7 +32,7 @@ void CalcCrossSection::GenerateEvent(double mom) {
     // The test particle starts outside the nucleus by 5%
     ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
     auto mass = achilles::ParticleInfo(m_pid).Mass();
-    FourVector momentum{0, 0, mom, sqrt(mom * mom + mass * mass)};
+    FourVector momentum{ sqrt(mom * mom + mass * mass), 0, 0, mom};
     Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
 
     // Cascade
@@ -47,7 +47,8 @@ void CalcCrossSection::GenerateEvent(double mom) {
 
     nevents++;
     for(const auto &part : m_nuc->Nucleons()) {
-        if(part.Status() == ParticleStatus::escaped) {
+        if(part.Status() == ParticleStatus::final_state || 
+	part.Status() == ParticleStatus::captured) {
             nhits++;
             break;
         }
@@ -90,8 +91,10 @@ void CalcCrossSectionMFP::GenerateEvent(double mom) {
     for(const auto &part : m_nuc->Nucleons()) { spdlog::debug("  - {}", part); }
 
     nevents++;
+
     for(const auto &part : m_nuc->Nucleons()) {
-        if(part.Status() == ParticleStatus::escaped) {
+        if(part.Status() == ParticleStatus::final_state || 
+	part.Status() == ParticleStatus::captured) {
             nhits++;
             break;
         }
@@ -145,8 +148,8 @@ void CalcTransparency::GenerateEvent(double kick_mom) {
     m_cascade.SetKicked(idx);
     auto kicked_particle = &particles[idx];
     auto mass = kicked_particle->Info().Mass();
-    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                    kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
+    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi),
+                    kick_mom * sintheta * sin(phi), kick_mom * costheta};
     kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
     kicked_particle->Status() = ParticleStatus::internal_test;
     kicked_particle->SetMomentum(kick);
@@ -189,9 +192,8 @@ void CalcTransparencyMFP::GenerateEvent(double kick_mom) {
     m_cascade.SetKicked(idx);
     auto kicked_particle = &particles[idx];
     auto mass = kicked_particle->Info().Mass();
-    // auto mass = Constant::mN;
-    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                    kick_mom * costheta, sqrt(kick_mom * kick_mom + mass * mass)};
+    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi), 
+                    kick_mom * sintheta * sin(phi),kick_mom * costheta};
     kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
     kicked_particle->Status() = ParticleStatus::internal_test;
     kicked_particle->SetMomentum(kick);
@@ -253,10 +255,12 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     case CascadeMode::CrossSection:
         generator = std::make_unique<CalcCrossSection>(config["PID"].as<int>(), nucleus,
                                                        std::move(cascade));
+	nucleus->PrepareReaction( PID{config["PID"].as<int>()} );
         break;
     case CascadeMode::CrossSectionMFP:
         generator = std::make_unique<CalcCrossSectionMFP>(config["PID"].as<int>(), nucleus,
                                                           std::move(cascade));
+	nucleus->PrepareReaction( PID{config["PID"].as<int>()} );
         break;
     case CascadeMode::MeanFreePath:
         generator = std::make_unique<CalcMeanFreePath>(config["PID"].as<int>(), nucleus,

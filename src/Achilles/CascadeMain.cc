@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
 
-    achilles::RunCascade(runcard);
+    achilles::CascadeTest::RunCascade(runcard);
 
     return 0;
 }
