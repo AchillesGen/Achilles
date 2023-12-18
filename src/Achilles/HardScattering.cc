@@ -63,7 +63,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     using namespace achilles::Constant;
     // TODO: Double check form factors
     if(pid == 24) {
-        const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
+        const std::complex<double> coupl = Vud*ee*i/(sw*sqrt(2)*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F1n, -coupl},
                                          {FormFactorInfo::Type::F2p, coupl},
@@ -72,7 +72,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         results[{PID::neutron(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == -24) {
-        const std::complex<double> coupl = ee*i/(sw*sqrt(2)*2);
+        const std::complex<double> coupl = Vud*ee*i/(sw*sqrt(2)*2);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},
                                           {FormFactorInfo::Type::F2p, coupl},
@@ -81,18 +81,19 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         results[{PID::proton(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 23) {
-        const std::complex<double> coupl1 = cw*ee*i/(2*sw)-ee*i*sw/(2*cw);
-        const std::complex<double> coupl2 = -(cw*ee*i/(2*sw));
+        const std::complex<double> coupl1 = (ee*i/(4*sw*sw*cw))*(0.5 - 2.*sin2w);
+        const std::complex<double> coupl2 = (ee*i/(4*sw*cw));
+
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
-                                         {FormFactorInfo::Type::F1n, coupl2},
+                                         {FormFactorInfo::Type::F1n, -coupl2},
                                          {FormFactorInfo::Type::F2p, coupl1},
-                                         {FormFactorInfo::Type::F2n, coupl2},
+                                         {FormFactorInfo::Type::F2n, -coupl2},
                                          {FormFactorInfo::Type::FA, coupl2}};
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl1},
-                                          {FormFactorInfo::Type::F1p, coupl2},
+                                          {FormFactorInfo::Type::F1p, -coupl2},
                                           {FormFactorInfo::Type::F2n, coupl1},
-                                          {FormFactorInfo::Type::F2p, coupl2},
-                                          {FormFactorInfo::Type::FA, coupl2}};
+                                          {FormFactorInfo::Type::F2p, -coupl2},
+                                          {FormFactorInfo::Type::FA, -coupl2}};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 22) {
         const std::complex<double> coupl = i*ee;
@@ -199,15 +200,22 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     static std::vector<NuclearModel::FFInfoMap> ffInfo;
     if(ffInfo.empty()) {
         ffInfo.resize(m_group.Processes().size());
+        //ffInfo.resize(3);
         for(const auto &current : leptonCurrent) {
             size_t idx = 0;
             for(const auto &process : m_group.Processes()) {
 #ifdef ENABLE_BSM
                 // TODO: Handle MEC
                 ffInfo[idx++][current.first] = p_sherpa -> FormFactors(process.state.first[0], current.first);
+            //ffInfo[0][current.first] = p_sherpa -> FormFactors(PID::proton(), current.first);
+            //ffInfo[1][current.first] = p_sherpa -> FormFactors(PID::neutron(), current.first);
+            
 #else
                 // TODO: Define values somewhere
                 ffInfo[idx++][current.first] = SMFormFactor.at({process.state.first[0], current.first});
+                //ffInfo[0][current.first] = SMFormFactor.at({PID::proton(), current.first});
+            //ffInfo[1][current.first] = SMFormFactor.at({PID::neutron(), current.first});
+            
 #endif
             }
         }
@@ -227,10 +235,13 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end())
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+                        spdlog::debug("amp = {}", sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu]);
+                    
                     }
                 }
                 sign = -1.0;
             }
+
             for(size_t k = 0; k < hadronCurrent.size(); ++k)
                 amps2[k] += std::norm(amps[k]);
         }
@@ -240,11 +251,15 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     if(!ParticleInfo(m_group.Processes()[0].ids[0]).IsNeutrino()) spin_avg *= 2;
     if(m_nuclear -> NSpins() > 1) spin_avg *= 2;
 
+    spdlog::debug("size of group processes = {}", m_group.Processes().size());
+
     static constexpr double to_nb = 1e6;
     std::vector<double> xsecs(m_group.Processes().size());
-    for(size_t i = 0; i < m_group.Processes().size(); ++i) {
+    //std::vector<double> xsecs(hadronCurrent.size());
+    for(size_t i = 0; i < hadronCurrent.size(); ++i) {
         // TODO: Handle the case for MEC
         double mass = ParticleInfo(m_group.Processes()[i].state.first[0]).Mass();
+        //double mass = 939.57;
         double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
         // TODO: Correct this flux
         // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 

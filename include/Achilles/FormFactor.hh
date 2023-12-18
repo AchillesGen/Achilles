@@ -150,6 +150,32 @@ class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
         double MA, gan1, gans;
 };
 
+class VectorDummy : public FormFactorImpl, RegistrableFormFactor<VectorDummy> {
+    public:
+        VectorDummy(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "VectorDummy"; }
+        static FFType Type() { return FFType::vector; }
+    private:
+        double f1p, f1n, f2p, f2n;
+};
+
+class AxialDummy : public FormFactorImpl, RegistrableFormFactor<AxialDummy> {
+    public:
+        AxialDummy(const YAML::Node&);
+        void Evaluate(double, FormFactor::Values&) const override;
+
+        // Required factory methods
+        static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node&);
+        static std::string Name() { return "AxialDummy"; }
+        static FFType Type() { return FFType::axial; }
+    private:
+        double fa, fas;
+};
+
 class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
     public:
         Kelly(const YAML::Node&);
