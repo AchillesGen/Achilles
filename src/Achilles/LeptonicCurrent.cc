@@ -58,7 +58,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     using namespace achilles::Constant;
     // TODO: Double check form factors
     if(pid == 24) {
-        const std::complex<double> coupl = ee * i / (sw * sqrt(2) * 2);
+        const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F1n, -coupl},
                                          {FormFactorInfo::Type::F2p, coupl},
@@ -67,7 +67,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         results[{PID::neutron(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == -24) {
-        const std::complex<double> coupl = ee * i / (sw * sqrt(2) * 2);
+        const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},
                                           {FormFactorInfo::Type::F2p, coupl},
@@ -76,18 +76,18 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         results[{PID::proton(), pid}] = {};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 23) {
-        const std::complex<double> coupl1 = cw * ee * i / (2 * sw) - ee * i * sw / (2 * cw);
-        const std::complex<double> coupl2 = -(cw * ee * i / (2 * sw));
+        const std::complex<double> coupl1 = (ee * i / (4 * sin2w * cw)) * (0.5 - 2 * sin2w);
+        const std::complex<double> coupl2 = (ee * i / (4 * sw * cw));
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
-                                         {FormFactorInfo::Type::F1n, coupl2},
+                                         {FormFactorInfo::Type::F1n, -coupl2},
                                          {FormFactorInfo::Type::F2p, coupl1},
-                                         {FormFactorInfo::Type::F2n, coupl2},
+                                         {FormFactorInfo::Type::F2n, -coupl2},
                                          {FormFactorInfo::Type::FA, coupl2}};
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl1},
-                                          {FormFactorInfo::Type::F1p, coupl2},
+                                          {FormFactorInfo::Type::F1p, -coupl2},
                                           {FormFactorInfo::Type::F2n, coupl1},
-                                          {FormFactorInfo::Type::F2p, coupl2},
-                                          {FormFactorInfo::Type::FA, coupl2}};
+                                          {FormFactorInfo::Type::F2p, -coupl2},
+                                          {FormFactorInfo::Type::FA, -coupl2}};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 22) {
         const std::complex<double> coupl = i * ee;
