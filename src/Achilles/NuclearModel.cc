@@ -602,6 +602,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
 
 double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
                                       const std::vector<FourVector> &mom) const {
+    if(is_hydrogen) return 1;
     const double removal_energy = Constant::mN - mom[0].E();
     return nucleons[0] == PID::proton() ? spectral_proton(mom[0].P(), removal_energy)
                                         : spectral_neutron(mom[0].P(), removal_energy);
