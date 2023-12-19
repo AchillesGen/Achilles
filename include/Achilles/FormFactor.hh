@@ -138,6 +138,42 @@ class VectorDipole : public FormFactorImpl, RegistrableFormFactor<VectorDipole> 
     double lambda, muP, muN;
 };
 
+class VectorDummy : public FormFactorImpl, RegistrableFormFactor<VectorDummy> {
+  public:
+    VectorDummy(const YAML::Node &) {}
+    void Evaluate(double, FormFactor::Values &vals) const override {
+        vals.F1p = 1;
+        vals.F1n = 0;
+        vals.F2p = 0;
+        vals.F2n = 0;
+    }
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType type, const YAML::Node &node) {
+        Validate<VectorDummy>(type);
+        return std::make_unique<VectorDummy>(node);
+    }
+    static std::string Name() { return "VectorDummy"; }
+    static FFType Type() { return FFType::vector; }
+};
+
+class AxialDummy : public FormFactorImpl, RegistrableFormFactor<AxialDummy> {
+  public:
+    AxialDummy(const YAML::Node &) {}
+    void Evaluate(double, FormFactor::Values &vals) const override {
+        vals.FA = 0;
+        vals.FAs = 0;
+    }
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType type, const YAML::Node &node) {
+        Validate<AxialDummy>(type);
+        return std::make_unique<AxialDummy>(node);
+    }
+    static std::string Name() { return "AxialDummy"; }
+    static FFType Type() { return FFType::axial; }
+};
+
 class AxialDipole : public FormFactorImpl, RegistrableFormFactor<AxialDipole> {
   public:
     AxialDipole(const YAML::Node &);
