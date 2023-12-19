@@ -25,12 +25,12 @@ class ThreeVector {
     ThreeVector() noexcept : vec({0, 0, 0}) {}
     /// Create a ThreeVector object with values given by p
     ///@param p: A std::array<double, 3> containing the values for the vector
-    ThreeVector(std::array<double, 3> p) noexcept : vec(p) {}
+    constexpr ThreeVector(std::array<double, 3> p) noexcept : vec(p) {}
     /// Create a ThreeVector object with values pX, pY, and pZ
     ///@param pX: The x value of the vector
     ///@param pY: The y value of the vector
     ///@param pZ: The z value of the vector
-    ThreeVector(double pX, double pY, double pZ) noexcept : vec({pX, pY, pZ}) {}
+    constexpr ThreeVector(double pX, double pY, double pZ) noexcept : vec({pX, pY, pZ}) {}
     /// Create a copy of a ThreeVector object
     ///@param other: The vector to be copied
     ThreeVector(const ThreeVector &other) noexcept = default;
