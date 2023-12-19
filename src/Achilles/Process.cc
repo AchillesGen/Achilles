@@ -1,6 +1,7 @@
 #include "Achilles/Process.hh"
 #include "Achilles/Beams.hh"
 #include "Achilles/Channels.hh"
+#include "Achilles/Exceptions.hh"
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
@@ -243,23 +244,31 @@ void ProcessGroup::SetupBackend(const YAML::Node &node, std::unique_ptr<NuclearM
     for(auto &process : m_processes) m_backend->AddProcess(process);
 }
 
-void ProcessGroup::SetupIntegration(const YAML::Node &config) {
+bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
     if(m_processes.size() == 0)
         throw std::runtime_error("ProcessGroup: Number of processes found is zero!");
 
-    m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand);
+    try {
+        m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
+    } catch(const InvalidChannel &) {
+        std::cout << "here" << std::endl;
+        return false;
+    }
 
     // TODO: Fix scaling to be consistent with Chili paper
     m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
     if(config["Initialize"]["Accuracy"])
         m_integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
+
+    return true;
 }
 
 void ProcessGroup::Optimize() {
     b_optimize = true;
 
-    spdlog::info("Optimizing process group: Nuclear Model = {}, Multiplicity = {}",
-                 m_backend->GetNuclearModel()->GetName(), m_processes[0].Info().Multiplicity());
+    spdlog::info("Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
+                 m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
+                 m_processes[0].Info().Multiplicity());
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();

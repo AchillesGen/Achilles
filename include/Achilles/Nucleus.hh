@@ -93,9 +93,14 @@ class Nucleus {
     void SetRadius(const double &_radius) noexcept { radius = _radius; }
 
     /// Prepare nucleus to accept a hadronic probe
-    /// @param pid_probe: The PID of the particle that will interact
+    ///@param pid_probe: The PID of the particle that will interact
     void PrepareReaction(const PID &pid_probe);
-    
+
+    /// Setup basic properties for nuclei, needed to setup hydrogen correctly
+    ///@param protons: Number of protons
+    ///@param nucleons: Number of nucleons
+    void Initialize(size_t protons, size_t nucleons);
+
     /// @name Getters
     /// @{
     /// These functions provide get specific features from the Nucleus object
@@ -252,6 +257,7 @@ class Nucleus {
 
     FourVector m_recoil{};
     std::shared_ptr<Potential> potential;
+    bool is_hydrogen{false};
 };
 
 } // namespace achilles
@@ -260,6 +266,14 @@ namespace YAML {
 template <> struct convert<achilles::Nucleus> {
     static bool decode(const Node &node, achilles::Nucleus &nuc) {
         std::string name = node["Name"].as<std::string>();
+
+        // Special case for hydrogen
+        if(name == "1H") {
+            spdlog::info("Nucleus: creating hydrogen nucleus.");
+            nuc.Initialize(1, 1);
+            return true;
+        }
+
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
@@ -282,6 +296,27 @@ template <> struct convert<achilles::Nucleus> {
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, type,
                                              std::move(configs));
 
+        return true;
+    }
+};
+
+template <> struct convert<std::vector<std::shared_ptr<achilles::Nucleus>>> {
+    static bool decode(const Node &node, std::vector<std::shared_ptr<achilles::Nucleus>> &nuclei) {
+        for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
+            YAML::Node nucleus_node = (*it)["Nucleus"];
+            auto nucleus =
+                std::make_shared<achilles::Nucleus>(nucleus_node.as<achilles::Nucleus>());
+
+            if(nucleus->ID() != achilles::PID::hydrogen()) {
+                // Set potential for the nucleus
+                auto potential_name = nucleus_node["Potential"]["Name"].as<std::string>();
+                auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
+                                                                        nucleus_node["Potential"]);
+                nucleus->SetPotential(std::move(potential));
+            }
+
+            nuclei.push_back(nucleus);
+        }
         return true;
     }
 };

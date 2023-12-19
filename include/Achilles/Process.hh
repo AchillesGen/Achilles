@@ -89,7 +89,7 @@ class ProcessGroup {
 
     Integrand<FourVector> &GetIntegrand() { return m_integrand; }
     const Integrand<FourVector> &GetIntegrand() const { return m_integrand; }
-    void SetupIntegration(const YAML::Node &);
+    bool SetupIntegration(const YAML::Node &);
     void Optimize();
     void Summary() const;
     Event GenerateEvent();

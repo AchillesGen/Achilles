@@ -35,6 +35,7 @@ static constexpr int ExternalTest = 23;
 static constexpr int Propagating = 24;
 static constexpr int Background = 25;
 static constexpr int Captured = 26;
+static constexpr int UndecayedResidue = 27;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
@@ -180,6 +181,7 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     GenEvent evt;
     struct compare {
         bool operator()(const achilles::Particle &a, const achilles::Particle &b) const {
+            if(a.ID() != b.ID()) return a.ID() < b.ID();
             if(achilles::compare_momentum(a, 1e-10)(b)) { return a.Status() < b.Status(); }
             return a.Momentum().Vec3().Magnitude() < b.Momentum().Vec3().Magnitude();
         }

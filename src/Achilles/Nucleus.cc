@@ -23,18 +23,7 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
                  const double &kf, const std::string &densityFilename, const FermiGasType &fgType,
                  std::unique_ptr<Density> _density)
     : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType), density(std::move(_density)) {
-    if(Z > A) {
-        std::string errorMsg = "Requires the number of protons to be less than the total";
-        errorMsg += " number of nucleons. Got " + std::to_string(Z);
-        errorMsg += " protons and " + std::to_string(A) + " nucleons";
-        throw std::runtime_error(errorMsg);
-    }
-
-    nucleons.resize(A);
-    protons.resize(Z);
-    neutrons.resize(A - Z);
-    protonLoc.resize(Z);
-    neutronLoc.resize(A - Z);
+    Initialize(Z, A);
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     // spdlog::info("Nucleus: inferring nuclear radius using 0.16
     // nucleons/fm^3."); constexpr double nucDensity = 0.16; radius =
@@ -77,15 +66,31 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number "
                                  "of protons or neutrons.");
+}
+
+void Nucleus::Initialize(size_t Z, size_t A) {
+    if(Z > A) {
+        std::string errorMsg = "Requires the number of protons to be less than the total";
+        errorMsg += " number of nucleons. Got " + std::to_string(Z);
+        errorMsg += " protons and " + std::to_string(A) + " nucleons";
+        throw std::runtime_error(errorMsg);
+    }
+
+    nucleons.resize(A);
+    protons.resize(Z);
+    neutrons.resize(A - Z);
+    protonLoc.resize(Z);
+    neutronLoc.resize(A - Z);
 
     static constexpr int IDBase = 1000000000;
     static constexpr int ZBase = 10000;
     static constexpr int ABase = 10;
-    int ID = IDBase + ZBase * static_cast<int>(NProtons()) + ABase * static_cast<int>(NNucleons());
+    int ID = IDBase + ZBase * static_cast<int>(Z) + ABase * static_cast<int>(A);
     m_pid = PID{ID};
+
+    // Set flag to handle special case of hydrogen
+    if(Z == 1 && A == 1) is_hydrogen = true;
 }
-
-
 
 // achilles::PID Nucleus::ID() const {
 //     // Output format based on PDG Monte-Carlo PIDs
@@ -119,19 +124,25 @@ void Nucleus::SetNucleons(Particles &_nucleons) noexcept {
 }
 
 void Nucleus::PrepareReaction(const PID &pid_probe) {
-
-    if (pid_probe == PID::proton()) {
-	std::size_t Z = protons.size();
-        protons.resize(Z+1);
-        protonLoc.resize(Z+1);
-    } else if (pid_probe == PID::neutron()) {
-	std::size_t N = neutrons.size();
-	neutrons.resize(N+1);
-	neutronLoc.resize(N+1);
+    if(pid_probe == PID::proton()) {
+        std::size_t Z = protons.size();
+        protons.resize(Z + 1);
+        protonLoc.resize(Z + 1);
+    } else if(pid_probe == PID::neutron()) {
+        std::size_t N = neutrons.size();
+        neutrons.resize(N + 1);
+        neutronLoc.resize(N + 1);
     }
 }
 
 void Nucleus::GenerateConfig() {
+    // Handle special case of hydrogen
+    if(is_hydrogen) {
+        Particles particles = {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
+        SetNucleons(particles);
+        return;
+    }
+
     // Get a configuration from the density function
     Particles particles = density->GetConfiguration();
 

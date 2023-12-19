@@ -1,4 +1,5 @@
 #include "Achilles/NuclearModel.hh"
+#include "Achilles/Exceptions.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -141,6 +142,12 @@ std::vector<achilles::ProcessInfo> Coherent::AllowedStates(const ProcessInfo &in
 std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<Coherent>(config, form_factor);
+}
+
+std::string Coherent::PhaseSpace(PID nuc_id) const {
+    if(nuc_id == nucleus_pid) return Name();
+    throw achilles::InvalidChannel(
+        fmt::format("Nucleus don't match: Model {}, Phasespace {}", nucleus_pid, nuc_id));
 }
 
 // TODO: Clean this interface up
@@ -287,6 +294,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
 
 double QESpectral::InitialStateWeight(const std::vector<PID> &nucleons,
                                       const std::vector<FourVector> &mom) const {
+    if(is_hydrogen) return 1;
     const double removal_energy = Constant::mN - mom[0].E();
     return nucleons[0] == PID::proton() ? spectral_proton(mom[0].P(), removal_energy)
                                         : spectral_neutron(mom[0].P(), removal_energy);
@@ -322,4 +330,10 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
     }
 
     return result;
+}
+
+std::string QESpectral::PhaseSpace(PID nuc_id) const {
+    if(nuc_id != PID::hydrogen()) return Name();
+    is_hydrogen = true;
+    return Coherent::Name();
 }

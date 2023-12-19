@@ -27,8 +27,8 @@ class XSecBackend {
     virtual NuclearModel *GetNuclearModel() { return m_model.get(); }
     virtual void AddProcess(Process &process) = 0;
     virtual bool Validate() { return m_model != nullptr; }
-    virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,
-                               Integrand<FourVector> &) = 0;
+    virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+                               PID) = 0;
 
   protected:
     double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
@@ -47,8 +47,8 @@ class DefaultBackend : public XSecBackend, RegistrableBackend<DefaultBackend> {
     DefaultBackend();
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,
-                       Integrand<FourVector> &) override;
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+                       PID) override;
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<DefaultBackend>(); }
@@ -67,8 +67,8 @@ class BSMBackend : public XSecBackend, RegistrableBackend<BSMBackend> {
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,
-                       Integrand<FourVector> &) override;
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+                       PID) override;
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<BSMBackend>(); }
@@ -86,8 +86,8 @@ class SherpaBackend : public XSecBackend, RegistrableBackend<SherpaBackend> {
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>,
-                       Integrand<FourVector> &) override;
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+                       PID) override;
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<SherpaBackend>(); }

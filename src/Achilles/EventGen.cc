@@ -43,17 +43,11 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    // Load initial beam and nucleus
+    // Load initial beam and nuclei
     // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
-    nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
-
-    // Set potential for the nucleus
-    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
-    auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
-                                                            config["Nucleus"]["Potential"]);
-    nucleus->SetPotential(std::move(potential));
+    nuclei = config["Nuclei"].as<std::vector<std::shared_ptr<Nucleus>>>();
 
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
@@ -65,10 +59,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Initialize decays
     runDecays = config["Main"]["RunDecays"].as<bool>();
-
-    // Initialize the Nuclear models
-    spdlog::debug("Initializing nuclear models");
-    auto models = LoadModels(config);
 
     // Initialize Sherpa
     if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos ||
@@ -99,18 +89,27 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // if(beam->BeamIDs().size() > 1)
     //     throw std::runtime_error("Multiple processes are not implemented yet. "
     //                              "Please use only one beam.");
-    for(auto &model : models) {
-        auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
-        for(auto &group : groups) {
-            for(const auto &process : group.second.Processes())
-                spdlog::info("Found Process: {}", process.Info());
-            group.second.SetupBackend(config, std::move(model.second), p_sherpa);
-            process_groups.push_back(std::move(group.second));
+
+    for(const auto &nucleus : nuclei) {
+        // Initialize the Nuclear models for each nuclei
+        spdlog::debug("Initializing nuclear models");
+        auto models = LoadModels(config);
+        for(auto &model : models) {
+            auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
+            for(auto &group : groups) {
+                for(const auto &process : group.second.Processes())
+                    spdlog::info("Found Process: {}", process.Info());
+                group.second.SetupBackend(config, std::move(model.second), p_sherpa);
+                process_groups.push_back(std::move(group.second));
+            }
         }
     }
 
-    // Setup Multichannel integrators
-    for(auto &group : process_groups) { group.SetupIntegration(config); }
+    // Setup Multichannel integrators and remove invalid configurations
+    process_groups.erase(
+        std::remove_if(process_groups.begin(), process_groups.end(),
+                       [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
+        process_groups.end());
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config["Main"]["DoRotate"]) doRotate = config["Main"]["DoRotate"].as<bool>();

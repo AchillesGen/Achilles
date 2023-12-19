@@ -72,6 +72,7 @@ class PID {
     static constexpr PID dummyHadron() { return PID{2212}; }
     // Common Elements
     static constexpr PID dummyNucleus() { return PID{1000000000}; }
+    static constexpr PID hydrogen() { return PID{1000010010}; }
     static constexpr PID carbon() { return PID{1000060120}; }
     static constexpr PID argon() { return PID{1000180400}; }
 

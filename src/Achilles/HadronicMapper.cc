@@ -1,7 +1,6 @@
 #include "Achilles/HadronicMapper.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
-#include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
 #include "spdlog/spdlog.h"
 
@@ -9,7 +8,7 @@ using achilles::CoherentMapper;
 using achilles::QESpectralMapper;
 
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
-    point[HadronIdx()] = {ParticleInfo(PID::carbon()).Mass(), 0, 0, 0};
+    point[HadronIdx()] = {sqrt(Masses()[HadronIdx()]), 0, 0, 0};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
 }
 

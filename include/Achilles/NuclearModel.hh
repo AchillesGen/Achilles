@@ -95,7 +95,7 @@ class NuclearModel {
     virtual ~NuclearModel() = default;
 
     virtual NuclearMode Mode() const = 0;
-    virtual std::string PhaseSpace() const = 0;
+    virtual std::string PhaseSpace(PID) const = 0;
     virtual Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
                                   const FourVector &, const FFInfoMap &) const = 0;
     virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const = 0;
@@ -128,7 +128,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     Coherent(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
 
     NuclearMode Mode() const override { return NuclearMode::Coherent; }
-    std::string PhaseSpace() const override { return Name(); }
+    std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
@@ -153,7 +153,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     QESpectral(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
 
     NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
-    std::string PhaseSpace() const override { return Name(); }
+    std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
@@ -176,6 +176,8 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
 
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
+    // TODO: This is a code smell. Should figure out a better solution
+    mutable bool is_hydrogen;
 };
 
 } // namespace achilles

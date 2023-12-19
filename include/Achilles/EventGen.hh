@@ -45,7 +45,7 @@ class EventGen {
     void Rotate(Event &);
 
     std::shared_ptr<Beam> beam;
-    std::shared_ptr<Nucleus> nucleus;
+    std::vector<std::shared_ptr<Nucleus>> nuclei;
     std::shared_ptr<Cascade> cascade;
     std::vector<ProcessGroup> process_groups;
     CutCollection hard_cuts{};

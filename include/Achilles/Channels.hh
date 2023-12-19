@@ -20,11 +20,12 @@ Channel<FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<Bea
 
 template <typename T>
 Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
-                                 std::shared_ptr<Beam> beam, const std::vector<double> &masses) {
+                                 std::shared_ptr<Beam> beam, const std::vector<double> &masses,
+                                 PID nuc_id) {
     Channel<FourVector> channel;
     channel.mapping = PSBuilder(nlep, nhad)
                           .Beam(beam, masses)
-                          .Hadron(model->PhaseSpace(), masses)
+                          .Hadron(model->PhaseSpace(nuc_id), masses)
                           .FinalState(T::Name(), masses)
                           .build();
     AdaptiveMap map(channel.mapping->NDims(), 2);
@@ -36,7 +37,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
 Channel<FourVector> BuildGenChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                     std::shared_ptr<Beam> beam,
                                     std::unique_ptr<PHASIC::Channels> final_state,
-                                    const std::vector<double> &masses);
+                                    const std::vector<double> &masses, PID nuc_id);
 #endif
 
 } // namespace achilles
