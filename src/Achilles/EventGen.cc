@@ -71,14 +71,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
         throw std::runtime_error("Multiple processes are not implemented yet. Please use only one beam.");
     leptonicProcess.m_ids.insert(leptonicProcess.m_ids.begin(),
                                  beam -> BeamIDs().begin(), beam -> BeamIDs().end());
-
-    // Initialize the nuclear model
-    spdlog::debug("Initializing nuclear model");
-    const auto model_name = config.GetAs<std::string>("NuclearModel/Model");
-    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config.Root());
-    nuclear_model -> AllowedStates(leptonicProcess);
-    spdlog::debug("Process: {}", leptonicProcess);
-
 #ifdef ENABLE_BSM
     // Initialize sherpa processes
     p_sherpa = new achilles::SherpaInterface();
@@ -95,6 +87,16 @@ achilles::EventGen::EventGen(const std::string &configFile,
     shargs.push_back(fmt::format("BEAM_2={}", 11));
     shargs.push_back(fmt::format("BEAM_ENERGY_2={}", 20)); 
     p_sherpa -> Initialize(shargs);
+#endif
+
+    // Initialize the nuclear model
+    spdlog::debug("Initializing nuclear model");
+    const auto model_name = config.GetAs<std::string>("NuclearModel/Model");
+    auto nuclear_model = NuclearModelFactory::Initialize(model_name, config.Root());
+    nuclear_model -> AllowedStates(leptonicProcess);
+    spdlog::debug("Process: {}", leptonicProcess);
+
+#ifdef ENABLE_BSM
     spdlog::debug("Initializing leptonic currents");
     if(!p_sherpa -> InitializeProcess(leptonicProcess)) {
         spdlog::error("Cannot initialize hard process");
