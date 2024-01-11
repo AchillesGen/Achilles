@@ -61,6 +61,53 @@ void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) cons
     result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
 }
 
+// Vector Dummy Form Factor
+achilles::VectorDummy::VectorDummy(const YAML::Node &config) {
+    f1p = config["f1p"].as<double>();
+    f1n = config["f1n"].as<double>();
+    f2p = config["f2p"].as<double>();
+    f2n = config["f2n"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl> achilles::VectorDummy::Construct(achilles::FFType type,
+                                                                        const YAML::Node &node) {
+    Validate<VectorDummy>(type);
+    return std::make_unique<VectorDummy>(node);
+}
+
+void achilles::VectorDummy::Evaluate(double Q2, FormFactor::Values &result) const {
+    result.F1p = f1p;
+    result.F1n = f1n;
+    result.F2p = f2p;
+    result.F2n = f2n;
+
+    double tau = Q2/4/pow(Constant::mp/1_GeV, 2);
+    result.Gep = result.F1p - tau*result.F2p;
+    result.Gmp = result.F1p + result.F2p;
+    result.Gen = result.F1n - tau*result.F2n;
+    result.Gmn = result.F1n + result.F2n;
+}
+
+// Axial-Vector Dummy Form Factor
+achilles::AxialDummy::AxialDummy(const YAML::Node &config) {
+    fa = config["fa"].as<double>();
+    fas = config["fas"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDummy::Construct(achilles::FFType type,
+                                                                           const YAML::Node &node) {
+    Validate<AxialDummy>(type);
+    return std::make_unique<AxialDummy>(node);
+}
+
+void achilles::AxialDummy::Evaluate(double Q2, FormFactor::Values &result) const {
+    double tau = Q2/4/pow(Constant::mp/1_GeV,2);
+    tau = 0;
+    result.FA = fa;
+    result.FAs = fas;
+}
+
+
 // Kelly Form Factor
 achilles::Kelly::Kelly(const YAML::Node &config) {
     lambdasq = config["lambdasq"].as<double>();

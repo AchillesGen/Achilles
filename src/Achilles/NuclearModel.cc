@@ -30,21 +30,27 @@ NuclearModel::FormFactorArray NuclearModel::CouplingsFF(const FormFactor::Values
         switch(ff.form_factor) {
             case FormFactorInfo::Type::F1p:
                 results[0] += formFactors.F1p*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
             case FormFactorInfo::Type::F1n:
                 results[0] += formFactors.F1n*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
             case FormFactorInfo::Type::F2p:
                 results[1] += formFactors.F2p*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
             case FormFactorInfo::Type::F2n:
                 results[1] += formFactors.F2n*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
             case FormFactorInfo::Type::FA:
                 results[2] += formFactors.FA*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
             case FormFactorInfo::Type::FCoh:
                 results[3] += formFactors.Fcoh*ff.coupling;
+            spdlog::debug("coupling = {}", ff.coupling);
                 break;
         }
     }
@@ -305,9 +311,9 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     auto omega = qVec.E();
     qVec.E() = qVec.E() + pIn.E() - free_energy;
 
-    std::vector<Currents> results(2);
+    std::vector<Currents> results(ff.size());
     // TODO: Move to the phase space definition
-    std::vector<double> spectral(2);
+    std::vector<double> spectral(ff.size());
     spectral[0] = spectral_proton(pIn.P(), removal_energy);
     spectral[1] = spectral_neutron(pIn.P(), removal_energy);
     spdlog::debug("Spectral function: S_p({}, {}) = {}, S_n({}, {}) = {}",
@@ -321,24 +327,33 @@ std::vector<NuclearModel::Currents> QESpectral::CalcCurrents(const Event &event,
     u[0] = USpinor(-1, -pIn);
     u[1] = USpinor(1, -pIn);
 
+
+    spdlog::debug("results.size = {}", results.size());
+
     // Loop over proton and neutron
     for(size_t i = 0; i < results.size(); ++i) {
+        spdlog::debug("i = {}", i);
         // Calculate nucleon contributions
         for(const auto &formFactor : ff[i]) {
             auto ffVal = CouplingsFF(ffVals, formFactor.second);
             spdlog::debug("{}: f1 = {}, f2 = {}, fa = {}", i, ffVal[0], ffVal[1], ffVal[2]);
+
             auto current = HadronicCurrent(ubar, u, qVec, ffVal);
             for(auto &subcur : current) {
+
                 for(auto &val : subcur) {
                     // TODO: Move this to phase space 
                     val *= sqrt(spectral[i]);
-                }
+                    spdlog::debug("spectral[i] = {}", spectral[i]);
+                    }
                 // Correct the Ward identity
                 if(b_ward) subcur[3] = omega/qVec.P()*subcur[0];
-            }
+                }
             results[i][formFactor.first] = current;
-        }
+
+            }
     }
+    //throw;
     return results;
 }
 
@@ -408,6 +423,7 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
             std::vector<std::complex<double>> subcur(4);
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*gamma[mu]*u[j];
+                spdlog::debug("subcur = {}", subcur[mu]);
             }
             result.push_back(subcur);
         }

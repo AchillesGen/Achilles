@@ -35,10 +35,12 @@ namespace Constant {
     constexpr double GAMW = 2.0895_GeV;
     constexpr double cos2w = MW*MW/MZ/MZ;
     constexpr double sin2w = 1 - cos2w;
+    constexpr double Vud = 0.97373; 
     const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
     const double ee = sqrt(4*M_PI*alpha);
     const double cw = sqrt(cos2w);
     const double sw = sqrt(sin2w);
+
 }
 
 }
