@@ -181,6 +181,7 @@ bool SherpaMEs::InitializeProcess(const Process_Info &info)
   if (pm->find(name)==pm->end()) getProcess(ampl);
   Process_Base* proc(pm->find(name)->second);
   if (proc==nullptr) return false;
+  proc->SetShower(p_sherpa->GetInitHandler()->GetShowerHandlers().at(PDF::isr::hard_process)->GetShower());
   return true;
 }
 

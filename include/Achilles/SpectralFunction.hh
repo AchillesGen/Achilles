@@ -24,13 +24,15 @@ class SpectralFunction {
         double Normalization() const { return norm; }
 
         // Interpolators
-        double operator()(double p) const { return overestimate(p); }
+        double operator()(double p) const;
         double operator()(double p, double E) const;
 
     private:
         double norm{};
-        std::vector<double> mom, energy, spectral;
-        Interp1D overestimate;
+        std::vector<double> mom, energy, spectral, dp_p;
+        std::vector<double> spectral_mf, spectral_corr;
+        std::vector<double> dp_p_mf, dp_p_corr;
+        Interp1D momentum_distribution;
         Interp2D func;
 };
 
