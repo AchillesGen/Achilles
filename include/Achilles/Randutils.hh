@@ -6,7 +6,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2015 Melissa E. O'Neill
+ * Copyright (c) 2015-2022 Melissa E. O'Neill
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,8 +27,8 @@
  * SOFTWARE.
  */
 
-#ifndef RANDUTILS_HH
-#define RANDUTILS_HH
+#ifndef RANDUTILS_HPP
+#define RANDUTILS_HPP 1
 
 /*
  * This header includes three class templates that can help make C++11
@@ -105,7 +105,7 @@
 // Ugly platform-specific code for auto_seeded
 
 #if !defined(RANDUTILS_CPU_ENTROPY) && defined(__has_builtin)
-    #if __has_builtin(__builtin_readcyclecounter)
+    #if __has_builtin(__builtin_readcyclecounter) && !defined(__aarch64__)
         #define RANDUTILS_CPU_ENTROPY __builtin_readcyclecounter()
     #endif
 #endif
@@ -217,7 +217,7 @@ template <size_t count = 4, typename IntRep = uint32_t,
 struct seed_seq_fe {
 public:
     // types
-    using result_type = IntRep;
+    typedef IntRep result_type;
 
 private:
     static constexpr uint32_t INIT_A = 0x43b0d7e5;
@@ -342,7 +342,7 @@ void seed_seq_fe<count,IntRep,mix_rounds>::param(OutputIterator dest) const
         auto hash_const = INIT_A*fast_exp(MULT_A, IntRep(count * count));
 
         for (auto src = mixer_copy.rbegin(); src != mixer_copy.rend(); ++src)
-            for (dest = mixer_copy.rbegin(); dest != mixer_copy.rend();
+            for (auto dest = mixer_copy.rbegin(); dest != mixer_copy.rend();
                  ++dest)
                 if (src != dest) {
                     IntRep revhashed = *src;
@@ -423,7 +423,7 @@ using seed_seq_fe256 = seed_seq_fe<8, uint32_t>;
 
 template <typename SeedSeq>
 class auto_seeded : public SeedSeq {
-    using default_seeds = std::array<uint32_t, 11>;
+    using default_seeds = std::array<uint32_t, 13>;
 
     template <typename T>
     static uint32_t crushto32(T value)
@@ -437,8 +437,6 @@ class auto_seeded : public SeedSeq {
         }
     }
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnoexcept-type"
     template <typename T>
     static uint32_t hash(T&& value)
     {
@@ -446,18 +444,17 @@ class auto_seeded : public SeedSeq {
                                     typename std::remove_cv<T>::type>::type>{}(
                                      std::forward<T>(value)));
     }
-#pragma GCC diagnostic pop
 
     static constexpr uint32_t fnv(uint32_t hash, const char* pos)
     {
-        return *pos == '\0' ? hash : fnv((hash * 16777619U) ^ static_cast<uint32_t>(*pos), pos+1);
+        return *pos == '\0' ? hash : fnv((hash * 16777619U) ^ *pos, pos+1);
     }
 
     default_seeds local_entropy()
     {
         // This is a constant that changes every time we compile the code
-        // constexpr uint32_t compile_stamp =
-        //     fnv(2166136261U, __DATE__ __TIME__ __FILE__);
+        constexpr uint32_t compile_stamp =
+            fnv(2166136261U, __DATE__ __TIME__ __FILE__);
 
         // Some people think you shouldn't use the random device much because
         // on some platforms it could be expensive to call or "use up" vital
@@ -466,9 +463,9 @@ class auto_seeded : public SeedSeq {
 
         // The heap can vary from run to run as well.
         void* malloc_addr = malloc(sizeof(int));
+        free(malloc_addr);
         auto heap  = hash(malloc_addr);
         auto stack = hash(&malloc_addr);
-        free(malloc_addr);
 
         // Every call, we increment our random int.  We don't care about race
         // conditons.  The more, the merrier.
@@ -489,7 +486,7 @@ class auto_seeded : public SeedSeq {
         // The address of the time function.  It should hopefully be in
         // a system library that hopefully isn't always in the same place
         // (might not change until system is rebooted though)
-        // auto time_func = hash(&std::chrono::high_resolution_clock::now);
+        auto time_func = hash(&std::chrono::high_resolution_clock::now);
 
         // The address of the exit function.  It should hopefully be in
         // a system library that hopefully isn't always in the same place
@@ -523,7 +520,8 @@ class auto_seeded : public SeedSeq {
         auto cpu = crushto32(RANDUTILS_CPU_ENTROPY);
 
         return {{random_int, crushto32(hitime), stack, heap, self_data,
-                 self_func, exit_func, thread_id, type_id, pid, cpu}};
+                 self_func, exit_func, time_func, thread_id, type_id, pid,
+                 cpu, compile_stamp}};
     }
 
 
@@ -810,4 +808,4 @@ using mt19937_rng = random_generator<std::mt19937>;
 
 }
 
-#endif // RANDUTILS_HH
+#endif // RANDUTILS_HPP

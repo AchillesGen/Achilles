@@ -3,7 +3,15 @@
 
 #include <memory>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+#ifndef __clang__
+#pragma GCC diagnostic ignored "-Wuse-after-free"
+#endif
 #include "Achilles/Randutils.hh"
+#pragma GCC diagnostic pop
 
 namespace achilles {
 
