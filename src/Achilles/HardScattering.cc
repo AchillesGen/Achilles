@@ -227,7 +227,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()){
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
-			    spdlog::info("hadron={}",hadronCurrent[k][boson][j][mu]);
+			    //spdlog::info("hadron={}",hadronCurrent[k][boson][j][mu]);
 			}
                     }
                 }
@@ -237,7 +237,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 amps2[k] += std::norm(amps[k]);
         }
     }
-    exit(1);
+    //exit(1);
 
     double spin_avg = 1;
     if(!ParticleInfo(m_group.Processes()[0].ids[0]).IsNeutrino()) spin_avg *= 2;
