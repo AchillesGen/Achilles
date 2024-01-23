@@ -11,21 +11,26 @@
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
-#else
-#include <fstream>
 #endif
+#include <fstream>
 
 achilles::DensityConfiguration::DensityConfiguration(const std::string &filename) {
     spdlog::debug("Loading density configurations from {}", filename);
     // Load configuration
+    std::unique_ptr<std::istream> configs;
 #ifdef GZIP
-    igzstream configs(filename.c_str());
+    configs = std::make_unique<igzstream>(filename.c_str());
+    if(!configs->good()) {
+        spdlog::debug("File {} is not gzipped, trying uncompressed", filename);
+        configs = std::make_unique<std::ifstream>(filename.c_str());
+        if(!configs->good()) throw std::runtime_error("Invalid file " + filename);
+    }
 #else
-    std::ifstream configs(filename.c_str());
+    configs = std::make_unique<std::ifstream>(filename.c_str());
+    if(!configs->good()) throw std::runtime_error("Invalid file " + filename);
 #endif
-    if(!configs.good()) throw std::runtime_error("Invalid file " + filename);
     std::string line;
-    std::getline(configs, line);
+    std::getline(*configs, line);
     std::vector<std::string> tokens;
     tokenize(line, tokens);
     m_nnucleons = std::stoul(tokens[0]);
@@ -39,20 +44,18 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
         Configuration config;
         for(size_t inucleon = 0; inucleon < m_nnucleons; ++inucleon) {
             tokens.clear();
-            std::getline(configs, line);
+            std::getline(*configs, line);
             tokenize(line, tokens);
             auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
             auto pos =
                 ThreeVector(std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3]));
             config.nucleons.emplace_back(pid, FourVector(), pos);
         }
-        std::getline(configs, line);
+        std::getline(*configs, line);
         config.wgt = std::stod(line);
-        std::getline(configs, line);
+        std::getline(*configs, line);
         m_configurations.push_back(config);
     }
-
-    configs.close();
 }
 
 std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration() {

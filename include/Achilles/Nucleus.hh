@@ -285,13 +285,8 @@ struct convert<achilles::Nucleus> {
         else return false;
 
         auto densityFile = node["Density"]["File"].as<std::string>();
-#ifdef GZIP
-	std::cout << node["Density"]["Configs"].as<std::string>() << std::endl;
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
-#else
-        auto configs = std::make_unique<achilles::DensityConfiguration>("data/configurations/QMC_configs.out");
-#endif
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, type, std::move(configs));
         return true;
     }
