@@ -128,6 +128,17 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.ids.insert(leptonicProcess.ids.begin(),
                                beam -> BeamIDs().begin(), beam -> BeamIDs().end());
 
+#ifdef ENABLE_BSM
+    // Initialize sherpa processes
+    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    //if(model == "SM") model = "SM_Nuc";
+    shargs.push_back("MODEL=" + model);
+    shargs.push_back("UFO_PARAM_CARD=" + param_card);
+    sherpa -> Initialize(shargs);
+#endif
+
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
     const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
@@ -136,18 +147,11 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Process Group: {}", proc_group);
 
 #ifdef ENABLE_BSM
-    // Initialize sherpa processes
-    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
-    std::string model = config["Process"]["Model"].as<std::string>();
-    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
-    if(model == "SM") model = "SM_Nuc";
-    shargs.push_back("MODEL=" + model);
-    shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
         auto &process = proc_group.Process(i);
         if(!sherpa -> InitializeProcess(process)) {
+
             spdlog::error("Cannot initialize hard process");
             exit(1);
         }

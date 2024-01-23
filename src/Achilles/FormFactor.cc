@@ -58,7 +58,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDipole::Construct(achil
 
 void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.FA = -gan1/pow(1.0+Q2/MA/MA, 2);
-    result.FAs = -gans/pow(1.0+Q2/MA/MA, 2);
+    result.FAs = gans/pow(1.0+Q2/MA/MA, 2);
 }
 
 // Vector Dummy Form Factor
@@ -100,9 +100,8 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDummy::Construct(achill
     return std::make_unique<AxialDummy>(node);
 }
 
-void achilles::AxialDummy::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2/4/pow(Constant::mp/1_GeV,2);
-    tau = 0;
+void achilles::AxialDummy::Evaluate(double, FormFactor::Values &result) const {
+
     result.FA = fa;
     result.FAs = fas;
 }
