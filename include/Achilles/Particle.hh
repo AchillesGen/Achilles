@@ -145,7 +145,7 @@ class Particle {
 
         /// Return the pid of the particle
         ///@return int: PID of the particle
-        PID ID() const noexcept { return info.ID(); }
+        PID ID() const noexcept { return info.IntID(); }
 
         ParticleInfo Info() const noexcept { return info; }
 

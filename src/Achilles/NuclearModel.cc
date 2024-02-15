@@ -100,7 +100,7 @@ achilles::Process_Group NuclearModel::AllowedStates(Process_Info info) {
             }
             break;
 
-	          case NuclearMode::Resonance:
+	    case NuclearMode::Resonance:
             if(std::abs(charge) > 1)
                 throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
             
@@ -114,14 +114,14 @@ achilles::Process_Group NuclearModel::AllowedStates(Process_Info info) {
                     m_group.AddProcess(info);
                     break; 
                 case 0: // Same charge in inital and final
-                    info.state = {{PID::proton()}, {PID::proton(),PID::pion0()}}; 
-                    m_group.AddProcess(info);
-		    info.state = {{PID::proton()}, {PID::neutron(),PID::pionp()}}; 
-                    m_group.AddProcess(info);
-                    info.state = {{PID::neutron()}, {PID::neutron(),PID::pion0()}}; 
-                    m_group.AddProcess(info);
-		    info.state = {{PID::neutron()}, {PID::proton(),-PID::pionp()}}; 
-                    m_group.AddProcess(info);
+                    //info.state = {{PID::proton()}, {PID::proton(),PID::pion0()}}; 
+                    //    m_group.AddProcess(info);
+		            //info.state = {{PID::proton()}, {PID::neutron(),PID::pionp()}}; 
+                    //    m_group.AddProcess(info);
+                    //info.state = {{PID::neutron()}, {PID::neutron(),PID::pion0()}}; 
+                    //    m_group.AddProcess(info);
+		            info.state = {{PID::neutron()}, {PID::proton(),-PID::pionp()}}; 
+                        m_group.AddProcess(info);
                     break;
                 case 1: // Final state has more charge than initial
                     info.state = {{PID::proton()}, {PID::neutron(),PID::pion0()}};

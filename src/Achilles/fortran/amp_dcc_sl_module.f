@@ -554,7 +554,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       if(isl==1)then
       open(10,file='sl_EW.dat',form='formatted',status='old')
       else
-      open(10,file='dcc_EW.dat',form='formatted',status='old')
+      open(10,file="data/dcc_EW.dat",form='formatted',status='old')
       endif 
       read(10,*) njLs
       jmax=0

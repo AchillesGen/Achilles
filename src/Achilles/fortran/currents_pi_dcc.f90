@@ -46,7 +46,8 @@ end subroutine
 subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
    implicit none     
    integer*4 :: i1,f1,i,j,ip
-   integer*4 :: hid1,hid2,mesid1
+   integer*8 :: hid1,hid2,mesid1
+   real*8 :: PgammaN(4), gammaNinv, Q2
    complex*16 :: zjmup(-1:1,-1:1,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
 
@@ -70,10 +71,36 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
            mesid1=id_pim       
    endif
 
+   !write(*,*)'mesid1 = ', mesid1
+
+   PgammaN = q + p1
+   gammaNinv = PgammaN(1)**2 - PgammaN(2)**2 - PgammaN(3)**2 - PgammaN(4)**2
+   gammaNinv = abs(gammaNinv)
+
+   !write(*,*)'q = ', q
+
+   Q2 = q(1)**2 - q(2)**2 - q(3)**2 - q(4)**2
+   Q2 = -Q2
+   if (Q2.lt.0.0d0) then        
+        J_mu(:,:,:) = (0.0d0,0.0d0)
+        return
+   endif
 
 
+   !write(*,*)'gammaNinv = ', sqrt(gammaNinv)
+   if(sqrt(gammaNinv).lt.1076.957d0) then
+        !write(*,*)'did we make it in'
+        J_mu(:,:,:) = (0.0d0,0.0d0)
+        return
+   endif
 
-   call amplitude(q,pp1,kpi,10,0,hid1,mesid1,hid2,zjmup(:,:,:))
+   ! shouldn't hid2 instead be 1? 
+   ! DCC code calls this argument ipar which selects pion or Eta
+   ! call amplitude(q,pp1,kpi,10,0,hid1,mesid1,hid2,zjmup(:,:,:))
+   call amplitude(q,pp1,kpi,10,0,hid1,mesid1,1,zjmup(:,:,:))
+
+
+   
 
 
    J_mu(1,1,:)=zjmup(-1,-1,:)

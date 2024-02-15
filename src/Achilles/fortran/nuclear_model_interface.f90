@@ -107,14 +107,13 @@ contains
         complex(c_double_complex), dimension(len_ff), intent(in), target :: ff
         ! C++ is row major, while Fortran is column major
         ! This means the moms passed in are transposed
-        integer(c_int), dimension(nin), intent(in) :: pids_in
-        integer(c_int), dimension(nout), intent(in) :: pids_out
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        integer(c_long), dimension(nout), intent(in) :: pids_out
         real(c_double), intent(in), dimension(4, nin+nout) :: moms
         type(fourvector), dimension(nin) :: mom_in
         type(fourvector), dimension(nout) :: mom_out
         type(fourvector) :: qvector
         integer(c_size_t) :: i
-
 
         do i=1,nin
             mom_in(i) = fourvector(moms(1, i), moms(2, i), moms(3, i), moms(4, i))

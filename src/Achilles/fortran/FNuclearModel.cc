@@ -42,6 +42,9 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
     std::vector<FourVector> moms;
     FourVector q;
 
+    spdlog::debug("nin = {}", nin);
+    spdlog::debug("nout = {}", nout);
+
     // Fill momentum
     // TODO: Make this cleaner, maybe pass FourVectors to fortran and use interface?
     // TODO: Make less dependent on 0th process
@@ -72,10 +75,11 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
             size_t nff = formfactors.size();
             std::vector<long> pids_in;
             std::vector<long> pids_out;
-            for(const auto &pid : process.state.first)
+            for(const auto &pid : process.state.first) 
                 pids_in.push_back(pid);
-            for(const auto &pid : process.state.second)
+            for(const auto &pid : process.state.second) 
                 pids_out.push_back(pid);
+
             GetCurrents(pids_in.data(), pids_out.data(), moms.data(), nin, nout, &q,
                         formfactors.data(), nff, cur, NSpins(), 4);
 

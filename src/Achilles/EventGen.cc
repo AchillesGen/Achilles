@@ -128,6 +128,17 @@ achilles::EventGen::EventGen(const std::string &configFile,
     leptonicProcess.ids.insert(leptonicProcess.ids.begin(),
                                beam -> BeamIDs().begin(), beam -> BeamIDs().end());
 
+#ifdef ENABLE_BSM
+    // Initialize sherpa processes
+    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
+    std::string model = config["Process"]["Model"].as<std::string>();
+    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
+    //if(model == "SM") model = "SM_Nuc";
+    shargs.push_back("MODEL=" + model);
+    shargs.push_back("UFO_PARAM_CARD=" + param_card);
+    sherpa -> Initialize(shargs);
+#endif
+
     // Initialize the nuclear model
     spdlog::debug("Initializing nuclear model");
     const auto model_name = config["NuclearModel"]["Model"].as<std::string>();
@@ -136,18 +147,11 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Process Group: {}", proc_group);
 
 #ifdef ENABLE_BSM
-    // Initialize sherpa processes
-    achilles::SherpaMEs *sherpa = new achilles::SherpaMEs();
-    std::string model = config["Process"]["Model"].as<std::string>();
-    std::string param_card = config["Process"]["ParamCard"].as<std::string>();
-    if(model == "SM") model = "SM_Nuc";
-    shargs.push_back("MODEL=" + model);
-    shargs.push_back("UFO_PARAM_CARD=" + param_card);
-    sherpa -> Initialize(shargs);
     spdlog::debug("Initializing leptonic currents");
     for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
         auto &process = proc_group.Process(i);
         if(!sherpa -> InitializeProcess(process)) {
+
             spdlog::error("Cannot initialize hard process");
             exit(1);
         }
@@ -162,9 +166,19 @@ achilles::EventGen::EventGen(const std::string &configFile,
         auto &process = proc_group.Process(i);
         for(size_t j = 0; j < process.Ids().size(); ++j) {
             process.m_mom_map[j] = process.Ids()[j];
+            spdlog::debug("PIDs are {}", process.m_mom_map[j]);
         }
     }
 #endif
+
+    for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
+        auto &process = proc_group.Process(i);
+        for(size_t j = 0; j < process.Ids().size(); ++j) {
+            process.m_mom_map[j] = process.Ids()[j];
+            spdlog::info("PIDs are {}", process.m_mom_map[j]);
+        }
+    }
+
 
     // Initialize hard cross-sections
     spdlog::debug("Initializing hard interaction");
@@ -179,27 +193,41 @@ achilles::EventGen::EventGen(const std::string &configFile,
     spdlog::debug("Initializing phase space");
     // TODO: Take into account all processes in a process group
     std::vector<double> masses = scattering -> ProcessGroup().Processes()[0].Masses();
-    spdlog::trace("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
+    spdlog::debug("Masses = [{}]", fmt::join(masses.begin(), masses.end(), ", "));
+
     if(config["TestingPS"]) {
         Channel<FourVector> channel = BuildChannelTest(config["TestingPS"], beam);
         integrand.AddChannel(std::move(channel));
     } else {
 #ifndef ENABLE_BSM
+
         if(scattering -> ProcessGroup().Multiplicity() == 4) {
             Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(scattering -> Nuclear(), 2, 2,
                                                                        beam, masses);
             integrand.AddChannel(std::move(channel0));
-        } else {
-            const std::string error = fmt::format("Can only handle 2->2 processes without "
+        } 
+
+        else if(scattering -> ProcessGroup().Multiplicity() == 5) {
+            Channel<FourVector> channel1 = BuildChannel<ThreeBodyMapper>(scattering -> Nuclear(), 2, 3,
+                                                                       beam, masses);
+            integrand.AddChannel(std::move(channel1));
+        } 
+
+        else {
+            const std::string error = fmt::format("Can only handle 2->2 and 2->3 processes without "
                                                   "BSM being enabled. "
                                                   "Got a 2->{} process",
                                                   scattering -> ProcessGroup().Multiplicity()-2);
             throw std::runtime_error(error);
         }
 #else
+
         // TODO: Take into account all processes in a process group
-        auto channels = sherpa -> GenerateChannels(scattering -> ProcessGroup().Processes()[0].Ids());
-        size_t count = 0;
+    auto channels = sherpa -> GenerateChannels(scattering -> ProcessGroup().Processes()[0].Ids());
+
+    size_t count = 0;
+ 
+
         for(auto & chan : channels) {
             Channel<FourVector> channel = BuildGenChannel(scattering -> Nuclear(), 
                                                           scattering -> ProcessGroup().Processes()[0].ids.size(), 2,
@@ -374,6 +402,12 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 integrator.Parameters().ncalls++;
             }
             return 0;
+        }
+    }
+
+    for(auto &part: event.CurrentNucleus()->Nucleons()) {
+        if(part.Status() == ParticleStatus::propagating) {
+            spdlog::info("propagating PID = {}", part.ID());
         }
     }
 

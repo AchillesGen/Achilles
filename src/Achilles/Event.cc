@@ -81,9 +81,11 @@ void Event::InitializeHadrons(const Process_Info &process) {
             part.Momentum() = m_mom[elm.first];
             position = part.Position();
         } else {
+            spdlog::info("event PID = {}",elm.second);
             auto part = Particle(elm.second, m_mom[elm.first]); 
             part.Status() = ParticleStatus::propagating;
             part.Position() = position;
+            spdlog::info("Part PID = {}", part.ID());
             m_nuc -> Nucleons().push_back(part);
         }
     }

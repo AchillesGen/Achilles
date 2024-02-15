@@ -108,8 +108,8 @@ contains
         type(fourvector) :: qvec
         type(fourvector), dimension(nin), intent(in) :: mom_in
         type(fourvector), dimension(nout), intent(in) :: mom_out
-        integer(c_int), dimension(nin), intent(in) :: pids_in
-        integer(c_int), dimension(nout), intent(in) :: pids_out
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        integer(c_long), dimension(nout), intent(in) :: pids_out
         complex(c_double_complex), dimension(nspin, nlorentz), intent(out) :: cur
 
         integer(c_size_t) :: i,j        

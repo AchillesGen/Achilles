@@ -109,8 +109,8 @@ contains
         type(fourvector) :: qvec
         type(fourvector), dimension(nin), intent(in) :: mom_in
         type(fourvector), dimension(nout), intent(in) :: mom_out
-        integer(c_int), dimension(nin), intent(in) :: pids_in
-        integer(c_int), dimension(nout), intent(in) :: pids_out
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        integer(c_long), dimension(nout), intent(in) :: pids_out
         complex(c_double_complex), dimension(nspin, nlorentz), intent(out) :: cur
 
         integer(c_size_t) :: i,j        
@@ -130,6 +130,9 @@ contains
         call current_init(p4,pp4,q4,kpi4) 
        
         !...check the order of the PID_out are correct in the fortran file
+        !write(*,*)'pid_in(1) = ',pids_in(1)
+        !write(*,*)'pid_out(1) = ',pids_out(1)
+        !write(*,*)'pid_out(2) = ',pids_out(2)
         call hadr_curr_matrix_el(pids_in(1),pids_out(1),pids_out(2),J_mu)
 
         cur=(0.0d0,0.0d0)
