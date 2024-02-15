@@ -77,7 +77,7 @@ class Particle {
                       status(std::move(_status)), mothers(std::move(_mothers)),
                       daughters(std::move(_daughters)) { formationZone = 0;}
 
-        Particle(const Particle &other) : info{ParticleInfo(other.info.ID())},
+        Particle(const Particle &other) : info{ParticleInfo(other.ID())},
             momentum{other.momentum},
             position{other.position}, status{other.status}, mothers{other.mothers},
             formationZone{other.formationZone} {}

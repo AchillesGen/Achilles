@@ -171,15 +171,6 @@ achilles::EventGen::EventGen(const std::string &configFile,
     }
 #endif
 
-    for(size_t i = 0; i < proc_group.Processes().size(); ++i) {
-        auto &process = proc_group.Process(i);
-        for(size_t j = 0; j < process.Ids().size(); ++j) {
-            process.m_mom_map[j] = process.Ids()[j];
-            spdlog::info("PIDs are {}", process.m_mom_map[j]);
-        }
-    }
-
-
     // Initialize hard cross-sections
     spdlog::debug("Initializing hard interaction");
     scattering = std::make_shared<HardScattering>();
@@ -402,12 +393,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 integrator.Parameters().ncalls++;
             }
             return 0;
-        }
-    }
-
-    for(auto &part: event.CurrentNucleus()->Nucleons()) {
-        if(part.Status() == ParticleStatus::propagating) {
-            spdlog::info("propagating PID = {}", part.ID());
         }
     }
 
