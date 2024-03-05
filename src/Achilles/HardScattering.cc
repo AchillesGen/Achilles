@@ -121,6 +121,13 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
         pU = -p[1];
         pUBar = p.back();
     }
+
+    //pU.SetPxPyPzE(0.0,0.0,-620.0,-620.0);
+    //pUBar.SetPxPyPzE(-3.68982132e+01, 8.37979251e+00, 1.77567478e+02, 1.81554148e+02);
+
+    spdlog::debug("k = {}, m = {}",pU, pU.M2());
+    spdlog::debug("kp = {}, m = {}",pUBar, pUBar.M2());
+
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pUBar);
     ubar[1] = UBarSpinor(1, pUBar);
@@ -130,6 +137,8 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
     // Calculate currents
     Current result;
     double q2 = (p[1] - p.back()).M2();
+    //double q2 = (pU + pUBar).M2();
+    spdlog::debug("Q2 = {}", q2);
     std::complex<double> prop = std::complex<double>(0, 1)/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
     spdlog::trace("Calculating Current for {}", pid);
     for(size_t i = 0; i < 2; ++i) {
@@ -190,8 +199,39 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
 }
 
 std::vector<double> HardScattering::CrossSection(Event &event) const {
+    static constexpr std::complex<double> ii(0, 1);
+    using namespace achilles::Constant;
+
     // Calculate leptonic currents
     auto leptonCurrent = LeptonicCurrents(event.Momentum(), 100);
+
+    
+    std::vector<std::vector<std::complex<double>>> lmunu(4,std::vector<std::complex<double>>(4));
+    // Let's compute the leptonic respone tensor for testing purposes
+    const size_t nlep_spins = leptonCurrent.begin()->second.size();
+    for(size_t i = 0; i  < nlep_spins; ++i) {
+        for(size_t mu = 0; mu < 4; ++mu) {
+            for(size_t nu = 0; nu < 4; ++nu) {
+                for(const auto &lcurrent : leptonCurrent) {
+                    lmunu[mu][nu] += std::conj(lcurrent.second[i][mu])*lcurrent.second[i][nu];
+                }
+            }
+        }
+    }
+    
+
+    for(size_t mu = 0; mu < 4; ++mu) {
+        for(size_t nu = 0; nu < 4; ++nu) {
+            spdlog::debug("l[{}][{}] = {}",mu,nu,lmunu[mu][nu]);
+        }
+    }
+    
+
+
+    //std::string filename = "data/pke12_tot.data";
+
+    //static SpectralFunction specf(filename);
+
 
     // Calculate the hadronic currents
     // TODO: Clean this up and make generic for the nuclear model
@@ -215,7 +255,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
 
     std::vector<double> amps2(hadronCurrent.size());
-    const size_t nlep_spins = leptonCurrent.begin()->second.size();
+    //const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
     for(size_t i = 0; i  < nlep_spins; ++i) {
         for(size_t j = 0; j < nhad_spins; ++j) {
@@ -226,9 +266,8 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                     auto boson = lcurrent.first;
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()){
-                            amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
-			    //spdlog::info("hadron={}",hadronCurrent[k][boson][j][mu]);
-			}
+                            amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu]*(ii*ee);//Need i*ee for resonance amplitude?
+			             }
                     }
                 }
                 sign = -1.0;
@@ -237,7 +276,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                 amps2[k] += std::norm(amps[k]);
         }
     }
-    //exit(1);
+
 
     double spin_avg = 1;
     if(!ParticleInfo(m_group.Processes()[0].ids[0]).IsNeutrino()) spin_avg *= 2;
@@ -249,13 +288,31 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         // TODO: Handle the case for MEC
         double mass = ParticleInfo(m_group.Processes()[i].state.first[0]).Mass();
         double flux = 2*event.Momentum()[1].E()*2*sqrt(event.Momentum()[0].P2() + mass*mass);
+
+        //double E = -event.Momentum()[0].E() + Constant::mN;
+        //double spec = specf(event.Momentum()[0].P(), E);
+
+        FourVector piN_p4 = event.Momentum()[2] + event.Momentum()[3];
+        double piN_inv = piN_p4.M();
+
+        if (piN_inv < 1076.957 || piN_inv > 1400.0) amps2[i] = 0.;
+        //else amps2[i] = pow(1_MeV,-2);
+        spdlog::debug("contraction = {}", amps2[i]);
+
+        //amps2[i] = 1.0;
         // TODO: Correct this flux
         // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2) 
         //                      - event.Momentum()[0].M2()*event.Momentum()[1].M2());
+
+
+        // Testing phase space only
+        
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
+        //xsecs[i] = amps2[i]/spin_avg;
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
 
+    //delete specf;
     return xsecs;
 }
 

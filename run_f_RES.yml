@@ -1,11 +1,11 @@
 Main:
-  NEvents: 1000
+  NEvents: 50000
   HardCuts: true
   EventCuts: false
   DoRotate: false
   Output:
       Format: HepMC3
-      Name: test_noressample.hepmc
+      Name: check_full.hepmc
       Zipped: False
 
 Process:
@@ -15,7 +15,7 @@ Process:
 
 Initialize:
   Seed: 8492134
-  Accuracy: 1e-0
+  Accuracy: 1e-2
 
 Unweighting:
   Name: Percentile
@@ -26,7 +26,7 @@ Beams:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 961
+        Energy: 620
 
 Cascade:
   Run: False
@@ -66,4 +66,4 @@ Nucleus:
 HardCuts:
   - Type: AngleTheta
     PIDs: 11
-    range: [36.5, 38.5]
+    range: [59., 61.]

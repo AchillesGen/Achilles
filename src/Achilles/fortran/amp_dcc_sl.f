@@ -1,175 +1,59 @@
-! Inputs
-!
-! four-momenta in MeV in the original frame (Lab, CM, etc.)
-!       qvec_in                   ! virtual photon four-momentum (thie needs to be along z-axis)
-!       xpnuc_in                  ! final nucleon four-momentum
-!       xk_in                     ! final meson four-momentum
-
-!       mode_in =1  neutrino C! scattering on nucleon
-!               =3  anti-neutrino C! scattering on nucleon
-!               =-1  neutrino N! scattering on nucleon
-!               =-3  anti-neutrino N! scattering on nucleon
-!               =10 electron scattering on nucleon
-!       isl                     ! =0: DCC; =1:SL
-!       itiz                    ! incoming nucleon isospin z-component * 2; =1:p ; =-1:n
-!       itpiz                   ! isospin z-component for final meson
-!       ipar                    ! =1 :pion ; =2: eta
-!
-!
-! Output
-!       zj_mu(isf,isi,ig)         ! current matrix elements in the original frame
-!             isf                 ! 2* (z-component of final nucleon spin)
-!             isi                 ! 2* (z-component of incoming nucleon spin)
-!             ig                  ! 0,1,2,3 : photon polarization
-! Relation between zj_mu and 
-! gamma N -> piN differentianl cross section (d\sigma / d\Omega_\pi [\mu b/sr]) in CM
-! when qvec_in, xpnuc_in, and xk_in are given in pi-nucleon CM frame
-!       dsigma : d\sigma / d\Omega_\pi [\mu b/sr] 
-!       wcm    : piN invariant mass
-!       fnu!   : nucleon mass
-!       xkabs  : magnitude of pion momentum (spatial component)
-!       alfa   : the fine structure constant  1/137
-!       pi     : 3.1415...
-!       E_gamma=(wcm**2-fnuc**2)/(2*fnuc)
-!       dsigma=0
-!       do isi=-1,1,2
-!       do isf=-1,1,2
-!       do ig=1,2
-!       dsigma=dsigma
-!      &  + 4*pi**2*alfa/E_gamma
-!      &    *abs(zj_mu(isf,isi,ig))**2
-!      &    *fnuc*xkabs/(16*pi**3*wcm)
-!      &    /4                    ! initial spins averaged
-!      &    *1d4                  ! \mu b/sr
-!       end do
-!       end do
-!       end do
-
-
-
-
-      subroutine set_param
-      implicit real*8 (a-h,o-y)
-      implicit complex*16 (z) 
-      parameter (maxmb=1)
-      common / cscal / pi,fm
-      common/masses/am1dt(maxmb),am2dt(maxmb)
-      common /icgmb / icgmb(5)
-      !fm      = 197.3289d0
-      !pi = atan(1d0)*4d0
-      !alfa = 1/137.0359895d0
-
-      imwpon=0
-      isw0=0
-      isigma=1
-
-      icgmb    = 0
-      icgmb(1) = 1 ! igmb=1 pn
-      icgmb(2) = 2 ! igmb=2 en
-      icgmb(3) = 6 ! igmb=3 on
-      icgmb(4) = 7 ! igmb=4 kl
-      icgmb(5) = 8 ! igmb=5 ks
-!=============================================
-!    DEFINE MASSES FOR CHANNELS
-!=============================================
-
-!     1 :pi-N      2 :eta-N      3 :pi-Delta
-!     4 :sigma-N   5 :rho-N      6 :omega-N
-!     7 :K-Lambda  8 :K-Sigma
-!
-      amn   = 938.5d0
-      api   = 138.5d0
-!      aeta  = 547.45d0
-      aeta  = 548.d0
-      amdel = 1299.d0
-!      asigma= 896.8d0
-!      arho  = 811.7d0
-      asigma= 897.d0
-      arho  = 812.d0
-
-      aomega= 782.d0  
-      akaon = 495.d0  
-      amlam = 1115.7d0 
-      amsig = 1193.d0 
-
-      if(isw0.eq.1) then   !JLMS
-      amn   = 940.d0
-      api   = 140.d0
-      aeta  = 550.d0
-      amdel = 1299.d0
-      asigma= 897.d0
-      arho  = 812.d0
-      end if
-      if(isigma.eq.1) then !new D->piN,sig->pipi f.f.
-      amdel = 1280.d0
-      asigma= 700.d0
-      end if
-
-!mwp's values
-      if(imwpon.eq.1) then
-      amn   = 938.5d0
-      api   = 138.5d0
-      aeta  = 547.5d0
-      amdel = 1300.d0
-      asigma= 898.6d0
-      arho  = 811.7d0
-      aomega= 782.6d0
-      end if
-
-      am1dt(1) = api
-      am2dt(1) = amn
-      do i=1,1
-      am1dt(i) = am1dt(i)/fm
-      am2dt(i) = am2dt(i)/fm
-      end do
-
-      return
-      end
-
-
-
-
-      subroutine pion_init(fneu,fpro,feta_in,fpio0,fpi1,pi_in,fm_in)
-       implicit real*8(a-h,o-y)
-       common / ccoup / fpio,fnuc,flep,fnuci,fdeu,feta,fmfin
-       common / cscal / pi,fm
-
-
-       !fneu = 939.56563d0/fm
-       !fpro = 938.27231d0/fm
-       !feta =  548.d0/fm
-       !fpio1 = 139.57018d0/fm
-       !fpio0 = 134.9764d0/fm
-       fnuc=(fpro+fneu)/2
-       !fpio=(2*fpio1+fpio0)/3
-       fpio = fpio0
-       fnuc2=fnuc**2
-       fpio2=fpio**2
-       fnuci = fnuc
-       fnuci2=fnuci**2
-       feta=feta_in
-!...
-       fm = fm_in!197.3289d0
-       pi = pi_in!atan(1d0)*4d0
-
-
-       write(6,*)'fneu= ', fneu*fm 
-       write(6,*)'fpro = ', fpro*fm 
-       write(6,*)'fnuc = ', fnuc*fm 
-       write(*,*)'fpio = ', fpio*fm
-
-      end subroutine
-      
-       
-
-
-
-
-      subroutine amplitude(qvec_in,xpnuc_in,xk_in,mode_in,isl,itiz,itpiz &
+c Inputs
+c
+c four-momenta in MeV in the original frame (Lab, CM, etc.)
+c       qvec_in                   ! virtual photon four-momentum (thie needs to be along z-axis)
+c       xpnuc_in                  ! final nucleon four-momentum
+c       xk_in                     ! final meson four-momentum
+c
+c       mode_in =1  neutrino CC scattering on nucleon
+c               =3  anti-neutrino CC scattering on nucleon
+c               =-1  neutrino NC scattering on nucleon
+c               =-3  anti-neutrino NC scattering on nucleon
+c               =10 electron scattering on nucleon
+c       isl                     ! =0: DCC; =1:SL
+c       itiz                    ! incoming nucleon isospin z-component * 2; =1:p ; =-1:n
+c       itpiz                   ! isospin z-component for final meson
+c       ipar                    ! =1 :pion ; =2: eta
+c
+c
+c Output
+c       zj_mu(isf,isi,ig)         ! current matrix elements in the original frame
+c             isf                 ! 2* (z-component of final nucleon spin)
+c             isi                 ! 2* (z-component of incoming nucleon spin)
+c             ig                  ! 0,1,2,3 : photon polarization
+c
+c
+c Relation between zj_mu and 
+c gamma N -> piN differentianl cross section (d\sigma / d\Omega_\pi [\mu b/sr]) in CM
+c when qvec_in, xpnuc_in, and xk_in are given in pi-nucleon CM frame
+c
+c       dsigma : d\sigma / d\Omega_\pi [\mu b/sr] 
+c       wcm    : piN invariant mass
+c       fnuc   : nucleon mass
+c       xkabs  : magnitude of pion momentum (spatial component)
+c       alfa   : the fine structure constant  1/137
+c       pi     : 3.1415...
+c       E_gamma=(wcm**2-fnuc**2)/(2*fnuc)
+c
+c       dsigma=0
+c       do isi=-1,1,2
+c       do isf=-1,1,2
+c       do ig=1,2
+c       dsigma=dsigma
+c      &  + 4*pi**2*alfa/E_gamma
+c      &    *abs(zj_mu(isf,isi,ig))**2
+c      &    *fnuc*xkabs/(16*pi**3*wcm)
+c      &    /4                    ! initial spins averaged
+c      &    *1d4                  ! \mu b/sr
+c       end do
+c       end do
+c       end do
+c
+      subroutine amplitude(qvec_in,xpnuc_in,xk_in,mode_in,isl,itiz,itpiz
      &  ,ipar,zj_mu)
       implicit real*8(a-h,o-y)
       implicit complex*16(z)
-      common / cscal / pi,fm
+      common / cscal / pi,fm,alfa
       common / ccoup / fpio,fnuc,flep,fnuci,fdeu,feta,fmfin
       parameter(ndimd=300)
       parameter (maxwcm=70,maxq2=30,npar=2)
@@ -212,8 +96,6 @@
      & ,facp,tcrz,fac
       save tmax,imxi,igm1_max,igm1_step,fn_sign
       save irot_spin,irot_q,irotq_sign,icomp,num_pol1,num_pol2
-
-
 c
       if(init==1)then
       init=0
@@ -231,19 +113,31 @@ c
       igm1_step=1
       num_pol1=0
       num_pol2=3
-!
+c
       irot_spin=1               ! =1 : spin rotation ; =0: no spin rotation
       irot_q=1     ! =0 photon momentum in 2CM is along z-axis (approx); =1 not along z-axis
       
       irotq_sign=(-1)**(irot_q+1)
-!
+c
       do i1=-2,2,2
       fn_sign(i1)=(-1)**(i1/2)
       end do
-!
+c
       call set_param
       call bifc
-!      
+c      
+      fneu = 939.56563d0/fm
+      fpro = 938.27231d0/fm
+      feta =  548.d0/fm
+      fpio1 = 139.57018d0/fm
+      fpio0 = 134.9764d0/fm
+      fnuc=(fpro+fneu)/2
+      !fpio=(2*fpio1+fpio0)/3
+      fpio = fpio0
+      fnuc2=fnuc**2
+      fpio2=fpio**2
+      fnuci = fnuc
+      fnuci2=fnuci**2
       rfac=1
 c
       if(ipar==1)then
@@ -257,13 +151,13 @@ c
         itpiz=0
       else
         stop 'ipar error'
-      endif  
-!
+      endif 
+c
       call read_amp(isl,icomp,ipar,0,0  ! called after fnuci is set
      & )
-!        
+c        
       tmax=tm_f+.5d0+eps_tpin
-!
+c
       if(isl==1)then
       facp=1d0/fnuc2
       else
@@ -276,7 +170,7 @@ c
       endif                     ! init=1
       tpiz=itpiz
       if(abs(itpiz).gt.1)stop 'itpiz error'
-!
+c
       if(mode==1.or.mode==2)then
         tcrz=1
       elseif (mode==3.or.mode==4)then
@@ -284,8 +178,8 @@ c
       elseif (mode.ge.-4.and.mode.le.-1.or.mode==10.or.mode==11)then
         tcrz=0
       endif
-!
-      if(mode.ge.1)then         ! C! and EM
+c
+      if(mode.ge.1)then         ! CC and EM
         vfac = 1
       else if(mode.le.-1)then   ! NC
         sw2 = 0.2312d0          ! Weinberg angle:  sin^2 \theta_W
@@ -293,23 +187,23 @@ c
         vvfac(1) =  - 2*sw2
         vvfac(-1) =    2*sw2
       endif 
-!
+c
       xpnuc=xpnuc_in/fm
       xk=xk_in/fm
       qvec=qvec_in/fm
-!
+c
       wcm2=(xk(0)+xpnuc(0))**2-(xk(1)+xpnuc(1))**2
      &  -(xk(2)+xpnuc(2))**2-(xk(3)+xpnuc(3))**2
       Q2=qvec(1)**2+qvec(2)**2+qvec(3)**2-qvec(0)**2
-!
-! impulse
-!
+c
+c impulse
+c
       zj_mu=0
       tiz=dble(itiz)/2
       tpinz=tcrz+tiz
       if(abs(tpinz-tpiz).gt.0.50001)
      &  stop 'isospin (input parameter) mismatch'
-!
+c
       do ix=0,3
       pcm(ix)=xpnuc(ix)+xk(ix)
       pnucx(ix)=xpnuc(ix)
@@ -317,7 +211,7 @@ c
       end do
       px(0)=sqrt(fnuc2+px(1)**2+px(2)**2+px(3)**2) ! on mass shell is assumed
       call lorentz_trans(1,1,pcm,xlrs) ! Lab -> 2CM
-!
+c
       do ix1=0,3
       xk2cm(ix1)=0
       px2cm(ix1)=0
@@ -332,7 +226,7 @@ c
       pnuc2cm(0)=sqrt(fnuc2+pnuc2cm(1)**2+pnuc2cm(2)**2+pnuc2cm(3)**2)
       xk2cmabs=sqrt(xk2cm(1)**2+xk2cm(2)**2+xk2cm(3)**2)
       qx2cmabs=sqrt(qx2cm(1)**2+qx2cm(2)**2+qx2cm(3)**2)
-!
+c
       xz_pin=xk2cm(3)/xk2cmabs
       sxz_pin=sqrt(1-xz_pin**2)
       cphi_pin=xk2cm(1)/(sxz_pin*xk2cmabs)
@@ -368,20 +262,20 @@ c
       end do
       call setdfun(xz_q,dfun)
       endif                     ! irot_q
-!
+c
       call ylmsub(lmax,xz_pin,bleg_pin)
       call lorentz_trans(2,1,pcm,xlr) ! 2CM -> Lab
-!
+c
       wcm=sqrt(wcm2)
       call interpolate_amp(wcm,Q2,icomp,itiz,tpinz)
-!
+c
       do 131 igmb = igmb_final_meson,igmb_final_meson
       if(icgmb(igmb).eq.0) go to 131
       ic        = icgmb(igmb)
       am1=am1dt(ic)
       am2=am2dt(ic)
       if(wcm.lt.am1+am2)goto 131
-
+cccccccccccccccccc
       zcrnt=0
       do ixi1p = 1,imxi
       ixi1 = ixi_cnv(ixi1p)
@@ -435,7 +329,7 @@ c
       endif                     ! tpin.ge.abs(tpinz)
       end do                    ! i
       end do                    ! ixi1p
-! Conversion from helicity basis to spin basis
+c Conversion from helicity basis to spin basis
       if(irot_q==1)then
       zcrntx=zcrnt
       do igm1=-1,igm1_max,igm1_step
@@ -448,19 +342,19 @@ c
       zcrnt(isfx,isix,igm1)=zcrnt(isfx,isix,igm1)
      &  +dfun(1,-lambda_N,isi)
      &  *fn_sign(lambda_N+isi)*zphi_qs(isi+lambda_N)
-cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to account for the used base
+ccc     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to account for the used base
      &    * zcrntx(isfx,lamx,igm1)
       end do
       end do
       end do
       end do
       endif                     ! irot_q=1
-! spin rotation
+c spin rotation
       if(irot_spin==1)then
       zcrntx=zcrnt
-!     for the D-function (zmxpi) of the incoming gamma-N
+c     for the D-function (zmxpi) of the incoming gamma-N
       call rspin(pcm,px,px2cm,zmxpi)
-!     for the D-function(zmxpf) of the final pi-N
+c     for the D-function(zmxpf) of the final pi-N
       call rspin(pcm,pnucx,pnuc2cm,zmxpf)
       zcrnt=0
       do igm1=-1,igm1_max,igm1_step
@@ -483,7 +377,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       end do                    ! igm1
       endif                     ! irot_spin=1
   131 continue                  ! igmb
-
+c
       do is1=-1,1,2
       do is2=-1,1,2
       is1x=isp(is1)
@@ -505,16 +399,14 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       zj_mu=zj_mu*fac
       return
       end
-
-      
-
+c
       subroutine read_amp(isl,icomp,ipar,nnresc,npiresc
      &  )
       implicit real*8 (a-h,o-y)
       implicit complex*16 (z)
       parameter (maxmb=1 ,maxlsj=20,ndimd=300,maxmom=1)
       common/masses/am1dt(maxmb),am2dt(maxmb)
-      common / cscal / pi,fm
+      common / cscal / pi,fm,alfa
       common /icgmb / icgmb(5)
       common / zmtx / zmtx(8,maxlsj,5,5)
       common/chdat1/njLs,jpind(maxlsj) ,Lpind(maxlsj)
@@ -556,15 +448,15 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       data id2 /6,5,4,8/
       save modex,pmom_mid,i_offshell2,tmax,ndir
       save wcm_old,Q2_old,itiz_old,tpinz_old
-
+c
       modex=1
       eps_tpin=0.01
       tmax=tm_f+.5d0+eps_tpin
-
+c
       if(isl==1)then
       open(10,file='sl_EW.dat',form='formatted',status='old')
       else
-      open(10,file="data/dcc_EW.dat",form='formatted',status='old')
+      open(10,file='data/dcc_EW.dat',form='formatted',status='old')
       endif 
       read(10,*) njLs
       jmax=0
@@ -574,17 +466,17 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       jmax=max(jmax,jpind(i))
       lmax=max(lmax,Lpind(i))
       end do
-
+c
       if(jmax.gt.2*njmx-1)stop 'njmx error'
       if(lmax.gt.2*lpimax)stop 'lpimax error'
-!      
-! set nLsdt
+c      
+c set nLsdt
       do i  =1,njLs
       jpin  =jpind(i)
       Lpin  =Lpind(i)
       ispin =ispind(i)
       ipar00=(-1)**(Lpin/2 +2+1)
-
+c
       do 50 ic=1,maxmb
       is1=is1dt(ic)
       is2=is2dt(ic)
@@ -605,7 +497,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       nLsdt(ic,i)  = ni
    50 continue       
       end do                    ! end loop i
-
+c
       read(10,*) maxw,mxq2
       do i=1,maxw
       read(10,*) wcms(i)
@@ -618,18 +510,18 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       if(maxw.gt.ndeu)stop 'ndeu error 2'
       if(maxw.gt.maxwcm)stop 'maxwcm error'
       if(mxq2.gt.maxq2)stop 'maxq2 error'
-
+c
       idata(1)=1                ! bare
       idata(2)=1                ! dressed
       idata(3)=1                ! non-res      
-! stable final states
+c stable final states
       mxp=0
       ip=mxp+1
       read(10,*) namp1,namp2,namp3
       do ix=1,namp1
       read(10,2800,end=100)ie,iq,idx,ipw,igmb,ils
      &    ,za(1),za(2),za(3)
-! za(i) i=1:bare; 2:dressed N*; 3: non-res
+c za(i) i=1:bare; 2:dressed N*; 3: non-res
       if(igmb.le.mbs.and.ipw.le.njLs)then
       zampv(iq,ie,ip,idx,ipw,igmb,ils)=0
       do n=1,3
@@ -639,7 +531,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       endif 
       end do
   100 continue
-
+c
       isign=1
       if(mode==10.or.mode==11)isign=-1 ! correct phase for neutron amp; isospin CG multiplied later
       do ix=1,namp2
@@ -654,7 +546,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       endif 
       end do
   106 continue
-
+c
       if(mode.lt.10)then        ! neutrino case
       do ix=1,namp3
       read(10,2800,end=110)ie,iq,idx,ipw,igmb,ils
@@ -671,9 +563,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       endif 
  2800 format (6i4,10g20.10)
       close(10) 
-
-!conversion 1/2p 1/2n -> 1/2v 1/2s basis
-
+c
+c conversion 1/2p 1/2n -> 1/2v 1/2s basis
+c
       if(mode.lt.10)then        ! neutrino case
       do 510 ipw=1,njLs
       if(itpind(ipw)==3)goto 510
@@ -692,9 +584,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   500 continue 
   510 continue
       endif                     ! mode < 10
-
-! z-component from time component via current conservation for vector current
-! V_z = V_0 * omega_cm / q_cm
+c
+c z-component from time component via current conservation for vector current
+c V_z = V_0 * omega_cm / q_cm
       do 535 ie=1,maxw
         wcmx=wcms(ie)
       do 535 iq=1,mxq2
@@ -715,21 +607,21 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
      &  =zampv_is(iq,ie,ip,idx,ipw,igmb,ils)*xxx
   530 continue 
   535 continue 
-
+c
       return
-
-! note : interpolation of structure function to be done
-
-! production amp for IA diagrams
+c
+c note : interpolation of structure function to be done
+c
+c production amp for IA diagrams
       entry interpolate_amp(wcm,Q2,icomp,itiz,tpinz)
-
+c
       if(abs(wcm-wcm_old).lt.1d-5.and.abs(Q2-Q2_old).lt.1d-5
      &  .and.itiz==itiz_old.and.abs(tpinz-tpinz_old).lt.1d-5)return
       wcm_old=wcm
       Q2_old=Q2
       itiz_old=itiz
       tpinz_old=tpinz
-
+c
       iax=1                     ! axial
       ivec=1                    ! vector
       i_pion_pole=1             ! pion-pole term in axial current
@@ -737,12 +629,12 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       ip=mxp+1
       idxp_mx=4
       idxp_mx_v=3
-
+c
       qc0=(wcm**2-fnuci**2-Q2)/(2*wcm)
       qc2=Q2+qc0**2
       qc=sqrt(qc2)
       xxx=qc0/qc
-
+c
       if(Q2==0d0)Q2=1d-6/fm**2
       do i=1,maxw
         if(wcm.le.wcms(i))goto 200
@@ -764,7 +656,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
         write(*,*) Q2*fm**2*1d-6
         stop 'Q2 interpolation error 2'
       endif
-
+c
       if(iw.le.2)then
         iw_start=1
         iw_end=4
@@ -785,7 +677,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
         iq_start=iq-2
         iq_end=iq+1
       endif 
-
+c
       iwx=0
       do iw=iw_start,iw_end
       iwx=iwx+1
@@ -798,9 +690,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       end do
       xout(1)=wcm
       xout2(1)=q2
-
+c
       if(mode.lt.10)then
-! axial current interpolation
+c axial current interpolation
       do 310 ipw=1,njLs
       tpin=dble(itpind(ipw))/2
       if(tpin+eps_tpin.gt.abs(tpinz).and.tmax.gt.tpin)then
@@ -817,7 +709,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       do 300 igmb=igmb_final_meson,igmb_final_meson
       ic        = icgmb(igmb)
       do 300 ils=1,nLsdt(ic,ipw)
-! stable final states
+c stable final states
       iqx=0
       do iq=iq_start,iq_end
       iqx=iqx+1
@@ -840,7 +732,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   300 continue 
       endif                     ! tpin.ge.abs(tpinz)
   310 continue
-! adding pion pole term
+c adding pion pole term
       if(i_pion_pole==1.and.mode.gt.0)then
         fpio2=fpio**2
         qc0=(wcm**2-fnuci**2-Q2)/(2*wcm)
@@ -864,7 +756,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       else                      ! mode=10 electron scattering; mode=20 photon absorption
       zmtx=0
       endif                     ! mode
-! vector current interpolation -> V-A
+c vector current interpolation -> V-A
       if(itiz==1)then         ! proton target
       do 610 ipw=1,njLs
       tpin=dble(itpind(ipw))/2
@@ -881,7 +773,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       do idxp=idxp_start,idxp_mx_v
         idx=id1(idxp)
         idxx=id2(idxp)
-! stable final states        
+c stable final states        
       iqx=0
       do iq=iq_start,iq_end
       iqx=iqx+1
@@ -904,7 +796,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       zmtx(idxx,ipw,igmb,ils)=zmtx(idxx,ipw,igmb,ils)
      &  +zzz*phv
       if(idxp==3)then
-! zth component from 0-th component using current conservation
+c zth component from 0-th component using current conservation
       zmtx(7,ipw,igmb,ils)=zmtx(7,ipw,igmb,ils)+zzz*xxx
       zmtx(8,ipw,igmb,ils)=zmtx(8,ipw,igmb,ils)+zzz*xxx*phv
       endif 
@@ -912,7 +804,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   600 continue 
       endif                     ! tpin.ge.abs(tpinz)
   610 continue
-
+c
       else if(itiz==-1)then      ! neutron target
       do 615 ipw=1,njLs
         phv=(-1)**((jpind(ipw)-1)/2 + Lpind(ipw)/2+1)
@@ -930,7 +822,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       do idxp=idxp_start,idxp_mx_v
         idx=id1(idxp)
         idxx=id2(idxp)
-! stable final states        
+c stable final states        
       iqx=0
       do iq=iq_start,iq_end
       iqx=iqx+1
@@ -953,7 +845,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       zmtx(idxx,ipw,igmb,ils)=zmtx(idxx,ipw,igmb,ils)
      &  +zzz*phv
       if(idxp==3)then
-! zth component from 0-th component using current conservation
+c zth component from 0-th component using current conservation
       zmtx(7,ipw,igmb,ils)=zmtx(7,ipw,igmb,ils)+zzz*xxx
       zmtx(8,ipw,igmb,ils)=zmtx(8,ipw,igmb,ils)+zzz*xxx*phv
       endif 
@@ -966,7 +858,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       do idxp=idxp_start,idxp_mx_v
         idx=id1(idxp)
         idxx=id2(idxp)
-! stable final states        
+c stable final states        
       iqx=0
       do iq=iq_start,iq_end
       iqx=iqx+1
@@ -989,7 +881,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       zmtx(idxx,ipw,igmb,ils)=zmtx(idxx,ipw,igmb,ils)
      &  +zzz*phv
       if(idxp==3)then
-! zth component from 0-th component using current conservation
+c zth component from 0-th component using current conservation
       zmtx(7,ipw,igmb,ils)=zmtx(7,ipw,igmb,ils)+zzz*xxx
       zmtx(8,ipw,igmb,ils)=zmtx(8,ipw,igmb,ils)+zzz*xxx*phv
       endif 
@@ -998,9 +890,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       endif 
   615 continue
       endif                     ! itiz
-
-! isoscalar vector current for N!      
-
+c
+c isoscalar vector current for NC      
+c
       if(mode.le.-1)then
       do 720 ipw=1,njLs
       tpin=dble(itpind(ipw))/2
@@ -1039,7 +931,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       zmtx(idxx,ipw,igmb,ils)=zmtx(idxx,ipw,igmb,ils)
      &  +zzz*phv
       if(idxp==3)then
-! zth component from 0-th component using current conservation
+c zth component from 0-th component using current conservation
       zmtx(7,ipw,igmb,ils)=zmtx(7,ipw,igmb,ils)+zzz*xxx
       zmtx(8,ipw,igmb,ils)=zmtx(8,ipw,igmb,ils)+zzz*xxx*phv
       endif 
@@ -1049,19 +941,94 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   720 continue
       endif                     ! mode.le.-1 
       return
-
+c
       end
-
-
-
-
+c
+      subroutine set_param
+      implicit real*8 (a-h,o-y)
+      implicit complex*16 (z) 
+      parameter (maxmb=1)
+      common / cscal / pi,fm,alfa
+      common/masses/am1dt(maxmb),am2dt(maxmb)
+      common /icgmb / icgmb(5)
+      fm      = 197.3289d0
+      pi = atan(1d0)*4d0
+      alfa = 1/137.0359895d0
+c
+      imwpon=0
+      isw0=0
+      isigma=1
+c
+      icgmb    = 0
+      icgmb(1) = 1 ! igmb=1 pn
+      icgmb(2) = 2 ! igmb=2 en
+      icgmb(3) = 6 ! igmb=3 on
+      icgmb(4) = 7 ! igmb=4 kl
+      icgmb(5) = 8 ! igmb=5 ks
+c=============================================
+c    DEFINE MASSES FOR CHANNELS
+c=============================================
+c
+c     1 :pi-N      2 :eta-N      3 :pi-Delta
+c     4 :sigma-N   5 :rho-N      6 :omega-N
+c     7 :K-Lambda  8 :K-Sigma
+c
+      amn   = 938.5d0
+      api   = 138.5d0
+c      aeta  = 547.45d0
+      aeta  = 548.d0
+      amdel = 1299.d0
+c      asigma= 896.8d0
+c      arho  = 811.7d0
+      asigma= 897.d0
+      arho  = 812.d0
+c
+      aomega= 782.d0  
+      akaon = 495.d0  
+      amlam = 1115.7d0 
+      amsig = 1193.d0 
+c
+      if(isw0.eq.1) then   !JLMS
+      amn   = 940.d0
+      api   = 140.d0
+      aeta  = 550.d0
+      amdel = 1299.d0
+      asigma= 897.d0
+      arho  = 812.d0
+      end if
+      if(isigma.eq.1) then !new D->piN,sig->pipi f.f.
+      amdel = 1280.d0
+      asigma= 700.d0
+      end if
+c
+!mwp's values
+      if(imwpon.eq.1) then
+      amn   = 938.5d0
+      api   = 138.5d0
+      aeta  = 547.5d0
+      amdel = 1300.d0
+      asigma= 898.6d0
+      arho  = 811.7d0
+      aomega= 782.6d0
+      end if
+c
+      am1dt(1) = api
+      am2dt(1) = amn
+      do i=1,1
+      am1dt(i) = am1dt(i)/fm
+      am2dt(i) = am2dt(i)/fm
+      end do
+      return
+      end
+c
+c
       
       subroutine ylmsub(lmax,z,bleg)
       implicit real*8(a-h,o-z)
-      common / cscal / pi,fm
+      common / cscal / pi,fm,alfa
       dimension bleg(0:8,-8:8),bc(0:30),bb(0:30,0:30)
       save bb,iniylm
-
+c
       if(iniylm.eq.0)then
       bc(0)   = 1
       do 100 k= 1,30
@@ -1073,9 +1040,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   200 continue
       iniylm   = 1
       end if
-
+c
       z1         = sqrt(1.d0 - z**2) + 1d-20 ! avoid 0; corrected on 030916
-!      z1         = sqrt(1.d0 - z**2)
+c      z1         = sqrt(1.d0 - z**2)
       z2         = z/z1
       bleg(0,0)  = 1.d0
       do 300 l   = 1,lmax
@@ -1087,7 +1054,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
      &              / dble((l-m)*(l+m+1))
   310 continue
   300 continue
-
+c
       do 400 l   = 0,lmax
       do 400 m   = 0,l
       fac        = sqrt(dble(2*l+1)/4.d0/pi*bb(l-m,l+m))*
@@ -1098,7 +1065,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       return
       end
       
-
+c
       subroutine lorentz_trans(i,j,pcm,xlr)
       implicit real*8 (a-h,o-y)
       implicit complex*16 (z)
@@ -1127,13 +1094,13 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       
       return
       end
-!------------------------------------------------------------
+c------------------------------------------------------------
       subroutine bifc
-!------------------------------------------------------------
+c------------------------------------------------------------
       implicit real*8(a-h,o-z)
       parameter (n=100,m=50)
       common / fdbn / h(0:n),dh(-1:m),bb(0:n,0:n)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+c- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       e=1.0d0 
       h(0)=e 
       dh(-1)=e 
@@ -1165,14 +1132,14 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
    30 continue
       return 
       end
-!------------------------------------------------------------
+c------------------------------------------------------------
       double precision function cbg(a,x,b,y,c,z)
-!------------------------------------------------------------
+c------------------------------------------------------------
       implicit real*8(a-h,o-z)
       common / fdbn / h(0:100),dh(-1:50),bb(0:100,0:100)
       parameter (de=0.01d0,t=1.0d0) 
       prt(i)=1-2*mod(i,2)
-!- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+c- - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       cbg=0.d0 
       if(max(abs(a-b)-c,c-a-b,abs(x+y-z),
      &  x-a,-x-a,y-b,-y-b).gt.de) return  
@@ -1185,7 +1152,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       ka=int(a1+a)
       kb=int(b1+b)
       kc=int(c1+c)
-!      ks=int(ka+kb)
+c      ks=int(ka+kb)
       is=int(a1+b+c)
       ia=is-ka 
       ib=is-kb 
@@ -1200,52 +1167,52 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
      &  /(bb(kb,is)*bb(ja,ka)*bb(jb,kb)*bb(jc,kc))
       return 
       end
-!-----------------------------------------------------------
+c------------------------------------------------------------
       subroutine spline (n, x, y, nout,xout,yout)
       implicit real*8(a-h,o-z)
       parameter(ndim=60)
       dimension x(ndim),y(ndim),b(ndim),c(ndim),d(ndim),
      &          xout(ndim),yout(ndim)
-
-!  the coefficients b(i), c(i), and d(i), i=1,2,...,n are computed
-!  for a cubi! interpolating spline
-
-!    s(x) = y(i) + b(i)*(x-x(i)) + c(i)*(x-x(i))**2 + d(i)*(x-x(i))**3
-
-!    for  x(i) .le. x .le. x(i+1)
-
-!  input..
-
-!    n = the number of data points or knots (n.ge.2)
-!    x = the abscissas of the knots in strictly increasing order
-!    y = the ordinates of the knots
-
-!  output..
-
-!    b, c, d  = arrays of spline coefficients as defined above.
-
-!  using  p  to denote differentiation,
-
-!    y(i) = s(x(i))
-!    b(i) = sp(x(i))
-!    c(i) = spp(x(i))/2
-!    d(i) = sppp(x(i))/6  (derivative from the right)
-
-!  the accompanying function subprogram  seval  can be used
-!  to evaluate the spline.
-
-
-!      integer nm1, ib, i
-!      double precision t
-
+c
+c  the coefficients b(i), c(i), and d(i), i=1,2,...,n are computed
+c  for a cubic interpolating spline
+c
+c    s(x) = y(i) + b(i)*(x-x(i)) + c(i)*(x-x(i))**2 + d(i)*(x-x(i))**3
+c
+c    for  x(i) .le. x .le. x(i+1)
+c
+c  input..
+c
+c    n = the number of data points or knots (n.ge.2)
+c    x = the abscissas of the knots in strictly increasing order
+c    y = the ordinates of the knots
+c
+c  output..
+c
+c    b, c, d  = arrays of spline coefficients as defined above.
+c
+c  using  p  to denote differentiation,
+c
+c    y(i) = s(x(i))
+c    b(i) = sp(x(i))
+c    c(i) = spp(x(i))/2
+c    d(i) = sppp(x(i))/6  (derivative from the right)
+c
+c  the accompanying function subprogram  seval  can be used
+c  to evaluate the spline.
+c
+c
+c      integer nm1, ib, i
+c      double precision t
+c
       nm1 = n-1
       if ( n .lt. 2 ) return
       if ( n .lt. 3 ) go to 50
-
-!  set up tridiagonal system
-
-!  b = diagonal, d = offdiagonal, ! = right hand side.
-
+c
+c  set up tridiagonal system
+c
+c  b = diagonal, d = offdiagonal, c = right hand side.
+c
       d(1) = x(2) - x(1)
       c(2) = (y(2) - y(1))/d(1)
       do 10 i = 2, nm1
@@ -1254,10 +1221,10 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
          c(i+1) = (y(i+1) - y(i))/d(i)
          c(i) = c(i+1) - c(i)
    10 continue
-
-!  end conditions.  third derivatives at  x(1)  and  x(n)
-!  obtained from divided differences
-
+c
+c  end conditions.  third derivatives at  x(1)  and  x(n)
+c  obtained from divided differences
+c
       b(1) = -d(1)
       b(n) = -d(n-1)
       c(1) = 0.d0
@@ -1267,27 +1234,27 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       c(n) = c(n-1)/(x(n)-x(n-2)) - c(n-2)/(x(n-1)-x(n-3))
       c(1) = c(1)*d(1)**2/(x(4)-x(1))
       c(n) = -c(n)*d(n-1)**2/(x(n)-x(n-3))
-
-!  forward elimination
-
+c
+c  forward elimination
+c
    15 do 20 i = 2, n
          t = d(i-1)/b(i-1)
          b(i) = b(i) - t*d(i-1)
          c(i) = c(i) - t*c(i-1)
    20 continue
-
-!  back substitution
-
+c
+c  back substitution
+c
       c(n) = c(n)/b(n)
       do 30 ib = 1, nm1
          i = n-ib
          c(i) = (c(i) - d(i)*c(i+1))/b(i)
    30 continue
-
-!  c(i) is now the sigma(i) of the text
-
-!  compute polynomial coefficients
-
+c
+c  c(i) is now the sigma(i) of the text
+c
+c  compute polynomial coefficients
+c
       b(n) = (y(n) - y(nm1))/d(nm1) + d(nm1)*(c(nm1) + 2*c(n))
       do 40 i = 1, nm1
          b(i) = (y(i+1) - y(i))/d(i) - d(i)*(c(i+1) + 2*c(i))
@@ -1297,7 +1264,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       c(n) = 3*c(n)
       d(n) = d(n-1)
       go to 100
-
+c
    50 b(1) = (y(2)-y(1))/(x(2)-x(1))
       c(1) = 0.d0
       d(1) = 0.d0
@@ -1305,9 +1272,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       c(2) = 0.d0
       d(2) = 0.d0
       go to 100
-
-!    calculate yout
-
+c
+c    calculate yout
+c
  100  continue
       do 200 j=1,nout
       xo      = xout(j)
@@ -1324,12 +1291,12 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
   200 continue
       return
       end
-
+c
       subroutine rspin(ptot,p00,pc,zmx)
       implicit real*8(a-h,o-y)
       implicit complex*16(z)
       common / ccoup / fpio,fnuc,flep,fnuci,fdeu,feta,fmfin
-      common / cscal / pi,fm
+      common / cscal / pi,fm,alfa
       dimension p00(0:3),pc(0:3), ptot(0:3),pcx(0:3)
       dimension zmx(2,2),zmxs(2,2),
      1 zmx1(2,2),zmxp(2,2),zmxpc(2,2),zmxptot(2,2)
@@ -1337,9 +1304,9 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       dimension pv(3),pcv(3),vbeta(3)
       data idata / 1 /
       save idata,zsigm
-
-!      Pauli matrices
-
+c
+c      Pauli matrices
+c
       amn=fnuc
        if(idata==1)then
        Z=cmplx(0.,1.)
@@ -1357,11 +1324,11 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
        ZSIGM(2,2,3)=-1
        idata=0 
        endif 
-
+c
        do i=1,3
        vbeta(i)=ptot(i)/ptot(0)
        end do
-
+c
         p0=p00(0)
         amtot=sqrt(ptot(0)**2-ptot(1)**2-ptot(2)**2-ptot(3)**2)
         do  i1=1,2
@@ -1382,7 +1349,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
         zmxpc=zmxpc*fac
         fac=1d0/sqrt(2d0*amtot*(ptot(0)+amtot))
         zmxptot=zmxptot*fac
-
+c
         do i1=1,2
         do i2=1,2
         zmx1(i1,i2)=0.
@@ -1391,7 +1358,7 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
         end do
         end do
         end do
-
+c
         do i1=1,2
         do i2=1,2
         zmx(i1,i2)=0.
@@ -1400,11 +1367,11 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
         end do
         end do
         end do
-!        do i1=1,2
-!        do i2=1,2
-!        zmxs(i1,i2)=conjg(zmx(i1,i2))
-!        end do
-!        end do
+c        do i1=1,2
+c        do i2=1,2
+c        zmxs(i1,i2)=conjg(zmx(i1,i2))
+c        end do
+c        end do
        return
        end
       subroutine setdfun(x,dfun)
@@ -1412,38 +1379,38 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
       parameter (njmx=5)
       common /para_dfn / jmax
       dimension dfun(2*njmx-1,-2*njmx+1:2*njmx-1,-2*njmx+1:2*njmx-1)
-!      parameter(max_l=27)
-!      common / cdff / xgau(100),wgau(100),dfun(2*njmx-1,-5:5,-5:5,100)
-!     & ,fleg(0:max_l,100)
-!      common / cdfi / meshx,mxx,mxj,mxm
-!      dimension fle(0:max_l),fled(-1:max_l),fledd(-1:max_l)
-!       dimension xg(3),wg(3)
-!       data xg/ -0.7745966692D0,0.d0,0.7745966692D0/
-!       data wg/ 0.5555555555d0,0.8888888888d0,0.5555555555d0/
-!       data ngaus/3/
+c      parameter(max_l=27)
+c      common / cdff / xgau(100),wgau(100),dfun(2*njmx-1,-5:5,-5:5,100)
+c     & ,fleg(0:max_l,100)
+c      common / cdfi / meshx,mxx,mxj,mxm
+c      dimension fle(0:max_l),fled(-1:max_l),fledd(-1:max_l)
+c       dimension xg(3),wg(3)
+c       data xg/ -0.7745966692D0,0.d0,0.7745966692D0/
+c       data wg/ 0.5555555555d0,0.8888888888d0,0.5555555555d0/
+c       data ngaus/3/
 
       dfun = 0
-!      fleg = 0
+c      fleg = 0
+c
+c      mxx       = meshx * ngaus
+c      dgux      = 2.d0/dble(2*meshx)
+c      idx       = 1
+c      do 110 nx = 1,meshx
+c      do 110 ng = 1,ngaus
+c      xgau(idx)   = dgux*(xg(ng)+dble(2*nx-1))-1.d0
+c      wgau(idx)   = wg(ng)*dgux
+c      x         = xgau(idx)
 
-!      mxx       = meshx * ngaus
-!      dgux      = 2.d0/dble(2*meshx)
-!      idx       = 1
-!      do 110 nx = 1,meshx
-!      do 110 ng = 1,ngaus
-!      xgau(idx)   = dgux*(xg(ng)+dble(2*nx-1))-1.d0
-!      wgau(idx)   = wg(ng)*dgux
-!      x         = xgau(idx)
-
-!       call legen(x,fle)
-!       do 111 lx = 0,max_l
-!  111  fleg(lx,idx) = fle(lx)
+c       call legen(x,fle)
+c       do 111 lx = 0,max_l
+c  111  fleg(lx,idx) = fle(lx)
 
       ss        = sqrt((1.d0 - x)/2.d0)
       cc        = sqrt((1.d0 + x)/2.d0)
-
+c
       do 120 lx = 1,jmax,2
-!      do 120 lx = 1,2*njmx-1,2
-!      maxm      = min(lx,mxm)
+c      do 120 lx = 1,2*njmx-1,2
+c      maxm      = min(lx,mxm)
       maxm      = lx
       do 130 mf = -maxm,maxm,2
       do 140 mi = -maxm,maxm,2
@@ -1482,22 +1449,22 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
  130  continue
  120  continue
 
-!      idx       = idx + 1
-! 110  continue
-
+c      idx       = idx + 1
+c 110  continue
+c
       return
       end
       real*8 function fblmmx(l,mf,mi,cc,ss)
       implicit real*8(a-h,o-z)
       parameter (n=100,m=50)
       common / fdbn / h(0:n),dh(-1:m),bb(0:n,0:n)
-
+c
       fblmmx  = 0
       if(l.lt.0.or.abs(mf).gt.l.or.abs(mi).gt.l)return
-
-!      t2     = theta/2.d0
-!      c!     = cos(t2)
-!      ss     = sin(t2)
+c
+c      t2     = theta/2.d0
+c      cc     = cos(t2)
+c      ss     = sin(t2)
       jmip   = l  + mi
       jmim   = l  - mi
       jmfp   = l  + mf
@@ -1518,5 +1485,4 @@ cc!     &    *(-1)**((1-isi)/2)*zphi_qs(isi-lambda_N) ! modified as above to acc
  100  continue
       fblmmx     = sum
       return
-      end function
-
+      end

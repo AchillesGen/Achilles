@@ -73,8 +73,8 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::ve
 void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
 
     // Mass and width of "resonance"
-    double res_mass = 1232.;
-    double res_width = 120.;
+    //double res_mass = 1232.;
+    //double res_width = 120.;
 
     auto p01 = (mom[0] + mom[1]);
     auto s = p01.M2();
@@ -85,10 +85,10 @@ void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vec
     double s23_min = std::max(pow(sqrt(s2) + sqrt(s3), 2), 1E-8);
 
     // old
-    auto s23 = MassivePropagatorMomenta(res_mass, res_width, s23_min, s23_max, rans[0]);
+    //auto s23 = MassivePropagatorMomenta(res_mass, res_width, s23_min, s23_max, rans[0]);
 
     // new
-    //auto s23 = s23_min + (s23_max - s23_min)*rans[0];
+    auto s23 = s23_min + (s23_max - s23_min)*rans[0];
 
     FourVector p23;
     // Should tmass = res_mass?
@@ -113,8 +113,8 @@ double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::
     // 4. Momentum of all outgoing parts of the leptonic tensor
 
     // Mass and width of "resonance"
-    double res_mass = 1232.;
-    double res_width = 120.;
+    //double res_mass = 1232.;
+    //double res_width = 120.;
     auto wt = 1.0;
 
     auto p01 = (mom[0] + mom[1]);
@@ -124,17 +124,17 @@ double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom, std::
     double s23_max = pow(sqrts - sqrt(s4),2);
     double s23_min = std::max(pow(sqrt(s2) + sqrt(s3), 2), 1E-8);
 
-    //auto s23 = (mom[2] + mom[3]).M2();
-    //rans[0] = (s23 - s23_min)/(s23_max - s23_min);
-    //wt *= 1./(s23_max - s23_min);
+    auto s23 = (mom[2] + mom[3]).M2();
+    rans[0] = (s23 - s23_min)/(s23_max - s23_min);
+    wt *= 1./(s23_max - s23_min);
 
-    wt *= MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((mom[2]+mom[3]).M2()),rans[0]);
+    //wt *= MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((mom[2]+mom[3]).M2()),rans[0]);
 
 
     wt *= TChannelWeight(mom[0],mom[1],mom[2]+mom[3],mom[4],0.0,m_alpha,m_ctmax,m_ctmin,m_amct,0,rans[1],rans[2]);
     wt *= Isotropic2Weight(mom[2],mom[3],rans[3],rans[4], m_ctmin, m_ctmax);
 
-    if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,3*3.-4.);
+    if (wt!=0.) wt = 1.0/wt/pow(2.*M_PI,(3*3.)-4.);
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     return 1/wt;
 }
@@ -148,7 +148,7 @@ double ThreeBodyMapper::MassivePropagatorMomenta(double mass, double width, doub
     auto s = mass2 + mw*tan(ymin + ran*(ymax -ymin));
 
     if(!(s>0) && !(s<0) && s!=0) {
-        spdlog::debug("  MassivePropMomenta produced a nan");
+        spdlog::debug("MassivePropMomenta produced a nan");
     }
 
     return s;
@@ -213,7 +213,7 @@ int ThreeBodyMapper::TChannelMomenta(FourVector p1in, FourVector p2in, FourVecto
     Boost(0,pin,help,p1out);
 
     p2out = pin + (-1.)*p1out;
-    spdlog::debug("  MassCheck: {}", CheckMasses({p1out, p2out}, {s1out, s2out}));
+    spdlog::debug("MassCheck: {}", CheckMasses({p1out, p2out}, {s1out, s2out}));
     return 0;
 
 }

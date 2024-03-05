@@ -68,7 +68,6 @@ contains
         call init(constants) ! load constants
 
         call dirac_matrices_in(constants%mp,constants%mn,constants%meta,constants%mpi0,constants%mpip,constants%pi,constants%hbarc)
-       !call dirac_matrices_in(constants%mp,constants%mn,constants%mn,constants%mn,constants%mn,constants%pi,constants%hbarc)
 
     end function
 
@@ -126,21 +125,27 @@ contains
         kpi4=mom_out(2)%to_array()
         
         q4=qvec%to_array()
+
+        !Set hard coded kinematics
+        !p4 = (/772.871731d0, 13.8063591d0, -74.2304546d0, 83.6718288d0/)
+        !pp4 = (/1052.14827d0, 28.5519856d0, -19.3847977d0, 474.841456d0/)
+        !kpi4 = (/159.169311d0, 22.1525867d0, -63.2254495d0, 51.2628948d0/)
+        !q4 = pp4 + kpi4 - p4         !This is the true q
         
+        !write(6,*)'p = ', p4
+        !write(6,*)'pf = ', pp4 
+        !write(6,*)'kpi = ', kpi4
+        !write(6,*)'q = ', q4
+
+        pmom=sqrt(sum(p4(2:4)**2))
+        E=-p4(1)+constants%mp
+        pke=sqrt(spectral_p%call(pmom,E))
+
         call current_init(p4,pp4,q4,kpi4) 
-       
-        !...check the order of the PID_out are correct in the fortran file
-        !write(*,*)'pid_in(1) = ',pids_in(1)
-        !write(*,*)'pid_out(1) = ',pids_out(1)
-        !write(*,*)'pid_out(2) = ',pids_out(2)
+
         call hadr_curr_matrix_el(pids_in(1),pids_out(1),pids_out(2),J_mu)
 
         cur=(0.0d0,0.0d0)
-        pmom=sqrt(sum(p4(2:4)**2))
-        
-        E=-p4(1)+constants%mqe
-        pke=sqrt(spectral_p%call(pmom,E))
-        !write(6,*) 'check', p4(1:4)
 
         do i=1,2
            do j=1,2
