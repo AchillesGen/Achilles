@@ -199,8 +199,18 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
 }
 
 std::vector<double> HardScattering::CrossSection(Event &event) const {
-    static constexpr std::complex<double> ii(0, 1);
-    using namespace achilles::Constant;
+
+    //Want to rotate whole system so that q is along z
+    auto q = event.Momentum()[1] - event.Momentum().back();
+    spdlog::debug("q before Rot = {}", q);
+    auto qalongz = q.AlignZ();
+    for(size_t i = 0; i < 5; ++i) {
+        spdlog::debug("p[{}] before Rot = {}", i, event.Momentum()[i]);
+        event.Momentum()[i] = event.Momentum()[i].Rotate(qalongz);
+        spdlog::debug("p[{}] after Rot = {}", i, event.Momentum()[i]);
+    }
+    q = q.Rotate(qalongz);
+    spdlog::debug("q after Rot = {}", q);
 
     // Calculate leptonic currents
     auto leptonCurrent = LeptonicCurrents(event.Momentum(), 100);
@@ -266,7 +276,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                     auto boson = lcurrent.first;
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()){
-                            amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu]*(ii*ee);//Need i*ee for resonance amplitude?
+                            amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
 			             }
                     }
                 }
@@ -310,6 +320,12 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
         //xsecs[i] = amps2[i]/spin_avg;
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
+    }
+
+    for(size_t i = 0; i < 5; ++i) {
+        spdlog::debug("p[{}] before Rotback = {}", i, event.Momentum()[i]);
+        event.Momentum()[i] = event.Momentum()[i].RotateBack(qalongz);
+        spdlog::debug("p[{}] after Rotback = {}", i, event.Momentum()[i]);
     }
 
     //delete specf;

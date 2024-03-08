@@ -116,12 +116,12 @@ achilles::Process_Group NuclearModel::AllowedStates(Process_Info info) {
                 case 0: // Same charge in inital and final
                     info.state = {{PID::proton()}, {PID::proton(),PID::pion0()}}; 
                         m_group.AddProcess(info);
-		            //info.state = {{PID::proton()}, {PID::neutron(),PID::pionp()}}; 
-                      //  m_group.AddProcess(info);
-                    //info.state = {{PID::neutron()}, {PID::neutron(),PID::pion0()}}; 
-                      //  m_group.AddProcess(info);
-		            //info.state = {{PID::neutron()}, {PID::proton(),-PID::pionp()}}; 
-                      //  m_group.AddProcess(info);
+		            info.state = {{PID::proton()}, {PID::neutron(),PID::pionp()}}; 
+                        m_group.AddProcess(info);
+                    info.state = {{PID::neutron()}, {PID::neutron(),PID::pion0()}}; 
+                        m_group.AddProcess(info);
+		            info.state = {{PID::neutron()}, {PID::proton(),-PID::pionp()}}; 
+                        m_group.AddProcess(info);
                     break;
                 case 1: // Final state has more charge than initial
                     info.state = {{PID::proton()}, {PID::neutron(),PID::pion0()}};

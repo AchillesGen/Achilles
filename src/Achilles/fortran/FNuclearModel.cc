@@ -50,12 +50,16 @@ std::vector<NuclearModel::Currents> FortranModel::CalcCurrents(const Event &even
     for(size_t i = 0; i < ids.size(); ++i) {
         if(ParticleInfo(ids[i]).IsHadron()) {
             moms.push_back(event.Momentum()[i]);
+            spdlog::debug("momenum = {}", event.Momentum()[i]);
         } else {
             // First lepton is always initial state, rest are final state
             q += lepton*event.Momentum()[i];
             lepton = -1;
         }
     }
+
+    spdlog::debug("q = {}", q);
+
     // Loop over the allowed initial states
     auto ffVals = EvalFormFactor(-q.M2()/1.0_GeV/1.0_GeV);
     for(size_t i = 0; i < m_group.Processes().size(); ++i) {

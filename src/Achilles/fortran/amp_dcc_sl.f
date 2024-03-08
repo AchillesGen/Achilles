@@ -132,8 +132,8 @@ c
       fpio1 = 139.57018d0/fm
       fpio0 = 134.9764d0/fm
       fnuc=(fpro+fneu)/2
-      !fpio=(2*fpio1+fpio0)/3
-      fpio = fpio0
+      fpio=(2*fpio1+fpio0)/3
+      !fpio = fpio1
       fnuc2=fnuc**2
       fpio2=fpio**2
       fnuci = fnuc

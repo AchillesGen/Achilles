@@ -2,7 +2,7 @@ module dirac_matrices_pi
     implicit none
     integer*4, private, parameter :: nspin_in=2,nspin_f=2    
     integer*4, private,parameter :: id_p=1,id_n=-1,id_pip=1,id_pi0=0,id_pim=-1   
-    real*8, private,save :: xmn,xmp,xm,xmeta,xmpi0,xmpi1,pi,hbarc
+    real*8, private,save :: xmn,xmp,xm,xmeta,xmpi0,xmpi1,pi,hbarc,xmnuc
     real*8, private, save ::  p1(4),pp1(4),q(4),kpi(4)
 contains
 
@@ -17,9 +17,11 @@ subroutine dirac_matrices_in(xmp_in,xmn_in,xmeta_in,xmpi0_in,xmpi1_in,pi_in,hbar
     xmpi1=xmpi1_in
     pi=pi_in
     hbarc=hbarc_in
+    xmnuc = (xmn + xmp)/2.0d0
 
     write(6,*)'xmp = ', xmp  
-    write(6,*)'xmn = ', xmn  
+    write(6,*)'xmn = ', xmn 
+    write(6,*)'xmnuc = ', xmnuc 
     write(6,*)'xmeta = ', xmeta  
     write(6,*)'xmpi0 = ', xmpi0  
     write(6,*)'xmpi1 = ', xmpi1  
@@ -42,7 +44,7 @@ subroutine current_init(p1_in,pp1_in,q_in,kpi_in)
     w=q(1)
     kpi=kpi_in
     q(1)=w+p1(1)
-    p1(1)=sqrt(p1(2)**2+p1(3)**2+p1(4)**2+xmp**2) 
+    p1(1)=sqrt(p1(2)**2+p1(3)**2+p1(4)**2+xmnuc**2) 
     q(1)=q(1)-p1(1)
     
     return
@@ -101,8 +103,8 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
    !write(6,*)'q = ', q
 
    
-   !call amplitude(q,pp1,kpi,10,0,hid1,mesid1,1,zjmup(:,:,:))
-   call amplitude(q,pp1,kpi,10,0,1,0,1,zjmup(:,:,:))
+   call amplitude(q,pp1,kpi,10,0,hid1,mesid1,1,zjmup(:,:,:))
+   !call amplitude(q,pp1,kpi,10,0,-1,-1,1,zjmup(:,:,:))
 
 
    !do i1=-1,1,2
@@ -118,7 +120,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
    J_mu(1,2,:)=zjmup(-1,1,:)
    J_mu(2,1,:)=zjmup(1,-1,:)  
    J_mu(2,2,:)=zjmup(1,1,:)
-   J_mu=J_mu/hbarc*xmp;!*2.0d0*xmn
+   J_mu=J_mu/hbarc*xmnuc/(2.0d0*pi)**3;!*2.0d0*xmn
    
    return
 end subroutine
