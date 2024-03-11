@@ -27,8 +27,8 @@ void LeptonicCurrent::Initialize(const Process_Info &process) {
 
     // TODO: Define couplings correctly
     if(charged_current) {
-        pid = init_neutrino ? (process.ids[0].AsInt() < 0 ? -24 : 24)
-                            : (process.ids[0].AsInt() < 0 ? 24 : -24);
+        pid = init_neutrino ? (process.ids[0].AsInt() < 0 ? 24 : -24)
+                            : (process.ids[0].AsInt() < 0 ? -24 : 24);
         coupl_right = 0;
         coupl_left = ee*i/(sw*sqrt(2));
         mass = Constant::MW;
@@ -54,7 +54,7 @@ bool LeptonicCurrent::NeutralCurrent(achilles::PID initial, achilles::PID final)
 }
 
 bool LeptonicCurrent::ChargedCurrent(bool neutrino, achilles::PID initial, achilles::PID final) const {
-    return initial.AsInt() - (2*neutrino - 1) == final.AsInt();
+    return std::abs(initial.AsInt()) - (2*neutrino - 1) == std::abs(final.AsInt());
 }
 
 achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
