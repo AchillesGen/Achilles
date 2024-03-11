@@ -112,21 +112,16 @@ contains
         integer(c_long), dimension(nout), intent(in) :: pids_out
         complex(c_double_complex), dimension(nspin, nlorentz), intent(out) :: cur
 
-        integer(c_size_t) :: i,j        
+        integer(c_size_t) :: i,j,mode      
         complex(c_double_complex), dimension(2) :: ffa
         complex(c_double_complex) :: ff1,ff2
         double precision, dimension(4) :: p4,pp4,kpi4,q4
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu
-        double precision :: pmom, E, pke, e_couple, alpha, mN
-        complex(c_double_complex) ::  ii 
+        double precision :: pmom, E, pke, e_couple, sw, alpha, mN, Vud
+        complex(c_double_complex) ::  ii, coupling
 
-        !DCC amplitudes must include fundamental QED vertex (i*e)
-        ii = (0.0d0,1.0d0)
-        alpha = 1.0d0/137.0d0
-        e_couple = sqrt(4.0d0*constants%pi*alpha)
-
-        mN = (constants%mn + constants%mp)/2.0d0
-
+        !Include coupling constant achilles
+        coupling = ff(5)
 
         p4=mom_in(1)%to_array()
         pp4=mom_out(1)%to_array()
@@ -145,19 +140,20 @@ contains
         !write(6,*)'kpi = ', kpi4
         !write(6,*)'q = ', q4
 
+        mN = (constants%mn + constants%mp)/2.0d0
         pmom=sqrt(sum(p4(2:4)**2))
         E=-p4(1)+mN
         pke=sqrt(spectral_p%call(pmom,E))
 
         call current_init(p4,pp4,q4,kpi4) 
 
-        call hadr_curr_matrix_el(pids_in(1),pids_out(1),pids_out(2),J_mu)
+        call hadr_curr_matrix_el(pids_in(1),pids_out(1),pids_out(2),ff,len_ff,J_mu)
 
         cur=(0.0d0,0.0d0)
 
         do i=1,2
            do j=1,2
-              cur(i+2*(j-1),:)= ii*e_couple*J_mu(j,i,:)*sqrt(spectral_p%call(pmom,E))
+              cur(i+2*(j-1),:)= coupling*J_mu(j,i,:)*sqrt(spectral_p%call(pmom,E))
             enddo   
         enddo
      return

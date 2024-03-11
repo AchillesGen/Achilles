@@ -51,13 +51,14 @@ subroutine current_init(p1_in,pp1_in,q_in,kpi_in)
 end subroutine
 
 
-subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
+subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,ff,len_ff,J_mu)
    implicit none     
    integer*4 :: i1,f1,i,j,ip
-   integer*8 :: hid1,hid2,mesid1
+   integer*8 :: hid1,hid2,mesid1,DCC_mode,sumIDS,len_ff
    real*8 :: PpiN(4), piNinv, Q2
    complex*16 :: zjmup(-1:1,-1:1,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
+   complex*16, dimension(len_ff):: ff
 
    if(hid1.eq.2212) then
            hid1=id_p
@@ -79,6 +80,46 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
            mesid1=id_pim       
    endif
 
+   ! Sum the hadron id's to decide 
+   ! which process we are doing
+   sumIDS = hid1 + hid2 + mesid1
+
+   DCC_mode = 0
+
+   !write(6,*)'hid1 = ', hid1
+   !write(6,*)'hid2 = ', hid2 
+   !write(6,*)'mesid = ', mesid1
+   !write(6,*)'DCC Resonance AFF x Coupling = ', ff(6)
+
+   ! Decide which mode we are using
+   ! Is the res axial form factor = 0?
+   if (ff(6).eq.(0.0d0,0.0d0)) then
+        DCC_mode = 10
+   else if (abs(sumIDS).eq.3) then
+        if (sumIDS.gt.0) then
+                DCC_mode = 1
+        else 
+                DCC_mode = 3
+        endif
+   else if (sumIDS.eq.0) then
+        if (hid1.lt.0) then
+                DCC_mode = 1
+        else 
+                DCC_mode = 3
+        endif
+   else if (abs(sumIDS).eq.2) then
+        DCC_mode = -1 
+   else if (abs(sumIDS).eq.1.and.hid1.eq.hid2) then
+        if (hid1.lt.0) then
+                DCC_mode = 1 
+        else
+                DCC_mode = 3
+        endif
+   else
+        DCC_mode = -1
+   endif
+
+   !write(6,*)'DCC mode = ', DCC_mode
 
    PpiN = kpi + pp1
    piNinv = PpiN(1)**2 - PpiN(2)**2 - PpiN(3)**2 - PpiN(4)**2
@@ -102,10 +143,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,J_mu)
    !write(6,*)'kpi = ', kpi
    !write(6,*)'q = ', q
 
-   
-   call amplitude(q,pp1,kpi,10,0,hid1,mesid1,1,zjmup(:,:,:))
-   !call amplitude(q,pp1,kpi,10,0,-1,-1,1,zjmup(:,:,:))
-
+   call amplitude(q,pp1,kpi,DCC_mode,0,hid1,mesid1,1,zjmup(:,:,:))
 
    !do i1=-1,1,2
    !     do f1=-1,1,2
