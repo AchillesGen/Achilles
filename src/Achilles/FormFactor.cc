@@ -416,3 +416,37 @@ void achilles::HyperonFormFactor::Evaluate(double Q2, FormFactor::Values &result
     result.F2sig0 = -sigma0_ratio * (1. / sqrt(2.)) * (result.F2p + 2. * result.F2n);
     result.FAsig0 = (1. - 2. * x) * result.FA / sqrt(2.);
 }
+
+// Resonance Dummy Form Factor
+achilles::ResonanceDummyVectorFormFactor::ResonanceDummyVectorFormFactor(const YAML::Node &config) {
+    resV = config["resV"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl> achilles::ResonanceDummyVectorFormFactor::Construct(achilles::FFType type,
+                                                                                const YAML::Node &node) {
+    Validate<ResonanceDummyVectorFormFactor>(type);
+    return std::make_unique<ResonanceDummyVectorFormFactor>(node);
+}
+
+void achilles::ResonanceDummyVectorFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("ResonanceDummyVectorFormFactor: Q2 = {}", Q2);
+    result.FresV = resV;
+
+}
+
+// Resonance Dummy Form Factor
+achilles::ResonanceDummyAxialFormFactor::ResonanceDummyAxialFormFactor(const YAML::Node &config) {
+    resA = config["resA"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl> achilles::ResonanceDummyAxialFormFactor::Construct(achilles::FFType type,
+                                                                                const YAML::Node &node) {
+    Validate<ResonanceDummyAxialFormFactor>(type);
+    return std::make_unique<ResonanceDummyAxialFormFactor>(node);
+}
+
+void achilles::ResonanceDummyAxialFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("ResonanceDummyAxialFormFactor: Q2 = {}", Q2);
+    result.FresA = resA;
+
+}
