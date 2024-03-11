@@ -56,7 +56,7 @@ class NuclearModel {
         using Current = std::vector<std::vector<std::complex<double>>>;
         using Currents = std::map<int, Current>;
         using FFInfoMap = std::map<int, std::vector<FormFactorInfo>>;
-        using FormFactorArray = std::array<std::complex<double>, 4>;
+        using FormFactorArray = std::array<std::complex<double>, 6>;
 
         NuclearModel() = default;
         NuclearModel(const YAML::Node&, const std::shared_ptr<Nucleus>&, FormFactorBuilder&);
