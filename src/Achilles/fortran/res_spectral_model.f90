@@ -143,7 +143,15 @@ contains
         mN = (constants%mn + constants%mp)/2.0d0
         pmom=sqrt(sum(p4(2:4)**2))
         E=-p4(1)+mN
-        pke=sqrt(spectral_p%call(pmom,E))
+
+        !write(6,*)'pid in = ', pids_in(1)
+        if(pids_in(1).eq.2212) then
+            !write(6,*)'proton spectral function'
+            pke=sqrt(spectral_p%call(pmom,E))
+        else
+            !write(6,*)'neutron spectral function'
+            pke=sqrt(spectral_n%call(pmom,E))
+        endif
 
         call current_init(p4,pp4,q4,kpi4) 
 
@@ -153,7 +161,7 @@ contains
 
         do i=1,2
            do j=1,2
-              cur(i+2*(j-1),:)= coupling*J_mu(j,i,:)*sqrt(spectral_p%call(pmom,E))
+              cur(i+2*(j-1),:)= coupling*J_mu(j,i,:)*pke
             enddo   
         enddo
      return
