@@ -7,6 +7,8 @@
 
 #include <optional>
 
+#include <optional>
+
 namespace PHASIC {
 class Channels;
 }
