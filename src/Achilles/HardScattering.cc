@@ -63,6 +63,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     using namespace achilles::Constant;
     // TODO: Double check form factors
     if(pid == 24) {
+
         const std::complex<double> coupl = Vud*ee*i/(sw*sqrt(2)*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F1n, -coupl},
@@ -77,6 +78,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
 
         results[{PID::carbon(), pid}] = {};
     } else if(pid == -24) {
+
         const std::complex<double> coupl = Vud*ee*i/(sw*sqrt(2)*2);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},
@@ -224,7 +226,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     auto q = event.Momentum()[1] - event.Momentum().back();
     spdlog::debug("q before Rot = {}", q);
     auto qalongz = q.AlignZ();
-    for(size_t i = 0; i < 5; ++i) {
+    for(size_t i = 0; i < event.Momentum().size(); ++i) {
         spdlog::debug("p[{}] before Rot = {}", i, event.Momentum()[i]);
         event.Momentum()[i] = event.Momentum()[i].Rotate(qalongz);
         spdlog::debug("p[{}] after Rot = {}", i, event.Momentum()[i]);
@@ -322,11 +324,6 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         //double E = -event.Momentum()[0].E() + Constant::mN;
         //double spec = specf(event.Momentum()[0].P(), E);
 
-        FourVector piN_p4 = event.Momentum()[2] + event.Momentum()[3];
-        double piN_inv = piN_p4.M();
-
-        if (piN_inv < 1076.957 || piN_inv > 1400.0) amps2[i] = 0.;
-        //else amps2[i] = pow(1_MeV,-2);
         spdlog::debug("contraction = {}", amps2[i]);
 
         //amps2[i] = 1.0;
@@ -338,11 +335,10 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         // Testing phase space only
         
         xsecs[i] = amps2[i]*Constant::HBARC2/spin_avg/flux*to_nb;
-        //xsecs[i] = amps2[i]/spin_avg;
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
 
-    for(size_t i = 0; i < 5; ++i) {
+    for(size_t i = 0; i < event.Momentum().size(); ++i) {
         spdlog::debug("p[{}] before Rotback = {}", i, event.Momentum()[i]);
         event.Momentum()[i] = event.Momentum()[i].RotateBack(qalongz);
         spdlog::debug("p[{}] after Rotback = {}", i, event.Momentum()[i]);

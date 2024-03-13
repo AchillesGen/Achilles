@@ -40,6 +40,7 @@ class LeptonicCurrent {
         void Initialize(const Process_Info&);
         FFDictionary GetFormFactor();
         Currents CalcCurrents(const std::vector<FourVector>&, const double&) const;
+        const double& GaugeBosonMass() const {return mass;}
 
     private:
         bool NeutralCurrent(PID, PID) const;
@@ -69,6 +70,7 @@ class HardScattering {
         // Process accessors
         void SetProcessGroup(const Process_Group&);
         Process_Group ProcessGroup() const { return m_group; }
+        const double& GaugeBosonMass() const {return m_current.GaugeBosonMass();}
 
         // Pointer operations
 #ifdef ENABLE_BSM

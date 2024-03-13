@@ -158,7 +158,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,ff,len_ff,J_mu)
    J_mu(1,2,:)=zjmup(-1,1,:)
    J_mu(2,1,:)=zjmup(1,-1,:)  
    J_mu(2,2,:)=zjmup(1,1,:)
-   J_mu=J_mu/hbarc*xmnuc/(2.0d0*pi)**3;!*2.0d0*xmn
+   J_mu=J_mu*2.0d0*xmn/hbarc
    
    return
 end subroutine

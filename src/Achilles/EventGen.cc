@@ -45,11 +45,12 @@ achilles::Channel<achilles::FourVector> BuildChannelTest(const YAML::Node &node,
 template<typename T>
 achilles::Channel<achilles::FourVector> BuildChannel(achilles::NuclearModel *model, size_t nlep, size_t nhad,
                                                  std::shared_ptr<achilles::Beam> beam,
-                                                 const std::vector<double> &masses) {
+                                                 const std::vector<double> &masses,
+                                                 std::optional<double> gauge_boson_mass = std::nullopt) {
     achilles::Channel<achilles::FourVector> channel;
     channel.mapping = achilles::PSBuilder(nlep, nhad).Beam(beam, masses, 1)
                                                    .Hadron(model -> PhaseSpace(), masses)
-                                                   .FinalState(T::Name(), masses).build();
+                                                   .FinalState(T::Name(), masses, gauge_boson_mass).build();
     achilles::AdaptiveMap map(channel.mapping -> NDims(), 2);
     channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
     return channel;
@@ -199,8 +200,10 @@ achilles::EventGen::EventGen(const std::string &configFile,
         } 
 
         else if(scattering -> ProcessGroup().Multiplicity() == 5) {
+            double gauge_boson_mass = scattering->GaugeBosonMass();
+            spdlog::debug("Gauge boson mass from HardScattering = {}", gauge_boson_mass);
             Channel<FourVector> channel1 = BuildChannel<ThreeBodyMapper>(scattering -> Nuclear(), 2, 3,
-                                                                       beam, masses);
+                                                                       beam, masses, gauge_boson_mass);
             integrand.AddChannel(std::move(channel1));
         } 
 

@@ -222,11 +222,15 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     spdlog::info("Looking for process");
-    if (pm->find(name)==pm->end())
+    if (pm->find(name)==pm->end()) {
+
       THROW(fatal_error,"Process not found: "+name);
+    }
     Process_Base *proc(pm->find(name)->second);
     auto *singleProcess = proc->Get<COMIX::Single_Process>();
     spdlog::info("Process found");
+
+
 
     // Setup external particle channel components
     std::map<int, std::vector<std::shared_ptr<ChannelNode>>> channelComponents;
@@ -239,6 +243,8 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const
         channelComponents[(1 << i)].push_back(node);
         s.push_back(sqr(Flavour((kf_code)(flavs[i])).Mass(false)));
     }
+
+
 
     for(unsigned int nset = 2; nset < flavs.size(); ++nset) {
       unsigned int cur = (1 << nset) - 1;
@@ -286,8 +292,10 @@ std::vector<std::unique_ptr<PHASIC::Channels>> SherpaMEs::GenerateChannels(const
       }
     }
 
+
     size_t lid = (1 << _fl.size()) - 2, rid = 2;
     if(channelComponents.find(lid) == channelComponents.end()) throw;
+
     std::vector<std::unique_ptr<PHASIC::Channels>> channels;
     for(const auto &cur : channelComponents[lid]) {
       auto channel = std::make_unique<GenChannel>(_fl.size(), s);
