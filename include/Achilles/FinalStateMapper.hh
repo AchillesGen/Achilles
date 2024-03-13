@@ -96,6 +96,7 @@ class ThreeBodyMapper : public FinalStateMapper,
     private:
         const double s2, s3, s4;
         double m_mass; 
+
         static constexpr double dCos = 2;
         static constexpr double dPhi = 2*M_PI;
         constexpr static double m_salpha=0.9,m_thexp=0.9;
