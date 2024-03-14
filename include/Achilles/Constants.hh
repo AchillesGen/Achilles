@@ -39,7 +39,7 @@ namespace Constant {
     //Derived quantities
     const double MW = sqrt( ( sqrt(2.)*M_PI*alpha/GF) * pow( (1 - sqrt( 1 - (4.*alpha*M_PI)/(sqrt(2.)*GF*pow(MZ,2) ) ) ) ,-1));
     const double cos2w = MW*MW/MZ/MZ;
-    const double sin2w = sqrt(1 - cosw);
+    const double sin2w = sqrt(1 - cos2w);
     const double ee = sqrt(4*M_PI*alpha);
     const double cw = sqrt(cos2w);
     const double sw = sqrt(sin2w);
