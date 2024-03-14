@@ -141,9 +141,10 @@ subroutine det_Ja(f1v,f2v,fa)
 
   !J_1(:,:,4,ip)=(w/q(4))*J_1(:,:,1,ip)
  
-  do mu=1,4
-     J_1(:,:,mu)=J_1(:,:,mu)+fa(1)*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))
-  enddo
+
+  !do mu=1,4
+  !   J_1(:,:,mu)=J_1(:,:,mu)+fa(1)*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))
+  !enddo
 end subroutine det_Ja
 
 
