@@ -80,6 +80,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     } else if(pid == -24) {
 
         const std::complex<double> coupl = Vud*ee*i/(sw*sqrt(2)*2);
+        spdlog::debug("coupling = {}", coupl);
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                           {FormFactorInfo::Type::F1n, -coupl},
                                           {FormFactorInfo::Type::F2p, coupl},
@@ -160,7 +161,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
     Current result;
     double q2 = (p[1] - p.back()).M2();
     //double q2 = (pU + pUBar).M2();
-    spdlog::debug("Q2 = {}", q2);
+    //spdlog::debug("Q2 = {}", q2);
     std::complex<double> prop = std::complex<double>(0, 1)/(q2-mass*mass-std::complex<double>(0, 1)*mass*width);
     spdlog::trace("Calculating Current for {}", pid);
     for(size_t i = 0; i < 2; ++i) {
@@ -169,7 +170,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*(coupl_left*SpinMatrix::GammaMu(mu)*SpinMatrix::PL()
                                     + coupl_right*SpinMatrix::GammaMu(mu)*SpinMatrix::PR())*u[j]*prop;
-                spdlog::trace("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
+                spdlog::debug("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
             }
             result.push_back(subcur);
         }
@@ -223,6 +224,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
 std::vector<double> HardScattering::CrossSection(Event &event) const {
 
     //Want to rotate whole system so that q is along z
+    /*
     auto q = event.Momentum()[1] - event.Momentum().back();
     spdlog::debug("q before Rot = {}", q);
     auto qalongz = q.AlignZ();
@@ -233,11 +235,12 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
     q = q.Rotate(qalongz);
     spdlog::debug("q after Rot = {}", q);
+    */
 
     // Calculate leptonic currents
     auto leptonCurrent = LeptonicCurrents(event.Momentum(), 100);
 
-    
+    /*
     std::vector<std::vector<std::complex<double>>> lmunu(4,std::vector<std::complex<double>>(4));
     // Let's compute the leptonic respone tensor for testing purposes
     const size_t nlep_spins = leptonCurrent.begin()->second.size();
@@ -257,6 +260,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
             spdlog::debug("l[{}][{}] = {}",mu,nu,lmunu[mu][nu]);
         }
     }
+    */
     
 
 
@@ -286,8 +290,9 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
     auto hadronCurrent = m_nuclear -> CalcCurrents(event, ffInfo);
 
+
     std::vector<double> amps2(hadronCurrent.size());
-    //const size_t nlep_spins = leptonCurrent.begin()->second.size();
+    const size_t nlep_spins = leptonCurrent.begin()->second.size();
     const size_t nhad_spins = m_nuclear -> NSpins();
     for(size_t i = 0; i  < nlep_spins; ++i) {
         for(size_t j = 0; j < nhad_spins; ++j) {
@@ -299,6 +304,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
                     for(size_t k = 0; k < hadronCurrent.size(); ++k) {
                         if(hadronCurrent[k].find(boson) != hadronCurrent[k].end()){
                             amps[k] += sign*lcurrent.second[i][mu]*hadronCurrent[k][boson][j][mu];
+                            if (i == 0)spdlog::debug("h[{}][{}] = {}", j,mu,hadronCurrent[k][boson][j][mu]);
 			             }
                     }
                 }
@@ -338,11 +344,13 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
 
+    /*
     for(size_t i = 0; i < event.Momentum().size(); ++i) {
         spdlog::debug("p[{}] before Rotback = {}", i, event.Momentum()[i]);
         event.Momentum()[i] = event.Momentum()[i].RotateBack(qalongz);
         spdlog::debug("p[{}] after Rotback = {}", i, event.Momentum()[i]);
     }
+    */
 
     //delete specf;
     return xsecs;
