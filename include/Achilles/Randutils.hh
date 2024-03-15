@@ -106,19 +106,24 @@
 
 #if !defined(RANDUTILS_CPU_ENTROPY) && defined(__has_builtin)
     #if __has_builtin(__builtin_readcyclecounter)
-        #define RANDUTILS_CPU_ENTROPY __builtin_readcyclecounter()
+        // #define RANDUTILS_CPU_ENTROPY __builtin_readcyclecounter()
+        #define RANDUTILS_CPU_ENTROPY 0
+        #pragma message "Found __builtin_readcyclecounter()"
     #endif
 #endif
 #if !defined(RANDUTILS_CPU_ENTROPY)
     #if __i386__
         #if __GNUC__
             #define RANDUTILS_CPU_ENTROPY __builtin_ia32_rdtsc()
+            #pragma message "Found __builtin_ia32_rdtsc()"
         #else
             #include <immintrin.h>
             #define RANDUTILS_CPU_ENTROPY __rdtsc()
+            #pragma message "Found __rdtsc()"
         #endif
     #else
         #define RANDUTILS_CPU_ENTROPY 0
+        #pragma message "Found None"
     #endif
 #endif
 
