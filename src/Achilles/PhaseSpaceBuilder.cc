@@ -12,7 +12,7 @@
 using achilles::PSBuilder;
 
 PSBuilder& PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, const std::vector<double> &masses, size_t idx) {
-    phase_space->lbeam = std::make_shared<BeamMapper>(idx, beam); 
+    phase_space->lbeam = std::make_shared<BeamMapper>(idx, beam);
     phase_space->lbeam->SetMasses(masses);
     return *this;
 }
@@ -24,6 +24,9 @@ PSBuilder& PSBuilder::Hadron(const std::string &mode, const std::vector<double> 
 }
 
 PSBuilder& PSBuilder::FinalState(const std::string &channel, const std::vector<double> &masses2) {
+    if (m_nlep != 2 || m_nhad != 2) {
+        throw std::runtime_error("Achilles without Sherpa only supports two-to-two scattering.");
+    }
     phase_space->main = PSFactory<FinalStateMapper, std::vector<double>>::Build(channel, masses2);
     return *this;
 }
