@@ -171,7 +171,7 @@ class SpinMatrix {
             else if(i == 2) return Gamma_2();
             else if(i == 3) return Gamma_3();
             else if(i == 5) return Gamma_5();
-            else throw std::runtime_error("Invalid Gamma Matrix: " + i);
+            else throw std::runtime_error("Invalid Gamma Matrix: " + std::to_string(i));
         }
 
         static SpinMatrix PL();
@@ -228,7 +228,7 @@ class SpinMatrix {
             for(size_t i = 0; i < 4; ++i) {
                 os << "{ ";
                 for(size_t j = 0; j < 4; ++j) {
-                    os << mat[4*i+j]; 
+                    os << mat[4*i+j];
                     if(j != 3) os << ", ";
                 }
                 os << " }";
@@ -244,7 +244,7 @@ class SpinMatrix {
 };
 
 template<class T>
-struct is_numeric 
+struct is_numeric
     : std::integral_constant<
         bool,
         std::is_same<int, typename std::remove_cv<T>::type>::value ||
@@ -293,7 +293,7 @@ Spinor operator*(const SpinMatrix &lhs, const Spinor &rhs);
 
 template<typename T,
          std::enable_if_t<achilles::is_numeric<T>::value, bool> = true>
-SpinMatrix operator/(const SpinMatrix &m, const T& scale) { 
+SpinMatrix operator/(const SpinMatrix &m, const T& scale) {
     return m * (1.0/scale);
 }
 
