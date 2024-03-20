@@ -241,10 +241,14 @@ void achilles::EventGen::GenerateEvents() {
 double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, const double &wgt) {
     if(outputEvents) {
         static constexpr size_t statusUpdate = 1000;
-        if(unweighter->Accepted() % statusUpdate == 0) {
+        static constexpr double timestep = 1;
+        now = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration<double>(now - prev).count();
+        if(unweighter->Accepted() % statusUpdate == 0 || duration > timestep) {
             fmt::print("Generated {} / {} events\r",
                        unweighter->Accepted(),
                        config["Main"]["NEvents"].as<size_t>());
+            prev = now;
         }
     }
     // Initialize the event, which generates the nuclear configuration
@@ -326,35 +330,44 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         }
     }
 
-    // TODO: Move to after unweighting?
-    // Run the cascade if needed
-    if(runCascade) {
-        spdlog::trace("Hadrons:");
-        idx = 0;
-        for(const auto &particle : event.Hadrons()) {
-            if(particle.Status() == ParticleStatus::initial_state
-                && particle.ID() == PID::proton())
-                spdlog::trace("\t{}: {}", idx, particle);
-            ++idx;
-        }
-        spdlog::debug("Runnning cascade");
-        cascade -> Evolve(&event);
-
-        spdlog::trace("Hadrons (Post Cascade):");
-        idx = 0;
-        for(const auto &particle : event.Hadrons()) {
-            spdlog::trace("\t{}: {}", ++idx, particle);
-        }
-    } else {
-        for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
-            if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::final_state;
-            }
-        }
-    }
-
     // Write out events
     if(outputEvents) {
+        std::vector<Particle> primary_out, propagating;
+        for(const auto &part : event.Particles()) {
+            if(part.IsFinal()) primary_out.push_back(part);
+            if(part.IsPropagating()) {
+                primary_out.push_back(part);
+                propagating.push_back(part);
+            }
+        }
+
+        // TODO: Move to after unweighting?
+        // Run the cascade if needed
+        if(runCascade) {
+            spdlog::trace("Hadrons:");
+            idx = 0;
+            for(const auto &particle : event.Hadrons()) {
+                if(particle.Status() == ParticleStatus::initial_state
+                    && particle.ID() == PID::proton())
+                    spdlog::trace("\t{}: {}", idx, particle);
+                ++idx;
+            }
+            spdlog::debug("Runnning cascade");
+            cascade -> Evolve(&event);
+
+            spdlog::trace("Hadrons (Post Cascade):");
+            idx = 0;
+            for(const auto &particle : event.Hadrons()) {
+                spdlog::trace("\t{}: {}", ++idx, particle);
+            }
+        } else {
+            for(auto & nucleon : event.CurrentNucleus()->Nucleons()) {
+                if(nucleon.Status() == ParticleStatus::propagating) {
+                    nucleon.Status() = ParticleStatus::final_state;
+                }
+            }
+        }
+
         // TODO: Handle MEC case
         // Setup target nucleus in history
         auto init_nuc = event.CurrentNucleus()->InitParticle();
@@ -373,14 +386,6 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
         const double max_energy = beam->MaxEnergy();
         init_beam.Momentum() = {max_energy, 0, 0, max_energy};
         event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
-#ifdef ENABLE_BSM
-        // Running Sherpa interface if requested
-        // Only needed when generating events and not optimizing the multichannel
-        // TODO: Move to after unweighting?
-        if(runDecays && event.Weight() > 0) {
-            p_sherpa -> GenerateEvent(event);
-        }
-#endif
         // TODO: Get remnant working
         // Setup remnant in history
         // auto recoilMom = init_nuc.Momentum();
@@ -413,23 +418,27 @@ double achilles::EventGen::GenerateEvent(const std::vector<FourVector> &mom, con
                 // is the same as that requested by the user
                 integrator.Parameters().ncalls++;
             }
+            event.History().AddVertex(init_had.Position(), {init_had, init_lep}, {primary_out},
+                                      EventHistory::StatusCode::primary);
+            // TODO: Properly build history including the cascade
+            std::vector<Particle> final;
+            for(const auto &part : event.Particles()) {
+                if(part.IsFinal() && part.Info().IsHadron()) final.push_back(part);
+            }
+            if(final.size() != 0)
+                event.History().AddVertex(init_had.Position(), propagating, final,
+                                          EventHistory::StatusCode::cascade); 
+#ifdef ENABLE_BSM
+            // Running Sherpa interface if requested
+            // Only needed when generating events and not optimizing the multichannel
+            if(runDecays && event.Weight() > 0) {
+                p_sherpa -> GenerateEvent(event);
+            }
+#endif
             writer -> Write(event);
-            polarization0 += event.Polarization(0);
-            polarization1 += event.Polarization(1);
-            outputfile << event.Momentum().back().E() << "," << event.Momentum().back().Theta()*180/M_PI << "," << event.Polarization(0) << "," << event.Polarization(1) << "," << event.Weight() << std::endl;
-            // File: events_enu_{Enu}.txt
-            // Event: q0 = E_nu - E_tau
-            // E_tau (q0), theta_tau, PL_num, PT_num, event.Weight()
-            //
-            // total cross section = mean(event.Weight())
-            //
-            // Python: 
-            // Figure 5: Histogram in q0 (cut on 15 < theta_tau < 17) PL_num/(total cross section), PT_num/(total cross section)
-            // Figure 7: For each event calculate P = sqrt(PL_num^2 + PT_num^2), sum P/(total cross section) this gives 1 point in Figure 7
-            // New Fig: Total cross section for tau neutrino vs Enu
         }
-        } else {
-            unweighter->AddEvent(event);
+    } else {
+        unweighter->AddEvent(event);
     }
 
     // Always return the weight when the event passes the initial hard cut.

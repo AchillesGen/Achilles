@@ -108,6 +108,26 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
         SpectralFunction spectral_proton, spectral_neutron; 
 };
 
+class QEStationary : public NuclearModel, RegistrableNuclearModel<QEStationary> {
+    public:
+        QEStationary(const YAML::Node&, const YAML::Node&, FormFactorBuilder&);
+
+        NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
+        std::string PhaseSpace() const override { return "Stationary"; }
+        std::vector<Currents> CalcCurrents(const Event&, const std::vector<FFInfoMap>&) const override;
+        void AllowedStates(Process_Info&) const override;
+        size_t NSpins() const override { return 4; }
+        bool FillNucleus(Event&, const std::vector<double>&) const override;
+
+        // Required factory methods
+        static std::unique_ptr<NuclearModel> Construct(const YAML::Node&);
+        static std::string Name() { return "QEStationary"; }
+
+    private:
+        Current HadronicCurrent(const std::array<Spinor, 2>&, const std::array<Spinor, 2>&,
+                                const FourVector&, const FormFactorMap&) const;
+};
+
 }
 
 #endif

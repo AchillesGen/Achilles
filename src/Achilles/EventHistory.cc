@@ -115,8 +115,14 @@ EventHistoryNode* EventHistory::FindNode(bool incoming, const Particle &part) co
 }
 
 void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {
+    // Ensure the history is not empty
+    if(size() == 0) return;
+
     // Start at primary interaction
     auto *primary = Primary();
+
+    // Ensure the primary vertex has been set
+    if(!primary) return;
 
     std::vector<size_t> visited;
     size_t current = primary -> Index();

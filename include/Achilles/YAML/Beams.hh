@@ -25,7 +25,7 @@ struct convert<std::shared_ptr<achilles::FluxType>> {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
         std::string type = node["Beam Params"]["Type"].as<std::string>();
         if(type == "Monochromatic") {
-            auto energy = node["Energy"].as<double>();
+            auto energy = node["Beam Params"]["Energy"].as<double>();
             rhs = std::make_shared<achilles::Monochromatic>(energy);
             return true;
         } else if(type == "Spectrum") {

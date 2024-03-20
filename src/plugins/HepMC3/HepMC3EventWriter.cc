@@ -1,10 +1,13 @@
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Achilles/EventHistory.hh"
+#include <memory>
 #ifdef GZIP
 #include "gzstream/gzstream.h"
 #endif
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenVertex.h"
 #include "HepMC3/GenParticle.h"
+#include "HepMC3/Print.h"
 
 #include "Achilles/Event.hh"
 #include "Achilles/Version.hh"
@@ -76,19 +79,18 @@ GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
 }
 
 struct HepMC3Visitor : achilles::HistoryVisitor {
-    static constexpr double to_mm = 1e-12;
-    GenEvent evt;
+    HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
+
     struct compare {
         bool operator()(const achilles::Particle &a, const achilles::Particle &b) const {
+            if(a.ID() != b.ID()) return a.ID() < b.ID();
             if(achilles::compare_momentum(a, 1e-10)(b)) {
                 return a.Status() < b.Status();
             }
             return a.Momentum().Vec3().Magnitude() < b.Momentum().Vec3().Magnitude();
         }
     };
-    std::map<achilles::Particle, GenParticlePtr, HepMC3Visitor::compare> converted;
-    std::vector<GenParticlePtr> beamparticles;
-    HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
+
     void visit(achilles::EventHistoryNode *node) {
         auto position = node -> Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
@@ -122,6 +124,12 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
         }
         evt.add_vertex(vertex);
     }
+
+    // Variables
+    GenEvent evt;
+    std::map<achilles::Particle, GenParticlePtr, HepMC3Visitor::compare> converted;
+    std::vector<GenParticlePtr> beamparticles;
+    static constexpr double to_mm = 1e-12;
 };
 
 void HepMC3Writer::Write(const achilles::Event &event) {
@@ -146,6 +154,9 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     // TODO: Add interaction type to the event, and have ids for different modes
     visitor.evt.add_attribute("InteractionType", std::make_shared<IntAttribute>(1));
 
+    // Add interaction flux
+    visitor.evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
+
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
@@ -160,6 +171,12 @@ void HepMC3Writer::Write(const achilles::Event &event) {
    
     // Walk the history and add to file
     event.History().WalkHistory(visitor);
-    // visitor.evt.add_tree(visitor.beamparticles);
+    visitor.evt.add_tree(visitor.beamparticles);
     file.write_event(visitor.evt);
+
+    // if(visitor.evt.vertices().size() != 4) {
+    //     PrintVisitor printer;
+    //     event.History().WalkHistory(printer);
+    //     std::cout << printer.data << std::endl;
+    // }
 }

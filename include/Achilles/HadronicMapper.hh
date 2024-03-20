@@ -66,6 +66,19 @@ class CoherentMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapp
         size_t NDims() const override { return 0; }
 };
 
+class StationaryMapper : public HadronicBeamMapper, RegistrablePS<HadronicBeamMapper, StationaryMapper, size_t> {
+    public:
+        StationaryMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+        static std::string Name() { return "Stationary"; }
+        static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
+            return std::make_unique<StationaryMapper>(idx);
+        }
+
+        void GeneratePoint(std::vector<FourVector>&, const std::vector<double>&) override;
+        double GenerateWeight(const std::vector<FourVector>&, std::vector<double>&) override;
+        size_t NDims() const override { return 0; }
+};
+
 }
 
 

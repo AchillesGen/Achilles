@@ -477,7 +477,7 @@ void achilles::SherpaInterface::AddHistoryNode(ATOOLS::Blob* blob, EventHistory 
 void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs, achilles::EventHistory &history) {
     // Collect primary vertex
     auto blob = blobs -> FindFirst(btp::code::Signal_Process);
-    AddHistoryNode(blob, history, EventHistory::StatusCode::primary);
+    // AddHistoryNode(blob, history, EventHistory::StatusCode::primary);
 
     // Add in any existing shower vetrices
     // auto shower_list = blobs -> Find(btp::code::Shower);

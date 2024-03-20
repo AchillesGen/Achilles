@@ -8,6 +8,7 @@
 using achilles::NuclearModel;
 using achilles::Coherent;
 using achilles::QESpectral;
+using achilles::QEStationary;
 using Type = achilles::FormFactorInfo::Type;
 
 NuclearModel::NuclearModel(const YAML::Node& config,
@@ -247,6 +248,120 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
                                                   const std::array<Spinor, 2> &u,
                                                   const FourVector &qVec,
                                                   const FormFactorMap &ffVal) const {
+    Current result;
+    std::array<SpinMatrix, 4> gamma{};
+    auto mpi2 = pow(ParticleInfo(211).Mass(), 2);
+    auto ffAP = 2.0*Constant::mN2/(-qVec.M2()+mpi2)*ffVal.at(Type::FA);
+    for(size_t mu = 0; mu < 4; ++mu) {
+        gamma[mu] = ffVal.at(Type::F1)*SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FA)*SpinMatrix::GammaMu(mu)*SpinMatrix::Gamma_5();
+        gamma[mu] += ffAP*SpinMatrix::Gamma_5()*qVec[mu]/Constant::mN;
+        double sign = 1;
+        for(size_t nu = 0; nu < 4; ++nu) {
+            gamma[mu] += std::complex<double>(0, 1)*(ffVal.at(Type::F2)*SpinMatrix::SigmaMuNu(mu, nu)*sign*qVec[nu]/(2*Constant::mN));
+            sign = -1;
+        }
+    }
+
+    for(size_t i = 0; i < 2; ++i) {
+        for(size_t j = 0; j < 2; ++j) {
+            std::vector<std::complex<double>> subcur(4);
+            for(size_t mu = 0; mu < 4; ++mu) {
+                subcur[mu] = ubar[i]*gamma[mu]*u[j];
+            }
+            result.push_back(subcur);
+        }
+    }
+
+    return result;
+}
+
+// TODO: Clean this interface up
+QEStationary::QEStationary(const YAML::Node &, const YAML::Node &form_factor,
+                       FormFactorBuilder &builder = FormFactorBuilder::Instance()) 
+        : NuclearModel(form_factor, builder) {}
+
+std::vector<NuclearModel::Currents> QEStationary::CalcCurrents(const Event &event,
+                                                             const std::vector<FFInfoMap> &ff) const {
+    auto pIn = event.Momentum().front();
+    auto pOut = event.Momentum()[2];
+    auto qVec = event.Momentum()[1];
+    for(size_t i = 3; i < event.Momentum().size(); ++i) {
+        qVec -= event.Momentum()[i];
+    }
+    auto ffVals = EvalFormFactor(-qVec.M2()/1.0_GeV/1.0_GeV);
+    std::vector<Currents> results(2);
+
+    // Setup spinors
+    std::array<Spinor, 2> ubar, u;
+    ubar[0] = UBarSpinor(-1, pOut);
+    ubar[1] = UBarSpinor(1, pOut);
+    u[0] = USpinor(-1, -pIn);
+    u[1] = USpinor(1, -pIn);
+
+    // Loop over proton and neutron
+    for(size_t i = 0; i < results.size(); ++i) {
+        // Calculate nucleon contributions
+        for(const auto &formFactor : ff[i]) {
+            auto ffVal = CouplingsFF(ffVals, formFactor.second);
+            spdlog::debug("{}: f1 = {}, f2 = {}, fa = {}",
+                          i, ffVal[Type::F1], ffVal[Type::F2], ffVal[Type::FA]);
+            auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+            results[i][formFactor.first] = current;
+        }
+    }
+    return results;
+}
+
+void QEStationary::AllowedStates(Process_Info &info) const {
+    // Check for charge conservation
+    int charge = -ParticleInfo(info.m_ids[0]).IntCharge();
+    for(size_t i = 1; i < info.m_ids.size(); ++i) {
+        charge += ParticleInfo(info.m_ids[i]).IntCharge();
+    }
+    charge /= 3;
+    if(std::abs(charge) > 1)
+        throw std::runtime_error(fmt::format("Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+
+    switch(charge) {
+        case -1: // Final state has less charge than initial
+            info.m_states[{PID::neutron()}] = {PID::proton()}; 
+            break; 
+        case 0: // Same charge in inital and final
+            info.m_states[{PID::proton()}] = {PID::proton()}; 
+            info.m_states[{PID::neutron()}] = {PID::neutron()}; 
+            break;
+        case 1: // Final state has more charge than initial
+            info.m_states[{PID::proton()}] = {PID::neutron()}; 
+            break;
+    }
+}
+
+bool QEStationary::FillNucleus(Event &event, const std::vector<double> &xsecs) const {
+    // Calculate total cross section
+    for(size_t i = 0; i < event.CurrentNucleus() -> Nucleons().size(); ++i) {
+        auto current_nucleon = event.CurrentNucleus() -> Nucleons()[i];
+        if(current_nucleon.ID() == PID::proton()) {
+            event.MatrixElementWgt(i) = xsecs[0];
+        } else {
+            event.MatrixElementWgt(i) = xsecs[1];
+        }
+    }
+    if(!event.TotalCrossSection())
+        return false;
+
+    return true;
+}
+
+std::unique_ptr<NuclearModel> QEStationary::Construct(const YAML::Node &config) {
+    auto form_factor = LoadFormFactor(config);
+    return std::make_unique<QEStationary>(config, form_factor);
+}
+
+NuclearModel::Current QEStationary::HadronicCurrent(const std::array<Spinor, 2> &ubar,
+                                                    const std::array<Spinor, 2> &u,
+                                                    const FourVector &qVec,
+                                                    const FormFactorMap &ffVal) const {
     Current result;
     std::array<SpinMatrix, 4> gamma{};
     auto mpi2 = pow(ParticleInfo(211).Mass(), 2);

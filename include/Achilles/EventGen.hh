@@ -61,6 +61,7 @@ class EventGen {
         StatsData polarization0, polarization1;
         SherpaInterface *p_sherpa;
         std::unique_ptr<Unweighter> unweighter;
+        std::chrono::time_point<std::chrono::system_clock> now, prev;
 };
 
 }

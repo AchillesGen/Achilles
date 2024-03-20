@@ -7,6 +7,7 @@
 
 using achilles::QESpectralMapper;
 using achilles::CoherentMapper;
+using achilles::StationaryMapper;
 
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
     point[HadronIdx()] = {ParticleInfo(PID::carbon()).Mass(), 0, 0, 0};
@@ -17,12 +18,21 @@ double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vect
     return 1;
 }
 
+void StationaryMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
+    point[HadronIdx()] = {ParticleInfo(PID::proton()).Mass(), 0, 0, 0};
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
+}
+
+double StationaryMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) {
+    return 1;
+}
+
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
     // Generate inital nucleon state
     double pmin = point[1].E() - sqrt(pow(point[1].E(), 2) + 2*point[1].E()*Constant::mN + Constant::mN2 - Smin());
     double pmax = point[1].E() + sqrt(pow(point[1].E(), 2) + 2*point[1].E()*Constant::mN + Constant::mN2 - Smin());
     pmin = pmin < 0 ? 0 : pmin;
-    pmax = pmax > 800 ? 800 : pmax;
+    pmax = pmax > 10000 ? 10000 : pmax;
     double dp = pmax - pmin;
     const double mom = dp*rans[0] + pmin;
     double cosT_max = (2*point[1].E()*Constant::mN+Constant::mN2-mom*mom-Smin())/(2*point[1].E()*mom);
@@ -46,7 +56,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
 
     point[HadronIdx()] = {Constant::mN - energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
-    spdlog::trace("  dp = {}", dp);
+    spdlog::trace("  pmin, pmax, dp = {}, {}, {}", pmin, pmax, dp);
     spdlog::trace("  cosT_min = {}", cosT_max);
     spdlog::trace("  cosT_max = {}", cosT_max);
     spdlog::trace("  cosT = {}", cosT);
@@ -59,8 +69,9 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) {
     double pmin = point[1].E() - sqrt(pow(point[1].E(), 2) + 2*point[1].E()*Constant::mN + Constant::mN2 - Smin());
     double pmax = point[1].E() + sqrt(pow(point[1].E(), 2) + 2*point[1].E()*Constant::mN + Constant::mN2 - Smin());
+    if(pmax < pmin) std::swap(pmax, pmin);
     pmin = pmin < 0 ? 0 : pmin;
-    pmax = pmax > 800 ? 800 : pmax;
+    pmax = pmax > 10000 ? 10000 : pmax;
     double dp = pmax - pmin;
     rans[0] = (point[HadronIdx()].P() - pmin)/dp;
     double cosT_max = (2*point[1].E()*Constant::mN+Constant::mN2-point[0].P2()-Smin())/(2*point[1].E()*point[0].P());

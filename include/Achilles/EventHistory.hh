@@ -124,7 +124,7 @@ class EventHistory {
         void WalkHistory(HistoryVisitor&) const;
 
         // Information
-        size_t size() { return m_history.size(); }
+        size_t size() const { return m_history.size(); }
 
     private:
         EventHistoryNode* FindNode(bool, const Particle&) const;

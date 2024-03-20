@@ -96,7 +96,7 @@ void achilles::MultiChannel::operator()(Integrand<T> &func) {
 
         // Evaluate the function at this point
         double wgt = func.GenerateWeight(channel_weights, point, densities);
-        double val = wgt == 0 ? 0 : func(point, wgt);
+        double val = wgt == 0 || std::isnan(wgt) ? 0 : func(point, wgt);
         double val2 = val * val;
         func.AddTrainData(ichannel, val2);
         results += val;

@@ -7,14 +7,14 @@
 # )
 # add_library(pybind11::pybind11 ALIAS pybind11)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME fmt
     GIT_TAG 7.1.3
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME spdlog
     GIT_TAG "v1.8.5"
     GITHUB_REPOSITORY gabime/spdlog
@@ -26,7 +26,7 @@ CPMFindPackage(
 add_library(spdlog::spdlog ALIAS spdlog)
 
 if(AUTODIFF)
-CPMFindPackage(
+    CPMAddPackage(
     NAME eigen3
     GIT_TAG "3.4"
     GIT_REPOSITORY "https://gitlab.com/libeigen/eigen"
@@ -34,7 +34,7 @@ CPMFindPackage(
         "BUILD_TESTING OFF"
 )
 
-CPMFindPackage(
+CPMAddPackage(
     NAME autodiff
     GIT_TAG "v0.6.1"
     GITHUB_REPOSITORY autodiff/autodiff
@@ -72,7 +72,7 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME HepMC3
     VERSION 3.2.5
     GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
