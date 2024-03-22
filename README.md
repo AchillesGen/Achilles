@@ -34,7 +34,7 @@ these codes can be found in the next [section](#-optional-dependencies).
 To build Achilles with these default options can be done with:
 ```bash
 mkdir build && cd build
-cmake .. -DSHERPA_ROOT_DIR=/path/to/Sherpa
+cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/Sherpa
 make -jN
 ```
 
