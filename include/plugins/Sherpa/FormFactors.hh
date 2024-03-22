@@ -1,10 +1,10 @@
 #pragma once
 
+#include "Achilles/FormFactor.hh"
+
+#ifdef UFO_2_0
 #include "METOOLS/Explicit/Form_Factor.H"
 #include "METOOLS/Explicit/Vertex_Key.H"
-
-#include "Achilles/FormFactor.hh"
-#include "Achilles/Units.hh"
 
 namespace achilles {
 
@@ -21,3 +21,17 @@ class FormFactorInterface : public METOOLS::Form_Factor {
 }; // end of class FormFactorInterface
 
 } // end of namespace achilles
+
+#else
+
+namespace achilles {
+
+class FormFactorInterface {
+  public:
+    static void SetFormFactor(std::unique_ptr<FormFactor>) {
+        throw std::runtime_error("FormFactorInterface::SetFormFactor not implemented");
+    }
+};
+} // end of namespace achilles
+
+#endif

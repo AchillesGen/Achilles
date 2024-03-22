@@ -1,6 +1,5 @@
 add_library(sherpa SHARED
     SherpaInterface.cc
-    FormFactors.cc
     Channels3.cc
     Channels1.cc
 )
