@@ -20,6 +20,11 @@ class Achilles_Reader : public Event_Reader {
 
     void SetAmpl(Cluster_Amplitude *ampl) { p_ampl = ampl; }
 
+#ifndef UFO_2_0
+  private:
+    Cluster_Amplitude *p_ampl;
+#endif
+
 }; // end of class Achilles_Reader
 
 } // end of namespace achilles
