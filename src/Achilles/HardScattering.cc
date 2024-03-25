@@ -96,25 +96,27 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     } else if(pid == 23) {
         const std::complex<double> coupl1 = (ee*i/(4*sw*sw*cw))*(0.5 - 2.*sin2w);
         const std::complex<double> coupl2 = (ee*i/(4*sw*cw));
+        const std::complex<double> coupl3 = ee*i/(cw*sw*sqrt(2)*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
                                          {FormFactorInfo::Type::F1n, -coupl2},
                                          {FormFactorInfo::Type::F2p, coupl1},
                                          {FormFactorInfo::Type::F2n, -coupl2},
                                          {FormFactorInfo::Type::FA, coupl2},
-                                         {FormFactorInfo::Type::FResV, coupl1},
-                                        {FormFactorInfo::Type::FResA, coupl1}};
+                                         {FormFactorInfo::Type::FResV, coupl3},
+                                        {FormFactorInfo::Type::FResA, coupl3}};
 
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl1},
                                           {FormFactorInfo::Type::F1p, -coupl2},
                                           {FormFactorInfo::Type::F2n, coupl1},
                                           {FormFactorInfo::Type::F2p, -coupl2},
                                           {FormFactorInfo::Type::FA, -coupl2},
-                                         {FormFactorInfo::Type::FResV, coupl2},
-                                        {FormFactorInfo::Type::FResA, coupl2}};
+                                         {FormFactorInfo::Type::FResV, coupl3},
+                                        {FormFactorInfo::Type::FResA, coupl3}};
 
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 22) {
         const std::complex<double> coupl = i*ee;
+        spdlog::debug("i*ee = {}", coupl);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F2p, coupl},
                                          {FormFactorInfo::Type::FResV, coupl}};
@@ -224,7 +226,7 @@ achilles::Currents HardScattering::LeptonicCurrents(const std::vector<FourVector
 std::vector<double> HardScattering::CrossSection(Event &event) const {
 
     //Want to rotate whole system so that q is along z
-    /*
+    
     auto q = event.Momentum()[1] - event.Momentum().back();
     spdlog::debug("q before Rot = {}", q);
     auto qalongz = q.AlignZ();
@@ -235,7 +237,7 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
     }
     q = q.Rotate(qalongz);
     spdlog::debug("q after Rot = {}", q);
-    */
+    
 
     // Calculate leptonic currents
     auto leptonCurrent = LeptonicCurrents(event.Momentum(), 100);
@@ -344,13 +346,13 @@ std::vector<double> HardScattering::CrossSection(Event &event) const {
         spdlog::debug("Xsec[{}] = {}", i, xsecs[i]);
     }
 
-    /*
+    
     for(size_t i = 0; i < event.Momentum().size(); ++i) {
         spdlog::debug("p[{}] before Rotback = {}", i, event.Momentum()[i]);
         event.Momentum()[i] = event.Momentum()[i].RotateBack(qalongz);
         spdlog::debug("p[{}] after Rotback = {}", i, event.Momentum()[i]);
     }
-    */
+    
 
     //delete specf;
     return xsecs;

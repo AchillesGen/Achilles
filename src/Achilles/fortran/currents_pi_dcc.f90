@@ -126,7 +126,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,ff,len_ff,J_mu)
    piNinv = abs(piNinv)
 
    Q2 = q(2)**2 + q(3)**2 + q(4)**2 - q(1)**2
-   if (Q2.lt.0.0d0) then        
+   if (Q2.lt.0.0d0.or.Q2.gt.5000000.0d0) then        
         J_mu(:,:,:) = (0.0d0,0.0d0)
         return
    endif
