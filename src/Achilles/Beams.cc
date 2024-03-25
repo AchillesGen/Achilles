@@ -215,11 +215,8 @@ std::string Spectrum::Format() const {
     return "Undefined";
 }
 
-achilles::FourVector Spectrum::Flux(const std::vector<double> &ran, double smin) const {
-    // TODO: Resolve this with a cut
-    static constexpr double eps = 5;
-    double min_energy = (sqrt(smin) - Constant::mN + eps)*m_energy_units;
-    min_energy = std::max(min_energy, m_min_energy);
+achilles::FourVector Spectrum::Flux(const std::vector<double> &ran, double min_energy) const {
+    min_energy = std::max(min_energy*m_energy_units, m_min_energy);
     double delta_energy = m_max_energy - min_energy;
     double energy = (ran[0]*delta_energy + min_energy)/m_energy_units;
     return {energy, 0, 0, energy};
