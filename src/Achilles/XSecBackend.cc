@@ -46,36 +46,33 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
-                                       const std::vector<FourVector> &p_in,
-                                       const ProcessInfo &process_info) const {
-    auto nstates = static_cast<double>(process_info.NInitialStates(nprotons, nneutrons));
-    auto initial_wgt = m_model->InitialStateWeight(process_info.m_hadronic.first, p_in);
-    return nstates * initial_wgt;
+                                       const std::vector<Particle> &p_in) const {
+    auto initial_wgt = m_model->InitialStateWeight(p_in, nprotons, nneutrons);
+    return initial_wgt;
 }
 
 achilles::DefaultBackend::DefaultBackend() {}
 
 double achilles::DefaultBackend::CrossSection(const Event &event, const Process &process) const {
     const auto &process_info = process.Info();
-    FourVector lepton_momentum_in;
-    std::vector<FourVector> hadron_momentum_in, hadron_momentum_out, lepton_momentum_out;
-    process.ExtractMomentum(event, lepton_momentum_in, hadron_momentum_in, lepton_momentum_out,
-                            hadron_momentum_out);
+    Particle lepton_in;
+    std::vector<Particle> hadron_in, hadron_out, lepton_out;
+    std::vector<Particle> spect;
+    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
 
     std::pair<PID, PID> leptons{process_info.m_leptonic.first, process_info.m_leptonic.second[0]};
     auto lcurrent_calculator = m_currents.at(leptons);
 
     auto lepton_current =
-        lcurrent_calculator.CalcCurrents(lepton_momentum_in, lepton_momentum_out[0]);
+        lcurrent_calculator.CalcCurrents(lepton_in.Momentum(), lepton_out[0].Momentum());
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
     for(const auto &boson : lepton_current) {
         ff_info[boson.first] = form_factors.at({process_info.m_hadronic.first[0], boson.first});
     }
-    auto q = lepton_momentum_in - lepton_momentum_out[0];
-    auto hadron_current =
-        m_model->CalcCurrents(hadron_momentum_in, hadron_momentum_out, q, ff_info);
+    auto q = lepton_in.Momentum() - lepton_out[0].Momentum();
+    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, q, ff_info);
 
     double amps2 = 0;
 
@@ -91,10 +88,10 @@ double achilles::DefaultBackend::CrossSection(const Event &event, const Process 
     }
     if(std::isnan(amps2)) amps2 = 0;
 
-    auto flux = FluxFactor(lepton_momentum_in, hadron_momentum_in[0], process_info);
+    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
     double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
@@ -137,18 +134,25 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
                                              std::shared_ptr<Beam> beam,
                                              Integrand<FourVector> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
-    if(process_info.Multiplicity() != 4) {
+    auto multiplicity = process_info.FinalStateMultiplicity();
+    if(multiplicity > 3) {
         const std::string error =
-            fmt::format("Leptonic Tensor can only handle 2->2 processes without "
+            fmt::format("Leptonic Tensor can only handle n->2 and n->3 processes without "
                         "BSM being enabled. "
-                        "Got a 2->{} process",
-                        process_info.Multiplicity() - 2);
+                        "Got a n->{} process",
+                        multiplicity);
         throw std::runtime_error(error);
     }
 
-    Channel<FourVector> channel0 =
-        BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses, nuc_id);
-    integrand.AddChannel(std::move(channel0));
+    if(multiplicity == 2) {
+        Channel<FourVector> channel0 =
+            BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses, nuc_id);
+        integrand.AddChannel(std::move(channel0));
+    } else {
+        Channel<FourVector> channel0 =
+            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, beam, masses, nuc_id);
+        integrand.AddChannel(std::move(channel0));
+    }
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -166,10 +170,9 @@ void achilles::BSMBackend::AddProcess(Process &process) {
 
 double achilles::BSMBackend::CrossSection(const Event &event, const Process &process) const {
     const auto &process_info = process.Info();
-    FourVector lepton_momentum_in;
-    std::vector<FourVector> hadron_momentum_in, hadron_momentum_out, lepton_momentum_out;
-    process.ExtractMomentum(event, lepton_momentum_in, hadron_momentum_in, lepton_momentum_out,
-                            hadron_momentum_out);
+    Particle lepton_in;
+    std::vector<Particle> hadron_in, hadron_out, lepton_out;
+    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out);
     auto lepton_current = CalcLeptonCurrents(event.Momentum(), process_info);
 
     // TODO: Handle the case for MEC, RES, and DIS
@@ -177,10 +180,9 @@ double achilles::BSMBackend::CrossSection(const Event &event, const Process &pro
     for(const auto &boson : lepton_current) {
         ff_info[boson.first] = p_sherpa->FormFactors(process_info.m_hadronic.first[0], boson.first);
     }
-    auto q = lepton_momentum_in;
-    for(const auto &mom : lepton_momentum_out) q -= mom;
-    auto hadron_current =
-        m_model->CalcCurrents(hadron_momentum_in, hadron_momentum_out, q, ff_info);
+    auto q = lepton_in.Momentum();
+    for(const auto &part : lepton_out) q -= part.Momentum();
+    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, q, ff_info);
 
     // Setup handling of spin decays
     const size_t nlep_spins = lepton_current.begin()->second.size();
@@ -207,10 +209,10 @@ double achilles::BSMBackend::CrossSection(const Event &event, const Process &pro
     }
     p_sherpa->FillAmplitudes(spin_amps);
 
-    auto flux = FluxFactor(lepton_momentum_in, hadron_momentum_in[0], process_info);
+    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, process_info);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
@@ -294,14 +296,13 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     spdlog::trace("|M|^2 = {}", amps2);
     if(std::isnan(amps2)) amps2 = 0;
 
-    FourVector lepton_momentum_in;
-    std::vector<FourVector> hadron_momentum_in, hadron_momentum_out, lepton_momentum_out;
-    process.ExtractMomentum(event, lepton_momentum_in, hadron_momentum_in, lepton_momentum_out,
-                            hadron_momentum_out);
-    auto flux = FluxFactor(lepton_momentum_in, hadron_momentum_in[0], info);
+    Particle lepton_in;
+    std::vector<Particle> hadron_in, hadron_out, lepton_out;
+    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out);
+    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_momentum_in, info);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
     return amps2 * flux * initial_wgt * event.Weight();
 }

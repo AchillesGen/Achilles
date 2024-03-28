@@ -21,12 +21,13 @@ Channel<FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<Bea
 template <typename T>
 Channel<FourVector> BuildChannel(NuclearModel *model, size_t nlep, size_t nhad,
                                  std::shared_ptr<Beam> beam, const std::vector<double> &masses,
-                                 PID nuc_id) {
+                                 PID nuc_id,
+                                 std::optional<double> gauge_boson_mass = std::nullopt) {
     Channel<FourVector> channel;
     channel.mapping = PSBuilder(nlep, nhad)
                           .Beam(beam, masses)
                           .Hadron(model->PhaseSpace(nuc_id), masses)
-                          .FinalState(T::Name(), masses)
+                          .FinalState(T::Name(), masses, gauge_boson_mass)
                           .build();
     AdaptiveMap map(channel.mapping->NDims(), 2);
     channel.integrator = Vegas(map, VegasParams{});

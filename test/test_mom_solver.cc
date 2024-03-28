@@ -59,10 +59,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
         constexpr double rho0 = 0.16;
         REQUIRE_CALL(*nucleus, Rho(trompeloeil::gt(0))).LR_RETURN((rho0)).TIMES(AT_LEAST(4));
 
-        achilles::WiringaPotential potential(nucleus, rho0);
+        achilles::WiringaPotential potential(rho0);
 
-        auto potential1 = potential(p1.P(), r1);
-        auto potential2 = potential(p2.P(), r2);
+        auto potential1 = potential(nucleus.get(), p1.P(), r1);
+        auto potential2 = potential(nucleus.get(), p2.P(), r2);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1 + p2;
@@ -101,10 +101,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
         constexpr size_t AA = 12;
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(4));
 
-        achilles::CooperPotential potential(nucleus);
+        achilles::CooperPotential potential;
 
-        auto potential1 = potential(p1.P(), 1);
-        auto potential2 = potential(p2.P(), 1);
+        auto potential1 = potential(nucleus.get(), p1.P(), 1);
+        auto potential2 = potential(nucleus.get(), p2.P(), 1);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1 + p2;

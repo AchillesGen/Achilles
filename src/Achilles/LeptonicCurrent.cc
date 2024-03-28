@@ -59,42 +59,47 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     // TODO: Double check form factors
     if(pid == 24) {
         const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);
-        results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
-                                         {FormFactorInfo::Type::F1n, -coupl},
-                                         {FormFactorInfo::Type::F2p, coupl},
-                                         {FormFactorInfo::Type::F2n, -coupl},
-                                         {FormFactorInfo::Type::FA, coupl}};
-        results[{PID::neutron(), pid}] = {};
+        results[{PID::proton(), pid}] = {
+            {FormFactorInfo::Type::F1p, coupl},  {FormFactorInfo::Type::F1n, -coupl},
+            {FormFactorInfo::Type::F2p, coupl},  {FormFactorInfo::Type::F2n, -coupl},
+            {FormFactorInfo::Type::FA, coupl},   {FormFactorInfo::Type::FResV, coupl},
+            {FormFactorInfo::Type::FResA, coupl}};
+        results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::FResV, coupl},
+                                          {FormFactorInfo::Type::FResA, coupl}};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == -24) {
         const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);
-        results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
-                                          {FormFactorInfo::Type::F1n, -coupl},
-                                          {FormFactorInfo::Type::F2p, coupl},
-                                          {FormFactorInfo::Type::F2n, -coupl},
-                                          {FormFactorInfo::Type::FA, coupl}};
-        results[{PID::proton(), pid}] = {};
+        results[{PID::neutron(), pid}] = {
+            {FormFactorInfo::Type::F1p, coupl},  {FormFactorInfo::Type::F1n, -coupl},
+            {FormFactorInfo::Type::F2p, coupl},  {FormFactorInfo::Type::F2n, -coupl},
+            {FormFactorInfo::Type::FA, coupl},   {FormFactorInfo::Type::FResV, coupl},
+            {FormFactorInfo::Type::FResA, coupl}};
+        results[{PID::proton(), pid}] = {{FormFactorInfo::Type::FResV, coupl},
+                                         {FormFactorInfo::Type::FResA, coupl}};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 23) {
         const std::complex<double> coupl1 = (ee * i / (4 * sin2w * cw)) * (0.5 - 2 * sin2w);
         const std::complex<double> coupl2 = (ee * i / (4 * sw * cw));
-        results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
-                                         {FormFactorInfo::Type::F1n, -coupl2},
-                                         {FormFactorInfo::Type::F2p, coupl1},
-                                         {FormFactorInfo::Type::F2n, -coupl2},
-                                         {FormFactorInfo::Type::FA, coupl2}};
-        results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl1},
-                                          {FormFactorInfo::Type::F1p, -coupl2},
-                                          {FormFactorInfo::Type::F2n, coupl1},
-                                          {FormFactorInfo::Type::F2p, -coupl2},
-                                          {FormFactorInfo::Type::FA, -coupl2}};
+        const std::complex<double> coupl3 = ee * i / (cw * sw * sqrt(2) * 2);
+        results[{PID::proton(), pid}] = {
+            {FormFactorInfo::Type::F1p, coupl1},  {FormFactorInfo::Type::F1n, -coupl2},
+            {FormFactorInfo::Type::F2p, coupl1},  {FormFactorInfo::Type::F2n, -coupl2},
+            {FormFactorInfo::Type::FA, coupl2},   {FormFactorInfo::Type::FResV, coupl3},
+            {FormFactorInfo::Type::FResA, coupl3}};
+        results[{PID::neutron(), pid}] = {
+            {FormFactorInfo::Type::F1n, coupl1},  {FormFactorInfo::Type::F1p, -coupl2},
+            {FormFactorInfo::Type::F2n, coupl1},  {FormFactorInfo::Type::F2p, -coupl2},
+            {FormFactorInfo::Type::FA, -coupl2},  {FormFactorInfo::Type::FResV, coupl3},
+            {FormFactorInfo::Type::FResA, coupl3}};
         results[{PID::carbon(), pid}] = {};
     } else if(pid == 22) {
         const std::complex<double> coupl = i * ee;
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
-                                         {FormFactorInfo::Type::F2p, coupl}};
+                                         {FormFactorInfo::Type::F2p, coupl},
+                                         {FormFactorInfo::Type::FResV, coupl}};
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl},
-                                          {FormFactorInfo::Type::F2n, coupl}};
+                                          {FormFactorInfo::Type::F2n, coupl},
+                                          {FormFactorInfo::Type::FResV, coupl}};
         results[{PID::carbon(), pid}] = {{FormFactorInfo::Type::FCoh, 6.0 * coupl}};
     } else {
         throw std::runtime_error("LeptonicCurrent: Invalid probe");

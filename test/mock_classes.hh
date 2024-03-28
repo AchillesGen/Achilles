@@ -67,10 +67,11 @@ class MockDensity : public trompeloeil::mock_interface<achilles::Density> {
 
 class MockPotential : public trompeloeil::mock_interface<achilles::Potential> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK2(Hamiltonian);
+    IMPLEMENT_CONST_MOCK3(Hamiltonian);
     IMPLEMENT_CONST_MOCK0(GetReference);
-    achilles::PotentialVals operator()(const double &p, const double &r) const override {
-        return call_op(p, r);
+    achilles::PotentialVals operator()(const achilles::Nucleus *nuc, double p,
+                                       double r) const override {
+        return call_op(nuc, p, r);
     }
     MAKE_CONST_MOCK2(call_op, achilles::PotentialVals(const double &, const double &));
 };
@@ -94,6 +95,7 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK0(PhaseSpace);
     IMPLEMENT_CONST_MOCK4(CalcCurrents);
     IMPLEMENT_CONST_MOCK1(AllowedStates);
+    IMPLEMENT_CONST_MOCK2(CalcCurrents);
     IMPLEMENT_CONST_MOCK0(NSpins);
     IMPLEMENT_CONST_MOCK2(InitialStateWeight);
     IMPLEMENT_CONST_MOCK0(GetName);

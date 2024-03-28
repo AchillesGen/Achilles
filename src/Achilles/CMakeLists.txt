@@ -20,10 +20,10 @@ add_library(utilities SHARED
     ProcessInfo.cc
     Poincare.cc
     Unweighter.cc
+    System.cc
 )
-target_include_directories(utilities PUBLIC $<BUILD_INTERFACE:${yaml-cpp_INCLUDE_DIRS}>)
 target_link_libraries(utilities PRIVATE project_warnings
-                                PUBLIC project_options spdlog::spdlog yaml::cpp) #pybind11::pybind11 
+                                PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11 
 list(APPEND achilles_targets utilities)
 
 add_library(cuts SHARED
@@ -87,11 +87,18 @@ target_link_libraries(physics PRIVATE project_warnings
                       PUBLIC utilities cuts HighFive mappers)
 list(APPEND achilles_targets physics)
 
-# add_subdirectory(fortran)
+add_library(nuclear_models SHARED
+    NuclearModel.cc
+)
+target_link_libraries(nuclear_models PRIVATE project_options project_warnings
+                                     PUBLIC physics)
+list(APPEND achilles_targets nuclear_models)
+
+add_subdirectory(fortran)
+list(APPEND achilles_targets fortran_interface)
 
 add_library(event_gen SHARED
     # TODO: Move to its own library
-    NuclearModel.cc
     EventGen.cc
     Debug.cc
     EventWriter.cc
@@ -102,7 +109,7 @@ target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings
-                                PUBLIC physics mappers) #fortran_interface
+                                PUBLIC physics mappers fortran_interface nuclear_models) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
                             # pybind11_add_module(_achilles MODULE
@@ -129,7 +136,7 @@ list(APPEND achilles_targets event_gen)
 
 add_executable(achilles main.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
-                               PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking)
+                               PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles)
 
 if(ACHILLES_ENABLE_CASCADE_TEST)
@@ -167,7 +174,7 @@ install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interf
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
-install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/achilles
+install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 # install(EXPORT achilles-targets
 #     FILE achilles-targets.cmake

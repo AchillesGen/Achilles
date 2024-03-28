@@ -5,6 +5,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/FormFactor.hh"
+#include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/SpectralFunction.hh"
 
@@ -96,12 +97,11 @@ class NuclearModel {
 
     virtual NuclearMode Mode() const = 0;
     virtual std::string PhaseSpace(PID) const = 0;
-    virtual Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    virtual Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                                   const FourVector &, const FFInfoMap &) const = 0;
-    virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const = 0;
-    virtual size_t NSpins() const = 0;
-    virtual double InitialStateWeight(const std::vector<PID> &,
-                                      const std::vector<FourVector> &) const = 0;
+    virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const;
+    virtual size_t NSpins() const;
+    virtual double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const = 0;
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
@@ -129,12 +129,11 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
 
     NuclearMode Mode() const override { return NuclearMode::Coherent; }
     std::string PhaseSpace(PID) const override;
-    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
-    double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override {
+    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override {
         return 1;
     }
     std::string GetName() const override { return Coherent::Name(); }
@@ -154,12 +153,10 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
 
     NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
     std::string PhaseSpace(PID) const override;
-    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
-    std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override;
+    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
 

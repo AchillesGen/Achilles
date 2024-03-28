@@ -21,17 +21,19 @@ class PID;
 struct ProcessInfo {
     using leptonic_state = std::pair<achilles::PID, std::vector<achilles::PID>>;
     using hadronic_state = std::pair<std::vector<achilles::PID>, std::vector<achilles::PID>>;
+    using spectator_state = std::vector<achilles::PID>;
     ProcessInfo() = default;
     ProcessInfo(leptonic_state leptons) : m_leptonic{leptons} {}
 
     leptonic_state m_leptonic{};
     hadronic_state m_hadronic{};
+    spectator_state m_spectator{};
+    size_t FinalStateMultiplicity() const;
     size_t Multiplicity() const;
     std::vector<double> Masses() const;
     std::vector<long> Ids() const;
     std::map<size_t, long> m_mom_map;
     int LeptonicCharge() const;
-    size_t NInitialStates(size_t, size_t) const;
 
     bool operator==(const ProcessInfo &other) const {
         return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic;

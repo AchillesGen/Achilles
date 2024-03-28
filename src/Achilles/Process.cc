@@ -21,8 +21,8 @@ using achilles::ProcessGroup;
 
 void Process::SetupHadrons(Event &event) const {
     FourVector lep_in;
-    std::vector<FourVector> had_in, lep_out, had_out;
-    ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
+    std::vector<FourVector> had_in, lep_out, had_out, spect;
+    ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons, hadrons;
 
     // Setup hadrons
@@ -50,6 +50,7 @@ void Process::SetupHadrons(Event &event) const {
 
     // TODO: Optimize selection of nucleons.
     //       Using pick doesn't ensure uniqueness and sample is extremely slow
+    // NOTE: This might be fixed now with the change to the Nucleus class
     // TODO: Handle position dependent probabilities
     auto protons = event.CurrentNucleus()->ProtonsIDs();
     auto neutrons = event.CurrentNucleus()->NeutronsIDs();
@@ -89,10 +90,12 @@ void Process::SetupHadrons(Event &event) const {
 
 void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
-                              std::vector<FourVector> &had_out) const {
+                              std::vector<FourVector> &had_out,
+                              std::vector<FourVector> &spect) const {
     static constexpr size_t lepton_in_end_idx = 1;
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
+    const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
     auto momentum = event.Momentum();
     lep_in = momentum[0];
     had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
@@ -100,7 +103,32 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
     lep_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(hadron_end_idx),
                                       momentum.begin() + static_cast<int>(lepton_end_idx));
     had_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(lepton_end_idx),
-                                      momentum.end());
+                                      momentum.begin() + static_cast<int>(had_out_end_idx));
+    spect = std::vector<FourVector>(momentum.begin() + static_cast<int>(had_out_end_idx),
+                                    momentum.end());
+}
+
+void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector<Particle> &had_in,
+                               std::vector<Particle> &lep_out, std::vector<Particle> &had_out,
+                               std::vector<Particle> &spect) const {
+    static constexpr size_t lepton_in_end_idx = 1;
+    const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
+    const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
+    const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
+    auto momentum = event.Momentum();
+    lep_in = Particle(m_info.m_leptonic.first, momentum[0]);
+    for(size_t i = 0; i < m_info.m_hadronic.first.size(); ++i) {
+        had_in.emplace_back(m_info.m_hadronic.first[i], momentum[i + lepton_in_end_idx]);
+    }
+    for(size_t i = 0; i < m_info.m_leptonic.second.size(); ++i) {
+        lep_out.emplace_back(m_info.m_leptonic.second[i], momentum[i + hadron_end_idx]);
+    }
+    for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
+        had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
+    }
+    for(size_t i = 0; i < spect.size(); ++i) {
+        spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
+    }
 }
 
 void Process::SetID(achilles::NuclearModel *model) {
@@ -167,9 +195,9 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
 
 void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
     FourVector lep_in;
-    std::vector<FourVector> had_in, lep_out, had_out;
+    std::vector<FourVector> had_in, lep_out, had_out, spect;
     auto &process = m_processes[process_idx.value_or(0)];
-    process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
+    process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons;
 
     // Setup leptons
@@ -250,10 +278,7 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
 
     try {
         m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
-    } catch(const InvalidChannel &) {
-        std::cout << "here" << std::endl;
-        return false;
-    }
+    } catch(const InvalidChannel &) { return false; }
 
     // TODO: Fix scaling to be consistent with Chili paper
     m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});

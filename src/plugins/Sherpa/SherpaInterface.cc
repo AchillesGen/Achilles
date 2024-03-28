@@ -181,6 +181,7 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     proc->SetScale(Scale_Setter_Arguments(MODEL::s_model, "VAR{100}{100}", "Alpha_QCD 1"));
     proc->SetKFactor(KFactor_Setter_Arguments("NO"));
     msg_Info() << "SherpaInterface::getProcess: Performing tests ";
+    // TODO: Figure out why the Tests cause a segfault
     if(proc->Get<COMIX::Process_Base>()) proc->Get<COMIX::Process_Base>()->Tests();
     msg_Info() << " done." << std::endl;
     proc->FillProcessMap(&m_pmap);

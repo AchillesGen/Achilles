@@ -28,6 +28,8 @@ struct FormFactorInfo {
         F2n,
         FA,
         FCoh,
+        FResV,
+        FResA,
     };
 
     Type form_factor;
@@ -38,6 +40,32 @@ struct FormFactorInfo {
     }
 };
 
+inline std::string ToString(FormFactorInfo::Type type) {
+    switch(type) {
+    case FormFactorInfo::Type::F1:
+        return "F1";
+    case FormFactorInfo::Type::F2:
+        return "F2";
+    case FormFactorInfo::Type::F1p:
+        return "F1p";
+    case FormFactorInfo::Type::F1n:
+        return "F1n";
+    case FormFactorInfo::Type::F2p:
+        return "F2p";
+    case FormFactorInfo::Type::F2n:
+        return "F2n";
+    case FormFactorInfo::Type::FA:
+        return "FA";
+    case FormFactorInfo::Type::FCoh:
+        return "FCoh";
+    case FormFactorInfo::Type::FResV:
+        return "FResV";
+    case FormFactorInfo::Type::FResA:
+        return "FResA";
+    }
+    return "Unknown";
+}
+
 class FormFactor {
   public:
     struct Values {
@@ -45,6 +73,7 @@ class FormFactor {
         double F1p{}, F2p{}, F1n{}, F2n{};
         double FA{}, FAs{};
         double Fcoh{};
+        double FresV{}, FresA{};
     };
 
     FormFactor() = default;
@@ -58,9 +87,11 @@ class FormFactor {
     std::shared_ptr<FormFactorImpl> vector = nullptr;
     std::shared_ptr<FormFactorImpl> axial = nullptr;
     std::shared_ptr<FormFactorImpl> coherent = nullptr;
+    std::shared_ptr<FormFactorImpl> resonancevector = nullptr;
+    std::shared_ptr<FormFactorImpl> resonanceaxial = nullptr;
 };
 
-enum class FFType { vector, axial, coherent };
+enum class FFType { vector, axial, coherent, resonancevector, resonanceaxial };
 
 inline std::string FFTypeToString(FFType type) {
     std::string result;
@@ -73,6 +104,12 @@ inline std::string FFTypeToString(FFType type) {
         break;
     case FFType::coherent:
         result = "coherent";
+        break;
+    case FFType::resonancevector:
+        result = "resonancevector";
+        break;
+    case FFType::resonanceaxial:
+        result = "resonanceaxial";
         break;
     }
     return result;
@@ -94,6 +131,8 @@ class FormFactorBuilder {
     MOCK FormFactorBuilder &Vector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &AxialVector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &Coherent(const std::string &, const YAML::Node &);
+    MOCK FormFactorBuilder &ResonanceVector(const std::string &, const YAML::Node &);
+    MOCK FormFactorBuilder &ResonanceAxial(const std::string &, const YAML::Node &);
 
     MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
 
@@ -323,6 +362,36 @@ class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoForm
   private:
     double b;
     std::array<double, 5> c{};
+};
+
+class ResonanceDummyVectorFormFactor : public FormFactorImpl,
+                                       RegistrableFormFactor<ResonanceDummyVectorFormFactor> {
+  public:
+    ResonanceDummyVectorFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "ResonanceVectorDummy"; }
+    static FFType Type() { return FFType::resonancevector; }
+
+  private:
+    double resV;
+};
+
+class ResonanceDummyAxialFormFactor : public FormFactorImpl,
+                                      RegistrableFormFactor<ResonanceDummyAxialFormFactor> {
+  public:
+    ResonanceDummyAxialFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "ResonanceAxialDummy"; }
+    static FFType Type() { return FFType::resonanceaxial; }
+
+  private:
+    double resA;
 };
 
 } // namespace achilles

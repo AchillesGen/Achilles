@@ -26,25 +26,25 @@ static constexpr double mn = 939.56542054_MeV;
 static constexpr double mN = (mp + mn) / 2.0;
 static constexpr double AMU = 931.49410248_MeV;
 static constexpr double mN2 = mN * mN;
+static constexpr double mpip = 139.57018_MeV;
+static constexpr double mpi0 = 134.9764_MeV;
+static constexpr double meta = 548.0_MeV;
 
 // EW parameters
 static constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
 static constexpr double MZ = 91.1876_GeV;
-static constexpr double aEWM1 = 137;
-static constexpr double aEW = 1.0 / aEWM1;
-// constexpr double MW = 80.359_GeV;
+static constexpr double MW = 80.359_GeV;
 static constexpr double GAMZ = 2.4952_GeV;
 static constexpr double GAMW = 2.0895_GeV;
-const double MW =
-    sqrt(((pow(MZ, 2) / 2) +
-          sqrt(((pow(MZ, 4) / 4) - (((aEW * M_PI) * pow(MZ, 2)) / (GF * sqrt(2.0)))))));
-const double cos2w = MW * MW / MZ / MZ;
-const double sin2w = 1 - cos2w;
+static constexpr double cos2w = MW * MW / MZ / MZ;
+static constexpr double sin2w = 1 - cos2w;
 static constexpr double Vud = 0.97373;
 // const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
-const double ee = sqrt(4 * M_PI * aEW);
+const double alpha = 1. / 137.;
+const double ee = sqrt(4 * M_PI * alpha);
 const double cw = sqrt(cos2w);
 const double sw = sqrt(sin2w);
+
 } // namespace Constant
 
 } // namespace achilles

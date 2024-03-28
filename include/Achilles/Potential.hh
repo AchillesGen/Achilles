@@ -57,6 +57,7 @@ class Potential {
 
     virtual ~Potential() = default;
     virtual std::string GetReference() const = 0;
+    // TODO: Figure out if it should be Nucleus or not passed in
     virtual PotentialVals operator()(const double &, const double &) const = 0;
 
     PotentialVals derivative_p(double p, double r, double h = step) const {
@@ -86,7 +87,6 @@ class Potential {
         deriv.iscalar /= pow(h, static_cast<int>(n));
         deriv.rvector /= pow(h, static_cast<int>(n));
         deriv.ivector /= pow(h, static_cast<int>(n));
-
         return deriv;
     }
 

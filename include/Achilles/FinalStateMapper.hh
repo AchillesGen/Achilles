@@ -7,6 +7,8 @@
 #ifdef ACHILLES_SHERPA_INTERFACE
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
+#pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+#pragma GCC diagnostic ignored "-Wdouble-promotion"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
 #endif // ACHILLES_SHERPA_INTERFACE
@@ -55,6 +57,57 @@ class TwoBodyMapper : public FinalStateMapper,
     const double s2, s3;
     static constexpr double dCos = 2;
     static constexpr double dPhi = 2 * M_PI;
+};
+
+class ThreeBodyMapper : public FinalStateMapper,
+                        RegistrablePS<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
+  public:
+    ThreeBodyMapper(const std::vector<double> &m)
+        : FinalStateMapper(3), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
+    static std::string Name() { return "ThreeBody"; }
+    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
+        if(m.size() != 3) {
+            auto msg = fmt::format("Incorrect number of masses. Expected 3. Got {}", m.size());
+            throw std::runtime_error(msg);
+        }
+        return std::make_unique<ThreeBodyMapper>(m);
+    }
+
+    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
+    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    double MassivePropagatorMomenta(double mass, double width, double smin, double smax,
+                                    double ran);
+    void Isotropic2Momenta(FourVector p, double s1_, double s2_, FourVector &p1, FourVector &p2,
+                           double ran1, double ran2, double ctmin, double ctmax);
+    int TChannelMomenta(FourVector p1in, FourVector p2in, FourVector &p1out, FourVector &p2out,
+                        double s1out, double s2out, double t_mass, double ctexp, double ctmax,
+                        double ctmin, double aminct, int, double ran1, double ran2);
+    double SqLam(double s_, double s1_, double s2_);
+    double Tj1(double cn, double amcxm, double amcxp, double ran);
+    double Hj1(double cn, double amcxm, double amcxp);
+    double MassivePropWeight(double mass, double width, int lim, double smin, double smax, double s,
+                             double &);
+    double TChannelWeight(const FourVector &p1in, const FourVector &p2in, const FourVector &p1out,
+                          const FourVector &p2out, double t_mass, double ctexp, double ctmax,
+                          double ctmin, double aminct, int, double &ran1, double &ran2);
+    double Isotropic2Weight(const FourVector &p1, const FourVector &p2, double &ran1, double &ran2,
+                            double ctmin, double ctmax);
+    void Boost(int lflag, const FourVector &q, const FourVector &ph, FourVector &p);
+    YAML::Node ToYAML() const override {
+        YAML::Node result;
+        result["Name"] = Name();
+        result["Masses"] = std::vector<double>{s2, s3, s4};
+        return result;
+    }
+    void SetGaugeBosonMass(double mass) override { m_mass = mass; }
+
+  private:
+    const double s2, s3, s4;
+    double m_mass;
+    static constexpr double dCos = 2;
+    static constexpr double dPhi = 2 * M_PI;
+    constexpr static double m_salpha = 0.9, m_thexp = 0.9;
+    constexpr static double m_amct = 1., m_alpha = 0.9, m_ctmax = 1., m_ctmin = -1.;
 };
 
 #ifdef ACHILLES_SHERPA_INTERFACE

@@ -219,6 +219,7 @@ class ParticleInfo {
     bool IsMassive() const noexcept { return info->mass != 0 ? info->massive : false; }
     double Mass() const noexcept { return info->massive ? info->mass : 0.0; }
     double Width() const noexcept { return info->width; }
+    size_t NSpins() const noexcept;
 
     double GenerateLifeTime() const;
 
@@ -323,6 +324,15 @@ template <> struct formatter<achilles::PID> {
     template <typename FormatContext>
     auto format(const achilles::PID &pid, FormatContext &ctx) const {
         return format_to(ctx.out(), "{}", pid.AsInt());
+    }
+};
+
+template <> struct formatter<std::vector<achilles::PID>> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const std::vector<achilles::PID> &pids, FormatContext &ctx) {
+        return format_to(ctx.out(), "[{}]", join(pids.begin(), pids.end(), ", "));
     }
 };
 

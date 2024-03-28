@@ -90,6 +90,12 @@ template <class Base> class CutFactory {
 
     static bool IsRegistered(std::string name) { return Registry().find(name) != Registry().end(); }
 
+    static void Deregister(const std::string &name) {
+        if(!IsRegistered(name)) spdlog::error("{} is not registered!", name);
+        spdlog::trace("Deregistering {}", name);
+        Registry().erase(name);
+    }
+
     static void DisplayCuts() {
         fmt::print("Registered {} cuts:\n", Base::Name());
         for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);

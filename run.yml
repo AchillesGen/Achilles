@@ -49,6 +49,14 @@ NuclearModels:
       SpectralP: data/pke12_tot.data
       SpectralN: data/pke12_tot.data
       Ward: Landau
+  - NuclearModel:
+      Model: FortranModel
+      Name: RES_Spectral_Func
+      ConfigFile: data/info_pke.data  
+      FormFactorFile: "FormFactors.yml"
+      SpectralP: data/pke12_tot.data
+      SpectralN: data/pke12_tot.data
+      Ward: False
 
 Nucleus:
   Name: 40Ar

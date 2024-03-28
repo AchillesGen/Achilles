@@ -35,6 +35,7 @@ template <typename T> class Mapper {
     virtual size_t NDims() const = 0;
     virtual void SetMasses(std::vector<double> masses) { m_masses = std::move(masses); }
     virtual const std::vector<double> &Masses() const { return m_masses; }
+    virtual void SetGaugeBosonMass(double) {}
 
     // Printers
     static void Print(const char *func, const std::vector<T> &point,

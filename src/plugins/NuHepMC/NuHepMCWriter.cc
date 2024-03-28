@@ -36,6 +36,7 @@ static constexpr int Propagating = 24;
 static constexpr int Background = 25;
 static constexpr int Captured = 26;
 static constexpr int UndecayedResidue = 27;
+static constexpr int Spectator = 28;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
