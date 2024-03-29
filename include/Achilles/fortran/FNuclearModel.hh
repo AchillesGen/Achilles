@@ -2,6 +2,7 @@
 #define FNUCLEAR_MODEL_HH
 
 #include "Achilles/NuclearModel.hh"
+#include <iostream>
 
 extern "C" {
 void RegisterAll();

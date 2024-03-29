@@ -12,6 +12,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Poincare.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/Spinor.hh"

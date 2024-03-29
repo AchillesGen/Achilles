@@ -40,6 +40,12 @@ enum class NuclearFrame : int {
     Custom,
 };
 
+enum class NuclearFrame : int {
+    Lab = 0,
+    QZ,
+    Custom,
+};
+
 inline std::string ToString(NuclearMode mode) {
     switch(mode) {
     case NuclearMode::None:
