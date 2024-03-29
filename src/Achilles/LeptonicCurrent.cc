@@ -80,7 +80,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     } else if(pid == 23) {
         const std::complex<double> coupl1 = (ee * i / (4 * sin2w * cw)) * (0.5 - 2 * sin2w);
         const std::complex<double> coupl2 = (ee * i / (4 * sw * cw));
-        const std::complex<double> coupl3 = ee * i / (cw * sw * sqrt(2) * 2);
+        const std::complex<double> coupl3 = ee * i / (cw * sw * 2);
         results[{PID::proton(), pid}] = {
             {FormFactorInfo::Type::F1p, coupl1},  {FormFactorInfo::Type::F1n, -coupl2},
             {FormFactorInfo::Type::F2p, coupl1},  {FormFactorInfo::Type::F2n, -coupl2},
