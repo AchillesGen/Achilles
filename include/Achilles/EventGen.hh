@@ -37,7 +37,7 @@ class EventGen {
   private:
     bool GenerateSingleEvent();
 
-    bool runCascade{false}, outputEvents{false}, doHardCuts{false}, doEventCuts{false};
+    bool runCascade{false}, outputEvents{false}, doHardCuts{false};
     bool runDecays{false};
     bool doRotate{false};
     bool MakeCuts(Event &);

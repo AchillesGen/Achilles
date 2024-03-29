@@ -106,6 +106,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Propagating, {"Propagating", "Propagating"}},
                  {NuHepMC::ParticleStatus::Background, {"Background", "Background"}},
                  {NuHepMC::ParticleStatus::Captured, {"Captured", "Captured"}},
+                 {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
              });
 
     // Signal conventions
@@ -147,6 +148,8 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::IncomingBeam;
     case achilles::ParticleStatus::target:
         return NuHepMC::ParticleStatus::Target;
+    case achilles::ParticleStatus::spectator:
+        return NuHepMC::ParticleStatus::Spectator;
     }
     return -1;
 }
