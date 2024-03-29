@@ -13,6 +13,7 @@ module nuclear_model
             procedure(nm_init), deferred :: init
             procedure(nm_cleanup), deferred :: cleanup
             procedure(nm_mode), deferred :: mode
+            procedure :: frame => nm_frame
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
             procedure(nm_init_wgt), deferred :: init_wgt
@@ -71,4 +72,10 @@ module nuclear_model
         end function
 
     end interface
+contains
+    function nm_frame(self)
+        class(model), intent(inout) :: self
+        integer :: nm_frame
+        nm_frame = 0
+    end function
 end module nuclear_model

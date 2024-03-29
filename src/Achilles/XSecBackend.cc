@@ -53,7 +53,18 @@ double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
 
 achilles::DefaultBackend::DefaultBackend() {}
 
-double achilles::DefaultBackend::CrossSection(const Event &event, const Process &process) const {
+double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
+    auto event = event_in;
+
+    for(const auto &part : event.Momentum()) {
+        spdlog::debug("Momentum: ({}, {}, {}, {})", part[0], part[1], part[2], part[3]);
+    }
+    m_model->TransformFrame(event, process, true);
+
+    for(const auto &part : event.Momentum()) {
+        spdlog::debug("Momentum: ({}, {}, {}, {})", part[0], part[1], part[2], part[3]);
+    }
+
     const auto &process_info = process.Info();
     Particle lepton_in;
     std::vector<Particle> hadron_in, hadron_out, lepton_out;
@@ -168,7 +179,10 @@ void achilles::BSMBackend::AddProcess(Process &process) {
     process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
-double achilles::BSMBackend::CrossSection(const Event &event, const Process &process) const {
+double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &process) const {
+    auto event = event_in;
+    m_model->TransformFrame(event, process, true);
+
     const auto &process_info = process.Info();
     Particle lepton_in;
     std::vector<Particle> hadron_in, hadron_out, lepton_out;

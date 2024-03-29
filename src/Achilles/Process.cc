@@ -96,7 +96,7 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
     const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
-    auto momentum = event.Momentum();
+    const auto &momentum = event.Momentum();
     lep_in = momentum[0];
     had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
                                      momentum.begin() + static_cast<int>(hadron_end_idx));
@@ -115,7 +115,7 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
     const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
-    auto momentum = event.Momentum();
+    const auto &momentum = event.Momentum();
     lep_in = Particle(m_info.m_leptonic.first, momentum[0]);
     for(size_t i = 0; i < m_info.m_hadronic.first.size(); ++i) {
         had_in.emplace_back(m_info.m_hadronic.first[i], momentum[i + lepton_in_end_idx]);
@@ -129,6 +129,16 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
     for(size_t i = 0; i < spect.size(); ++i) {
         spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
     }
+}
+
+achilles::FourVector Process::ExtractQ(const Event &event) const {
+    const auto &momentum = event.Momentum();
+    auto q = momentum[0];
+    size_t nleptons = m_info.m_leptonic.second.size();
+    for(size_t i = 0; i < nleptons; ++i) {
+        q -= momentum[i + 1 + m_info.m_hadronic.first.size()];
+    }
+    return q;
 }
 
 void Process::SetID(achilles::NuclearModel *model) {

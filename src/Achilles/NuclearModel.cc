@@ -3,6 +3,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Poincare.hh"
 #include "Achilles/Spinor.hh"
 
@@ -26,6 +27,26 @@ NuclearModel::NuclearModel(const YAML::Node &config,
                         .ResonanceAxial(resaxialFF, config[resaxialFF])
                         .build();
     ffbuilder.Reset();
+}
+
+void NuclearModel::SetTransform() {
+    spdlog::debug("Setting up frame transformation: {}", static_cast<int>(Frame()));
+    switch(Frame()) {
+    case NuclearFrame::Lab:
+        transform = std::bind(&NuclearModel::TransformLab, this, std::placeholders::_1,
+                              std::placeholders::_2, std::placeholders::_3);
+        break;
+    case NuclearFrame::QZ:
+        transform = std::bind(&NuclearModel::TransformQZ, this, std::placeholders::_1,
+                              std::placeholders::_2, std::placeholders::_3);
+        break;
+    case NuclearFrame::Custom:
+        transform = std::bind(&NuclearModel::TransformCustom, this, std::placeholders::_1,
+                              std::placeholders::_2, std::placeholders::_3);
+        break;
+    default:
+        throw std::runtime_error("NuclearModel: Invalid frame");
+    }
 }
 
 NuclearModel::FormFactorMap
@@ -69,6 +90,24 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
     return results;
 }
 
+void NuclearModel::TransformFrame(Event &event, const Process &process, bool forward) const {
+    transform(event, process, forward);
+}
+
+void NuclearModel::TransformQZ(Event &event, const Process &process, bool forward) {
+    if(forward) {
+        auto q = process.ExtractQ(event); 
+        rotation = q.AlignZ();
+        for(auto &mom : event.Momentum()) {
+            mom = mom.Rotate(rotation);
+        }
+    } else {
+        for(auto &mom : event.Momentum()) {
+            mom = mom.RotateBack(rotation);
+        }
+    }
+}
+
 YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
 }
@@ -92,6 +131,7 @@ NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
                                    ToString(model->Mode()));
             throw std::runtime_error(msg);
         }
+        model->SetTransform();
         models[model->Mode()] = std::move(model);
     }
 

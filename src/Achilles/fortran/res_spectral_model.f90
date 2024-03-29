@@ -14,6 +14,7 @@ module res_spectral_model_test
             procedure :: currents => res_spec_currents
             procedure :: ps_name => res_spec_ps
             procedure :: mode => res_spec_mode
+            procedure :: frame => res_spec_frame
             procedure :: init_wgt => res_spec_init_wgt
             procedure :: cleanup => res_spec_cleanup
     end type
@@ -65,6 +66,12 @@ contains
         res_spec_mode = 4 !..see enum in NuclearModel.hh
     end function
 
+    function res_spec_frame(self) !..frame: LAB, QZ
+        class(res_spec), intent(inout) :: self
+        integer :: res_spec_frame
+        res_spec_frame = 1 !..see enum in NuclearModel.hh
+    end function
+
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
         class(res_spec), intent(inout) :: self
         character(len=:), allocatable :: res_spec_ps
@@ -104,7 +111,7 @@ contains
         p4=mom_in(1)%to_array()
         pp4=mom_out(1)%to_array()
         kpi4=mom_out(2)%to_array()
-        
+
         q4=qvec%to_array()
 
         if(ff%lookup("FResA") /= 0.0d0) then

@@ -19,6 +19,7 @@ namespace achilles {
 class PID;
 class PSBuilder;
 class Spinor;
+class Process;
 
 enum class NuclearMode : int {
     None = -1,
@@ -29,6 +30,12 @@ enum class NuclearMode : int {
     Resonance = 4,
     ShallowInelastic = 5,
     DeepInelastic = 6,
+};
+
+enum class NuclearFrame : int {
+    Lab = 0,
+    QZ,
+    Custom,
 };
 
 inline std::string ToString(NuclearMode mode) {
@@ -106,14 +113,22 @@ class NuclearModel {
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string InspireHEP() const = 0;
+    virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
+    void TransformFrame(Event &, const Process &, bool) const;
+    void SetTransform();
 
   protected:
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
                               const std::vector<FormFactorInfo> &) const;
+    std::function<void(Event &, const Process &, bool)> transform;
+    void TransformLab(Event &, const Process &, bool) const {}
+    void TransformQZ(Event &, const Process &, bool);
+    virtual void TransformCustom(Event &, const Process &, bool) const {}
     static YAML::Node LoadFormFactor(const YAML::Node &);
 
   private:
+    FourVector::RotMat rotation;
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
 };
 

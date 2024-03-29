@@ -83,6 +83,14 @@ contains
         get_mode = model_ptr%mode()
     end function
 
+    function get_frame() bind(C, name="GetFrame")
+        use iso_c_binding
+        implicit none
+        integer(c_int) :: get_frame
+
+        get_frame = model_ptr%frame()
+    end function
+
     function get_ps_name() bind(C, name="GetName_")
         use iso_c_binding
         use libutilities

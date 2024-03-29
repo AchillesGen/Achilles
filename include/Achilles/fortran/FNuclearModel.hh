@@ -2,6 +2,7 @@
 #define FNUCLEAR_MODEL_HH
 
 #include "Achilles/NuclearModel.hh"
+#include <iostream>
 
 extern "C" {
 void RegisterAll();
@@ -11,6 +12,7 @@ bool InitModel(char *);
 void CleanUpEvent(std::complex<double> **, int *);
 void CleanUpModel();
 int GetMode();
+int GetFrame();
 char *GetName_();
 void GetCurrents(long *pids_in, long *pids_out, achilles::FourVector *pin, size_t nin, size_t nout,
                  const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
@@ -32,6 +34,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
         auto tmp = std::string(name);
         delete name;
         return tmp;
+    }
+    NuclearFrame Frame() const override { 
+        return static_cast<NuclearFrame>(GetFrame());
     }
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;

@@ -45,6 +45,7 @@ class Process {
     MOCK void ExtractParticles(const Event &, Particle &, std::vector<Particle> &,
                                std::vector<Particle> &, std::vector<Particle> &,
                                std::vector<Particle> &) const;
+    FourVector ExtractQ(const Event &) const;
     double UnweightEff() const { return m_xsec.Mean() / m_unweighter->MaxValue(); }
     bool operator==(const Process &other) const { return m_info == other.m_info; }
 
