@@ -22,7 +22,9 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
     double dp = point[1].E() + sqrt(pow(point[1].E(), 2) + 2*point[1].E()*Constant::mN + Constant::mN2 - Smin());
     dp = dp > 800 ? 800 : dp;
     const double mom = dp*rans[0];
+    spdlog::debug("dp = {}, mom = {}", dp, mom);
     double cosT_max = (2*point[1].E()*Constant::mN+Constant::mN2-mom*mom-Smin())/(2*point[1].E()*mom);
+    spdlog::debug("cosT_max = {}", cosT_max);
     cosT_max = cosT_max > 1 ? 1 : cosT_max;
     const double cosT = (cosT_max + 1)*rans[1] - 1;
     const double sinT = sqrt(1 - cosT*cosT);
@@ -35,7 +37,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point, const std::
     const double energy = emax*rans[3] - 1e-8;
     // if(emax < 0) energy = emax - 1;
     // const double energy = dE*rans[3];
-    
+ 
     // double cosT_max = (Constant::mN2 + energy*energy - 2*Constant::mN*energy - mom*mom + 2*point[1].E()*Constant::mN - 2*point[1].E()*energy - Smin())/(2*mom*point[1].P());
     // cosT_max = cosT_max > 1 ? 1 : cosT_max;
     // const double cosT = (cosT_max + 1) * rans[1] - 1;

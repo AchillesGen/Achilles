@@ -96,7 +96,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     } else if(pid == 23) {
         const std::complex<double> coupl1 = (ee*i/(4*sw*sw*cw))*(0.5 - 2.*sin2w);
         const std::complex<double> coupl2 = (ee*i/(4*sw*cw));
-        const std::complex<double> coupl3 = ee*i/(cw*sw*sqrt(2)*2);
+        const std::complex<double> coupl3 = ee*i/(cw*sw*2);
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
                                          {FormFactorInfo::Type::F1n, -coupl2},
                                          {FormFactorInfo::Type::F2p, coupl1},
@@ -172,7 +172,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const std::vector<FourVector> &
             for(size_t mu = 0; mu < 4; ++mu) {
                 subcur[mu] = ubar[i]*(coupl_left*SpinMatrix::GammaMu(mu)*SpinMatrix::PL()
                                     + coupl_right*SpinMatrix::GammaMu(mu)*SpinMatrix::PR())*u[j]*prop;
-                spdlog::debug("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
+                //spdlog::debug("Current[{}][{}] = {}", 2*i+j, mu, subcur[mu]);
             }
             result.push_back(subcur);
         }
