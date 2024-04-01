@@ -1,12 +1,8 @@
 vector: Kelly
-#axial: AxialDipole
 axial: AxialZExpansion
 coherent: Helm
-# vector: VectorDummy
-# axial: AxialDummy
-# coherent: CoherentDummy
-
-FormFactor: Kelly
+resonancevector: ResonanceVectorDummy 
+resonanceaxial: ResonanceAxialDummy 
 
 VectorDummy:
   f1p: 1
@@ -19,6 +15,12 @@ AxialDummy:
 
 CoherentDummy:
   fcoh: 1
+
+ResonanceVectorDummy:
+  resV: 1
+
+ResonanceAxialDummy:
+  resA: 1
 
 VectorDipole:
   lambda: 0.847
