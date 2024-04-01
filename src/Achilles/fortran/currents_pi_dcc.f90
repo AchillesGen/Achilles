@@ -104,7 +104,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
    piNinv = abs(piNinv)
 
    Q2 = q(2)**2 + q(3)**2 + q(4)**2 - q(1)**2
-   if (Q2.lt.0.0d0) then        
+   if (Q2.lt.0.0d0 .or. Q2.gt.5000000.0d0) then        
         J_mu(:,:,:) = (0.0d0,0.0d0)
         return
    endif
@@ -121,7 +121,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
    J_mu(1,2,:)=zjmup(-1,1,:)
    J_mu(2,1,:)=zjmup(1,-1,:)  
    J_mu(2,2,:)=zjmup(1,1,:)
-   J_mu=J_mu/hbarc*xmnuc/(2.0d0*pi)**3
+   J_mu=J_mu*2.0d0*xmn/hbarc
    return
 end subroutine
 end module dirac_matrices_pi
