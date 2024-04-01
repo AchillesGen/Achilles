@@ -6,16 +6,15 @@ Main:
   RunDecays: False
   Output:
       Format: NuHepMC
-      Name: electron_1300_37.hepmc
+      Name: achilles.hepmc
       Zipped: True
 
 SherpaOptions:
-  Model: DarkNeutrinoPortal_Dirac_UFO
+  Model: SMnu
   ParamCard: parameters.dat
 
 Processes:
   - Leptons: [14, [14]]
-  - Leptons: [14, [13]]
 
 Initialize:
   Seed: 12345678
@@ -33,7 +32,7 @@ Beams:
         Energy: 1300
 
 Cascade:
-  Run: True
+  Run: False
   Interaction:
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
@@ -58,20 +57,21 @@ NuclearModels:
       SpectralN: data/pke12_tot.data
       Ward: False
 
-Nucleus:
-  Name: 40Ar
-  Binding: 8.6
-  Fermi Momentum: 225
-  Density:
-    File: data/c12.prova.txt
-    FilePotential: data/realOP_12C_EDAI.dat
-    Function: configuration
-    Configs: data/configurations/AR40_configs_RMF_achilles.out.gz
-  FermiGas: Local
-  Potential: 
-    Name: Schroedinger
-    r0: 0.16
-    Mode: 3
+Nuclei:
+  - Nucleus:
+      Name: 12C
+      Binding: 8.6
+      Fermi Momentum: 225
+      Density:
+        File: data/c12.prova.txt
+        FilePotential: data/realOP_12C_EDAI.dat
+        Function: configuration
+        Configs: data/configurations/QMC_configs.out.gz
+      FermiGas: Local
+      Potential: 
+        Name: Schroedinger
+        r0: 0.16
+        Mode: 3
 
 HardCuts:
   - Type: AngleTheta
