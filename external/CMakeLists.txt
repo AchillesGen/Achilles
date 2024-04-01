@@ -85,6 +85,8 @@ CPMAddPackage(
     Name CmakeGitVersion
     GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
     GIT_TAG master
+    OPTIONS
+        "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
 # Install testing framework
