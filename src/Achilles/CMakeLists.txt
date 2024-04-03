@@ -59,8 +59,6 @@ add_library(physics SHARED
     FormFactorBuilder.cc
     Beams.cc
     LeptonicCurrent.cc
-    XSecBackend.cc
-    Process.cc
     Configuration.cc
     Event.cc
     Interactions.cc
@@ -89,6 +87,8 @@ list(APPEND achilles_targets physics)
 
 add_library(nuclear_models SHARED
     NuclearModel.cc
+    XSecBackend.cc
+    Process.cc
 )
 target_link_libraries(nuclear_models PRIVATE project_options project_warnings
                                      PUBLIC physics)
