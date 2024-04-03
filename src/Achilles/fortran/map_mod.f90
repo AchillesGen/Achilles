@@ -178,21 +178,34 @@ contains
         class(map), intent(inout) :: this
         character(len=*), intent(in) :: key
         real(kind=c_double), intent(in) :: val
-        call cmap_insert(this%dict, key, val)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        call cmap_insert(this%dict, ckey, val)
     end subroutine map_insert
 
     function map_lookup(this, key) result(val)
+        use libutilities
         class(map), intent(in) :: this
         character(len=*), intent(in) :: key
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
         real(kind=c_double) :: val
-        val = cmap_lookup(this%dict, key)
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        val = cmap_lookup(this%dict, ckey)
     end function map_lookup
 
     function map_contains(this, key) result(val)
         class(map), intent(in) :: this
         character(len=*), intent(in) :: key
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
         logical :: val
-        val = cmap_contains(this%dict, key)
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        val = cmap_contains(this%dict, ckey)
     end function map_contains
 
     function map_empty(this) result(val)
@@ -238,21 +251,33 @@ contains
         class(complex_map), intent(inout) :: this
         character(len=*), intent(in) :: key
         complex(kind=c_double_complex), intent(in) :: val
-        call ccmap_insert(this%dict, key, val)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        call ccmap_insert(this%dict, ckey, val)
     end subroutine complex_map_insert
 
     function complex_map_lookup(this, key) result(val)
         class(complex_map), intent(in) :: this
         character(len=*), intent(in) :: key
         complex(kind=c_double_complex) :: val
-        val = ccmap_lookup(this%dict, key)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        val = ccmap_lookup(this%dict, ckey)
     end function complex_map_lookup
 
     function complex_map_contains(this, key) result(val)
         class(complex_map), intent(in) :: this
         character(len=*), intent(in) :: key
         logical :: val
-        val = ccmap_contains(this%dict, key)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        val = ccmap_contains(this%dict, ckey)
     end function complex_map_contains
 
     function complex_map_empty(this) result(val)
