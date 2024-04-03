@@ -52,7 +52,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             real(kind=c_double), intent(in), value :: val
         end subroutine cmap_insert
 
@@ -60,7 +60,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             real(kind=c_double) :: val
         end function cmap_lookup
 
@@ -68,7 +68,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             logical(kind=c_bool) :: val
         end function cmap_contains        
 
@@ -83,7 +83,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
         end subroutine cmap_erase
 
         subroutine cmap_clear(dict) bind(C, name="map_clear")
@@ -108,7 +108,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             complex(kind=c_double_complex), intent(in), value :: val
         end subroutine ccmap_insert
 
@@ -116,7 +116,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             complex(kind=c_double_complex), pointer :: val
         end function ccmap_lookup
 
@@ -124,7 +124,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
             logical(kind=c_bool) :: val
         end function ccmap_contains        
 
@@ -139,7 +139,7 @@ module libmap
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
-            character(kind=c_char), dimension(*), intent(in) :: key
+            type(c_ptr), intent(in), value :: key
         end subroutine ccmap_erase
 
         subroutine ccmap_clear(dict) bind(C, name="cmap_clear")
@@ -175,6 +175,7 @@ contains
     end function map_exists
 
     subroutine map_insert(this, key, val)
+        use libutilities
         class(map), intent(inout) :: this
         character(len=*), intent(in) :: key
         real(kind=c_double), intent(in) :: val
@@ -198,6 +199,7 @@ contains
     end function map_lookup
 
     function map_contains(this, key) result(val)
+        use libutilities
         class(map), intent(in) :: this
         character(len=*), intent(in) :: key
         character(len=:), allocatable :: trim_key
@@ -215,9 +217,15 @@ contains
     end function map_empty
 
     subroutine map_erase(this, key)
+        use libutilities
         class(map), intent(inout) :: this
         character(len=*), intent(in) :: key
-        call cmap_erase(this%dict, key)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        logical :: val
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        call cmap_erase(this%dict, ckey)
     end subroutine map_erase
 
     subroutine map_clear(this)
@@ -248,6 +256,7 @@ contains
     end function complex_map_exists
 
     subroutine complex_map_insert(this, key, val)
+        use libutilities
         class(complex_map), intent(inout) :: this
         character(len=*), intent(in) :: key
         complex(kind=c_double_complex), intent(in) :: val
@@ -259,6 +268,7 @@ contains
     end subroutine complex_map_insert
 
     function complex_map_lookup(this, key) result(val)
+        use libutilities
         class(complex_map), intent(in) :: this
         character(len=*), intent(in) :: key
         complex(kind=c_double_complex) :: val
@@ -270,6 +280,7 @@ contains
     end function complex_map_lookup
 
     function complex_map_contains(this, key) result(val)
+        use libutilities
         class(complex_map), intent(in) :: this
         character(len=*), intent(in) :: key
         logical :: val
@@ -287,9 +298,14 @@ contains
     end function complex_map_empty
 
     subroutine complex_map_erase(this, key)
+        use libutilities
         class(complex_map), intent(inout) :: this
         character(len=*), intent(in) :: key
-        call ccmap_erase(this%dict, key)
+        character(len=:), allocatable :: trim_key
+        type(c_ptr) :: ckey
+        trim_key = trim(key) 
+        ckey = f2cstring(trim_key)
+        call ccmap_erase(this%dict, ckey)
     end subroutine complex_map_erase
 
     subroutine complex_map_clear(this)
