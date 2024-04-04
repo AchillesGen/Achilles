@@ -38,7 +38,7 @@ class ElectronPDF : public PDFBase {
     const Scheme m_scheme;
     const PID m_bunch;
     std::vector<PID> m_partons;
-    const double m_mass, m_scale;
+    [[maybe_unused]] const double m_mass, m_scale;
     const int m_order;
     double m_exponent;
     AlphaQED m_alpha;

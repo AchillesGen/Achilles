@@ -15,7 +15,7 @@ class Event;
 class NuclearModel;
 class PID;
 struct FormFactorInfo;
-class ProcessInfo;
+struct ProcessInfo;
 
 using Particles = std::vector<Particle>;
 using Current = std::vector<VCurrent>;

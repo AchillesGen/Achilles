@@ -154,7 +154,7 @@ class SpinMatrix {
         else if(i == 5)
             return Gamma_5();
         else
-            throw std::runtime_error("Invalid Gamma Matrix: " + i);
+            throw std::runtime_error("Invalid Gamma Matrix: " + std::to_string(i));
     }
 
     static SpinMatrix PL();
