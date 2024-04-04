@@ -32,7 +32,7 @@ class PSBuilder {
     MOCK std::unique_ptr<PSMapper> build() { return std::move(phase_space); }
 
   private:
-    size_t m_nlep, m_nhad;
+    [[maybe_unused]] size_t m_nlep, m_nhad;
     std::unique_ptr<PSMapper> phase_space = nullptr;
 };
 
