@@ -10,9 +10,6 @@ module libvectors
         private
         type(c_ptr) :: ptr ! Pointer to the FourVector obj
     contains
-        ! Bind some functions to the type for cleaner syntax
-        final :: delete_fourvector
-
         ! Member functions
         procedure :: self => get_ptr4
         procedure :: boost => boost4
@@ -36,9 +33,6 @@ module libvectors
         private
         type(c_ptr) :: ptr ! Pointer to the ThreeVector obj
     contains
-        ! Bind some functions to the type for cleaner syntax
-        final :: delete_threevector
-
         ! Function members
         procedure :: self => get_ptr3
         procedure :: dot => dot3
@@ -89,9 +83,9 @@ contains ! Implementation of functions
 
     function copy_constructor4(other)
         implicit none
-        type(c_ptr), intent(in) :: other
+        type(c_ptr), intent(in), target :: other
         type(fourvector) :: copy_constructor4
-        copy_constructor4%ptr = copy_fourvector_c(other)
+        copy_constructor4%ptr = other
     end function
 
     subroutine delete_fourvector(this)
@@ -196,10 +190,13 @@ contains ! Implementation of functions
         class(fourvector), intent(in) :: this
         double precision, dimension(4) :: array4
 
-        array4(1) = this%get(0)
-        array4(2) = this%get(1)
-        array4(3) = this%get(2)
-        array4(4) = this%get(3)
+
+        array4(1) = get4(this,0)
+        array4(2) = get4(this,1)
+        array4(3) = get4(this,2)
+        array4(4) = get4(this,3)
+
+
     end function
 
     function create_threevector(x, y, z)

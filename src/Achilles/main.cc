@@ -8,7 +8,9 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
+#include "Achilles/fortran/FNuclearModel.hh"
 #include "git.h"
+#include "plugins/Manager/PluginManager.hh"
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/Channels.hh"
 #include "plugins/Sherpa/SherpaInterface.hh"
@@ -67,7 +69,7 @@ void Splash() {
 |                                                                     |
 |    Version: {:56}|
 |    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,        | 
-|        Pedro A. Machado, Noemi Rocco                                | 
+|        Pedro A. Machado, Luke Pickering, Noemi Rocco                | 
 |                                                                     |
 |    Undergraduate Student Contributions:                             |
 |        Diego Lopez Gutierrez, Sherry Wang, Russell Farnsworth       |
@@ -129,6 +131,7 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     CreateLogger(verbosity, 5);
     GitInformation();
+    achilles::Plugin::Manager plugin_manager;
 
     if(args["--display-cuts"].asBool()) {
         achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
@@ -155,8 +158,10 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+    achilles::FortranModel::RegisterModels();
     if(args["--display-nuc-models"].asBool()) {
         achilles::NuclearModelFactory::Display();
+        achilles::FortranModel::DisplayModels();
         return 0;
     }
 

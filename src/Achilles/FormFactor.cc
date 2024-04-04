@@ -9,6 +9,8 @@ achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     if(vector) vector->Evaluate(Q2, results);
     if(axial) axial->Evaluate(Q2, results);
     if(coherent) coherent->Evaluate(Q2, results);
+    if(resonancevector) resonancevector->Evaluate(Q2, results);
+    if(resonanceaxial) resonanceaxial->Evaluate(Q2, results);
     return results;
 }
 
@@ -222,4 +224,38 @@ void achilles::LovatoFormFactor::Evaluate(double Q2, FormFactor::Values &result)
         exp(-0.5 * pow(b * x, 2)) *
         (c[0] + c[1] * b * x + c[2] * pow(b * x, 2) + c[3] * pow(b * x, 3) + c[4] * pow(b * x, 4)) /
         6.0;
+}
+
+// Resonance Dummy Form Factor
+achilles::ResonanceDummyVectorFormFactor::ResonanceDummyVectorFormFactor(const YAML::Node &config) {
+    resV = config["resV"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::ResonanceDummyVectorFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<ResonanceDummyVectorFormFactor>(type);
+    return std::make_unique<ResonanceDummyVectorFormFactor>(node);
+}
+
+void achilles::ResonanceDummyVectorFormFactor::Evaluate(double Q2,
+                                                        FormFactor::Values &result) const {
+    spdlog::trace("ResonanceDummyVectorFormFactor: Q2 = {}", Q2);
+    result.FresV = resV;
+}
+
+// Resonance Dummy Form Factor
+achilles::ResonanceDummyAxialFormFactor::ResonanceDummyAxialFormFactor(const YAML::Node &config) {
+    resA = config["resA"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::ResonanceDummyAxialFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<ResonanceDummyAxialFormFactor>(type);
+    return std::make_unique<ResonanceDummyAxialFormFactor>(node);
+}
+
+void achilles::ResonanceDummyAxialFormFactor::Evaluate(double Q2,
+                                                       FormFactor::Values &result) const {
+    spdlog::trace("ResonanceDummyAxialFormFactor: Q2 = {}", Q2);
+    result.FresA = resA;
 }

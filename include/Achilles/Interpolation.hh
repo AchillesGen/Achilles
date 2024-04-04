@@ -1,6 +1,7 @@
 #ifndef INTERPOLATION_HH
 #define INTERPOLATION_HH
 
+#include <cstddef>
 #include <vector>
 
 // #include "pybind11/numpy.h"

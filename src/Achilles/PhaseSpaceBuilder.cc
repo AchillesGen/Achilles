@@ -25,8 +25,10 @@ PSBuilder &PSBuilder::Hadron(const std::string &mode, const std::vector<double> 
     return *this;
 }
 
-PSBuilder &PSBuilder::FinalState(const std::string &channel, const std::vector<double> &masses2) {
+PSBuilder &PSBuilder::FinalState(const std::string &channel, const std::vector<double> &masses2,
+                                 std::optional<double> gauge_boson_mass) {
     phase_space->main = PSFactory<FinalStateMapper, std::vector<double>>::Build(channel, masses2);
+    if(gauge_boson_mass.has_value()) phase_space->main->SetGaugeBosonMass(gauge_boson_mass.value());
     return *this;
 }
 

@@ -5,6 +5,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/FormFactor.hh"
+#include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/SpectralFunction.hh"
 
@@ -18,6 +19,7 @@ namespace achilles {
 class PID;
 class PSBuilder;
 class Spinor;
+class Process;
 
 enum class NuclearMode : int {
     None = -1,
@@ -28,6 +30,12 @@ enum class NuclearMode : int {
     Resonance = 4,
     ShallowInelastic = 5,
     DeepInelastic = 6,
+};
+
+enum class NuclearFrame : int {
+    Lab = 0,
+    QZ,
+    Custom,
 };
 
 inline std::string ToString(NuclearMode mode) {
@@ -96,24 +104,31 @@ class NuclearModel {
 
     virtual NuclearMode Mode() const = 0;
     virtual std::string PhaseSpace(PID) const = 0;
-    virtual Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    virtual Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                                   const FourVector &, const FFInfoMap &) const = 0;
-    virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const = 0;
-    virtual size_t NSpins() const = 0;
-    virtual double InitialStateWeight(const std::vector<PID> &,
-                                      const std::vector<FourVector> &) const = 0;
+    virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const;
+    virtual size_t NSpins() const;
+    virtual double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const = 0;
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string InspireHEP() const = 0;
+    virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
+    void TransformFrame(Event &, const Process &, bool) const;
+    void SetTransform();
 
   protected:
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
                               const std::vector<FormFactorInfo> &) const;
+    std::function<void(Event &, const Process &, bool)> transform;
+    void TransformLab(Event &, const Process &, bool) const {}
+    void TransformQZ(Event &, const Process &, bool);
+    virtual void TransformCustom(Event &, const Process &, bool) const {}
     static YAML::Node LoadFormFactor(const YAML::Node &);
 
   private:
+    FourVector::RotMat rotation;
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
 };
 
@@ -129,12 +144,11 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
 
     NuclearMode Mode() const override { return NuclearMode::Coherent; }
     std::string PhaseSpace(PID) const override;
-    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
-    double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override {
+    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override {
         return 1;
     }
     std::string GetName() const override { return Coherent::Name(); }
@@ -154,12 +168,10 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
 
     NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
     std::string PhaseSpace(PID) const override;
-    Currents CalcCurrents(const std::vector<FourVector> &, const std::vector<FourVector> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
-    std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<PID> &,
-                              const std::vector<FourVector> &) const override;
+    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
 

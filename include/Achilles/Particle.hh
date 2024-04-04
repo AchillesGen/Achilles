@@ -26,6 +26,7 @@ enum class ParticleStatus : int {
     decayed = 5,
     beam = 6,
     target = 7,
+    spectator = 8,
 };
 
 /// The Particle class provides a container to handle information about the particle.

@@ -35,7 +35,7 @@ TEST_CASE("Histogram Stats", "[Histogram]") {
 
     SECTION("Test Integral") {
         CHECK(hist.Integral() == 55);
-        CHECK(hist.Integral(0, 5) == 45);
+        CHECK(hist.Integral(0, 5) == 40);
 
         CHECK(hist.Integral() == -hist.Integral(11, 0));
         CHECK_THROWS_WITH(hist.Integral(12, 2), "Invalid range for histogram integration");

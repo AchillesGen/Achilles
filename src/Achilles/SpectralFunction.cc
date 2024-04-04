@@ -1,6 +1,5 @@
 #include "Achilles/SpectralFunction.hh"
 #include "spdlog/spdlog.h"
-#include <cmath>
 #include <fstream>
 
 using achilles::SpectralFunction;

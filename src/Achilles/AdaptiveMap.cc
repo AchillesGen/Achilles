@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
-#include <iostream>
 
 #include "Achilles/AdaptiveMap.hh"
 #include "Achilles/Random.hh"

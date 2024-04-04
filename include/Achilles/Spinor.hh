@@ -4,7 +4,6 @@
 // Implementation of spinor classes closely related to that in Sherpa
 
 #include <complex>
-#include <iostream>
 
 #include "Achilles/FourVector.hh"
 

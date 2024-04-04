@@ -36,6 +36,7 @@ static constexpr int Propagating = 24;
 static constexpr int Background = 25;
 static constexpr int Captured = 26;
 static constexpr int UndecayedResidue = 27;
+static constexpr int Spectator = 28;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
@@ -105,6 +106,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Propagating, {"Propagating", "Propagating"}},
                  {NuHepMC::ParticleStatus::Background, {"Background", "Background"}},
                  {NuHepMC::ParticleStatus::Captured, {"Captured", "Captured"}},
+                 {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
              });
 
     // Signal conventions
@@ -146,6 +148,8 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::IncomingBeam;
     case achilles::ParticleStatus::target:
         return NuHepMC::ParticleStatus::Target;
+    case achilles::ParticleStatus::spectator:
+        return NuHepMC::ParticleStatus::Spectator;
     }
     return -1;
 }

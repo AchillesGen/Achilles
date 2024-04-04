@@ -32,7 +32,6 @@ class Process {
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
     MOCK const ProcessInfo &Info() const { return m_info; }
-    size_t NInitialStates(Nucleus *) const;
     void SetupHadrons(Event &) const;
     MOCK void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
@@ -41,7 +40,12 @@ class Process {
     MOCK double Unweight(double weight) { return m_unweighter->AcceptEvent(weight); }
     double MaxWeight() { return m_unweighter->MaxValue(); }
     MOCK void ExtractMomentum(const Event &, FourVector &, std::vector<FourVector> &,
-                              std::vector<FourVector> &, std::vector<FourVector> &) const;
+                              std::vector<FourVector> &, std::vector<FourVector> &,
+                              std::vector<FourVector> &) const;
+    MOCK void ExtractParticles(const Event &, Particle &, std::vector<Particle> &,
+                               std::vector<Particle> &, std::vector<Particle> &,
+                               std::vector<Particle> &) const;
+    FourVector ExtractQ(const Event &) const;
     double UnweightEff() const { return m_xsec.Mean() / m_unweighter->MaxValue(); }
     bool operator==(const Process &other) const { return m_info == other.m_info; }
 
@@ -56,6 +60,7 @@ class Process {
     std::unique_ptr<Unweighter> m_unweighter;
     int m_id{};
 
+    // Metadata handlers
     std::string Name(XSecBackend *) const;
     std::string Description(XSecBackend *) const;
     std::string InspireHEP(XSecBackend *) const;

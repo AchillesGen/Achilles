@@ -39,7 +39,7 @@ ElectronPDF::ElectronPDF(PID bunch, Scheme scheme, int order, double muh, double
       m_order{order}, m_alpha{alpha0} {
     m_partons.push_back(bunch);
 
-    double L = log(muh * muh / m_mass / m_mass);
+    double L = log(m_scale * m_scale / m_mass / m_mass);
     m_exponent = m_alpha(m_mass * m_mass) / M_PI * (L - 1);
     if(m_order > 3)
         throw std::runtime_error("ElectronPDF: Invalid order. Only valid up to order 3");

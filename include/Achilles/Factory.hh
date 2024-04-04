@@ -35,6 +35,12 @@ template <typename Base, typename... Args> class Factory {
         return Registry().find(name) != Registry().end();
     }
 
+    static void Deregister(const std::string &name) {
+        if(!IsRegistered(name)) spdlog::error("{} is not registered!", name);
+        spdlog::trace("Deregistering {}", name);
+        Registry().erase(name);
+    }
+
     static void Display() {
         fmt::print("Registered {}:\n", Base::Name());
         for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);

@@ -7,7 +7,9 @@ module libutilities
     public :: constants, c2fstring, f2cstring, malloc, free
 
     type constants_type
-        double precision :: c, hbarc, hbarc2, mp, mn, mqe
+        double precision :: c, hbarc, hbarc2, pi, mp, mn
+        double precision ::  mqe, mpi0, mpip, meta
+
     end type constants_type
 
     interface

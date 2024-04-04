@@ -18,6 +18,9 @@ target_include_directories(project_options INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
+enable_language(Fortran)
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
+
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
 add_library(project_warnings INTERFACE)
 
@@ -41,6 +44,18 @@ if(ACHILLES_ENABLE_PCH)
     target_precompile_headers(project_options INTERFACE <vector> <string> <map>)
 endif()
 
+# Check for python development environment
+# find_package(Python REQUIRED COMPONENTS Development)
+
+# Add CMake modules to CMAKE_MODULE_PATH
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
+
+# Ensure compiler supports filesystem and needed compiler flags
+find_package(Filesystem REQUIRED)
+
+# Find HDF5
+find_package(HDF5 REQUIRED COMPONENTS CXX)
+
 # Find ZLIB to read gzip files
 if(ACHILLES_ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
@@ -48,7 +63,6 @@ endif()
 
 if(ACHILLES_ENABLE_SHERPA)
 # Find Sherpa
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 find_package(SHERPA REQUIRED)
 find_package(ZLIB REQUIRED)
 endif()

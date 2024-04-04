@@ -1,8 +1,6 @@
 #include "Achilles/Interpolation.hh"
 #include "fmt/ostream.h"
 
-#include <iostream>
-
 extern "C" {
 // Fortran 1D interpolation interface
 achilles::Interp1D *CreateInterp1D(const double *x, const double *y, int n, int mode) {

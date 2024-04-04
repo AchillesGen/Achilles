@@ -286,7 +286,6 @@ class ThreeVector {
     bool operator!=(const ThreeVector &other) const noexcept { return !(*this == other); }
 
     // Access Operators
-
     /// Access a given index from the vector
     ///@param idx: Index to access
     ///@return double: The value of the vector at the given index

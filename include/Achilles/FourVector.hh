@@ -17,9 +17,9 @@ class ThreeVector;
 /// The FourVector class provides an easy to use container to handle four
 /// component vectors, such as four-position and four-momentum
 class FourVector {
+  public:
     using RotMat = std::array<double, 9>;
 
-  public:
     /// @name Constructors and Destructors
     ///@{
 

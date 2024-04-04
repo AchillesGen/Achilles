@@ -21,7 +21,14 @@ class SherpaInterface {};
 #endif
 
 #ifdef ACHILLES_ENABLE_HEPMC3
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
 #include "plugins/HepMC3/HepMC3EventWriter.hh"
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
@@ -185,6 +192,7 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // Select the process group and generate an event
     auto &group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
     auto &&event = group.GenerateEvent();
+    event.Weight() *= m_max_weight;
     if(event.Weight() == 0) {
         writer->Write(event);
         return false;

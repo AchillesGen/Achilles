@@ -1,6 +1,4 @@
 #include "Achilles/Unweighter.hh"
-#include "Achilles/Event.hh"
-#include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
 
 using achilles::PercentileUnweighter;

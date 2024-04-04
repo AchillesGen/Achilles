@@ -24,7 +24,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
-        achilles::CooperPotential potential(nucleus);
+        achilles::CooperPotential potential;
 
 #ifdef AUTODIFF
         autodiff::real r = 0.15;
@@ -57,8 +57,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         std::cout << drsdp << " " << drsdr << "\n";
         std::cout << disdp << " " << disdr << "\n";
 
-        auto stencilp = potential.derivative_p(plab, r, 0.01);
-        auto stencilr = potential.derivative_r(plab, r, 0.01);
+        auto stencilp = potential.derivative_p(nucleus.get(), plab, r, 0.01);
+        auto stencilr = potential.derivative_r(nucleus.get(), plab, r, 0.01);
 
         CHECK(drvdp == Approx(stencilp.rvector));
         CHECK(drvdr == Approx(stencilr.rvector));
@@ -73,9 +73,9 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
 #endif
-        auto vals = potential(plab, r);
-        auto stencilp = potential.derivative_p(plab, r);
-        auto stencilr = potential.derivative_r(plab, r);
+        auto vals = potential(nucleus.get(), plab, r);
+        auto stencilp = potential.derivative_p(nucleus.get(), plab, r);
+        auto stencilr = potential.derivative_r(nucleus.get(), plab, r);
 
         // Require to match to 0.01% of Cooper code
         CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
@@ -193,12 +193,12 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
-        achilles::SchroedingerPotential potential(nucleus, 5);
+        achilles::SchroedingerPotential potential(5);
 
         double r = 0.15;
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
-        auto vals = potential(plab, r);
+        auto vals = potential(nucleus.get(), plab, r);
 
         // Require to match to 0.01% of Cooper code
         CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
