@@ -89,6 +89,9 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
 
 double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, size_t nproton,
                                         size_t nneutron) const {
+
+    if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
+
     size_t nin = had_in.size();
     std::vector<long> pids_in;
     std::vector<FourVector> moms;
@@ -103,4 +106,15 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, siz
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<FortranModel>(config, form_factor);
+}
+
+std::string FortranModel::PhaseSpace(PID nuc_pid) const {
+    if(nuc_pid != PID::hydrogen()){
+        char *name = GetName_();
+        auto tmp = std::string(name);
+        delete name;
+        return tmp;
+    }
+    is_hydrogen = true;
+    return "Coherent";
 }

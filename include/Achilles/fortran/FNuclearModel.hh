@@ -29,12 +29,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     ~FortranModel() override { CleanUpModel(); }
 
     NuclearMode Mode() const override { return static_cast<NuclearMode>(GetMode()); }
-    std::string PhaseSpace(PID) const override {
-        char *name = GetName_();
-        auto tmp = std::string(name);
-        delete name;
-        return tmp;
-    }
+    std::string PhaseSpace(PID) const override;
     NuclearFrame Frame() const override { 
         return static_cast<NuclearFrame>(GetFrame());
     }
@@ -56,6 +51,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
         fmt::print("Available Fortran nuclear models:\n");
         ListModels();
     }
+
+  private:
+    mutable bool is_hydrogen;
 };
 
 } // namespace achilles
