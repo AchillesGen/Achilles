@@ -394,6 +394,9 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
 NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had_in,
                                                 const std::vector<Particle> &had_out,
                                                 const FourVector &q, const FFInfoMap &ff) const {
+
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
@@ -452,11 +455,7 @@ void QESpectral::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) 
     cur4_imag[3] = omega / q.P() * cur[0].imag();
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 void QESpectral::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
@@ -472,21 +471,13 @@ void QESpectral::WeylGauge(VCurrent &cur, const FourVector &q, double omega) con
     cur4_imag[0] = q.P() / omega * cur4_imag[3];
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 void QESpectral::LandauGauge(VCurrent &cur, const FourVector &q) const {
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
     auto Q2 = -q.M2();
     for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
