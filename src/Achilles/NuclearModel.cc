@@ -455,11 +455,7 @@ void QESpectral::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) 
     cur4_imag[3] = omega / q.P() * cur[0].imag();
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 void QESpectral::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
@@ -475,21 +471,13 @@ void QESpectral::WeylGauge(VCurrent &cur, const FourVector &q, double omega) con
     cur4_imag[0] = q.P() / omega * cur4_imag[3];
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 void QESpectral::LandauGauge(VCurrent &cur, const FourVector &q) const {
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
     auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
     auto Q2 = -q.M2();
     for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
 }
 
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
@@ -499,7 +487,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
 
 double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons, size_t nprotons,
                                       size_t nneutrons) const {
-    if(is_hydrogen) return 1;
+    if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     const double removal_energy = Constant::mN - nucleons[0].E();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *
