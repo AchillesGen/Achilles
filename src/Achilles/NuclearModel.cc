@@ -394,6 +394,9 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
 NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had_in,
                                                 const std::vector<Particle> &had_out,
                                                 const FourVector &q, const FFInfoMap &ff) const {
+
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
