@@ -167,3 +167,14 @@ std::string FortranModel::PhaseSpace(PID nuc_pid) const {
         is_free_neutron = true;
     return "Coherent";
 }
+
+std::string FortranModel::PhaseSpace(PID nuc_pid) const {
+    if(nuc_pid != PID::hydrogen()){
+        char *name = GetName_();
+        auto tmp = std::string(name);
+        delete name;
+        return tmp;
+    }
+    is_hydrogen = true;
+    return "Coherent";
+}
