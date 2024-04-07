@@ -6,15 +6,13 @@
 #include <vector>
 
 #include "Achilles/FourVector.hh"
+#include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
-#include "Achilles/Interpolation.hh"
-#include "Achilles/Random.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
-#include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
 namespace achilles {
@@ -40,6 +38,9 @@ class Cascade {
     // In-Medium Effects Enums
     enum InMedium { None, NonRelativistic, Relativistic };
 
+    // Algorithms Enums
+    enum Algorithm { Base, MFP };
+
     /// @name Constructor and Destructor
     ///@{
 
@@ -49,8 +50,8 @@ class Cascade {
     ///@param dist: The maximum distance step to take when propagating
     /// TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
     Cascade() = default;
-    Cascade(std::unique_ptr<Interactions>, const ProbabilityType &, const InMedium &,
-            bool potential_prob = false, const double &dist = 0.03);
+    Cascade(InteractionHandler, const ProbabilityType &, Algorithm, const InMedium &,
+            bool potential_prob = false, double dist = 0.03);
     Cascade(Cascade &&) = default;
     Cascade &operator=(Cascade &&) = default;
 
@@ -61,9 +62,10 @@ class Cascade {
     /// @name Getters
     ///@{
 
+    // TODO: Convert to InteractionHandler
     /// Get the name of the interaction model used
     ///@return std::string: Name of the interaction model
-    std::string InteractionModel() const { return m_interactions->Name(); }
+    // std::string InteractionModel() const { return m_interactions->Name(); }
 
     /// Get the probability model used
     ///@return std::string: Name of the probability model
@@ -153,7 +155,7 @@ class Cascade {
                        const ThreeVector &) const noexcept;
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
-    const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) const noexcept;
+    const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
     double GetXSec(const Particle &, const Particle &) const;
     std::size_t Interacted(const Particles &, const Particle &,
                            const InteractionDistances &) noexcept;
@@ -162,13 +164,19 @@ class Cascade {
     bool PauliBlocking(const Particle &) const noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *, double);
+    std::vector<size_t> InitializeIntegrator();
     void UpdateIntegrator(size_t, Particle *);
+    void UpdateKicked(bool, size_t, size_t, Particle *, Particle *, std::vector<size_t> &);
+    void Validate(const Particles &);
+    size_t BaseAlgorithm(size_t, Particles &);
+    size_t MFPAlgorithm(size_t, Particles &);
 
     // Variables
     std::vector<std::size_t> kickedIdxs;
     double distance{}, timeStep{};
-    std::unique_ptr<Interactions> m_interactions;
+    InteractionHandler m_interactions;
     std::function<double(double, double)> probability;
+    std::function<size_t(size_t, Particles &)> algorithm;
     std::shared_ptr<Nucleus> localNucleus;
     InMedium m_medium;
     bool m_potential_prop;
@@ -180,14 +188,16 @@ class Cascade {
 
 namespace YAML {
 template <> struct convert<achilles::Cascade> {
-    static bool decode(const Node &node, achilles::Cascade &cascade) {
-        auto interaction = achilles::InteractionFactory::Create(node["Interaction"]);
-        auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
-        auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
-        auto potentialProp = node["PotentialProp"].as<bool>();
-        auto distance = node["Step"].as<double>();
-        cascade = achilles::Cascade(std::move(interaction), probType, mediumType, potentialProp,
-                                    distance);
+    static bool decode(const Node &, achilles::Cascade &) {
+        // TODO: Modify this to handle a InteractionHandler object
+        // auto interaction = achilles::InteractionFactory::Create(node["Interaction"]);
+        // auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
+        // auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
+        // auto potentialProp = node["PotentialProp"].as<bool>();
+        // auto distance = node["Step"].as<double>();
+        // auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
+        // cascade = achilles::Cascade(std::move(interaction), probType, algorithm,
+        //                             mediumType, potentialProp, distance);
         return true;
     }
 };
@@ -214,6 +224,18 @@ template <> struct convert<achilles::Cascade::InMedium> {
             type = achilles::Cascade::InMedium::NonRelativistic;
         else if(node.as<std::string>() == "Relativistic")
             type = achilles::Cascade::InMedium::Relativistic;
+        else
+            return false;
+        return true;
+    }
+};
+
+template <> struct convert<achilles::Cascade::Algorithm> {
+    static bool decode(const Node &node, achilles::Cascade::Algorithm &type) {
+        if(node.as<std::string>() == "Base")
+            type = achilles::Cascade::Algorithm::Base;
+        else if(node.as<std::string>() == "MFP")
+            type = achilles::Cascade::Algorithm::MFP;
         else
             return false;
         return true;

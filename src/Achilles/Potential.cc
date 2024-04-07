@@ -110,8 +110,7 @@ std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr
     return std::make_unique<WiringaPotential>(nuc, r0);
 }
 
-PotentialVals achilles::WiringaPotential::operator()(const double &plab,
-                                                     const double &radius) const {
+PotentialVals achilles::WiringaPotential::operator()(double plab, double radius) const {
     const double rho = m_nucleus->Rho(radius);
     const double rho_ratio = rho / m_rho0;
     const double alpha = 15.52 * rho_ratio + 24.93 * pow(rho_ratio, 2);
@@ -226,8 +225,7 @@ std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucl
     return std::make_unique<SchroedingerPotential>(nuc, mode);
 }
 
-achilles::PotentialVals SchroedingerPotential::operator()(const double &plab,
-                                                          const double &radius) const {
+achilles::PotentialVals SchroedingerPotential::operator()(double plab, double radius) const {
     auto potential = stencil5all([&](double r) { return evaluate(plab, r); }, radius, 0.01);
     const double u1 = potential[0].rscalar;
     const double w1 = potential[0].iscalar;

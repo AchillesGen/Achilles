@@ -58,7 +58,7 @@ class Potential {
     virtual ~Potential() = default;
     virtual std::string GetReference() const = 0;
     // TODO: Figure out if it should be Nucleus or not passed in
-    virtual PotentialVals operator()(const double &, const double &) const = 0;
+    virtual PotentialVals operator()(double, double) const = 0;
 
     PotentialVals derivative_p(double p, double r, double h = step) const {
         auto fp = [&](double x) { return this->operator()(x, r); };
@@ -198,7 +198,7 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
     std::string GetReference() const override { return m_ref.GetReference(); }
     double Rho0() const { return m_rho0; }
 
-    PotentialVals operator()(const double &plab, const double &radius) const override;
+    PotentialVals operator()(double plab, double radius) const override;
 
   private:
     std::shared_ptr<Nucleus> m_nucleus;
@@ -238,7 +238,7 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
     std::string GetReference() const override { return m_ref.GetReference(); }
     bool IsRelativistic() const override { return true; }
 
-    PotentialVals operator()(const double &plab, const double &radius) const override {
+    PotentialVals operator()(double plab, double radius) const override {
         return evaluate(plab, radius);
     }
 
@@ -313,7 +313,7 @@ class SchroedingerPotential : public CooperPotential, RegistrablePotential<Schro
     static std::string Name() { return "Schroedinger"; }
     static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus> &, const YAML::Node &);
 
-    PotentialVals operator()(const double &plab, const double &radius) const override;
+    PotentialVals operator()(double plab, double radius) const override;
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);

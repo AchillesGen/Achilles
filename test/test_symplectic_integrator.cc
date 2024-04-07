@@ -3,11 +3,14 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/SymplecticIntegrator.hh"
+#include "Achilles/ThreeVector.hh"
 #include "mock_classes.hh"
 #include "spdlog/spdlog.h"
 
 #include <complex>
 #include <fstream>
+
+using achilles::ThreeVector;
 
 double Rho(double r) {
     static constexpr double a = 0.09320982;
@@ -118,15 +121,18 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
     ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(0))).LR_RETURN((Rho(_1)));
     auto potential = MakePotential<TestType>(nucleus);
 
-    auto dHamiltonian_dr_func = [&](const ThreeVector &p_, const ThreeVector &q_) -> ThreeVector {
-        return dHamiltonian_dr(p_, q_, nucleus.get(), potential);
+    auto dHamiltonian_dr_func = [&](const ThreeVector &p_, const ThreeVector &q_,
+                                    std::shared_ptr<achilles::Potential> pot_) -> ThreeVector {
+        return dHamiltonian_dr(p_, q_, pot_);
     };
 
-    auto dHamiltonian_dp_func = [&](const ThreeVector &p_, const ThreeVector &q_) -> ThreeVector {
-        return dHamiltonian_dp(p_, q_, nucleus.get(), potential);
+    auto dHamiltonian_dp_func = [&](const ThreeVector &p_, const ThreeVector &q_,
+                                    std::shared_ptr<achilles::Potential> pot_) -> ThreeVector {
+        return dHamiltonian_dp(p_, q_, pot_);
     };
 
-    achilles::SymplecticIntegrator si(q, p, dHamiltonian_dr_func, dHamiltonian_dp_func, omega);
+    achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr_func, dHamiltonian_dp_func,
+                                      omega);
 
     SECTION("Order 2") {
         std::ofstream out("symplectic2_" + potential->Name() + ".txt");
@@ -137,12 +143,12 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<2>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
-        const double Ef2 = Hamiltonian(si.State().x, si.State().y, nucleus.get(), potential);
+        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
+        const double Ef2 = Hamiltonian(si.State().x, si.State().y, potential);
         spdlog::info("Final Hamiltonian Value: {}, {}, {}, {}",
                      Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef - E0) / E0, Ef2,
                      std::abs(Ef2 - E0) / E0);
@@ -162,7 +168,7 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<4>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
@@ -183,7 +189,7 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<6>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }

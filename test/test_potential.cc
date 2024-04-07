@@ -2,7 +2,6 @@
 #include "Achilles/Potential.hh"
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
-#include <iostream>
 
 double stencil5(std::function<double(double)> f, double x, double h) {
     return (-f(x + 2 * h) + 8 * f(x + h) - 8 * f(x - h) - f(x - 2 * h)) / (12 * h);
@@ -24,7 +23,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
-        achilles::CooperPotential potential;
+        achilles::CooperPotential potential(nucleus);
 
 #ifdef AUTODIFF
         autodiff::real r = 0.15;
@@ -73,9 +72,9 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
 #endif
-        auto vals = potential(nucleus.get(), plab, r);
-        auto stencilp = potential.derivative_p(nucleus.get(), plab, r);
-        auto stencilr = potential.derivative_r(nucleus.get(), plab, r);
+        auto vals = potential(plab, r);
+        auto stencilp = potential.derivative_p(plab, r);
+        auto stencilr = potential.derivative_r(plab, r);
 
         // Require to match to 0.01% of Cooper code
         CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
@@ -193,12 +192,12 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
 
-        achilles::SchroedingerPotential potential(5);
+        achilles::SchroedingerPotential potential(nucleus, 5);
 
         double r = 0.15;
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
 
-        auto vals = potential(nucleus.get(), plab, r);
+        auto vals = potential(plab, r);
 
         // Require to match to 0.01% of Cooper code
         CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));

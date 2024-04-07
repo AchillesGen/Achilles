@@ -2,6 +2,7 @@
 #define FINTERACTIONS_HH
 
 #include "Achilles/Interactions.hh"
+#include "Achilles/Particle.hh"
 
 extern "C" {
 using namespace achilles;
@@ -14,9 +15,10 @@ ThreeVector *MakeMomentumFortran(bool, const double, const double[2]);
 
 namespace achilles {
 
-class FortranInteraction : public Interactions {
+class FortranInteraction : public Interaction {
   public:
     FortranInteraction(const YAML::Node &node) {
+        throw std::runtime_error("FortranInteraction is not implemented");
         auto name = node["Name"].as<std::string>();
         size_t len = name.size();
         auto cname = std::unique_ptr<char>(new char[len]);
@@ -24,18 +26,27 @@ class FortranInteraction : public Interactions {
         InitializeInteraction(cname.get());
     };
 
-    static std::unique_ptr<Interactions> Create(const YAML::Node &data) {
+    static std::unique_ptr<Interaction> Create(const YAML::Node &data) {
         return std::make_unique<FortranInteraction>(data);
     }
 
     static std::string GetName() { return "FortranInteraction"; }
     std::string Name() const override { return FortranInteraction::GetName(); }
     static bool IsRegistered() noexcept { return registered; }
-    double CrossSection(const Particle &part1, const Particle &part2) const override {
-        return CrossSectionFortran(&part1, &part2);
+    InteractionResults CrossSection(const Particle &part1, const Particle &part2) const override {
+        return {{{part1.ID(), part2.ID()}, CrossSectionFortran(&part1, &part2)}};
+    }
+    std::vector<std::pair<int, int>> InitialStates() const override {
+        return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
+    }
+    std::vector<Particle> GenerateMomentum(const Particle &, const Particle &,
+                                           const std::vector<PID> &,
+                                           const std::vector<double> &) const override {
+        std::vector<Particle> particles;
+        return particles;
     }
     ThreeVector MakeMomentum(bool samePID, const double &pcm,
-                             const std::array<double, 2> &rans) const override {
+                             const std::array<double, 2> &rans) const {
         return {*MakeMomentumFortran(samePID, pcm, rans.data())};
     }
 
