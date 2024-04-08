@@ -37,6 +37,10 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
                                                   const std::vector<Particle> &had_out,
                                                   const FourVector &qVec,
                                                   const FFInfoMap &ff) const {
+
+    
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    
     NuclearModel::Currents result;
 
     // Create momentum variables to pass to fortran
