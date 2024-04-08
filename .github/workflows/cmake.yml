@@ -7,6 +7,7 @@ env:
   CMAKE_VERSION: 3.21.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 4.4
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
   build:
@@ -33,17 +34,17 @@ jobs:
     #         }
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
 
     - name: Set up cache
       id: cache-cpm
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
-        path: ~/cpm-cache
-        key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+        path: "**/cpm_modules"
+        key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
         restore-keys: |
           ${{ runner.os }}-cpm-
 
@@ -63,12 +64,12 @@ jobs:
         message("::set-output name=timestamp::${current_date}")
 
     - name: ccache cache files 
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: .ccache
-        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        key: ${{ github.workflow }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
         restore-keys: |
-          ${{ matrix.config.name }}-ccache-
+          ${{ github.workflow }}-ccache-
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
