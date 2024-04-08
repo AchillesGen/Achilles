@@ -63,7 +63,7 @@ contains
     function qe_spec_mode(self) !..interaction mode: QE, MEC, RES
         class(qe_spec), intent(inout) :: self
         integer :: qe_spec_mode
-        qe_spec_mode = 1
+        qe_spec_mode = 2
     end function
 
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
