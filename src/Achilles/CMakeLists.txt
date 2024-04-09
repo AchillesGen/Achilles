@@ -62,7 +62,6 @@ add_library(physics SHARED
     Configuration.cc
     Event.cc
     Interactions.cc
-    InteractionsFactory.cc
     InteractionHandler.cc
     SpectralFunction.cc
     Channels.cc

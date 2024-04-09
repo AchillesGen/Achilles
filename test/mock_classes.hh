@@ -115,7 +115,7 @@ class MockInteraction : public trompeloeil::mock_interface<achilles::Interaction
     IMPLEMENT_CONST_MOCK0(InitialStates);
     IMPLEMENT_CONST_MOCK2(CrossSection);
     IMPLEMENT_CONST_MOCK4(GenerateMomentum);
-    IMPLEMENT_CONST_MOCK0(Name);
+    IMPLEMENT_CONST_MOCK0(GetName);
 };
 
 class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {

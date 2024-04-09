@@ -15,7 +15,7 @@ ThreeVector *MakeMomentumFortran(bool, const double, const double[2]);
 
 namespace achilles {
 
-class FortranInteraction : public Interaction {
+class FortranInteraction : public Interaction, RegistrableInteraction<FortranInteraction> {
   public:
     FortranInteraction(const YAML::Node &node) {
         throw std::runtime_error("FortranInteraction is not implemented");
@@ -26,12 +26,12 @@ class FortranInteraction : public Interaction {
         InitializeInteraction(cname.get());
     };
 
-    static std::unique_ptr<Interaction> Create(const YAML::Node &data) {
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
         return std::make_unique<FortranInteraction>(data);
     }
 
-    static std::string GetName() { return "FortranInteraction"; }
-    std::string Name() const override { return FortranInteraction::GetName(); }
+    static std::string Name() { return "FortranInteraction"; }
+    std::string GetName() const override { return FortranInteraction::GetName(); }
     static bool IsRegistered() noexcept { return registered; }
     InteractionResults CrossSection(const Particle &part1, const Particle &part2) const override {
         return {{{part1.ID(), part2.ID()}, CrossSectionFortran(&part1, &part2)}};

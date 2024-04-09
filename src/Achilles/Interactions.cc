@@ -24,11 +24,6 @@
 
 using namespace achilles;
 
-REGISTER_INTERACTION(GeantInteraction);
-// REGISTER_INTERACTION(GeantInteractionsDt);
-REGISTER_INTERACTION(NasaInteraction);
-REGISTER_INTERACTION(ConstantInteraction);
-
 const std::map<std::string, double> HZETRN = {{"a", 5.0_MeV},
                                               {"b", 0.199 / sqrt(1_MeV)},
                                               {"c", 0.451 * pow(1_MeV, -0.258)},
