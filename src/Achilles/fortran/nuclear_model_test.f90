@@ -13,6 +13,7 @@ module nuclear_model_test
         contains
             procedure :: init => test_init
             procedure :: currents => test_currents
+            procedure, nopass :: model_name => test_name
             procedure :: ps_name => test_ps
             procedure :: mode => test_mode
             procedure :: init_wgt => test_init_wgt
@@ -69,6 +70,11 @@ contains
         class(test), intent(inout) :: self
         integer :: test_mode
         test_mode = 1
+    end function
+
+    function test_name()
+        character(len=:), allocatable :: test_name
+        test_name = "test"
     end function
 
     function test_ps(self)

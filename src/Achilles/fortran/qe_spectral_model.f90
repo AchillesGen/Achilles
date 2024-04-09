@@ -1,6 +1,5 @@
-module qe_spectral_model_test
+module qe_spectral_model
     use iso_c_binding
-    !use nuclear_model_interface
     use nuclear_model
     use libspectral_function
     implicit none
@@ -13,6 +12,7 @@ module qe_spectral_model_test
         contains
             procedure :: init => qe_spec_init
             procedure :: currents => qe_spec_currents
+            procedure, nopass :: model_name => qe_spec_name
             procedure :: ps_name => qe_spec_ps
             procedure :: mode => qe_spec_mode
             procedure :: init_wgt => qe_spec_init_wgt
@@ -43,6 +43,7 @@ contains
         read(read_unit, '(A)', iostat=ios) string
         trim_string = trim(string)
         length=len(trim_string)
+        print*, 'qe', trim_string
         spectral_p = spectral_function(trim_string)
 
         read(read_unit, '(A)', iostat=ios) string
@@ -50,9 +51,11 @@ contains
         length=len(trim_string)
         spectral_n = spectral_function(trim_string)
         qe_spec_init = .true.
- 
+
         call init(constants) ! load constants
         call dirac_matrices_in(constants%mqe) 
+
+        close(read_unit)
     end function
 
     function build_qe_spec() !..you register the different things that cAN BE CREATED
@@ -64,6 +67,11 @@ contains
         class(qe_spec), intent(inout) :: self
         integer :: qe_spec_mode
         qe_spec_mode = 2
+    end function
+
+    function qe_spec_name() !...name of the model
+        character(len=:), allocatable :: qe_spec_name
+        qe_spec_name = "QE_Spectral_Func"
     end function
 
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
@@ -143,4 +151,4 @@ contains
         endif
         
     end function qe_spec_init_wgt
-end module qe_spectral_model_test
+end module qe_spectral_model

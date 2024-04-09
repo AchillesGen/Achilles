@@ -118,14 +118,15 @@ NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
     std::set<std::string> model_names;
     for(const auto &model_config : node["NuclearModels"]) {
         const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
-        if(model_names.find(name) != model_names.end()) {
+        auto model = NuclearModelFactory::Initialize(name, model_config);
+        if(model_names.find(model->GetName()) != model_names.end()) {
             auto msg = fmt::format(
-                "NuclearModels: Multiple definitions for model {}, skipping second model", name);
+                "NuclearModels: Multiple definitions for model {}, skipping second model",
+                model->GetName());
             spdlog::warn(msg);
             continue;
         }
         model_names.insert(name);
-        auto model = NuclearModelFactory::Initialize(name, model_config);
         if(models.find(model->Mode()) != models.end()) {
             auto msg = fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
                                    ToString(model->Mode()));

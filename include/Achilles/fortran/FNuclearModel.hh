@@ -2,7 +2,6 @@
 #define FNUCLEAR_MODEL_HH
 
 #include "Achilles/NuclearModel.hh"
-#include <iostream>
 
 extern "C" {
 void RegisterAll();
@@ -13,6 +12,7 @@ void CleanUpEvent(std::complex<double> **, int *);
 void CleanUpModel();
 int GetMode();
 int GetFrame();
+char *ModelName();
 char *GetName_();
 void GetCurrents(long *pids_in, long *pids_out, achilles::FourVector *pin, size_t nin, size_t nout,
                  const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
@@ -42,7 +42,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     static std::string Name() { return "FortranModel"; }
 
     // TODO: Allow fortran codes to fill these out
-    std::string GetName() const override { return FortranModel::Name(); }
+    std::string GetName() const override { return ModelName(); }
     std::string InspireHEP() const override { return ""; }
 
     // Method needed to register fortran models at start-up
