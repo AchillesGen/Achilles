@@ -33,7 +33,7 @@ class InteractionHandler {
     }
     bool EnabledChannel(const PID &p1, const PID &p2) const;
     void RegisterInteraction(const Interaction &);
-    InteractionResult SelectChannel(const std::vector<InteractionResult> &) const;
+    InteractionResult SelectChannel(const std::vector<InteractionResult> &, double) const;
 
   private:
     void RegisterCrossSection(const PID &, const PID &, CrossSectionFunction);

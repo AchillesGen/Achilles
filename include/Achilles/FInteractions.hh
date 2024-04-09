@@ -36,7 +36,7 @@ class FortranInteraction : public Interaction, RegistrableInteraction<FortranInt
     InteractionResults CrossSection(const Particle &part1, const Particle &part2) const override {
         return {{{part1.ID(), part2.ID()}, CrossSectionFortran(&part1, &part2)}};
     }
-    std::vector<std::pair<int, int>> InitialStates() const override {
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
         return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
     }
     std::vector<Particle> GenerateMomentum(const Particle &, const Particle &,

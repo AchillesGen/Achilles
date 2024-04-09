@@ -26,7 +26,9 @@ std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_cross_sections.find(key);
     if(it == m_cross_sections.end()) {
-        throw std::runtime_error("Cross section not registered for particles");
+        auto msg =
+            fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
+        throw std::runtime_error(msg);
     }
     return it->second(p1, p2);
 }
@@ -37,7 +39,9 @@ std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, c
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_phase_space.find(key);
     if(it == m_phase_space.end()) {
-        throw std::runtime_error("Phase space not registered for particles");
+        auto msg =
+            fmt::format("Phase space not registered for particles: [{}, {}]", p1.ID(), p2.ID());
+        throw std::runtime_error(msg);
     }
     return it->second(p1, p2, out_pids, rands);
 }
@@ -69,16 +73,15 @@ void InteractionHandler::RegisterInteraction(const Interaction &interaction) {
     }
 }
 
-InteractionResult
-InteractionHandler::SelectChannel(const std::vector<InteractionResult> &channels) const {
+InteractionResult InteractionHandler::SelectChannel(const std::vector<InteractionResult> &channels,
+                                                    double rand) const {
     if(channels.empty()) { throw std::runtime_error("No channels to select from"); }
 
     double total = 0.0;
     for(const auto &channel : channels) { total += channel.cross_section; }
 
-    double rand = Random::Instance().Uniform(0.0, total);
     for(const auto &channel : channels) {
-        rand -= channel.cross_section;
+        rand -= channel.cross_section / total;
         if(rand <= 0.0) { return channel; }
     }
 

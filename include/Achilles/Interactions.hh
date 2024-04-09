@@ -8,6 +8,7 @@
 
 #include "Achilles/Factory.hh"
 #include "Achilles/Interpolation.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
@@ -29,7 +30,6 @@ namespace achilles {
 class Particle;
 class FourVector;
 class Potential;
-class PID;
 class Random;
 
 struct InteractionResult {
@@ -64,7 +64,7 @@ class Interaction {
 
     /// Function to list all implemented interactions between two particles
     ///@return std::vector<std::pair<PID, PID>>: List of all interactions
-    virtual std::vector<std::pair<int, int>> InitialStates() const = 0;
+    virtual std::vector<std::pair<PID, PID>> InitialStates() const = 0;
 
     /// Function to determine the cross-section between two particles
     ///@param part1: The first particle involved with the interaction
@@ -107,8 +107,10 @@ class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteracti
     static std::string Name() { return "NasaInteraction"; }
 
     // These functions are defined in the base class
-    std::vector<std::pair<int, int>> InitialStates() const override {
-        return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        return {{PID::proton(), PID::proton()},
+                {PID::neutron(), PID::proton()},
+                {PID::neutron(), PID::neutron()}};
     }
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
@@ -151,8 +153,10 @@ class GeantInteraction : public Interaction, RegistrableInteraction<GeantInterac
     static std::string Name() { return "GeantInteraction"; }
 
     // These functions are defined in the base class
-    std::vector<std::pair<int, int>> InitialStates() const override {
-        return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        return {{PID::proton(), PID::proton()},
+                {PID::neutron(), PID::proton()},
+                {PID::neutron(), PID::neutron()}};
     }
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
@@ -181,10 +185,11 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
     ///@name Constructors and Destructors
     ///@{
 
+    /// Initialize ConstantInteractions class for testing purposes.
+    ConstantInteraction() = default;
     /// Initialize ConstantInteractions class. This loads data from an input file
-    ///@param filename: The location of the Geant4 hdf5 data file
-    ConstantInteraction(const YAML::Node &xsec) : m_xsec(xsec["CrossSection"].as<double>()) {}
-    ConstantInteraction(double xsec) : m_xsec(xsec) {}
+    ///@param node: The constant interactions to load
+    ConstantInteraction(const YAML::Node &);
     ConstantInteraction(const ConstantInteraction &) = default;
     ConstantInteraction(ConstantInteraction &&) = default;
     ConstantInteraction &operator=(const ConstantInteraction &) = default;
@@ -206,19 +211,47 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
     static std::string Name() { return "ConstantInteraction"; }
 
     // These functions are defined in the base class
-    std::vector<std::pair<int, int>> InitialStates() const override {
-        return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
-    }
+    std::vector<std::pair<PID, PID>> InitialStates() const override { return m_states; }
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            const std::vector<double> &rands) const override;
 
+    // These functions are for testing only
+    void AddInteraction(const std::pair<PID, PID> &state, const InteractionResults &results) {
+        if(m_interactions.find(state) != m_interactions.end()) {
+            auto msg =
+                fmt::format("Initial state: [{}, {}] already exists", state.first, state.second);
+            throw std::runtime_error("Initial state already exists");
+        }
+        m_interactions[state] = results;
+        m_states.push_back(state);
+    }
+
   private:
     ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
 
     // Variables
-    double m_xsec;
+    std::map<std::pair<PID, PID>, InteractionResults> m_interactions;
+    std::vector<std::pair<PID, PID>> m_states;
 };
 
 } // namespace achilles
+
+namespace YAML {
+template <> struct convert<achilles::InteractionResult> {
+    static bool decode(const Node &node, achilles::InteractionResult &result) {
+        result.particles = node["Outgoing"].as<std::vector<achilles::PID>>();
+        result.cross_section = node["CrossSection"].as<double>();
+        return true;
+    }
+};
+
+template <> struct convert<std::vector<achilles::InteractionResult>> {
+    static bool decode(const Node &node, std::vector<achilles::InteractionResult> &results) {
+        for(auto result : node) results.push_back(result.as<achilles::InteractionResult>());
+        return true;
+    }
+};
+
+} // namespace YAML

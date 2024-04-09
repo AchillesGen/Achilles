@@ -416,10 +416,19 @@ ThreeVector NasaInteraction::MakeMomentum(bool, double pcm, const std::vector<do
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const Particle &p2) const {
-    return {{{p1.ID(), p2.ID()}, m_xsec}};
+ConstantInteraction::ConstantInteraction(const YAML::Node &node) {
+    for(const auto &interactions : node["InitialStates"]) {
+        auto incoming = std::make_pair<PID, PID>(interactions["Incoming"][0].as<PID>(),
+                                                 interactions["Incoming"][1].as<PID>());
+        AddInteraction(incoming, interactions["Outgoing"].as<InteractionResults>());
+    }
 }
 
+InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const Particle &p2) const {
+    return m_interactions.at({p1.ID(), p2.ID()});
+}
+
+// TODO: Implement generic n-body final state phase space
 std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &particle1,
                                                             const Particle &particle2,
                                                             const std::vector<PID> &out_pids,
