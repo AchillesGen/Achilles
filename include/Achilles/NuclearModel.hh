@@ -145,6 +145,10 @@ class NuclearModel {
     void WeylGauge(VCurrent &, const FourVector &, double) const;
     void LandauGauge(VCurrent &, const FourVector &) const;
 
+    void CoulombGauge(VCurrent &, const FourVector &, double) const;
+    void WeylGauge(VCurrent &, const FourVector &, double) const;
+    void LandauGauge(VCurrent &, const FourVector &) const;
+
   private:
     FourVector::RotMat rotation;
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
