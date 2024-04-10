@@ -43,7 +43,6 @@ contains
         read(read_unit, '(A)', iostat=ios) string
         trim_string = trim(string)
         length=len(trim_string)
-        print*, 'qe', trim_string
         spectral_p = spectral_function(trim_string)
 
         read(read_unit, '(A)', iostat=ios) string

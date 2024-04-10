@@ -126,7 +126,7 @@ NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
             spdlog::warn(msg);
             continue;
         }
-        model_names.insert(name);
+        model_names.insert(model->GetName());
         if(models.find(model->Mode()) != models.end()) {
             auto msg = fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
                                    ToString(model->Mode()));

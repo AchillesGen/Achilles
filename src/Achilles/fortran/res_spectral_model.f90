@@ -42,10 +42,8 @@ contains
         endif
 
         read(read_unit, '(A)', iostat=ios) string
-        print*, 'res', string
         trim_string = trim(string)
         length=len(trim_string)
-        print*, 'res', trim_string
         spectral_p = spectral_function(trim_string)
 
         read(read_unit, '(A)', iostat=ios) string
