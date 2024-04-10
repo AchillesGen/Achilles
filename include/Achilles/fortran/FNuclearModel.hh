@@ -54,6 +54,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
 
   private:
     mutable bool is_hydrogen;
+    const WardGauge m_ward;
 };
 
 } // namespace achilles

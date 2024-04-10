@@ -1,13 +1,16 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
 
 FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
                            FormFactorBuilder &builder = FormFactorBuilder::Instance())
-    : NuclearModel(form_factor, builder) {
+    : NuclearModel(form_factor, builder),
+    m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())}
+    {
     // Setup fortran side
     auto modelname = config["NuclearModel"]["Name"].as<std::string>();
     size_t len_model = modelname.size();
@@ -48,6 +51,8 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     const size_t nout = had_out.size();
     spdlog::debug("q = {}", qVec);
 
+    auto omega = qVec[0];
+
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     std::vector<long> pids_in;
     std::vector<long> pids_out;
@@ -82,6 +87,24 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
             std::vector<std::complex<double>> tmp(4);
             for(size_t k = 0; k < tmp.size(); ++k) { tmp[k] = cur[j + NSpins() * k]; }
             result[ffinfo.first].push_back(tmp);
+        }
+
+        // Correct the Ward identity
+        for(auto &subcur : result[ffinfo.first]) {
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, qVec);
+                break;
+            }
         }
 
         delete[] cur;
