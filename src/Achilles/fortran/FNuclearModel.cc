@@ -1,13 +1,16 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
 
 FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
                            FormFactorBuilder &builder = FormFactorBuilder::Instance())
-    : NuclearModel(form_factor, builder) {
+    : NuclearModel(form_factor, builder),
+    m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())}
+    {
     // Setup fortran side
     auto modelname = config["NuclearModel"]["Name"].as<std::string>();
     size_t len_model = modelname.size();
@@ -48,6 +51,8 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     const size_t nout = had_out.size();
     spdlog::debug("q = {}", qVec);
 
+    auto omega = qVec[0];
+
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     std::vector<long> pids_in;
     std::vector<long> pids_out;
@@ -84,11 +89,66 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
             result[ffinfo.first].push_back(tmp);
         }
 
+        // Correct the Ward identity
+        for(auto &subcur : result[ffinfo.first]) {
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, qVec);
+                break;
+            }
+        }
+
         delete[] cur;
         cur = nullptr;
     }
 
     return result;
+}
+
+void FortranModel::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) const {
+    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
+    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
+    FourVector ref{0, 0, 0, 1};
+    Poincare poincare(q, ref, 0);
+    poincare.Rotate(cur4_real);
+    poincare.Rotate(cur4_imag);
+
+    cur4_real[3] = omega / q.P() * cur[0].real();
+    cur4_imag[3] = omega / q.P() * cur[0].imag();
+    poincare.RotateBack(cur4_real);
+    poincare.RotateBack(cur4_imag);
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+}
+
+void FortranModel::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
+    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
+    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
+    FourVector ref{0, 0, 0, 1};
+    Poincare poincare(q, ref, 0);
+
+    poincare.Rotate(cur4_real);
+    poincare.Rotate(cur4_imag);
+
+    cur4_real[0] = q.P() / omega * cur4_real[3];
+    cur4_imag[0] = q.P() / omega * cur4_imag[3];
+    poincare.RotateBack(cur4_real);
+    poincare.RotateBack(cur4_imag);
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+}
+
+void FortranModel::LandauGauge(VCurrent &cur, const FourVector &q) const {
+    auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
+    auto Q2 = -q.M2();
+    for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
 }
 
 double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, size_t nproton,
