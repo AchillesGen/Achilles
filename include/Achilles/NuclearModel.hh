@@ -127,6 +127,10 @@ class NuclearModel {
     virtual void TransformCustom(Event &, const Process &, bool) const {}
     static YAML::Node LoadFormFactor(const YAML::Node &);
 
+    void CoulombGauge(VCurrent &, const FourVector &, double) const;
+    void WeylGauge(VCurrent &, const FourVector &, double) const;
+    void LandauGauge(VCurrent &, const FourVector &) const;
+
   private:
     FourVector::RotMat rotation;
     std::unique_ptr<FormFactor> m_form_factor{nullptr};
@@ -180,9 +184,6 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     static std::string Name() { return "QESpectral"; }
 
   private:
-    void CoulombGauge(VCurrent &, const FourVector &, double) const;
-    void WeylGauge(VCurrent &, const FourVector &, double) const;
-    void LandauGauge(VCurrent &, const FourVector &) const;
     Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
                             const FourVector &, const FormFactorMap &) const;
 
