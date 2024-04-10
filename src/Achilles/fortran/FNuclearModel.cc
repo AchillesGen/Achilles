@@ -1,6 +1,7 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -58,6 +59,8 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     const size_t nin = had_in.size();
     const size_t nout = had_out.size();
     const size_t nspect = had_spect.size();
+
+    auto omega = qVec[0];
 
     auto omega = qVec[0];
 
