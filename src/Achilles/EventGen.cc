@@ -199,9 +199,9 @@ bool achilles::EventGen::GenerateSingleEvent() {
     }
     if(spdlog::get_level() == spdlog::level::trace) event.Display();
 
-    auto init_nuc = event.CurrentNucleus()->InitParticle();
+    auto init_nuc = group.GetNucleus()->InitParticle();
     std::vector<Particle> init_parts;
-    for(const auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+    for(const auto &nucleon : event.Hadrons()) {
         if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
     }
     // TODO: Handle multiple positions from MEC
@@ -232,13 +232,13 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // Cascade the nucleus
     if(runCascade) {
         spdlog::debug("Runnning cascade");
-        cascade->Evolve(&event);
+        cascade->Evolve(event, group.GetNucleus());
 
         spdlog::trace("Hadrons (Post Cascade):");
         size_t idx = 0;
         for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
     } else {
-        for(auto &nucleon : event.CurrentNucleus()->Nucleons()) {
+        for(auto &nucleon : event.Hadrons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
                 nucleon.Status() = ParticleStatus::final_state;
             }

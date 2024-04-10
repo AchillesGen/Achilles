@@ -54,7 +54,7 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     // NOTE: This only is checked at startup, so if density returns a varying
     // number of nucleons it will not necessarily be caught
     auto particles = density->GetConfiguration();
-    if(particles.size() != nucleons.size())
+    if(particles.size() != nnucleons)
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
 
     std::size_t nProtons = 0, nNeutrons = 0;
@@ -76,12 +76,17 @@ void Nucleus::Initialize(size_t Z, size_t A) {
         throw std::runtime_error(errorMsg);
     }
 
-    nucleons.resize(A);
-    protons.resize(Z);
-    neutrons.resize(A - Z);
-    protonLoc.resize(Z);
-    neutronLoc.resize(A - Z);
+    nnucleons = A;
+    nprotons = Z;
+    nneutrons = A - Z;
 
+    // Based on PDG Monte-Carlo PIDs
+    // Nuclear codes are given as a 10 digit number:
+    // +/- 10LZZZAAAI
+    // L: number of strange baryons
+    // Z: number of protons
+    // A: number of nucleons
+    // I: excited state (0 is ground state)
     static constexpr int IDBase = 1000000000;
     static constexpr int ZBase = 10000;
     static constexpr int ABase = 10;
@@ -92,56 +97,9 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     if(Z == 1 && A == 1) is_hydrogen = true;
 }
 
-// achilles::PID Nucleus::ID() const {
-//     // Output format based on PDG Monte-Carlo PIDs
-//     // Nuclear codes are given as a 10 digit number:
-//     // +/- 10LZZZAAAI
-//     // L: number of strange baryons
-//     // Z: number of protons
-//     // A: number of nucleons
-//     // I: excited state (0 is ground state)
-//     static constexpr int IDBase = 1000000000;
-//     static constexpr int ZBase = 10000;
-//     static constexpr int ABase = 10;
-//     int ID = IDBase + ZBase*static_cast<int>(NProtons()) +
-//     ABase*static_cast<int>(NNucleons()); return PID{ID};
-// }
-
-void Nucleus::SetNucleons(Particles &_nucleons) noexcept {
-    std::swap(nucleons, _nucleons);
-    std::size_t idx = 0;
-    std::size_t proton_idx = 0;
-    std::size_t neutron_idx = 0;
-    for(auto particle : nucleons) {
-        if(particle.ID() == PID::proton()) {
-            protons[proton_idx] = particle;
-            protonLoc[proton_idx++] = idx++;
-        } else if(particle.ID() == PID::neutron()) {
-            neutrons[neutron_idx] = particle;
-            neutronLoc[neutron_idx++] = idx++;
-        }
-    }
-}
-
-void Nucleus::PrepareReaction(const PID &pid_probe) {
-    if(pid_probe == PID::proton()) {
-        std::size_t Z = protons.size();
-        protons.resize(Z + 1);
-        protonLoc.resize(Z + 1);
-    } else if(pid_probe == PID::neutron()) {
-        std::size_t N = neutrons.size();
-        neutrons.resize(N + 1);
-        neutronLoc.resize(N + 1);
-    }
-}
-
-void Nucleus::GenerateConfig() {
+Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
-    if(is_hydrogen) {
-        Particles particles = {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
-        SetNucleons(particles);
-        return;
-    }
+    if(is_hydrogen) { return {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}}; }
 
     // Get a configuration from the density function
     Particles particles = density->GetConfiguration();
@@ -156,9 +114,7 @@ void Nucleus::GenerateConfig() {
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;
     }
-
-    // Update the nucleons in the nucleus
-    SetNucleons(particles);
+    return particles;
 }
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {

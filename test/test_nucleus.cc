@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
 
@@ -23,7 +21,7 @@ Catch::Generators::GeneratorWrapper<std::string> randomNucleus(size_t length) {
 
 const std::string dFile = "data/c12.prova.txt";
 
-TEST_CASE("Nucleus construction", "[nucleus]") {
+TEST_CASE("Nucleus construction", "[Nucleus]") {
     auto fermiGas =
         GENERATE(achilles::Nucleus::FermiGasType::Local, achilles::Nucleus::FermiGasType::Global);
 
@@ -108,10 +106,10 @@ TEST_CASE("Nuclear Configuration", "[Nucleus]") {
     REQUIRE_CALL(*density, GetConfiguration()).TIMES(2).RETURN(particles);
 
     achilles::Nucleus nuc(Z, 2 * Z, 0, kf, dFile, fermiGas, std::move(density));
-    nuc.GenerateConfig();
-    for(size_t i = 0; i < 2 * Z; ++i) {
-        CHECK(nuc.Nucleons()[i].Momentum().P() < kf);
-        CHECK(nuc.Nucleons()[i].Position() == achilles::ThreeVector());
+    auto config_particles = nuc.GenerateConfig();
+    for(const auto &part : config_particles) {
+        CHECK(part.Momentum().P() < kf);
+        CHECK(part.Position() == achilles::ThreeVector());
     }
 }
 

@@ -60,7 +60,7 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
     kickedIdxs.resize(0);
 }
 
-void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector &energyTransfer,
+void Cascade::Kick(Event &event, const FourVector &energyTransfer,
                    const std::array<double, 2> &sigma) {
     std::vector<std::size_t> indices;
 
@@ -71,13 +71,13 @@ void Cascade::Kick(std::shared_ptr<Nucleus> nucleus, const FourVector &energyTra
     auto interactPID = index == 0 ? PID::proton() : PID::neutron();
 
     // Restrict to particles of chosen species
-    for(std::size_t i = 0; i < nucleus->Nucleons().size(); ++i) {
-        if(nucleus->Nucleons()[i].ID() == interactPID) indices.push_back(i);
+    for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
+        if(event.Hadrons()[i].ID() == interactPID) indices.push_back(i);
     }
 
     // Kick a single particle from the list
     kickedIdxs.push_back(Random::Instance().Pick(indices));
-    auto kicked = &nucleus->Nucleons()[kickedIdxs.back()];
+    auto kicked = &event.Hadrons()[kickedIdxs.back()];
     kicked->Status() = ParticleStatus::propagating;
     kicked->SetMomentum(kicked->Momentum() + energyTransfer);
 }
@@ -100,7 +100,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
     auto p1 = kickedPart.Momentum();
     double mass = kickedPart.Info().Mass();
 
-    auto mom = localNucleus->GenerateMomentum(position);
+    auto mom = m_nucleus->GenerateMomentum(position);
     double energy = pow(kickedPart.Info().Mass(), 2);
     for(auto p : mom) energy += p * p;
     std::size_t idxSame = SIZE_MAX;
@@ -112,7 +112,7 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         auto p2 = particles[idxSame].Momentum();
         double fact = 1.0;
         if(m_medium == InMedium::NonRelativistic)
-            fact = localNucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
+            fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
 
         xsecSame = GetXSec(kickedPart, particles[idxSame]) * fact;
     }
@@ -130,18 +130,18 @@ std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
         auto p2 = particles[idxSame].Momentum();
         double fact = 1.0;
         if(m_medium == InMedium::NonRelativistic)
-            fact = localNucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
+            fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
 
         xsecDiff = GetXSec(kickedPart, particles[idxDiff]) * fact;
     }
 
     double rhoSame = 0.0;
     double rhoDiff = 0.0;
-    if(position < localNucleus->Radius()) {
+    if(position < m_nucleus->Radius()) {
         // TODO: Adjust below to handle non-isosymmetric nuclei
-        rhoSame = localNucleus->Rho(position) * 2 * static_cast<double>(index_same.size()) /
+        rhoSame = m_nucleus->Rho(position) * 2 * static_cast<double>(index_same.size()) /
                   static_cast<double>(particles.size());
-        rhoDiff = localNucleus->Rho(position) * 2 * static_cast<double>(index_diff.size()) /
+        rhoDiff = m_nucleus->Rho(position) * 2 * static_cast<double>(index_diff.size()) /
                   static_cast<double>(particles.size());
     }
     if(rhoSame <= 0.0 && rhoDiff <= 0.0) return SIZE_MAX;
@@ -166,15 +166,15 @@ void Cascade::Reset() {
     integrators.clear();
 }
 
-std::vector<size_t> Cascade::InitializeIntegrator() {
+std::vector<size_t> Cascade::InitializeIntegrator(Event &event) {
     std::vector<size_t> notCaptured{};
     for(auto idx : kickedIdxs) {
-        if(m_potential_prop && localNucleus->GetPotential()->Hamiltonian(
-                                   localNucleus->Nucleons()[idx].Momentum().P(),
-                                   localNucleus->Nucleons()[idx].Position().P()) < Constant::mN) {
-            localNucleus->Nucleons()[idx].Status() = ParticleStatus::captured;
+        if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
+                                   event.Hadrons()[idx].Momentum().P(),
+                                   event.Hadrons()[idx].Position().P()) < Constant::mN) {
+            event.Hadrons()[idx].Status() = ParticleStatus::captured;
         } else {
-            AddIntegrator(idx, localNucleus->Nucleons()[idx]);
+            AddIntegrator(idx, event.Hadrons()[idx]);
             notCaptured.push_back(idx);
         }
     }
@@ -186,13 +186,13 @@ void Cascade::UpdateKicked(bool hit, size_t idx, size_t hitIdx, Particle *kickNu
                            std::vector<size_t> &newKicked) {
     if(hit) {
         if(m_potential_prop &&
-           localNucleus->GetPotential()->Hamiltonian(kickNuc->Momentum().P(),
-                                                     kickNuc->Position().P()) < Constant::mN) {
+           m_nucleus->GetPotential()->Hamiltonian(kickNuc->Momentum().P(),
+                                                  kickNuc->Position().P()) < Constant::mN) {
             kickNuc->Status() = ParticleStatus::captured;
         } else {
             newKicked.push_back(idx);
         }
-        if(m_potential_prop && localNucleus->GetPotential()->Hamiltonian(
+        if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                    hitNuc->Momentum().P(), hitNuc->Position().P()) < Constant::mN) {
             hitNuc->Status() = ParticleStatus::captured;
         } else {
@@ -212,40 +212,18 @@ void Cascade::Validate(const Particles &particles) {
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
     }
-    localNucleus->Nucleons() = particles;
 }
 
-void Cascade::Evolve(achilles::Event *event, const std::size_t &maxSteps) {
+void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
     // Set all propagating particles as kicked for the cascade
-    for(size_t idx = 0; idx < event->Hadrons().size(); ++idx) {
-        if(event->Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
+    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
+        if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
-    // Run the normal cascade
-    Evolve(event->CurrentNucleus(), maxSteps);
-}
-
-size_t Cascade::BaseAlgorithm(size_t idx, Particles &particles) {
-    // Get allowed interactions
-    auto dist2 = AllowedInteractions(particles, idx);
-    if(dist2.size() == 0) { return SIZE_MAX; }
-
-    // Get interaction
-    return Interacted(particles, particles[idx], dist2);
-}
-
-size_t Cascade::MFPAlgorithm(size_t idx, Particles &particles) {
-    double step_prop = distance;
-    Particle *kickNuc = &particles[idx];
-    auto hitIdx = GetInter(particles, *kickNuc, step_prop);
-    Propagate(idx, kickNuc, step_prop);
-    return hitIdx;
-}
-
-void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSteps) {
-    localNucleus = nucleus;
-    Particles particles = nucleus->Nucleons();
-    kickedIdxs = InitializeIntegrator();
+    // Run the cascade
+    m_nucleus = nucleus;
+    Particles &particles = event.Hadrons();
+    kickedIdxs = InitializeIntegrator(event);
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -292,6 +270,23 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSte
     Reset();
 }
 
+size_t Cascade::BaseAlgorithm(size_t idx, Particles &particles) {
+    // Get allowed interactions
+    auto dist2 = AllowedInteractions(particles, idx);
+    if(dist2.size() == 0) { return SIZE_MAX; }
+
+    // Get interaction
+    return Interacted(particles, particles[idx], dist2);
+}
+
+size_t Cascade::MFPAlgorithm(size_t idx, Particles &particles) {
+    double step_prop = distance;
+    Particle *kickNuc = &particles[idx];
+    auto hitIdx = GetInter(particles, *kickNuc, step_prop);
+    Propagate(idx, kickNuc, step_prop);
+    return hitIdx;
+}
+
 void Cascade::AddIntegrator(size_t idx, const Particle &part) {
     static constexpr double omega = 20;
     auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p,
@@ -317,7 +312,7 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
         return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
     };
     integrators[idx] =
-        SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), localNucleus->GetPotential(),
+        SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), m_nucleus->GetPotential(),
                              dHamiltonian_dr, dHamiltonian_dp, omega);
 }
 
@@ -341,9 +336,10 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc, double step) {
     }
 }
 
-void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSteps) {
-    localNucleus = nucleus;
-    Particles particles = nucleus->Nucleons();
+// TODO: Switch to using reference_wrapper to reduce copying
+void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
+    m_nucleus = nucleus;
+    Particles particles = event.Hadrons();
 
     if(kickedIdxs.size() != 1) {
         throw std::runtime_error("MeanFreePath: only one particle should be kicked.");
@@ -354,10 +350,10 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t &
 
     // Initialize symplectic integrator
     AddIntegrator(idx, particles[idx]);
-    if(m_potential_prop && localNucleus->GetPotential()->Hamiltonian(
+    if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
         kickNuc->Status() = ParticleStatus::captured;
-        nucleus->Nucleons() = particles;
+        event.Hadrons() = particles;
         Reset();
         return;
     }
@@ -398,13 +394,14 @@ void Cascade::MeanFreePath(std::shared_ptr<Nucleus> nucleus, const std::size_t &
         // Stop as soon as we hit anything
         if(hit) break;
     }
-    nucleus->Nucleons() = particles;
+    event.Hadrons() = particles;
     Reset();
 }
 
-void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSteps) {
-    localNucleus = nucleus;
-    Particles particles = nucleus->Nucleons();
+// TODO: Switch to using reference_wrapper to reduce copying
+void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
+    m_nucleus = nucleus;
+    Particles particles = event.Hadrons();
 
     if(kickedIdxs.size() != 1) {
         std::runtime_error("MeanFreePath: only one particle should be kicked.");
@@ -415,10 +412,10 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus, const std::si
 
     // Initialize symplectic integrator
     AddIntegrator(idx, particles[idx]);
-    if(m_potential_prop && localNucleus->GetPotential()->Hamiltonian(
+    if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
         kickNuc->Status() = ParticleStatus::captured;
-        nucleus->Nucleons() = particles;
+        event.Hadrons() = particles;
         Reset();
         return;
     }
@@ -448,13 +445,13 @@ void Cascade::MeanFreePath_NuWro(std::shared_ptr<Nucleus> nucleus, const std::si
         if(hit) break;
     }
 
-    nucleus->Nucleons() = particles;
+    event.Hadrons() = particles;
     Reset();
 }
 
 // TODO: Rewrite to have the logic built into the Nucleus class
 void Cascade::Escaped(Particles &particles) {
-    const auto radius = localNucleus->Radius();
+    const auto radius = m_nucleus->Radius();
     for(auto it = kickedIdxs.begin(); it != kickedIdxs.end();) {
         // Nucleon outside nucleus (will check if captured or escaped after
         // cascade)
@@ -574,8 +571,8 @@ double Cascade::GetXSec(const Particle &particle1, const Particle &particle2) co
     double position3 = (pos_p1 + pos_p2).Magnitude();
     double fact = 1.0;
     if(m_medium == InMedium::NonRelativistic)
-        fact = localNucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1,
-                                                                      position2, position3);
+        fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1,
+                                                                   position2, position3);
 
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
     auto modes = m_interactions.CrossSection(particle1, particle2);
@@ -635,5 +632,5 @@ bool Cascade::FinalizeMomentum(Particle &particle1, Particle &particle2) noexcep
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(particle.ID() != PID::proton() || particle.ID() != PID::neutron()) return false;
     double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < localNucleus->FermiMomentum(position);
+    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }

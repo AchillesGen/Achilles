@@ -11,7 +11,7 @@ add_library(fortran_interface SHARED
     interpolation_mod.f90
     # hardscattering_mod.f90
     event_mod.f90
-    nucleus_mod.f90
+    # nucleus_mod.f90
     nuclear_model.f90
     nuclear_model_factory.f90
     nuclear_model_interface.f90
@@ -43,7 +43,7 @@ add_library(fortran_interface SHARED
     FInterpolation.cc
     # FHardScattering.cc
     FEvent.cc 
-    FNucleus.cc
+    # FNucleus.cc
     FProcessInfo.cc
     FNuclearModel.cc
     FSpectralFunction.cc

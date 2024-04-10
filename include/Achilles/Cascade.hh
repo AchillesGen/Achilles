@@ -106,7 +106,7 @@ class Cascade {
     ///@param particles: The list of particles inside the nucleus
     ///@param energyTransfer: The energy transfered to the nucleon during the kick
     ///@param sigma: An array representing the cross-section for different kicked nucleons
-    void Kick(std::shared_ptr<Nucleus>, const FourVector &, const std::array<double, 2> &);
+    void Kick(Event &, const FourVector &, const std::array<double, 2> &);
 
     /// Reset the cascade internal variables for the next cascade
     void Reset();
@@ -115,37 +115,32 @@ class Cascade {
     ///@param idx: The index of the particle that has been kicked
     void SetKicked(const std::size_t &idx) { kickedIdxs.push_back(idx); }
 
-    /// Simulate the cascade until all particles either escape, are recaptured, or are in
-    /// the background.
-    ///@param nucleus: The nucleus to evolve
-    ///@param maxSteps: The maximum steps to take in the cascade
-    void Evolve(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
-
     /// Simulate the cascade on an event until all particles either escape,
     /// are recaptured, or are in the background.
     ///@param event: The event to run the cascade evolution on
+    ///@param nucleus: The nucleus to use during evolution
     ///@param maxSteps: The maximum steps to take in the cascade
-    void Evolve(achilles::Event *, const std::size_t &maxSteps = cMaxSteps);
+    void Evolve(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
     /// traveled by the kicked particle before it interacts.
     ///@param nucleus: The nucleus to evolve according to the mean free path calculation
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void MeanFreePath(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate the cascade until all particles either escape, are recaptured, or are in
     /// the background. This is done according to the NuWro algorithm.
     ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void NuWro(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
     /// traveled by the kicked particle before it interacts.
     ///@param nucleus: The nucleus to evolve according to the mean free path calculation
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void MeanFreePath_NuWro(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void MeanFreePath_NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
     ///@}
   private:
     // Functions
@@ -164,7 +159,7 @@ class Cascade {
     bool PauliBlocking(const Particle &) const noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *, double);
-    std::vector<size_t> InitializeIntegrator();
+    std::vector<size_t> InitializeIntegrator(Event &);
     void UpdateIntegrator(size_t, Particle *);
     void UpdateKicked(bool, size_t, size_t, Particle *, Particle *, std::vector<size_t> &);
     void Validate(const Particles &);
@@ -177,7 +172,7 @@ class Cascade {
     InteractionHandler m_interactions;
     std::function<double(double, double)> probability;
     std::function<size_t(size_t, Particles &)> algorithm;
-    std::shared_ptr<Nucleus> localNucleus;
+    Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
     std::map<size_t, SymplecticIntegrator> integrators;

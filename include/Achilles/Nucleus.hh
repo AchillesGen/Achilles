@@ -64,10 +64,6 @@ class Nucleus {
     /// @{
     /// These functions provide access to setting the parameters of the Nucleus object
 
-    /// Set the nucleons, protons, and neutrons of the nucleus
-    ///@param nucleons: The nucleons to be used for the nucleus
-    void SetNucleons(Particles &_nucleons) noexcept;
-
     /// Set the binding energy of the nucleus in MeV
     ///@param energy: The binding energy to be set in MeV
     void SetBindingEnergy(const double &energy) noexcept { binding = energy; }
@@ -92,10 +88,6 @@ class Nucleus {
     /// @param radius: The radius to be set in fm
     void SetRadius(const double &_radius) noexcept { radius = _radius; }
 
-    /// Prepare nucleus to accept a hadronic probe
-    ///@param pid_probe: The PID of the particle that will interact
-    void PrepareReaction(const PID &pid_probe);
-
     /// Setup basic properties for nuclei, needed to setup hydrogen correctly
     ///@param protons: Number of protons
     ///@param nucleons: Number of nucleons
@@ -116,38 +108,17 @@ class Nucleus {
         return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
     }
 
-    /// Return a vector of the current nucleons
-    ///@return Particles: The current nucleons generated for the nucleus
-    MOCK Particles &Nucleons() noexcept { return nucleons; }
-    const Particles &Nucleons() const noexcept { return nucleons; }
-
-    /// Return a vector of the ids of the protons in the nucleus
-    ///@return std::vector<size_t>: The current ids of protons in nucleon vector
-    MOCK std::vector<size_t> ProtonsIDs() const noexcept { return protonLoc; }
-
-    /// Return a vector of the ids of the neutrons in the nucleus
-    ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector
-    MOCK std::vector<size_t> NeutronsIDs() const noexcept { return neutronLoc; }
-
-    /// Return a vector of the current protons
-    ///@return Particles: The current protons generated for the nucleus
-    Particles &Protons() noexcept { return protons; }
-
-    /// Return a vector of the current neutrons
-    ///@return Particles: The current neutrons generated for the nucleus
-    Particles &Neutrons() noexcept { return neutrons; }
-
     /// Return the number of nucleons in the nucleus
     ///@return int: The number of nucleons in the nucleus
-    MOCK std::size_t NNucleons() const noexcept { return nucleons.size(); }
+    MOCK std::size_t NNucleons() const noexcept { return nnucleons; }
 
     /// Return the number of protons in the nucleus
     ///@return int: The number of protons in the nucleus
-    std::size_t NProtons() const noexcept { return protons.size(); }
+    MOCK std::size_t NProtons() const noexcept { return nprotons; }
 
     /// Return the number of neutrons in the nucleus
     ///@return int: The number of neutrons in the nucleus
-    std::size_t NNeutrons() const noexcept { return neutrons.size(); }
+    MOCK std::size_t NNeutrons() const noexcept { return nneutrons; }
 
     /// Return the current binding energy of the nucleus
     ///@return double: The binding energy in MeV
@@ -184,7 +155,7 @@ class Nucleus {
     /// @{
 
     /// Generate a configuration of the nucleus based on the density function
-    MOCK void GenerateConfig();
+    MOCK Particles GenerateConfig();
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
@@ -244,8 +215,7 @@ class Nucleus {
     /// @}
 
   private:
-    Particles nucleons, protons, neutrons;
-    std::vector<size_t> protonLoc, neutronLoc;
+    size_t nnucleons, nprotons, nneutrons;
     double binding{}, fermiMomentum{}, radius{};
     FermiGasType fermiGas{FermiGasType::Local};
     std::unique_ptr<Density> density;

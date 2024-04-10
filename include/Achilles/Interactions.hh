@@ -83,6 +83,7 @@ class Interaction {
                                                    const std::vector<double> &rands) const = 0;
 
     virtual std::string GetName() const = 0;
+    static std::string Name() { return "Interaction"; }
 
   protected:
     double CrossSectionLab(bool, const double &) const noexcept;

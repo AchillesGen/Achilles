@@ -15,6 +15,7 @@ namespace achilles {
 
 // TODO: Reorganize to match NuHepMC3 standard
 enum class ParticleStatus : int {
+    any = -4,
     internal_test = -3,
     external_test = -2,
     propagating = -1,
@@ -241,6 +242,10 @@ class Particle {
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
     bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
+
+    /// Check to see if the particle should be written out
+    ///@return bool: True if the particle should be written out, False otherwise
+    bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
 
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for

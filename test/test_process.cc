@@ -5,7 +5,6 @@
 #include "Achilles/Unweighter.hh"
 #include "Approx.hh"
 #include "mock_classes.hh"
-#include "trompeloeil.hpp"
 #include <utility>
 
 template <typename Type, std::size_t Size, std::size_t... Index>
@@ -63,7 +62,7 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        const MockEvent event;
+        const MockEvent event{};
         REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
 
         process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
@@ -86,14 +85,10 @@ TEST_CASE("Handles events correctly", "[Process]") {
         expected_nucleons.emplace_back(achilles::PID::carbon(), momentum[3]);
         expected_nucleons.back().Status() = achilles::ParticleStatus::final_state;
 
-        auto mnuc = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*mnuc, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
-        std::shared_ptr<achilles::Nucleus> nuc = mnuc;
-
         MockEvent event;
         const MockEvent &cevent = event;
         REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, CurrentNucleus()).TIMES(3).LR_RETURN(nuc);
+        REQUIRE_CALL(event, Hadrons()).TIMES(4).LR_RETURN(std::ref(nucleons));
 
         process.SetupHadrons(event);
 
@@ -118,17 +113,9 @@ TEST_CASE("Handles events correctly", "[Process]") {
         achilles::Process process(info, std::move(unweight));
 
         std::vector<achilles::Particle> nucleons{achilles::PID::proton(), achilles::PID::neutron()};
-
-        auto mnuc = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*mnuc, ProtonsIDs()).TIMES(1).RETURN(std::vector<size_t>{0});
-        REQUIRE_CALL(*mnuc, NeutronsIDs()).TIMES(1).RETURN(std::vector<size_t>{1});
-        REQUIRE_CALL(*mnuc, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
-        std::shared_ptr<achilles::Nucleus> nuc = mnuc;
-
-        MockEvent event;
-        const MockEvent &cevent = event;
-        REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, CurrentNucleus()).TIMES(AT_LEAST(5)).LR_RETURN(nuc);
+        achilles::Event event;
+        event.Momentum() = momentum;
+        event.Hadrons() = nucleons;
 
         process.SetupHadrons(event);
 
@@ -147,6 +134,7 @@ TEST_CASE("Handles events correctly", "[Process]") {
         expected_nucleons.emplace_back(pid2, momentum[3]);
         expected_nucleons.back().Status() = achilles::ParticleStatus::propagating;
 
+        nucleons = event.Hadrons();
         CHECK(nucleons.size() == expected_nucleons.size());
         CHECK(nucleons[0] == expected_nucleons[0]);
         CHECK(nucleons[1] == expected_nucleons[1]);
