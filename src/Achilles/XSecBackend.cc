@@ -67,8 +67,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
     const auto &process_info = process.Info();
     Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out;
-    std::vector<Particle> spect;
+    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
     process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
 
     std::pair<PID, PID> leptons{process_info.m_leptonic.first, process_info.m_leptonic.second[0]};
@@ -187,8 +186,8 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
 
     const auto &process_info = process.Info();
     Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out;
-    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out);
+    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
+    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
     auto lepton_current = CalcLeptonCurrents(event.Momentum(), process_info);
 
     // TODO: Handle the case for MEC, RES, and DIS
@@ -313,8 +312,8 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     if(std::isnan(amps2)) amps2 = 0;
 
     Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out;
-    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out);
+    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
+    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
