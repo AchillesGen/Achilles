@@ -124,6 +124,7 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
+
     static constexpr size_t lepton_in_end_idx = 1;
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
@@ -269,6 +270,7 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons;
 
+    spdlog::trace("settig up leptons2");
     // Setup leptons
     const auto &info = process.Info();
     leptons.emplace_back(info.m_leptonic.first, lep_in);
@@ -281,6 +283,7 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
         leptons.back().Status() = ParticleStatus::final_state;
     }
 
+    spdlog::trace("settig up leptons3");
     event.Leptons() = leptons;
 }
 

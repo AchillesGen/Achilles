@@ -358,6 +358,7 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         case 0: // Same charge in inital and final
             local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
             local.m_spectator = {PID::neutron()};
+            spdlog::trace("{}", local);
             results.push_back(local);
             local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
             local.m_spectator = {PID::proton()};
