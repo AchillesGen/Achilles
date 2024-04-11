@@ -14,6 +14,7 @@ module nuclear_model
             procedure(nm_cleanup), deferred :: cleanup
             procedure(nm_mode), deferred :: mode
             procedure :: frame => nm_frame
+            procedure(nm_name), deferred, nopass :: model_name
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
             procedure(nm_init_wgt), deferred :: init_wgt
@@ -36,6 +37,10 @@ module nuclear_model
             import model 
             class(model), intent(inout) :: self
             integer :: nm_mode 
+        end function
+
+        function nm_name()
+            character(len=:), allocatable :: nm_name
         end function
 
         function nm_psname(self)

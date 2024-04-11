@@ -1,4 +1,4 @@
-module res_spectral_model_test
+module res_spectral_model
     use iso_c_binding
     use nuclear_model
     use libspectral_function   !...spectral_function_mod.f90
@@ -12,6 +12,7 @@ module res_spectral_model_test
         contains
             procedure :: init => res_spec_init
             procedure :: currents => res_spec_currents
+            procedure, nopass :: model_name => res_spec_name
             procedure :: ps_name => res_spec_ps
             procedure :: mode => res_spec_mode
             procedure :: frame => res_spec_frame
@@ -53,6 +54,8 @@ contains
         res_spec_init = .true.
         call init(constants) ! load constants
         call dirac_matrices_in(constants%mp,constants%mn,constants%meta,constants%mpi0,constants%mpip,constants%pi,constants%hbarc)
+
+        close(read_unit)
     end function
 
     function build_res_spec() !..you register the different things that cAN BE CREATED
@@ -70,6 +73,11 @@ contains
         class(res_spec), intent(inout) :: self
         integer :: res_spec_frame
         res_spec_frame = 1 !..see enum in NuclearModel.hh
+    end function
+
+    function res_spec_name() !..name of the model
+        character(len=:), allocatable :: res_spec_name
+        res_spec_name = "RES_Spectral_Func"
     end function
 
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
@@ -154,4 +162,4 @@ contains
             wgt=nneutron*spectral_n%call(pmom,E)
         endif
     end function res_spec_init_wgt
-end module res_spectral_model_test
+end module res_spectral_model

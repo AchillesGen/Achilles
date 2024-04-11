@@ -1,8 +1,8 @@
 module nuclear_model_interface
     use nuclear_model_factory
     use nuclear_model
-    use qe_spectral_model_test
-    use res_spectral_model_test
+    use qe_spectral_model
+    use res_spectral_model
 
     implicit none
 
@@ -15,10 +15,12 @@ module nuclear_model_interface
 contains
 
     subroutine register_all() bind(C, name="RegisterAll")
+        type(qe_spec) :: qe
+        type(res_spec) :: res
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
-        call factory%register_model("QE_Spectral_Func", build_qe_spec)
-        call factory%register_model("RES_Spectral_Func", build_res_spec)
+        call factory%register_model(qe%model_name(), build_qe_spec)
+        call factory%register_model(res%model_name(), build_res_spec)
         call factory%init()
     end subroutine
 
@@ -89,6 +91,18 @@ contains
         integer(c_int) :: get_frame
 
         get_frame = model_ptr%frame()
+    end function
+
+    function get_model_name() bind(C, name="ModelName")
+        use iso_c_binding
+        use libutilities
+        implicit none
+        type(c_ptr) :: get_model_name
+        type(c_ptr) :: tmp
+        character(len=:), allocatable :: fname
+
+        fname = model_ptr%model_name()
+        get_model_name = f2cstring(fname)
     end function
 
     function get_ps_name() bind(C, name="GetName_")

@@ -1,13 +1,16 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
 
 FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
                            FormFactorBuilder &builder = FormFactorBuilder::Instance())
-    : NuclearModel(form_factor, builder) {
+    : NuclearModel(form_factor, builder),
+    m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())}
+    {
     // Setup fortran side
     auto modelname = config["NuclearModel"]["Name"].as<std::string>();
     size_t len_model = modelname.size();
@@ -37,12 +40,18 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
                                                   const std::vector<Particle> &had_out,
                                                   const FourVector &qVec,
                                                   const FFInfoMap &ff) const {
+
+    
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    
     NuclearModel::Currents result;
 
     // Create momentum variables to pass to fortran
     const size_t nin = had_in.size();
     const size_t nout = had_out.size();
     spdlog::debug("q = {}", qVec);
+
+    auto omega = qVec[0];
 
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     std::vector<long> pids_in;
@@ -80,6 +89,24 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
             result[ffinfo.first].push_back(tmp);
         }
 
+        // Correct the Ward identity
+        for(auto &subcur : result[ffinfo.first]) {
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, qVec, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, qVec);
+                break;
+            }
+        }
+
         delete[] cur;
         cur = nullptr;
     }
@@ -89,6 +116,9 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
 
 double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, size_t nproton,
                                         size_t nneutron) const {
+
+    if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
+
     size_t nin = had_in.size();
     std::vector<long> pids_in;
     std::vector<FourVector> moms;
@@ -103,4 +133,15 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, siz
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<FortranModel>(config, form_factor);
+}
+
+std::string FortranModel::PhaseSpace(PID nuc_pid) const {
+    if(nuc_pid != PID::hydrogen()){
+        char *name = GetName_();
+        auto tmp = std::string(name);
+        delete name;
+        return tmp;
+    }
+    is_hydrogen = true;
+    return "Coherent";
 }

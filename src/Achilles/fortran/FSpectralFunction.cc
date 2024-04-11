@@ -18,4 +18,8 @@ extern "C" {
     double SpectralFunction(achilles::SpectralFunction *spectral, double p, double E) {
         return spectral -> operator()(p, E);
     }
+
+    double MomentumDistribution(achilles::SpectralFunction *spectral, double p) {
+        return spectral -> operator()(p);
+    }
 }

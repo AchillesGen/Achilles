@@ -118,14 +118,15 @@ NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
     std::set<std::string> model_names;
     for(const auto &model_config : node["NuclearModels"]) {
         const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
-        if(model_names.find(name) != model_names.end()) {
+        auto model = NuclearModelFactory::Initialize(name, model_config);
+        if(model_names.find(model->GetName()) != model_names.end()) {
             auto msg = fmt::format(
-                "NuclearModels: Multiple definitions for model {}, skipping second model", name);
+                "NuclearModels: Multiple definitions for model {}, skipping second model",
+                model->GetName());
             spdlog::warn(msg);
             continue;
         }
-        model_names.insert(name);
-        auto model = NuclearModelFactory::Initialize(name, model_config);
+        model_names.insert(model->GetName());
         if(models.find(model->Mode()) != models.end()) {
             auto msg = fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
                                    ToString(model->Mode()));
@@ -324,6 +325,44 @@ size_t NuclearModel::NSpins() const {
     return 0;
 }
 
+void NuclearModel::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) const {
+    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
+    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
+    FourVector ref{0, 0, 0, 1};
+    Poincare poincare(q, ref, 0);
+    poincare.Rotate(cur4_real);
+    poincare.Rotate(cur4_imag);
+
+    cur4_real[3] = omega / q.P() * cur[0].real();
+    cur4_imag[3] = omega / q.P() * cur[0].imag();
+    poincare.RotateBack(cur4_real);
+    poincare.RotateBack(cur4_imag);
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+}
+
+void NuclearModel::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
+    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
+    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
+    FourVector ref{0, 0, 0, 1};
+    Poincare poincare(q, ref, 0);
+
+    poincare.Rotate(cur4_real);
+    poincare.Rotate(cur4_imag);
+
+    cur4_real[0] = q.P() / omega * cur4_real[3];
+    cur4_imag[0] = q.P() / omega * cur4_imag[3];
+    poincare.RotateBack(cur4_real);
+    poincare.RotateBack(cur4_imag);
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+}
+
+void NuclearModel::LandauGauge(VCurrent &cur, const FourVector &q) const {
+    auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
+    auto Q2 = -q.M2();
+    for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
+}
+
+
 // TODO: Clean this up such that the nucleus isn't loaded twice, and that it works with multiple
 // nuclei
 Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
@@ -394,6 +433,9 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
 NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had_in,
                                                 const std::vector<Particle> &had_out,
                                                 const FourVector &q, const FFInfoMap &ff) const {
+
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
@@ -440,55 +482,6 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
     return results;
 }
 
-void QESpectral::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) const {
-    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
-    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
-    FourVector ref{0, 0, 0, 1};
-    Poincare poincare(q, ref, 0);
-    poincare.Rotate(cur4_real);
-    poincare.Rotate(cur4_imag);
-
-    cur4_real[3] = omega / q.P() * cur[0].real();
-    cur4_imag[3] = omega / q.P() * cur[0].imag();
-    poincare.RotateBack(cur4_real);
-    poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-}
-
-void QESpectral::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
-    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
-    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
-    FourVector ref{0, 0, 0, 1};
-    Poincare poincare(q, ref, 0);
-
-    poincare.Rotate(cur4_real);
-    poincare.Rotate(cur4_imag);
-
-    cur4_real[0] = q.P() / omega * cur4_real[3];
-    cur4_imag[0] = q.P() / omega * cur4_imag[3];
-    poincare.RotateBack(cur4_real);
-    poincare.RotateBack(cur4_imag);
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-}
-
-void QESpectral::LandauGauge(VCurrent &cur, const FourVector &q) const {
-    // spdlog::info("Before: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-    auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
-    auto Q2 = -q.M2();
-    for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
-    // spdlog::info("After: {}, {}, {}, {}",
-    //              cur[0], cur[1], cur[2], cur[3]);
-}
-
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
     return std::make_unique<QESpectral>(config, form_factor);
@@ -496,7 +489,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
 
 double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons, size_t nprotons,
                                       size_t nneutrons) const {
-    if(is_hydrogen) return 1;
+    if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     const double removal_energy = Constant::mN - nucleons[0].E();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *

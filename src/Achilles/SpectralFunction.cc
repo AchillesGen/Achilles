@@ -5,13 +5,14 @@
 using achilles::SpectralFunction;
 
 SpectralFunction::SpectralFunction(const std::string &filename) {
+    spdlog::debug("Reading spectral function from file: {}", filename);
     std::ifstream data(filename);
     size_t ne{}, np{};
     data >> ne >> np;
     mom.resize(np);
     energy.resize(ne);
     spectral.resize(ne * np);
-    std::vector<double> dp_p(np);
+    dp_p.resize(np);
     for(size_t j = 0; j < np; ++j) {
         data >> mom[j];
         for(size_t i = 0; i < ne; ++i) { data >> energy[i] >> spectral[j * ne + i]; }
@@ -34,9 +35,9 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
         }
     }
 
-    // Setup overestimate interpolator
-    overestimate = Interp1D(mom, maxS, InterpolationType::Polynomial);
-    overestimate.SetPolyOrder(1);
+    // Setup momentum distribution interpolator
+    mom_func = Interp1D(mom, dp_p, InterpolationType::Polynomial);
+    mom_func.SetPolyOrder(3);
 
     // Setup spectral function interpolator
     func = Interp2D(mom, energy, spectral, InterpolationType::Polynomial);
@@ -47,5 +48,12 @@ double SpectralFunction::operator()(double p, double E) const {
     if(p < mom.front() || p > mom.back() || E < energy.front() || E > energy.back()) return 0;
 
     auto result = func(p, E) / norm;
+    return result > 0 ? result : 0;
+}
+
+double SpectralFunction::operator()(double p) const {
+    if(p < mom.front() || p > mom.back()) return 0;
+
+    auto result = mom_func(p) / norm;
     return result > 0 ? result : 0;
 }
