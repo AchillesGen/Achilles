@@ -14,10 +14,10 @@ int GetMode();
 int GetFrame();
 char *ModelName();
 char *GetName_();
-void GetCurrents(long *pids_in, long *pids_out, achilles::FourVector *pin, size_t nin, size_t nout,
+void GetCurrents(long *pids_in, long *pids_out, long *pids_spect, achilles::FourVector *pin, size_t nin, size_t nout, size_t nspect,
                  const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
                  std::complex<double> *current, size_t nspins, size_t nlorentz);
-double GetInitialStateWeight(long *pids_in, achilles::FourVector *pin, size_t nin, size_t nproton,
+double GetInitialStateWeight(long *pids_in, long *pids_spect, achilles::FourVector *mom, size_t nin, size_t nspect, size_t nproton,
                              size_t nneutron);
 }
 
@@ -33,9 +33,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     NuclearFrame Frame() const override { 
         return static_cast<NuclearFrame>(GetFrame());
     }
-    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
-    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

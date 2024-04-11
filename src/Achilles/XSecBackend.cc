@@ -46,8 +46,8 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
-                                       const std::vector<Particle> &p_in) const {
-    auto initial_wgt = m_model->InitialStateWeight(p_in, nprotons, nneutrons);
+                                       const std::vector<Particle> &p_in, const std::vector<Particle> &p_spect) const {
+    auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
     return initial_wgt;
 }
 
@@ -83,7 +83,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         ff_info[boson.first] = form_factors.at({process_info.m_hadronic.first[0], boson.first});
     }
     auto q = lepton_in.Momentum() - lepton_out[0].Momentum();
-    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, q, ff_info);
+    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
 
     double amps2 = 0;
 
@@ -99,10 +99,12 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
     }
     if(std::isnan(amps2)) amps2 = 0;
 
+    spdlog::trace("calculating flux");
+
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
     double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
@@ -157,11 +159,11 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
 
     if(multiplicity == 2) {
         Channel<FourVector> channel0 =
-            BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, beam, masses, nuc_id);
+            BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
         Channel<FourVector> channel0 =
-            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, beam, masses, nuc_id);
+            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
 }
@@ -196,7 +198,7 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
     }
     auto q = lepton_in.Momentum();
     for(const auto &part : lepton_out) q -= part.Momentum();
-    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, q, ff_info);
+    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
 
     // Setup handling of spin decays
     const size_t nlep_spins = lepton_current.begin()->second.size();
@@ -226,7 +228,7 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
@@ -316,7 +318,7 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
     return amps2 * flux * initial_wgt * event.Weight();
 }

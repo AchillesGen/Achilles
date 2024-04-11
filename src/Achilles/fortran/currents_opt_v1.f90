@@ -26,7 +26,7 @@ subroutine dirac_matrices_in(xmn_in)
     
     real*8 :: xmn_in
     xmn=xmn_in
-   allocate(up1(nspin_in,4),upp1(nspin_f,4), &
+    allocate(up1(nspin_in,4),upp1(nspin_f,4), &
             &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4))
     sig(:,:,:)=czero
     id(:,:)=czero

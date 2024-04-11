@@ -3,6 +3,7 @@ module nuclear_model_interface
     use nuclear_model
     use qe_spectral_model
     use res_spectral_model
+    use intf_spectral_model
 
     implicit none
 
@@ -17,10 +18,12 @@ contains
     subroutine register_all() bind(C, name="RegisterAll")
         type(qe_spec) :: qe
         type(res_spec) :: res
+        type(intf_spec) :: intf
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
         call factory%register_model(qe%model_name(), build_qe_spec)
         call factory%register_model(res%model_name(), build_res_spec)
+        call factory%register_model(intf%model_name(), build_intf_spec)
         call factory%init()
     end subroutine
 
@@ -117,23 +120,25 @@ contains
         get_ps_name = f2cstring(fname)
     end function
 
-    subroutine currents(pids_in, pids_out, moms, nin, nout, qvec, ff, cur, nspin, nlorentz) bind(C, name="GetCurrents")
+    subroutine currents(pids_in, pids_out, pids_spect, moms, nin, nout, nspect, qvec, ff, cur, nspin, nlorentz) bind(C, name="GetCurrents")
         use iso_c_binding
         use libvectors
         use libmap
         implicit none
 
         real(c_double), intent(in), dimension(4), target :: qvec
-        integer(c_size_t), intent(in), value :: nin, nout, nspin, nlorentz
+        integer(c_size_t), intent(in), value :: nin, nout, nspect, nspin, nlorentz
         complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
         type(c_ptr), intent(in), value, target :: ff
         ! C++ is row major, while Fortran is column major
         ! This means the moms passed in are transposed
         integer(c_long), dimension(nin), intent(in) :: pids_in
         integer(c_long), dimension(nout), intent(in) :: pids_out
-        real(c_double), intent(in), dimension(4, nin+nout) :: moms
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        real(c_double), intent(in), dimension(4, nin+nout+nspect) :: moms
         type(fourvector), dimension(nin) :: mom_in
         type(fourvector), dimension(nout) :: mom_out
+        type(fourvector), dimension(nspect) :: mom_spect
         type(fourvector) :: qvector
         type(complex_map) :: ff_dict
         integer(c_size_t) :: i
@@ -146,28 +151,39 @@ contains
             mom_out(i) = fourvector(moms(1, nin+i), moms(2, nin+i), moms(3, nin+i), moms(4, nin+i))
         enddo
 
+        do i=1,nspect
+            mom_spect(i) = fourvector(moms(1, nin+nout+i), moms(2, nin+nout+i), moms(3, nin+nout+i), moms(4, nin+nout+i))
+        enddo
+
         qvector = fourvector(qvec(1), qvec(2), qvec(3), qvec(4))
         ff_dict = complex_map(ff)
-        call model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, qvector, ff_dict, cur, nspin, nlorentz)
+        call model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvector, ff_dict, cur, nspin, nlorentz)
     end subroutine
 
-    function get_init_wgt(pids, pin, nin, nproton, nneutron) result(wgt) bind(c, name="GetInitialStateWeight")
+    function get_init_wgt(pids_in, pids_spect, pmom, nin, nspect, nproton, nneutron) result(wgt) bind(c, name="GetInitialStateWeight")
         use iso_c_binding
         use libvectors
         implicit none
 
-        integer(c_long), dimension(nin), intent(in) :: pids
-        real(c_double), dimension(4, nin), intent(in) :: pin
-        type(fourvector), dimension(nin) :: mom
-        integer(c_size_t), intent(in), value :: nin, nproton, nneutron
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        real(c_double), dimension(4, nin+nspect), intent(in) :: pmom
+        type(fourvector), dimension(nin) :: mom_in
+        type(fourvector), dimension(nspect) :: mom_spect
+        integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         real(c_double) :: wgt
         integer(c_size_t) :: i
 
         do i=1,nin
-            mom(i) = fourvector(pin(1, i), pin(2, i), pin(3, i), pin(4, i))
+            mom_in(i) = fourvector(pmom(1, i), pmom(2, i), pmom(3, i), pmom(4, i))
         enddo
 
-        wgt = model_ptr%init_wgt(pids, mom, nin, nproton, nneutron)
+        do i=1,nspect
+            mom_spect(i) = fourvector(pmom(1, nin+i), pmom(2, nin+i), pmom(3, nin+i), pmom(4, nin+i))
+        enddo
+
+
+        wgt = model_ptr%init_wgt(pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron)
     end function get_init_wgt
 
 end module

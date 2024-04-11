@@ -269,6 +269,7 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         case 0: // Same charge in inital and final
             local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
             local.m_spectator = {PID::neutron()};
+            spdlog::trace("{}", local);
             results.push_back(local);
             local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
             local.m_spectator = {PID::proton()};
@@ -373,6 +374,7 @@ Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
 
 achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<Particle> &had_in,
                                                         const std::vector<Particle> &had_out,
+                                                        const std::vector<Particle> &,
                                                         const FourVector &qVec,
                                                         const FFInfoMap &ff) const {
     auto pIn = had_in[0].Momentum();
@@ -432,6 +434,7 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
 
 NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had_in,
                                                 const std::vector<Particle> &had_out,
+                                                const std::vector<Particle> &,
                                                 const FourVector &q, const FFInfoMap &ff) const {
 
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
@@ -487,7 +490,7 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     return std::make_unique<QESpectral>(config, form_factor);
 }
 
-double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons, size_t nprotons,
+double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons, const std::vector<Particle> &, size_t nprotons,
                                       size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     const double removal_energy = Constant::mN - nucleons[0].E();

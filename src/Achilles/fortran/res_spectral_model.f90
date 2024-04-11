@@ -92,7 +92,7 @@ contains
         class(res_spec), intent(inout) :: self
     end subroutine
 
-    subroutine res_spec_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, cur, nspin, nlorentz)
+    subroutine res_spec_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvec, ff, cur, nspin, nlorentz)
         use iso_c_binding
         use libvectors
         use dirac_matrices_pi
@@ -100,14 +100,16 @@ contains
         use libmap
         
         class(res_spec), intent(inout) :: self
-        integer(c_size_t), intent(in), value :: nin, nout, nspin, nlorentz
-        type(complex_map), intent(in) :: ff 
+        integer(c_size_t), intent(in), value :: nin, nout, nspect, nspin, nlorentz
+        type(complex_map), intent(in) :: ff
         type(fourvector) :: qvec
-        type(fourvector), dimension(nin), intent(in) :: mom_in
-        type(fourvector), dimension(nout), intent(in) :: mom_out
         integer(c_long), dimension(nin), intent(in) :: pids_in
         integer(c_long), dimension(nout), intent(in) :: pids_out
-        complex(c_double_complex), dimension(nspin, nlorentz), intent(out) :: cur
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        type(fourvector), dimension(nin), intent(in) :: mom_in
+        type(fourvector), dimension(nout), intent(in) :: mom_out
+        type(fourvector), dimension(nspect), intent(in) :: mom_spect
+        complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
 
         integer(c_size_t) :: i,j,mode      
         double precision, dimension(4) :: p4,pp4,kpi4,q4
@@ -142,26 +144,30 @@ contains
      return
     end subroutine
 
-    function res_spec_init_wgt(self, pids, moms, nin, nproton, nneutron) result(wgt)
+    function res_spec_init_wgt(self, pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron) result(wgt)
         use iso_c_binding
         use libvectors
         use libutilities
 
         class(res_spec), intent(inout) :: self
-        integer(c_long), dimension(nin), intent(in) :: pids
-        type(fourvector), dimension(nin), intent(in) :: moms
-        integer(c_size_t), intent(in), value :: nin, nproton, nneutron
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        type(fourvector), dimension(nin), intent(in) :: mom_in
+        type(fourvector), dimension(nspect), intent(in) :: mom_spect
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         double precision, dimension(4) :: p4
         real(c_double) :: wgt, pmom, E
 
-        p4=moms(1)%to_array()
+        p4=mom_in(1)%to_array()
         E=-p4(1)+constants%mqe
         pmom=sqrt(sum(p4(2:4)**2))
 
-        if (pids(1) == 2212) then
+        if (pids_in(1) == 2212) then
             wgt=nproton*spectral_p%call(pmom,E)
         else
             wgt=nneutron*spectral_n%call(pmom,E)
         endif
+
+
     end function res_spec_init_wgt
 end module res_spectral_model

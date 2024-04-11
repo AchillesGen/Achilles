@@ -92,11 +92,17 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
+
     static constexpr size_t lepton_in_end_idx = 1;
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
     const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
     const auto &momentum = event.Momentum();
+
+
+    spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx, had_out_end_idx, momentum.size());
+    spdlog::trace("{}", m_info);
+
     lep_in = momentum[0];
     had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
                                      momentum.begin() + static_cast<int>(hadron_end_idx));
@@ -126,7 +132,7 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
     for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
         had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
     }
-    for(size_t i = 0; i < spect.size(); ++i) {
+    for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
         spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
     }
 }
@@ -204,12 +210,15 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
 }
 
 void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
+
+    spdlog::trace("settig up leptons");
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     auto &process = m_processes[process_idx.value_or(0)];
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons;
 
+    spdlog::trace("settig up leptons2");
     // Setup leptons
     const auto &info = process.Info();
     leptons.emplace_back(info.m_leptonic.first, lep_in);
@@ -222,6 +231,7 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
         leptons.back().Status() = ParticleStatus::final_state;
     }
 
+    spdlog::trace("settig up leptons3");
     event.Leptons() = leptons;
 }
 
@@ -348,7 +358,6 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     for(const auto &momentum : event.Momentum()) {
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
-
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     SetupLeptons(event, process_opt);

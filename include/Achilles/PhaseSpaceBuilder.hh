@@ -16,8 +16,8 @@ class Beam;
 
 class PSBuilder {
   public:
-    PSBuilder(size_t nlep = 2, size_t nhad = 2) : m_nlep{nlep}, m_nhad{nhad} {
-        phase_space = std::make_unique<PSMapper>(m_nlep, m_nhad);
+    PSBuilder(size_t nlep = 2, size_t nhad = 2, size_t nspec = 0) : m_nlep{nlep}, m_nhad{nhad}, m_nspec{nspec} {
+        phase_space = std::make_unique<PSMapper>(m_nlep, m_nhad, m_nspec);
     }
     MOCK ~PSBuilder() = default;
     MOCK PSBuilder &Beam(std::shared_ptr<Beam>, const std::vector<double> &, size_t = 0);
@@ -32,7 +32,7 @@ class PSBuilder {
     MOCK std::unique_ptr<PSMapper> build() { return std::move(phase_space); }
 
   private:
-    size_t m_nlep, m_nhad;
+    size_t m_nlep, m_nhad, m_nspec;
     std::unique_ptr<PSMapper> phase_space = nullptr;
 };
 
