@@ -270,7 +270,6 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons;
 
-    spdlog::trace("settig up leptons2");
     // Setup leptons
     const auto &info = process.Info();
     leptons.emplace_back(info.m_leptonic.first, lep_in);
@@ -283,7 +282,6 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
         leptons.back().Status() = ParticleStatus::final_state;
     }
 
-    spdlog::trace("settig up leptons3");
     event.Leptons() = leptons;
 }
 
