@@ -20,6 +20,8 @@ module intf_spectral_model
             procedure :: cleanup => intf_spec_cleanup
     end type
 
+    logical :: compute_1body = .true.
+
 contains
 
     function intf_spec_init(self, filename)
@@ -36,8 +38,6 @@ contains
         integer*8 :: length
 
         open(unit=read_unit, file=trim(filename), iostat=ios)
-            print*,'iostat = ', ios
-            print*,'file = ', trim(filename)
         if( ios /= 0 ) then
             intf_spec_init = .false.
             return
@@ -140,11 +140,17 @@ contains
             cur=(0.0d0,0.0d0)
             return
         endif
-        call onebody_curr_matrix_el(J_mu_1b)
-        call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
-        call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
 
-        J_mu = J_mu_1b + J_mu_pi + J_mu_del
+        if(compute_1body.eq.true) then
+            call onebody_curr_matrix_el(J_mu_1b)
+            J_mu = J_mu_1b
+            compute_1body = .false.
+        else
+            call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
+            call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
+            J_mu = J_mu_pi + J_mu_del
+            compute_1body = .true.
+        endif
 
         do i=1,2
            do j=1,2
@@ -176,15 +182,15 @@ contains
         pspec_mom=sqrt(sum(p2_4(2:4)**2)) 
 
         if (pids_in(1) == 2212) then
-            wgt=nproton*spectral_p_MF%call(pmom,E)
+            wgt=nproton*spectral_p_MF%call(pmom,E) 
         else
             wgt=nneutron*spectral_n_MF%call(pmom,E)
         endif
 
         if (pids_spect(1) == 2212) then
-            wgt=wgt*nproton*spectral_p_bkgd%call(pmom,E)
+            wgt=wgt*nproton*spectral_p_bkgd%call(pmom)
         else
-            wgt=wgt*nneutron*spectral_n_bkgd%call(pmom,E)
+            wgt=wgt*nneutron*spectral_n_bkgd%call(pmom)
         endif
         
     end function intf_spec_init_wgt

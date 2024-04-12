@@ -211,14 +211,13 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
 
 void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
 
-    spdlog::trace("settig up leptons");
+    spdlog::trace("Setting up leptons");
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     auto &process = m_processes[process_idx.value_or(0)];
     process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
     std::vector<Particle> leptons;
 
-    spdlog::trace("settig up leptons2");
     // Setup leptons
     const auto &info = process.Info();
     leptons.emplace_back(info.m_leptonic.first, lep_in);
@@ -231,7 +230,6 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
         leptons.back().Status() = ParticleStatus::final_state;
     }
 
-    spdlog::trace("settig up leptons3");
     event.Leptons() = leptons;
 }
 

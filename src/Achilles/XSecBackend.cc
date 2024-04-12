@@ -98,8 +98,6 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
     }
     if(std::isnan(amps2)) amps2 = 0;
 
-    spdlog::trace("calculating flux");
-
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
