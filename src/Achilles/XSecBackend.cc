@@ -290,17 +290,17 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     }
 }
 
-void achilles::BSMBackend::SetOptions(const YAML::Node &options) {
-    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
-    const auto vectorFF = config["vector"].as<std::string>();
-    const auto axialFF = config["axial"].as<std::string>();
-    const auto coherentFF = config["coherent"].as<std::string>();
-    auto ff = FormFactorBuilder()
-                  .Vector(vectorFF, config[vectorFF])
-                  .AxialVector(axialFF, config[axialFF])
-                  .Coherent(coherentFF, config[coherentFF])
-                  .build();
-    FormFactorInterface::SetFormFactor(std::move(ff));
+void achilles::BSMBackend::SetOptions(const YAML::Node &) {
+    // auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    // const auto vectorFF = config["vector"].as<std::string>();
+    // const auto axialFF = config["axial"].as<std::string>();
+    // const auto coherentFF = config["coherent"].as<std::string>();
+    // auto ff = FormFactorBuilder()
+    //               .Vector(vectorFF, config[vectorFF])
+    //               .AxialVector(axialFF, config[axialFF])
+    //               .Coherent(coherentFF, config[coherentFF])
+    //               .build();
+    // FormFactorInterface::SetFormFactor(std::move(ff));
 }
 
 achilles::SherpaBackend::SherpaBackend() {}
