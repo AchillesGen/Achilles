@@ -30,7 +30,8 @@ contains
     end subroutine
 
     subroutine register() bind(C, name="Register")
-        call factory%register_model("test", build_test)
+        type(test) :: model
+        call factory%register_model(model%model_name(), build_test)
     end subroutine
 
     function test_init(self, filename)
