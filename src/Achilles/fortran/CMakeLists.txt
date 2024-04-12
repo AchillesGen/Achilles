@@ -23,6 +23,8 @@ add_library(fortran_interface SHARED
     currents_pi_dcc.f90
     #amp_dcc_sl_module.f
     amp_dcc_sl.f
+    intf_spectral_model.f90
+    currents_intf.f90
     # OneBody/pke_read_xsec.f90
     # OneBody/contract.f90
     # OneBody/currents.f90
@@ -50,6 +52,8 @@ add_library(fortran_interface SHARED
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
                                         PUBLIC physics nuclear_models)
+
+target_compile_options(fortran_interface PUBLIC $<$<COMPILE_LANGUAGE:Fortran>: -ffree-line-length-none>) 
 
 add_library(AchillesPlugin_nuclear_test nuclear_model_test.f90)
 target_link_libraries(AchillesPlugin_nuclear_test PRIVATE project_options

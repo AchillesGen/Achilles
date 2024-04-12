@@ -1,7 +1,6 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -17,7 +16,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cmodelname = std::make_unique<char[]>(len_model + 1);
     strcpy(cmodelname.get(), modelname.c_str());
 
-    if(!CreateModel(cmodelname.get())) {
+    if(!CreateModel(cmodelname.get(), m_model)) {
         auto msg = fmt::format(
             "NuclearModel: Invalid model requested {}. Please ensure the model is registered",
             modelname);
@@ -29,7 +28,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cfilename = std::make_unique<char[]>(len + 1);
     strcpy(cfilename.get(), filename.c_str());
 
-    if(!InitModel(cfilename.get())) {
+    if(!InitModel(cfilename.get(), m_model)) {
         auto msg = fmt::format("NuclearModel: Could not initialize model {} using file {}.",
                                modelname, filename);
         throw std::runtime_error(msg);
@@ -38,6 +37,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
 
 NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &had_in,
                                                   const std::vector<Particle> &had_out,
+                                                  const std::vector<Particle> &had_spect,
                                                   const FourVector &qVec,
                                                   const FFInfoMap &ff) const {
 
@@ -49,6 +49,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     // Create momentum variables to pass to fortran
     const size_t nin = had_in.size();
     const size_t nout = had_out.size();
+    const size_t nspect = had_spect.size();
     spdlog::debug("q = {}", qVec);
 
     auto omega = qVec[0];
@@ -56,6 +57,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     std::vector<long> pids_in;
     std::vector<long> pids_out;
+    std::vector<long> pids_spect;
     std::vector<FourVector> moms;
     for(const auto &part : had_in) {
         pids_in.push_back(part.ID());
@@ -63,6 +65,10 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     }
     for(const auto &part : had_out) {
         pids_out.push_back(part.ID());
+        moms.push_back(part.Momentum());
+    }
+    for(const auto &part : had_spect) {
+        pids_spect.push_back(part.ID());
         moms.push_back(part.Momentum());
     }
 
@@ -79,7 +85,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
         std::map<std::string, std::complex<double>> ffmap;
         for(const auto &factor : formfactors) { ffmap[ToString(factor.first)] = factor.second; }
 
-        GetCurrents(pids_in.data(), pids_out.data(), moms.data(), nin, nout, &qVec, &ffmap, cur,
+        GetCurrents(m_model, pids_in.data(), pids_out.data(), pids_spect.data(), moms.data(), nin, nout, nspect, &qVec, &ffmap, cur,
                     NSpins(), 4);
 
         // Convert from array to Current
@@ -114,20 +120,27 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     return result;
 }
 
-double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, size_t nproton,
+double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, const std::vector<Particle> &had_spect, size_t nproton,
                                         size_t nneutron) const {
 
     if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
 
     size_t nin = had_in.size();
+    size_t nspect = had_spect.size();
     std::vector<long> pids_in;
+    std::vector<long> pids_spect;
     std::vector<FourVector> moms;
     for(const auto &part : had_in) {
         pids_in.push_back(part.ID());
         moms.push_back(part.Momentum());
     }
 
-    return GetInitialStateWeight(pids_in.data(), moms.data(), nin, nproton, nneutron);
+    for(const auto &part : had_spect) {
+        pids_spect.push_back(part.ID());
+        moms.push_back(part.Momentum());
+    }
+
+    return GetInitialStateWeight(m_model, pids_in.data(), pids_spect.data(), moms.data(), nin, nspect, nproton, nneutron);
 }
 
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
@@ -137,7 +150,7 @@ std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) 
 
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
     if(nuc_pid != PID::hydrogen()){
-        char *name = GetName_();
+        char *name = GetName_(m_model);
         auto tmp = std::string(name);
         delete name;
         return tmp;

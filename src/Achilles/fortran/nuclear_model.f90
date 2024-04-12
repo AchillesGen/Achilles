@@ -49,30 +49,34 @@ module nuclear_model
             character(len=:), allocatable :: nm_psname
         end function
 
-        subroutine nm_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, cur, nspin, nlorentz)
+        subroutine nm_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvec, ff, cur, nspin, nlorentz)
             use libvectors
             use libmap
             use iso_c_binding
             import model 
             class(model), intent(inout) :: self
-            integer(c_size_t), intent(in), value :: nin, nout, nspin, nlorentz
+            integer(c_size_t), intent(in), value :: nin, nout, nspect, nspin, nlorentz
             type(complex_map), intent(in) :: ff
             type(fourvector) :: qvec
             integer(c_long), dimension(nin), intent(in) :: pids_in
             integer(c_long), dimension(nout), intent(in) :: pids_out
+            integer(c_long), dimension(nspect), intent(in) :: pids_spect
             type(fourvector), dimension(nin), intent(in) :: mom_in
             type(fourvector), dimension(nout), intent(in) :: mom_out
+            type(fourvector), dimension(nspect), intent(in) :: mom_spect
             complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
         end subroutine
 
-        function nm_init_wgt(self, pids, moms, nin, nproton, nneutron) result(wgt)
+        function nm_init_wgt(self, pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron) result(wgt)
             use libvectors
             use iso_c_binding
             import model 
             class(model), intent(inout) :: self
-            integer(c_size_t), intent(in), value :: nin, nproton, nneutron
-            integer(c_long), dimension(nin), intent(in) :: pids
-            type(fourvector), dimension(nin), intent(in) :: moms
+            integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
+            integer(c_long), dimension(nin), intent(in) :: pids_in
+            integer(c_long), dimension(nspect), intent(in) :: pids_spect
+            type(fourvector), dimension(nin), intent(in) :: mom_in
+            type(fourvector), dimension(nspect), intent(in) :: mom_spect
             real(c_double) :: wgt
         end function
 

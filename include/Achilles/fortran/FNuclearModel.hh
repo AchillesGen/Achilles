@@ -6,18 +6,18 @@
 extern "C" {
 void RegisterAll();
 void ListModels();
-bool CreateModel(char *);
-bool InitModel(char *);
+bool CreateModel(char *, size_t&);
+bool InitModel(char *, size_t);
 void CleanUpEvent(std::complex<double> **, int *);
-void CleanUpModel();
-int GetMode();
-int GetFrame();
-char *ModelName();
-char *GetName_();
-void GetCurrents(long *pids_in, long *pids_out, achilles::FourVector *pin, size_t nin, size_t nout,
+void CleanUpModel(size_t);
+int GetMode(size_t);
+int GetFrame(size_t);
+char *ModelName(size_t);
+char *GetName_(size_t);
+void GetCurrents(size_t, long *pids_in, long *pids_out, long *pids_spect, achilles::FourVector *pin, size_t nin, size_t nout, size_t nspect,
                  const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
                  std::complex<double> *current, size_t nspins, size_t nlorentz);
-double GetInitialStateWeight(long *pids_in, achilles::FourVector *pin, size_t nin, size_t nproton,
+double GetInitialStateWeight(size_t, long *pids_in, long *pids_spect, achilles::FourVector *mom, size_t nin, size_t nspect, size_t nproton,
                              size_t nneutron);
 }
 
@@ -26,23 +26,23 @@ namespace achilles {
 class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> {
   public:
     FortranModel(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
-    ~FortranModel() override { CleanUpModel(); }
+    ~FortranModel() override { CleanUpModel(m_model); }
 
-    NuclearMode Mode() const override { return static_cast<NuclearMode>(GetMode()); }
+    NuclearMode Mode() const override { return static_cast<NuclearMode>(GetMode(m_model)); }
     std::string PhaseSpace(PID) const override;
     NuclearFrame Frame() const override { 
-        return static_cast<NuclearFrame>(GetFrame());
+        return static_cast<NuclearFrame>(GetFrame(m_model));
     }
-    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &, const std::vector<Particle> &,
                           const FourVector &, const FFInfoMap &) const override;
-    double InitialStateWeight(const std::vector<Particle> &, size_t, size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
     static std::string Name() { return "FortranModel"; }
 
     // TODO: Allow fortran codes to fill these out
-    std::string GetName() const override { return ModelName(); }
+    std::string GetName() const override { return ModelName(m_model); }
     std::string InspireHEP() const override { return ""; }
 
     // Method needed to register fortran models at start-up
@@ -53,8 +53,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     }
 
   private:
-    mutable bool is_hydrogen;
+    mutable bool is_hydrogen{false};
     const WardGauge m_ward;
+    size_t m_model;
 };
 
 } // namespace achilles
