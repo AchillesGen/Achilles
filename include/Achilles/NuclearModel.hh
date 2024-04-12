@@ -190,7 +190,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
-    mutable bool is_hydrogen;
+    mutable bool is_hydrogen{false};
 };
 
 } // namespace achilles

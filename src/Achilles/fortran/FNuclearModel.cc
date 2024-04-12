@@ -1,7 +1,6 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -17,7 +16,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cmodelname = std::make_unique<char[]>(len_model + 1);
     strcpy(cmodelname.get(), modelname.c_str());
 
-    if(!CreateModel(cmodelname.get())) {
+    if(!CreateModel(cmodelname.get(), m_model)) {
         auto msg = fmt::format(
             "NuclearModel: Invalid model requested {}. Please ensure the model is registered",
             modelname);
@@ -29,7 +28,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     auto cfilename = std::make_unique<char[]>(len + 1);
     strcpy(cfilename.get(), filename.c_str());
 
-    if(!InitModel(cfilename.get())) {
+    if(!InitModel(cfilename.get(), m_model)) {
         auto msg = fmt::format("NuclearModel: Could not initialize model {} using file {}.",
                                modelname, filename);
         throw std::runtime_error(msg);
@@ -86,7 +85,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
         std::map<std::string, std::complex<double>> ffmap;
         for(const auto &factor : formfactors) { ffmap[ToString(factor.first)] = factor.second; }
 
-        GetCurrents(pids_in.data(), pids_out.data(), pids_spect.data(), moms.data(), nin, nout, nspect, &qVec, &ffmap, cur,
+        GetCurrents(m_model, pids_in.data(), pids_out.data(), pids_spect.data(), moms.data(), nin, nout, nspect, &qVec, &ffmap, cur,
                     NSpins(), 4);
 
         // Convert from array to Current
@@ -141,7 +140,7 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, con
         moms.push_back(part.Momentum());
     }
 
-    return GetInitialStateWeight(pids_in.data(), pids_spect.data(), moms.data(), nin, nspect, nproton, nneutron);
+    return GetInitialStateWeight(m_model, pids_in.data(), pids_spect.data(), moms.data(), nin, nspect, nproton, nneutron);
 }
 
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
@@ -151,7 +150,7 @@ std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) 
 
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
     if(nuc_pid != PID::hydrogen()){
-        char *name = GetName_();
+        char *name = GetName_(m_model);
         auto tmp = std::string(name);
         delete name;
         return tmp;

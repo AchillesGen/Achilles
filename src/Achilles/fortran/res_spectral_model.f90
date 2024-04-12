@@ -165,7 +165,5 @@ contains
         else
             wgt=nneutron*spectral_n%call(pmom,E)
         endif
-
-
     end function res_spec_init_wgt
 end module res_spectral_model
