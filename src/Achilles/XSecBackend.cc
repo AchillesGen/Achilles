@@ -283,7 +283,9 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     size_t count = 0;
     for(auto &chan : channels) {
         Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1, 2,
+            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
+                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+                                      process_info.m_spectator.size(),
                                       beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
@@ -346,7 +348,9 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
     size_t count = 0;
     for(auto &chan : channels) {
         Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1, 2,
+            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
+                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+                                      process_info.m_spectator.size(),
                                       beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
