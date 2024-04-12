@@ -86,13 +86,29 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
     double amps2 = 0;
 
-    for(const auto &lcurrent : lepton_current) {
-        auto boson = lcurrent.first;
-        if(hadron_current.find(boson) == hadron_current.end()) continue;
-        const auto &hcurrent = hadron_current[boson];
-        for(const auto &lcurrent_spin : lcurrent.second) {
-            for(const auto &hcurrent_spin : hcurrent) {
-                amps2 += std::norm(lcurrent_spin * hcurrent_spin);
+    // TODO: Clean this up to look nicer
+    if(spect.size() == 0) {
+        for(const auto &lcurrent : lepton_current) {
+            auto boson = lcurrent.first;
+            if(hadron_current.find(boson) == hadron_current.end()) continue;
+            const auto &hcurrent = hadron_current[boson];
+            for(const auto &lcurrent_spin : lcurrent.second) {
+                for(const auto &hcurrent_spin : hcurrent) {
+                    amps2 += std::norm(lcurrent_spin * hcurrent_spin);
+                }
+            }
+        }
+    } else {
+        auto hadron_current2 = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
+        for(const auto &lcurrent : lepton_current) {
+            auto boson = lcurrent.first;
+            if(hadron_current.find(boson) == hadron_current.end() || hadron_current2.find(boson) == hadron_current2.end()) continue;
+            const auto &hcurrent = hadron_current[boson];
+            const auto &hcurrent2 = hadron_current2[boson];
+            for(const auto &lcurrent_spin : lcurrent.second) {
+                for(size_t i = 0; i < hcurrent.size(); ++i) {
+                    amps2 += 2*std::real(lcurrent_spin * hcurrent[i] * std::conj(lcurrent_spin * hcurrent2[i]));
+                }
             }
         }
     }
