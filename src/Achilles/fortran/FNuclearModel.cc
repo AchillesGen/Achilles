@@ -1,7 +1,6 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Poincare.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -173,7 +172,7 @@ std::string FortranModel::PhaseSpace(PID nuc_pid) const {
 
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
     if(nuc_pid != PID::hydrogen()){
-        char *name = GetName_();
+        char *name = GetName_(m_model);
         auto tmp = std::string(name);
         delete name;
         return tmp;
