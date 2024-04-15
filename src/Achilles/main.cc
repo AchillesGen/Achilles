@@ -69,7 +69,8 @@ void Splash() {
 |                                                                     |
 |    Version: {:56}|
 |    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,        | 
-|        Pedro A. Machado, Luke Pickering, Noemi Rocco                | 
+|        Pedro A. Machado, Luke Pickering, Noemi Rocco,               | 
+|        Noah Steinberg                                               |
 |                                                                     |
 |    Undergraduate Student Contributions:                             |
 |        Diego Lopez Gutierrez, Sherry Wang, Russell Farnsworth       |
