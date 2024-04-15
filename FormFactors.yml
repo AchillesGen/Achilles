@@ -3,6 +3,8 @@ axial: AxialZExpansion
 coherent: Helm
 resonancevector: ResonanceVectorDummy 
 resonanceaxial: ResonanceAxialDummy 
+mecvector: MesonExchangeVector 
+mecaxial: MesonExchangeAxial
 
 VectorDummy:
   f1p: 1
@@ -90,3 +92,13 @@ Helm:
 Lovato:
   b: 0.994885
   c: [6.01084, 0.143785, -4.06675, 1.45063, -0.135216]
+
+MesonExchangeVector:
+  MvSq: 710000.0
+  cv3norm: 2.13
+  cv4norm: -1.15
+  cv5norm: 0.48
+
+MesonExchangeAxial: 
+  MaDeltaSq: 1102500.0
+  ca5norm: 1.2
