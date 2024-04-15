@@ -106,7 +106,8 @@
 
 #if !defined(RANDUTILS_CPU_ENTROPY) && defined(__has_builtin)
 #if __has_builtin(__builtin_readcyclecounter)
-#define RANDUTILS_CPU_ENTROPY __builtin_readcyclecounter()
+// #define RANDUTILS_CPU_ENTROPY __builtin_readcyclecounter()
+#define RANDUTILS_CPU_ENTROPY 0
 #endif
 #endif
 #if !defined(RANDUTILS_CPU_ENTROPY)

@@ -38,6 +38,7 @@ class EventGen {
     bool GenerateSingleEvent();
 
     bool runCascade{false}, outputEvents{false}, doHardCuts{false};
+    [[maybe_unused]] bool doEventCuts{false};
     bool runDecays{false};
     bool doRotate{false};
     bool MakeCuts(Event &);

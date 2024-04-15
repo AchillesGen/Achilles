@@ -7,7 +7,7 @@
 #ifdef ACHILLES_SHERPA_INTERFACE
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
-#pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+// #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
