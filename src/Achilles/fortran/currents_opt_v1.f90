@@ -129,6 +129,10 @@ subroutine det_Ja(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu,ip
   complex*16 :: f1v,f2v,fa(2)
+
+  !write(6,*)' q', q
+  !write(6,*)'f1v = ', f1v 
+  !write(6,*)'f2v = ', f2v
   
   do mu=1,4
      J_1(:,:,mu)=czero

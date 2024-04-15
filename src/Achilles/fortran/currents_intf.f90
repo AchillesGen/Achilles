@@ -7,13 +7,13 @@ module dirac_matrices_intf
     complex*16, private, parameter :: cone  = (1.0d0,0.0d0)
     complex*16, private, parameter :: ci    = (0.0d0,1.0d0)
     real*8, private, parameter :: pi=acos(-1.0d0) 
-    real*8, private, save :: pi_elec_ff
+    complex*16, private, save :: pi_elec_ff
     real*8, parameter :: lsq=0.71*1.e6   
     real*8, private, parameter :: fgnd=5.0d0,fpind=0.54d0
     real*8, private, parameter :: fstar=2.13d0, xmrho=775.8d0,ga=1.26d0,fpinn2=0.081*4.0d0*pi!1.0094d0! 2.14/2.13 from JUAN, !=0.08*4.0d0*pi ARTURO
     real*8, private, parameter :: lpi=1300.0d0,lpind=1150.0d0
     real*8, private, save :: mqe, qval
-    real*8, private, save :: cv3, cv4, cv5, ca5
+    complex*16, private, save :: cv3, cv4, cv5, ca5
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, allocatable, private, save :: up1(:,:),up2(:,:),upp1(:,:),upp2(:,:), &
             &   ubarp1(:,:),ubarp2(:,:),ubarpp1(:,:),ubarpp2(:,:)
@@ -116,7 +116,6 @@ subroutine define_spinors()
     up1(2,1:2)=down(:)
     up1(2,3:4)=matmul(sigp1(:,:),down(:))/(p1(1)+xmn)
     up1(:,:)=cp1*up1(:,:)
-
 !
     up2(1,1:2)=up(:)
     up2(1,3:4)=matmul(sigp2(:,:),up(:))/(p2(1)+xmn)
@@ -124,21 +123,17 @@ subroutine define_spinors()
     up2(2,3:4)=matmul(sigp2(:,:),down(:))/(p2(1)+xmn)
     up2(:,:)=cp2*up2(:,:)
 !
-    
-
     upp1(1,1:2)=up(:)
     upp1(1,3:4)=matmul(sigpp1(:,:),up(:))/(pp1(1)+xmn)
     upp1(2,1:2)=down(:)
     upp1(2,3:4)=matmul(sigpp1(:,:),down(:))/(pp1(1)+xmn)
     upp1(:,:)=cpp1*upp1(:,:)
-
 !
     upp2(1,1:2)=up(:)
     upp2(1,3:4)=matmul(sigpp2(:,:),up(:))/(pp2(1)+xmn)
     upp2(2,1:2)=down(:)
     upp2(2,3:4)=matmul(sigpp2(:,:),down(:))/(pp2(1)+xmn)
     upp2(:,:)=cpp2*upp2(:,:)
-
 !
     ubarp1(1,1:2)=up(:)
     ubarp1(1,3:4)=-matmul(up(:),sigp1(:,:))/(p1(1)+xmn)
@@ -181,7 +176,7 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
     endif
 
     !spectator nucleon
-    if(nuc2_pid_in.eq.2112) then
+    if(nuc2_pid_in.eq.2212) then
         t2 = up
     else
         t2 = down
@@ -229,12 +224,6 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
        Pi_k2e(:,:)=matmul(gamma_mu(:,:,5),k2_sl(:,:))/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)
     endif
 
-
-    cv3=fstar/(1.0d0-q2/lsq)**2/(1.0d0-q2/4.0d0/lsq)*sqrt(3.0d0/2.0d0)
-    cv4= -1.15/(1.0d0-q2/lsq)**2/(1.0d0-q2/4.0d0/lsq)*sqrt(3.0d0/2.0d0)
-    cv5 = 0.48/(1.0d0-q2/lsq)**2/(1.0d0-q2/0.776/lsq)*sqrt(3.0d0/2.0d0)
-    ca5=0.0d0!1.20d0/(1.0d0-q2/xma2)**2/(1.0d0-q2/3.0d0/xma2)*sqrt(3.0d0/2.0d0)
-
     return
 end subroutine
 
@@ -244,8 +233,9 @@ subroutine det_Ja(f1v,f2v,fa)
   complex*16 :: f1v,f2v,fa  
 
   ! compute and save pion em form factor
+  ! since it depends on f1, f2
   pi_elec_ff = f1v + (q2)*f2v/(4.0d0*xmn**2)
-  
+
   do mu=1,4
      J_1(:,:,mu)=czero
      do nu=1,4
@@ -279,9 +269,10 @@ subroutine onebody_curr_matrix_el(J_mu)
    return
 end subroutine
 
-function det_JaJb_JcJd() result(err)
+function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     implicit none
     integer*4 :: i,j,mu, err
+    complex*16 :: cv3_in, cv4_in, cv5_in, ca5_in
     real*8 :: pa(4),pb(4),pc(4),pd(4),width,fpik1,fpik2,fpindk2,fpindk1
     real*8 :: ga,gb,gc,gd,pa2,pb2,pc2,pd2
     real*8 :: pot_pa,pot_pb,pot_pc,pot_pd
@@ -291,6 +282,11 @@ function det_JaJb_JcJd() result(err)
     complex*16 :: j_c_1(4,4,4),j_c_2(4,4,4,4),RSc(4,4,4,4),RSd(4,4,4,4),j_d_1(4,4,4,4),j_d_2(4,4,4)
     complex*16 :: J_a(4,4,4),J_b(4,4,4),J_c(4,4,4),J_d(4,4,4)
   
+    cv3 = cv3_in
+    cv4 = cv4_in
+    cv5 = cv5_in
+    ca5 = ca5_in
+
     if(i_fl.eq.1)then
         pa(:)=p1(:)+q(:)
         pb(:)=pp1(:)-q(:)
@@ -524,7 +520,9 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
    ctc = IDeltaC(t1,t2,t2,t1)
    ctd = IDeltaD(t1,t2,t2,t1)
 
-   J_mu=j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd
+   !write(6,*)cta, ctb, ctc, ctd 
+
+   J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
 
    return
 end subroutine twobody_curr_matrix_J1Jdel_exc
@@ -582,7 +580,7 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    ctf = - Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
    cts = - Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
 
-   J_mu=ctf*j1jf(:,:,:) + cts*j1js(:,:,:)
+   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:))/2.0d0
 
    return
  end subroutine twobody_curr_matrix_J1Jpi_exc

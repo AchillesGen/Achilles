@@ -20,11 +20,16 @@ NuclearModel::NuclearModel(const YAML::Node &config,
     const auto coherentFF = config["coherent"].as<std::string>();
     const auto resvectorFF = config["resonancevector"].as<std::string>();
     const auto resaxialFF = config["resonanceaxial"].as<std::string>();
+    const auto mecvectorFF = config["mecvector"].as<std::string>();
+    const auto mecaxialFF = config["mecaxial"].as<std::string>();
+    spdlog::debug("mecvectoFF = {}", mecvectorFF);
     m_form_factor = ffbuilder.Vector(vectorFF, config[vectorFF])
                         .AxialVector(axialFF, config[axialFF])
                         .Coherent(coherentFF, config[coherentFF])
                         .ResonanceVector(resvectorFF, config[resvectorFF])
                         .ResonanceAxial(resaxialFF, config[resaxialFF])
+                        .MesonExchangeVector(mecvectorFF, config[mecvectorFF])
+                        .MesonExchangeAxial(mecaxialFF, config[mecaxialFF])
                         .build();
     ffbuilder.Reset();
 }
@@ -80,6 +85,18 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
             break;
         case Type::FResA:
             results[Type::FResA] += formFactors.FresA * ff.coupling;
+            break;
+        case Type::FMecV3:
+            results[Type::FMecV3] += formFactors.FmecV3 * ff.coupling;
+            break;
+        case Type::FMecV4:
+            results[Type::FMecV4] += formFactors.FmecV4 * ff.coupling;
+            break;
+        case Type::FMecV5:
+            results[Type::FMecV5] += formFactors.FmecV5 * ff.coupling;
+            break;
+        case Type::FMecA5:
+            results[Type::FMecA5] += formFactors.FmecA5 * ff.coupling;
             break;
         case Type::F1:
         case Type::F2:
@@ -311,10 +328,9 @@ size_t NuclearModel::NSpins() const {
     case NuclearMode::Coherent:
         return 1;
     case NuclearMode::Quasielastic:
+    case NuclearMode::Interference_QE_MEC:
     case NuclearMode::Resonance:
         return 4;
-    case NuclearMode::Interference_QE_MEC:
-        return 8;
     case NuclearMode::MesonExchangeCurrent:
         return 16;
     case NuclearMode::ShallowInelastic:

@@ -96,10 +96,16 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         const std::complex<double> coupl = i * ee;
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F2p, coupl},
-                                         {FormFactorInfo::Type::FResV, coupl}};
+                                         {FormFactorInfo::Type::FResV, coupl},
+                                         {FormFactorInfo::Type::FMecV3, coupl},
+                                         {FormFactorInfo::Type::FMecV4, coupl},
+                                         {FormFactorInfo::Type::FMecV5, coupl}};
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl},
                                           {FormFactorInfo::Type::F2n, coupl},
-                                          {FormFactorInfo::Type::FResV, coupl}};
+                                          {FormFactorInfo::Type::FResV, coupl},
+                                         {FormFactorInfo::Type::FMecV3, coupl},
+                                         {FormFactorInfo::Type::FMecV4, coupl},
+                                         {FormFactorInfo::Type::FMecV5, coupl}};
         results[{PID::carbon(), pid}] = {{FormFactorInfo::Type::FCoh, 6.0 * coupl}};
     } else {
         throw std::runtime_error("LeptonicCurrent: Invalid probe");

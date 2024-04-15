@@ -11,6 +11,8 @@ achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     if(coherent) coherent->Evaluate(Q2, results);
     if(resonancevector) resonancevector->Evaluate(Q2, results);
     if(resonanceaxial) resonanceaxial->Evaluate(Q2, results);
+    if(mecvector) mecvector->Evaluate(Q2, results);
+    if(mecaxial) mecaxial->Evaluate(Q2, results);
     return results;
 }
 
@@ -258,4 +260,44 @@ void achilles::ResonanceDummyAxialFormFactor::Evaluate(double Q2,
                                                        FormFactor::Values &result) const {
     spdlog::trace("ResonanceDummyAxialFormFactor: Q2 = {}", Q2);
     result.FresA = resA;
+}
+
+// MEC Vector form factors
+achilles::MECVectorFormFactor::MECVectorFormFactor(const YAML::Node &config) {
+    MvSq = config["MvSq"].as<double>();
+    cv3norm = config["cv3norm"].as<double>();
+    cv4norm = config["cv4norm"].as<double>();
+    cv5norm = config["cv5norm"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::MECVectorFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<MECVectorFormFactor>(type);
+    return std::make_unique<MECVectorFormFactor>(node);
+}
+
+void achilles::MECVectorFormFactor::Evaluate(double Q2,
+                                                        FormFactor::Values &result) const {
+    spdlog::debug("MECVectorFormFactor: Q2 = {}", Q2);
+    result.FmecV3 = cv3norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
+    result.FmecV4 = cv4norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
+    result.FmecV5 = cv5norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/0.776/MvSq)*sqrt(3./2.);
+}
+
+// MEC Axial form factors
+achilles::MECAxialFormFactor::MECAxialFormFactor(const YAML::Node &config) {
+    MaDeltaSq = config["MaDeltaSq"].as<double>();
+    ca5norm = config["ca5norm"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::MECAxialFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<MECAxialFormFactor>(type);
+    return std::make_unique<MECAxialFormFactor>(node);
+}
+
+void achilles::MECAxialFormFactor::Evaluate(double Q2,
+                                                        FormFactor::Values &result) const {
+    spdlog::trace("MECAxialFormFactor: Q2 = {}", Q2);
+    result.FmecA5 = ca5norm/pow(1. + Q2/MaDeltaSq,2)/(1. + Q2/3./MaDeltaSq)*sqrt(3./2.);
 }

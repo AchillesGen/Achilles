@@ -20,7 +20,7 @@ module intf_spectral_model
             procedure :: cleanup => intf_spec_cleanup
     end type
 
-    logical :: compute_1body = .true.
+    integer :: compute_1body = 1
 
 contains
 
@@ -120,8 +120,13 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
+        double precision :: rho,A,V
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi, J_mu_del
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
+
+        rho = (225.0d0**3)/(1.5d0 * (3.141d0**2))
+        A = 12.0d0
+        V = rho/A
 
         p1_4=mom_in(1)%to_array()
         p2_4=mom_spect(1)%to_array()
@@ -129,27 +134,35 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
-        call current_init(p1_4,pp1_4,p2_4,pp2_4,q4,2,pids_in(1),pids_spect(1))
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,2,pids_in(1),pids_spect(1))
         call define_spinors()
         call det_Ja(ff%lookup("F1"),ff%lookup("F2"),ff%lookup("FA"))
-        call det_Jpi()
-        ! Avoid interpolating outside
-        ! of delta potential range
-        err = det_JaJb_JcJd()
-        if (err.eq.1) then
-            cur=(0.0d0,0.0d0)
-            return
-        endif
 
-        if(compute_1body.eq.true) then
+        J_mu = (0.0d0,0.0d0)
+        J_mu_1b = (0.0d0,0.0d0)
+        J_mu_del = (0.0d0,0.0d0)
+        J_mu_pi = (0.0d0,0.0d0)
+
+        if(compute_1body.eq.1) then
             call onebody_curr_matrix_el(J_mu_1b)
             J_mu = J_mu_1b
-            compute_1body = .false.
+            compute_1body = 0
         else
+            call det_Jpi()
+            ! Avoid interpolating outside
+            ! of delta potential range
+            err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"))
+            if (err.eq.1) then
+                cur=(0.0d0,0.0d0)
+                return
+            endif
             call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
             call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
-            J_mu = J_mu_pi + J_mu_del
-            compute_1body = .true.
+            !call onebody_curr_matrix_el(J_mu_1b)
+            J_mu = sqrt(V)*(-J_mu_pi -J_mu_del)/(2.0d0*p2_4(1))
+            !print*, J_mu
+            !J_mu = J_mu_1b
+            compute_1body = 1
         endif
 
         do i=1,2
@@ -182,15 +195,15 @@ contains
         pspec_mom=sqrt(sum(p2_4(2:4)**2)) 
 
         if (pids_in(1) == 2212) then
-            wgt=nproton*spectral_p_MF%call(pmom,E) 
+            wgt=spectral_p_MF%normalization()*spectral_p_MF%call(pmom,E)
         else
-            wgt=nneutron*spectral_n_MF%call(pmom,E)
+            wgt=spectral_n_MF%normalization()*spectral_n_MF%call(pmom,E)
         endif
 
         if (pids_spect(1) == 2212) then
-            wgt=wgt*nproton*spectral_p_bkgd%call(pmom)
+            wgt=wgt*spectral_p_bkgd%normalization()*spectral_p_bkgd%call(pmom) 
         else
-            wgt=wgt*nneutron*spectral_n_bkgd%call(pmom)
+            wgt=wgt*spectral_n_bkgd%normalization()*spectral_n_bkgd%call(pmom) 
         endif
         
     end function intf_spec_init_wgt

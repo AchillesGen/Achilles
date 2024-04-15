@@ -30,6 +30,10 @@ struct FormFactorInfo {
         FCoh,
         FResV,
         FResA,
+        FMecV3,
+        FMecV4,
+        FMecV5,
+        FMecA5
     };
 
     Type form_factor;
@@ -62,6 +66,14 @@ inline std::string ToString(FormFactorInfo::Type type) {
         return "FResV";
     case FormFactorInfo::Type::FResA:
         return "FResA";
+    case FormFactorInfo::Type::FMecV3:
+        return "FMecV3";
+    case FormFactorInfo::Type::FMecV4:
+        return "FMecV4";
+    case FormFactorInfo::Type::FMecV5:
+        return "FMecV5";
+    case FormFactorInfo::Type::FMecA5:
+        return "FMecA5";
     }
     return "Unknown";
 }
@@ -74,6 +86,7 @@ class FormFactor {
         double FA{}, FAs{};
         double Fcoh{};
         double FresV{}, FresA{};
+        double FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};
     };
 
     FormFactor() = default;
@@ -89,9 +102,11 @@ class FormFactor {
     std::shared_ptr<FormFactorImpl> coherent = nullptr;
     std::shared_ptr<FormFactorImpl> resonancevector = nullptr;
     std::shared_ptr<FormFactorImpl> resonanceaxial = nullptr;
+    std::shared_ptr<FormFactorImpl> mecvector = nullptr;
+    std::shared_ptr<FormFactorImpl> mecaxial = nullptr;
 };
 
-enum class FFType { vector, axial, coherent, resonancevector, resonanceaxial };
+enum class FFType { vector, axial, coherent, resonancevector, resonanceaxial, mecvector, mecaxial };
 
 inline std::string FFTypeToString(FFType type) {
     std::string result;
@@ -110,6 +125,12 @@ inline std::string FFTypeToString(FFType type) {
         break;
     case FFType::resonanceaxial:
         result = "resonanceaxial";
+        break;
+    case FFType::mecvector:
+        result = "mecvector";
+        break;
+    case FFType::mecaxial:
+        result = "mecaxial";
         break;
     }
     return result;
@@ -133,6 +154,8 @@ class FormFactorBuilder {
     MOCK FormFactorBuilder &Coherent(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &ResonanceVector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &ResonanceAxial(const std::string &, const YAML::Node &);
+    MOCK FormFactorBuilder &MesonExchangeVector(const std::string &, const YAML::Node &);
+    MOCK FormFactorBuilder &MesonExchangeAxial(const std::string &, const YAML::Node &);
 
     MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
 
@@ -394,6 +417,36 @@ class ResonanceDummyAxialFormFactor : public FormFactorImpl,
     double resA;
 };
 
+class MECVectorFormFactor : public FormFactorImpl,
+                                       RegistrableFormFactor<MECVectorFormFactor> {
+  public:
+    MECVectorFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "MesonExchangeVector"; }
+    static FFType Type() { return FFType::mecvector; }
+
+  private:
+    double MvSq, cv3norm, cv4norm, cv5norm;
+};
+
+class MECAxialFormFactor : public FormFactorImpl,
+                                      RegistrableFormFactor<MECAxialFormFactor> {
+  public:
+    MECAxialFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "MesonExchangeAxial"; }
+    static FFType Type() { return FFType::mecaxial; }
+
+  private:
+    double MaDeltaSq, ca5norm;
+};
+
 } // namespace achilles
 
 namespace fmt {
@@ -420,6 +473,18 @@ template <> struct formatter<achilles::FormFactorInfo::Type> {
             return format_to(ctx.out(), "FA({})", static_cast<int>(ffit));
         case achilles::FormFactorInfo::Type::FCoh:
             return format_to(ctx.out(), "FCoh({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FResV:
+            return format_to(ctx.out(), "FResV({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FResA:
+            return format_to(ctx.out(), "FResA({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FMecV3:
+            return format_to(ctx.out(), "FMecV3({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FMecV4:
+            return format_to(ctx.out(), "FMecV4({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FMecV5:
+            return format_to(ctx.out(), "FMecV5({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FMecA5:
+            return format_to(ctx.out(), "FMecA5({})", static_cast<int>(ffit));
         default:
             return format_to(ctx.out(), "Unknown achilles::FormFactorInfo::Type({}) ",
                              static_cast<int>(ffit));
