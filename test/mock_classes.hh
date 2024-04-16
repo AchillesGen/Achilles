@@ -156,6 +156,8 @@ class MockFormFactorBuilder : public trompeloeil::mock_interface<achilles::FormF
     IMPLEMENT_MOCK2(Vector);
     IMPLEMENT_MOCK2(AxialVector);
     IMPLEMENT_MOCK2(Coherent);
+    IMPLEMENT_MOCK2(ResonanceVector);
+    IMPLEMENT_MOCK2(ResonanceAxial);
     IMPLEMENT_MOCK0(build);
 };
 

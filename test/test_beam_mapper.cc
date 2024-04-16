@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "Achilles/BeamMapper.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Approx.hh"
 #include "mock_classes.hh"
 
@@ -11,6 +12,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
     const std::vector<double> beam_rans{0.5};
     std::vector<double> new_rans(1);
     static constexpr int nvars = 1;
+    double mN2 = pow(achilles::ParticleInfo(achilles::PID::neutron()).Mass(), 2);
 
     SECTION("Variables is passed through") {
         auto beam = std::make_shared<MockBeam>();
@@ -32,7 +34,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
 
         SECTION("Forward") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({0});
+            mapper.SetMasses({mN2});
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, beam_rans);
             double wgt = mapper.GenerateWeight(mom, new_rans);
@@ -43,7 +45,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
 
         SECTION("Reverse") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({0});
+            mapper.SetMasses({mN2});
             double wgt = mapper.GenerateWeight({beam_mom}, new_rans);
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, new_rans);

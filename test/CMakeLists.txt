@@ -17,7 +17,7 @@ add_executable(achilles-testsuite
     test_nucleus.cc
     test_form_factor.cc
     test_cascade.cc
-    # test_beams.cc
+    test_beams.cc
     test_event.cc
     test_cuts.cc
     test_mom_solver.cc
@@ -28,23 +28,25 @@ add_executable(achilles-testsuite
     test_stats.cc
     test_vegas.cc
     test_multichannel.cc
+    # TODO: Rewrite tests for serializing the integrand results
     # test_integrand.cc
     test_spectral.cc
     test_spinor.cc
     test_histogram.cc
     test_configuration.cc
-    # test_nuclear_model.cc
+    test_nuclear_model.cc
     test_event_writer.cc
     test_process_info.cc
-    # test_hadronic_mapper.cc
+    test_hadronic_mapper.cc
     test_final_state_mapper.cc
     test_quasielastic_mapper.cc
-    # test_beam_mapper.cc
+    test_beam_mapper.cc
     test_ps_mapper.cc
-    # test_event_history.cc
+    test_event_history.cc
     test_poincare.cc
     test_process.cc
     test_process_group.cc
+    # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_interaction_handler.cc
 )

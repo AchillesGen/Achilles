@@ -2,8 +2,6 @@
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
 
-#include <sstream>
-
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
 #include "plugins/NuHepMC/NuHepMCWriter.hh"
@@ -36,7 +34,7 @@ TEST_CASE("Passes Validator", "[NuHepMC]") {
                       {nuc_in, neutrino}, {nuc_out, lepton},
                       achilles::EventHistoryNode::StatusCode::primary);
 
-    const MockEvent event;
+    const MockEvent event{};
     double wgt = 1.0;
     REQUIRE_CALL(event, History()).TIMES(1).LR_RETURN((history));
     REQUIRE_CALL(event, Weight()).TIMES(AT_LEAST(1)).LR_RETURN((wgt));
@@ -66,25 +64,24 @@ TEST_CASE("Passes Validator", "[NuHepMC]") {
         infos.back().m_hadronic = {{achilles::PID::neutron()}, {achilles::PID::neutron()}};
         REQUIRE_CALL(*model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
         REQUIRE_CALL(*model, Mode()).TIMES(AT_LEAST(1)).RETURN(achilles::NuclearMode::Quasielastic);
+        REQUIRE_CALL(*model, GetName()).TIMES(AT_LEAST(3)).RETURN("QESpectral");
+        REQUIRE_CALL(*model, InspireHEP()).TIMES(AT_LEAST(1)).RETURN("Isaacson:2022cwh");
 
-        MockNuclearModel model2;
-        REQUIRE_CALL(model2, GetName()).TIMES(AT_LEAST(1)).RETURN("Quasielastic");
-
-        achilles::SherpaInterface *p_sherpa = nullptr;
+        auto model_dummy = std::make_unique<MockNuclearModel>();
         auto backend = std::make_unique<MockBackend>();
         trompeloeil::sequence seq;
         REQUIRE_CALL(*backend, SetOptions(config["Backend"]["Options"])).TIMES(1).IN_SEQUENCE(seq);
         REQUIRE_CALL(*backend, AddNuclearModel(trompeloeil::ne(nullptr))).TIMES(1).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*backend, SetSherpa(p_sherpa)).TIMES(1).IN_SEQUENCE(seq);
+        REQUIRE_CALL(*backend, SetSherpa(nullptr)).TIMES(1).IN_SEQUENCE(seq);
         REQUIRE_CALL(*backend, Validate()).TIMES(1).IN_SEQUENCE(seq).RETURN(true);
         REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(2).IN_SEQUENCE(seq);
-        REQUIRE_CALL(*backend, GetNuclearModel()).TIMES(AT_LEAST(3)).LR_RETURN(&model2);
+        REQUIRE_CALL(*backend, GetNuclearModel()).TIMES(AT_LEAST(3)).LR_RETURN(model.get());
         MockBackend::SetSelf(std::move(backend));
 
         auto groups = achilles::ProcessGroup::ConstructGroups(config, model.get(), beam, nucleus);
         std::vector<achilles::ProcessGroup> process_groups;
         for(auto &group : groups) {
-            group.second.SetupBackend(config, std::move(model), p_sherpa);
+            group.second.SetupBackend(config, std::move(model_dummy), nullptr);
             process_groups.push_back(std::move(group.second));
         }
         achilles::NuHepMCWriter writer("data.hepmc", false);

@@ -200,7 +200,7 @@ std::string Process::InspireHEP(achilles::XSecBackend *backend) const {
 }
 
 achilles::ProcessMetadata Process::Metadata(achilles::XSecBackend *backend) const {
-    return {ID(), Name(backend), Description(backend), ""};
+    return {ID(), Name(backend), Description(backend), InspireHEP(backend)};
 }
 
 std::vector<int> ProcessGroup::ProcessIds() const {

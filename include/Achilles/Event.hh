@@ -92,8 +92,8 @@ class Event {
     double m_wgt{};
     vParticles m_leptons{}, m_hadrons{};
     EventHistory m_history{};
-    double flux;
-    int m_process_id;
+    double flux{};
+    int m_process_id{};
 };
 
 } // namespace achilles

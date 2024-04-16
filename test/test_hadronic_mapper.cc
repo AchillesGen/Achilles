@@ -6,9 +6,11 @@
 #include "Achilles/ParticleInfo.hh"
 
 TEST_CASE("HadronicMapper", "[PhaseSpace]") {
+    const double mCarbon = achilles::ParticleInfo(achilles::PID::carbon()).Mass();
     SECTION("Forward Map") {
         SECTION("Coherent") {
             auto mapper = achilles::CoherentMapper::Construct(0);
+            mapper->SetMasses({pow(mCarbon, 2)});
             std::vector<achilles::FourVector> mom(1);
             std::vector<double> ran(mapper->NDims());
             mapper->GeneratePoint(mom, ran);
@@ -33,8 +35,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
     SECTION("Reverse Map") {
         SECTION("Coherent") {
             auto mapper = achilles::CoherentMapper::Construct(0);
-            std::vector<achilles::FourVector> mom = {
-                {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0}};
+            mapper->SetMasses({pow(mCarbon, 2)});
+            std::vector<achilles::FourVector> mom = {{mCarbon, 0, 0, 0}};
             std::vector<double> ran(mapper->NDims());
             mapper->GenerateWeight(mom, ran);
             std::vector<achilles::FourVector> mom2(1);
