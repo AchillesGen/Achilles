@@ -1,5 +1,5 @@
 #include "Achilles/Interpolation.hh"
-#include "fmt/ostream.h"
+#include <stdexcept>
 
 extern "C" {
 // Fortran 1D interpolation interface

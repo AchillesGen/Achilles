@@ -81,7 +81,6 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in)
         read(10,*) pdel(i),pot_del(i)
     enddo 
     interp = interp1d(pdel, pot_del, np_del, 1)
-
 end subroutine 
 
 subroutine define_spinors()

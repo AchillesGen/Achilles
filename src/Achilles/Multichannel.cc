@@ -17,6 +17,7 @@ void achilles::MultiChannel::Adapt(const std::vector<double> &train) {
         sum_wgts += new_weights[i];
     }
 
+    if(sum_wgts == 0) return;
     double new_sum = 0;
     for(auto &wgt : new_weights) {
         if(wgt == 0) continue;
