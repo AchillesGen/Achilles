@@ -85,7 +85,7 @@ class IntfSpectralMapper : public HadronicBeamMapper,
   private:
     static constexpr double dCos2 = 2;
     static constexpr double dPhi = 2 * M_PI;
-    static constexpr double dp2 = 800;
+    static constexpr double dp2 = 400; // reduced b/c MF SF has no strength at high P
     // static constexpr double dE = 400;
 };
 

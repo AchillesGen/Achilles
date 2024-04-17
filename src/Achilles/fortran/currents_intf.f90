@@ -501,7 +501,7 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
             do f1=1,2
               j1jb(f1,i1,i)=j1jb(f1,i1,i)+Je_12b_dag(i2,i1,i)*Je_2_dag(f1,i2)
               j1jc(f1,i1,i)=j1jc(f1,i1,i)+Je_12c_dag(f1,i2,i)*Je_1_dag(i2,i1)
-              !We may need ja and jd for exlcusive case, even though they cancel for inclusive
+              !We may need ja and jd for exclusive case, even though they cancel for inclusive
               j1ja(f1,i1,i)=j1ja(f1,i1,i)+Je_12a_dag(i2,i1,i)*Je_2_dag(f1,i2)
               j1jd(f1,i1,i)=j1jd(f1,i1,i)+Je_12d_dag(f1,i2,i)*Je_1_dag(i2,i1)
             enddo

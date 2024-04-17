@@ -158,7 +158,7 @@ contains
             call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
             call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
             !call onebody_curr_matrix_el(J_mu_1b)
-            J_mu = sqrt(V)*(-J_mu_pi -J_mu_del)/(2.0d0*p2_4(1))
+            J_mu = -sqrt(V)*(J_mu_pi + J_mu_del)/(2.0d0*p2_4(1))
             !print*, J_mu
             !J_mu = J_mu_1b
             compute_1body = 1
@@ -200,9 +200,9 @@ contains
         endif
 
         if (pids_spect(1) == 2212) then
-            wgt=wgt*spectral_p_bkgd%normalization()*spectral_p_bkgd%call(pmom) 
+            wgt=wgt*spectral_p_MF%normalization()*spectral_p_MF%call(pmom) 
         else
-            wgt=wgt*spectral_n_bkgd%normalization()*spectral_n_bkgd%call(pmom) 
+            wgt=wgt*spectral_n_MF%normalization()*spectral_n_MF%call(pmom) 
         endif
         
     end function intf_spec_init_wgt
