@@ -29,6 +29,7 @@ static constexpr double mN2 = mN * mN;
 static constexpr double mpip = 139.57018_MeV;
 static constexpr double mpi0 = 134.9764_MeV;
 static constexpr double meta = 548.0_MeV;
+static constexpr double mdelta = 1232.25_MeV;
 
 // EW parameters
 static constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
