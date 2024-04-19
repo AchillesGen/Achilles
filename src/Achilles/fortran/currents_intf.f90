@@ -185,6 +185,9 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
     pp1=pp1_in
     q=q_in
 
+    ! This is the unmodified q2
+    q2 = q(1)**2 - q(2)**2 - q(3)**2 - q(4)**2
+
     w=q(1)
     q(1)=w+p1(1)
     p1(1)=sqrt(p1(2)**2+p1(3)**2+p1(4)**2+xmn**2) 
@@ -203,8 +206,6 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
     k1_sl=czero
     k2_sl=czero
     q_sl=czero
-
-    q2 = q(1)**2 - sum(q(2:4)**2)
        
     do i=1,4
        p1_sl=p1_sl+g_munu(i,i)*gamma_mu(:,:,i)*p1(i)  
@@ -303,20 +304,10 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     pc2=pc(1)**2-sum(pc(2:4)**2)
     pd2=pd(1)**2-sum(pd(2:4)**2)
 
-    if(sqrt(pa2).gt.interp%max().or.sqrt(pa2).lt.interp%min() &
-        & .or.sqrt(pb2).gt.interp%max().or.sqrt(pb2).lt.interp%min() &
-        & .or.sqrt(pc2).gt.interp%max().or.sqrt(pc2).lt.interp%min() & 
-        & .or.sqrt(pd2).gt.interp%max().or.sqrt(pd2).lt.interp%min() &
-        & ) then
-        err = 1
-        return
-    endif
-
-
-    pot_pa = interp%call(sqrt(pa2))
-    pot_pb = interp%call(sqrt(pb2))
-    pot_pc = interp%call(sqrt(pc2))
-    pot_pd = interp%call(sqrt(pd2))
+    call delta_potential(pa2,pot_pa)
+    call delta_potential(pb2,pot_pb)
+    call delta_potential(pc2,pot_pc)
+    call delta_potential(pd2,pot_pd)
     
     pa_sl=czero
     pb_sl=czero
@@ -495,10 +486,10 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
    j1jc=czero
    j1jd=czero
    
-   do i=1,2
-    do i2=1,2
-        do i1=1,2
-            do f1=1,2
+   do i=1,4
+    do i1=1,2
+        do f1=1,2
+            do i2=1,2
               j1jb(f1,i1,i)=j1jb(f1,i1,i)+Je_12b_dag(i2,i1,i)*Je_2_dag(f1,i2)
               j1jc(f1,i1,i)=j1jc(f1,i1,i)+Je_12c_dag(f1,i2,i)*Je_1_dag(i2,i1)
               !We may need ja and jd for exclusive case, even though they cancel for inclusive
@@ -562,9 +553,9 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    j1js=czero
 
    do i=1,4
-    do i2=1,2
-        do i1=1,2
-            do f1=1,2
+    do i1=1,2
+        do f1=1,2
+            do i2=1,2
                 j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f_dag(i2,i1,i)*Je_2_dag(f1,i2)
                 j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
                           &  +Je_1_dag(i2,i1)*Je_s2_dag(f1,i2,i)
@@ -576,8 +567,8 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    ctf=czero
    cts=czero
 
-   ctf = - Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
-   cts = - Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
+   ctf = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
+   cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
 
    J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:))/2.0d0
 
@@ -609,6 +600,23 @@ subroutine delta_se(pd2,width,pot)
 
    return
 end subroutine
+
+subroutine delta_potential(p2,delta_pot)
+    implicit none
+    real*8 :: p2, delta_pot
+    real*8 :: p_interp
+
+    p_interp = sqrt(p2) 
+
+    if(p_interp.gt.interp%max()) then
+        p_interp = interp%max()
+    elseif (p_interp.lt.interp%min()) then
+        p_interp = interp%min()
+    endif
+
+    delta_pot = interp%call(p_interp)
+    return
+end subroutine delta_potential
 
 function Iv(it1,it2,itp1,itp2)
     implicit none

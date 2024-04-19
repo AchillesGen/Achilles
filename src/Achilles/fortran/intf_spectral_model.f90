@@ -65,7 +65,7 @@ contains
         intf_spec_init = .true.
 
         call init(constants) ! load constants
-        call dirac_matrices_in(1232.0d0,constants%mqe,constants%mpi0) 
+        call dirac_matrices_in(constants%mdelta,constants%mqe,constants%mpi0) 
 
         close(read_unit)
     end function
