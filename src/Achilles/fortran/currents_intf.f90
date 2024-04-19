@@ -212,6 +212,9 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
     pp1=pp1_in
     q=q_in
 
+    ! This is the unmodified q2
+    q2 = q(1)**2 - q(2)**2 - q(3)**2 - q(4)**2
+
     w=q(1)
     q(1)=w+p1(1)
     p1(1)=sqrt(p1(2)**2+p1(3)**2+p1(4)**2+xmn**2) 
