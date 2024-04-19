@@ -162,10 +162,6 @@ contains
             has_axial = .true.
         endif
 
-        rho = (225.0d0**3)/(1.5d0 * (3.141d0**2))
-        A = 12.0d0
-        V = rho/A
-
         p1_4=mom_in(1)%to_array()
         p2_4=mom_spect(1)%to_array()
         pp1_4=mom_out(1)%to_array()
