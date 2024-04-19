@@ -177,6 +177,9 @@ class Nucleus {
     ///@param position: The radius to calculate the density
     double FermiMomentum(const double &) const noexcept; //
 
+    // Return kF
+    double FermiMomentum() const noexcept {return fermiMomentum;}
+
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
 

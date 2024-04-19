@@ -107,12 +107,13 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
             const auto &hcurrent2 = hadron_current2[boson];
             for(const auto &lcurrent_spin : lcurrent.second) {
                 for(size_t i = 0; i < hcurrent.size(); ++i) {
-                    amps2 += 2*std::real(lcurrent_spin * hcurrent[i] * std::conj(lcurrent_spin * hcurrent2[i]));
-
-                    spdlog::debug("amps2 = {}", amps2);
+                    amps2 += 2*std::real(lcurrent_spin * hcurrent[i] * (achilles::conj(lcurrent_spin) * hcurrent2[i]));
                 }
             }
         }
+        // For interference amplitude 
+        // we need a factor of V = rho/A
+        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(),3)/(1.5*pow(M_PI,2))/event.CurrentNucleus()->NNucleons();
     }
     if(std::isnan(amps2)) amps2 = 0;
 

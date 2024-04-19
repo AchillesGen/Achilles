@@ -27,14 +27,6 @@ SpectralFunction::SpectralFunction(const std::string &filename) {
     for(size_t i = 0; i < np; ++i) { norm += mom[i] * mom[i] * dp_p[i] * 4 * M_PI * hp; }
     spdlog::debug("Spectral function normalization: {}", norm);
 
-    // Find maximums for each p
-    std::vector<double> maxS(np);
-    for(size_t i = 0; i < np; ++i) {
-        for(size_t j = 0; j < ne; ++j) {
-            if(maxS[i] < spectral[i * ne + j]) maxS[i] = spectral[i * ne + j];
-        }
-    }
-
     // Setup momentum distribution interpolator
     mom_func = Interp1D(mom, dp_p, InterpolationType::Polynomial);
     mom_func.SetPolyOrder(3);

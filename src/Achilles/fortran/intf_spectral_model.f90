@@ -119,13 +119,8 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
-        double precision :: rho,A,V
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi, J_mu_del
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
-
-        rho = (225.0d0**3)/(1.5d0 * (3.141d0**2))
-        A = 12.0d0
-        V = rho/A
 
         p1_4=mom_in(1)%to_array()
         p2_4=mom_spect(1)%to_array()
@@ -157,10 +152,7 @@ contains
             endif
             call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
             call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
-            !call onebody_curr_matrix_el(J_mu_1b)
-            J_mu = -sqrt(V)*(J_mu_pi + J_mu_del)/(2.0d0*p2_4(1))
-            !print*, J_mu
-            !J_mu = J_mu_1b
+            J_mu = (-J_mu_pi - J_mu_del)/(2.0d0*p2_4(1))
             compute_1body = 1
         endif
 
