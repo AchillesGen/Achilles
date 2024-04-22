@@ -8,6 +8,30 @@
 using namespace PHASIC;
 using namespace ATOOLS;
 
+template <> struct fmt::formatter<ATOOLS::Vec4<double>> {
+    char presentation = 'e';
+    constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
+        // Parse the presentation format and store it in the formatter:
+        auto it = ctx.begin(), end = ctx.end();
+        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+        // Check if reached the end of the range:
+        if(it != end && *it != '}') throw format_error("Invalid format");
+
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    template <typename FormatContext>
+    auto format(const ATOOLS::Vec4<double> &p, FormatContext &ctx) -> decltype(ctx.out()) {
+        // ctx.out() is an output iterator to write to
+        return format_to(ctx.out(),
+                         presentation == 'f' ? "Vec4({:.8f}, {:.8f}, {:.8f}, {:.8f})"
+                                             : "Vec4({:.8e}, {:.8e}, {:.8e}, {:.8e})",
+                         p[0], p[1], p[2], p[3]);
+    }
+};
+
 double GenChannel::SCut(size_t id) {
     if(id & 3) { id = (1 << m_n) - 1 - id; }
     double result = 0;
@@ -209,15 +233,15 @@ void GenChannel::TChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
                        m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] = {}, m = {}", aid, m_p[aid], m_p[aid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", m_rid, m_p[m_rid], m_p[m_rid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
-    // spdlog::trace("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
-    // spdlog::trace("  se = {}, sp = {}", se, sp);
+    spdlog::trace("{}", name);
+    spdlog::trace("  m_p[{}] = {}, m = {}", aid, m_p[aid], m_p[aid].Mass());
+    spdlog::trace("  m_p[{}] = {}, m = {}", m_rid, m_p[m_rid], m_p[m_rid].Mass());
+    spdlog::trace("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
+    spdlog::trace("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
+    spdlog::trace("  se = {}, sp = {}", se, sp);
     // spdlog::trace("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2],
-    //               m_s[3]);
-    // spdlog::trace("  iran = {}", iran);
+    //              m_s[3]);
+    spdlog::trace("  iran = {}", iran);
 }
 
 double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, size_t cid,
@@ -230,7 +254,6 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     double rtsmax = (m_p[aid] + m_p[m_rid]).Mass();
     const std::string name = "TChannelWeight(" + std::to_string(aid) + ", " + std::to_string(bid) +
                              ", " + std::to_string(cid) + ", " + std::to_string(pid) + ")";
-    // spdlog::trace("{}", name);
     if(!achilles::IsPower2(bid)) {
         double smin = se, smax = sqr(rtsmax - sqrt(sp));
         wgt *= PropWeight(node, bid, smin, smax, se = m_p[bid].Abs2(), rans[iran++]);
@@ -246,14 +269,15 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
                              m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
-    // spdlog::trace("  m_p[{}] = {}", aid, m_p[aid]);
-    // spdlog::trace("  m_p[{}] = {}", m_rid, m_p[m_rid]);
-    // spdlog::trace("  m_p[{}] = {}", bid, m_p[bid]);
-    // spdlog::trace("  m_p[{}] = {}", pid, m_p[pid]);
+    spdlog::trace("{}", name);
+    spdlog::trace("  m_p[{}] = {}", aid, m_p[aid]);
+    spdlog::trace("  m_p[{}] = {}", m_rid, m_p[m_rid]);
+    spdlog::trace("  m_p[{}] = {}", bid, m_p[bid]);
+    spdlog::trace("  m_p[{}] = {}", pid, m_p[pid]);
     // spdlog::trace("  mass = {}", mass);
-    // spdlog::trace("  se = {}, sp = {}", se, sp);
-    // spdlog::trace("  iran = {}", iran);
-    // spdlog::trace("  wgt = {}", wgt);
+    spdlog::trace("  se = {}, sp = {}", se, sp);
+    spdlog::trace("  iran = {}", iran);
+    spdlog::trace("  wgt = {}", wgt);
     return wgt;
 }
 

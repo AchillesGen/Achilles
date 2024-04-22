@@ -113,7 +113,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         }
         // For interference amplitude 
         // we need a factor of V = rho/A
-        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(),3)/(1.5*pow(M_PI,2))/event.CurrentNucleus()->NNucleons();
+        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(),3)/(1.5*pow(M_PI,2))/static_cast<double>(event.CurrentNucleus()->NNucleons());
     }
     if(std::isnan(amps2)) amps2 = 0;
 
@@ -252,7 +252,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
                                                             const ProcessInfo &info) const {
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<int> pids;
+    std::vector<long> pids;
     spdlog::debug("mom map: {}", info.m_mom_map.size());
     for(const auto &elm : info.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));

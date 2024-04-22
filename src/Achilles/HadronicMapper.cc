@@ -57,7 +57,6 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
-    spdlog::trace("  cosT_min = {}", cosT_max);
     spdlog::trace("  cosT_max = {}", cosT_max);
     spdlog::trace("  cosT = {}", cosT);
     spdlog::trace("  mom = {}", mom);
