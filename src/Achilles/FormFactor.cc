@@ -282,6 +282,7 @@ void achilles::MECVectorFormFactor::Evaluate(double Q2,
     result.FmecV3 = cv3norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
     result.FmecV4 = cv4norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
     result.FmecV5 = cv5norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/0.776/MvSq)*sqrt(3./2.);
+    result.Fpiem = result.Gep - result.Gen;
 }
 
 // MEC Axial form factors

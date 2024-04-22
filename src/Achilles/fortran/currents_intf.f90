@@ -232,10 +232,6 @@ subroutine det_Ja(f1v,f2v,fa)
   integer*4 :: mu,nu
   complex*16 :: f1v,f2v,fa  
 
-  ! compute and save pion em form factor
-  ! since it depends on f1, f2
-  pi_elec_ff = f1v + (q2)*f2v/(4.0d0*xmn**2)
-
   do mu=1,4
      J_1(:,:,mu)=czero
      do nu=1,4
@@ -414,10 +410,14 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
 
 end function
 
-subroutine det_Jpi()
+subroutine det_Jpi(pi_elec_ff_in)
    implicit none
    integer*4 :: mu
+   complex*16 :: pi_elec_ff_in
    real*8 :: fpik1,fpik2,frho1,frho2,fact
+
+   pi_elec_ff = pi_elec_ff_in
+
    fpik1=(lpi**2-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2))
    fpik2=(lpi**2-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2))
 

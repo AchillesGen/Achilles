@@ -30,6 +30,7 @@ struct FormFactorInfo {
         FCoh,
         FResV,
         FResA,
+        FPiEM,
         FMecV3,
         FMecV4,
         FMecV5,
@@ -66,6 +67,8 @@ inline std::string ToString(FormFactorInfo::Type type) {
         return "FResV";
     case FormFactorInfo::Type::FResA:
         return "FResA";
+    case FormFactorInfo::Type::FPiEM:
+        return "FPiEM";
     case FormFactorInfo::Type::FMecV3:
         return "FMecV3";
     case FormFactorInfo::Type::FMecV4:
@@ -86,7 +89,7 @@ class FormFactor {
         double FA{}, FAs{};
         double Fcoh{};
         double FresV{}, FresA{};
-        double FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};
+        double Fpiem{}, FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};
     };
 
     FormFactor() = default;
@@ -477,6 +480,8 @@ template <> struct formatter<achilles::FormFactorInfo::Type> {
             return format_to(ctx.out(), "FResV({})", static_cast<int>(ffit));
         case achilles::FormFactorInfo::Type::FResA:
             return format_to(ctx.out(), "FResA({})", static_cast<int>(ffit));
+        case achilles::FormFactorInfo::Type::FPiEM:
+            return format_to(ctx.out(), "FPiEM({})", static_cast<int>(ffit));
         case achilles::FormFactorInfo::Type::FMecV3:
             return format_to(ctx.out(), "FMecV3({})", static_cast<int>(ffit));
         case achilles::FormFactorInfo::Type::FMecV4:

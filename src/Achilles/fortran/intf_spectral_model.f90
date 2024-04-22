@@ -142,7 +142,7 @@ contains
             J_mu = J_mu_1b
             compute_1body = 0
         else
-            call det_Jpi()
+            call det_Jpi(ff%lookup("FPiEM"));
             ! Avoid interpolating outside
             ! of delta potential range
             err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"))
@@ -158,7 +158,7 @@ contains
 
         do i=1,2
            do j=1,2
-              cur(i+2*(j-1),:)= J_mu(j,i,:)
+              cur(i+2*(j-1),:)=J_mu(j,i,:)
             enddo   
         enddo
      return

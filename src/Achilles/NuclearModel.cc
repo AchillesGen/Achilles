@@ -85,6 +85,9 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
         case Type::FResA:
             results[Type::FResA] += formFactors.FresA * ff.coupling;
             break;
+        case Type::FPiEM:
+            results[Type::FPiEM] += formFactors.Fpiem * ff.coupling;
+            break;
         case Type::FMecV3:
             results[Type::FMecV3] += formFactors.FmecV3 * ff.coupling;
             break;

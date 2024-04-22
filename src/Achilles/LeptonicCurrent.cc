@@ -97,12 +97,14 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl},
                                          {FormFactorInfo::Type::F2p, coupl},
                                          {FormFactorInfo::Type::FResV, coupl},
+                                         {FormFactorInfo::Type::FPiEM, coupl},
                                          {FormFactorInfo::Type::FMecV3, coupl},
                                          {FormFactorInfo::Type::FMecV4, coupl},
                                          {FormFactorInfo::Type::FMecV5, coupl}};
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::F1n, coupl},
                                           {FormFactorInfo::Type::F2n, coupl},
                                           {FormFactorInfo::Type::FResV, coupl},
+                                         {FormFactorInfo::Type::FPiEM, coupl},
                                          {FormFactorInfo::Type::FMecV3, coupl},
                                          {FormFactorInfo::Type::FMecV4, coupl},
                                          {FormFactorInfo::Type::FMecV5, coupl}};

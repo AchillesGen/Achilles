@@ -50,7 +50,6 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     const size_t nin = had_in.size();
     const size_t nout = had_out.size();
     const size_t nspect = had_spect.size();
-    spdlog::debug("q = {}", qVec);
 
     auto omega = qVec[0];
 
