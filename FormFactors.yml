@@ -94,11 +94,11 @@ Lovato:
   c: [6.01084, 0.143785, -4.06675, 1.45063, -0.135216]
 
 MesonExchangeVector:
-  MvSq: 710000.0
+  MvSq: 0.71
   cv3norm: 2.13
   cv4norm: -1.15
   cv5norm: 0.48
 
 MesonExchangeAxial: 
-  MaDeltaSq: 1102500.0
+  MaDeltaSq: 1.1025
   ca5norm: 1.2
