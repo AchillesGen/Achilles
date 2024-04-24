@@ -17,9 +17,9 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
 
         REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(3));
 
-        achilles::Cascade cascade(interaction, achilles::Cascade::ProbabilityType::Gaussian,
-                                  achilles::Cascade::Algorithm::Base,
-                                  achilles::Cascade::InMedium::None);
+        achilles::Cascade cascade(
+            std::move(interaction), achilles::Cascade::ProbabilityType::Gaussian,
+            achilles::Cascade::Algorithm::Base, achilles::Cascade::InMedium::None);
         cascade.Kick(event, {0, 100, 0, 0}, {10, 0});
         CHECK(particles[0].Status() == achilles::ParticleStatus::propagating);
         CHECK(particles[1].Status() == achilles::ParticleStatus::background);
@@ -56,7 +56,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(5);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
@@ -76,7 +76,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
         hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
@@ -94,7 +94,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(nucleus, GetPotential()).TIMES(AT_LEAST(1)).RETURN(nullptr);
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         cascade.Evolve(event, &nucleus);
 
@@ -112,7 +112,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(nucleus, GetPotential()).TIMES(AT_LEAST(1)).RETURN(nullptr);
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::MFP,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::MFP,
                                   achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
@@ -154,7 +154,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .TIMES(AT_LEAST(1))
             .RETURN(5);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None, true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
@@ -176,7 +176,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
         hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
@@ -265,7 +265,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
     SECTION("Must have exactly one kicked") {
         REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(2)).LR_RETURN((hadrons));
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         CHECK_THROWS_WITH(cascade.MeanFreePath(event, &nucleus),
                           "MeanFreePath: only one particle should be kicked.");
@@ -280,7 +280,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
         REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(1)).LR_RETURN((hadrons));
         REQUIRE_CALL(nucleus, GetPotential()).TIMES(1).RETURN(nullptr);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         cascade.SetKicked(1);
         CHECK_THROWS_WITH(
@@ -293,7 +293,7 @@ TEST_CASE("Mean Free Path", "[Cascade]") {
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
         REQUIRE_CALL(nucleus, GetPotential()).TIMES(1).RETURN(nullptr);
 
-        achilles::Cascade cascade(interaction, mode, achilles::Cascade::Algorithm::Base,
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
                                   achilles::Cascade::InMedium::None);
         cascade.SetKicked(0);
         CHECK_NOTHROW(cascade.MeanFreePath(event, &nucleus));

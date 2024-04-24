@@ -21,7 +21,7 @@ TEST_CASE("Registering an interaction", "[InteractionHandler]") {
                                {{{PID::proton(), PID::neutron()}, 10}});
     interaction.AddInteraction({PID::neutron(), PID::neutron()},
                                {{{PID::neutron(), PID::neutron()}, 10}});
-    handler.RegisterInteraction(interaction);
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
     REQUIRE(handler.RegisteredInteractions().size() == 3);
     REQUIRE(handler.EnabledChannel(PID::proton(), PID::proton()) == true);
     REQUIRE(handler.EnabledChannel(PID::proton(), PID::neutron()) == true);
@@ -35,7 +35,7 @@ TEST_CASE("Testing Cross Section", "[InteractionHandler]") {
     interaction.AddInteraction({PID::proton(), PID::proton()},
                                {{{PID::proton(), PID::proton()}, 10}});
 
-    handler.RegisterInteraction(interaction);
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     auto results = handler.CrossSection(p1, p2);
@@ -56,10 +56,11 @@ TEST_CASE("Validate Interactions", "[InteractionHandler]") {
                                 {{{PID::proton(), PID::proton()}, 10},
                                  {{PID::proton(), PID::neutron(), PID::pionp()}, 20}});
 
-    handler.RegisterInteraction(interaction1);
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction1));
     auto msg = fmt::format("Interaction already registered for particles: [2212, 2212]");
-    REQUIRE_THROWS_MATCHES(handler.RegisterInteraction(interaction2), std::runtime_error,
-                           Catch::Matchers::Message(msg));
+    REQUIRE_THROWS_MATCHES(
+        handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction2)),
+        std::runtime_error, Catch::Matchers::Message(msg));
 
     msg = fmt::format("Cross section not registered for particles: [211, 2212]");
     REQUIRE_THROWS_MATCHES(handler.CrossSection({PID::pionp(), {}}, {PID::proton(), {}}),
@@ -78,7 +79,7 @@ TEST_CASE("Testing Multiple Final States", "[InteractionHandler]") {
                                {{{PID::proton(), PID::proton()}, 10},
                                 {{PID::proton(), PID::neutron(), PID::pionp()}, 20}});
 
-    handler.RegisterInteraction(interaction);
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     auto results = handler.CrossSection(p1, p2);
@@ -103,7 +104,7 @@ TEST_CASE("Channel Selection", "[InteractionHandler]") {
                                {{{PID::proton(), PID::proton()}, 10},
                                 {{PID::proton(), PID::neutron(), PID::pionp()}, 20}});
 
-    handler.RegisterInteraction(interaction);
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     auto results = handler.CrossSection(p1, p2);

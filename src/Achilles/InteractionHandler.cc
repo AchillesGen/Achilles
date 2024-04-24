@@ -24,26 +24,26 @@ bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
 std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &p1,
                                                                 const Particle &p2) const {
     auto key = std::make_pair(p1.ID(), p2.ID());
-    auto it = m_cross_sections.find(key);
-    if(it == m_cross_sections.end()) {
+    auto it = m_interaction_indices.find(key);
+    if(it == m_interaction_indices.end()) {
         auto msg =
             fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
         throw std::runtime_error(msg);
     }
-    return it->second(p1, p2);
+    return m_interactions[it->second]->CrossSection(p1, p2);
 }
 
 std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, const Particle &p2,
                                                            const std::vector<PID> &out_pids,
                                                            const std::vector<double> &rands) const {
     auto key = std::make_pair(p1.ID(), p2.ID());
-    auto it = m_phase_space.find(key);
-    if(it == m_phase_space.end()) {
+    auto it = m_interaction_indices.find(key);
+    if(it == m_interaction_indices.end()) {
         auto msg =
             fmt::format("Phase space not registered for particles: [{}, {}]", p1.ID(), p2.ID());
         throw std::runtime_error(msg);
     }
-    return it->second(p1, p2, out_pids, rands);
+    return m_interactions[it->second]->GenerateMomentum(p1, p2, out_pids, rands);
 }
 
 bool InteractionHandler::EnabledChannel(const PID &p1, const PID &p2) const {
@@ -51,25 +51,19 @@ bool InteractionHandler::EnabledChannel(const PID &p1, const PID &p2) const {
            m_registered_interactions.end();
 }
 
-void InteractionHandler::RegisterInteraction(const Interaction &interaction) {
-    for(const auto &pid : interaction.InitialStates()) {
+void InteractionHandler::RegisterInteraction(std::unique_ptr<Interaction> interaction) {
+    size_t idx = m_interactions.size();
+    m_interactions.push_back(std::move(interaction));
+    for(const auto &pid : m_interactions.back()->InitialStates()) {
         if(EnabledChannel(pid.first, pid.second)) {
             throw std::runtime_error(fmt::format(
                 "Interaction already registered for particles: [{}, {}]", pid.first, pid.second));
         }
 
+        spdlog::debug("InteractionHandler: Registering interaction for particles: [{}, {}]",
+                      pid.first, pid.second);
         m_registered_interactions.insert(pid);
-        RegisterCrossSection(pid.first, pid.second,
-                             [&](const Particle &p1, const Particle &p2) -> Results {
-                                 return interaction.CrossSection(p1, p2);
-                             });
-
-        RegisterPhaseSpace(pid.first, pid.second,
-                           [&](const Particle &p1, const Particle &p2,
-                               const std::vector<PID> &out_pids,
-                               const std::vector<double> &rands) -> std::vector<Particle> {
-                               return interaction.GenerateMomentum(p1, p2, out_pids, rands);
-                           });
+        m_interaction_indices[pid] = idx;
     }
 }
 
@@ -86,13 +80,4 @@ InteractionResult InteractionHandler::SelectChannel(const std::vector<Interactio
     }
 
     throw std::runtime_error("No channel selected");
-}
-
-void InteractionHandler::RegisterCrossSection(const PID &p1, const PID &p2,
-                                              CrossSectionFunction f) {
-    m_cross_sections[std::make_pair(p1, p2)] = f;
-}
-
-void InteractionHandler::RegisterPhaseSpace(const PID &p1, const PID &p2, PhaseSpaceFunction f) {
-    m_phase_space[std::make_pair(p1, p2)] = f;
 }

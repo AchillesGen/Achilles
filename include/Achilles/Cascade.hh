@@ -2,7 +2,6 @@
 #define CASCADE_HH
 
 #include <array>
-#include <memory>
 #include <vector>
 
 #include "Achilles/FourVector.hh"
@@ -34,12 +33,43 @@ class Cascade {
   public:
     // Probability Enums
     enum ProbabilityType { Gaussian, Pion, Cylinder };
+    std::string ToString(const ProbabilityType &type) {
+        switch(type) {
+        case Gaussian:
+            return "Gaussian";
+        case Pion:
+            return "Pion";
+        case Cylinder:
+            return "Cylinder";
+        }
+        return "Unknown";
+    }
 
     // In-Medium Effects Enums
     enum InMedium { None, NonRelativistic, Relativistic };
+    std::string ToString(const InMedium &type) {
+        switch(type) {
+        case None:
+            return "None";
+        case NonRelativistic:
+            return "NonRelativistic";
+        case Relativistic:
+            return "Relativistic";
+        }
+        return "Unknown";
+    }
 
     // Algorithms Enums
     enum Algorithm { Base, MFP };
+    std::string ToString(const Algorithm &type) {
+        switch(type) {
+        case Base:
+            return "Base";
+        case MFP:
+            return "MFP";
+        }
+        return "Unknown";
+    }
 
     /// @name Constructor and Destructor
     ///@{
@@ -169,9 +199,9 @@ class Cascade {
     // Variables
     std::vector<std::size_t> kickedIdxs;
     double distance{}, timeStep{};
-    InteractionHandler m_interactions;
+    InteractionHandler m_interactions{};
     std::function<double(double, double)> probability;
-    std::function<size_t(size_t, Particles &)> algorithm;
+    std::function<size_t(Cascade *, size_t, Particles &)> algorithm;
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
@@ -183,16 +213,15 @@ class Cascade {
 
 namespace YAML {
 template <> struct convert<achilles::Cascade> {
-    static bool decode(const Node &, achilles::Cascade &) {
-        // TODO: Modify this to handle a InteractionHandler object
-        // auto interaction = achilles::InteractionFactory::Create(node["Interaction"]);
-        // auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
-        // auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
-        // auto potentialProp = node["PotentialProp"].as<bool>();
-        // auto distance = node["Step"].as<double>();
-        // auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
-        // cascade = achilles::Cascade(std::move(interaction), probType, algorithm,
-        //                             mediumType, potentialProp, distance);
+    static bool decode(const Node &node, achilles::Cascade &cascade) {
+        auto handler = node["Interactions"].as<achilles::InteractionHandler>();
+        auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
+        auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
+        auto potentialProp = node["PotentialProp"].as<bool>();
+        auto distance = node["Step"].as<double>();
+        auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
+        cascade = achilles::Cascade(std::move(handler), probType, algorithm, mediumType,
+                                    potentialProp, distance);
         return true;
     }
 };
