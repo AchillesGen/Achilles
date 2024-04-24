@@ -22,13 +22,13 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
       m_potential_prop(potential_prop) {
     switch(alg) {
     case Algorithm::Base:
-        algorithm = [&](size_t idx, Particles &particles) -> size_t {
-            return BaseAlgorithm(idx, particles);
+        algorithm = [&](Cascade *cascade, size_t idx, Particles &particles) -> size_t {
+            return cascade->BaseAlgorithm(idx, particles);
         };
         break;
     case Algorithm::MFP:
-        algorithm = [&](size_t idx, Particles &particles) -> size_t {
-            return MFPAlgorithm(idx, particles);
+        algorithm = [&](Cascade *cascade, size_t idx, Particles &particles) -> size_t {
+            return cascade->MFPAlgorithm(idx, particles);
         };
         break;
     }
@@ -56,6 +56,11 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
             return b2 < sigma / M_PI ? 1 : 0;
         };
     }
+
+    spdlog::debug("Cascade initialized with distance: {}, medium: {}, potential_prop: {}, "
+                  "probability: {}, algorithm: {}",
+                  distance, ToString(m_medium), m_potential_prop, m_probability_name,
+                  ToString(alg));
 
     kickedIdxs.resize(0);
 }
@@ -246,7 +251,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
                 continue;
             }
 
-            auto hitIdx = algorithm(idx, particles);
+            auto hitIdx = algorithm(this, idx, particles);
             if(hitIdx == SIZE_MAX) {
                 newKicked.push_back(idx);
                 continue;
