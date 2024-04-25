@@ -2,6 +2,7 @@ program fortran_test
   use unit_test
   use test_spectral_interface
   use test_map_interface
+  use test_fortran_inteference
 
   implicit none
 
@@ -12,6 +13,7 @@ program fortran_test
   ! Test all test cases
   call test_spectral(test_suite)
   call test_map(test_suite)
+  call test_interference(test_suite)
   ! report the complete suite
   call test_suite_report(test_suite)
   ! finalize
