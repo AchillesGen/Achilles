@@ -256,7 +256,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
                                                             const ProcessInfo &info) const {
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<int> pids;
+    std::vector<long> pids;
     spdlog::debug("mom map: {}", info.m_mom_map.size());
     for(const auto &elm : info.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));

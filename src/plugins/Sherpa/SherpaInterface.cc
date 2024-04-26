@@ -129,6 +129,31 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     return true;
 }
 
+ATOOLS::Cluster_Amplitude *SherpaInterface::ConstructAmplitude(const std::vector<long> &_fl,
+                                                               const std::vector<std::array<double, 4>> &p) const {
+    std::vector<Vec4D> cp(_fl.size());
+    if(p.size() == 0) {
+        for(size_t i(0); i < _fl.size(); ++i) {
+            cp[i] = Vec4D();
+        }
+    } else {
+        for(size_t i(0); i < _fl.size(); ++i) {
+            cp[i] = {p[i][0], p[i][1], p[i][2], p[i][3]};
+        }
+    }
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    ampl->CreateLeg(-cp[1], Flavour((long int)(_fl[1])).Bar(), ColorID(0, 0));
+    ampl->CreateLeg(-cp[0], Flavour((long int)(_fl[0])).Bar(), ColorID(0, 0));
+    for(size_t i(2); i < _fl.size(); ++i) {
+        Flavour fl(Flavour((long int)(_fl[i])));
+        ampl->CreateLeg(cp[i], fl, ColorID(0, 0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    return ampl;
+}
+
 Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     std::string megen = "Comix";
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
@@ -192,17 +217,8 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
 }
 
 bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
-    Cluster_Amplitude *ampl = Cluster_Amplitude::New();
     int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
-    ampl->CreateLeg(Vec4D(), Flavour(info.m_leptonic.first).Bar());
-    for(const auto &initial : info.m_hadronic.first) {
-        ampl->CreateLeg(Vec4D(), Flavour(initial).Bar());
-    }
-    for(const auto &part : info.m_leptonic.second) { ampl->CreateLeg(Vec4D(), Flavour(part)); }
-    for(const auto &final : info.m_hadronic.second) { ampl->CreateLeg(Vec4D(), Flavour(final)); }
-    ampl->SetNIn(info.m_hadronic.first.size() + 1);
-    ampl->SetOrderQCD(0);
-    ampl->SetOrderEW(info.m_leptonic.second.size() - 1);
+    Cluster_Amplitude *ampl = ConstructAmplitude(info.Ids());
     // TODO: Need to fix this later
     // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
@@ -216,14 +232,7 @@ bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
 }
 
 std::map<size_t, long> SherpaInterface::MomentumMap(const std::vector<long> &_fl) const {
-    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
-    for(size_t i(0); i < _fl.size(); ++i) {
-        Flavour fl(Flavour((long int)(_fl[i])));
-        ampl->CreateLeg({}, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
-    }
-    ampl->SetNIn(2);
-    ampl->SetOrderQCD(0);
-    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    Cluster_Amplitude *ampl = ConstructAmplitude(_fl);
     // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
@@ -234,20 +243,17 @@ std::map<size_t, long> SherpaInterface::MomentumMap(const std::vector<long> &_fl
     std::map<size_t, long> mom_map;
     size_t idx = 0;
     for(const auto &flav : singleProcess->Flavours()) mom_map[idx++] = flav;
+    // TODO: Make more robust, right now we just swap the incoming hadron and incoming lepton
+    auto tmp = mom_map[0];
+    mom_map[0] = mom_map[1];
+    mom_map[1] = tmp;
 
     return mom_map;
 }
 
 std::vector<std::unique_ptr<PHASIC::Channels>>
 SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
-    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
-    for(size_t i(0); i < _fl.size(); ++i) {
-        Flavour fl(Flavour((long int)(_fl[i])));
-        ampl->CreateLeg({}, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
-    }
-    ampl->SetNIn(2);
-    ampl->SetOrderQCD(0);
-    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    Cluster_Amplitude *ampl = ConstructAmplitude(_fl);
     // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
@@ -332,17 +338,9 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
 }
 
 achilles::SherpaInterface::LeptonCurrents
-SherpaInterface::CalcCurrent(const std::vector<int> &_fl,
+SherpaInterface::CalcCurrent(const std::vector<long> &_fl,
                              const std::vector<std::array<double, 4>> &p, const double &mu2) {
-    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
-    for(size_t i(0); i < _fl.size(); ++i) {
-        Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
-        Flavour fl(Flavour((long int)(_fl[i])));
-        ampl->CreateLeg(i < 2 ? -cp : cp, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
-    }
-    ampl->SetNIn(2);
-    ampl->SetOrderQCD(0);
-    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    auto *ampl = ConstructAmplitude(_fl, p);
     ampl->SetMuQ2(mu2);
     ampl->SetMuF2(mu2);
     ampl->SetMuR2(mu2);
@@ -350,7 +348,7 @@ SherpaInterface::CalcCurrent(const std::vector<int> &_fl,
     // Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
-    if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);
+    if(pm->find(name) == pm->end()) throw std::runtime_error("Process not found: " + name);
     Process_Base *proc = pm->find(name)->second;
     auto reader = dynamic_cast<Achilles_Reader *>(proc->EventReader());
     reader->SetAmpl(ampl);
@@ -369,15 +367,7 @@ SherpaInterface::CalcCurrent(const std::vector<int> &_fl,
 double SherpaInterface::CalcDifferential(const std::vector<long> &_fl,
                                          const std::vector<std::array<double, 4>> &p,
                                          const double &mu2) {
-    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
-    for(size_t i(0); i < _fl.size(); ++i) {
-        Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
-        Flavour fl(Flavour((long int)(_fl[i])));
-        ampl->CreateLeg(i < 2 ? -cp : cp, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
-    }
-    ampl->SetNIn(2);
-    ampl->SetOrderQCD(0);
-    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    auto *ampl = ConstructAmplitude(_fl, p);
     ampl->SetMuQ2(mu2);
     ampl->SetMuF2(mu2);
     ampl->SetMuR2(mu2);
