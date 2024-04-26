@@ -128,6 +128,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         amps2 *= pow(event.CurrentNucleus()->FermiMomentum(), 3) / (1.5 * pow(M_PI, 2)) /
                  static_cast<double>(event.CurrentNucleus()->NNucleons());
     }
+
     if(std::isnan(amps2)) amps2 = 0;
 
     if(std::isnan(amps2)) amps2 = 0;

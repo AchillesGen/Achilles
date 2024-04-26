@@ -189,8 +189,10 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
 
     !struck nucleon
     if(nuc1_pid_in.eq.2212) then
+        !print*,'proton ph'
         t1 = up 
     else
+        !print*,'neutron ph'
         t1 = down
     endif
 
@@ -203,17 +205,16 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
 
     !spectator nucleon
     if(nuc2_pid_in.eq.2212) then
+        !print*,'proton spectator'
         t2 = up
     else
+        !print*,'neutron spectator'
         t2 = down
     endif
 
     p1=p1_in
     pp1=pp1_in
     q=q_in
-
-    ! This is the unmodified q2
-    q2 = q(1)**2 - q(2)**2 - q(3)**2 - q(4)**2
 
     w=q(1)
     q(1)=w+p1(1)
@@ -229,6 +230,14 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
     k1_e=pp2-p1
     k2_e=pp1-p2
 
+
+    !print*,'p1 = ', p1  
+    !print*,'p2 = ', p2  
+    !print*, 'pp1 = ', pp1  
+    !print*, 'pp2 = ', pp2  
+    !print*, 'q  = ', q
+    !print*,'k1 = ', k1  
+    !print*, 'k2 = ', k2
 
     p1_sl=czero
     p2_sl=czero
