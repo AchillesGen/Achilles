@@ -20,6 +20,7 @@ struct fconstants {
     double mpip = achilles::Constant::mpip;
     double meta = achilles::Constant::meta;
     double mdelta = achilles::Constant::mdelta;
+    double mrho = achilles::Constant::mrho;
 };
 
 void init_(fconstants &data) {
@@ -34,5 +35,6 @@ void init_(fconstants &data) {
     data.mpip = achilles::Constant::mpip;
     data.meta = achilles::Constant::meta;
     data.mdelta = achilles::Constant::mdelta;
+    data.mrho = achilles::Constant::mrho;
 }
 }

@@ -28,7 +28,7 @@ module dirac_matrices_intf
     complex*16, private, save :: Je_a_mu(4,4,4),Je_b_mu(4,4,4),Je_c_mu(4,4,4),Je_d_mu(4,4,4)
     complex*16, private, save :: J_pif(4,4,4),J_sea1(4,4,4),J_sea2(4,4,4),J_pl1(4,4,4),J_pl2(4,4,4)
     complex*16, private, save :: J_1(4,4,4)    
-    real*8, private, save :: xmd,xmn,xmpi,w
+    real*8, private, save :: xmd,xmn,xmpi,xmrho,w
     type(interp1d), private, save:: interp
     real*8, private, allocatable :: pdel(:),pot_del(:)
 contains
@@ -36,7 +36,7 @@ contains
 subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in)
     implicit none
     integer*4 :: i,j
-    real*8 :: xmd_in,xmn_in,xmpi_in
+    real*8 :: xmd_in,xmn_in,xmpi_in,xmrho_in
     xmd=xmd_in
     xmn=xmn_in
     xmpi=xmpi_in
@@ -450,10 +450,10 @@ subroutine det_Jpi(pi_elec_ff_in)
         & - 1.0d0/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2)))
    do mu=1,4
       J_pif(:,:,mu)=pi_elec_ff*(k1(mu)-k2(mu))*Pi_k1e(:,:)!*fact
-      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))-frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
-      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))+frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
-      J_pl1(:,:,mu)=frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
-      J_pl2(:,:,mu)=-frho2/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
+      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!-frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
+      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!+frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
+      !J_pl1(:,:,mu)=frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
+      !J_pl2(:,:,mu)=-frho2/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
    enddo
   J_pif=J_pif*fpik1*fpik2*fpinn2/xmpi**2 
   J_sea1=J_sea1*fpik2**2*fpinn2/xmpi**2
@@ -546,6 +546,7 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    complex*16 :: Je_1(2,2),Je_1_dag(2,2)
    complex*16 :: Je_s2(2,2,4),Je_s2_dag(2,2,4)
    complex*16 :: Je_f(2,2,4),Je_f_dag(2,2,4),Je_s1(2,2,4),Je_s1_dag(2,2,4)
+   complex*16 :: Je_p1(2,2,4),Je_p1_dag(2,2,4),Je_p2(2,2,4),Je_p2_dag(2,2,4)
    complex*16 :: j1jf(nspin_f,nspin_in,4),j1js(nspin_f,nspin_in,4),j1jp(nspin_f,nspin_in,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
    complex*16 :: ctf,cts,ctp  
@@ -582,8 +583,8 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
                 j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f_dag(i2,i1,i)*Je_2_dag(f1,i2)
                 j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
                           &  +Je_1_dag(i2,i1)*Je_s2_dag(f1,i2,i)
-                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
-                          &  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
+                !j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
+                          !&  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
             enddo
         enddo
     enddo
@@ -593,7 +594,7 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
    ctp = -Iv(t1,t2,t2,t1)
 
-   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
+   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:))/2.0d0! + ctp*j1jp(:,:,:))/2.0d0
 
    return
  end subroutine twobody_curr_matrix_J1Jpi_exc

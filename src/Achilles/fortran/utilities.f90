@@ -8,7 +8,7 @@ module libutilities
 
     type constants_type
         double precision :: c, hbarc, hbarc2, pi, mp, mn
-        double precision ::  mqe, mpi0, mpip, meta, mdelta
+        double precision ::  mqe, mpi0, mpip, meta, mdelta, mrho
 
     end type constants_type
 
