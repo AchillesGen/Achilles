@@ -10,7 +10,8 @@ module dirac_matrices_intf
     complex*16, private, save :: pi_elec_ff
     real*8, parameter :: lsq=0.71*1.e6   
     real*8, private, parameter :: fgnd=5.0d0,fpind=0.54d0
-    real*8, private, parameter :: fstar=2.13d0, xmrho=775.8d0,ga=1.26d0,fpinn2=0.081*4.0d0*pi!1.0094d0! 2.14/2.13 from JUAN, !=0.08*4.0d0*pi ARTURO
+    real*8, private, parameter :: fstar=2.13d0,fpinn2=0.081*4.0d0*pi!1.0094d0! 2.14/2.13 from JUAN, !=0.08*4.0d0*pi ARTURO
+    real*8, private, parameter :: ga=0.0d0!ga=1.26d0
     real*8, private, parameter :: lpi=1300.0d0,lpind=1150.0d0
     real*8, private, save :: mqe, qval
     complex*16, private, save :: cv3, cv4, cv5, ca5
@@ -27,18 +28,21 @@ module dirac_matrices_intf
     complex*16, private, save :: Je_a_mu(4,4,4),Je_b_mu(4,4,4),Je_c_mu(4,4,4),Je_d_mu(4,4,4)
     complex*16, private, save :: J_pif(4,4,4),J_sea1(4,4,4),J_sea2(4,4,4),J_pl1(4,4,4),J_pl2(4,4,4)
     complex*16, private, save :: J_1(4,4,4)    
-    real*8, private, save :: xmd,xmn,xmpi,w,q2
+    real*8, private, save :: xmd,xmn,xmpi,w
     type(interp1d), private, save:: interp
     real*8, private, allocatable :: pdel(:),pot_del(:)
 contains
 
-subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in)
+subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in)
     implicit none
     integer*4 :: i,j
     real*8 :: xmd_in,xmn_in,xmpi_in
     xmd=xmd_in
     xmn=xmn_in
     xmpi=xmpi_in
+    xmrho=xmrho_in
+
+    print*,xmd, xmn, xmpi, xmrho
 
     allocate(up1(nspin_in,4),upp1(nspin_f,4), &
             &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4), &
@@ -169,24 +173,25 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
 
     !knocked out nucleon
     if(nuc1_pid_in.eq.2212) then
+        !print*,'proton ph'
         t1 = up 
     else
+        !print*,'neutron ph'
         t1 = down
     endif
 
     !spectator nucleon
     if(nuc2_pid_in.eq.2212) then
+        !print*,'proton spectator'
         t2 = up
     else
+        !print*,'neutron spectator'
         t2 = down
     endif
 
     p1=p1_in
     pp1=pp1_in
     q=q_in
-
-    ! This is the unmodified q2
-    q2 = q(1)**2 - q(2)**2 - q(3)**2 - q(4)**2
 
     w=q(1)
     q(1)=w+p1(1)
@@ -198,6 +203,14 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
 
     k1=pp2-p1
     k2=pp1-p2
+
+    !print*,'p1 = ', p1  
+    !print*,'p2 = ', p2  
+    !print*, 'pp1 = ', pp1  
+    !print*, 'pp2 = ', pp2  
+    !print*, 'q  = ', q
+    !print*,'k1 = ', k1  
+    !print*, 'k2 = ', k2
 
     p1_sl=czero
     p2_sl=czero
@@ -227,10 +240,11 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_
     return
 end subroutine
 
-subroutine det_Ja(f1v,f2v,fa)
+subroutine det_J1(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu
   complex*16 :: f1v,f2v,fa  
+ ! print*,f1v,f2v,fa
 
   do mu=1,4
      J_1(:,:,mu)=czero
@@ -247,7 +261,7 @@ subroutine det_Ja(f1v,f2v,fa)
 
  
   return
-end subroutine det_Ja
+end subroutine det_J1
 
 subroutine onebody_curr_matrix_el(J_mu)
    implicit none
@@ -282,6 +296,8 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     cv4 = cv4_in
     cv5 = cv5_in
     ca5 = ca5_in
+
+    !print*,'delta FF = ',cv3,cv4,cv5,ca5
 
     if(i_fl.eq.1)then
         pa(:)=p1(:)+q(:)
@@ -359,16 +375,20 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
 !         J_d_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
 
          J_a_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+(cv4/xmn+cv5/xmn)*(g_munu(i,j)* &
-     &        (q(1)*pa(1) -q(3)*pa(3))-q(i)*pa(j))
+     &        (q(1)*pa(1) -q(3)*pa(3))-q(i)*pa(j)) &
+         &  + ca5*xmn*g_munu(i,j)*id4(:,:)
 
          J_b_1(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+(cv4/xmn+cv5/xmn)*(g_munu(i,j)* &
-     &        (q(1)*pb(1) -q(3)*pb(3))-q(i)*pb(j))
+     &        (q(1)*pb(1) -q(3)*pb(3))-q(i)*pb(j)) &
+         &  + ca5*xmn*g_munu(i,j)*id4(:,:)
 
          J_c_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+(cv4/xmn+cv5/xmn)*(g_munu(i,j)* &
-     &        (q(1)*pc(1)-q(3)*pc(3))-q(i)*pc(j))
+     &        (q(1)*pc(1)-q(3)*pc(3))-q(i)*pc(j)) &
+         &  + ca5*xmn*g_munu(i,j)*id4(:,:)
 
          J_d_1(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+(cv4/xmn+cv5/xmn)*(g_munu(i,j)* &
-     &        (q(1)*pd(1)-q(3)*pd(3))-q(i)*pd(j))
+     &        (q(1)*pd(1)-q(3)*pd(3))-q(i)*pd(j)) &
+         &  + ca5*xmn*g_munu(i,j)*id4(:,:)
          
 
 !         J_b_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
@@ -420,7 +440,8 @@ subroutine det_Jpi(pi_elec_ff_in)
 
    fpik1=(lpi**2-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2))
    fpik2=(lpi**2-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2))
-
+   frho1=1.0d0/(1.0d0 - (k1(1)**2-sum(k1(2:4)**2))/xmrho**2)
+   frho2=1.0d0/(1.0d0 - (k2(1)**2-sum(k2(2:4)**2))/xmrho**2)
 
    !...this factor is needed to fulfill current conservation, see A3 Dekker
    fact=(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)*(k2(1)**2-sum(k2(2:4)**2)-xmpi**2) &
@@ -429,12 +450,16 @@ subroutine det_Jpi(pi_elec_ff_in)
         & - 1.0d0/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2)))
    do mu=1,4
       J_pif(:,:,mu)=pi_elec_ff*(k1(mu)-k2(mu))*Pi_k1e(:,:)!*fact
-      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!/fpik2**2
-      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!/fpik1**2
+      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))-frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
+      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))+frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
+      J_pl1(:,:,mu)=frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
+      J_pl2(:,:,mu)=-frho2/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
    enddo
   J_pif=J_pif*fpik1*fpik2*fpinn2/xmpi**2 
   J_sea1=J_sea1*fpik2**2*fpinn2/xmpi**2
   J_sea2=J_sea2*fpik1**2*fpinn2/xmpi**2
+  J_pl1=J_pl1*fpinn2/xmpi**2*fpik2**2
+  J_pl2=J_pl2*fpinn2/xmpi**2*fpik1**2
   return
 end subroutine 
 
@@ -500,17 +525,10 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
     enddo
    enddo
 
-   cta=czero
-   ctb=czero
-   ctc=czero
-   ctd=czero
-
    cta = IDeltaA(t1,t2,t2,t1)
    ctb = IDeltaB(t1,t2,t2,t1)
    ctc = IDeltaC(t1,t2,t2,t1)
    ctd = IDeltaD(t1,t2,t2,t1)
-
-   !write(6,*)cta, ctb, ctc, ctd 
 
    J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
 
@@ -528,9 +546,9 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    complex*16 :: Je_1(2,2),Je_1_dag(2,2)
    complex*16 :: Je_s2(2,2,4),Je_s2_dag(2,2,4)
    complex*16 :: Je_f(2,2,4),Je_f_dag(2,2,4),Je_s1(2,2,4),Je_s1_dag(2,2,4)
-   complex*16 :: j1jf(nspin_f,nspin_in,4),j1js(nspin_f,nspin_in,4)
+   complex*16 :: j1jf(nspin_f,nspin_in,4),j1js(nspin_f,nspin_in,4),j1jp(nspin_f,nspin_in,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
-   complex*16 :: ctf,cts  
+   complex*16 :: ctf,cts,ctp  
    
    do i1=1,2
       do f1=1,2
@@ -545,12 +563,17 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
             Je_s1_dag(f1,i1,i)=conjg(Je_s1(f1,i1,i))
             Je_s2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_sea2(:,:,i),up2(i1,:)))
             Je_s2_dag(f1,i1,i)=conjg(Je_s2(f1,i1,i))
+            Je_p1(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pl1(:,:,i),up1(i1,:)))
+            Je_p1_dag(f1,i1,i)=conjg(Je_p1(f1,i1,i))
+            Je_p2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_pl2(:,:,i),up2(i1,:)))
+            Je_p2_dag(f1,i1,i)=conjg(Je_p2(f1,i1,i))
          enddo
       enddo
    enddo   
 
    j1jf=czero
    j1js=czero
+   j1jp=czero
 
    do i=1,4
     do i1=1,2
@@ -559,18 +582,18 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
                 j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f_dag(i2,i1,i)*Je_2_dag(f1,i2)
                 j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
                           &  +Je_1_dag(i2,i1)*Je_s2_dag(f1,i2,i)
+                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
+                          &  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
             enddo
         enddo
     enddo
    enddo
 
-   ctf=czero
-   cts=czero
-
    ctf = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
    cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
+   ctp = -Iv(t1,t2,t2,t1)
 
-   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:))/2.0d0
+   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
 
    return
  end subroutine twobody_curr_matrix_J1Jpi_exc

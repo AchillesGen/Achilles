@@ -57,7 +57,6 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
-    spdlog::trace("  cosT_min = {}", cosT_max);
     spdlog::trace("  cosT_max = {}", cosT_max);
     spdlog::trace("  cosT = {}", cosT);
     spdlog::trace("  mom = {}", mom);
@@ -121,7 +120,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     double phi2 = dPhi*rans[6];
 
     ThreeVector pmom2 = {p2 * sinT2 * cos(phi2), p2 * sinT2 * sin(phi2), p2 * cosT2};
-    double E2 = sqrt(pmom2*pmom2 + Constant::mN2);
+    double E2 = sqrt(p2*p2 + Constant::mN2);
 
     point.back() = {E2, pmom2[0], pmom2[1], pmom2[2]};
 

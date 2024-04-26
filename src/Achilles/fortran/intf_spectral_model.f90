@@ -6,8 +6,7 @@ module intf_spectral_model
     private
     public :: intf_spec, build_intf_spec
 
-    type(spectral_function) :: spectral_p_MF, spectral_p_bkgd, &
-        & spectral_n_MF, spectral_n_bkgd
+    type(spectral_function) :: spectral_p_MF, spectral_n_MF
 
     type, extends(model) :: intf_spec
         contains
@@ -52,21 +51,10 @@ contains
         trim_string = trim(string)
         length=len(trim_string)
         spectral_n_MF = spectral_function(trim_string)
-
-        read(read_unit, '(A)', iostat=ios) string
-        trim_string = trim(string)
-        length=len(trim_string)
-        spectral_p_bkgd = spectral_function(trim_string)
-
-        read(read_unit, '(A)', iostat=ios) string
-        trim_string = trim(string)
-        length=len(trim_string)
-        spectral_n_bkgd = spectral_function(trim_string)
         intf_spec_init = .true.
 
         call init(constants) ! load constants
-        call dirac_matrices_in(constants%mdelta,constants%mqe,constants%mpi0) 
-
+        call dirac_matrices_in(constants%mdelta,constants%mqe,constants%mpip,constants%mrho) 
         close(read_unit)
     end function
 
@@ -130,7 +118,6 @@ contains
 
         call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,2,pids_in(1),pids_spect(1))
         call define_spinors()
-        call det_Ja(ff%lookup("F1"),ff%lookup("F2"),ff%lookup("FA"))
 
         J_mu = (0.0d0,0.0d0)
         J_mu_1b = (0.0d0,0.0d0)
@@ -138,6 +125,8 @@ contains
         J_mu_pi = (0.0d0,0.0d0)
 
         if(compute_1body.eq.1) then
+            !print*,'computing 1 body'
+            call det_J1(ff%lookup("F1"),ff%lookup("F2"),ff%lookup("FA"))
             call onebody_curr_matrix_el(J_mu_1b)
             J_mu = J_mu_1b
             compute_1body = 0
@@ -176,7 +165,7 @@ contains
         integer(c_long), dimension(nspect), intent(in) :: pids_spect
         integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         double precision, dimension(4) :: p1_4,p2_4
-        real(c_double) :: wgt, pmom,pspec_mom,E
+        real(c_double) :: wgt, pmom,pspec_mom,E, hole_wgt, spect_wgt
 
         p1_4=mom_in(1)%to_array()
         E=-p1_4(1)+constants%mqe
@@ -185,18 +174,20 @@ contains
         p2_4=mom_spect(1)%to_array()
         pspec_mom=sqrt(sum(p2_4(2:4)**2)) 
 
-        if (pids_in(1) == 2212) then
-            wgt=spectral_p_MF%normalization()*spectral_p_MF%call(pmom,E)
+        if (pids_in(1).eq.2212) then
+            hole_wgt=spectral_p_MF%normalization()*spectral_p_MF%call(pmom,E)
         else
-            wgt=spectral_n_MF%normalization()*spectral_n_MF%call(pmom,E)
+            hole_wgt=spectral_n_MF%normalization()*spectral_n_MF%call(pmom,E)
         endif
 
-        if (pids_spect(1) == 2212) then
-            wgt=wgt*spectral_p_MF%normalization()*spectral_p_MF%call(pmom) 
+        if (pids_spect(1).eq.2212) then
+            spect_wgt=spectral_p_MF%normalization()*spectral_p_MF%call(pspec_mom) 
         else
-            wgt=wgt*spectral_n_MF%normalization()*spectral_n_MF%call(pmom) 
+            spect_wgt=spectral_n_MF%normalization()*spectral_n_MF%call(pspec_mom) 
         endif
-        
+
+        wgt = hole_wgt * spect_wgt
+
     end function intf_spec_init_wgt
 
 
