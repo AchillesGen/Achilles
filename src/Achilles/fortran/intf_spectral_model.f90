@@ -109,6 +109,13 @@ contains
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi, J_mu_del
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
+        logical :: has_axial
+
+        if(ff%lookup("FMecA5") /= 0.0d0) then
+            has_axial = .true.
+        else
+            has_axial = .false.
+        endif
 
         p1_4=mom_in(1)%to_array()
         p2_4=mom_spect(1)%to_array()
@@ -116,7 +123,7 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
-        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,2,pids_in(1),pids_spect(1))
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,2,pids_in(1),pids_out(1),pids_spect(1),has_axial)
         call define_spinors()
 
         J_mu = (0.0d0,0.0d0)

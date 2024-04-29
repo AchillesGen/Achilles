@@ -11,7 +11,8 @@ module dirac_matrices_intf
     real*8, parameter :: lsq=0.71*1.e6   
     real*8, private, parameter :: fgnd=5.0d0,fpind=0.54d0
     real*8, private, parameter :: fstar=2.13d0,fpinn2=0.081*4.0d0*pi!1.0094d0! 2.14/2.13 from JUAN, !=0.08*4.0d0*pi ARTURO
-    real*8, private, parameter :: ga=0.0d0!ga=1.26d0
+    real*8, private, parameter :: ga=1.26d0
+    integer*4, private, save :: ax 
     real*8, private, parameter :: lpi=1300.0d0,lpind=1150.0d0
     real*8, private, save :: mqe, qval
     complex*16, private, save :: cv3, cv4, cv5, ca5
@@ -164,11 +165,21 @@ subroutine define_spinors()
     return
 end subroutine
 
-subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc2_pid_in)
+subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in)
     implicit none
     integer*4 :: i,i_fl_in
-    integer*8 :: nuc1_pid_in, nuc2_pid_in
+    integer*8 :: nuc1_pid_in, nuc1_pid_out,nuc2_pid_in
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
+    logical :: has_axial_in
+
+    ! 1 if axial current is present
+    ! 0 else
+    if(has_axial_in .eqv. .false. .and. nuc1_pid_in.eq.nuc1_pid_out) then
+        ax = 0  
+    else
+        ax = 1
+    endif
+
     i_fl=i_fl_in
 
     !knocked out nucleon
@@ -284,7 +295,7 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     integer*4 :: i,j,mu, err
     complex*16 :: cv3_in, cv4_in, cv5_in, ca5_in
     real*8 :: pa(4),pb(4),pc(4),pd(4),width,fpik1,fpik2,fpindk2,fpindk1
-    real*8 :: ga,gb,gc,gd,pa2,pb2,pc2,pd2
+    real*8 :: gadelta,gbdelta,gcdelta,gddelta,pa2,pb2,pc2,pd2
     real*8 :: pot_pa,pot_pb,pot_pc,pot_pd
     complex*16 :: pa_sl(4,4),pb_sl(4,4),pc_sl(4,4),pd_sl(4,4)
     complex*16 :: xmd_a,xmd_b,xmd_c,xmd_d
@@ -325,14 +336,14 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     pb_sl=czero
     pc_sl=czero
     pd_sl=czero
-    call delta_se(pa(1)**2-sum(pa(2:4)**2),ga,pot_pa)
-    xmd_a=xmd-0.5d0*ci*ga
-    call delta_se(pb(1)**2-sum(pb(2:4)**2),gb,pot_pb)
-    xmd_b=xmd-0.5d0*ci*gb
-    call delta_se(pc(1)**2-sum(pc(2:4)**2),gc,pot_pc)
-    xmd_c=xmd-0.5d0*ci*gc
-    call delta_se(pd(1)**2-sum(pd(2:4)**2),gd,pot_pd)
-    xmd_d=xmd-0.5d0*ci*gd
+    call delta_se(pa(1)**2-sum(pa(2:4)**2),gadelta,pot_pa)
+    xmd_a=xmd-0.5d0*ci*gadelta
+    call delta_se(pb(1)**2-sum(pb(2:4)**2),gbdelta,pot_pb)
+    xmd_b=xmd-0.5d0*ci*gbdelta
+    call delta_se(pc(1)**2-sum(pc(2:4)**2),gcdelta,pot_pc)
+    xmd_c=xmd-0.5d0*ci*gcdelta
+    call delta_se(pd(1)**2-sum(pd(2:4)**2),gddelta,pot_pd)
+    xmd_d=xmd-0.5d0*ci*gddelta
     fpik1=(lpi**2-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2))
     fpik2=(lpi**2-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2))
     fpindk1=lpind**2/(lpind**2-k1(1)**2+sum(k1(2:4)**2))
@@ -450,10 +461,10 @@ subroutine det_Jpi(pi_elec_ff_in)
         & - 1.0d0/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2)))
    do mu=1,4
       J_pif(:,:,mu)=pi_elec_ff*(k1(mu)-k2(mu))*Pi_k1e(:,:)!*fact
-      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!-frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
-      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))!+frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
-      !J_pl1(:,:,mu)=frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
-      !J_pl2(:,:,mu)=-frho2/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
+      J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))-ax*frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
+      J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))+ax*frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
+      J_pl1(:,:,mu)=ax*frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
+      J_pl2(:,:,mu)=-ax*frho2/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
    enddo
   J_pif=J_pif*fpik1*fpik2*fpinn2/xmpi**2 
   J_sea1=J_sea1*fpik2**2*fpinn2/xmpi**2
@@ -594,7 +605,7 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
    cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
    ctp = -Iv(t1,t2,t2,t1)
 
-   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:))/2.0d0! + ctp*j1jp(:,:,:))/2.0d0
+   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
 
    return
  end subroutine twobody_curr_matrix_J1Jpi_exc
