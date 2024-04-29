@@ -231,14 +231,6 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
     k2_e=pp1-p2
 
 
-    !print*,'p1 = ', p1  
-    !print*,'p2 = ', p2  
-    !print*, 'pp1 = ', pp1  
-    !print*, 'pp2 = ', pp2  
-    !print*, 'q  = ', q
-    !print*,'k1 = ', k1  
-    !print*, 'k2 = ', k2
-
     p1_sl=czero
     p2_sl=czero
     pp1_sl=czero
@@ -1058,6 +1050,66 @@ function IDeltaDDag_v(it1,it2,itp1,itp2)
     return
 end function IDeltaDDag_v
 
+function Ivminus(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: Ivminus
+
+    Ivminus = ci*( ( mev(2,it1,itp1)*mev(3,it2,itp2) - mev(3,it1,itp1)*mev(2,it2,itp2) ) & 
+    &    - ci*( mev(3,it1,itp1)*mev(1,it2,itp2) - mev(1,it1,itp1)*mev(3,it2,itp2) ) )
+
+    return
+end function Ivminus
+
+function IDeltaAdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaAdag, c
+
+    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaAdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaAdag
+
+function IDeltaBdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaBdag, c
+
+    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaBdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaBdag
+
+function IDeltaCdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaCdag, c
+
+    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaCdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaCdag
+
+function IDeltaDdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaDdag, c
+
+    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaDdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaDdag
+
+
 function me(i,it,itp)
     implicit none
     integer*4 :: i
@@ -1067,6 +1119,10 @@ function me(i,it,itp)
     return
 end function me
 
+function mev(i,it,itp)
+    implicit none
+    integer*4 :: i
+    complex*16 :: mev, it(2),itp(2)
 
 function iden(it,itp)
     implicit none 
