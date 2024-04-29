@@ -19,7 +19,7 @@ module dirac_matrices_intf
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, allocatable, private, save :: up1(:,:),up2(:,:),upp1(:,:),upp2(:,:), &
             &   ubarp1(:,:),ubarp2(:,:),ubarpp1(:,:),ubarpp2(:,:)
-    complex*16, private, save :: t1(2),t2(2)
+    complex*16, private, save :: t1(2),t1p(2),t2(2)
     complex*16, private, save :: gamma_mu(4,4,5),g_munu(4,4), sigma_munu(4,4,4,4)
     complex*16, private, save :: p1_sl(4,4),p2_sl(4,4),pp1_sl(4,4),pp2_sl(4,4), &
          &   k1_sl(4,4),k2_sl(4,4),q_sl(4,4), &
@@ -168,13 +168,13 @@ end subroutine
 subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in)
     implicit none
     integer*4 :: i,i_fl_in
-    integer*8 :: nuc1_pid_in, nuc1_pid_out,nuc2_pid_in
+    integer*8 :: nuc1_pid_in,nuc1_pid_out,nuc2_pid_in
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
     logical :: has_axial_in
 
-    ! 1 if axial current is present
+    ! 1 if neutrinos
     ! 0 else
-    if(has_axial_in .eqv. .false. .and. nuc1_pid_in.eq.nuc1_pid_out) then
+    if(has_axial_in .eqv. .false.) then
         ax = 0  
     else
         ax = 1
@@ -182,13 +182,22 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
 
     i_fl=i_fl_in
 
-    !knocked out nucleon
+    !struck nucleon
     if(nuc1_pid_in.eq.2212) then
         !print*,'proton ph'
         t1 = up 
     else
         !print*,'neutron ph'
         t1 = down
+    endif
+
+    !knocked out nucleon
+    if(nuc1_pid_out.eq.2212) then
+        !print*,'proton ph'
+        t1p = up 
+    else
+        !print*,'neutron ph'
+        t1p = down
     endif
 
     !spectator nucleon
@@ -214,14 +223,6 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
 
     k1=pp2-p1
     k2=pp1-p2
-
-    !print*,'p1 = ', p1  
-    !print*,'p2 = ', p2  
-    !print*, 'pp1 = ', pp1  
-    !print*, 'pp2 = ', pp2  
-    !print*, 'q  = ', q
-    !print*,'k1 = ', k1  
-    !print*, 'k2 = ', k2
 
     p1_sl=czero
     p2_sl=czero
@@ -307,8 +308,6 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     cv4 = cv4_in
     cv5 = cv5_in
     ca5 = ca5_in
-
-    !print*,'delta FF = ',cv3,cv4,cv5,ca5
 
     if(i_fl.eq.1)then
         pa(:)=p1(:)+q(:)
@@ -536,10 +535,21 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
     enddo
    enddo
 
-   cta = IDeltaA(t1,t2,t2,t1)
-   ctb = IDeltaB(t1,t2,t2,t1)
-   ctc = IDeltaC(t1,t2,t2,t1)
-   ctd = IDeltaD(t1,t2,t2,t1)
+   if(ax.eq.0) then
+    cta = IDeltaA(t1,t2,t2,t1)
+    ctb = IDeltaB(t1,t2,t2,t1)
+    ctc = IDeltaC(t1,t2,t2,t1)
+    ctd = IDeltaD(t1,t2,t2,t1)
+   else
+    cta = IDeltaAdag(t2,t1p,t1,t2)
+    ctb = IDeltaBdag(t2,t1p,t1,t2)
+    ctc = IDeltaCdag(t2,t1p,t1,t2)
+    ctd = IDeltaDdag(t2,t1p,t1,t2)
+    !print*,'cta = ', cta 
+    !print*,'ctb = ', ctb 
+    !print*,'ctc = ', ctc 
+    !print*,'ctd = ', ctd
+   endif
 
    J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
 
@@ -601,9 +611,16 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
     enddo
    enddo
 
-   ctf = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
-   cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
-   ctp = -Iv(t1,t2,t2,t1)
+
+   if(ax.eq.0) then
+       ctf = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       ctp = -Iv(t1,t2,t2,t1)
+   else
+       ctf = -Ivminus(t2,t1p,t1,t2) 
+       cts = -Ivminus(t2,t1p,t1,t2) 
+       ctp = -Ivminus(t2,t1p,t1,t2) 
+   endif
 
    J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
 
@@ -712,6 +729,66 @@ function IDeltaD(it1,it2,itp1,itp2)
     return
 end function IDeltaD
 
+function Ivminus(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: Ivminus
+
+    Ivminus = ci*( ( mev(2,it1,itp1)*mev(3,it2,itp2) - mev(3,it1,itp1)*mev(2,it2,itp2) ) & 
+    &    - ci*( mev(3,it1,itp1)*mev(1,it2,itp2) - mev(1,it1,itp1)*mev(3,it2,itp2) ) )
+
+    return
+end function Ivminus
+
+function IDeltaAdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaAdag, c
+
+    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaAdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaAdag
+
+function IDeltaBdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaBdag, c
+
+    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaBdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaBdag
+
+function IDeltaCdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaCdag, c
+
+    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaCdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaCdag
+
+function IDeltaDdag(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaDdag, c
+
+    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaDdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaDdag
+
+
 function me(i,it,itp)
     implicit none
     integer*4 :: i
@@ -722,7 +799,23 @@ function me(i,it,itp)
     return
 end function me
 
+function mev(i,it,itp)
+    implicit none
+    integer*4 :: i
+    complex*16 :: mev, it(2),itp(2)
 
+    mev = sum(itp(:)*matmul(sig(i,:,:),it))
+
+    return
+end function mev
+
+function iden(it,itp)
+    implicit none 
+    complex*16:: iden, it(2),itp(2)
+
+    iden = sum(itp(:)*matmul(id,it))
+    return
+end function iden
 
 
 end module dirac_matrices_intf

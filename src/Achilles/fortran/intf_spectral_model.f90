@@ -111,10 +111,10 @@ contains
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
         logical :: has_axial
 
-        if(ff%lookup("FMecA5") /= 0.0d0) then
-            has_axial = .true.
-        else
+        if(ff%lookup("FMecA5").eq.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
             has_axial = .false.
+        else
+            has_axial = .true.
         endif
 
         p1_4=mom_in(1)%to_array()
