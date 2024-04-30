@@ -592,8 +592,8 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
                 j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f_dag(i2,i1,i)*Je_2_dag(f1,i2)
                 j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
                           &  +Je_1_dag(i2,i1)*Je_s2_dag(f1,i2,i)
-                !j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
-                          !&  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
+                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
+                          &  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
             enddo
         enddo
     enddo
