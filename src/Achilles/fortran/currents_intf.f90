@@ -172,8 +172,7 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
     logical :: has_axial_in
 
-    ! 1 if neutrinos
-    ! 0 else
+    ! 1 if neutrinos 0 else
     if(has_axial_in .eqv. .false.) then
         ax = 0  
     else
@@ -184,28 +183,22 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
 
     !struck nucleon
     if(nuc1_pid_in.eq.2212) then
-        !print*,'proton ph'
         t1 = up 
     else
-        !print*,'neutron ph'
         t1 = down
     endif
 
     !knocked out nucleon
     if(nuc1_pid_out.eq.2212) then
-        !print*,'proton ph'
         t1p = up 
     else
-        !print*,'neutron ph'
         t1p = down
     endif
 
     !spectator nucleon
     if(nuc2_pid_in.eq.2212) then
-        !print*,'proton spectator'
         t2 = up
     else
-        !print*,'neutron spectator'
         t2 = down
     endif
 
@@ -256,7 +249,6 @@ subroutine det_J1(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu
   complex*16 :: f1v,f2v,fa  
- ! print*,f1v,f2v,fa
 
   do mu=1,4
      J_1(:,:,mu)=czero
@@ -536,19 +528,15 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
    enddo
 
    if(ax.eq.0) then
-    cta = IDeltaA(t1,t2,t2,t1)
-    ctb = IDeltaB(t1,t2,t2,t1)
-    ctc = IDeltaC(t1,t2,t2,t1)
-    ctd = IDeltaD(t1,t2,t2,t1)
+    cta = IDeltaADag_EM(t2,t1p,t1,t2)
+    ctb = IDeltaBDag_EM(t2,t1p,t1,t2)
+    ctc = IDeltaCDag_EM(t2,t1p,t1,t2)
+    ctd = IDeltaDDag_EM(t2,t1p,t1,t2)
    else
-    cta = IDeltaAdag(t2,t1p,t1,t2)
-    ctb = IDeltaBdag(t2,t1p,t1,t2)
-    ctc = IDeltaCdag(t2,t1p,t1,t2)
-    ctd = IDeltaDdag(t2,t1p,t1,t2)
-    !print*,'cta = ', cta 
-    !print*,'ctb = ', ctb 
-    !print*,'ctc = ', ctc 
-    !print*,'ctd = ', ctd
+    cta = IDeltaADag_v(t2,t1p,t1,t2)
+    ctb = IDeltaBDag_v(t2,t1p,t1,t2)
+    ctc = IDeltaCDag_v(t2,t1p,t1,t2)
+    ctd = IDeltaDDag_v(t2,t1p,t1,t2)
    endif
 
    J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
@@ -613,9 +601,9 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
 
 
    if(ax.eq.0) then
-       ctf = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       cts = -Iv(t1,t2,t2,t1) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       ctp = -Iv(t1,t2,t2,t1)
+       ctf = -Ivz(t2,t1p,t1,t2) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       cts = -Ivz(t2,t1p,t1,t2) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       ctp = -Ivz(t2,t1p,t1,t2)
    else
        ctf = -Ivminus(t2,t1p,t1,t2) 
        cts = -Ivminus(t2,t1p,t1,t2) 
@@ -670,144 +658,242 @@ subroutine delta_potential(p2,delta_pot)
     return
 end subroutine delta_potential
 
-function Iv(it1,it2,itp1,itp2)
+function Ivz(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: Iv
+    complex*16 :: Ivz
 
-    Iv = ci*(me(1,it1,itp1)*me(2,it2,itp2) - me(2,it1,itp1)*me(1,it2,itp2))
-
-    return
-end function Iv
-
-
-function IDeltaA(it1,it2,itp1,itp2)
-    implicit none
-    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaA, c
-
-    c = me(3,it2,itp2)
-
-    IDeltaA = (2.*c/3.) + (Iv(it1,it2,itp1,itp2)/3.)
+    Ivz = ci*(me(1,it1,itp1)*me(2,it2,itp2) - me(2,it1,itp1)*me(1,it2,itp2))
 
     return
-end function IDeltaA
-
-function IDeltaB(it1,it2,itp1,itp2)
-    implicit none
-    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaB, c
-
-    c = me(3,it2,itp2) 
-
-    IDeltaB = (2.*c/3.) - (Iv(it1,it2,itp1,itp2)/3.) 
-
-    return
-end function IDeltaB
-
-function IDeltaC(it1,it2,itp1,itp2)
-    implicit none
-    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaC, c
-
-    c = me(3,it1,itp1) 
-
-    IDeltaC = (2.*c/3.) - (Iv(it1,it2,itp1,itp2)/3.)
-
-    return
-end function IDeltaC
-
-function IDeltaD(it1,it2,itp1,itp2)
-    implicit none
-    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaD, c
-
-    c = me(3,it1,itp1) 
-
-    IDeltaD = (2.*c/3.) + (Iv(it1,it2,itp1,itp2)/3.) 
-
-    return
-end function IDeltaD
+end function Ivz
 
 function Ivminus(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
     complex*16 :: Ivminus
 
-    Ivminus = ci*( ( mev(2,it1,itp1)*mev(3,it2,itp2) - mev(3,it1,itp1)*mev(2,it2,itp2) ) & 
-    &    - ci*( mev(3,it1,itp1)*mev(1,it2,itp2) - mev(1,it1,itp1)*mev(3,it2,itp2) ) )
+    Ivminus = ci*( ( me(2,it1,itp1)*me(3,it2,itp2) - me(3,it1,itp1)*me(2,it2,itp2) ) & 
+    &    - ci*( me(3,it1,itp1)*me(1,it2,itp2) - me(1,it1,itp1)*me(3,it2,itp2) ) )
 
     return
 end function Ivminus
 
-function IDeltaAdag(it1,it2,itp1,itp2)
+function Ivplus(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaAdag, c
+    complex*16 :: Ivplus
 
-    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
-
-    IDeltaAdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.)
+    Ivplus = ci*( ( me(2,it1,itp1)*me(3,it2,itp2) - me(3,it1,itp1)*me(2,it2,itp2) ) & 
+    &    + ci*( me(3,it1,itp1)*me(1,it2,itp2) - me(1,it1,itp1)*me(3,it2,itp2) ) )
 
     return
-end function IDeltaAdag
+end function Ivplus
 
-function IDeltaBdag(it1,it2,itp1,itp2)
+
+function IDeltaA_EM(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaBdag, c
+    complex*16 :: IDeltaA_EM, c
 
-    c = (mev(1,it2,itp2) - ci*mev(2,it2,itp2))*iden(it1,itp1)
+    c = me(3,it2,itp2)*iden(it1,itp1)
 
-    IDeltaBdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.) 
+    IDeltaA_EM = (2.*c/3.) - (Ivz(it1,it2,itp1,itp2)/3.)
+    !IDeltaA = me(1,it1,itp1)*me(1,it2,itp2)
 
     return
-end function IDeltaBdag
+end function IDeltaA_EM
 
-function IDeltaCdag(it1,it2,itp1,itp2)
+function IDeltaADag_EM(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaCdag, c
+    complex*16 :: IDeltaADag_EM, c
 
-    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+    c = me(3,it2,itp2)*iden(it1,itp1)
 
-    IDeltaCdag = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.)
+    IDeltaADag_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.)
+
 
     return
-end function IDeltaCdag
+end function IDeltaADag_EM
 
-function IDeltaDdag(it1,it2,itp1,itp2)
+function IDeltaB_EM(it1,it2,itp1,itp2)
     implicit none
     complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
-    complex*16 :: IDeltaDdag, c
+    complex*16 :: IDeltaB_EM, c
 
-    c = (mev(1,it1,itp1) - ci*mev(2,it1,itp1))*iden(it2,itp2)
+    c = me(3,it2,itp2)*iden(it1,itp1) 
 
-    IDeltaDdag = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.) 
+    IDeltaB_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.) 
 
     return
-end function IDeltaDdag
+end function IDeltaB_EM
 
+function IDeltaBDag_EM(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaBDag_EM, c
+
+    c = me(3,it2,itp2)*iden(it1,itp1)
+
+    IDeltaBDag_EM = (2.*c/3.) - (Ivz(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaBDag_EM
+
+function IDeltaC_EM(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaC_EM, c
+
+    c = me(3,it1,itp1)*iden(it2,itp2) 
+
+    IDeltaC_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaC_EM
+
+function IDeltaCDag_EM(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaCDag_EM, c
+
+    c = me(3,it1,itp1)*iden(it2,itp2)  
+
+    IDeltaCDag_EM = (2.*c/3.) - (Ivz(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaCDag_EM
+
+function IDeltaD_EM(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaD_EM, c
+
+    c = me(3,it1,itp1)*iden(it2,itp2)  
+
+    IDeltaD_EM = (2.*c/3.) - (Ivz(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaD_EM
+
+function IDeltaDDag_EM(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaDDag_EM, c
+
+    c = me(3,it1,itp1)*iden(it2,itp2)  
+
+    IDeltaDDag_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaDDag_EM
+
+function IDeltaA_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaA_v, c
+
+    c = (me(1,it2,itp2) + ci*me(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaA_v = (2.*c/3.) - (Ivplus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaA_v
+
+function IDeltaADag_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaADag_v, c
+
+    c = (me(1,it2,itp2) - ci*me(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaADag_v = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaADag_v
+
+function IDeltaB_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaB_v, c
+
+    c = (me(1,it2,itp2) + ci*me(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaB_v = (2.*c/3.) + (Ivplus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaB_v
+
+function IDeltaBDag_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaBDag_v, c
+
+    c = (me(1,it2,itp2) - ci*me(2,it2,itp2))*iden(it1,itp1)
+
+    IDeltaBDag_v = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaBDag_v
+
+function IDeltaC_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaC_v, c
+
+    c = (me(1,it1,itp1) + ci*me(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaC_v = (2.*c/3.) + (Ivplus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaC_v
+
+function IDeltaCDag_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaCDag_v, c
+
+    c = (me(1,it1,itp1) - ci*me(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaCDag_v = (2.*c/3.) - (Ivminus(it1,it2,itp1,itp2)/3.)
+
+    return
+end function IDeltaCDag_v
+
+function IDeltaD_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaD_v, c
+
+    c = (me(1,it1,itp1) + ci*me(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaD_v = (2.*c/3.) - (Ivplus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaD_v
+
+function IDeltaDDag_v(it1,it2,itp1,itp2)
+    implicit none
+    complex*16 :: it1(2),it2(2),itp1(2),itp2(2)
+    complex*16 :: IDeltaDDag_v, c
+
+    c = (me(1,it1,itp1) - ci*me(2,it1,itp1))*iden(it2,itp2)
+
+    IDeltaDDag_v = (2.*c/3.) + (Ivminus(it1,it2,itp1,itp2)/3.) 
+
+    return
+end function IDeltaDDag_v
 
 function me(i,it,itp)
     implicit none
     integer*4 :: i
-    complex*16 :: me, it(2),itp(2)
+    complex*16 :: me, it(2),itp(2), matrix(2)
 
-    me = sum(it(:)*matmul(sig(i,:,:),itp))
-
+    me = sum(itp(:)*matmul(sig(i,:,:),it))
     return
 end function me
 
-function mev(i,it,itp)
-    implicit none
-    integer*4 :: i
-    complex*16 :: mev, it(2),itp(2)
-
-    mev = sum(itp(:)*matmul(sig(i,:,:),it))
-
-    return
-end function mev
 
 function iden(it,itp)
     implicit none 
@@ -816,7 +902,6 @@ function iden(it,itp)
     iden = sum(itp(:)*matmul(id,it))
     return
 end function iden
-
 
 end module dirac_matrices_intf
 
