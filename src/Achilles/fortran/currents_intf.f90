@@ -517,26 +517,26 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
     do i1=1,2
         do f1=1,2
             do i2=1,2
-              j1jb(f1,i1,i)=j1jb(f1,i1,i)+Je_12b_dag(i2,i1,i)*Je_2_dag(f1,i2)
-              j1jc(f1,i1,i)=j1jc(f1,i1,i)+Je_12c_dag(f1,i2,i)*Je_1_dag(i2,i1)
+              j1jb(f1,i1,i)=j1jb(f1,i1,i)+Je_12b(i2,i1,i)*Je_2(f1,i2)
+              j1jc(f1,i1,i)=j1jc(f1,i1,i)+Je_12c(f1,i2,i)*Je_1(i2,i1)
               !We may need ja and jd for exclusive case, even though they cancel for inclusive
-              j1ja(f1,i1,i)=j1ja(f1,i1,i)+Je_12a_dag(i2,i1,i)*Je_2_dag(f1,i2)
-              j1jd(f1,i1,i)=j1jd(f1,i1,i)+Je_12d_dag(f1,i2,i)*Je_1_dag(i2,i1)
+              j1ja(f1,i1,i)=j1ja(f1,i1,i)+Je_12a(i2,i1,i)*Je_2(f1,i2)
+              j1jd(f1,i1,i)=j1jd(f1,i1,i)+Je_12d(f1,i2,i)*Je_1(i2,i1)
             enddo
         enddo
     enddo
    enddo
 
    if(ax.eq.0) then
-    cta = IDeltaADag_EM(t2,t1p,t1,t2)
-    ctb = IDeltaBDag_EM(t2,t1p,t1,t2)
-    ctc = IDeltaCDag_EM(t2,t1p,t1,t2)
-    ctd = IDeltaDDag_EM(t2,t1p,t1,t2)
+    cta = IDeltaA_EM(t1,t2,t2,t1p)
+    ctb = IDeltaB_EM(t1,t2,t2,t1p)
+    ctc = IDeltaC_EM(t1,t2,t2,t1p)
+    ctd = IDeltaD_EM(t1,t2,t2,t1p)
    else
-    cta = IDeltaADag_v(t2,t1p,t1,t2)
-    ctb = IDeltaBDag_v(t2,t1p,t1,t2)
-    ctc = IDeltaCDag_v(t2,t1p,t1,t2)
-    ctd = IDeltaDDag_v(t2,t1p,t1,t2)
+    cta = IDeltaA_v(t1,t2,t2,t1p)
+    ctb = IDeltaB_v(t1,t2,t2,t1p)
+    ctc = IDeltaC_v(t1,t2,t2,t1p)
+    ctd = IDeltaD_v(t1,t2,t2,t1p)
    endif
 
    J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
@@ -589,11 +589,11 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
     do i1=1,2
         do f1=1,2
             do i2=1,2
-                j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f_dag(i2,i1,i)*Je_2_dag(f1,i2)
-                j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
-                          &  +Je_1_dag(i2,i1)*Je_s2_dag(f1,i2,i)
-                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1_dag(i2,i1,i)*Je_2_dag(f1,i2) &
-                          &  +Je_1_dag(i2,i1)*Je_p2_dag(f1,i2,i)
+                j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f(i2,i1,i)*Je_2(f1,i2)
+                j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1(i2,i1,i)*Je_2(f1,i2) &
+                          &  +Je_1(i2,i1)*Je_s2(f1,i2,i)
+                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1(i2,i1,i)*Je_2(f1,i2) &
+                          &  +Je_1(i2,i1)*Je_p2(f1,i2,i)
             enddo
         enddo
     enddo
@@ -601,13 +601,13 @@ subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
 
 
    if(ax.eq.0) then
-       ctf = -Ivz(t2,t1p,t1,t2) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       cts = -Ivz(t2,t1p,t1,t2) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       ctp = -Ivz(t2,t1p,t1,t2)
+       ctf = Ivz(t1,t2,t2,t1p) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       cts = Ivz(t1,t2,t2,t1p) !Want to compute matrix element of (Iv^{dag} = -Iv)
+       ctp = Ivz(t1,t2,t2,t1p)
    else
-       ctf = -Ivminus(t2,t1p,t1,t2) 
-       cts = -Ivminus(t2,t1p,t1,t2) 
-       ctp = -Ivminus(t2,t1p,t1,t2) 
+       ctf = Ivplus(t1,t2,t2,t1p) 
+       cts = Ivplus(t1,t2,t2,t1p) 
+       ctp = Ivplus(t1,t2,t2,t1p) 
    endif
 
    J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
