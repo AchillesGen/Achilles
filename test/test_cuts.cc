@@ -120,14 +120,13 @@ TEST_CASE("CutCollection", "[Cuts]") {
     SECTION("Single PIDs work") {
         YAML::Node node;
         node["min"] = 10;
-        auto cut = achilles::CutFactory<achilles::OneParticleCut>::InitializeCut("Energy", node);
+        auto cut = achilles::CutFactory<achilles::OneParticleCut>::Initialize("Energy", node);
         cuts.AddCut({achilles::PID::electron()}, std::move(cut));
         CHECK(cuts.EvaluateCuts({part1}) == (mom1.E() > 10));
         CHECK(cuts.EvaluateCuts({part2}) == true);
         CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10));
 
-        auto cut2 =
-            achilles::CutFactory<achilles::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        auto cut2 = achilles::CutFactory<achilles::TwoParticleCut>::Initialize("DeltaTheta", node);
         cuts.AddCut({achilles::PID::electron()}, std::move(cut2));
         bool pass_cuts =
             (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2)) * 180 / M_PI > 10);
@@ -137,12 +136,11 @@ TEST_CASE("CutCollection", "[Cuts]") {
     SECTION("Sets of PIDs work") {
         YAML::Node node;
         node["min"] = 10;
-        auto cut = achilles::CutFactory<achilles::OneParticleCut>::InitializeCut("Energy", node);
+        auto cut = achilles::CutFactory<achilles::OneParticleCut>::Initialize("Energy", node);
         cuts.AddCut({achilles::PID::electron(), achilles::PID::muon()}, std::move(cut));
         CHECK(cuts.EvaluateCuts({part1, part2}) == (mom1.E() > 10 && mom2.E() > 10));
 
-        auto cut2 =
-            achilles::CutFactory<achilles::TwoParticleCut>::InitializeCut("DeltaTheta", node);
+        auto cut2 = achilles::CutFactory<achilles::TwoParticleCut>::Initialize("DeltaTheta", node);
         cuts.AddCut({achilles::PID::electron(), achilles::PID::muon()}, std::move(cut2));
         bool pass_cuts =
             (mom1.E() > 10 && mom2.E() > 10 && std::acos(mom1.CosAngle(mom2)) * 180 / M_PI > 10);

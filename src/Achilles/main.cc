@@ -135,8 +135,8 @@ int main(int argc, char *argv[]) {
     achilles::Plugin::Manager plugin_manager;
 
     if(args["--display-cuts"].asBool()) {
-        achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
-        achilles::CutFactory<achilles::TwoParticleCut>::DisplayCuts();
+        achilles::CutFactory<achilles::OneParticleCut>::Display();
+        achilles::CutFactory<achilles::TwoParticleCut>::Display();
         return 0;
     }
 
