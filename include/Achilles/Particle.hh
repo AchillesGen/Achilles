@@ -28,6 +28,7 @@ enum class ParticleStatus : int {
     beam = 6,
     target = 7,
     spectator = 8,
+    interacted = 9,
 };
 
 /// The Particle class provides a container to handle information about the particle.

@@ -605,29 +605,41 @@ std::size_t Cascade::Interacted(const Particles &particles, const Particle &kick
 }
 
 bool Cascade::FinalizeMomentum(Particle &particle1, Particle &particle2) noexcept {
-    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
-    // TODO: Update this to the new interface
-    auto pOut = m_interactions.GenerateMomentum(particle1, particle2,
-                                                {particle1.ID(), particle2.ID()}, {0});
+    // TODO: Clean this up
+    auto p1 = particle1.Momentum();
+    auto p2 = particle2.Momentum();
+    double mass = particle1.Info().Mass();
+    auto pos_p1 = particle1.Position();
+    auto pos_p2 = particle2.Position();
+    double position1 = pos_p1.Magnitude();
+    double position2 = pos_p2.Magnitude();
+    double position3 = (pos_p1 + pos_p2).Magnitude();
+    double fact = 1.0;
+    if(m_medium == InMedium::NonRelativistic)
+        fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1,
+                                                                   position2, position3);
+    auto modes = m_interactions.CrossSection(particle1, particle2);
+    std::vector<double> xsecs;
+    for(auto mode : modes) { xsecs.push_back(mode.cross_section * fact); }
+    auto mode = Random::Instance().SelectIndex(xsecs);
 
-    // Assign momenta to particles
-    particle1.SetMomentum(pOut[0].Momentum());
-    particle2.SetMomentum(pOut[1].Momentum());
+    auto particles_out =
+        m_interactions.GenerateMomentum(particle1, particle2, modes[mode].particles, {0});
 
     // Check for Pauli Blocking
-    bool hit = !(PauliBlocking(particle1) || PauliBlocking(particle2));
+    bool hit = true;
+    for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
     if(hit) {
+        // TODO: Figure out this
         // Assign formation zone
-        particle1.SetFormationZone(p1Lab, pOut[0].Momentum());
-        particle2.SetFormationZone(p2Lab, pOut[0].Momentum());
+        // particle1.SetFormationZone(p1Lab, pOut[0].Momentum());
+
+        particle1.Status() = ParticleStatus::interacted;
+        particle2.Status() = ParticleStatus::interacted;
 
         // Hit nucleon is now propagating
         // Users are responsibile for updating the status externally as desired
-    } else {
-        // Assign momenta to particles
-        particle1.SetMomentum(p1Lab);
-        particle2.SetMomentum(p2Lab);
     }
 
     return hit;
