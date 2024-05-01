@@ -8,13 +8,23 @@ using achilles::CoherentMapper;
 using achilles::IntfSpectralMapper;
 using achilles::QESpectralMapper;
 
+CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
+}
+
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
-    point[HadronIdx()] = {Masses()[HadronIdx()], 0, 0, 0};
+    point[HadronIdx()] = {m_mass, 0, 0, 0};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
 }
 
 double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) {
     return 1;
+}
+
+QESpectralMapper::QESpectralMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    SetMasses(info.Masses());
 }
 
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
@@ -109,6 +119,11 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     spdlog::trace("  dE: {}", dE);
 
     return wgt;
+}
+
+IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    SetMasses(info.Masses());
 }
 
 void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,

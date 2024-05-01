@@ -3,7 +3,6 @@
 #include "Achilles/Beams.hh"
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/HadronicMapper.hh"
-#include "Achilles/PhaseSpaceFactory.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/Channels.hh"
@@ -25,19 +24,17 @@ PSBuilder &PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, size_t idx) {
 }
 
 PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
-    phase_space->hbeam = PSFactory<HadronicBeamMapper, size_t>::Build(mode, idx);
-    // TODO: Right now we only need the intial hadronic mass for Coherent, but we may need to change
-    // this
-    // TODO: Also, assumes that the zeroth index is the beam particle
-    auto masses = {0.0, ParticleInfo(m_info.m_hadronic.first[0]).Mass()};
-    phase_space->hbeam->SetMasses(masses);
+    // BUG: The idx parameter needs to be cast to size_t otherwise it is an error about rvalue and
+    // lvalues
+    phase_space->hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
+        mode, m_info, static_cast<size_t>(idx));
     return *this;
 }
 
 PSBuilder &PSBuilder::FinalState(const std::string &channel,
                                  std::optional<double> gauge_boson_mass) {
     phase_space->main =
-        PSFactory<FinalStateMapper, std::vector<double>>::Build(channel, m_info.Masses());
+        Factory<FinalStateMapper, std::vector<double>>::Initialize(channel, m_info.Masses());
     if(gauge_boson_mass.has_value()) phase_space->main->SetGaugeBosonMass(gauge_boson_mass.value());
     return *this;
 }
@@ -45,7 +42,7 @@ PSBuilder &PSBuilder::FinalState(const std::string &channel,
 #ifdef ACHILLES_SHERPA_INTERFACE
 PSBuilder &PSBuilder::SherpaFinalState(const std::string &channel) {
     auto sherpaMap =
-        PSFactory<PHASIC::Channels, std::vector<double>>::Build(channel, m_info.Masses());
+        Factory<PHASIC::Channels, std::vector<double>>::Initialize(channel, m_info.Masses());
     phase_space->main = std::make_unique<SherpaMapper>(m_nlep + m_nhad - 2, std::move(sherpaMap));
     return *this;
 }
