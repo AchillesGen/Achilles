@@ -143,7 +143,7 @@ class Cascade {
 
     /// Helper function to make a specific nucleon as the kicked nucleon
     ///@param idx: The index of the particle that has been kicked
-    void SetKicked(const std::size_t &idx) { kickedIdxs.push_back(idx); }
+    void SetKicked(const std::size_t &idx) { kickedIdxs.insert(idx); }
 
     /// Simulate the cascade on an event until all particles either escape,
     /// are recaptured, or are in the background.
@@ -185,19 +185,19 @@ class Cascade {
     std::size_t Interacted(const Particles &, const Particle &,
                            const InteractionDistances &) noexcept;
     void Escaped(Particles &);
-    bool FinalizeMomentum(Particle &, Particle &) noexcept;
+    void FinalizeMomentum(Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *, double);
-    std::vector<size_t> InitializeIntegrator(Event &);
-    void UpdateIntegrator(size_t, Particle *);
-    void UpdateKicked(bool, size_t, size_t, Particle *, Particle *, std::vector<size_t> &);
+    std::set<size_t> InitializeIntegrator(Event &);
+    void UpdateKicked(Particles &, std::set<size_t> &);
     void Validate(const Particles &);
     size_t BaseAlgorithm(size_t, Particles &);
     size_t MFPAlgorithm(size_t, Particles &);
+    double InMediumCorrection(const Particle &, const Particle &) const;
 
     // Variables
-    std::vector<std::size_t> kickedIdxs;
+    std::set<std::size_t> kickedIdxs;
     double distance{}, timeStep{};
     InteractionHandler m_interactions{};
     std::function<double(double, double)> probability;
