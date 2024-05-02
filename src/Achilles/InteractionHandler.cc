@@ -21,6 +21,17 @@ bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
     return std::tie(a1, a2) < std::tie(b1, b2);
 }
 
+double InteractionHandler::TotalCrossSection(const Particle &p1, const Particle &p2) const {
+    auto key = std::make_pair(p1.ID(), p2.ID());
+    auto it = m_interaction_indices.find(key);
+    if(it == m_interaction_indices.end()) {
+        auto msg =
+            fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
+        throw std::runtime_error(msg);
+    }
+    return m_interactions[it->second]->TotalCrossSection(p1, p2);
+}
+
 std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &p1,
                                                                 const Particle &p2) const {
     auto key = std::make_pair(p1.ID(), p2.ID());
@@ -35,7 +46,7 @@ std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &
 
 std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, const Particle &p2,
                                                            const std::vector<PID> &out_pids,
-                                                           const std::vector<double> &rands) const {
+                                                           Random &&random) const {
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
@@ -43,7 +54,7 @@ std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, c
             fmt::format("Phase space not registered for particles: [{}, {}]", p1.ID(), p2.ID());
         throw std::runtime_error(msg);
     }
-    return m_interactions[it->second]->GenerateMomentum(p1, p2, out_pids, rands);
+    return m_interactions[it->second]->GenerateMomentum(p1, p2, out_pids, random);
 }
 
 bool InteractionHandler::EnabledChannel(const PID &p1, const PID &p2) const {

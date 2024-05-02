@@ -42,6 +42,13 @@ const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, /
                                            {"alpha", 0.00369 / 1_MeV},
                                            {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
+double Interaction::TotalCrossSection(const Particle &particle1, const Particle &particle2) const {
+    auto cross_sections = CrossSection(particle1, particle2);
+    double total = 0;
+    for(const auto &cross_section : cross_sections) total += cross_section.cross_section;
+    return total;
+}
+
 double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
     const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
@@ -194,7 +201,7 @@ InteractionResults GeantInteraction::CrossSection(const Particle &particle1,
 std::vector<Particle> GeantInteraction::GenerateMomentum(const Particle &particle1,
                                                          const Particle &particle2,
                                                          const std::vector<PID> &out_pids,
-                                                         const std::vector<double> &rans) const {
+                                                         Random &random) const {
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
@@ -203,6 +210,8 @@ std::vector<Particle> GeantInteraction::GenerateMomentum(const Particle &particl
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
     const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
     FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
@@ -212,7 +221,7 @@ std::vector<Particle> GeantInteraction::GenerateMomentum(const Particle &particl
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
-    return {{out_pids[0], p1Out}, {out_pids[1], p2Out}};
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
 
 ThreeVector GeantInteraction::MakeMomentum(bool samePID, double pcm,
@@ -387,7 +396,7 @@ InteractionResults NasaInteraction::CrossSection(const Particle &particle1,
 std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle1,
                                                         const Particle &particle2,
                                                         const std::vector<PID> &out_pids,
-                                                        const std::vector<double> &rans) const {
+                                                        Random &random) const {
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
@@ -396,6 +405,8 @@ std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
     const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
     FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
@@ -405,7 +416,7 @@ std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
-    return {{out_pids[0], p1Out}, {out_pids[1], p2Out}};
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
 
 ThreeVector NasaInteraction::MakeMomentum(bool, double pcm, const std::vector<double> &rans) const {
@@ -432,7 +443,7 @@ InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const P
 std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &particle1,
                                                             const Particle &particle2,
                                                             const std::vector<PID> &out_pids,
-                                                            const std::vector<double> &rans) const {
+                                                            Random &random) const {
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
@@ -441,6 +452,8 @@ std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &part
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
     const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
     FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
@@ -450,7 +463,7 @@ std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &part
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
-    return {{out_pids[0], p1Out}, {out_pids[1], p2Out}};
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
 
 ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,

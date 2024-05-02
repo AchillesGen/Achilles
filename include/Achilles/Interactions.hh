@@ -66,7 +66,14 @@ class Interaction {
     ///@return std::vector<std::pair<PID, PID>>: List of all interactions
     virtual std::vector<std::pair<PID, PID>> InitialStates() const = 0;
 
+    /// Function that returns the total cross-section between two particles
+    ///@param part1: The first particle involved with the interaction
+    ///@param part2: The second particle involved with the interaction
+    ///@return double: The cross-section
+    virtual double TotalCrossSection(const Particle &, const Particle &) const;
+
     /// Function to determine the cross-section between two particles
+    /// broken down into all possible final state channels
     ///@param part1: The first particle involved with the interaction
     ///@param part2: The second particle involved with the interaction
     ///@return double: The cross-section
@@ -80,7 +87,7 @@ class Interaction {
     ///@return std::vector<Particle>: The final state particles
     virtual std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                                    const std::vector<PID> &out_pids,
-                                                   const std::vector<double> &rands) const = 0;
+                                                   Random &) const = 0;
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Interaction"; }
@@ -116,7 +123,7 @@ class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteracti
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
-                                           const std::vector<double> &rands) const override;
+                                           Random &) const override;
 
   private:
     ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
@@ -162,7 +169,7 @@ class GeantInteraction : public Interaction, RegistrableInteraction<GeantInterac
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
-                                           const std::vector<double> &rands) const override;
+                                           Random &) const override;
 
   private:
     // Functions
@@ -216,7 +223,7 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
     InteractionResults CrossSection(const Particle &, const Particle &) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
-                                           const std::vector<double> &rands) const override;
+                                           Random &) const override;
 
     // These functions are for testing only
     void AddInteraction(const std::pair<PID, PID> &state, const InteractionResults &results) {
