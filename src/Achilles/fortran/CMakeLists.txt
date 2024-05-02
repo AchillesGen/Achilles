@@ -39,7 +39,8 @@ add_library(fortran_interface SHARED
     FParticle.cc
     FParticleInfo.cc
     FLogging.cc
-    FInteractions.cc
+    # TODO: This is broken for now. Requires defining interface to Random number handler
+    # FInteractions.cc
     FInterpolation.cc
     # FHardScattering.cc
     FEvent.cc 
