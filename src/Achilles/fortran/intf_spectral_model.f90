@@ -107,7 +107,8 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
-        complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi, J_mu_del
+        complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
+        complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
         logical :: has_axial
 
@@ -123,13 +124,15 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
-        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,2,pids_in(1),pids_out(1),pids_spect(1),has_axial)
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
         call define_spinors()
 
         J_mu = (0.0d0,0.0d0)
         J_mu_1b = (0.0d0,0.0d0)
-        J_mu_del = (0.0d0,0.0d0)
-        J_mu_pi = (0.0d0,0.0d0)
+        J_mu_del_dir = (0.0d0,0.0d0)
+        J_mu_pi_dir = (0.0d0,0.0d0)
+        J_mu_del_exc = (0.0d0,0.0d0)
+        J_mu_pi_exc = (0.0d0,0.0d0)
 
         if(compute_1body.eq.1) then
             !print*,'computing 1 body'
@@ -138,17 +141,30 @@ contains
             J_mu = J_mu_1b
             compute_1body = 0
         else
-            call det_Jpi(ff%lookup("FPiEM"));
+            err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"),1)
             ! Avoid interpolating outside
             ! of delta potential range
-            err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"))
             if (err.eq.1) then
                 cur=(0.0d0,0.0d0)
                 return
             endif
-            call twobody_curr_matrix_J1Jdel_exc(J_mu_del)
-            call twobody_curr_matrix_J1Jpi_exc(J_mu_pi)
-            J_mu = (-J_mu_pi - J_mu_del)/(2.0d0*p2_4(1))
+            call det_Jpi(ff%lookup("FPiEM"));
+            call twobody_del_curr_matrix_el(J_mu_del_dir)
+            call twobody_pi_curr_matrix_el(J_mu_pi_dir)
+
+            err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"),2)
+            ! Avoid interpolating outside
+            ! of delta potential range
+            if (err.eq.1) then
+                cur=(0.0d0,0.0d0)
+                return
+            endif
+            call det_Jpi(ff%lookup("FPiEM"));
+            call twobody_del_curr_matrix_el(J_mu_del_exc)
+            call twobody_pi_curr_matrix_el(J_mu_pi_exc)
+
+
+            J_mu = (J_mu_pi_dir + J_mu_del_dir + J_mu_del_exc + J_mu_pi_exc)/(2.0d0*p2_4(1))
             compute_1body = 1
         endif
 

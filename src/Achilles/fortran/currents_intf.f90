@@ -22,9 +22,9 @@ module dirac_matrices_intf
     complex*16, private, save :: t1(2),t1p(2),t2(2)
     complex*16, private, save :: gamma_mu(4,4,5),g_munu(4,4), sigma_munu(4,4,4,4)
     complex*16, private, save :: p1_sl(4,4),p2_sl(4,4),pp1_sl(4,4),pp2_sl(4,4), &
-         &   k1_sl(4,4),k2_sl(4,4),q_sl(4,4), &
+         &   k1_sl(4,4),k2_sl(4,4),k1e_sl(4,4),k2e_sl(4,4),q_sl(4,4), &
          &   Pi_k1(4,4),Pi_k2(4,4),Pi_k1e(4,4),Pi_k2e(4,4)
-    real*8, private, save ::  p1(4),p2(4),pp1(4),pp2(4),q(4),k1(4),k2(4)
+    real*8, private, save ::  p1(4),p2(4),pp1(4),pp2(4),q(4),k1(4),k2(4),k1_e(4),k2_e(4)
     complex*16, private, save :: J_a_mu(4,4,4),J_b_mu(4,4,4),J_c_mu(4,4,4),J_d_mu(4,4,4)
     complex*16, private, save :: Je_a_mu(4,4,4),Je_b_mu(4,4,4),Je_c_mu(4,4,4),Je_d_mu(4,4,4)
     complex*16, private, save :: J_pif(4,4,4),J_sea1(4,4,4),J_sea2(4,4,4),J_pl1(4,4,4),J_pl2(4,4,4)
@@ -165,9 +165,9 @@ subroutine define_spinors()
     return
 end subroutine
 
-subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in)
+subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in)
     implicit none
-    integer*4 :: i,i_fl_in
+    integer*4 :: i
     integer*8 :: nuc1_pid_in,nuc1_pid_out,nuc2_pid_in
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
     logical :: has_axial_in
@@ -178,8 +178,6 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
     else
         ax = 1
     endif
-
-    i_fl=i_fl_in
 
     !struck nucleon
     if(nuc1_pid_in.eq.2212) then
@@ -214,13 +212,24 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
     p2=p2_in
     pp2=pp2_in
 
-    k1=pp2-p1
-    k2=pp1-p2
+    k1=pp1-p1
+    !k1=q
+    k2=q-k1
+    !k1 = 0.0d0
+    !k2 = 0.0d0
+    !print*,'k1 = ', k1 
+    !print*,'k2 = ', k2
+
+    k1_e=pp2-p1
+    k2_e=pp1-p2
+
 
     p1_sl=czero
     p2_sl=czero
     pp1_sl=czero
     pp2_sl=czero
+    k1e_sl=czero
+    k2e_sl=czero
     k1_sl=czero
     k2_sl=czero
     q_sl=czero
@@ -230,17 +239,18 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,i_fl_in,nuc1_pid_in,nuc1_
        p2_sl=p2_sl+g_munu(i,i)*gamma_mu(:,:,i)*p2(i)
        pp1_sl=pp1_sl+g_munu(i,i)*gamma_mu(:,:,i)*pp1(i)  
        pp2_sl=pp2_sl+g_munu(i,i)*gamma_mu(:,:,i)*pp2(i)
+       k1e_sl=k1e_sl+g_munu(i,i)*gamma_mu(:,:,i)*k1_e(i)  
+       k2e_sl=k2e_sl+g_munu(i,i)*gamma_mu(:,:,i)*k2_e(i)
        k1_sl=k1_sl+g_munu(i,i)*gamma_mu(:,:,i)*k1(i)  
        k2_sl=k2_sl+g_munu(i,i)*gamma_mu(:,:,i)*k2(i)
        q_sl=q_sl+g_munu(i,i)*gamma_mu(:,:,i)*q(i)  
     enddo
-    if(i_fl.eq.1) then
-       Pi_k1(:,:)=matmul(gamma_mu(:,:,5),k1_sl(:,:))/(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)
-       Pi_k2(:,:)=matmul(gamma_mu(:,:,5),k2_sl(:,:))/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)
-    elseif(i_fl.eq.2) then
-       Pi_k1e(:,:)=matmul(gamma_mu(:,:,5),k1_sl(:,:))/(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)
-       Pi_k2e(:,:)=matmul(gamma_mu(:,:,5),k2_sl(:,:))/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)
-    endif
+
+    Pi_k1(:,:)=matmul(gamma_mu(:,:,5),k1_sl(:,:))/(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)
+    Pi_k2(:,:)=matmul(gamma_mu(:,:,5),k2_sl(:,:))/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)
+
+    Pi_k1e(:,:)=matmul(gamma_mu(:,:,5),k1e_sl(:,:))/(k1_e(1)**2-sum(k1_e(2:4)**2)-xmpi**2)
+    Pi_k2e(:,:)=matmul(gamma_mu(:,:,5),k2e_sl(:,:))/(k2_e(1)**2-sum(k2_e(2:4)**2)-xmpi**2)
 
     return
 end subroutine
@@ -283,11 +293,11 @@ subroutine onebody_curr_matrix_el(J_mu)
    return
 end subroutine
 
-function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
+function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
     implicit none
-    integer*4 :: i,j,mu, err
+    integer*4 :: i,j,mu,err,i_fl_in
     complex*16 :: cv3_in, cv4_in, cv5_in, ca5_in
-    real*8 :: pa(4),pb(4),pc(4),pd(4),width,fpik1,fpik2,fpindk2,fpindk1
+    real*8 :: pa(4),pb(4),pc(4),pd(4),width,fpik1,fpik2,fpindk2,fpindk1,k_1(4),k_2(4)
     real*8 :: gadelta,gbdelta,gcdelta,gddelta,pa2,pb2,pc2,pd2
     real*8 :: pot_pa,pot_pb,pot_pc,pot_pd
     complex*16 :: pa_sl(4,4),pb_sl(4,4),pc_sl(4,4),pd_sl(4,4)
@@ -296,6 +306,8 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     complex*16 :: j_c_1(4,4,4),j_c_2(4,4,4,4),RSc(4,4,4,4),RSd(4,4,4,4),j_d_1(4,4,4,4),j_d_2(4,4,4)
     complex*16 :: J_a(4,4,4),J_b(4,4,4),J_c(4,4,4),J_d(4,4,4)
   
+    i_fl = i_fl_in
+
     cv3 = cv3_in
     cv4 = cv4_in
     cv5 = cv5_in
@@ -306,11 +318,15 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
         pb(:)=pp1(:)-q(:)
         pc(:)=p2(:)+q(:)
         pd(:)=pp2(:)-q(:)
+        k_1 = k1  
+        k_2 = k2 
     elseif(i_fl.eq.2) then
         pa(:)=p1(:)+q(:)
         pb(:)=pp2(:)-q(:)
         pc(:)=p2(:)+q(:)
         pd(:)=pp1(:)-q(:)
+        k_1 = k1_e
+        k_2 = k2_e
     endif
 
     pa2=pa(1)**2-sum(pa(2:4)**2)
@@ -335,10 +351,10 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
     xmd_c=xmd-0.5d0*ci*gcdelta
     call delta_se(pd(1)**2-sum(pd(2:4)**2),gddelta,pot_pd)
     xmd_d=xmd-0.5d0*ci*gddelta
-    fpik1=(lpi**2-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2))
-    fpik2=(lpi**2-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2))
-    fpindk1=lpind**2/(lpind**2-k1(1)**2+sum(k1(2:4)**2))
-    fpindk2=lpind**2/(lpind**2-k2(1)**2+sum(k2(2:4)**2))
+    fpik1=(lpi**2-xmpi**2)/(lpi**2-k_1(1)**2+sum(k_1(2:4)**2))
+    fpik2=(lpi**2-xmpi**2)/(lpi**2-k_2(1)**2+sum(k_2(2:4)**2))
+    fpindk1=lpind**2/(lpind**2-k_1(1)**2+sum(k_1(2:4)**2))
+    fpindk2=lpind**2/(lpind**2-k_2(1)**2+sum(k_2(2:4)**2))
     do i=1,4
        pa_sl=pa_sl+g_munu(i,i)*gamma_mu(:,:,i)*pa(i)
        pb_sl=pb_sl+g_munu(i,i)*gamma_mu(:,:,i)*pb(i)
@@ -348,10 +364,10 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in) result(err)
 ! costruisco i primi due termini della corrente a 2 corpi corrispondenti ai diagrammi a,b,c e d questo e' un passaggio intermedio,
 ! l'espressione finale di tali correnti e' data da j_a_mu, j_b_mu, j_c_mu, j_d_mu
     do i=1,4
-      j_a_1(:,:,i)=k2(i)*id4(:,:)
-      j_b_2(:,:,i)=k2(i)*id4(:,:)
-      j_c_1(:,:,i)=k1(i)*id4(:,:)
-      j_d_2(:,:,i)=k1(i)*id4(:,:)
+      j_a_1(:,:,i)=k_2(i)*id4(:,:)
+      j_b_2(:,:,i)=k_2(i)*id4(:,:)
+      j_c_1(:,:,i)=k_1(i)*id4(:,:)
+      j_d_2(:,:,i)=k_1(i)*id4(:,:)
       !!!...I AM USING THE FULL 
       do j=1,4
          RSa(:,:,i,j)=matmul(pa_sl(:,:)+xmd*id4(:,:),g_munu(i,j)*id4(:,:)-matmul(gamma_mu(:,:,i),gamma_mu(:,:,j))/3.0d0- &
@@ -436,22 +452,34 @@ subroutine det_Jpi(pi_elec_ff_in)
    implicit none
    integer*4 :: mu
    complex*16 :: pi_elec_ff_in
-   real*8 :: fpik1,fpik2,frho1,frho2,fact
+   real*8 :: fpik1,fpik2,frho1,frho2,fact,k_1(4),k_2(4)
+
+   if(i_fl.eq.1) then
+    k_1 = k1  
+    k_2 = k2
+   else
+    k_1 = k1_e 
+    k_2 = k2_e
+   endif
 
    pi_elec_ff = pi_elec_ff_in
 
-   fpik1=(lpi**2-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2))
-   fpik2=(lpi**2-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2))
-   frho1=1.0d0/(1.0d0 - (k1(1)**2-sum(k1(2:4)**2))/xmrho**2)
-   frho2=1.0d0/(1.0d0 - (k2(1)**2-sum(k2(2:4)**2))/xmrho**2)
+   fpik1=(lpi**2-xmpi**2)/(lpi**2-k_1(1)**2+sum(k_1(2:4)**2))
+   fpik2=(lpi**2-xmpi**2)/(lpi**2-k_2(1)**2+sum(k_2(2:4)**2))
+   frho1=1.0d0/(1.0d0 - (k_1(1)**2-sum(k_1(2:4)**2))/xmrho**2)
+   frho2=1.0d0/(1.0d0 - (k_2(1)**2-sum(k_2(2:4)**2))/xmrho**2)
 
    !...this factor is needed to fulfill current conservation, see A3 Dekker
-   fact=(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)*(k2(1)**2-sum(k2(2:4)**2)-xmpi**2) &
-        & *(1.0d0/(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2) &
-        & - 1.0d0/(k1(1)**2-sum(k1(2:4)**2)-xmpi**2)/(lpi**2-k1(1)**2+sum(k1(2:4)**2)) &
-        & - 1.0d0/(k2(1)**2-sum(k2(2:4)**2)-xmpi**2)/(lpi**2-k2(1)**2+sum(k2(2:4)**2)))
+   fact=(k_1(1)**2-sum(k_1(2:4)**2)-xmpi**2)*(k_2(1)**2-sum(k_2(2:4)**2)-xmpi**2) &
+        & *(1.0d0/(k_1(1)**2-sum(k_1(2:4)**2)-xmpi**2)/(k_2(1)**2-sum(k_2(2:4)**2)-xmpi**2) &
+        & - 1.0d0/(k_1(1)**2-sum(k_1(2:4)**2)-xmpi**2)/(lpi**2-k_1(1)**2+sum(k_1(2:4)**2)) &
+        & - 1.0d0/(k_2(1)**2-sum(k_2(2:4)**2)-xmpi**2)/(lpi**2-k_2(1)**2+sum(k_2(2:4)**2)))
    do mu=1,4
-      J_pif(:,:,mu)=pi_elec_ff*(k1(mu)-k2(mu))*Pi_k1e(:,:)!*fact
+      if(i_fl.eq.1) then
+        J_pif(:,:,mu)=pi_elec_ff*(k_1(mu)-k_2(mu))*Pi_k1(:,:)!*fact
+      else
+        J_pif(:,:,mu)=pi_elec_ff*(k_1(mu)-k_2(mu))*Pi_k1e(:,:)!*fact
+      endif
       J_sea1(:,:,mu)=-pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))-ax*frho1/ga*gamma_mu(:,:,mu)!/fpik2**2
       J_sea2(:,:,mu)=pi_elec_ff*matmul(gamma_mu(:,:,5),gamma_mu(:,:,mu))+ax*frho2/ga*gamma_mu(:,:,mu)!/fpik1**2
       J_pl1(:,:,mu)=ax*frho1/ga*q(mu)*q_sl(:,:)/(q(1)**2-q(4)**2-xmpi**2)
@@ -465,10 +493,13 @@ subroutine det_Jpi(pi_elec_ff_in)
   return
 end subroutine 
 
-subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
+subroutine twobody_del_curr_matrix_el(J_mu)
    implicit none
    integer*4 :: i1,f1,i2,f2,i,j
-   complex*16 :: J_12a(2,2,4),J_12b(2,2,4)
+   complex*16 :: J_12a(2,2,4),J_12b(2,2,4),J_2(2,2)
+   complex*16 :: J_12c(2,2,4),J_12d(2,2,4),J_1(2,2)
+   complex*16 :: J_12a_dag(2,2,4),J_12b_dag(2,2,4),J_2_dag(2,2)
+   complex*16 :: J_12c_dag(2,2,4),J_12d_dag(2,2,4),J_1_dag(2,2)
    complex*16 :: Je_12a(2,2,4),Je_12b(2,2,4)   
    complex*16 :: Je_12a_dag(2,2,4),Je_12b_dag(2,2,4)
    complex*16 :: Je_12c(2,2,4),Je_12d(2,2,4)   
@@ -477,37 +508,37 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
    complex*16 :: Je_1(2,2),Je_1_dag(2,2)   
    complex*16 :: j1ja(nspin_f,nspin_in,4),j1jb(nspin_f,nspin_in,4)
    complex*16 :: j1jc(nspin_f,nspin_in,4),j1jd(nspin_f,nspin_in,4)
+   complex*16 :: j1ja_e(nspin_f,nspin_in,4),j1jb_e(nspin_f,nspin_in,4)
+   complex*16 :: j1jc_e(nspin_f,nspin_in,4),j1jd_e(nspin_f,nspin_in,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
    complex*16 :: cta,ctb,ctc,ctd ! isospin coefficients
 
-   do i1=1,2
-      do f1=1,2
-         Je_2(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k2e(:,:),up2(i1,:)))
-         Je_2_dag(f1,i1)=conjg(Je_2(f1,i1))
-         Je_1(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k1e(:,:),up1(i1,:)))
-         Je_1_dag(f1,i1)=conjg(Je_1(f1,i1))
 
+   if(i_fl.eq.1) then
+    do i1=1,2
+      do f1=1,2
+
+         J_1(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k1(:,:),up1(i1,:)))
+         J_1_dag(f1,i1)=conjg(J_1(f1,i1))
+         J_2(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k2(:,:),up2(i1,:)))
+         J_2_dag(f1,i1)=conjg(J_2(f1,i1))
 
          do i=1,4
-            !J_12a(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_a_mu(:,:,i),up1(i1,:)))
-            
-            Je_12a(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(Je_a_mu(:,:,i),up1(i1,:)))
-            Je_12a_dag(f1,i1,i)=conjg(Je_12a(f1,i1,i))
-            !
-            Je_12b(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(Je_b_mu(:,:,i),up1(i1,:)))
-            Je_12b_dag(f1,i1,i)=conjg(Je_12b(f1,i1,i))
+            J_12a(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_a_mu(:,:,i),up1(i1,:)))
+            J_12a_dag(f1,i1,i)=conjg(J_12a(f1,i1,i))
 
+            J_12b(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_b_mu(:,:,i),up1(i1,:)))
+            J_12b_dag(f1,i1,i)=conjg(J_12b(f1,i1,i))
 
-            Je_12c(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(Je_c_mu(:,:,i),up2(i1,:)))
-            Je_12c_dag(f1,i1,i)=conjg(Je_12c(f1,i1,i))
+            J_12c(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_c_mu(:,:,i),up2(i1,:)))
+            J_12c_dag(f1,i1,i)=conjg(J_12c(f1,i1,i))
 
-            Je_12d(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(Je_d_mu(:,:,i),up2(i1,:)))
-            Je_12d_dag(f1,i1,i)=conjg(Je_12d(f1,i1,i))
-
-
+            J_12d(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_d_mu(:,:,i),up2(i1,:)))
+            J_12d_dag(f1,i1,i)=conjg(J_12d(f1,i1,i))
          enddo
       enddo
    enddo   
+
    j1ja=czero
    j1jb=czero
    j1jc=czero
@@ -517,103 +548,243 @@ subroutine twobody_curr_matrix_J1Jdel_exc(J_mu)
     do i1=1,2
         do f1=1,2
             do i2=1,2
-              j1jb(f1,i1,i)=j1jb(f1,i1,i)+Je_12b(i2,i1,i)*Je_2(f1,i2)
-              j1jc(f1,i1,i)=j1jc(f1,i1,i)+Je_12c(f1,i2,i)*Je_1(i2,i1)
-              !We may need ja and jd for exclusive case, even though they cancel for inclusive
-              j1ja(f1,i1,i)=j1ja(f1,i1,i)+Je_12a(i2,i1,i)*Je_2(f1,i2)
-              j1jd(f1,i1,i)=j1jd(f1,i1,i)+Je_12d(f1,i2,i)*Je_1(i2,i1)
+              j1jb(f1,i1,i)=j1jb(f1,i1,i)+J_12b(i2,i1,i)*J_2(f1,i2)
+              j1jc(f1,i1,i)=j1jc(f1,i1,i)+J_12c(f1,i2,i)*J_1(i2,i1)
+              j1ja(f1,i1,i)=j1ja(f1,i1,i)+J_12a(i2,i1,i)*J_2(f1,i2)
+              j1jd(f1,i1,i)=j1jd(f1,i1,i)+J_12d(f1,i2,i)*J_1(i2,i1)
             enddo
         enddo
     enddo
-   enddo
+   enddo 
 
    if(ax.eq.0) then
-    cta = IDeltaA_EM(t1,t2,t2,t1p)
-    ctb = IDeltaB_EM(t1,t2,t2,t1p)
-    ctc = IDeltaC_EM(t1,t2,t2,t1p)
-    ctd = IDeltaD_EM(t1,t2,t2,t1p)
+    cta = IDeltaA_EM(t1,t2,t1p,t2)
+    ctb = IDeltaB_EM(t1,t2,t1p,t2)
+    ctc = IDeltaC_EM(t1,t2,t1p,t2)
+    ctd = IDeltaD_EM(t1,t2,t1p,t2)
    else
-    cta = IDeltaA_v(t1,t2,t2,t1p)
-    ctb = IDeltaB_v(t1,t2,t2,t1p)
-    ctc = IDeltaC_v(t1,t2,t2,t1p)
-    ctd = IDeltaD_v(t1,t2,t2,t1p)
+    cta = IDeltaA_v(t1,t2,t1p,t2)
+    ctb = IDeltaB_v(t1,t2,t1p,t2)
+    ctc = IDeltaC_v(t1,t2,t1p,t2)
+    ctd = IDeltaD_v(t1,t2,t1p,t2)
    endif
 
-   J_mu=(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
+   !print*,'j1ja = ', j1ja
+
+   !print*,'j1jb = ', j1jb
+
+   !print*,'j1jc = ', j1jc
+
+   !print*,'j1jd = ', j1jd
+
+   !print*,'t1 = ', t1 
+   !print8,'t2 = ', t2 
+   !print*,''
+
+   !print*,'cta = ', cta
+   !print*,'ctb = ', ctb
+   !print*,'ctc = ', ctc 
+   !print*,'ctd = ', ctd
+
+   J_mu =(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
+  
+   return
+   else
+        do i1=1,2
+          do f1=1,2
+             Je_2(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k2e(:,:),up2(i1,:)))
+             Je_2_dag(f1,i1)=conjg(Je_2(f1,i1))
+             Je_1(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k1e(:,:),up1(i1,:)))
+             Je_1_dag(f1,i1)=conjg(Je_1(f1,i1))
+
+             do i=1,4
+                Je_12a(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(Je_a_mu(:,:,i),up1(i1,:)))
+                Je_12a_dag(f1,i1,i)=conjg(Je_12a(f1,i1,i))
+                !
+                Je_12b(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(Je_b_mu(:,:,i),up1(i1,:)))
+                Je_12b_dag(f1,i1,i)=conjg(Je_12b(f1,i1,i))
+
+
+                Je_12c(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(Je_c_mu(:,:,i),up2(i1,:)))
+                Je_12c_dag(f1,i1,i)=conjg(Je_12c(f1,i1,i))
+
+                Je_12d(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(Je_d_mu(:,:,i),up2(i1,:)))
+                Je_12d_dag(f1,i1,i)=conjg(Je_12d(f1,i1,i))
+             enddo
+          enddo
+       enddo   
+
+       j1ja_e=czero
+       j1jb_e=czero
+       j1jc_e=czero
+       j1jd_e=czero
+       
+       do i=1,4
+        do i1=1,2
+            do f1=1,2
+                do i2=1,2
+                  j1jb_e(f1,i1,i)=j1jb_e(f1,i1,i)+Je_12b(i2,i1,i)*Je_2(f1,i2)
+                  j1jc_e(f1,i1,i)=j1jc_e(f1,i1,i)+Je_12c(f1,i2,i)*Je_1(i2,i1)
+                  j1ja_e(f1,i1,i)=j1ja_e(f1,i1,i)+Je_12a(i2,i1,i)*Je_2(f1,i2)
+                  j1jd_e(f1,i1,i)=j1jd_e(f1,i1,i)+Je_12d(f1,i2,i)*Je_1(i2,i1)
+                enddo
+            enddo
+        enddo
+       enddo
+
+       if(ax.eq.0) then
+        cta = IDeltaA_EM(t1,t2,t2,t1p)
+        ctb = IDeltaB_EM(t1,t2,t2,t1p)
+        ctc = IDeltaC_EM(t1,t2,t2,t1p)
+        ctd = IDeltaD_EM(t1,t2,t2,t1p)
+       else
+        cta = IDeltaA_v(t1,t2,t2,t1p)
+        ctb = IDeltaB_v(t1,t2,t2,t1p)
+        ctc = IDeltaC_v(t1,t2,t2,t1p)
+        ctd = IDeltaD_v(t1,t2,t2,t1p)
+       endif
+
+       J_mu = -(j1ja_e(:,:,:)*cta + j1jb_e(:,:,:)*ctb +j1jc_e(:,:,:)*ctc + j1jd_e(:,:,:)*ctd)/2.0d0
+       return
+   endif
+   
 
    return
-end subroutine twobody_curr_matrix_J1Jdel_exc
+end subroutine twobody_del_curr_matrix_el
 
 
-subroutine twobody_curr_matrix_J1Jpi_exc(J_mu)
+subroutine twobody_pi_curr_matrix_el(J_mu)
    implicit none
    integer*4 :: i1,f1,i2,f2,i,j
-   complex*16 :: J_12a(2,2,4),J_12b(2,2,4)
-   complex*16 :: Je_12a(2,2,4),Je_12b(2,2,4)   
-   complex*16 :: Je_12a_dag(2,2,4),Je_12b_dag(2,2,4)
    complex*16 :: Je_2(2,2),Je_2_dag(2,2)
    complex*16 :: Je_1(2,2),Je_1_dag(2,2)
    complex*16 :: Je_s2(2,2,4),Je_s2_dag(2,2,4)
    complex*16 :: Je_f(2,2,4),Je_f_dag(2,2,4),Je_s1(2,2,4),Je_s1_dag(2,2,4)
    complex*16 :: Je_p1(2,2,4),Je_p1_dag(2,2,4),Je_p2(2,2,4),Je_p2_dag(2,2,4)
+
+   complex*16 :: J_2(2,2),J_2_dag(2,2)
+   complex*16 :: J_1(2,2),J_1_dag(2,2),J_s2(2,2,4),J_s2_dag(2,2,4)
+   complex*16 :: J_f(2,2,4),J_s1(2,2,4),J_f_dag(2,2,4),J_s1_dag(2,2,4)
+   complex*16 :: J_p2(2,2,4),J_p2_dag(2,2,4),J_p1(2,2,4),J_p1_dag(2,2,4)
+
+   complex*16 :: j1jf_e(nspin_f,nspin_in,4),j1js_e(nspin_f,nspin_in,4),j1jp_e(nspin_f,nspin_in,4)
    complex*16 :: j1jf(nspin_f,nspin_in,4),j1js(nspin_f,nspin_in,4),j1jp(nspin_f,nspin_in,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
    complex*16 :: ctf,cts,ctp  
    
-   do i1=1,2
-      do f1=1,2
-         Je_1(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k1e(:,:),up1(i1,:)))
-         Je_1_dag(f1,i1)=conjg(Je_1(f1,i1))
-         Je_2(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k2e(:,:),up2(i1,:)))
-         Je_2_dag(f1,i1)=conjg(Je_2(f1,i1))
-         do i=1,4
-            Je_f(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pif(:,:,i),up1(i1,:)))
-            Je_f_dag(f1,i1,i)=conjg(Je_f(f1,i1,i))
-            Je_s1(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_sea1(:,:,i),up1(i1,:)))
-            Je_s1_dag(f1,i1,i)=conjg(Je_s1(f1,i1,i))
-            Je_s2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_sea2(:,:,i),up2(i1,:)))
-            Je_s2_dag(f1,i1,i)=conjg(Je_s2(f1,i1,i))
-            Je_p1(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pl1(:,:,i),up1(i1,:)))
-            Je_p1_dag(f1,i1,i)=conjg(Je_p1(f1,i1,i))
-            Je_p2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_pl2(:,:,i),up2(i1,:)))
-            Je_p2_dag(f1,i1,i)=conjg(Je_p2(f1,i1,i))
-         enddo
-      enddo
-   enddo   
+   if(i_fl.eq.1) then !direct
+        do i1=1,2
+          do f1=1,2
+             J_1(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k1(:,:),up1(i1,:)))
+             J_1_dag(f1,i1)=conjg(J_1(f1,i1))
+             J_2(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k2(:,:),up2(i1,:)))
+             J_2_dag(f1,i1)=conjg(J_2(f1,i1))
 
-   j1jf=czero
-   j1js=czero
-   j1jp=czero
+             do i=1,4
+                J_f(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_pif(:,:,i),up1(i1,:)))
+                J_f_dag(f1,i1,i)=conjg(J_f(f1,i1,i))
+                J_s1(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_sea1(:,:,i),up1(i1,:)))
+                J_s1_dag(f1,i1,i)=conjg(J_s1(f1,i1,i))
+                J_s2(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_sea2(:,:,i),up2(i1,:)))
+                J_s2_dag(f1,i1,i)=conjg(J_s2(f1,i1,i))
+                J_p1(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_pl1(:,:,i),up1(i1,:)))
+                J_p1_dag(f1,i1,i)=conjg(J_p1(f1,i1,i))
+                J_p2(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pl2(:,:,i),up2(i1,:)))
+                J_p2_dag(f1,i1,i)=conjg(J_p2(f1,i1,i))
+             enddo
+          enddo
+       enddo   
 
-   do i=1,4
-    do i1=1,2
-        do f1=1,2
-            do i2=1,2
-                j1jf(f1,i1,i)=j1jf(f1,i1,i)+Je_f(i2,i1,i)*Je_2(f1,i2)
-                j1js(f1,i1,i)=j1js(f1,i1,i)+Je_s1(i2,i1,i)*Je_2(f1,i2) &
-                          &  +Je_1(i2,i1)*Je_s2(f1,i2,i)
-                j1jp(f1,i1,i)=j1jp(f1,i1,i)+Je_p1(i2,i1,i)*Je_2(f1,i2) &
-                          &  +Je_1(i2,i1)*Je_p2(f1,i2,i)
+       j1jf=czero
+       j1js=czero
+       j1jp=czero
+
+       do i=1,4
+        do i1=1,2
+            do f1=1,2
+                do i2=1,2
+                    j1jf(f1,i1,i)=j1jf(f1,i1,i)+J_f(i2,i1,i)*J_2(f1,i2)
+                    j1js(f1,i1,i)=j1js(f1,i1,i)+J_s1(i2,i1,i)*J_2(f1,i2) &
+                              &  +J_1(i2,i1)*J_s2(f1,i2,i)
+                    j1jp(f1,i1,i)=j1jp(f1,i1,i)+J_p1(i2,i1,i)*J_2(f1,i2) &
+                              &  +J_1(i2,i1)*J_p2(f1,i2,i)
+                enddo
             enddo
         enddo
-    enddo
-   enddo
+       enddo
+
+       if(ax.eq.0) then
+           ctf = Ivz(t1,t2,t1p,t2) 
+           cts = Ivz(t1,t2,t1p,t2) 
+           ctp = Ivz(t1,t2,t1p,t2)
+       else
+           ctf = Ivplus(t1,t2,t1p,t2) 
+           cts = Ivplus(t1,t2,t1p,t2) 
+           ctp = Ivplus(t1,t2,t1p,t2) 
+       endif
+
+       J_mu = (ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
+       return
+
+   else !Exchange
+        do i1=1,2
+          do f1=1,2
+             Je_1(f1,i1)=sum(ubarpp2(f1,:)*matmul(Pi_k1e(:,:),up1(i1,:)))
+             Je_1_dag(f1,i1)=conjg(Je_1(f1,i1))
+             Je_2(f1,i1)=sum(ubarpp1(f1,:)*matmul(Pi_k2e(:,:),up2(i1,:)))
+             Je_2_dag(f1,i1)=conjg(Je_2(f1,i1))
+
+             do i=1,4
+                Je_f(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pif(:,:,i),up1(i1,:)))
+                Je_f_dag(f1,i1,i)=conjg(Je_f(f1,i1,i))
+                Je_s1(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_sea1(:,:,i),up1(i1,:)))
+                Je_s1_dag(f1,i1,i)=conjg(Je_s1(f1,i1,i))
+                Je_s2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_sea2(:,:,i),up2(i1,:)))
+                Je_s2_dag(f1,i1,i)=conjg(Je_s2(f1,i1,i))
+                Je_p1(f1,i1,i)=sum(ubarpp2(f1,:)*matmul(J_pl1(:,:,i),up1(i1,:)))
+                Je_p1_dag(f1,i1,i)=conjg(Je_p1(f1,i1,i))
+                Je_p2(f1,i1,i)=sum(ubarpp1(f1,:)*matmul(J_pl2(:,:,i),up2(i1,:)))
+                Je_p2_dag(f1,i1,i)=conjg(Je_p2(f1,i1,i))
+             enddo
+          enddo
+       enddo   
+
+       j1jf_e=czero
+       j1js_e=czero
+       j1jp_e=czero
+
+       do i=1,4
+        do i1=1,2
+            do f1=1,2
+                do i2=1,2
+                    j1jf_e(f1,i1,i)=j1jf_e(f1,i1,i)+Je_f(i2,i1,i)*Je_2(f1,i2)
+                    j1js_e(f1,i1,i)=j1js_e(f1,i1,i)+Je_s1(i2,i1,i)*Je_2(f1,i2) &
+                              &  +Je_1(i2,i1)*Je_s2(f1,i2,i)
+                    j1jp_e(f1,i1,i)=j1jp_e(f1,i1,i)+Je_p1(i2,i1,i)*Je_2(f1,i2) &
+                              &  +Je_1(i2,i1)*Je_p2(f1,i2,i)
+                enddo
+            enddo
+        enddo
+       enddo
 
 
-   if(ax.eq.0) then
-       ctf = Ivz(t1,t2,t2,t1p) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       cts = Ivz(t1,t2,t2,t1p) !Want to compute matrix element of (Iv^{dag} = -Iv)
-       ctp = Ivz(t1,t2,t2,t1p)
-   else
-       ctf = Ivplus(t1,t2,t2,t1p) 
-       cts = Ivplus(t1,t2,t2,t1p) 
-       ctp = Ivplus(t1,t2,t2,t1p) 
+       if(ax.eq.0) then
+           ctf = Ivz(t1,t2,t2,t1p) 
+           cts = Ivz(t1,t2,t2,t1p) 
+           ctp = Ivz(t1,t2,t2,t1p)
+       else
+           ctf = Ivplus(t1,t2,t2,t1p) 
+           cts = Ivplus(t1,t2,t2,t1p) 
+           ctp = Ivplus(t1,t2,t2,t1p) 
+       endif
+
+       J_mu = -(ctf*j1jf_e(:,:,:) + cts*j1js_e(:,:,:) + ctp*j1jp_e(:,:,:))/2.0d0
+       return
    endif
 
-   J_mu=(ctf*j1jf(:,:,:) + cts*j1js(:,:,:) + ctp*j1jp(:,:,:))/2.0d0
 
    return
- end subroutine twobody_curr_matrix_J1Jpi_exc
+ end subroutine twobody_pi_curr_matrix_el
   
 subroutine delta_se(pd2,width,pot)
    implicit none
@@ -699,7 +870,6 @@ function IDeltaA_EM(it1,it2,itp1,itp2)
     c = me(3,it2,itp2)*iden(it1,itp1)
 
     IDeltaA_EM = (2.*c/3.) - (Ivz(it1,it2,itp1,itp2)/3.)
-    !IDeltaA = me(1,it1,itp1)*me(1,it2,itp2)
 
     return
 end function IDeltaA_EM
@@ -712,7 +882,6 @@ function IDeltaADag_EM(it1,it2,itp1,itp2)
     c = me(3,it2,itp2)*iden(it1,itp1)
 
     IDeltaADag_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.)
-
 
     return
 end function IDeltaADag_EM
