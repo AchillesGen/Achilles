@@ -1091,7 +1091,6 @@ function IDeltaADag_EM(it1,it2,itp1,itp2)
 
     IDeltaADag_EM = (2.*c/3.) + (Ivz(it1,it2,itp1,itp2)/3.)
 
-
     return
 end function IDeltaADag_EM
 
