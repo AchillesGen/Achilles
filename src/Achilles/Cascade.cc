@@ -82,7 +82,7 @@ void Cascade::Kick(Event &event, const FourVector &energyTransfer,
 
     // Kick a single particle from the list
     kickedIdxs.insert(Random::Instance().Pick(indices));
-    auto kicked = &event.Hadrons()[*kickedIdxs.end()];
+    auto kicked = &event.Hadrons()[*kickedIdxs.begin()];
     kicked->Status() = ParticleStatus::propagating;
     kicked->SetMomentum(kicked->Momentum() + energyTransfer);
 }
