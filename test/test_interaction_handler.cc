@@ -4,6 +4,7 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Random.hh"
 
 using achilles::PID;
 
@@ -67,9 +68,9 @@ TEST_CASE("Validate Interactions", "[InteractionHandler]") {
                            std::runtime_error, Catch::Matchers::Message(msg));
 
     msg = fmt::format("Phase space not registered for particles: [211, 2212]");
-    REQUIRE_THROWS_MATCHES(
-        handler.GenerateMomentum({PID::pionp(), {}}, {PID::proton(), {}}, {}, {}),
-        std::runtime_error, Catch::Matchers::Message(msg));
+    REQUIRE_THROWS_MATCHES(handler.GenerateMomentum({PID::pionp(), {}}, {PID::proton(), {}}, {},
+                                                    achilles::Random::Instance()),
+                           std::runtime_error, Catch::Matchers::Message(msg));
 }
 
 TEST_CASE("Testing Multiple Final States", "[InteractionHandler]") {
