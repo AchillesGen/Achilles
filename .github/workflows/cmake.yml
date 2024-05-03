@@ -37,7 +37,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov cmake && sudo pip install codecov
 
     - name: Set up cache
       id: cache-cpm
