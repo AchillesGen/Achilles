@@ -312,6 +312,12 @@ class Particle {
     double distanceTraveled = 0.0;
 };
 
+/// Find the time to closest approach between two particles
+/// @param p1: The first particle
+/// @param p2: The second particle
+/// @return double: The time to closest approach between the two particles
+double ClosestApproach(const Particle &, const Particle &);
+
 } // namespace achilles
 
 namespace fmt {
