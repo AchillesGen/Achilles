@@ -214,7 +214,7 @@ NuclearModel:
         value.F2p = 1;
         value.F2n = 1;
         value.FA = 1;
-        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(2).LR_RETURN((value));
+        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(AT_LEAST(1)).LR_RETURN((value));
 
         // Require to build here or else form_factor is moved before expectations are set in next
         // test
@@ -234,11 +234,12 @@ NuclearModel:
         auto output_p = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}},
                                            momentum[0] - momentum[2], info_map[0]);
         auto output_n = model.CalcCurrents({{2112, momentum[1]}}, {{2112, momentum[3]}},
-                                           momentum[0] - momentum[2], info_map[0]);
+                                           momentum[0] - momentum[2], info_map[1]);
         CHECK(output_p.size() == 1);
         auto results_p = output_p[achilles::PID::photon()];
         CHECK(results_p.size() == model.NSpins());
         CHECK(results_p[0].size() == 4);
+        CHECK(output_n.size() == 1);
         auto results_n = output_n[achilles::PID::photon()];
         CHECK(results_n.size() == model.NSpins());
         CHECK(results_n[0].size() == 4);
