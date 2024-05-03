@@ -23,13 +23,15 @@ module intf_spectral_model
 
 contains
 
-    function intf_spec_init(self, filename)
+    function intf_spec_init(self, filename, params)
         use libutilities
         use dirac_matrices_intf
-        
+        use libmap
+
         class(intf_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: intf_spec_init
@@ -53,8 +55,13 @@ contains
         spectral_n_MF = spectral_function(trim_string)
         intf_spec_init = .true.
 
+        if(params%empty().eqv. .true.) then
+            print*,'This model requires a parameter file. Please check your run card for ModelParamsFile.'
+            intf_spec_init = .false.
+        endif
+
         call init(constants) ! load constants
-        call dirac_matrices_in(constants%mdelta,constants%mqe,constants%mpip,constants%mrho) 
+        call dirac_matrices_in(constants%mdelta,constants%mqe,constants%mpip,constants%mrho,params%lookup("fpind"),params%lookup("fstar"),params%lookup("fpinn2"),params%lookup("ga"),params%lookup("lpi"),params%lookup("lpind")) 
         close(read_unit)
     end function
 

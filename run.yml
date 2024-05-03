@@ -1,6 +1,6 @@
 Main:
-  NEvents: 100000
-  HardCuts: false
+  NEvents: 50000
+  HardCuts: true
   EventCuts: false
   DoRotate: false
   RunDecays: False
@@ -14,7 +14,7 @@ SherpaOptions:
   ParamCard: parameters.dat
 
 Processes:
-  - Leptons: [14, [14]]
+  - Leptons: [11, [11]]
 
 Initialize:
   Seed: 12345678
@@ -26,10 +26,10 @@ Unweighting:
 
 Beams:
   - Beam:
-      PID: 14
+      PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1300
+        Energy: 1108
 
 Cascade:
   Run: False
@@ -43,19 +43,25 @@ Cascade:
 
 NuclearModels:
   - NuclearModel:
-      Model: QESpectral
+      Model: FortranModel
+      Name: QE_Spectral_Func
+      ConfigFile: data/info_pke.data  
       FormFactorFile: "FormFactors.yml"
-      SpectralP: data/pke12_tot.data
-      SpectralN: data/pke12_tot.data
-      Ward: Landau
+      ModelParamsFile: "data/intf_params.yml"
+      Ward: None
+  - NuclearModel:
+      Model: FortranModel
+      Name: Intf_Spectral_Func
+      ConfigFile: data/intf_info.data  
+      FormFactorFile: "FormFactors.yml"
+      ModelParamsFile: "data/intf_params.yml"
+      Ward: None
   - NuclearModel:
       Model: FortranModel
       Name: RES_Spectral_Func
       ConfigFile: data/info_pke.data  
       FormFactorFile: "FormFactors.yml"
-      SpectralP: data/pke12_tot.data
-      SpectralN: data/pke12_tot.data
-      Ward: False
+      Ward: None
 
 Nuclei:
   - Nucleus:
@@ -76,7 +82,7 @@ Nuclei:
 HardCuts:
   - Type: AngleTheta
     PIDs: 11
-    range: [35, 39]
+    range: [36.5, 38.5]
 
 Backend:
   Name: Default

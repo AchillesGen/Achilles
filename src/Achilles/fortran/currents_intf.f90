@@ -8,12 +8,11 @@ module dirac_matrices_intf
     complex*16, private, parameter :: ci    = (0.0d0,1.0d0)
     real*8, private, parameter :: pi=acos(-1.0d0) 
     complex*16, private, save :: pi_elec_ff
-    real*8, parameter :: lsq=0.71*1.e6   
-    real*8, private, parameter :: fgnd=5.0d0,fpind=0.54d0
-    real*8, private, parameter :: fstar=2.13d0,fpinn2=0.081*4.0d0*pi!1.0094d0! 2.14/2.13 from JUAN, !=0.08*4.0d0*pi ARTURO
-    real*8, private, parameter :: ga=1.26d0
+    real*8, private, save :: fpind
+    real*8, private, save :: fstar,fpinn2
+    real*8, private, save :: ga
     integer*4, private, save :: ax 
-    real*8, private, parameter :: lpi=1300.0d0,lpind=1150.0d0
+    real*8, private, save :: lpi,lpind
     real*8, private, save :: mqe, qval
     complex*16, private, save :: cv3, cv4, cv5, ca5
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
@@ -34,16 +33,21 @@ module dirac_matrices_intf
     real*8, private, allocatable :: pdel(:),pot_del(:)
 contains
 
-subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in)
+subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in)
     implicit none
     integer*4 :: i,j
     real*8 :: xmd_in,xmn_in,xmpi_in,xmrho_in
+    real*8 :: fpind_in, fstar_in, fpinn2_in, ga_in, lpi_in, lpind_in
     xmd=xmd_in
     xmn=xmn_in
     xmpi=xmpi_in
     xmrho=xmrho_in
-
-    print*,xmd, xmn, xmpi, xmrho
+    fpind=fpind_in
+    fstar=fstar_in
+    fpinn2=fpinn2_in
+    ga=ga_in
+    lpi=lpi_in
+    lpind=lpind_in
 
     allocate(up1(nspin_in,4),upp1(nspin_f,4), &
             &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4), &

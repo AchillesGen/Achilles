@@ -126,6 +126,7 @@ class NuclearModel {
     void TransformQZ(Event &, const Process &, bool);
     virtual void TransformCustom(Event &, const Process &, bool) const {}
     static YAML::Node LoadFormFactor(const YAML::Node &);
+    static YAML::Node LoadModelParams(const YAML::Node &);
 
     void CoulombGauge(VCurrent &, const FourVector &, double) const;
     void WeylGauge(VCurrent &, const FourVector &, double) const;

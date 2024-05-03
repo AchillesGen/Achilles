@@ -133,21 +133,25 @@ contains
         endif
     end function
 
-    function init_model(name, idx) bind(C, name="InitModel")
+    function init_model(name, params, idx) bind(C, name="InitModel")
         use iso_c_binding
         use libutilities
+        use libmap
         implicit none
 
         type(c_ptr), intent(in), value :: name
         integer(c_size_t), intent(in), value :: idx
+        type(c_ptr), intent(in), value, target :: params
         type(c_ptr) :: model_cptr
         logical :: init_model
         character(len=:), allocatable :: fname
+        type(map) :: params_dict
         type(model_holder) :: model
 
         model = models%get_model(idx)
         fname = c2fstring(name)
-        init_model = model%model_ptr%init(fname)
+        params_dict = map(params)
+        init_model = model%model_ptr%init(fname,params_dict)
     end function
 
     subroutine clean_event(cur, size) bind(C, name="CleanUpEvent")

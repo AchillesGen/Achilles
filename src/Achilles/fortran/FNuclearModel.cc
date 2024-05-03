@@ -23,12 +23,20 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
         throw std::runtime_error(msg);
     }
 
+
+    if (config["NuclearModel"]["ModelParamsFile"]) {
+        auto Model_Params = LoadModelParams(config);
+        for(const auto &params : Model_Params["Parameters"]) {
+            param_map[params.first.as<std::string>()] = params.second.as<double>();
+        }
+    }
+
     auto filename = config["NuclearModel"]["ConfigFile"].as<std::string>();
     size_t len = filename.size();
     auto cfilename = std::make_unique<char[]>(len + 1);
     strcpy(cfilename.get(), filename.c_str());
 
-    if(!InitModel(cfilename.get(), m_model)) {
+    if(!InitModel(cfilename.get(), &param_map, m_model)) {
         auto msg = fmt::format("NuclearModel: Could not initialize model {} using file {}.",
                                modelname, filename);
         throw std::runtime_error(msg);

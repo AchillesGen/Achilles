@@ -7,7 +7,7 @@ extern "C" {
 void RegisterAll();
 void ListModels();
 bool CreateModel(char *, size_t&);
-bool InitModel(char *, size_t);
+bool InitModel(char *, std::map<std::string, double> *pm, size_t);
 void CleanUpEvent(std::complex<double> **, int *);
 void CleanUpModel(size_t);
 int GetMode(size_t);
@@ -56,6 +56,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     mutable bool is_hydrogen{false};
     const WardGauge m_ward;
     size_t m_model;
+    std::map<std::string, double> param_map;
 };
 
 } // namespace achilles

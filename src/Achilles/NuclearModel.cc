@@ -131,6 +131,10 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
 }
 
+YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
+    return YAML::LoadFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>());
+}
+
 NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
     NuclearModel::ModelMap models;
 

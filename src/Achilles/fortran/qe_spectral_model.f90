@@ -21,13 +21,15 @@ module qe_spectral_model
 
 contains
 
-    function qe_spec_init(self, filename)
+    function qe_spec_init(self, filename, params)
         use libutilities
         use dirac_matrices
+        use libmap
         
         class(qe_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: qe_spec_init
