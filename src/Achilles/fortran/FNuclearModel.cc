@@ -23,7 +23,6 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
         throw std::runtime_error(msg);
     }
 
-
     if (config["NuclearModel"]["ModelParamsFile"]) {
         auto Model_Params = LoadModelParams(config);
         for(const auto &params : Model_Params["Parameters"]) {

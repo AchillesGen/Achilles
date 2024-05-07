@@ -8,13 +8,9 @@ module dirac_matrices_intf
     complex*16, private, parameter :: ci    = (0.0d0,1.0d0)
     real*8, private, parameter :: pi=acos(-1.0d0) 
     complex*16, private, save :: pi_elec_ff
-    real*8, private, save :: fpind
-    real*8, private, save :: fstar,fpinn2
-    real*8, private, save :: ga
+    real*8, private, save :: fpind,fstar,fpinn2,ga,lpi,lpind
     integer*4, private, save :: ax 
-    real*8, private, save :: lpi,lpind
-    real*8, private, save :: mqe, qval
-    complex*16, private, save :: cv3, cv4, cv5, ca5
+    complex*16, private, save :: cv3,cv4,cv5,ca5
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, allocatable, private, save :: up1(:,:),up2(:,:),upp1(:,:),upp2(:,:), &
             &   ubarp1(:,:),ubarp2(:,:),ubarpp1(:,:),ubarpp2(:,:)
@@ -37,7 +33,7 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fp
     implicit none
     integer*4 :: i,j
     real*8 :: xmd_in,xmn_in,xmpi_in,xmrho_in
-    real*8 :: fpind_in, fstar_in, fpinn2_in, ga_in, lpi_in, lpind_in
+    real*8 :: fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in
     xmd=xmd_in
     xmn=xmn_in
     xmpi=xmpi_in
@@ -217,12 +213,7 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
     pp2=pp2_in
 
     k1=pp1-p1
-    !k1=q
     k2=q-k1
-    !k1 = 0.0d0
-    !k2 = 0.0d0
-    !print*,'k1 = ', k1 
-    !print*,'k2 = ', k2
 
     k1_e=pp2-p1
     k2_e=pp1-p2
@@ -572,23 +563,6 @@ subroutine twobody_del_curr_matrix_el(J_mu)
     ctc = IDeltaC_v(t1,t2,t1p,t2)
     ctd = IDeltaD_v(t1,t2,t1p,t2)
    endif
-
-   !print*,'j1ja = ', j1ja
-
-   !print*,'j1jb = ', j1jb
-
-   !print*,'j1jc = ', j1jc
-
-   !print*,'j1jd = ', j1jd
-
-   !print*,'t1 = ', t1 
-   !print8,'t2 = ', t2 
-   !print*,''
-
-   !print*,'cta = ', cta
-   !print*,'ctb = ', ctb
-   !print*,'ctc = ', ctc 
-   !print*,'ctd = ', ctd
 
    J_mu =(j1ja(:,:,:)*cta + j1jb(:,:,:)*ctb +j1jc(:,:,:)*ctc + j1jd(:,:,:)*ctd)/2.0d0
   
