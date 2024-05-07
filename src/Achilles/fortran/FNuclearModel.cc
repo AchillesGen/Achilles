@@ -23,6 +23,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
         throw std::runtime_error(msg);
     }
 
+    // Load model parameters from yml file
     if (config["NuclearModel"]["ModelParamsFile"]) {
         auto Model_Params = LoadModelParams(config);
         for(const auto &params : Model_Params["Parameters"]) {
@@ -30,6 +31,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
         }
     }
 
+    // Load Configuration, currently sets up spectral functions only
     auto filename = config["NuclearModel"]["ConfigFile"].as<std::string>();
     size_t len = filename.size();
     auto cfilename = std::make_unique<char[]>(len + 1);
@@ -48,7 +50,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
                                                   const FourVector &qVec,
                                                   const FFInfoMap &ff) const {
 
-    
+    // Special case for hydrogen
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
     
     NuclearModel::Currents result;
@@ -126,6 +128,7 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     return result;
 }
 
+// Returns weight from nuclear ground state (i.e. SF or FG)
 double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, const std::vector<Particle> &had_spect, size_t nproton,
                                         size_t nneutron) const {
 
@@ -154,6 +157,7 @@ std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) 
     return std::make_unique<FortranModel>(config, form_factor);
 }
 
+// Return name of initial state phase space needed
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
     if(nuc_pid != PID::hydrogen()){
         char *name = GetName_(m_model);

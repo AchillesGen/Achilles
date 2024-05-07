@@ -114,11 +114,14 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
+        double precision :: Q2
+        complex(c_double_complex), dimension(2) :: ffa
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
         logical :: has_axial
 
+        ! Differentiate EM from CC & NC
         if(ff%lookup("FMecA5").eq.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
             has_axial = .false.
         else
@@ -131,6 +134,11 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
+        Q2 = q4(2)**2 + q4(3)**2 + q4(4)**2 - q4(1)**2
+
+        ffa(1)=ff%lookup("FA")
+        ffa(2)=ffa(1)*2.0*(constants%mqe**2)/(Q2 + constants%mpip**2)
+
         call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
         call define_spinors()
 
@@ -141,13 +149,16 @@ contains
         J_mu_del_exc = (0.0d0,0.0d0)
         J_mu_pi_exc = (0.0d0,0.0d0)
 
+        ! Compute 1 body current first
         if(compute_1body.eq.1) then
-            !print*,'computing 1 body'
-            call det_J1(ff%lookup("F1"),ff%lookup("F2"),ff%lookup("FA"))
+            call det_J1(ff%lookup("F1"),ff%lookup("F2"),ffa)
             call onebody_curr_matrix_el(J_mu_1b)
             J_mu = J_mu_1b
+            !Switch flag so we compute 2 body next time
             compute_1body = 0
         else
+            !Compute 2 body current
+            !Direct current pieces first
             err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"),1)
             ! Avoid interpolating outside
             ! of delta potential range
@@ -159,6 +170,7 @@ contains
             call twobody_del_curr_matrix_el(J_mu_del_dir)
             call twobody_pi_curr_matrix_el(J_mu_pi_dir)
 
+            !Now exchange currents
             err = det_JaJb_JcJd(ff%lookup("FMecV3"),ff%lookup("FMecV4"),ff%lookup("FMecV5"),ff%lookup("FMecA5"),2)
             ! Avoid interpolating outside
             ! of delta potential range
@@ -172,6 +184,8 @@ contains
 
 
             J_mu = (J_mu_pi_dir + J_mu_del_dir + J_mu_del_exc + J_mu_pi_exc)/(2.0d0*p2_4(1))
+
+            !Switch flag so we compute 1 body next time
             compute_1body = 1
         endif
 

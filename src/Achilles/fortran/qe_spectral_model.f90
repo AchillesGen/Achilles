@@ -108,16 +108,19 @@ contains
         integer(c_size_t) :: i,j        
         complex(c_double_complex), dimension(2) :: ffa
         double precision, dimension(4) :: p4,pp4,q4
+        double precision :: Q2
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu
 
         p4=mom_in(1)%to_array()
         pp4=mom_out(1)%to_array()
         q4=qvec%to_array()
+
+        Q2 = q4(2)**2 + q4(3)**2 + q4(4)**2 - q4(1)**2
         
         call current_init_had(p4,pp4,q4) 
         call define_spinors()
         ffa(1)=ff%lookup("FA")
-        ffa(2)=0.0d0
+        ffa(2)=ffa(1)*2.0*(constants%mqe**2)/(Q2 + constants%mpip**2)
  
         call det_Ja(ff%lookup("F1"),ff%lookup("F2"),ffa)
         call hadr_curr_matrix_el(J_mu)

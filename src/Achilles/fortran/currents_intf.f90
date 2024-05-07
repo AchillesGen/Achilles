@@ -253,7 +253,7 @@ end subroutine
 subroutine det_J1(f1v,f2v,fa)
   implicit none
   integer*4 :: mu,nu
-  complex*16 :: f1v,f2v,fa  
+  complex*16 :: f1v,f2v,fa(2) 
 
   do mu=1,4
      J_1(:,:,mu)=czero
@@ -265,7 +265,8 @@ subroutine det_J1(f1v,f2v,fa)
  enddo
  
  do mu=1,4
-     J_1(:,:,mu)=J_1(:,:,mu)+fa*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))
+     J_1(:,:,mu)=J_1(:,:,mu)+fa(1)*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))&
+        &   +fa(2)*gamma_mu(:,:,5)*q(mu)/xmn
  enddo  
 
  
