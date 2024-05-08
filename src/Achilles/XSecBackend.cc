@@ -165,6 +165,8 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
                                              Integrand<FourVector> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto multiplicity = process_info.FinalStateMultiplicity();
+    auto total_multiplicity = process_info.Multiplicity();
+    spdlog::debug("total_multiplicity = {}", total_multiplicity);
     if(multiplicity > 3) {
         const std::string error =
             fmt::format("Leptonic Tensor can only handle n->2 and n->3 processes without "
@@ -179,9 +181,15 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
             BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
+        if(total_multiplicity == 4) {
         Channel<FourVector> channel0 =
             BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        integrand.AddChannel(std::move(channel0));}
+        if(total_multiplicity == 6) {
+        Channel<FourVector> channel0 =
+            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 3, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
+        }
     }
 }
 

@@ -25,6 +25,8 @@ add_library(fortran_interface SHARED
     amp_dcc_sl.f
     intf_spectral_model.f90
     currents_intf.f90
+    mec_spectral_model.f90
+    currents_mec.f90
     # OneBody/pke_read_xsec.f90
     # OneBody/contract.f90
     # OneBody/currents.f90

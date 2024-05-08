@@ -5,6 +5,7 @@ module nuclear_model_interface
     use qe_spectral_model
     use res_spectral_model
     use intf_spectral_model
+    use mec_spectral_model
 
     implicit none
 
@@ -96,11 +97,13 @@ contains
         type(qe_spec) :: qe
         type(res_spec) :: res
         type(intf_spec) :: intf
+        type(mec_spec) :: mec
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
         call factory%register_model(qe%model_name(), build_qe_spec)
         call factory%register_model(res%model_name(), build_res_spec)
         call factory%register_model(intf%model_name(), build_intf_spec)
+        call factory%register_model(mec%model_name(), build_mec_spec)
         call factory%init()
     end subroutine
 

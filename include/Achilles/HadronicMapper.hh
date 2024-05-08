@@ -89,6 +89,26 @@ class IntfSpectralMapper : public HadronicBeamMapper,
     // static constexpr double dE = 400;
 };
 
+class MecSpectralMapper : public HadronicBeamMapper,
+                         RegistrablePS<HadronicBeamMapper, MecSpectralMapper, size_t> {
+  public:
+    MecSpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    static std::string Name() { return "MecSpectral"; }
+    static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
+        return std::make_unique<MecSpectralMapper>(idx);
+    }
+
+    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
+    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    size_t NDims() const override { return 8; }
+
+  private:
+    static constexpr double dCos2 = 2;
+    static constexpr double dPhi = 2 * M_PI;
+    static constexpr double dp2 = 800; 
+    static constexpr double dE2 = 80;
+};
+
 
 
 } // namespace achilles
