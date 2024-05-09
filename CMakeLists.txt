@@ -163,6 +163,11 @@ add_subdirectory(src)
 # Install CMake find_package files
 include(CMakePackageConfigHelpers)
 
+# Build documentation
+if(ACHILLES_ENABLE_DOCS)
+    add_subdirectory(docs)
+endif()
+
 configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/CMake/achilles-config.cmake.in
     ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
