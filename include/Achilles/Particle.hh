@@ -35,19 +35,37 @@ enum class ParticleStatus : int {
 /// mother particles, the particle's daughter particles, and any other needed information.
 /// Currently, the status codes are as follows:
 ///
-/// @rst
+/// @verbatim embed:rst:leading-slashes
 ///
-/// +-------------+-----------------------+
-/// | Status Code | Meaning               |
-/// +=============+=======================+
-/// |     -1      |  Propagating Particle |
-/// +-------------+-----------------------+
-/// |      0      |  Background Particle  |
-/// +-------------+-----------------------+
-/// |      1      |  Escaped Particle     |
-/// +-------------+-----------------------+
+/// +-------------+----------------------------+
+/// | Status Code | Meaning                    |
+/// +=============+============================+
+/// |     -3      |  Internal Test Particle    |
+/// +-------------+----------------------------+
+/// |     -2      |  External Test Particle    |
+/// +-------------+----------------------------+
+/// |     -1      |  Propagating Particle      |
+/// +-------------+----------------------------+
+/// |      0      |  Background Particle       |
+/// +-------------+----------------------------+
+/// |      1      |  Initial State Particle    |
+/// +-------------+----------------------------+
+/// |      2      |  Final State Particle      |
+/// +-------------+----------------------------+
+/// |      3      |  Escaped Particle          |
+/// +-------------+----------------------------+
+/// |      4      |  Captured Particle         |
+/// +-------------+----------------------------+
+/// |      5      |  Decayed Particle          |
+/// +-------------+----------------------------+
+/// |      6      |  Beam Particle             |
+/// +-------------+----------------------------+
+/// |      7      |  Target Particle           |
+/// +-------------+----------------------------+
+/// |      8      |  Spectator Particle        |
+/// +-------------+----------------------------+
 ///
-/// @endrst
+/// @endverbatim
 class Particle {
   public:
     /// @name Constructors and Destructors
