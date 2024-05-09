@@ -1,19 +1,16 @@
-.. nuchic documentation master file, created by
-   sphinx-quickstart on Mon Oct 14 15:53:37 2019.
+.. Achilles documentation master file, created by
+   sphinx-quickstart on Thu May  9 16:28:55 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to nuchic's documentation!
-==================================
+Welcome to Achilles's documentation!
+====================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   nuchic.rst
-
-   about
-   api/nuchic_cpp
+   physics
 
 
 Indices and tables
