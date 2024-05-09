@@ -10,6 +10,7 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
+#include "Achilles/MesonBaryonAmplitudes.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -184,6 +185,51 @@ class GeantInteraction : public Interaction, RegistrableInteraction<GeantInterac
     Interp1D m_crossSectionPP, m_crossSectionNP;
     Interp2D m_thetaDistPP, m_thetaDistNP;
 };
+
+
+class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonBaryonInteraction> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
+
+    /// Initialize MesonBaryonInteraction class. This loads data from an input file
+    MesonBaryonInteraction() = default;
+    MesonBaryonInteraction(const YAML::Node &){};
+
+    /// Generate a object. This is used in the InteractionFactory.
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<MesonBaryonInteraction>(data);
+    }
+
+    /// Default Destructor
+    ~MesonBaryonInteraction() override = default;
+    ///@}
+
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return MesonBaryonInteraction::Name(); }
+    static std::string Name() { return "MesonBaryonInteraction"; }
+
+    // List off all InitialStates
+    std::vector<std::pair<PID, PID>> InitialStates() const override; 
+
+    //Cross sections and pairs of PIDs for all possible final states
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
+  private:
+    // Functions
+    double CrossSectionAngle(bool, const double &, const double &) const;
+    void LoadData(bool, const HighFive::Group &);
+    ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
+
+    // Variables
+    MBAmplitudes Amplitudes; //Contains all the mesonBaryon information
+};
+
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
