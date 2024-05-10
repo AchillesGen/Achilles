@@ -36,7 +36,8 @@ set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
 set(ACHILLES_DOC_FILES 
     ${CMAKE_CURRENT_SOURCE_DIR}/index.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/physics.rst)
+    ${CMAKE_CURRENT_SOURCE_DIR}/physics.rst
+    ${CMAKE_CURRENT_SOURCE_DIR}/numerics.rst)
 
 # Only regenerate Sphinx when:
 # - Doxygen has rerun
