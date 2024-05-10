@@ -249,6 +249,33 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     mutable bool is_free_neutron{false};
 };
 
+class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpectral> {
+  public:
+    HyperonSpectral(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
+
+    NuclearMode Mode() const override { return NuclearMode::Hyperon; }
+    std::string PhaseSpace(PID) const override;
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+         const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
+    size_t NSpins() const override { return 4; }
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
+    std::string GetName() const override { return QESpectral::Name(); }
+    std::string InspireHEP() const override { return ""; }
+
+    // Required factory methods
+    static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
+    static std::string Name() { return "HyperonSpectral"; }
+
+  private:
+    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                            const FourVector &, const FormFactorMap &) const;
+
+    const WardGauge m_ward;
+    SpectralFunction spectral_proton, spectral_neutron;
+    // TODO: This is a code smell. Should figure out a better solution
+    mutable bool is_hydrogen{false};
+};
+
 } // namespace achilles
 
 #endif
