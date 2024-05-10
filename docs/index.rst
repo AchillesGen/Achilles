@@ -11,6 +11,7 @@ Welcome to Achilles's documentation!
    :caption: Contents:
 
    physics
+   numerics
 
 
 Indices and tables
