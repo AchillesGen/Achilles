@@ -17,7 +17,14 @@ class MBAmplitudes {
 	double GetCG(int ichan, int twoJ, int twoIm, int twoIb){ return CGcof[ichan][(twoJ-1)/2][twoIm +2][twoIb+2];}
 	double CSTotal(double, int, int, int);
 
+	int MesonPID_Cchan(int ichan) const { return Meson_PID_Cchan[ichan]; }
+	int BaryonPID_Cchan(int ichan) const { return Baryon_PID_Cchan[ichan]; }
+	int NChargeChannels() const {return nCchan;}
+
+//TODO move some to private 
 	void initIso();
+
+	void PIDlist();
 
 	void initCChannels();
 
@@ -27,7 +34,6 @@ class MBAmplitudes {
 
 	int iCChannel(int MBchan, int twoI3m, int twoI3b);
 
-	int NChargeChannels(){return nCchan;}
 	int NMesonBaryonChannels(){return nMBchan;}
 
 	int NFSChannels(int iCchan){return NOpenCChannels[iCchan];}
@@ -93,6 +99,9 @@ class MBAmplitudes {
 
 	int twoI3m_Cchan[maxchannels];
 	int twoI3b_Cchan[maxchannels];
+
+	int Baryon_PID_Cchan[maxchannels];
+	int Meson_PID_Cchan[maxchannels];
 
 	int NOpenCChannels[maxchannels]={0};
 	int OpenCChannels[maxchannels][maxchannels]={0};

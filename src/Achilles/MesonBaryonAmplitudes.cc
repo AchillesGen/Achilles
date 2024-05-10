@@ -2,9 +2,9 @@
 #include <iomanip>
 #include <fstream>
 
-#include "MesonBaryon.hh"
-#include "Legendre.hh"
-#include "f_polynomial.hh"
+#include "Achilles/MesonBaryonAmplitudes.hh"
+#include "Achilles/Legendre.hh"
+#include "Achilles/f_polynomial.hh"
 
 MBAmplitudes::MBAmplitudes()
 {
@@ -19,6 +19,7 @@ MBAmplitudes::MBAmplitudes()
 	nMBchan=4;
 	initIso();
 	initCChannels();
+	PIDlist();
 	SetOpenCChannels();
 	SetCrossSectionsW();
 	SetH_G_coeffs();
@@ -163,12 +164,10 @@ double MBAmplitudes::CSTotal(double W, int ichan, int twoIm, int twoIb)
 
 	//For lineair interpolation on equally spaced grid:
 	double W_step = w_vec[ichan][ichan][3] - w_vec[ichan][ichan][2];
-	int iW_m = (int) std::floor(W/W_step);
+	int iW_m = static_cast <int> (std::floor(W/W_step));
 	double W_m = w_vec[ichan][ichan][iW_m];
 	double cofmax = (W-W_m)/W_step;
 	double cofmin = 1. - cofmax;
-
-	int Lmax = Lmax;
 
 	double CStot=0.;
 
@@ -229,6 +228,54 @@ void MBAmplitudes::initCChannels()
 
 }
 
+void MBAmplitudes::PIDlist()
+{
+	//Make a list of mesons and baryons corresponding to the channels
+	//This is hardcoded, based on the PIDs (which will likely not change) but could be taken from the parameterlist in principe
+	Meson_PID_Cchan[0] = -211;
+	Meson_PID_Cchan[1] = -211;
+	Meson_PID_Cchan[2] =  111;
+	Meson_PID_Cchan[3] =  111;
+	Meson_PID_Cchan[4] =  211;
+	Meson_PID_Cchan[5] =  211;
+
+	Meson_PID_Cchan[6] = 221;
+	Meson_PID_Cchan[7] = 221;
+
+	Meson_PID_Cchan[8] = 311; //K0, will this complicate life ?
+	Meson_PID_Cchan[9] = 321;
+
+	Meson_PID_Cchan[10] = 311;
+	Meson_PID_Cchan[11] = 311;
+	Meson_PID_Cchan[12] = 311;
+	Meson_PID_Cchan[13] = 321;
+	Meson_PID_Cchan[14] = 321;
+	Meson_PID_Cchan[15] = 321;
+
+
+
+	Baryon_PID_Cchan[0] = 2112;
+	Baryon_PID_Cchan[1] = 2212;
+	Baryon_PID_Cchan[2] = 2112;
+	Baryon_PID_Cchan[3] = 2212;
+	Baryon_PID_Cchan[4] = 2112;
+	Baryon_PID_Cchan[5] = 2212;
+
+	Baryon_PID_Cchan[6] = 2112;
+	Baryon_PID_Cchan[7] = 2212;
+
+	Baryon_PID_Cchan[8] = 3122; 
+	Baryon_PID_Cchan[9] = 3122;
+
+	Baryon_PID_Cchan[10] = 3112;
+	Baryon_PID_Cchan[11] = 3212;
+	Baryon_PID_Cchan[12] = 3222;
+	Baryon_PID_Cchan[13] = 3112;
+	Baryon_PID_Cchan[14] = 3212;
+	Baryon_PID_Cchan[15] = 3222;
+		
+
+}
 
 int MBAmplitudes::iCChannel(int MBchan, int twoI3m, int twoI3b)
 {
@@ -314,7 +361,7 @@ void MBAmplitudes::SetOpenCChannels()
 
 void MBAmplitudes::SetCrossSectionsW()
 {
-	for (int ichan_i ; ichan_i < nCchan ; ichan_i++)
+	for (int ichan_i = 0; ichan_i < nCchan ; ichan_i++)
 	{
 		
 		int nOpenFS = NOpenCChannels[ichan_i];
@@ -423,7 +470,7 @@ double MBAmplitudes::GetCSW(int i_i, int i_f, double W)
 
 	//For lineair interpolation on equally spaced grid:
 	double W_step = w_vec[iMB_i][iMB_f][3] - w_vec[iMB_i][iMB_f][2];
-	int iW_m = (int) std::floor((W - w_vec[iMB_i][iMB_f][0])  /W_step);
+	int iW_m = static_cast <int> (std::floor((W - w_vec[iMB_i][iMB_f][0])   /W_step) );
 	double W_m = w_vec[iMB_i][iMB_f][iW_m];
 	double cofmax = (W-W_m)/W_step;
 	double cofmin = 1. - cofmax;
@@ -462,10 +509,10 @@ void MBAmplitudes::SetH_G_coeffs()
 {
 	SetLegendrecoeffs();
 
-	for(int Ln = 0 ; Ln < Lmax+1 ; Ln++)
+	for(size_t Ln = 0 ; Ln < static_cast<size_t> (Lmax+1); Ln++)
 	{
 		//for (int Lm = Ln ; Lm < Lmax+1; Lm++) // in principle symmetric, but can just do all of them since this function is only called once if used correctly
-		for (int Lm = 0 ; Lm < Lmax+1 ; Lm++)
+		for (size_t Lm = 0 ; Lm < static_cast<size_t> (Lmax+1); Lm++)
 		{
 			H_G_Coefficients(Ln, Lm, A_Legendre, H_poly[Ln][Lm], G_poly[Ln][Lm]);
 		}
@@ -481,14 +528,14 @@ f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f)
 	
 //	if (W < thresholds[iMB_i] || W < thresholds[iMB_f]){ return 0.;} //error handle later
 
-	int nW = num_W[iMB_i][iMB_f];
-//A	if (W > w_vec[iMB_i][iMB_f][nW-1]){ return 0.; }
+//	int nW = num_W[iMB_i][iMB_f];
+//	if (W > w_vec[iMB_i][iMB_f][nW-1]){ return 0.; }
 
 	
 
 	//NN interpolation on equally spaced grid:
 	double W_step = w_vec[iMB_i][iMB_f][3] - w_vec[iMB_i][iMB_f][2];
-	int iW_m = (int) std::floor((W - w_vec[iMB_i][iMB_f][0])  /W_step);
+	int iW_m = static_cast <int> ( std::floor((W - w_vec[iMB_i][iMB_f][0])  /W_step));
 	double W_m = w_vec[iMB_i][iMB_f][iW_m];
 	double cofmax = (W-W_m)/W_step;
 	if (cofmax > 0.5){iW_m = iW_m+1;}
@@ -545,36 +592,53 @@ f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f)
 	
 	} 
 
-	//Quick test herei
-	//
-	//
-	//trcick ::
-
-	for ( int ik = 0 ; ik < 2*Lmax+1 ; ik++)
-	{
-		std::cout << A_poly[ik] << " x^" << ik << "  "; 
-
-	}	
-	std::cout << std::endl;
-
-	f_Polynomial poly(A_poly,2*Lmax);
-
-	poly.print();
-
-	//totcross ??
-	double CSmin = poly.eval_If(-1.);
-	double CStot = poly.eval_If(1.) - CSmin;
-	
-	for (double x = -1 ; x < 1 ; x+=0.02)
-	{
-		std::cout << x << "  " << poly.eval_f(x) << "  " << (poly.eval_If(x) - CSmin)/CStot <<  std::endl;
-
-	}
-
-	//EYOO, check copy constructor stuff here !!!
-
 //	return f_Polynomial(A_poly, 2*Lmax+1);
 	return f_Polynomial(A_poly, 2*Lmax);
 }
+
+double f_Polynomial::eval_f(double x)
+{
+	//Horner method
+	double fx = Coeffs[order];
+	for (int k = order -1 ; k > -1  ; k--)
+	{
+		fx = Coeffs[k] + fx*x;
+	}
+
+	return fx;
+}
+
+double f_Polynomial::eval_df(double x)
+{
+	double dfx = order*Coeffs[order];
+	for (int k = order -1 ; k > 0 ; k--)
+	{
+		dfx = Coeffs[k]*k + dfx*x;
+	}
+	
+	return dfx;
+}
+
+double f_Polynomial::eval_If(double x)
+{
+	double Ifx = Coeffs[order]/(1.*order+1.);
+	for (int k = order -1 ; k > -1 ; k--)
+	{
+		Ifx = Coeffs[k]/(1.*k+1.) + Ifx*x;
+	}
+
+	return Ifx*x;
+}
+
+void f_Polynomial::SetCoeffs(const double *cof, int _order)
+{	
+	order = _order;
+	for (int k = 0 ; k <= order ; k++)
+	{
+		Coeffs[k] = cof[k];
+	}
+}
+
+
 
 

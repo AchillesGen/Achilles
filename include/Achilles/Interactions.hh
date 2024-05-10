@@ -194,12 +194,12 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
 
     /// Initialize MesonBaryonInteraction class. This loads data from an input file
     MesonBaryonInteraction() = default;
-    MesonBaryonInteraction(const YAML::Node &){};
+//    MesonBaryonInteraction(const YAML::Node &){};
 
     /// Generate a object. This is used in the InteractionFactory.
-    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
-        return std::make_unique<MesonBaryonInteraction>(data);
-    }
+//    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+//        return std::make_unique<MesonBaryonInteraction>(data);
+//    }
 
     /// Default Destructor
     ~MesonBaryonInteraction() override = default;
@@ -211,14 +211,26 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
     static std::string Name() { return "MesonBaryonInteraction"; }
 
     // List off all InitialStates
-    std::vector<std::pair<PID, PID>> InitialStates() const override; 
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+	std::vector<std::pair<PID,PID>> states;
+
+	int nChan = Amplitudes.NChargeChannels();	
+
+	for (int i = 0 ; i < nChan ; i++)
+	{
+		int pidm = Amplitudes.MesonPID_Cchan(i);
+		int pidb = Amplitudes.BaryonPID_Cchan(i);
+		states.push_back( {PID(pidm), PID(pidb)} );
+	}
+	return states;
+    } 
 
     //Cross sections and pairs of PIDs for all possible final states
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(const Particle &, const Particle &) const override = 0;
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
-                                           Random &) const override;
+                                           Random &) const override = 0;
 
   private:
     // Functions
