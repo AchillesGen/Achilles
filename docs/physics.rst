@@ -12,3 +12,6 @@ Physics Objects
 
 .. doxygenclass:: achilles::Particle
    :members:
+
+.. doxygenclass:: achilles::Nucleus
+   :members:
