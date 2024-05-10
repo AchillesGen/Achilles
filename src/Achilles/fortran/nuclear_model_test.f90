@@ -36,6 +36,7 @@ contains
 
     function test_init(self, filename, params)
         use libutilities
+        use libmap
         class(test), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
