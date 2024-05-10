@@ -25,6 +25,7 @@ Particles:
     - Particle: [221, 547.862,  1.31e-9, 0, 0, 0, 0, 1, true, true,   eta, eta]
     - Particle: [130, 497.611, 1.28e-14, 0, 0, 0, 1, 1, true, true,   KL0, KL0]
     - Particle: [310, 497.611, 7.35e-12, 0, 0, 0, 0, 1, true, true,   KS0, KS0]
+    - Particle: [311, 497.611, 0, 0, 0, 0, 0, 1, true, true,   K0, anti-K0]
     - Particle: [321, 493.677, 5.32e-14, 3, 0, 0, 1, 0, true, true,    K+, K-]
     - Particle: [411, 1869.65, 6.33e-10, 3, 0, 0, 0, 0, true, true,    D+, D-]
     - Particle: [421, 1864.83,  1.61e-9, 0, 0, 0, 0, 1, true, true,    D0, D0]
