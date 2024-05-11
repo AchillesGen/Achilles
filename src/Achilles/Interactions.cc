@@ -474,3 +474,41 @@ ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
+
+
+InteractionResults MesonBaryonInteraction::CrossSection(const Particle &particle1,
+                                                  const Particle &particle2) const {
+    int pidm = particle1.ID();
+    int pidb = particle2.ID(); //Usually the case
+
+    if (particle1.Info().IntSpin() % 2 == 1)
+    {
+	//In this case what we thought was a meson has half-integer spin
+	pidb = particle2.ID();
+	pidm = particle1.ID();
+    }
+
+    //Could encapsulate all the following in one function, but here we make use of achilles utilities
+    int ichan = Amplitudes.GetCchannel(pidm, pidb);
+
+    InteractionResults results;
+    if (ichan < 0){return results;} //return empty, no initial channel matches
+
+    double W =  (particle1.Momentum() + particle2.Momentum()).M();
+
+    std::vector<std::pair<double, int>> CS_fchan = Amplitudes.GetAllCSW(ichan,W);
+
+    //Add this outside to remove cross sections that are identically zero
+    for (auto & CS_i : CS_fchan)
+    {
+	double CS = CS_i.first;
+	if (CS > 0.){
+	    int fchan = CS_i.second;
+	    int meson_out = Amplitudes.MesonPID_Cchan(fchan);
+	    int baryon_out = Amplitudes.BaryonPID_Cchan(fchan);
+	    results.push_back( {{PID(meson_out), PID(baryon_out)}, CS} );
+	}
+    }
+
+    return results;
+}

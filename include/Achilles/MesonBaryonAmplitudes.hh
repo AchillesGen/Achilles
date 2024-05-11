@@ -2,6 +2,7 @@
 #define MESONBARYON_H
 
 #include <complex>
+#include <vector>
 #include "f_polynomial.hh"
 
 class MBAmplitudes {
@@ -21,6 +22,14 @@ class MBAmplitudes {
 	int BaryonPID_Cchan(int ichan) const { return Baryon_PID_Cchan[ichan]; }
 	int NChargeChannels() const {return nCchan;}
 
+	int GetCchannel(int pidm, int pidb) const {
+		for (int i = 0 ; i < nCchan ; i++)
+		{
+			if  ( (pidm == Meson_PID_Cchan[i]) && (pidb == Baryon_PID_Cchan[i])  ) { return i;}
+		}
+		return -1;
+	}
+
 //TODO move some to private 
 	void initIso();
 
@@ -38,6 +47,8 @@ class MBAmplitudes {
 
 	int NFSChannels(int iCchan){return NOpenCChannels[iCchan];}
 
+	std::vector<std::pair<double,int>> GetAllCSW(int ichan, double W) const;
+
 	void SetCrossSectionsW();
 
 	void CalcCrossSectionW_grid(int, int, double*);
@@ -46,7 +57,7 @@ class MBAmplitudes {
 	void SetH_G_coeffs();
 
 
-	double GetCSW(int i_i, int i_f, double W);
+	double GetCSW(int i_i, int i_f, double W) const;
         void printCSW(int i_i, int i_f);
 
 

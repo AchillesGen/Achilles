@@ -445,7 +445,7 @@ void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS)
 		
 }
 
-double MBAmplitudes::GetCSW(int i_i, int i_f, double W)
+double MBAmplitudes::GetCSW(int i_i, int i_f, double W) const
 {
 	//Simple lineair interpolation on a fixed grid
 	int twoI3_i= twoI3m_Cchan[i_i];
@@ -479,6 +479,23 @@ double MBAmplitudes::GetCSW(int i_i, int i_f, double W)
 	double CS_W = CrossSectionsW[i_i][i_f][iW_m]*cofmin;
 	CS_W += CrossSectionsW[i_i][i_f][iW_m+1]*cofmax;
 	return CS_W;
+}
+
+
+std::vector<std::pair<double,int>> MBAmplitudes::GetAllCSW(int ichan, double W) const {
+	
+	std::vector<std::pair<double,int>> CS_fchan;
+	if (ichan >= maxchannels) { return CS_fchan;} //return empty }
+	int Nfchan = NOpenCChannels[ichan];
+
+	for ( int ifchan = 0 ; ifchan < Nfchan ; ifchan++)
+	{
+		int fchan = OpenCChannels[ichan][ifchan];
+		double CS = GetCSW(ichan, fchan, W);
+		CS_fchan.push_back( {CS,fchan} );
+	}
+
+	return CS_fchan;
 }
 
 void MBAmplitudes::printCSW(int i_i, int i_f)
