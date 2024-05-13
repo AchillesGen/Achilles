@@ -450,3 +450,35 @@ void achilles::ResonanceDummyAxialFormFactor::Evaluate(double Q2, FormFactor::Va
     result.FresA = resA;
 
 }
+
+// Hyperon form factors
+achilles::HyperonFormFactor::HyperonFormFactor(const YAML::Node &config) {
+    dummy = config["dummy"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::HyperonFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<HyperonFormFactor>(type);
+    return std::make_unique<HyperonFormFactor>(node);
+}
+
+void achilles::HyperonFormFactor::Evaluate(double Q2,
+                                                        FormFactor::Values &result) const {
+    spdlog::trace("HyperonFormFactor: Q2 = {}", Q2);
+    
+    double x = 0.73;
+    double lambda_ratio = Constant::mlambda/(Constant::mlambda + Constant::mn);
+    double sigmam_ratio = Constant::msigmam/(Constant::msigmam + Constant::mn);
+    double sigma0_ratio = Constant::msigma0/(Constant::msigma0 + Constant::mn);
+    
+    result.F1lam = -sqrt(3./2.)*result.F1p;
+    result.F2lam = -sqrt(3./2.)*lambda_ratio*result.F2p;
+    result.FAlam = -sqrt(3./2.)*((1. + 2.*x)/3.)*result.FA;
+    result.F1sigm = -(result.F1p + 2*result.F1n);
+    result.F2sigm = -sigmam_ratio*(result.F2p + 2.*result.F2n);
+    result.FAsigm = (1. - 2.*x)*result.FA;
+    result.F1sig0 = -(1./sqrt(2.))*(result.F1p + 2.*result.F1n);
+    result.F2sig0 = -sigma0_ratio*(1./sqrt(2.))*(result.F2p + 2.*result.F2n);
+    result.FAsig0 = (1. - 2.*x)*result.FA/sqrt(2.);
+    
+}

@@ -395,10 +395,10 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         case 1: // Final state has more charge than initial
             local.m_hadronic = {{PID::proton()}, {PID::lambda0()}};
             results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
-            results.push_back(local);
+            //local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
+            //results.push_back(local);
+            //local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
+            //results.push_back(local);
             break;
         }
 
@@ -829,8 +829,8 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     // Calculate nucleon contributions
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
-                      ffVal[Type::FA]);
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1Lam], ffVal[Type::F2Lam],
+                      ffVal[Type::FALam]);
         auto current = HadronicCurrent(ubar, u, qVec, ffVal);
         for(auto &subcur : current) {
             // Correct the Ward identity
@@ -877,12 +877,12 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
     Current result;
     std::array<SpinMatrix, 4> gamma{};
     for(size_t mu = 0; mu < 4; ++mu) {
-        gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
-        gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] = ffVal.at(Type::F1Lam) * SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FALam) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] +=
-                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
+                std::complex<double>(0, 1) * (ffVal.at(Type::F2Lam) * SpinMatrix::SigmaMuNu(mu, nu) *
                                               sign * qVec[nu] / (2 * Constant::mN));
             sign = -1;
         }
