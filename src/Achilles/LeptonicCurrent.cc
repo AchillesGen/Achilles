@@ -59,15 +59,24 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
     // TODO: Double check form factors
     if(pid == 24) {
         const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);
+        const std::complex<double> coupl2 = Vus * ee * i / (sw * sqrt(2) * 2);
         results[{PID::proton(), pid}] = {
             {FormFactorInfo::Type::F1p, coupl},  {FormFactorInfo::Type::F1n, -coupl},
             {FormFactorInfo::Type::F2p, coupl},  {FormFactorInfo::Type::F2n, -coupl},
             {FormFactorInfo::Type::FA, coupl},   {FormFactorInfo::Type::FResV, coupl},
             {FormFactorInfo::Type::FResA, coupl}, {FormFactorInfo::Type::FPiEM, coupl}, 
             {FormFactorInfo::Type::FMecV3, coupl}, {FormFactorInfo::Type::FMecV4, coupl},
-            {FormFactorInfo::Type::FMecV5, coupl},{FormFactorInfo::Type::FMecA5, coupl}};
+            {FormFactorInfo::Type::FMecV5, coupl}, {FormFactorInfo::Type::FMecA5, coupl},
+            {FormFactorInfo::Type::F1Lam, coupl2}, {FormFactorInfo::Type::F2Lam, coupl2},
+            {FormFactorInfo::Type::FALam, coupl2}, {FormFactorInfo::Type::F1Sig0, coupl2},
+            {FormFactorInfo::Type::F2Sig0, coupl2}, {FormFactorInfo::Type::FASig0, coupl2}
+        };
         results[{PID::neutron(), pid}] = {{FormFactorInfo::Type::FResV, coupl},
-                                          {FormFactorInfo::Type::FResA, coupl}};
+                                          {FormFactorInfo::Type::FResA, coupl},
+                                          {FormFactorInfo::Type::F1Sigm, coupl2},
+                                          {FormFactorInfo::Type::F2Sigm, coupl2},
+                                          {FormFactorInfo::Type::FASigm, coupl2}
+                                      };
         results[{PID::carbon(), pid}] = {};
     } else if(pid == -24) {
         const std::complex<double> coupl = Vud * ee * i / (sw * sqrt(2) * 2);

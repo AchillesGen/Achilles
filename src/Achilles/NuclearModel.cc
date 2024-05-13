@@ -23,6 +23,7 @@ NuclearModel::NuclearModel(const YAML::Node &config,
     const auto resaxialFF = config["resonanceaxial"].as<std::string>();
     const auto mecvectorFF = config["mecvector"].as<std::string>();
     const auto mecaxialFF = config["mecaxial"].as<std::string>();
+    const auto hyperonFF = config["hyperon"].as<std::string>();
     m_form_factor = ffbuilder.Vector(vectorFF, config[vectorFF])
                         .AxialVector(axialFF, config[axialFF])
                         .Coherent(coherentFF, config[coherentFF])
@@ -30,6 +31,7 @@ NuclearModel::NuclearModel(const YAML::Node &config,
                         .ResonanceAxial(resaxialFF, config[resaxialFF])
                         .MesonExchangeVector(mecvectorFF, config[mecvectorFF])
                         .MesonExchangeAxial(mecaxialFF, config[mecaxialFF])
+                        .Hyperon(hyperonFF, config[hyperonFF])
                         .build();
     ffbuilder.Reset();
 }
@@ -100,6 +102,33 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
             break;
         case Type::FMecA5:
             results[Type::FMecA5] += formFactors.FmecA5 * ff.coupling;
+            break;
+        case Type::F1Lam:
+            results[Type::F1Lam] += formFactors.F1lam * ff.coupling;
+            break;
+        case Type::F2Lam:
+            results[Type::F2Lam] += formFactors.F2lam * ff.coupling;
+            break;
+        case Type::FALam:
+            results[Type::FALam] += formFactors.FAlam * ff.coupling;
+            break;
+        case Type::F1Sigm:
+            results[Type::F1Sigm] += formFactors.F1sigm * ff.coupling;
+            break;
+        case Type::F2Sigm:
+            results[Type::F2Sigm] += formFactors.F2sigm * ff.coupling;
+            break;
+        case Type::FASigm:
+            results[Type::FASigm] += formFactors.FAsigm * ff.coupling;
+            break;
+        case Type::F1Sig0:
+            results[Type::F1Sig0] += formFactors.F1sig0 * ff.coupling;
+            break;
+        case Type::F2Sig0:
+            results[Type::F2Sig0] += formFactors.F2sig0 * ff.coupling;
+            break;
+        case Type::FASig0:
+            results[Type::FASig0] += formFactors.FAsig0 * ff.coupling;
             break;
         case Type::F1:
         case Type::F2:
@@ -329,10 +358,10 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         case 1: // Final state has more charge than initial
             local.m_hadronic = {{PID::proton()}, {PID::lambda0()}};
             results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
-            results.push_back(local);
+            //local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
+            //results.push_back(local);
+            //local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
+            //results.push_back(local);
             break;
         }
 
@@ -619,8 +648,8 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     // Calculate nucleon contributions
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
-                      ffVal[Type::FA]);
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1Lam], ffVal[Type::F2Lam],
+                      ffVal[Type::FALam]);
         auto current = HadronicCurrent(ubar, u, qVec, ffVal);
         for(auto &subcur : current) {
             // Correct the Ward identity
@@ -667,12 +696,12 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
     Current result;
     std::array<SpinMatrix, 4> gamma{};
     for(size_t mu = 0; mu < 4; ++mu) {
-        gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
-        gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] = ffVal.at(Type::F1Lam) * SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FALam) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] +=
-                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
+                std::complex<double>(0, 1) * (ffVal.at(Type::F2Lam) * SpinMatrix::SigmaMuNu(mu, nu) *
                                               sign * qVec[nu] / (2 * Constant::mN));
             sign = -1;
         }
