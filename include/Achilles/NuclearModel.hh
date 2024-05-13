@@ -259,8 +259,9 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
          const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
-    std::string GetName() const override { return QESpectral::Name(); }
+    std::string GetName() const override { return HyperonSpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
