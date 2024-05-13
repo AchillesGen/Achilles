@@ -493,7 +493,7 @@ std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
 }
 
 std::string Coherent::PhaseSpace(PID nuc_id) const {
-    if(nuc_id == nucleus_pid) return Name();
+    if(nuc_id == nucleus_pid) return PSName();
     throw achilles::InvalidChannel(
         fmt::format("Nucleus don't match: Model {}, Phasespace {}", nucleus_pid, nuc_id));
 }
@@ -607,7 +607,7 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
 }
 
 std::string QESpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen()) return Name();
+    if(nuc_id != PID::hydrogen()) return PSName();
     is_hydrogen = true;
     return Coherent::Name();
 }
@@ -718,7 +718,7 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
 }
 
 std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen()) return Name();
+    if(nuc_id != PID::hydrogen()) return PSName();
     is_hydrogen = true;
     return Coherent::Name();
 }

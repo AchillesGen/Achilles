@@ -173,7 +173,7 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
                         multiplicity);
         throw std::runtime_error(error);
     }
-
+    
     if(multiplicity == 2) {
         Channel<FourVector> channel0 =
             BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);

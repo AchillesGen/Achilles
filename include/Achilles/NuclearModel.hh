@@ -115,6 +115,7 @@ class NuclearModel {
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
+    virtual std::string PSName() const = 0;
     virtual std::string InspireHEP() const = 0;
     virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
     void TransformFrame(Event &, const Process &, bool) const;
@@ -161,6 +162,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     }
     std::string GetName() const override { return Coherent::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "Coherent"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -182,6 +184,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -207,8 +210,9 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
          const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
-    std::string GetName() const override { return QESpectral::Name(); }
+    std::string GetName() const override { return HyperonSpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

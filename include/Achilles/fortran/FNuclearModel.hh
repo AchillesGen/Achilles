@@ -13,7 +13,7 @@ void CleanUpModel(size_t);
 int GetMode(size_t);
 int GetFrame(size_t);
 char *ModelName(size_t);
-char *GetName_(size_t);
+char *ModelPS(size_t);
 void GetCurrents(size_t, long *pids_in, long *pids_out, long *pids_spect, achilles::FourVector *pin, size_t nin, size_t nout, size_t nspect,
                  const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
                  std::complex<double> *current, size_t nspins, size_t nlorentz);
@@ -40,6 +40,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
     static std::string Name() { return "FortranModel"; }
+    std::string PSName() const override { return ModelPS(m_model); }
 
     // TODO: Allow fortran codes to fill these out
     std::string GetName() const override { return ModelName(m_model); }
