@@ -648,8 +648,6 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     // Calculate nucleon contributions
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1Lam], ffVal[Type::F2Lam],
-                      ffVal[Type::FALam]);
         auto current = HadronicCurrent(ubar, u, qVec, ffVal, had_out[0].ID());
         for(auto &subcur : current) {
             // Correct the Ward identity
@@ -699,12 +697,12 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         F2hyp = ffVal.at(Type::F2Lam);
         FAhyp = ffVal.at(Type::FALam);
     }
-    if(hyperon_id == PID::sigmam()) {
+    else if(hyperon_id == PID::sigmam()) {
         F1hyp = ffVal.at(Type::F1Sigm);
         F2hyp = ffVal.at(Type::F2Sigm);
         FAhyp = ffVal.at(Type::FASigm);
     }
-    if(hyperon_id == PID::sigma0()) {
+    else if(hyperon_id == PID::sigma0()) {
         F1hyp = ffVal.at(Type::F1Sig0);
         F2hyp = ffVal.at(Type::F2Sig0);
         FAhyp = ffVal.at(Type::FASig0);

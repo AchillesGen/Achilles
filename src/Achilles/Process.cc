@@ -326,7 +326,7 @@ void ProcessGroup::Optimize() {
     b_calc_weights = false;
     b_optimize = false;
 
-    //std::ofstream outfile("Results.txt");
+    std::ofstream outfile("Results.txt");
 
     // Store max weight and weight vector
     m_process_weights.resize(m_processes.size());
@@ -334,9 +334,9 @@ void ProcessGroup::Optimize() {
         m_process_weights[i] = m_processes[i].MaxWeight();
         m_maxweight += m_process_weights[i];
         spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
-        //outfile << m_processes[i].TotalCrossSection() << std::endl;
+        outfile << m_processes[i].TotalCrossSection() << std::endl;
     }
-    //outfile.close();
+    outfile.close();
     spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
