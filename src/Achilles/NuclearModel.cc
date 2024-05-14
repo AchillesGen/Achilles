@@ -358,10 +358,10 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         case 1: // Final state has more charge than initial
             local.m_hadronic = {{PID::proton()}, {PID::lambda0()}};
             results.push_back(local);
-            //local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
-            //results.push_back(local);
-            //local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
-            //results.push_back(local);
+            local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
+            results.push_back(local);
+            local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
+            results.push_back(local);
             break;
         }
 
@@ -650,7 +650,7 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1Lam], ffVal[Type::F2Lam],
                       ffVal[Type::FALam]);
-        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        auto current = HadronicCurrent(ubar, u, qVec, ffVal, had_out[0].ID());
         for(auto &subcur : current) {
             // Correct the Ward identity
             switch(m_ward) {
@@ -692,16 +692,33 @@ double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons
 NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
                                                   const std::array<Spinor, 2> &u,
                                                   const FourVector &qVec,
-                                                  const FormFactorMap &ffVal) const {
+                                                  const FormFactorMap &ffVal, PID hyperon_id) const {
+    std::complex<double> F1hyp, F2hyp, FAhyp;
+    if(hyperon_id == PID::lambda0()) {
+        F1hyp = ffVal.at(Type::F1Lam);
+        F2hyp = ffVal.at(Type::F2Lam);
+        FAhyp = ffVal.at(Type::FALam);
+    }
+    if(hyperon_id == PID::sigmam()) {
+        F1hyp = ffVal.at(Type::F1Sigm);
+        F2hyp = ffVal.at(Type::F2Sigm);
+        FAhyp = ffVal.at(Type::FASigm);
+    }
+    if(hyperon_id == PID::sigma0()) {
+        F1hyp = ffVal.at(Type::F1Sig0);
+        F2hyp = ffVal.at(Type::F2Sig0);
+        FAhyp = ffVal.at(Type::FASig0);
+    }
+
     Current result;
     std::array<SpinMatrix, 4> gamma{};
     for(size_t mu = 0; mu < 4; ++mu) {
-        gamma[mu] = ffVal.at(Type::F1Lam) * SpinMatrix::GammaMu(mu);
-        gamma[mu] += ffVal.at(Type::FALam) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] = F1hyp * SpinMatrix::GammaMu(mu);
+        gamma[mu] += FAhyp * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] +=
-                std::complex<double>(0, 1) * (ffVal.at(Type::F2Lam) * SpinMatrix::SigmaMuNu(mu, nu) *
+                std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
                                               sign * qVec[nu] / (2 * Constant::mN));
             sign = -1;
         }
