@@ -50,10 +50,9 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     // const double cosT = (cosT_max + 1) * rans[1] - 1;
     // const double sinT = sqrt(1 - cosT*cosT);
 
-    spdlog::debug("hadronidx() = {}", HadronIdx());
-
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
+#ifdef ACHILLES_EVENT_DETAILS 
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
@@ -64,6 +63,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     spdlog::trace("  emax = {}", emax);
     spdlog::trace("  s = {}", (point[0] + point[1]).M2());
     spdlog::trace("  s_min = {}", Smin());
+#endif
 }
 
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
@@ -101,12 +101,14 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
 
     double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi / dE;
+#ifdef ACHILLES_EVENT_DETAILS 
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);
     spdlog::trace("  dCos: {}", dCos);
     spdlog::trace("  dPhi: {}", dPhi);
     spdlog::trace("  dE: {}", dE);
+#endif
 
     return wgt;
 }

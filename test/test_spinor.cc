@@ -113,12 +113,8 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
     SECTION("SigmaMuNu") {
         for(size_t mu = 0; mu < 4; ++mu) {
             for(size_t nu = 0; nu < 4; ++nu) {
-                double gmunu = mu == nu ? mu == 0 ? 1 : -1 : 0;
                 CHECK(SpinMatrix::SigmaMuNu(mu, nu) == -SpinMatrix::SigmaMuNu(nu, mu));
-                CHECK(SpinMatrix::SigmaMuNu(mu, nu) ==
-                      std::complex<double>(0, 1) *
-                          (SpinMatrix::GammaMu(mu) * SpinMatrix::GammaMu(nu) -
-                           gmunu * SpinMatrix::Identity()));
+                CHECK(SpinMatrix::SigmaMuNu(mu, nu) == std::complex<double>(0, 1)/2.0*(SpinMatrix::GammaMu(mu)*SpinMatrix::GammaMu(nu) - SpinMatrix::GammaMu(nu)*SpinMatrix::GammaMu(mu)));
             }
         }
     }

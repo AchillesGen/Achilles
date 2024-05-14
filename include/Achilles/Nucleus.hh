@@ -1,6 +1,7 @@
 #ifndef NUCLEUS_HH
 #define NUCLEUS_HH
 
+#include <filesystem>
 #include <functional>
 #include <iosfwd>
 #include <map>
@@ -14,11 +15,14 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/System.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
+
+namespace fs = std::filesystem;
 
 namespace achilles {
 

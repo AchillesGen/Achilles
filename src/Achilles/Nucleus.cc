@@ -29,10 +29,10 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     // nucleons/fm^3."); constexpr double nucDensity = 0.16; radius =
     // std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
-    std::ifstream densityFile(densityFilename);
+    auto densityPathFile = Filesystem::FindFile(densityFilename, "Nucleus");
+    std::ifstream densityFile(densityPathFile);
     if(!densityFile.is_open())
-        throw std::runtime_error(
-            fmt::format("Nucleus: Density file {} does not exist.", densityFilename));
+        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", densityPathFile));
     std::string lineContent;
 
     constexpr size_t HeaderLength = 16;

@@ -27,6 +27,7 @@ struct FormFactorInfo {
         F2p,
         F2n,
         FA,
+        FAP,
         FCoh,
         FResV,
         FResA,
@@ -44,6 +45,7 @@ struct FormFactorInfo {
         return form_factor == other.form_factor && coupling == other.coupling;
     }
 };
+inline auto format_as(achilles::FormFactorInfo::Type t) { return fmt::underlying(t); }
 
 inline std::string ToString(FormFactorInfo::Type type) {
     switch(type) {
@@ -86,7 +88,7 @@ class FormFactor {
     struct Values {
         double Gep{}, Gen{}, Gmp{}, Gmn{};
         double F1p{}, F2p{}, F1n{}, F2n{};
-        double FA{}, FAs{};
+        double FA{}, FAs{}, FAP{};
         double Fcoh{};
         double FresV{}, FresA{};
         double Fpiem{}, FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};

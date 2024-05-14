@@ -1,5 +1,10 @@
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Exceptions.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -57,9 +62,14 @@ NuclearModel::FormFactorMap
 NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
                           const std::vector<FormFactorInfo> &ffInfo) const {
     FormFactorMap results{};
+    results[Type::F1] = 0;
+    results[Type::F2] = 0;
+    results[Type::FA] = 0;
+    results[Type::FAP] = 0;
+    results[Type::FCoh] = 0;
 
     for(const auto &ff : ffInfo) {
-        spdlog::trace("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
+        SPDLOG_TRACE("Form Factor: {}, Coupling: {}", ff.form_factor, ff.coupling);
         switch(ff.form_factor) {
         case Type::F1p:
             results[Type::F1] += formFactors.F1p * ff.coupling;
@@ -74,7 +84,9 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
             results[Type::F2] += formFactors.F2n * ff.coupling;
             break;
         case Type::FA:
-            results[Type::FA] += formFactors.FA * ff.coupling;
+        case Type::FAP:
+            results[Type::FA] += formFactors.FA*ff.coupling;
+            results[Type::FAP] += formFactors.FAP*ff.coupling;
             break;
         case Type::FCoh:
             results[Type::FCoh] += formFactors.Fcoh * ff.coupling;
@@ -128,7 +140,15 @@ void NuclearModel::TransformQZ(Event &event, const Process &process, bool forwar
 }
 
 YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
-    return YAML::LoadFile(config["NuclearModel"]["FormFactorFile"].as<std::string>());
+    std::string filename = config["NuclearModel"]["FormFactorFile"].as<std::string>();
+    try {
+        return YAML::LoadFile(Filesystem::FindFile(filename, "NuclearModel"));
+    } catch(const AchillesLoadError &e) {
+        spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as FormFactorsDefault.yml",
+                PathVariables::installDefaults / "FormFactors.yml");
+        fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+        return YAML::LoadFile("FormFactorsDefault.yml");
+    }
 }
 
 YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {

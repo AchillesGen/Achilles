@@ -1,3 +1,7 @@
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
 #include "Achilles/Event.hh"
 #include "Achilles/HardScattering.hh"
 #include "Achilles/HardScatteringFactory.hh"
@@ -19,7 +23,7 @@ achilles::HCurrents achilles::FCoherent::HadronicCurrents(Event &event, const FF
     HCurrents results;
     for(const auto &formFactor : coherentFF) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::debug("fcoh = {}", ffVal[3]);
+        SPDLOG_TRACE("fcoh = {}", ffVal[3]);
 
         Current current;
         std::vector<std::complex<double>> subcur(4);

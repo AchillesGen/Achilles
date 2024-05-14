@@ -7,6 +7,7 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Vegas.hh"
 
@@ -53,7 +54,7 @@ class EventGen {
     // CutCollection event_cuts{};
     MultiChannel integrator;
     Integrand<FourVector> integrand;
-    YAML::Node config;
+    Settings config;
     std::vector<double> m_group_weights{};
     double m_max_weight{};
 

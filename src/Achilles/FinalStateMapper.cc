@@ -43,9 +43,11 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     mom[2] = mom[2].Boost(boostVec);
     mom[3] = mom[3].Boost(boostVec);
 
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
     spdlog::trace("  s = {}, lambda = {}", s, lambda);
+#endif
 }
 
 double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
@@ -62,11 +64,14 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
 
     auto factor = pcm / ecm / (16 * M_PI * M_PI);
     auto wgt = 1.0 / dCos / dPhi / factor;
+
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     spdlog::trace("  ct: {}", p2.CosTheta());
     spdlog::trace("  pcm: {}", pcm);
     spdlog::trace("  ecm: {}", ecm);
     spdlog::trace("  Weight: {}", wgt);
+#endif
 
     return wgt;
 }

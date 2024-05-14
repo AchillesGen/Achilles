@@ -1,5 +1,4 @@
-#ifndef COMPLEX_FMT_HH
-#define COMPLEX_FMT_HH
+#pragma once
 
 #include "fmt/format.h"
 #include <complex>
@@ -67,5 +66,3 @@ struct fmt::formatter<std::complex<T>, Char> : public fmt::formatter<T, Char> {
         return format_to(ctx.out(), ")");
     }
 };
-
-#endif

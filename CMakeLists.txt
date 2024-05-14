@@ -36,6 +36,11 @@ enable_sanitizers(project_options)
 include(CMake/StaticAnalyzers.cmake)
 include(CMake/ProgramOptions.cmake)
 
+option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
+
+# Allow build to be made even if not a git repo
+SET(GIT_FAIL_IF_NONZERO_EXIT FALSE)
+
 # Very basic PCH example
 if(ACHILLES_ENABLE_PCH)
     # This sets a global PCH parameter, each project will build its own PCH,
@@ -120,7 +125,7 @@ configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include
 # Copy over data files
 file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/flux DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ACHILLES_SOURCE_DIR}/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/data/default/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -180,4 +185,11 @@ install(
         ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
         ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+)
+
+# Install the data files to be found
+install(DIRECTORY
+    ${CMAKE_BINARY_DIR}/data
+    ${CMAKE_BINARY_DIR}/flux
+    DESTINATION share/Achilles
 )

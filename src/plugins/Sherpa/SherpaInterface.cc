@@ -329,7 +329,7 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
         channel->InitializeChannel(cur);
         auto encoding = std::hash<std::string>{}(channel->ToString());
         if(encoded_channels.find(encoding) != encoded_channels.end()) continue;
-        spdlog::info("{}", channel->ToString());
+        spdlog::debug("{}", channel->ToString());
         encoded_channels.insert(encoding);
         channels.push_back(std::move(channel));
     }
