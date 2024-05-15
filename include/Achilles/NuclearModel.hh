@@ -220,7 +220,7 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
 
   private:
     Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
-                            const FourVector &, const FormFactorMap &, PID) const;
+                            const FourVector &, const FormFactorMap &, const Particle &) const;
 
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;

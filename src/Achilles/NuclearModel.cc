@@ -648,7 +648,7 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     // Calculate nucleon contributions
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        auto current = HadronicCurrent(ubar, u, qVec, ffVal, had_out[0].ID());
+        auto current = HadronicCurrent(ubar, u, qVec, ffVal, had_out[0]);
         for(auto &subcur : current) {
             // Correct the Ward identity
             switch(m_ward) {
@@ -690,19 +690,19 @@ double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons
 NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
                                                   const std::array<Spinor, 2> &u,
                                                   const FourVector &qVec,
-                                                  const FormFactorMap &ffVal, PID hyperon_id) const {
+                                                  const FormFactorMap &ffVal, const Particle &hyperon) const {
     std::complex<double> F1hyp, F2hyp, FAhyp;
-    if(hyperon_id == PID::lambda0()) {
+    if(hyperon.ID() == PID::lambda0()) {
         F1hyp = ffVal.at(Type::F1Lam);
         F2hyp = ffVal.at(Type::F2Lam);
         FAhyp = ffVal.at(Type::FALam);
     }
-    else if(hyperon_id == PID::sigmam()) {
+    else if(hyperon.ID() == PID::sigmam()) {
         F1hyp = ffVal.at(Type::F1Sigm);
         F2hyp = ffVal.at(Type::F2Sigm);
         FAhyp = ffVal.at(Type::FASigm);
     }
-    else if(hyperon_id == PID::sigma0()) {
+    else if(hyperon.ID() == PID::sigma0()) {
         F1hyp = ffVal.at(Type::F1Sig0);
         F2hyp = ffVal.at(Type::F2Sig0);
         FAhyp = ffVal.at(Type::FASig0);
@@ -717,7 +717,7 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] +=
                 std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
-                                              sign * qVec[nu] / (2 * Constant::mN));
+                                              sign * qVec[nu] / (2 * hyperon.Mass()));
             sign = -1;
         }
     }
