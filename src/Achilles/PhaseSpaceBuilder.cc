@@ -27,7 +27,7 @@ PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
     // BUG: The idx parameter needs to be cast to size_t otherwise it is an error about rvalue and
     // lvalues
     phase_space->hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
-        mode, m_info, static_cast<size_t>(idx));
+        mode, m_info, std::move(idx));
     return *this;
 }
 

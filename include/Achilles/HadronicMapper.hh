@@ -13,7 +13,7 @@ class FourVector;
 
 class HadronicBeamMapper : public Mapper<FourVector> {
   public:
-    HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{std::move(idx)} {}
+    HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{idx} {}
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
