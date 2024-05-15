@@ -88,13 +88,14 @@ class IntfSpectralMapper
     // static constexpr double dE = 400;
 };
 
-class IntfSpectralMapper : public HadronicBeamMapper,
-                           RegistrablePS<HadronicBeamMapper, IntfSpectralMapper, size_t> {
+class IntfSpectralMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, IntfSpectralMapper, const ProcessInfo &, size_t> {
   public:
-    IntfSpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    IntfSpectralMapper(const ProcessInfo &info, size_t idx);
     static std::string Name() { return "IntfSpectral"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
-        return std::make_unique<IntfSpectralMapper>(idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<IntfSpectralMapper>(info, idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;

@@ -15,6 +15,11 @@ CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
     m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
 }
 
+CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
+}
+
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
     point[HadronIdx()] = {m_mass, 0, 0, 0};
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
@@ -246,6 +251,11 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 #endif
 
     return wgt;
+}
+
+IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    SetMasses(info.Masses());
 }
 
 void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
