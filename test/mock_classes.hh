@@ -232,10 +232,10 @@ class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
     IMPLEMENT_MOCK1(SetOptions);
     IMPLEMENT_MOCK1(SetSherpa);
     IMPLEMENT_MOCK1(AddNuclearModel);
+    IMPLEMENT_MOCK0(GetNuclearModel);
     IMPLEMENT_MOCK1(AddProcess);
     IMPLEMENT_MOCK0(Validate);
-    IMPLEMENT_MOCK3(SetupChannels);
-    IMPLEMENT_MOCK0(GetNuclearModel);
+    IMPLEMENT_MOCK4(SetupChannels);
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }

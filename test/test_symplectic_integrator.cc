@@ -143,12 +143,12 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<2>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
-        const double Ef2 = Hamiltonian(si.State().x, si.State().y, nucleus.get(), potential);
+        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
+        const double Ef2 = Hamiltonian(si.State().x, si.State().y, potential);
         spdlog::info("Final Hamiltonian Value: {}, {}, {}, {}",
                      Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef - E0) / E0, Ef2,
                      std::abs(Ef2 - E0) / E0);
@@ -168,7 +168,7 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<4>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
@@ -189,7 +189,7 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
         for(size_t i = 0; i < nsteps; ++i) {
             si.Step<6>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), nucleus.get(), potential);
+            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
             out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
             out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
         }
