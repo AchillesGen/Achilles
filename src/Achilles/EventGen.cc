@@ -107,7 +107,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         // TODO: Convert to using Settings object instead of calling Root()
         auto models = LoadModels(config.Root());
         for(auto &model : models) {
-            auto groups = ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
+            auto groups =
+                ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
                     spdlog::info("Found Process: {}", process.Info());

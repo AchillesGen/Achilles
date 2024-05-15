@@ -10,6 +10,7 @@
 #include "spdlog/fmt/ostr.h"
 #include "fmt/core.h"
 #include "fmt/format.h"
+#include "spdlog/fmt/ostr.h"
 
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"

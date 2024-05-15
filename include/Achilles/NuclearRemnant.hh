@@ -51,10 +51,11 @@ struct formatter<achilles::NuclearRemnant> {
         return ctx.begin();
     }
 
-    auto format(const achilles::NuclearRemnant &rem, format_context &ctx) const -> format_context::iterator {
+    auto format(const achilles::NuclearRemnant &rem, format_context &ctx) const
+        -> format_context::iterator {
         return format_to(ctx.out(), "NuclearRemnant({})", rem.PID());
     }
 };
-}
+} // namespace fmt
 
 #endif

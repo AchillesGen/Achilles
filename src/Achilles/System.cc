@@ -1,6 +1,7 @@
 #include "Achilles/System.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/std.h"
 #include "spdlog/spdlog.h"
 
 using achilles::Filesystem::Cache;

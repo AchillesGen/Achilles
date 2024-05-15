@@ -79,14 +79,16 @@ struct formatter<achilles::ProcessInfo> {
         return ctx.begin();
     }
 
-    auto format(const achilles::ProcessInfo &info, format_context &ctx) const -> format_context::iterator {
-        return format_to(ctx.out(), "ProcessInfo([{}, {}] -> [{}, {}])", info.m_leptonic.first,
+    auto format(const achilles::ProcessInfo &info, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(
+            ctx.out(), "ProcessInfo([{}, {}] -> [{}, {}])", info.m_leptonic.first,
             fmt::join(info.m_hadronic.first.begin(), info.m_hadronic.first.end(), ", "),
             fmt::join(info.m_leptonic.second.begin(), info.m_leptonic.second.end(), ", "),
             fmt::join(info.m_hadronic.second.begin(), info.m_hadronic.second.end(), ", "));
     }
 };
-}
+} // namespace fmt
 
 namespace YAML {
 
