@@ -53,7 +53,7 @@ TEST_CASE("Handles events correctly", "[Process]") {
     SECTION("Extract Momentum") {
         info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
         achilles::FourVector lep_in, lep_in_expected{1.3e+03, 0.0, 0.0, 1.3e+03};
-        std::vector<achilles::FourVector> had_in, lep_out, had_out;
+        std::vector<achilles::FourVector> had_in, lep_out, had_out, spect;
         std::vector<achilles::FourVector> had_in_exp{{1.1188e+04, 0.0, 0.0, 0.0}};
         std::vector<achilles::FourVector> lep_out_exp{
             {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}};
@@ -66,7 +66,7 @@ TEST_CASE("Handles events correctly", "[Process]") {
         const MockEvent event;
         REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
 
-        process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out);
+        process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
         CHECK(lep_in == lep_in_expected);
         CHECK_THAT(had_in, AllFourVectorApprox(had_in_exp));
         CHECK_THAT(lep_out, AllFourVectorApprox(lep_out_exp));

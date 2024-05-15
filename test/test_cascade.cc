@@ -46,12 +46,12 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_unique<MockPotential>();
+        auto potential = std::make_shared<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(nucleus.get(), hadrons[0].Momentum().P(),
+        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(),
                                              hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
@@ -67,7 +67,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     SECTION("Large Formation Zone") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_unique<MockPotential>();
+        auto potential = std::make_shared<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).RETURN(nullptr);
@@ -160,12 +160,12 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     SECTION("Captured") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_unique<MockPotential>();
+        auto potential = std::make_shared<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(nucleus.get(), hadrons[0].Momentum().P(),
+        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(),
                                              hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
@@ -183,7 +183,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     SECTION("Large Formation Zone") {
         auto interaction = std::make_unique<MockInteraction>();
         auto nucleus = std::make_shared<MockNucleus>();
-        auto potential = std::make_unique<MockPotential>();
+        auto potential = std::make_shared<MockPotential>();
 
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).RETURN(nullptr);

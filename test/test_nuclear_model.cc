@@ -79,8 +79,9 @@ NuclearModel:
         std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
         info_map[2][achilles::PID::photon()] = {
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FCoh, 1}};
-        auto output = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
-                                         info_map[2]);
+        auto output = model.CalcCurrents({{achilles::PID::carbon(), momentum[1]}},
+                                         {{achilles::PID::carbon(), momentum[3]}}, {},
+                                         momentum[0] - momentum[2], info_map[2]);
         CHECK(output.size() == 1);
         auto results = output[achilles::PID::photon()];
         achilles::VCurrent expected;
@@ -184,7 +185,6 @@ NuclearModel:
     }
 
     // TODO: This test is too sensitive to minor numerical changes. Need to find a way to better test
-    /*
     SECTION("CalcCurrents") {
         std::vector<achilles::FourVector> momentum = {
             {1.30000000e+03, 0.00000000e+00, 0.00000000e+00, 1.30000000e+03},
@@ -215,14 +215,15 @@ NuclearModel:
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
-        auto output_p = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
-                                           info_map[0]);
-        auto output_n = model.CalcCurrents({momentum[1]}, {momentum[3]}, momentum[0] - momentum[2],
-                                           info_map[0]);
+        auto output_p = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}}, {},
+                                           momentum[0] - momentum[2], info_map[0]);
+        auto output_n = model.CalcCurrents({{2112, momentum[1]}}, {{2112, momentum[3]}}, {},
+                                           momentum[0] - momentum[2], info_map[1]);
         CHECK(output_p.size() == 1);
         auto results_p = output_p[achilles::PID::photon()];
         CHECK(results_p.size() == model.NSpins());
         CHECK(results_p[0].size() == 4);
+        CHECK(output_n.size() == 1);
         auto results_n = output_n[achilles::PID::photon()];
         CHECK(results_n.size() == model.NSpins());
         CHECK(results_n[0].size() == 4);

@@ -46,7 +46,7 @@ inline unsigned int Log2(unsigned int val) {
 }
 
 template <class ContainerT>
-void tokenize(const std::string &str, ContainerT &tokens, const std::string &delimiters = " \n\t",
+void tokenize(const std::string_view &str, ContainerT &tokens, const std::string_view &delimiters = " \n\t",
               bool trimEmpty = true) {
     std::string::size_type lastPos = 0, length = str.length();
 

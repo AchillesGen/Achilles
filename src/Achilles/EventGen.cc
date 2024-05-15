@@ -52,7 +52,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config.GetAs<Beam>("Beams"));
-    nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>("Nuclei");
+    nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
     spdlog::debug("Cascade mode: {}", config.GetAs<bool>("Cascade/Run"));
@@ -74,7 +74,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         std::string model_name = "SMnu";
         if(config.Exists("SherpaOptions/Model"))
             model_name = config.GetAs<std::string>("SherpaOptions/Model");
-        auto param_card = config.GetAs<std::string>("SherpaOptions/ParamCard"];
+        auto param_card = config.GetAs<std::string>("SherpaOptions/ParamCard");
         int qed = 0;
         if(config.Exists("SherpaOptions/QEDShower"))
             if(config.GetAs<bool>("SherpaOptions/QEDShower")) qed = 1;
@@ -99,22 +99,24 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     for(const auto &nucleus : nuclei) {
         // Initialize the Nuclear models for each nuclei
         spdlog::debug("Initializing nuclear models");
-        auto models = LoadModels(config);
+        // TODO: Convert to using Settings object instead of calling Root()
+        auto models = LoadModels(config.Root());
         for(auto &model : models) {
-            auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
+            auto groups = ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
                     spdlog::info("Found Process: {}", process.Info());
-                group.second.SetupBackend(config, std::move(model.second), p_sherpa);
+                group.second.SetupBackend(config.Root(), std::move(model.second), p_sherpa);
                 process_groups.push_back(std::move(group.second));
             }
         }
     }
 
     // Setup Multichannel integrators and remove invalid configurations
+    // TODO: Convert to using Settings object instead of calling Root()
     process_groups.erase(
         std::remove_if(process_groups.begin(), process_groups.end(),
-                       [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
+                       [&](ProcessGroup &group) { return !group.SetupIntegration(config.Root()); }),
         process_groups.end());
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane

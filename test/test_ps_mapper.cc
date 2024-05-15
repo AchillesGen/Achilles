@@ -121,7 +121,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .LR_SIDE_EFFECT(_2 = final_state_rans)
         .RETURN(1.0);
 
-    achilles::PSMapper mapper(2, 2);
+    achilles::PSMapper mapper(2, 2, 0);
     mapper.SetLeptonBeam(beam_map);
     mapper.SetHadronBeam(hadron_map);
     mapper.SetFinalState(std::move(final_state_map));

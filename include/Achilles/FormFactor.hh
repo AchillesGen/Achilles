@@ -63,6 +63,8 @@ inline std::string ToString(FormFactorInfo::Type type) {
         return "F2n";
     case FormFactorInfo::Type::FA:
         return "FA";
+    case FormFactorInfo::Type::FAP:
+        return "FAP";
     case FormFactorInfo::Type::FCoh:
         return "FCoh";
     case FormFactorInfo::Type::FResV:

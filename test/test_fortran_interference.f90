@@ -9,6 +9,7 @@ contains
 
     subroutine test_interference(test_suite)
         use unit_test
+        use libmap
         type(test_suite_type) :: test_suite
         integer(4) :: i,j
         real(8),dimension(4,4) :: rmunu_np, rmunu_nn, rmunu_pn, rmunu_pp
@@ -17,11 +18,12 @@ contains
         character(len=100) :: file
         logical :: valid
         integer(8) :: pid_in, pid_out, pid_spect
+        type(map) :: params
 
         file = 'data/intf_info.data'
 
         call test_case_create('Fortran Spectral Inteference model', test_suite)
-        valid = model%init(file)
+        valid = model%init(file, params)
 
         pid_in = 2112 
         pid_out = 2112  

@@ -167,6 +167,6 @@ TEST_CASE("Make Nucleus", "[Nucleus]") {
         if(!bad_random)
             CHECK_THROWS_WITH(
                 achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, fermiGas, std::move(density)),
-                fmt::format("Invalid nucleus: {} does not exist.", match[2]));
+                fmt::format("Invalid nucleus: {} does not exist.", match[2].str()));
     }
 }

@@ -12,6 +12,8 @@
 #include "Achilles/Poincare.hh"
 #include "Achilles/Spinor.hh"
 
+#include "fmt/std.h"
+
 using achilles::Coherent;
 using achilles::NuclearModel;
 using achilles::QESpectral;

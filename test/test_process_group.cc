@@ -98,7 +98,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         Options: 
     )backend");
 
-    MockSherpaInterface sherpa;
+    // MockSherpaInterface sherpa;
     auto backend = std::make_unique<MockBackend>();
     auto model = std::make_unique<MockNuclearModel>();
     trompeloeil::sequence seq;
@@ -106,7 +106,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         .TIMES(1)
         .IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, AddNuclearModel(trompeloeil::ne(nullptr))).TIMES(1).IN_SEQUENCE(seq);
-    REQUIRE_CALL(*backend, SetSherpa(&sherpa)).TIMES(1).IN_SEQUENCE(seq);
+    REQUIRE_CALL(*backend, SetSherpa(nullptr)).TIMES(1).IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, Validate()).TIMES(1).IN_SEQUENCE(seq).RETURN(true);
     REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(1).IN_SEQUENCE(seq);
 
@@ -121,7 +121,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
 
         SECTION("Optimize") {
             group.CrossSection(event, std::optional<size_t>());
@@ -159,7 +159,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             Options: 
         )backend");
 
-    MockSherpaInterface sherpa;
+    // MockSherpaInterface sherpa;
     auto backend = std::make_unique<MockBackend>();
     auto model = std::make_unique<MockNuclearModel>();
     trompeloeil::sequence seq;
@@ -167,7 +167,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         .TIMES(1)
         .IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, AddNuclearModel(trompeloeil::ne(nullptr))).TIMES(1).IN_SEQUENCE(seq);
-    REQUIRE_CALL(*backend, SetSherpa(&sherpa)).TIMES(1).IN_SEQUENCE(seq);
+    REQUIRE_CALL(*backend, SetSherpa(nullptr)).TIMES(1).IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, Validate()).TIMES(1).IN_SEQUENCE(seq).RETURN(true);
     REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(1).IN_SEQUENCE(seq);
 
@@ -186,7 +186,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
         CHECK(event.Weight() == expected_weight);
     }
@@ -213,7 +213,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
         CHECK(event.Weight() == expected_weight);
     }
