@@ -3,8 +3,9 @@
 
 #include <cmath>
 
+#include "Achilles/Factory.hh"
 #include "Achilles/Mapper.hh"
-#include "Achilles/PhaseSpaceFactory.hh"
+#include "Achilles/ProcessInfo.hh"
 
 namespace achilles {
 
@@ -12,15 +13,13 @@ class FourVector;
 
 class HadronicBeamMapper : public Mapper<FourVector> {
   public:
-    HadronicBeamMapper(size_t idx, std::string name)
-        : m_idx{std::move(idx)}, m_name{std::move(name)} {}
+    HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{std::move(idx)} {}
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
     size_t NDims() const override = 0;
     YAML::Node ToYAML() const override {
         YAML::Node result;
-        result["Name"] = m_name;
         result["Idx"] = m_idx;
         return result;
     }
@@ -28,19 +27,20 @@ class HadronicBeamMapper : public Mapper<FourVector> {
 
   protected:
     size_t HadronIdx() const { return m_idx; }
+    ProcessInfo m_info;
 
   private:
     size_t m_idx;
-    std::string m_name;
 };
 
-class QESpectralMapper : public HadronicBeamMapper,
-                         RegistrablePS<HadronicBeamMapper, QESpectralMapper, size_t> {
+class QESpectralMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, QESpectralMapper, const ProcessInfo &, size_t> {
   public:
-    QESpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    QESpectralMapper(const ProcessInfo &info, size_t idx);
     static std::string Name() { return "OneBodySpectral"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
-        return std::make_unique<QESpectralMapper>(idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<QESpectralMapper>(info, idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
@@ -54,27 +54,32 @@ class QESpectralMapper : public HadronicBeamMapper,
     // static constexpr double dE = 400;
 };
 
-class CoherentMapper : public HadronicBeamMapper,
-                       RegistrablePS<HadronicBeamMapper, CoherentMapper, size_t> {
+class CoherentMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, CoherentMapper, const ProcessInfo &, size_t> {
   public:
-    CoherentMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    CoherentMapper(const ProcessInfo &info, size_t idx);
     static std::string Name() { return "Coherent"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
-        return std::make_unique<CoherentMapper>(idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<CoherentMapper>(info, idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
     size_t NDims() const override { return 0; }
+
+  private:
+    double m_mass;
 };
 
-class IntfSpectralMapper : public HadronicBeamMapper,
-                           RegistrablePS<HadronicBeamMapper, IntfSpectralMapper, size_t> {
+class IntfSpectralMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, IntfSpectralMapper, const ProcessInfo &, size_t> {
   public:
-    IntfSpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    IntfSpectralMapper(const ProcessInfo &info, size_t idx);
     static std::string Name() { return "IntfSpectral"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
-        return std::make_unique<IntfSpectralMapper>(idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<IntfSpectralMapper>(info, idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;

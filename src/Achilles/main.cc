@@ -146,16 +146,17 @@ int main(int argc, char *argv[]) {
     achilles::Plugin::Manager plugin_manager;
 
     if(args["--display-cuts"].asBool()) {
-        achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
-        achilles::CutFactory<achilles::TwoParticleCut>::DisplayCuts();
+        achilles::CutFactory<achilles::OneParticleCut>::Display();
+        achilles::CutFactory<achilles::TwoParticleCut>::Display();
         return 0;
     }
 
     if(args["--display-ps"].asBool()) {
-        achilles::PSFactory<achilles::HadronicBeamMapper, size_t>::DisplayPhaseSpaces();
-        achilles::PSFactory<achilles::FinalStateMapper, std::vector<double>>::DisplayPhaseSpaces();
+        achilles::Factory<achilles::HadronicBeamMapper, const achilles::ProcessInfo &,
+                          size_t>::Display();
+        achilles::Factory<achilles::FinalStateMapper, std::vector<double>>::Display();
 #ifdef ACHILLES_SHERPA_INTERFACE
-        achilles::PSFactory<PHASIC::Channels, std::vector<double>>::DisplayPhaseSpaces();
+        achilles::Factory<PHASIC::Channels, std::vector<double>>::Display();
 #endif // ACHILLES_SHERPA_INTERFACE
         return 0;
     }

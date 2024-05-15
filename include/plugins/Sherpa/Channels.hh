@@ -1,12 +1,11 @@
 #ifndef PLUGINS_CHANNELS_HH
 #define PLUGINS_CHANNELS_HH
 
-#include <functional>
 #include <utility>
 
 #include "ATOOLS/Math/Vector.H"
+#include "Achilles/Factory.hh"
 #include "Achilles/Mapper.hh"
-#include "Achilles/PhaseSpaceFactory.hh"
 
 namespace COMIX {
 class Single_Process;
@@ -33,7 +32,7 @@ struct ChannelNode {
 };
 
 class GenChannel : public Channels,
-                   achilles::RegistrablePS<Channels, GenChannel, std::vector<double>> {
+                   achilles::Registrable<Channels, GenChannel, std::vector<double>> {
   public:
     GenChannel(size_t npart, std::vector<double> s)
         : m_n{npart}, m_nout{npart - 2}, m_s{std::move(s)} {
