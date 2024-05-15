@@ -31,7 +31,7 @@ class PSBuilder {
 
   private:
     ProcessInfo m_info;
-    [[maybe_unused]] size_t m_nlep, m_nhad, m_nspec;
+    size_t m_nlep, m_nhad, m_nspec;
     std::unique_ptr<PSMapper> phase_space = nullptr;
 };
 
