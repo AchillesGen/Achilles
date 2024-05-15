@@ -262,9 +262,9 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
     for(const auto &process_node : node["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
         auto infos = model->AllowedStates(process_info);
-        const auto unweight_name = node["Unweighting"]["Name"].as<std::string>();
+        const auto unweight_name = node["Options"]["Unweighting"]["Name"].as<std::string>();
         for(auto &info : infos) {
-            auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
+            auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
             Process process(info, std::move(unweighter));
             process.SetID(model);
             const auto multiplicity = info.Multiplicity();
@@ -300,8 +300,8 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
 
     // TODO: Fix scaling to be consistent with Chili paper
     m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
-    if(config["Initialize"]["Accuracy"])
-        m_integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
+    if(config["Options"]["Initialize"]["Accuracy"])
+        m_integrator.Parameters().rtol = config["Options"]["Initialize"]["Accuracy"].as<double>();
 
     return true;
 }

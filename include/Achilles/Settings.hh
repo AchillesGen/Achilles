@@ -92,8 +92,8 @@ class Settings {
 
         YAML::Node m_settings;
         static constexpr std::array<std::string_view, 9> m_required_options = {
-            "Main/NEvents", "Main/Output/Format", "Main/Output/Name", "Process/Final States",
-            "NuclearModel/Model", "Nucleus", "Cascade/Run", "Options/Unweighting", "Options/Initialize" };
+            "Main/NEvents", "Main/Output/Format", "Main/Output/Name", "Processes",
+            "NuclearModels", "Nuclei", "Cascade/Run", "Options/Unweighting", "Options/Initialize" };
         static Settings main_settings;
 };
 

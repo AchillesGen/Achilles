@@ -16,13 +16,13 @@ SherpaOptions:
 Processes:
   - Leptons: [11, [11]]
 
-Initialize:
-  Seed: 12345678
-  Accuracy: 1e-2
-
-Unweighting:
-  Name: Percentile
-  percentile: 99
+Options:
+  Initialize:
+    Seed: 12345678
+    Accuracy: 1e-2
+  Unweighting:
+    Name: Percentile
+    percentile: 99
 
 Beams:
   - Beam:
