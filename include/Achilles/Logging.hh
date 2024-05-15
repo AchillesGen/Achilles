@@ -10,24 +10,24 @@
 inline void SignalHandler(int signal) {
     std::string signal_str;
     switch(signal) {
-        case SIGTERM:
-            signal_str = "SIGTERM";
-            break;
-        case SIGSEGV:
-            signal_str = "SIGSEGV";
-            break;
-        case SIGINT:
-            signal_str = "SIGINT";
-            break;
-        case SIGABRT:
-            signal_str = "SIGABRT";
-            break;
-        default:
-            signal_str = "Unknown";
+    case SIGTERM:
+        signal_str = "SIGTERM";
+        break;
+    case SIGSEGV:
+        signal_str = "SIGSEGV";
+        break;
+    case SIGINT:
+        signal_str = "SIGINT";
+        break;
+    case SIGABRT:
+        signal_str = "SIGABRT";
+        break;
+    default:
+        signal_str = "Unknown";
     }
     spdlog::error("Achilles has recieved a {} signal", signal_str);
     spdlog::error("Achilles attempting to exit gracefully!");
-    spdlog::get("achilles") -> flush();
+    spdlog::get("achilles")->flush();
     exit(-1);
 }
 

@@ -18,8 +18,8 @@
 
 #include "docopt.h"
 
-#include <filesystem>
 #include <dlfcn.h>
+#include <filesystem>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
@@ -138,7 +138,7 @@ int main(int argc, char *argv[]) {
     std::signal(SIGSEGV, SignalHandler);
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGABRT, SignalHandler);
-    
+
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
     CreateLogger(verbosity, log_verbosity, 1);
@@ -179,16 +179,18 @@ int main(int argc, char *argv[]) {
     }
 
     std::string runcard = "run.yml";
-    if(args["<input>"].isString()) runcard = args["<input>"].asString();
+    if(args["<input>"].isString())
+        runcard = args["<input>"].asString();
     else {
         // Ensure file exists, otherwise copy template file to current location
         if(!fs::exists(runcard)) {
-            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to this location");
+            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
+                          "this location");
             if(!fs::exists(achilles::PathVariables::installData)) {
-                fs::copy(achilles::PathVariables::buildData/fs::path("default/run.yml"),
+                fs::copy(achilles::PathVariables::buildData / fs::path("default/run.yml"),
                          fs::current_path());
             } else {
-                fs::copy(achilles::PathVariables::installData/fs::path("default/run.yml"),
+                fs::copy(achilles::PathVariables::installData / fs::path("default/run.yml"),
                          fs::current_path());
             }
             return 1;
@@ -200,9 +202,7 @@ int main(int argc, char *argv[]) {
 
     try {
         GenerateEvents(runcard, shargs);
-    } catch (const std::runtime_error &error) {
-        spdlog::error(error.what());
-    }
+    } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
 
     return 0;
 }

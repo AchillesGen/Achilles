@@ -121,10 +121,7 @@ class SpinMatrix {
     }
 
     static constexpr SpinMatrix Zero() {
-        return {{0, 0, 0, 0,
-                 0, 0, 0, 0,
-                 0, 0, 0, 0,
-                 0, 0, 0, 0}};
+        return {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
     }
 
     static constexpr SpinMatrix Gamma_0() {

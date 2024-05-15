@@ -43,11 +43,13 @@ achilles::DensityConfiguration::DensityConfiguration(const std::string &filename
             tokenize(line, tokens);
 #ifdef ACHILLES_LOW_MEMORY
             auto is_proton = tokens[0] == "1" ? true : false;
-            std::array<double, 3> pos{std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3])};
+            std::array<double, 3> pos{std::stod(tokens[1]), std::stod(tokens[2]),
+                                      std::stod(tokens[3])};
             config.nucleons.emplace_back(is_proton, pos);
 #else
             const auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
-            const ThreeVector position{std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3])}; 
+            const ThreeVector position{std::stod(tokens[1]), std::stod(tokens[2]),
+                                       std::stod(tokens[3])};
             config.nucleons.emplace_back(pid, FourVector{}, position);
 #endif
         }
@@ -67,14 +69,14 @@ std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration
     while(true) {
         auto index = Random::Instance().Uniform<std::size_t>(0, m_configurations.size());
 
-        if(m_configurations[index].wgt/m_maxWgt > Random::Instance().Uniform(0.0, 1.0)) {
+        if(m_configurations[index].wgt / m_maxWgt > Random::Instance().Uniform(0.0, 1.0)) {
             Configuration &config = m_configurations[index];
             std::array<double, 3> angles{};
-            Random::Instance().Generate(angles, 0.0, 2*M_PI);
+            Random::Instance().Generate(angles, 0.0, 2 * M_PI);
             angles[1] /= 2;
 
 #ifdef ACHILLES_LOW_MEMORY
-            for(auto& part : config.nucleons) {
+            for(auto &part : config.nucleons) {
                 const auto pid = part.is_proton ? PID::proton() : PID::neutron();
                 const auto position = ThreeVector(part.position).Rotate(angles);
                 particles.emplace_back(pid, FourVector{}, position);
@@ -82,9 +84,7 @@ std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration
 
             return particles;
 #else
-            for(auto& part : config.nucleons) {
-                part.SetPosition(part.Position().Rotate(angles));
-            }
+            for(auto &part : config.nucleons) { part.SetPosition(part.Position().Rotate(angles)); }
 
             return config.nucleons;
 #endif

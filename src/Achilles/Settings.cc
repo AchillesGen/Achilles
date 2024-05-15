@@ -10,7 +10,8 @@
 #include <cxxabi.h>
 std::string achilles::demangle(const char *name) {
     int status = -4;
-    std::unique_ptr<char, void(*)(void*)> res {abi::__cxa_demangle(name, NULL, NULL, &status), std::free};
+    std::unique_ptr<char, void (*)(void *)> res{abi::__cxa_demangle(name, NULL, NULL, &status),
+                                                std::free};
 
     return status == 0 ? res.get() : name;
 }
@@ -32,26 +33,26 @@ void Settings::Print() const {
 }
 
 const YAML::Node Settings::operator[](const std::string_view &key) const {
-    auto paths = ParsePath(key); 
-    spdlog::trace("Settings: key = {}, parsed path = {}",
-                  key, fmt::join(paths.begin(), paths.end(), ", "));
+    auto paths = ParsePath(key);
+    spdlog::trace("Settings: key = {}, parsed path = {}", key,
+                  fmt::join(paths.begin(), paths.end(), ", "));
     if(paths.size() == 1) return m_settings[paths[0]];
     try {
         return seek(paths, m_settings);
-    } catch (const SettingsError &) {
+    } catch(const SettingsError &) {
         auto msg = fmt::format("Settings: key {} can not be found", key);
         throw SettingsError(msg);
     }
 }
 
 YAML::Node Settings::operator[](const std::string_view &key) {
-    auto paths = ParsePath(key); 
+    auto paths = ParsePath(key);
     if(paths.size() == 1) return m_settings[paths[0]];
-    spdlog::trace("Settings: key = {}, parsed path = {}",
-                  key, fmt::join(paths.begin(), paths.end(), ", "));
+    spdlog::trace("Settings: key = {}, parsed path = {}", key,
+                  fmt::join(paths.begin(), paths.end(), ", "));
     try {
         return seek(paths, m_settings);
-    } catch (const SettingsError &) {
+    } catch(const SettingsError &) {
         auto msg = fmt::format("Settings: key {} can not be found", key);
         throw SettingsError(msg);
     }
@@ -60,18 +61,14 @@ YAML::Node Settings::operator[](const std::string_view &key) {
 bool Settings::Exists(const std::string_view &key) const {
     try {
         return static_cast<bool>((*this)[key]);
-    } catch (const SettingsError &) {
-        return false;
-    }
+    } catch(const SettingsError &) { return false; }
 }
 
 YAML::Node Settings::IncludeFile(const std::string &filename) {
     YAML::Node node = YAML::LoadFile(Filesystem::FindFile(filename, "Settings"));
 
     MutableYAMLVisitor([](YAML::Node scalar) {
-        if(scalar.Tag() == "!include") {
-            scalar = IncludeFile(scalar.Scalar());
-        }
+        if(scalar.Tag() == "!include") { scalar = IncludeFile(scalar.Scalar()); }
     })(node);
 
     return node;
@@ -83,8 +80,7 @@ void Settings::CheckRequired() const {
         if(!(*this)[option]) {
             spdlog::debug("Printing out processed run card");
             if(spdlog::get_level() == spdlog::level::debug) Print();
-            auto msg = fmt::format("Settings: Required option {} is not defined",
-                                   option);
+            auto msg = fmt::format("Settings: Required option {} is not defined", option);
             throw SettingsError(msg);
         }
     }

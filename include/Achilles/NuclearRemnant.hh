@@ -31,16 +31,16 @@ class NuclearRemnant {
 
 namespace fmt {
 
-template<>
-struct formatter<achilles::NuclearRemnant> {
+template <> struct formatter<achilles::NuclearRemnant> {
     constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    auto format(const achilles::NuclearRemnant &rem, format_context &ctx) const -> format_context::iterator {
+    auto format(const achilles::NuclearRemnant &rem, format_context &ctx) const
+        -> format_context::iterator {
         return format_to(ctx.out(), "NuclearRemnant({})", rem.PID());
     }
 };
-}
+} // namespace fmt
 
 #endif

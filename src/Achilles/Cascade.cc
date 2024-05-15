@@ -555,13 +555,12 @@ void Cascade::AdaptiveStep(const Particles &particles, const double &stepDistanc
 }
 
 /// Determine whether "test_point" is between two parallel planes defined by
-/// the normal vector "plane_normal". With the point "on_plane" on the closer plane 
+/// the normal vector "plane_normal". With the point "on_plane" on the closer plane
 /// and dist the distance from the start plane to the end plane.
-bool Cascade::BetweenPlanes(const ThreeVector& test_point,
-                            const ThreeVector& on_plane,
-                            const ThreeVector& plane_normal, double dist) const noexcept {
+bool Cascade::BetweenPlanes(const ThreeVector &test_point, const ThreeVector &on_plane,
+                            const ThreeVector &plane_normal, double dist) const noexcept {
     // Get signed distance to plane
-    auto signed_dist = plane_normal.Dot(test_point-on_plane);
+    auto signed_dist = plane_normal.Dot(test_point - on_plane);
 
     // Determine if point is between planes
     return signed_dist > 0 && signed_dist < dist;
@@ -599,15 +598,15 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
     particles[idx].Propagate(timeStep);
     const ThreeVector point2 = particles[idx].Position();
     auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
-    auto distance2 = (point2-point1).Dot(normedMomentum);
+    auto distance2 = (point2 - point1).Dot(normedMomentum);
 
     // Build results vector
     for(std::size_t i = 0; i < particles.size(); ++i) {
         // TODO: Should particles propagating be able to interact with
         //       other propagating particles?
-        if (particles[i].Status() != ParticleStatus::background) continue;
-        //if(i == idx) continue;
-        // if(particles[i].InFormationZone()) continue;
+        if(particles[i].Status() != ParticleStatus::background) continue;
+        // if(i == idx) continue;
+        //  if(particles[i].InFormationZone()) continue;
         if(!BetweenPlanes(particles[i].Position(), point1, normedMomentum, distance2)) continue;
         auto projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
         // (Squared) distance in the direction orthogonal to the momentum

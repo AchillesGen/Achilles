@@ -3,8 +3,8 @@
 #endif
 
 #include "Achilles/NuclearModel.hh"
-#include "Achilles/Exceptions.hh"
 #include "Achilles/Exception.hh"
+#include "Achilles/Exceptions.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -90,8 +90,8 @@ NuclearModel::CouplingsFF(const FormFactor::Values &formFactors,
             break;
         case Type::FA:
         case Type::FAP:
-            results[Type::FA] += formFactors.FA*ff.coupling;
-            results[Type::FAP] += formFactors.FAP*ff.coupling;
+            results[Type::FA] += formFactors.FA * ff.coupling;
+            results[Type::FAP] += formFactors.FAP * ff.coupling;
             break;
         case Type::FCoh:
             results[Type::FCoh] += formFactors.Fcoh * ff.coupling;
@@ -172,8 +172,9 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     try {
         return YAML::LoadFile(Filesystem::FindFile(filename, "NuclearModel"));
     } catch(const AchillesLoadError &e) {
-        spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as FormFactorsDefault.yml",
-                PathVariables::installDefaults / "FormFactors.yml");
+        spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as "
+                     "FormFactorsDefault.yml",
+                     PathVariables::installDefaults / "FormFactors.yml");
         fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
         return YAML::LoadFile("FormFactorsDefault.yml");
     }

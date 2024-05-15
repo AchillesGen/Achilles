@@ -240,7 +240,8 @@ void GenChannel::TChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
     SPDLOG_TRACE("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
     SPDLOG_TRACE("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
     SPDLOG_TRACE("  se = {}, sp = {}", se, sp);
-    SPDLOG_TRACE("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2], m_s[3]);
+    SPDLOG_TRACE("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2],
+                 m_s[3]);
     SPDLOG_TRACE("  iran = {}", iran);
 }
 
@@ -252,10 +253,8 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     m_p[pid] = m_p[aid] + m_p[m_rid] - m_p[bid];
     double se = SCut(bid), sp = SCut(pid);
     double rtsmax = (m_p[aid] + m_p[m_rid]).Mass();
-    const std::string name = "TChannelWeight(" + std::to_string(aid) + ", "
-                                               + std::to_string(bid) + ", "
-                                               + std::to_string(cid) + ", "
-                                               + std::to_string(pid) + ")";
+    const std::string name = "TChannelWeight(" + std::to_string(aid) + ", " + std::to_string(bid) +
+                             ", " + std::to_string(cid) + ", " + std::to_string(pid) + ")";
     SPDLOG_TRACE("{}", name);
     if(!achilles::IsPower2(bid)) {
         double smin = se, smax = sqr(rtsmax - sqrt(sp));
@@ -305,9 +304,11 @@ void GenChannel::SChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
     m_p[(1 << m_n) - 1 - aid] = m_p[aid];
     m_p[(1 << m_n) - 1 - bid] = m_p[bid];
     SPDLOG_TRACE("{}", name);
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", cid, node -> m_pid, m_p[cid], m_p[cid].Mass());
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", lid, node -> m_left -> m_pid, m_p[lid], m_p[lid].Mass());
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", rid, node -> m_right -> m_pid, m_p[rid], m_p[rid].Mass());
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", cid, node->m_pid, m_p[cid], m_p[cid].Mass());
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", lid, node->m_left->m_pid, m_p[lid],
+                 m_p[lid].Mass());
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", rid, node->m_right->m_pid, m_p[rid],
+                 m_p[rid].Mass());
     SPDLOG_TRACE("  sl = {}, sr = {}", sl, sr);
     SPDLOG_TRACE("  iran = {}", iran);
 }
@@ -330,9 +331,9 @@ double GenChannel::SChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     const std::string name = "SChannelWeight(" + std::to_string(cid) + ", " + std::to_string(aid) +
                              ", " + std::to_string(bid) + ")";
     SPDLOG_TRACE("{}", name);
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}", cid, node -> m_pid, m_p[cid]);
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}", lid, node -> m_left -> m_pid, m_p[lid]);
-    SPDLOG_TRACE("  m_p[{}] ({}) = {}", rid, node -> m_right -> m_pid, m_p[rid]);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", cid, node->m_pid, m_p[cid]);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", lid, node->m_left->m_pid, m_p[lid]);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", rid, node->m_right->m_pid, m_p[rid]);
     SPDLOG_TRACE("  sl = {}, sr = {}", sl, sr);
     SPDLOG_TRACE("  iran = {}", iran);
     SPDLOG_TRACE("  wgt = {}", wgt);

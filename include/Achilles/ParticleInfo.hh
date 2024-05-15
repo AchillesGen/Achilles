@@ -327,8 +327,7 @@ template <> struct convert<achilles::ParticleInfoEntry> {
 
 namespace fmt {
 
-template<>
-struct formatter<achilles::PID> {
+template <> struct formatter<achilles::PID> {
     constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }

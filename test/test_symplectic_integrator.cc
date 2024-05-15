@@ -130,7 +130,8 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         return dHamiltonian_dp(p_, q_, pot_);
     };
 
-    achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr_func, dHamiltonian_dp_func, omega);
+    achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr_func, dHamiltonian_dp_func,
+                                      omega);
 
     SECTION("Order 2") {
         std::ofstream out("symplectic2_" + potential->Name() + ".txt");

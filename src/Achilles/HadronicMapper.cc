@@ -62,7 +62,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
-#ifdef ACHILLES_EVENT_DETAILS 
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
@@ -111,7 +111,7 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
 
     double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi / dE;
-#ifdef ACHILLES_EVENT_DETAILS 
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);

@@ -94,8 +94,8 @@ achilles::SquareWellPotential::Construct(std::shared_ptr<Nucleus>& nuc, const
 YAML::Node&) { return std::make_unique<SquareWellPotential>(nuc);
 }
 
-PotentialVals achilles::SquareWellPotential::operator()(double, double &r) const { PotentialVals result; constexpr double potential_shift = 8;
-    result.rvector = -(sqrt(Constant::mN*Constant::mN +
+PotentialVals achilles::SquareWellPotential::operator()(double, double &r) const { PotentialVals
+result; constexpr double potential_shift = 8; result.rvector = -(sqrt(Constant::mN*Constant::mN +
 pow(m_nucleus->FermiMomentum(r), 2))
         - Constant::mN + potential_shift);
 
@@ -109,8 +109,7 @@ std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr
     return std::make_unique<WiringaPotential>(nuc, r0);
 }
 
-PotentialVals achilles::WiringaPotential::operator()(double plab,
-                                                     double radius) const {
+PotentialVals achilles::WiringaPotential::operator()(double plab, double radius) const {
     const double rho = m_nucleus->Rho(radius);
     const double rho_ratio = rho / m_rho0;
     const double alpha = 15.52 * rho_ratio + 24.93 * pow(rho_ratio, 2);
@@ -225,8 +224,7 @@ std::unique_ptr<Potential> SchroedingerPotential::Construct(std::shared_ptr<Nucl
     return std::make_unique<SchroedingerPotential>(nuc, mode);
 }
 
-achilles::PotentialVals SchroedingerPotential::operator()(double plab,
-                                                          double radius) const {
+achilles::PotentialVals SchroedingerPotential::operator()(double plab, double radius) const {
     auto potential = stencil5all([&](double r) { return evaluate(plab, r); }, radius, 0.01);
     const double u1 = potential[0].rscalar;
     const double w1 = potential[0].iscalar;

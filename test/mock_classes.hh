@@ -69,9 +69,7 @@ class MockPotential : public trompeloeil::mock_interface<achilles::Potential> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK2(Hamiltonian);
     IMPLEMENT_CONST_MOCK0(GetReference);
-    achilles::PotentialVals operator()(double p, double r) const override {
-        return call_op(p, r);
-    }
+    achilles::PotentialVals operator()(double p, double r) const override { return call_op(p, r); }
     MAKE_CONST_MOCK2(call_op, achilles::PotentialVals(const double &, const double &));
 };
 

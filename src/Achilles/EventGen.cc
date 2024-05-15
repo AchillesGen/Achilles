@@ -34,14 +34,15 @@ class SherpaInterface {};
 
 #include "yaml-cpp/yaml.h"
 
-achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs) : config{configFile} {
-
+achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs)
+    : config{configFile} {
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
 
     // Setup random number generator
-    auto seed = static_cast<unsigned int>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    auto seed = static_cast<unsigned int>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config.Exists("Options/Initialize/Seed"))
         if(config.GetAs<int>("Options/Initialize/Seed") > 0)
             seed = config.GetAs<unsigned int>("Options/Initialize/Seed");
@@ -67,8 +68,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Initialize Sherpa
     auto backend = config.GetAs<std::string>("Backend/Name");
-    if(backend.find("Sherpa") != std::string::npos ||
-       backend.find("BSM") != std::string::npos) {
+    if(backend.find("Sherpa") != std::string::npos || backend.find("BSM") != std::string::npos) {
 #ifdef ACHILLES_SHERPA_INTERFACE
         p_sherpa = new achilles::SherpaInterface();
         std::string model_name = "SMnu";
@@ -102,7 +102,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         // TODO: Convert to using Settings object instead of calling Root()
         auto models = LoadModels(config.Root());
         for(auto &model : models) {
-            auto groups = ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
+            auto groups =
+                ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
                     spdlog::info("Found Process: {}", process.Info());
@@ -136,8 +137,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Setup outputs
     bool zipped = true;
-    if(config.Exists("Main/Output/Zipped"))
-        zipped = config.GetAs<bool>("Main/Output/Zipped");
+    if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
     auto format = config.GetAs<std::string>("Main/Output/Format");
     auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);

@@ -48,7 +48,7 @@ void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<Pr
 
 GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
     HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
-    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()), 
+    return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()),
                                          static_cast<int>(particle.Status()));
 }
 

@@ -8,11 +8,13 @@
 #include "mock_classes.hh"
 
 class DummyHadron : public achilles::HadronicBeamMapper,
-                    achilles::Registrable<achilles::HadronicBeamMapper, DummyHadron, const achilles::ProcessInfo &, size_t> {
+                    achilles::Registrable<achilles::HadronicBeamMapper, DummyHadron,
+                                          const achilles::ProcessInfo &, size_t> {
   public:
     DummyHadron(const achilles::ProcessInfo &info, size_t idx) : HadronicBeamMapper(info, idx) {}
     static std::string Name() { return "Dummy"; }
-    static std::unique_ptr<achilles::HadronicBeamMapper> Construct(const achilles::ProcessInfo &info, size_t idx) {
+    static std::unique_ptr<achilles::HadronicBeamMapper>
+    Construct(const achilles::ProcessInfo &info, size_t idx) {
         return std::make_unique<DummyHadron>(info, idx);
     }
 
@@ -55,11 +57,8 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     achilles::FourVector beam_mom = {achilles::Constant::mN, 0, 0, 0};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
-    auto mapper = achilles::PSBuilder(info)
-                      .Beam(beam, 0)
-                      .Hadron("Dummy")
-                      .FinalState("Dummy")
-                      .build();
+    auto mapper =
+        achilles::PSBuilder(info).Beam(beam, 0).Hadron("Dummy").FinalState("Dummy").build();
     std::vector<double> rans(2);
     std::vector<double> beam_rans;
     std::set<achilles::PID> beam_id{achilles::PID::electron()};

@@ -23,7 +23,7 @@ double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vec
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Beam weight = {}", wgt);
 #endif
-    return 1.0/wgt;
+    return 1.0 / wgt;
 }
 
 size_t BeamMapper::NDims() const {

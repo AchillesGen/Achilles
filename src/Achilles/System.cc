@@ -1,13 +1,13 @@
-#include "Achilles/Exception.hh"
 #include "Achilles/System.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/std.h"
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
-#include "fmt/std.h"
 
 // Function to load the search path for Achilles files
 std::vector<fs::path> achilles::Filesystem::AchillesPath() {
-    std::vector<fs::path> dirs; 
+    std::vector<fs::path> dirs;
     dirs.push_back(fs::current_path());
     const char *env = std::getenv("ACHILLES_PATH");
     std::vector<std::string> tmp;
@@ -36,6 +36,7 @@ std::string achilles::Filesystem::FindFile(const std::string &filename, const st
         spdlog::debug("{}: Could not find {} at {}", head, filename, path);
     }
 
-    spdlog::warn("{}: Could not load {} from {}", head, filename, fmt::join(dirs.begin(), dirs.end(), ":"));
+    spdlog::warn("{}: Could not load {} from {}", head, filename,
+                 fmt::join(dirs.begin(), dirs.end(), ":"));
     throw AchillesLoadError(filename);
 }

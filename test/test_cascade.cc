@@ -51,8 +51,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(),
-                                             hadrons[0].Position().P()))
+        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(), hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
 
@@ -165,8 +164,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(1).LR_RETURN((potential));
 
-        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(),
-                                             hadrons[0].Position().P()))
+        REQUIRE_CALL(*potential, Hamiltonian(hadrons[0].Momentum().P(), hadrons[0].Position().P()))
             .TIMES(1)
             .RETURN(5);
 

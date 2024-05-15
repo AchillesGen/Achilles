@@ -95,14 +95,19 @@ SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {
     }
     static constexpr std::complex<double> li(0, 1);
     if(mu == 0) {
-        if(nu == 1) return sign*SpinMatrix({0, -li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, li, 0});
-        else if(nu == 2) return sign*SpinMatrix({0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0});
-        else return sign*SpinMatrix({-li, 0, 0, 0, 0, li, 0, 0, 0, 0, li, 0, 0, 0, 0, -li});
+        if(nu == 1)
+            return sign * SpinMatrix({0, -li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, li, 0});
+        else if(nu == 2)
+            return sign * SpinMatrix({0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0});
+        else
+            return sign * SpinMatrix({-li, 0, 0, 0, 0, li, 0, 0, 0, 0, li, 0, 0, 0, 0, -li});
     } else if(mu == 1) {
-        if(nu == 2) return sign*SpinMatrix({1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1});
-        else return sign*SpinMatrix({0, li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, -li, 0});
+        if(nu == 2)
+            return sign * SpinMatrix({1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1});
+        else
+            return sign * SpinMatrix({0, li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, -li, 0});
     } else {
-        return sign*SpinMatrix({0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0});
+        return sign * SpinMatrix({0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0});
     }
 }
 

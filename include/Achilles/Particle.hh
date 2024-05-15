@@ -5,9 +5,9 @@
 #include <utility>
 #include <vector>
 
-#include "spdlog/fmt/ostr.h"
 #include "fmt/core.h"
 #include "fmt/format.h"
+#include "spdlog/fmt/ostr.h"
 
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"
@@ -29,7 +29,9 @@ enum class ParticleStatus : int {
     captured = 25,
     spectator = 26,
 };
-inline auto format_as(achilles::ParticleStatus s) { return fmt::underlying(s); }
+inline auto format_as(achilles::ParticleStatus s) {
+    return fmt::underlying(s);
+}
 
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
@@ -55,19 +57,22 @@ class Particle {
     /// @name Constructors and Destructors
     ///@{
 
-        /// Create a particle
-        ///@param pid: The PID of the particle (default = 0)
-        ///@param momentum: The momentum of the particle (default = FourVector())
-        ///@param position: The position of the particle (default = ThreeVector())
-        ///@param status: The status code of the particle (default = 0)
-        ///@param mothers: The mother particles of the particle (default = Empty)
-        ///@param daughters: The daughter particles of the particle (default = Empty)
-        Particle(const PID& pid = PID{0}, FourVector mom = FourVector(),
-                 ThreeVector  pos = ThreeVector(), const ParticleStatus& _status = ParticleStatus::background,
-                 std::vector<int>  _mothers = std::vector<int>(),
-                 std::vector<int>  _daughters = std::vector<int>()) noexcept :
-            info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
-            mothers(std::move(_mothers)), daughters(std::move(_daughters)) { formationZone = 0;}
+    /// Create a particle
+    ///@param pid: The PID of the particle (default = 0)
+    ///@param momentum: The momentum of the particle (default = FourVector())
+    ///@param position: The position of the particle (default = ThreeVector())
+    ///@param status: The status code of the particle (default = 0)
+    ///@param mothers: The mother particles of the particle (default = Empty)
+    ///@param daughters: The daughter particles of the particle (default = Empty)
+    Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
+             ThreeVector pos = ThreeVector(),
+             const ParticleStatus &_status = ParticleStatus::background,
+             std::vector<int> _mothers = std::vector<int>(),
+             std::vector<int> _daughters = std::vector<int>()) noexcept
+        : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
+          mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
+        formationZone = 0;
+    }
 
     Particle(const long int &pid, const FourVector &mom = FourVector(),
              ThreeVector pos = ThreeVector(), const int &_status = 0,
@@ -233,9 +238,7 @@ class Particle {
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
-    bool IsFinal() const noexcept {
-        return status == ParticleStatus::final_state;
-    }
+    bool IsFinal() const noexcept { return status == ParticleStatus::final_state; }
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
@@ -309,15 +312,14 @@ class Particle {
 
 namespace fmt {
 
-template<>
-struct formatter<achilles::Particle> {
-    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator{
+template <> struct formatter<achilles::Particle> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    auto format(const achilles::Particle &particle, format_context &ctx) const -> format_context::iterator {
-        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]",
-                         particle.ID(), particle.Status(),
+    auto format(const achilles::Particle &particle, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
                          particle.Momentum(), particle.Position());
     }
 };

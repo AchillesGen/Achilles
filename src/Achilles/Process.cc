@@ -260,7 +260,8 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
         auto infos = model->AllowedStates(process_info);
         const auto unweight_name = node["Options"]["Unweighting"]["Name"].as<std::string>();
         for(auto &info : infos) {
-            auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
+            auto unweighter =
+                UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
             Process process(info, std::move(unweighter));
             process.SetID(model);
             const auto multiplicity = info.Multiplicity();

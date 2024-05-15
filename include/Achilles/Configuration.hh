@@ -11,14 +11,14 @@ class Particle;
 
 #ifdef ACHILLES_LOW_MEMORY
 struct ConfigurationParticle {
-    ConfigurationParticle(bool proton, std::array<double, 3> _position) 
+    ConfigurationParticle(bool proton, std::array<double, 3> _position)
         : is_proton(proton), position{std::move(_position)} {}
     bool is_proton;
     std::array<double, 3> position;
 };
 
 struct Configuration {
-    std::vector<ConfigurationParticle> nucleons; 
+    std::vector<ConfigurationParticle> nucleons;
     double wgt;
 };
 #else
