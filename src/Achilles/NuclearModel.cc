@@ -12,7 +12,6 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Process.hh"
 #include "Achilles/Poincare.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/Spinor.hh"
@@ -23,7 +22,6 @@ using achilles::Coherent;
 using achilles::HyperonSpectral;
 using achilles::NuclearModel;
 using achilles::QESpectral;
-using achilles::HyperonSpectral;
 using Type = achilles::FormFactorInfo::Type;
 
 NuclearModel::NuclearModel(const YAML::Node &config,
@@ -795,17 +793,17 @@ std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
 
 // TODO: Clean this interface up
 HyperonSpectral::HyperonSpectral(const YAML::Node &config, const YAML::Node &form_factor,
-                       FormFactorBuilder &builder = FormFactorBuilder::Instance())
+                                 FormFactorBuilder &builder = FormFactorBuilder::Instance())
     : NuclearModel(form_factor, builder),
       m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())},
       spectral_proton{config["NuclearModel"]["SpectralP"].as<std::string>()},
       spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {}
 
 NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle> &had_in,
-                                                const std::vector<Particle> &had_out,
-                                                const std::vector<Particle> &,
-                                                const FourVector &q, const FFInfoMap &ff) const {
-
+                                                     const std::vector<Particle> &had_out,
+                                                     const std::vector<Particle> &,
+                                                     const FourVector &q,
+                                                     const FFInfoMap &ff) const {
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
 
     auto pIn = had_in[0].Momentum();
@@ -857,8 +855,9 @@ std::unique_ptr<NuclearModel> HyperonSpectral::Construct(const YAML::Node &confi
     return std::make_unique<HyperonSpectral>(config, form_factor);
 }
 
-double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons, const std::vector<Particle> &, size_t nprotons,
-                                      size_t nneutrons) const {
+double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
+                                           const std::vector<Particle> &, size_t nprotons,
+                                           size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     const double removal_energy = Constant::mN - nucleons[0].E();
     return nucleons[0].ID() == PID::proton()
@@ -869,21 +868,20 @@ double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons
 }
 
 NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
-                                                  const std::array<Spinor, 2> &u,
-                                                  const FourVector &qVec,
-                                                  const FormFactorMap &ffVal, const Particle &hyperon) const {
+                                                       const std::array<Spinor, 2> &u,
+                                                       const FourVector &qVec,
+                                                       const FormFactorMap &ffVal,
+                                                       const Particle &hyperon) const {
     std::complex<double> F1hyp, F2hyp, FAhyp;
     if(hyperon.ID() == PID::lambda0()) {
         F1hyp = ffVal.at(Type::F1Lam);
         F2hyp = ffVal.at(Type::F2Lam);
         FAhyp = ffVal.at(Type::FALam);
-    }
-    else if(hyperon.ID() == PID::sigmam()) {
+    } else if(hyperon.ID() == PID::sigmam()) {
         F1hyp = ffVal.at(Type::F1Sigm);
         F2hyp = ffVal.at(Type::F2Sigm);
         FAhyp = ffVal.at(Type::FASigm);
-    }
-    else if(hyperon.ID() == PID::sigma0()) {
+    } else if(hyperon.ID() == PID::sigma0()) {
         F1hyp = ffVal.at(Type::F1Sig0);
         F2hyp = ffVal.at(Type::F2Sig0);
         FAhyp = ffVal.at(Type::FASig0);
@@ -896,9 +894,8 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         gamma[mu] += FAhyp * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
-            gamma[mu] +=
-                std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
-                                              sign * qVec[nu] / (2 * hyperon.Mass()));
+            gamma[mu] += std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
+                                                       sign * qVec[nu] / (2 * hyperon.Mass()));
             sign = -1;
         }
     }

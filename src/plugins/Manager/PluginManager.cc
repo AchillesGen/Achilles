@@ -5,7 +5,6 @@
 
 #include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
-#include <regex>
 #include <dlfcn.h>
 #include <regex>
 

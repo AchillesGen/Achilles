@@ -172,9 +172,7 @@ std::string FortranModel::PhaseSpace(PID nuc_pid) const {
 
 // Return name of initial state phase space needed
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
-    if(nuc_pid != PID::hydrogen()){
-        return PSName();
-    }
+    if(nuc_pid != PID::hydrogen()) { return PSName(); }
     is_hydrogen = true;
     return "Coherent";
 }

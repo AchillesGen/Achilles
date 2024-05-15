@@ -20,7 +20,8 @@ FormFactorBuilder &FormFactorBuilder::Coherent(const std::string &name, const YA
 
 FormFactorBuilder &FormFactorBuilder::ResonanceVector(const std::string &name,
                                                       const YAML::Node &node) {
-    form_factor->resonancevector = FormFactorFactory::Initialize(name, FFType::resonancevector, node);
+    form_factor->resonancevector =
+        FormFactorFactory::Initialize(name, FFType::resonancevector, node);
     return *this;
 }
 

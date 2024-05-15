@@ -256,9 +256,11 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     NuclearMode Mode() const override { return NuclearMode::Hyperon; }
     std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
-         const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override;
     std::string GetName() const override { return HyperonSpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
     std::string PSName() const override { return "OneBodySpectral"; }

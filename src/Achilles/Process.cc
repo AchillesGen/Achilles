@@ -124,7 +124,6 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
-
     static constexpr size_t lepton_in_end_idx = 1;
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
