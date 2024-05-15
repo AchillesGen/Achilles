@@ -31,6 +31,9 @@ static constexpr double mpi0 = 134.9764_MeV;
 static constexpr double meta = 548.0_MeV;
 static constexpr double mdelta = 1232.25_MeV;
 static constexpr double mrho = 775.8_MeV;
+static constexpr double mlambda = 1115.68_MeV;
+static constexpr double msigmam = 1197.45_MeV;
+static constexpr double msigma0 = 1192.64_MeV;
 
 // EW parameters
 static constexpr double GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
@@ -41,6 +44,7 @@ static constexpr double GAMW = 2.0895_GeV;
 static constexpr double cos2w = MW * MW / MZ / MZ;
 static constexpr double sin2w = 1 - cos2w;
 static constexpr double Vud = 0.97373;
+static constexpr double Vus = 0.225;
 // const double alpha = sqrt(2.0)*MW*MW*GF*sin2w/M_PI;
 const double alpha = 1. / 137.;
 const double ee = sqrt(4 * M_PI * alpha);

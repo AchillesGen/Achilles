@@ -21,13 +21,15 @@ module qe_spectral_model
 
 contains
 
-    function qe_spec_init(self, filename)
+    function qe_spec_init(self, filename, params)
         use libutilities
         use dirac_matrices
+        use libmap
         
         class(qe_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: qe_spec_init
@@ -76,7 +78,7 @@ contains
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
         class(qe_spec), intent(inout) :: self
         character(len=:), allocatable :: qe_spec_ps
-        qe_spec_ps = "QESpectral"
+        qe_spec_ps = "OneBodySpectral"
     end function
 
     subroutine qe_spec_cleanup(self)
@@ -106,16 +108,19 @@ contains
         integer(c_size_t) :: i,j        
         complex(c_double_complex), dimension(2) :: ffa
         double precision, dimension(4) :: p4,pp4,q4
+        double precision :: Q2
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu
 
         p4=mom_in(1)%to_array()
         pp4=mom_out(1)%to_array()
         q4=qvec%to_array()
+
+        Q2 = q4(2)**2 + q4(3)**2 + q4(4)**2 - q4(1)**2
         
         call current_init_had(p4,pp4,q4) 
         call define_spinors()
         ffa(1)=ff%lookup("FA")
-        ffa(2)=0.0d0
+        ffa(2)=ffa(1)*2.0*(constants%mqe**2)/(Q2 + constants%mpip**2)
  
         call det_Ja(ff%lookup("F1"),ff%lookup("F2"),ffa)
         call hadr_curr_matrix_el(J_mu)

@@ -46,8 +46,8 @@ inline std::complex<double> operator*(const VCurrent &c1, const VCurrent &c2) {
 }
 
 inline VCurrent conj(const VCurrent &c1) {
-    std::array<std::complex<double>, 4> conj_current{std::conj(c1[0]), 
-    std::conj(c1[1]),std::conj(c1[2]),std::conj(c1[3])}; 
+    std::array<std::complex<double>, 4> conj_current{std::conj(c1[0]), std::conj(c1[1]),
+                                                     std::conj(c1[2]), std::conj(c1[3])};
     return VCurrent(conj_current);
 }
 

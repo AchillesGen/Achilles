@@ -49,6 +49,21 @@ c       end do
 c       end do
 c       end do
 c
+      subroutine pion_init(fneu,fpro,feta_in,fpio0,fpi1,pi_in,fm_in)
+       implicit real*8(a-h,o-y)
+       common / ccoup / fpio,fnuc,flep,fnuci,fdeu,feta,fmfin
+       common / cscal / pi,fm
+
+
+       fm = fm_in
+       pi = pi_in
+       fnuc=(fpro+fneu)/2/fm
+       fpio=(2*fpi1+fpio0)/3/fm
+       fnuci = fnuc
+       feta=feta_in/fm
+
+      end subroutine
+
       subroutine amplitude(qvec_in,xpnuc_in,xk_in,mode_in,isl,itiz,itpiz
      &  ,ipar,zj_mu)
       implicit real*8(a-h,o-y)
@@ -126,17 +141,20 @@ c
       call set_param
       call bifc
 c      
-      fneu = 939.56563d0/fm
-      fpro = 938.27231d0/fm
-      feta =  548.d0/fm
-      fpio1 = 139.57018d0/fm
-      fpio0 = 134.9764d0/fm
-      fnuc=(fpro+fneu)/2
-      fpio=(2*fpio1+fpio0)/3
+      !fneu = 939.56563d0/fm
+      !fpro = 938.27231d0/fm
+      !feta =  548.d0/fm
+      !fpio1 = 139.57018d0/fm
+      !fpio0 = 134.9764d0/fm
+      !fnuc=(fpro+fneu)/2
+      !fpio=(2*fpio1+fpio0)/3
       !fpio = fpio1
+      !fnuc2=fnuc**2
+      !fpio2=fpio**2
+      !fnuci = fnuc
+      !fnuci2=fnuci**2
       fnuc2=fnuc**2
       fpio2=fpio**2
-      fnuci = fnuc
       fnuci2=fnuci**2
       rfac=1
 c
@@ -951,8 +969,8 @@ c
       common / cscal / pi,fm,alfa
       common/masses/am1dt(maxmb),am2dt(maxmb)
       common /icgmb / icgmb(5)
-      fm      = 197.3289d0
-      pi = atan(1d0)*4d0
+      !fm      = 197.3289d0
+      !pi = atan(1d0)*4d0
       alfa = 1/137.0359895d0
 c
       imwpon=0
@@ -1012,6 +1030,9 @@ c
       aomega= 782.6d0
       end if
 c
+
+      api=fpio*fm
+      amn=fnuc*fm
       am1dt(1) = api
       am2dt(1) = amn
       do i=1,1

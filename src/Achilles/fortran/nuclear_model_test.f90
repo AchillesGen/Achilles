@@ -34,11 +34,13 @@ contains
         call factory%register_model(model%model_name(), build_test)
     end subroutine
 
-    function test_init(self, filename)
+    function test_init(self, filename, params)
         use libutilities
+        use libmap
         class(test), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: test_init

@@ -30,6 +30,7 @@ enum class NuclearMode : int {
     Resonance = 4,
     ShallowInelastic = 5,
     DeepInelastic = 6,
+    Hyperon = 8
 };
 
 enum class NuclearFrame : int {
@@ -56,6 +57,8 @@ inline std::string ToString(NuclearMode mode) {
         return "ShallowInelastic";
     case NuclearMode::DeepInelastic:
         return "DeepInelastic";
+    case NuclearMode::Hyperon:
+        return "Hyperon";
     }
 
     throw std::runtime_error("Invalid NuclearMode");
@@ -104,14 +107,17 @@ class NuclearModel {
 
     virtual NuclearMode Mode() const = 0;
     virtual std::string PhaseSpace(PID) const = 0;
-    virtual Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &, 
-        const std::vector<Particle> &, const FourVector &, const FFInfoMap &) const = 0;
+    virtual Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+                                  const std::vector<Particle> &, const FourVector &,
+                                  const FFInfoMap &) const = 0;
     virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const;
     virtual size_t NSpins() const;
-    virtual double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const = 0;
+    virtual double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                                      size_t, size_t) const = 0;
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
+    virtual std::string PSName() const = 0;
     virtual std::string InspireHEP() const = 0;
     virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
     void TransformFrame(Event &, const Process &, bool) const;
@@ -126,6 +132,7 @@ class NuclearModel {
     void TransformQZ(Event &, const Process &, bool);
     virtual void TransformCustom(Event &, const Process &, bool) const {}
     static YAML::Node LoadFormFactor(const YAML::Node &);
+    static YAML::Node LoadModelParams(const YAML::Node &);
 
     void CoulombGauge(VCurrent &, const FourVector &, double) const;
     void WeylGauge(VCurrent &, const FourVector &, double) const;
@@ -149,14 +156,17 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     NuclearMode Mode() const override { return NuclearMode::Coherent; }
     std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
-            const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override {
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override {
         return 1;
     }
     std::string GetName() const override { return Coherent::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "Coherent"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -173,11 +183,14 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
     std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
-         const std::vector<Particle> &,const FourVector &, const FFInfoMap &) const override;
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -186,6 +199,36 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
   private:
     Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
                             const FourVector &, const FormFactorMap &) const;
+
+    const WardGauge m_ward;
+    SpectralFunction spectral_proton, spectral_neutron;
+    // TODO: This is a code smell. Should figure out a better solution
+    mutable bool is_hydrogen{false};
+};
+
+class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpectral> {
+  public:
+    HyperonSpectral(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
+
+    NuclearMode Mode() const override { return NuclearMode::Hyperon; }
+    std::string PhaseSpace(PID) const override;
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
+    size_t NSpins() const override { return 4; }
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override;
+    std::string GetName() const override { return HyperonSpectral::Name(); }
+    std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodySpectral"; }
+
+    // Required factory methods
+    static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
+    static std::string Name() { return "HyperonSpectral"; }
+
+  private:
+    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                            const FourVector &, const FormFactorMap &, const Particle &) const;
 
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;

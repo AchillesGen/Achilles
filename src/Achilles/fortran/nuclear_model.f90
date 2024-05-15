@@ -21,10 +21,12 @@ module nuclear_model
     end type model
 
     abstract interface
-        function nm_init(self, filename)
+        function nm_init(self, filename, params)
+            use libmap
             import model
             class(model), intent(inout) :: self
             character(len=*), intent(in) :: filename
+            type(map), intent(in) :: params
             logical :: nm_init
         end function
 

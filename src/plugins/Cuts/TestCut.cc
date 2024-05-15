@@ -7,8 +7,8 @@ namespace achilles {
 
 ONE_PARTICLE_CUT(Test);
 
-bool TestCut::MakeCut(const FourVector&) const {
+bool TestCut::MakeCut(const FourVector &) const {
     return true;
 }
 
-}
+} // namespace achilles

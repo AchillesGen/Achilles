@@ -38,7 +38,7 @@ class QESpectralMapper
       Registrable<HadronicBeamMapper, QESpectralMapper, const ProcessInfo &, size_t> {
   public:
     QESpectralMapper(const ProcessInfo &info, size_t idx);
-    static std::string Name() { return "QESpectral"; }
+    static std::string Name() { return "OneBodySpectral"; }
     static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
         return std::make_unique<QESpectralMapper>(info, idx);
     }

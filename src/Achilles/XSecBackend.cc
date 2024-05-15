@@ -110,14 +110,8 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
             const auto &hcurrent2 = hadron_current2[boson];
             for(const auto &lcurrent_spin : lcurrent.second) {
                 for(size_t i = 0; i < hcurrent.size(); ++i) {
-                    // amps2 += 2*std::real(lcurrent_spin * hcurrent[i] *
-                    // (achilles::conj(lcurrent_spin) * hcurrent2[i]));
-
-                    amps2 += std::real(
-                        (lcurrent_spin * hcurrent[i]) *
-                            (achilles::conj(lcurrent_spin) * hcurrent2[i]) +
-                        (lcurrent_spin * (achilles::conj(hcurrent[i]))) *
-                            ((achilles::conj(lcurrent_spin)) * (achilles::conj(hcurrent2[i]))));
+                    amps2 += 2 * std::real(lcurrent_spin * hcurrent[i] *
+                                           std::conj(lcurrent_spin * hcurrent2[i]));
                 }
             }
         }

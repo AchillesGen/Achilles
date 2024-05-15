@@ -129,17 +129,14 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     return true;
 }
 
-ATOOLS::Cluster_Amplitude *SherpaInterface::ConstructAmplitude(const std::vector<long> &_fl,
-                                                               const std::vector<std::array<double, 4>> &p) const {
+ATOOLS::Cluster_Amplitude *
+SherpaInterface::ConstructAmplitude(const std::vector<long> &_fl,
+                                    const std::vector<std::array<double, 4>> &p) const {
     std::vector<Vec4D> cp(_fl.size());
     if(p.size() == 0) {
-        for(size_t i(0); i < _fl.size(); ++i) {
-            cp[i] = Vec4D();
-        }
+        for(size_t i(0); i < _fl.size(); ++i) { cp[i] = Vec4D(); }
     } else {
-        for(size_t i(0); i < _fl.size(); ++i) {
-            cp[i] = {p[i][0], p[i][1], p[i][2], p[i][3]};
-        }
+        for(size_t i(0); i < _fl.size(); ++i) { cp[i] = {p[i][0], p[i][1], p[i][2], p[i][3]}; }
     }
     Cluster_Amplitude *ampl(Cluster_Amplitude::New());
     ampl->CreateLeg(-cp[1], Flavour((long int)(_fl[1])).Bar(), ColorID(0, 0));

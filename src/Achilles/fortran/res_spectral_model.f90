@@ -1,7 +1,7 @@
 module res_spectral_model
     use iso_c_binding
     use nuclear_model
-    use libspectral_function   !...spectral_function_mod.f90
+    use libspectral_function  
     implicit none
     private
     public :: res_spec, build_res_spec
@@ -22,13 +22,15 @@ module res_spectral_model
 
 contains
 
-    function res_spec_init(self, filename)
+    function res_spec_init(self, filename, params)
         use libutilities
         use dirac_matrices_pi
+        use libmap
         
         class(res_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: res_spec_init
@@ -83,7 +85,7 @@ contains
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
         class(res_spec), intent(inout) :: self
         character(len=:), allocatable :: res_spec_ps
-        res_spec_ps = "QESpectral"
+        res_spec_ps = "OneBodySpectral"
     end function
 
     subroutine res_spec_cleanup(self)
