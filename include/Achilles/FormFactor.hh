@@ -87,21 +87,21 @@ inline std::string ToString(FormFactorInfo::Type type) {
     case FormFactorInfo::Type::FMecA5:
         return "FMecA5";
     case FormFactorInfo::Type::F1Lam:
-        return "F1Lam";    
+        return "F1Lam";
     case FormFactorInfo::Type::F2Lam:
-        return "F2Lam";    
+        return "F2Lam";
     case FormFactorInfo::Type::FALam:
-        return "FALam";    
+        return "FALam";
     case FormFactorInfo::Type::F1Sigm:
-        return "F1Sigm";    
+        return "F1Sigm";
     case FormFactorInfo::Type::F2Sigm:
-        return "F2Sigm";    
+        return "F2Sigm";
     case FormFactorInfo::Type::FASigm:
-        return "FASigm";    
+        return "FASigm";
     case FormFactorInfo::Type::F1Sig0:
-        return "F1Sig0";    
+        return "F1Sig0";
     case FormFactorInfo::Type::F2Sig0:
-        return "F2Sig0";    
+        return "F2Sig0";
     case FormFactorInfo::Type::FASig0:
         return "FASig0";
     }
@@ -140,7 +140,16 @@ class FormFactor {
     std::shared_ptr<FormFactorImpl> hyperon = nullptr;
 };
 
-enum class FFType { vector, axial, coherent, resonancevector, resonanceaxial, mecvector, mecaxial, hyperon };
+enum class FFType {
+    vector,
+    axial,
+    coherent,
+    resonancevector,
+    resonanceaxial,
+    mecvector,
+    mecaxial,
+    hyperon
+};
 
 inline std::string FFTypeToString(FFType type) {
     std::string result;
@@ -455,8 +464,7 @@ class ResonanceDummyAxialFormFactor : public FormFactorImpl,
     double resA;
 };
 
-class MECVectorFormFactor : public FormFactorImpl,
-                                       RegistrableFormFactor<MECVectorFormFactor> {
+class MECVectorFormFactor : public FormFactorImpl, RegistrableFormFactor<MECVectorFormFactor> {
   public:
     MECVectorFormFactor(const YAML::Node &);
     void Evaluate(double, FormFactor::Values &) const override;
@@ -470,8 +478,7 @@ class MECVectorFormFactor : public FormFactorImpl,
     double MvSq, cv3norm, cv4norm, cv5norm;
 };
 
-class MECAxialFormFactor : public FormFactorImpl,
-                                      RegistrableFormFactor<MECAxialFormFactor> {
+class MECAxialFormFactor : public FormFactorImpl, RegistrableFormFactor<MECAxialFormFactor> {
   public:
     MECAxialFormFactor(const YAML::Node &);
     void Evaluate(double, FormFactor::Values &) const override;
@@ -485,8 +492,7 @@ class MECAxialFormFactor : public FormFactorImpl,
     double MaDeltaSq, ca5norm;
 };
 
-class HyperonFormFactor : public FormFactorImpl,
-                                      RegistrableFormFactor<HyperonFormFactor> {
+class HyperonFormFactor : public FormFactorImpl, RegistrableFormFactor<HyperonFormFactor> {
   public:
     HyperonFormFactor(const YAML::Node &);
     void Evaluate(double, FormFactor::Values &) const override;
@@ -498,7 +504,6 @@ class HyperonFormFactor : public FormFactorImpl,
 
   private:
     double dummy;
-
 };
 
 } // namespace achilles

@@ -32,7 +32,8 @@ class PSMapper : public Mapper<FourVector> {
         return node;
     }
     PSMapper(size_t _nleptons, size_t _nhadrons, size_t _nspectators)
-        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)}, nspectators{_nspectators} {}
+        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
+          nspectators{_nspectators} {}
 
   private:
     size_t nleptons, nhadrons, nspectators;

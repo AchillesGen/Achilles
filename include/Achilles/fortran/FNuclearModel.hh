@@ -6,7 +6,7 @@
 extern "C" {
 void RegisterAll();
 void ListModels();
-bool CreateModel(char *, size_t&);
+bool CreateModel(char *, size_t &);
 bool InitModel(char *, std::map<std::string, double> *pm, size_t);
 void CleanUpEvent(std::complex<double> **, int *);
 void CleanUpModel(size_t);
@@ -14,11 +14,12 @@ int GetMode(size_t);
 int GetFrame(size_t);
 char *ModelName(size_t);
 char *ModelPS(size_t);
-void GetCurrents(size_t, long *pids_in, long *pids_out, long *pids_spect, achilles::FourVector *pin, size_t nin, size_t nout, size_t nspect,
-                 const achilles::FourVector *q, std::map<std::string, std::complex<double>> *ff,
-                 std::complex<double> *current, size_t nspins, size_t nlorentz);
-double GetInitialStateWeight(size_t, long *pids_in, long *pids_spect, achilles::FourVector *mom, size_t nin, size_t nspect, size_t nproton,
-                             size_t nneutron);
+void GetCurrents(size_t, long *pids_in, long *pids_out, long *pids_spect, achilles::FourVector *pin,
+                 size_t nin, size_t nout, size_t nspect, const achilles::FourVector *q,
+                 std::map<std::string, std::complex<double>> *ff, std::complex<double> *current,
+                 size_t nspins, size_t nlorentz);
+double GetInitialStateWeight(size_t, long *pids_in, long *pids_spect, achilles::FourVector *mom,
+                             size_t nin, size_t nspect, size_t nproton, size_t nneutron);
 }
 
 namespace achilles {
@@ -30,12 +31,12 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
 
     NuclearMode Mode() const override { return static_cast<NuclearMode>(GetMode(m_model)); }
     std::string PhaseSpace(PID) const override;
-    NuclearFrame Frame() const override { 
-        return static_cast<NuclearFrame>(GetFrame(m_model));
-    }
-    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &, const std::vector<Particle> &,
-                          const FourVector &, const FFInfoMap &) const override;
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t, size_t) const override;
+    NuclearFrame Frame() const override { return static_cast<NuclearFrame>(GetFrame(m_model)); }
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

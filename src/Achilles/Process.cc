@@ -92,15 +92,14 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
-
     static constexpr size_t lepton_in_end_idx = 1;
     const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
     const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
     const auto &momentum = event.Momentum();
 
-
-    spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx, had_out_end_idx, momentum.size());
+    spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx,
+                  had_out_end_idx, momentum.size());
     spdlog::trace("{}", m_info);
 
     lep_in = momentum[0];
@@ -141,9 +140,7 @@ achilles::FourVector Process::ExtractQ(const Event &event) const {
     const auto &momentum = event.Momentum();
     auto q = momentum[0];
     size_t nleptons = m_info.m_leptonic.second.size();
-    for(size_t i = 0; i < nleptons; ++i) {
-        q -= momentum[i + 1 + m_info.m_hadronic.first.size()];
-    }
+    for(size_t i = 0; i < nleptons; ++i) { q -= momentum[i + 1 + m_info.m_hadronic.first.size()]; }
     return q;
 }
 
@@ -210,7 +207,6 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
 }
 
 void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
-
     spdlog::trace("Setting up leptons");
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;

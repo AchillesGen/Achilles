@@ -16,7 +16,8 @@ class Beam;
 
 class PSBuilder {
   public:
-    PSBuilder(size_t nlep = 2, size_t nhad = 2, size_t nspec = 0) : m_nlep{nlep}, m_nhad{nhad}, m_nspec{nspec} {
+    PSBuilder(size_t nlep = 2, size_t nhad = 2, size_t nspec = 0)
+        : m_nlep{nlep}, m_nhad{nhad}, m_nspec{nspec} {
         phase_space = std::make_unique<PSMapper>(m_nlep, m_nhad, m_nspec);
     }
     MOCK ~PSBuilder() = default;
