@@ -17,7 +17,18 @@ TEST_CASE("CoherentModel", "[NuclearModel]") {
 NuclearModel:
     Nucleus: 1000060120
 )config");
-    YAML::Node ff = YAML::Load("vector: dummy\naxial: dummy\ncoherent: dummy\ndummy: dummy2");
+    YAML::Node ff = YAML::Load(R"form(
+vector: dummy
+axial: dummy
+coherent: dummy
+resonancevector: dummy
+resonanceaxial: dummy
+mecvector: dummy
+mecaxial: dummy
+hyperon: dummy
+
+dummy: dummy2
+)form");
 
     auto form_factor = std::make_unique<MockFormFactor>();
 
@@ -32,6 +43,26 @@ NuclearModel:
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
     REQUIRE_CALL(builder, Coherent(ff["coherent"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, ResonanceVector(ff["resonancevector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, ResonanceAxial(ff["resonanceaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeVector(ff["mecvector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeAxial(ff["mecaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, Hyperon(ff["hyperon"].as<std::string>(), ff["dummy"]))
         .TIMES(1)
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
@@ -109,7 +140,18 @@ NuclearModel:
   SpectralN: data/pke12_tot.data
   Ward: Coulomb
 )config");
-    YAML::Node ff = YAML::Load("vector: dummy\naxial: dummy\ncoherent: dummy\ndummy: dummy2");
+    YAML::Node ff = YAML::Load(R"form(
+vector: dummy
+axial: dummy
+coherent: dummy
+resonancevector: dummy
+resonanceaxial: dummy
+mecvector: dummy
+mecaxial: dummy
+hyperon: dummy
+
+dummy: dummy2
+)form");
 
     auto form_factor = std::make_unique<MockFormFactor>();
 
@@ -124,6 +166,26 @@ NuclearModel:
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
     REQUIRE_CALL(builder, Coherent(ff["coherent"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, ResonanceVector(ff["resonancevector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, ResonanceAxial(ff["resonanceaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeVector(ff["mecvector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeAxial(ff["mecaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, Hyperon(ff["hyperon"].as<std::string>(), ff["dummy"]))
         .TIMES(1)
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));

@@ -97,6 +97,7 @@ class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearMod
     IMPLEMENT_CONST_MOCK0(NSpins);
     IMPLEMENT_CONST_MOCK4(InitialStateWeight);
     IMPLEMENT_CONST_MOCK0(GetName);
+    IMPLEMENT_CONST_MOCK0(PSName);
     IMPLEMENT_CONST_MOCK0(InspireHEP);
     IMPLEMENT_CONST_MOCK0(Frame);
 };
@@ -161,6 +162,7 @@ class MockFormFactorBuilder : public trompeloeil::mock_interface<achilles::FormF
     IMPLEMENT_MOCK2(ResonanceAxial);
     IMPLEMENT_MOCK2(MesonExchangeVector);
     IMPLEMENT_MOCK2(MesonExchangeAxial);
+    IMPLEMENT_MOCK2(Hyperon);
     IMPLEMENT_MOCK0(build);
 };
 
@@ -177,9 +179,9 @@ class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<achilles:
 
 class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK3(Beam);
-    IMPLEMENT_MOCK3(Hadron);
-    IMPLEMENT_MOCK3(FinalState);
+    IMPLEMENT_MOCK2(Beam);
+    IMPLEMENT_MOCK2(Hadron);
+    IMPLEMENT_MOCK2(FinalState);
     IMPLEMENT_MOCK0(build);
 };
 

@@ -77,7 +77,7 @@ TEST_CASE("I/O", "[Particle]") {
     achilles::Particle part2;
 
     CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, "
-                             "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 0)");
+                             "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 24)");
 
     std::stringstream ss;
     ss << part;

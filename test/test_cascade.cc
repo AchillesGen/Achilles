@@ -211,8 +211,6 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
 
         REQUIRE_CALL(*nucleus, Nucleons()).TIMES(2).LR_RETURN((hadrons));
         REQUIRE_CALL(*nucleus, GetPotential()).TIMES(AT_LEAST(1)).RETURN(nullptr);
-        REQUIRE_CALL(*nucleus, Rho(trompeloeil::gt(0))).TIMES(4).RETURN(0);
-
         REQUIRE_CALL(*nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
         std::pair<achilles::FourVector, achilles::FourVector> output{{1000, 80, 0, 0},

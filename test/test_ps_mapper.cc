@@ -8,12 +8,12 @@
 #include "mock_classes.hh"
 
 class DummyHadron : public achilles::HadronicBeamMapper,
-                    achilles::RegistrablePS<achilles::HadronicBeamMapper, DummyHadron, size_t> {
+                    achilles::Registrable<achilles::HadronicBeamMapper, DummyHadron, const achilles::ProcessInfo &, size_t> {
   public:
-    DummyHadron(size_t idx) : HadronicBeamMapper(idx, Name()) {}
+    DummyHadron(const achilles::ProcessInfo &info, size_t idx) : HadronicBeamMapper(info, idx) {}
     static std::string Name() { return "Dummy"; }
-    static std::unique_ptr<achilles::HadronicBeamMapper> Construct(const size_t &idx) {
-        return std::make_unique<DummyHadron>(idx);
+    static std::unique_ptr<achilles::HadronicBeamMapper> Construct(const achilles::ProcessInfo &info, size_t idx) {
+        return std::make_unique<DummyHadron>(info, idx);
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
@@ -28,7 +28,7 @@ class DummyHadron : public achilles::HadronicBeamMapper,
 };
 
 class DummyFS : public achilles::FinalStateMapper,
-                achilles::RegistrablePS<achilles::FinalStateMapper, DummyFS, std::vector<double>> {
+                achilles::Registrable<achilles::FinalStateMapper, DummyFS, std::vector<double>> {
   public:
     DummyFS(const std::vector<double> &) : FinalStateMapper(2) {}
     static std::string Name() { return "Dummy"; }
@@ -48,14 +48,17 @@ class DummyFS : public achilles::FinalStateMapper,
 };
 
 TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
+    achilles::ProcessInfo info({achilles::PID::electron(), {achilles::PID::electron()}});
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+
     auto beam = std::make_shared<MockBeam>();
     achilles::FourVector beam_mom = {achilles::Constant::mN, 0, 0, 0};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
-    auto mapper = achilles::PSBuilder(2, 2)
-                      .Beam(beam, {achilles::Constant::mN2, 0.0}, 0)
-                      .Hadron("Dummy", {achilles::Constant::mN2, 0.0})
-                      .FinalState("Dummy", {achilles::Constant::mN2, 0.0})
+    auto mapper = achilles::PSBuilder(info)
+                      .Beam(beam, 0)
+                      .Hadron("Dummy")
+                      .FinalState("Dummy")
                       .build();
     std::vector<double> rans(2);
     std::vector<double> beam_rans;
