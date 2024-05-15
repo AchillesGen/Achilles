@@ -54,7 +54,8 @@ struct fmt::formatter<std::complex<T>, Char> : public fmt::formatter<T, Char> {
         }
         if(bool(x.real()) || !bool(x.imag())) base::format(x.real(), ctx);
         if(bool(x.imag())) {
-            if(bool(x.real()) && bool(x.imag() >= 0) && specs_.sign != sign::plus) format_to(ctx.out(), "+");
+            if(bool(x.real()) && bool(x.imag() >= 0) && specs_.sign != sign::plus)
+                format_to(ctx.out(), "+");
             base::format(x.imag(), ctx);
             if(style_ == style::star)
                 format_to(ctx.out(), "*i");

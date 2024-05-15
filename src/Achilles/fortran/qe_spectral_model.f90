@@ -78,7 +78,7 @@ contains
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
         class(qe_spec), intent(inout) :: self
         character(len=:), allocatable :: qe_spec_ps
-        qe_spec_ps = "QESpectral"
+        qe_spec_ps = "OneBodySpectral"
     end function
 
     subroutine qe_spec_cleanup(self)

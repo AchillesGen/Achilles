@@ -214,7 +214,7 @@ contains
         get_model_name = f2cstring(fname)
     end function
 
-    function get_ps_name(idx) bind(C, name="GetName_")
+    function get_ps_name(idx) bind(C, name="ModelPS")
         use iso_c_binding
         use libutilities
         implicit none

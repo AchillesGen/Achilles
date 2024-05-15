@@ -85,7 +85,7 @@ contains
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
         class(res_spec), intent(inout) :: self
         character(len=:), allocatable :: res_spec_ps
-        res_spec_ps = "QESpectral"
+        res_spec_ps = "OneBodySpectral"
     end function
 
     subroutine res_spec_cleanup(self)

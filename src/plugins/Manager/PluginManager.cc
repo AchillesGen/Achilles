@@ -1,20 +1,18 @@
-#include "Achilles/Utilities.hh"
-#include "Achilles/System.hh"
-#include "Achilles/Version.hh"
 #include "plugins/Manager/PluginManager.hh"
+#include "Achilles/System.hh"
+#include "Achilles/Utilities.hh"
+#include "Achilles/Version.hh"
 #include "spdlog/spdlog.h"
-#include <regex>
 #include <dlfcn.h>
+#include <regex>
 
 using achilles::Plugin::Manager;
 
-template<typename Ret, typename... Args>
-std::function<Ret(Args...)> fptr_cast(void *fptr) {
-    using function_type = Ret(*)(Args...);
+template <typename Ret, typename... Args> std::function<Ret(Args...)> fptr_cast(void *fptr) {
+    using function_type = Ret (*)(Args...);
     using ptr_size_type = std::conditional_t<sizeof(fptr) == 4, long, long long>;
 
-    return reinterpret_cast<function_type>(
-            reinterpret_cast<ptr_size_type>(fptr));
+    return reinterpret_cast<function_type>(reinterpret_cast<ptr_size_type>(fptr));
 }
 
 void Manager::Open() {
@@ -28,11 +26,12 @@ void Manager::Open() {
                 spdlog::warn("PluginManager: Could not load plugin: {}", dlerror());
                 return;
             }
-            auto get_version = fptr_cast<void, std::array<int, 3>&>(dlsym(handle, "ExpectedVersion"));
-            
+            auto get_version =
+                fptr_cast<void, std::array<int, 3> &>(dlsym(handle, "ExpectedVersion"));
+
             if(dlerror() != NULL) {
                 spdlog::warn("PluginManager: Plugin does not define an Achilles version");
-                dlclose(handle); 
+                dlclose(handle);
                 return;
             }
 
@@ -55,7 +54,8 @@ void Manager::Open() {
 
     for(const auto &dir : paths) {
         const auto &directory{dir};
-        Filesystem::RecurseDirectories(directory, load_plugin, achilles::Filesystem::FileType::regular);
+        Filesystem::RecurseDirectories(directory, load_plugin,
+                                       achilles::Filesystem::FileType::regular);
     }
 }
 

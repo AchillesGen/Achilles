@@ -46,7 +46,8 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
-                                       const std::vector<Particle> &p_in, const std::vector<Particle> &p_spect) const {
+                                       const std::vector<Particle> &p_in,
+                                       const std::vector<Particle> &p_spect) const {
     auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
     return initial_wgt;
 }
@@ -102,18 +103,22 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         auto hadron_current2 = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
-            if(hadron_current.find(boson) == hadron_current.end() || hadron_current2.find(boson) == hadron_current2.end()) continue;
+            if(hadron_current.find(boson) == hadron_current.end() ||
+               hadron_current2.find(boson) == hadron_current2.end())
+                continue;
             const auto &hcurrent = hadron_current[boson];
             const auto &hcurrent2 = hadron_current2[boson];
             for(const auto &lcurrent_spin : lcurrent.second) {
                 for(size_t i = 0; i < hcurrent.size(); ++i) {
-                    amps2 += 2*std::real(lcurrent_spin * hcurrent[i] * std::conj(lcurrent_spin * hcurrent2[i]));
+                    amps2 += 2 * std::real(lcurrent_spin * hcurrent[i] *
+                                           std::conj(lcurrent_spin * hcurrent2[i]));
                 }
             }
         }
-        // For interference amplitude 
+        // For interference amplitude
         // we need a factor of V = rho/A
-        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(),3)/(1.5*pow(M_PI,2))/static_cast<double>(event.CurrentNucleus()->NNucleons());
+        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(), 3) / (1.5 * pow(M_PI, 2)) /
+                 static_cast<double>(event.CurrentNucleus()->NNucleons());
     }
 
     if(std::isnan(amps2)) amps2 = 0;
@@ -175,12 +180,12 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     }
 
     if(multiplicity == 2) {
-        Channel<FourVector> channel0 =
-            BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(
+            m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
-        Channel<FourVector> channel0 =
-            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 = BuildChannel<ThreeBodyMapper>(
+            m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
 }
@@ -284,11 +289,10 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
-                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-                                      process_info.m_spectator.size(),
-                                      beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel = achilles::BuildGenChannel(
+            m_model.get(), process_info.m_leptonic.second.size() + 1,
+            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
@@ -349,11 +353,10 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
-                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-                                      process_info.m_spectator.size(),
-                                      beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel = achilles::BuildGenChannel(
+            m_model.get(), process_info.m_leptonic.second.size() + 1,
+            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
