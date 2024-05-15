@@ -38,7 +38,7 @@ class Channels3 : public Channels {
     }
 };
 
-class C3_0 : public Channels3, achilles::RegistrablePS<Channels, C3_0, std::vector<double>> {
+class C3_0 : public Channels3, achilles::Registrable<Channels, C3_0, std::vector<double>> {
   public:
     C3_0(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_0"; }
@@ -54,7 +54,7 @@ class C3_0 : public Channels3, achilles::RegistrablePS<Channels, C3_0, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_1 : public Channels3, achilles::RegistrablePS<Channels, C3_1, std::vector<double>> {
+class C3_1 : public Channels3, achilles::Registrable<Channels, C3_1, std::vector<double>> {
   public:
     C3_1(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_1"; }
@@ -70,7 +70,7 @@ class C3_1 : public Channels3, achilles::RegistrablePS<Channels, C3_1, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_2 : public Channels3, achilles::RegistrablePS<Channels, C3_2, std::vector<double>> {
+class C3_2 : public Channels3, achilles::Registrable<Channels, C3_2, std::vector<double>> {
   public:
     C3_2(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_2"; }
@@ -86,7 +86,7 @@ class C3_2 : public Channels3, achilles::RegistrablePS<Channels, C3_2, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_3 : public Channels3, achilles::RegistrablePS<Channels, C3_3, std::vector<double>> {
+class C3_3 : public Channels3, achilles::Registrable<Channels, C3_3, std::vector<double>> {
   public:
     C3_3(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_3"; }
@@ -102,7 +102,7 @@ class C3_3 : public Channels3, achilles::RegistrablePS<Channels, C3_3, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_4 : public Channels3, achilles::RegistrablePS<Channels, C3_4, std::vector<double>> {
+class C3_4 : public Channels3, achilles::Registrable<Channels, C3_4, std::vector<double>> {
   public:
     C3_4(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_4"; }
@@ -118,7 +118,7 @@ class C3_4 : public Channels3, achilles::RegistrablePS<Channels, C3_4, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_5 : public Channels3, achilles::RegistrablePS<Channels, C3_5, std::vector<double>> {
+class C3_5 : public Channels3, achilles::Registrable<Channels, C3_5, std::vector<double>> {
   public:
     C3_5(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_5"; }
@@ -134,7 +134,7 @@ class C3_5 : public Channels3, achilles::RegistrablePS<Channels, C3_5, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_6 : public Channels3, achilles::RegistrablePS<Channels, C3_6, std::vector<double>> {
+class C3_6 : public Channels3, achilles::Registrable<Channels, C3_6, std::vector<double>> {
   public:
     C3_6(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_6"; }
@@ -150,7 +150,7 @@ class C3_6 : public Channels3, achilles::RegistrablePS<Channels, C3_6, std::vect
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override;
 };
 
-class C3_7 : public Channels3, achilles::RegistrablePS<Channels, C3_7, std::vector<double>> {
+class C3_7 : public Channels3, achilles::Registrable<Channels, C3_7, std::vector<double>> {
   public:
     C3_7(const std::vector<double> &s) : Channels3(s, Name()) {}
     static std::string Name() { return "C3_7"; }

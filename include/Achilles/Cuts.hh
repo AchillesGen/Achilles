@@ -3,6 +3,7 @@
 
 #include <utility>
 
+#include "Achilles/Factory.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "fmt/ranges.h"
 
@@ -68,57 +69,9 @@ template <class T> class CutBase {
     cut_ranges m_range;
 };
 
-template <class Base> class CutFactory {
-    using Constructor = std::function<std::unique_ptr<Base>(const YAML::Node &)>;
-
-    static std::map<std::string, Constructor> &Registry() {
-        static std::map<std::string, Constructor> registry;
-        return registry;
-    }
-
-  public:
-    static std::unique_ptr<Base> InitializeCut(const std::string &name, const YAML::Node &node) {
-        auto constructor = Registry().at(name);
-        return constructor(node);
-    }
-
-    template <class Derived> static void Register(std::string name) {
-        if(IsRegistered(name)) spdlog::error("{} is already registered!", name);
-        spdlog::trace("Registering {} Cut", name);
-        Registry()[name] = Derived::Construct;
-    }
-
-    static bool IsRegistered(std::string name) { return Registry().find(name) != Registry().end(); }
-
-    static void Deregister(const std::string &name) {
-        if(!IsRegistered(name)) spdlog::error("{} is not registered!", name);
-        spdlog::trace("Deregistering {}", name);
-        Registry().erase(name);
-    }
-
-    static void DisplayCuts() {
-        fmt::print("Registered {} cuts:\n", Base::Name());
-        for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);
-    }
-};
-
-template <class Base, class Derived> class RegistrableCut {
-  protected:
-    RegistrableCut() = default;
-    virtual ~RegistrableCut() {
-        if(!m_registered) spdlog::error("Error registering cut");
-    }
-
-    static bool Register() {
-        CutFactory<Base>::template Register<Derived>(Derived::Name());
-        return true;
-    }
-
-  private:
-    static const bool m_registered;
-};
 template <class Base, class Derived>
-const bool RegistrableCut<Base, Derived>::m_registered = RegistrableCut<Base, Derived>::Register();
+using RegistrableCut = Registrable<Base, Derived, const YAML::Node &>;
+template <class Base> using CutFactory = Factory<Base, const YAML::Node &>;
 
 } // namespace achilles
 

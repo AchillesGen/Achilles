@@ -73,12 +73,12 @@ template <> struct convert<achilles::CutCollection> {
             spdlog::trace("Found cut: {}", cut_type);
             spdlog::trace("Found PIDs: [{}]", std::vector<int>(pid.begin(), pid.end()));
             if(achilles::CutFactory<achilles::OneParticleCut>::IsRegistered(cut_type)) {
-                auto cut = achilles::CutFactory<achilles::OneParticleCut>::InitializeCut(cut_type,
-                                                                                         subnode);
+                auto cut =
+                    achilles::CutFactory<achilles::OneParticleCut>::Initialize(cut_type, subnode);
                 cuts.AddCut(pid, std::move(cut));
             } else if(achilles::CutFactory<achilles::TwoParticleCut>::IsRegistered(cut_type)) {
-                auto cut = achilles::CutFactory<achilles::TwoParticleCut>::InitializeCut(cut_type,
-                                                                                         subnode);
+                auto cut =
+                    achilles::CutFactory<achilles::TwoParticleCut>::Initialize(cut_type, subnode);
                 cuts.AddCut(pid, std::move(cut));
             } else {
                 return false;
