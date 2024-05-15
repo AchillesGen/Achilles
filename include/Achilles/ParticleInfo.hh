@@ -70,6 +70,9 @@ class PID {
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }
+    static constexpr PID sigma0() { return PID{3212}; }
+    static constexpr PID sigmam() { return PID{3222}; }
+    static constexpr PID lambda0() { return PID{3122}; }
     // Dummy hadron
     static constexpr PID dummyHadron() { return PID{2212}; }
     // Common Elements

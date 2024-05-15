@@ -20,7 +20,8 @@ FormFactorBuilder &FormFactorBuilder::Coherent(const std::string &name, const YA
 
 FormFactorBuilder &FormFactorBuilder::ResonanceVector(const std::string &name,
                                                       const YAML::Node &node) {
-    form_factor->resonancevector = FormFactorFactory::Initialize(name, FFType::resonancevector, node);
+    form_factor->resonancevector =
+        FormFactorFactory::Initialize(name, FFType::resonancevector, node);
     return *this;
 }
 
@@ -31,13 +32,18 @@ FormFactorBuilder &FormFactorBuilder::ResonanceAxial(const std::string &name,
 }
 
 FormFactorBuilder &FormFactorBuilder::MesonExchangeVector(const std::string &name,
-                                                      const YAML::Node &node) {
+                                                          const YAML::Node &node) {
     form_factor->mecvector = FormFactorFactory::Initialize(name, FFType::mecvector, node);
     return *this;
 }
 
 FormFactorBuilder &FormFactorBuilder::MesonExchangeAxial(const std::string &name,
-                                                     const YAML::Node &node) {
+                                                         const YAML::Node &node) {
     form_factor->mecaxial = FormFactorFactory::Initialize(name, FFType::mecaxial, node);
+    return *this;
+}
+
+FormFactorBuilder &FormFactorBuilder::Hyperon(const std::string &name, const YAML::Node &node) {
+    form_factor->hyperon = FormFactorFactory::Initialize(name, FFType::hyperon, node);
     return *this;
 }

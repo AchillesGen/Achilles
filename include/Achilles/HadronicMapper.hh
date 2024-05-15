@@ -38,7 +38,7 @@ class QESpectralMapper : public HadronicBeamMapper,
                          RegistrablePS<HadronicBeamMapper, QESpectralMapper, size_t> {
   public:
     QESpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
-    static std::string Name() { return "QESpectral"; }
+    static std::string Name() { return "OneBodySpectral"; }
     static std::unique_ptr<HadronicBeamMapper> Construct(const size_t &idx) {
         return std::make_unique<QESpectralMapper>(idx);
     }
@@ -68,9 +68,8 @@ class CoherentMapper : public HadronicBeamMapper,
     size_t NDims() const override { return 0; }
 };
 
-
 class IntfSpectralMapper : public HadronicBeamMapper,
-                         RegistrablePS<HadronicBeamMapper, IntfSpectralMapper, size_t> {
+                           RegistrablePS<HadronicBeamMapper, IntfSpectralMapper, size_t> {
   public:
     IntfSpectralMapper(size_t idx) : HadronicBeamMapper(idx, Name()) {}
     static std::string Name() { return "IntfSpectral"; }
@@ -88,8 +87,6 @@ class IntfSpectralMapper : public HadronicBeamMapper,
     static constexpr double dp2 = 400; // reduced b/c MF SF has no strength at high P
     // static constexpr double dE = 400;
 };
-
-
 
 } // namespace achilles
 

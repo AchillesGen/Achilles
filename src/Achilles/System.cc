@@ -19,7 +19,7 @@ std::vector<fs::path> achilles::Filesystem::AchillesPath() {
 
 std::vector<std::string> achilles::Filesystem::GetPluginPaths() {
     std::vector<std::string> dirs;
-    const char* env = std::getenv("ACHILLES_PLUGIN_PATH");
+    const char *env = std::getenv("ACHILLES_PLUGIN_PATH");
     if(env) achilles::tokenize(std::string(env), dirs, ":");
     dirs.push_back(achilles::PathVariables::installLibs);
     return dirs;

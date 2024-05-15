@@ -182,7 +182,7 @@ class Nucleus {
     double FermiMomentum(const double &) const noexcept; //
 
     // Return kF
-    double FermiMomentum() const noexcept {return fermiMomentum;}
+    double FermiMomentum() const noexcept { return fermiMomentum; }
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
