@@ -3,7 +3,6 @@
 #include "Achilles/Utilities.hh"
 #include "fmt/std.h"
 #include "spdlog/spdlog.h"
-#include "yaml-cpp/yaml.h"
 
 // Function to load the search path for Achilles files
 std::vector<fs::path> achilles::Filesystem::AchillesPath() {
