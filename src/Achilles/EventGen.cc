@@ -130,11 +130,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         hard_cuts = config.GetAs<achilles::CutCollection>("HardCuts");
     }
 
-    // if(config["Main"]["EventCuts"])
-    //     doEventCuts = config["Main"]["EventCuts"].as<bool>();
-    // spdlog::info("Apply event cuts? {}", doEventCuts);
-    // event_cuts = config["EventCuts"].as<achilles::CutCollection>();
-
     // Setup outputs
     bool zipped = true;
     if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
