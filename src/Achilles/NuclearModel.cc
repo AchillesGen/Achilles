@@ -627,8 +627,6 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
                                                   const FormFactorMap &ffVal) const {
     Current result;
     std::array<SpinMatrix, 4> gamma{};
-    auto mpi2 = pow(ParticleInfo(211).Mass(), 2);
-    auto ffAP = 2.0 * Constant::mN2 / (-qVec.M2() + mpi2) * ffVal.at(Type::FA);
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
         gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
