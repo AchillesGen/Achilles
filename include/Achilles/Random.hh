@@ -46,6 +46,9 @@ class Random {
         std::sample(array.begin(), array.end(), std::back_inserter(result), n, m_rng->engine());
     }
 
+    void SaveState(std::ostream &os) { os << m_rng->engine(); }
+    void LoadState(std::istream &is) { is >> m_rng->engine(); }
+
   private:
     Random() { m_rng = std::make_shared<randutils::mt19937_rng>(); }
     std::shared_ptr<randutils::mt19937_rng> m_rng;
