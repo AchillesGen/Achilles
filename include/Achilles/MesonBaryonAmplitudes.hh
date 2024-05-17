@@ -12,7 +12,6 @@ class MBAmplitudes {
         MBAmplitudes(const MBAmplitudes&) = default;
 
 	void readANL(int,int);
-	void printPWA(int,int,int);
 	void printPWA(int iMB, int fMB, int L, int iJ, int iI);
 
 	double GetCG(int ichan, int twoJ, int twoIm, int twoIb) const{ return CGcof[ichan][(twoJ-1)/2][twoIm +2][twoIb+2];}
@@ -76,8 +75,8 @@ class MBAmplitudes {
 	const static int maxMBchan=4;
 	int nMBchan=0;
 	std::string MBchannels[maxMBchan] = {"piN", "eta N", "K Lambda", "K Sigma"};
-	double thresholds[maxMBchan] = {1080., 1500.,1615.,1100.}; //sum of masses plus 10 here, to fix
-	double Mass_m[maxMBchan] = {138.5, 548.0, 495., 1690.};
+	double thresholds[maxMBchan] = {1080., 1490.,1615.,1690.}; //Minima in the datafiles
+	double Mass_m[maxMBchan] = {138.5, 548.0, 495., 495.}; //Masses in ANL code
 	double Mass_b[maxMBchan] = {938.5, 938.5, 1115.7, 1193.0};
 
 	int twoIm_MBchannels[maxMBchan] = {2,0,1,1};
@@ -87,9 +86,6 @@ class MBAmplitudes {
 	int num_W[maxMBchan][maxMBchan] = {0};
 
 	double w_vec[maxMBchan][maxMBchan][Wmax];
-
-	double A_r[maxMBchan][maxMBchan][Wmax][nPW] = {0.}; //these are redundant but sometimes still used
-	double A_i[maxMBchan][maxMBchan][Wmax][nPW] = {0.};
 
 	const static int Lmax = 5;
 	const static int twoJmax = 9;

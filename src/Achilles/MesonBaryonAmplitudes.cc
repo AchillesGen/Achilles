@@ -43,7 +43,9 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 
 		for( int iPW = 0 ; iPW < nPW ; iPW++)
 		{
+			double Ar, Ai;
 			ing >> A_r[i_i][i_f][iw][iPW] >> A_i[i_i][i_f][iw][iPW];
+			ing >> Ar >> Ai;
 			int L = L_vec[iPW];
 			int twoJ = twoJ_vec[iPW];
 			int iJ = 1; //J = L + 1/2
@@ -52,9 +54,8 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 			int twoI = twoI_vec[iPW];
 			int iI = (twoI - 1)/2;
 
-//			std::cout << "reading : " << PWnames[iPW] << " assigning to L, iJ, iI  : " << L << "  " << iJ << "  " << iI << "  " << twoJ << " " << twoI << std::endl;
 
-			A_LJI[i_i][i_f][iw][L][iJ][iI] = A_r[i_i][i_f][iw][iPW] +C_i*A_i[i_i][i_f][iw][iPW];
+			A_LJI[i_i][i_f][iw][L][iJ][iI] = Ar +C_i*Ai;
 		}
 
 		iw++;
@@ -65,17 +66,6 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 
 }
 
-void MBAmplitudes::printPWA(int i_i, int i_f, int iPW)
-{
-	std::cout << PWnames[iPW] << " PWA for " <<  MBchannels[i_i] << " - > " << MBchannels[i_f] << std::endl;
-
-	for( int iw = 0 ; iw < num_W[i_i][i_f] ; iw++)
-	{
-		std::cout << w_vec[i_i][i_f][iw] << "  " << A_r[i_i][i_f][iw][iPW] << "  " <<  A_i[i_i][i_f][iw][iPW] << std::endl;
-	}
-
-
-}
 
 void MBAmplitudes::printPWA(int iMB, int fMB, int L, int iJ, int iI)
 {

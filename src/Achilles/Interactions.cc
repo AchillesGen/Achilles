@@ -535,7 +535,7 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     int fpidm = int(out_pids[0]);
     int fpidb = int(out_pids[1]);
 
-    if (fpidm % 2 == 1) //Works for all, except for the KS and KL ? these are not included here anyway
+    if (fpidm % 2 == 0) //Works for all, last number in pid should be 2*j except for the KS and KL ? these are not included here anyway
     {
 	//In this case what we thought was a meson has half-integer spin
 	fpidb = fpidm;
@@ -636,8 +636,8 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
 	p_perp = {1.,0.,0.};
     }else{
 	double norm = sqrt(1. - p_axis.Pz()*p_axis.Pz());
-	//An arbitrary orthogonal vector is
-	p_perp = {p_axis[1]/norm, p_axis[0]/norm,0.};
+	//An arbitrary orthonormal vector is
+	p_perp = {p_axis[1]/norm, -p_axis[0]/norm,0.};
     }
 
     ThreeVector p_out = pfCMS*(p_axis*cos_CMS + p_perp*sin_CMS*sinphi + p_perp.Cross(p_axis)*sin_CMS*cosphi); //Rotate p_out 
