@@ -15,7 +15,7 @@ class MBAmplitudes {
 	void printPWA(int,int,int);
 	void printPWA(int iMB, int fMB, int L, int iJ, int iI);
 
-	double GetCG(int ichan, int twoJ, int twoIm, int twoIb){ return CGcof[ichan][(twoJ-1)/2][twoIm +2][twoIb+2];}
+	double GetCG(int ichan, int twoJ, int twoIm, int twoIb) const{ return CGcof[ichan][(twoJ-1)/2][twoIm +2][twoIb+2];}
 	double CSTotal(double, int, int, int);
 
 	int MesonPID_Cchan(int ichan) const { return Meson_PID_Cchan[ichan]; }
@@ -61,7 +61,7 @@ class MBAmplitudes {
         void printCSW(int i_i, int i_f);
 
 
-	f_Polynomial Get_CSpoly_W(double W, int i_i, int i_f);
+	f_Polynomial Get_CSpoly_W(double W, int i_i, int i_f) const;
 
     private:
 	const static int nPW = 20;

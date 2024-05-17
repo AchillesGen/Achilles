@@ -537,7 +537,7 @@ void MBAmplitudes::SetH_G_coeffs()
 	}
 }
 
-f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f)
+f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f) const
 {
 
 	int iMB_i = MBchan_Cchan[i_i];
@@ -612,6 +612,7 @@ f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f)
 //	return f_Polynomial(A_poly, 2*Lmax+1);
 	return f_Polynomial(A_poly, 2*Lmax);
 }
+
 
 double f_Polynomial::eval_f(double x)
 {
