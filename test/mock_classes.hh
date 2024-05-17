@@ -130,8 +130,8 @@ class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
 class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK0(Remnant);
-    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &());
-    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &());
+    MAKE_CONST_MOCK0(Momentum, const std::vector<achilles::FourVector> &(), override);
+    MAKE_MOCK0(Momentum, std::vector<achilles::FourVector> &(), override);
     IMPLEMENT_MOCK0(CurrentNucleus);
     IMPLEMENT_CONST_MOCK0(CurrentNucleus);
     IMPLEMENT_CONST_MOCK0(Particles);
@@ -139,8 +139,8 @@ class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
     IMPLEMENT_CONST_MOCK0(Hadrons);
     IMPLEMENT_MOCK0(Leptons);
     IMPLEMENT_CONST_MOCK0(Leptons);
-    MAKE_CONST_MOCK0(Weight, const double &());
-    MAKE_MOCK0(Weight, double &());
+    MAKE_CONST_MOCK0(Weight, const double &(), override);
+    MAKE_MOCK0(Weight, double &(), override);
     IMPLEMENT_CONST_MOCK0(History);
 };
 

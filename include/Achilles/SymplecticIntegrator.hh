@@ -77,7 +77,8 @@ template <> inline void SymplecticIntegrator::Step<2>(double time_step) {
 template <size_t order> void SymplecticIntegrator::Step(double time_step) {
     static_assert(order % 2 == 0, "SymplecticIntegrator: Order must be an even number");
 
-    constexpr double gamma = 1.0 / (2 - pow(2, 1.0 / (static_cast<double>(order) + 1.0)));
+    // TODO: Make constexpr when c++26 is available
+    double gamma = 1.0 / (2 - pow(2, 1.0 / (static_cast<double>(order) + 1.0)));
     Step<order - 2>(gamma * time_step);
     Step<order - 2>((1 - 2 * gamma) * time_step);
     Step<order - 2>(gamma * time_step);

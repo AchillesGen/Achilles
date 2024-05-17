@@ -21,6 +21,13 @@ contains
         type(map) :: params
 
         file = 'data/intf_info.data'
+        call params%init()
+        call params%insert('fpind', 0.54d0)
+        call params%insert('fstar', 2.13d0)
+        call params%insert('fpinn2', 0.081*4.0*acos(-1d0))
+        call params%insert('ga', 1.26d0)
+        call params%insert('lpi', 1300.0d0)
+        call params%insert('lpind', 1150.0d0)
 
         call test_case_create('Fortran Spectral Inteference model', test_suite)
         valid = model%init(file, params)
