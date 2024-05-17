@@ -114,7 +114,6 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
-        double precision :: Q2
         complex(c_double_complex), dimension(2) :: ffa
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
@@ -134,10 +133,8 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
-        Q2 = q4(2)**2 + q4(3)**2 + q4(4)**2 - q4(1)**2
-
         ffa(1)=ff%lookup("FA")
-        ffa(2)=ffa(1)*2.0*(constants%mqe**2)/(Q2 + constants%mpip**2)
+        ffa(2)=ff%lookup("FAP")
 
         call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
         call define_spinors()

@@ -5,6 +5,7 @@ resonancevector: ResonanceVectorDummy
 resonanceaxial: ResonanceAxialDummy 
 mecvector: MesonExchangeVector 
 mecaxial: MesonExchangeAxial
+hyperon: Hyperon
 
 VectorDummy:
   f1p: 1
@@ -102,3 +103,6 @@ MesonExchangeVector:
 MesonExchangeAxial: 
   MaDeltaSq: 1.1025
   ca5norm: 1.2
+
+Hyperon:
+  dummy: 0.
