@@ -128,6 +128,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         doHardCuts = config.GetAs<bool>("Main/HardCuts");
         spdlog::info("Apply hard cuts? {}", doHardCuts);
         hard_cuts = config.GetAs<achilles::CutCollection>("HardCuts");
+        for(auto &group : process_groups) group.SetCuts(hard_cuts);
     }
 
     // Setup outputs
