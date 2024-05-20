@@ -732,7 +732,7 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] += std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
-                                                       sign * qVec[nu] / (2 * hyperon.Mass()));
+                                                       sign * qVec[nu] / (hyperon.Mass()));
             sign = -1;
         }
     }
