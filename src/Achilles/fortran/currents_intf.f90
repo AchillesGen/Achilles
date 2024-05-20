@@ -294,7 +294,7 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
     integer*4 :: i,j,mu,err,i_fl_in
     complex*16 :: cv3_in, cv4_in, cv5_in, ca5_in
     real*8 :: pa(4),pb(4),pc(4),pd(4),width,fpik1,fpik2,fpindk2,fpindk1,k_1(4),k_2(4)
-    real*8 :: gadelta,gbdelta,gcdelta,gddelta,pa2,pb2,pc2,pd2
+    real*8 :: gadelta,gbdelta,gcdelta,gddelta,pa2,pb2,pc2,pd2,ppn1(4),ppn2(4)
     real*8 :: pot_pa,pot_pb,pot_pc,pot_pd
     complex*16 :: pa_sl(4,4),pb_sl(4,4),pc_sl(4,4),pd_sl(4,4)
     complex*16 :: xmd_a,xmd_b,xmd_c,xmd_d
@@ -309,6 +309,8 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
     cv5 = cv5_in
     ca5 = ca5_in
 
+
+    !define delta, pion, and final state nucleon momenta
     if(i_fl.eq.1)then
         pa(:)=p1(:)+q(:)
         pb(:)=pp1(:)-q(:)
@@ -316,6 +318,8 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
         pd(:)=pp2(:)-q(:)
         k_1 = k1  
         k_2 = k2 
+        ppn1 = pp1 
+        ppn2 = pp2 
     elseif(i_fl.eq.2) then
         pa(:)=p1(:)+q(:)
         pb(:)=pp2(:)-q(:)
@@ -323,6 +327,8 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
         pd(:)=pp1(:)-q(:)
         k_1 = k1_e
         k_2 = k2_e
+        ppn1 = pp2 
+        ppn2 = pp1 
     endif
 
     pa2=pa(1)**2-sum(pa(2:4)**2)
@@ -359,6 +365,7 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
     enddo
 ! costruisco i primi due termini della corrente a 2 corpi corrispondenti ai diagrammi a,b,c e d questo e' un passaggio intermedio,
 ! l'espressione finale di tali correnti e' data da j_a_mu, j_b_mu, j_c_mu, j_d_mu
+
     do i=1,4
       j_a_1(:,:,i)=k_2(i)*id4(:,:)
       j_b_2(:,:,i)=k_2(i)*id4(:,:)
@@ -383,10 +390,29 @@ function det_JaJb_JcJd(cv3_in, cv4_in, cv5_in, ca5_in, i_fl_in) result(err)
     &    2.0d0*pd(i)*pd(j)/3.0d0/xmd**2*id4(:,:)-(gamma_mu(:,:,i)*pd(j)-gamma_mu(:,:,j)*pd(i))/3.0d0/xmd) &
     &    *(1.0d0/(pd(1)**2-sum(pd(2:4)**2)-xmd_d**2))
 !   &     *(pd2-xmd**2)/((pd2-xmd**2)**2+xmd**2*gd**2)
-         J_a_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+ca5*xmn*g_munu(i,j)*id4(:,:)
-         J_b_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
-         J_c_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+ca5*xmn*g_munu(i,j)*id4(:,:)
-         J_d_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
+         J_a_2(:,:,i,j)= matmul(cv3*(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j)) + &
+         &  (cv4/xmn)*(g_munu(i,j)*(q(1)*pa(1)-sum(q(2:4)*pa(2:4)))-q(i)*pa(j)) + &
+         &  (cv5/xmn)*(g_munu(i,j)*(q(1)*p1(1)-sum(q(2:4)*p1(2:4)))-q(i)*p1(j)),gamma_mu(:,:,5)) + &
+         &  ca5*xmn*g_munu(i,j)*id4(:,:)
+
+         J_b_1(:,:,i,j)=matmul(gamma_mu(:,:,5),cv3*(g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i)) + &
+         &  (cv4/xmn)*(g_munu(j,i)*(q(1)*pb(1)-sum(q(2:4)*pb(2:4)))-q(j)*pb(i)) + &
+         &  (cv5/xmn)*(g_munu(j,i)*(q(1)*ppn1(1)-sum(q(2:4)*ppn1(2:4)))-q(j)*ppn1(i))) + &
+         &  ca5*xmn*g_munu(i,j)*id4(:,:)
+
+         J_c_2(:,:,i,j)= matmul(cv3*(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j)) + &
+         &  (cv4/xmn)*(g_munu(i,j)*(q(1)*pc(1)-sum(q(2:4)*pc(2:4)))-q(i)*pc(j)) + &
+         &  (cv5/xmn)*(g_munu(i,j)*(q(1)*p2(1)-sum(q(2:4)*p2(2:4)))-q(i)*p2(j)),gamma_mu(:,:,5)) + &
+         &  ca5*xmn*g_munu(i,j)*id4(:,:)
+
+         J_d_1(:,:,i,j)=matmul(gamma_mu(:,:,5),cv3*(g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i)) + &
+         &  (cv4/xmn)*(g_munu(j,i)*(q(1)*pd(1)-sum(q(2:4)*pd(2:4)))-q(j)*pd(i)) + &
+         &  (cv5/xmn)*(g_munu(j,i)*(q(1)*ppn2(1)-sum(q(2:4)*ppn2(2:4)))-q(j)*ppn2(i))) + &
+         &  ca5*xmn*g_munu(i,j)*id4(:,:)
+
+         !J_b_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
+         !J_c_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+ca5*xmn*g_munu(i,j)*id4(:,:)
+         !J_d_1(:,:,i,j)=cv3*matmul(gamma_mu(:,:,5),g_munu(j,i)*q_sl(:,:)-q(j)*gamma_mu(:,:,i))+ca5*xmn*g_munu(j,i)*id4(:,:)
 
          !J_a_2(:,:,i,j)=cv3*matmul(g_munu(i,j)*q_sl(:,:)-q(i)*gamma_mu(:,:,j),gamma_mu(:,:,5))+(cv4/xmn+cv5/xmn)*(g_munu(i,j)* &
      !&        (q(1)*pa(1) -q(3)*pa(3))-q(i)*pa(j)) &
