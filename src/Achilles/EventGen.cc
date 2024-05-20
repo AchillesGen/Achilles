@@ -180,7 +180,7 @@ void achilles::EventGen::Initialize() {
 
 void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
-    runCascade = cascade == nullptr;
+    runCascade = !(cascade == nullptr);
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
     while(accepted < nevents) {
