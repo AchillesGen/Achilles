@@ -44,7 +44,6 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 		for( int iPW = 0 ; iPW < nPW ; iPW++)
 		{
 			double Ar, Ai;
-			ing >> A_r[i_i][i_f][iw][iPW] >> A_i[i_i][i_f][iw][iPW];
 			ing >> Ar >> Ai;
 			int L = L_vec[iPW];
 			int twoJ = twoJ_vec[iPW];

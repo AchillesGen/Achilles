@@ -194,12 +194,12 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
 
     /// Initialize MesonBaryonInteraction class. This loads data from an input file
     MesonBaryonInteraction() = default;
-//    MesonBaryonInteraction(const YAML::Node &){};
+    MesonBaryonInteraction(const YAML::Node &){};
 
     /// Generate a object. This is used in the InteractionFactory.
-//    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
-//        return std::make_unique<MesonBaryonInteraction>(data);
-//    }
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<MesonBaryonInteraction>(data);
+    }
 
     /// Default Destructor
     ~MesonBaryonInteraction() override = default;
@@ -226,11 +226,11 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
     } 
 
     //Cross sections and pairs of PIDs for all possible final states
-    InteractionResults CrossSection(const Particle &, const Particle &) const override = 0;
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
-                                           Random &) const override = 0;
+                                           Random &) const override;
 
   private:
     // Functions
