@@ -37,7 +37,7 @@ AxialDipole:
 
 AxialZExpansion:
   tcut: 0.1753180641  # [GeV^2] 9*mpi^2 = 9*(0.13957)^2
-  t0: 0  # [GeV^2]
+  t0: -0.28  # [GeV^2]
   # Compare with footnote 13 of https://arxiv.org/pdf/1603.03048.pdf
   CC Params: [-0.759, 2.30, -0.6, -3.8, 2.3, 2.16, -0.896, -1.58, 0.823]
   Strange Params: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
