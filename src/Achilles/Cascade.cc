@@ -445,7 +445,7 @@ void Cascade::Escaped(Particles &particles) {
         // cascade)
         auto particle = &particles[*it];
         spdlog::debug("Kicked particle: {} at idx = {}", *particle, *it);
-        if(particle->Status() != ParticleStatus::propagating)
+        if(particle->Status() != ParticleStatus::propagating && particle->Status() != ParticleStatus::external_test)
             throw std::domain_error("Invalid Particle in kicked list");
         // if(particle -> Status() == -2) {
         //     std::cout << particle -> Position().Pz() << " " << sqrt(radius2)
