@@ -16,6 +16,7 @@ enum class CascadeMode {
     Transparency,
     CrossSectionMFP,
     TransparencyMFP,
+    TransparencyExternal
 };
 
 } // namespace achilles
@@ -35,6 +36,8 @@ template <> struct convert<achilles::CascadeMode> {
             mode = achilles::CascadeMode::CrossSectionMFP;
         else if(name == "TransparencyMFP")
             mode = achilles::CascadeMode::TransparencyMFP;
+	else if(name == "TransparencyExternal")
+            mode = achilles::CascadeMode::TransparencyExternal;
         else
             return false;
 
@@ -145,6 +148,28 @@ class CalcTransparencyMFP : public RunMode {
     }
 
   private:
+    double nevents{};
+    double ninteract{};
+    double distance{};
+    double ncaptured{};
+};
+
+
+class CalcTransparencyExternal : public RunMode {
+  public:
+    CalcTransparencyExternal(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade)
+        : RunMode(nuc, std::move(cascade)), m_pid{pid} {}
+    void GenerateEvent(double mom) override;
+    void PrintResults(std::ofstream &out) const override;
+    void Reset() override {
+        nevents = 0;
+        ninteract = 0;
+        distance = 0;
+        ncaptured = 0;
+    }
+
+  private:
+    int m_pid;
     double nevents{};
     double ninteract{};
     double distance{};

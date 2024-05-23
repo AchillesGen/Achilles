@@ -16,6 +16,7 @@ using achilles::CascadeTest::CalcCrossSectionMFP;
 using achilles::CascadeTest::CalcMeanFreePath;
 using achilles::CascadeTest::CalcTransparency;
 using achilles::CascadeTest::CalcTransparencyMFP;
+using achilles::CascadeTest::CalcTransparencyExternal;
 
 void CalcCrossSection::GenerateEvent(double mom) {
     // Generate a point in the beam of a given radius
@@ -195,7 +196,67 @@ void CalcTransparency::GenerateEvent(double kick_mom) {
     }
 }
 
+
+
 void CalcTransparency::PrintResults(std::ofstream &out) const {
+    double transparency = 1 - ninteract / nevents;
+    double error = sqrt(ninteract / nevents / nevents);
+    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
+    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
+    out << fmt::format("{},{}\n", transparency, error);
+}
+
+
+void CalcTransparencyExternal::GenerateEvent(double kick_mom) {
+    double costheta = Random::Instance().Uniform(-1.0, 1.0);
+    double sintheta = sqrt(1 - costheta * costheta);
+    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
+    
+    std::vector<FourVector> momdummy; 
+    Event event(m_nuc.get(), momdummy, 1.);
+
+    //We put the external particle at the position of a nucleon -> distribute according to density
+    //Note: all this skips the configurations ? 
+    size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
+    ThreeVector position = event.Hadrons()[idx].Position();
+
+    //Optional: rotate to some other spot on the sphere so that it is not always on top of another nucleon:
+    double rth = M_PI* Random::Instance().Uniform(0.,1.);
+    double rph = 2. * M_PI * Random::Instance().Uniform(0.,1.);
+    position = { position.Px()*sin(rth)*cos(rph), position.Py()*sin(rth)*sin(rph), position.Pz()*cos(rth) };
+    
+    auto mass = achilles::ParticleInfo(m_pid).Mass();
+    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi),
+                    kick_mom * sintheta * sin(phi), kick_mom * costheta};
+
+    
+    Particle testPart{m_pid, kick, position, ParticleStatus::internal_test};
+//    testPart.SetFormationZone(kicked_particle->Momentum(), kick); -> this is implemented specifically for nucleons!
+    event.Hadrons().push_back(testPart);
+    m_cascade.SetKicked(event.Hadrons().size() - 1);
+
+
+    spdlog::debug("Initial Hadrons:");
+    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
+
+    m_cascade.MeanFreePath(event, m_nuc.get());
+    nevents++;
+
+    spdlog::debug("Final Nucleons:");
+    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
+
+    for(const auto &part : event.Hadrons()) {
+        if(part.Status() == ParticleStatus::internal_test) {
+            ninteract++;
+            distance += part.GetDistanceTraveled();
+        } else if(part.Status() == ParticleStatus::captured) {
+            ncaptured++;
+            ninteract++;
+        }
+    }
+}
+
+void CalcTransparencyExternal::PrintResults(std::ofstream &out) const {
     double transparency = 1 - ninteract / nevents;
     double error = sqrt(ninteract / nevents / nevents);
     fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
@@ -293,6 +354,9 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
         break;
     case CascadeMode::TransparencyMFP:
         generator = std::make_unique<CalcTransparencyMFP>(nucleus, std::move(cascade));
+        break;
+    case CascadeMode::TransparencyExternal:
+        generator = std::make_unique<CalcTransparencyExternal>(config["PID"].as<int>(), nucleus, std::move(cascade));
         break;
     }
 

@@ -31,7 +31,7 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 	C_i = std::sqrt(C_i); 
 	std::ifstream ing;
 	std::string fnm = "ANL_"+std::to_string(i_i)+"-"+std::to_string(i_f)+".dat";
-	ing.open("./Amplitudes/" + fnm);
+	ing.open("./data/MesonBaryonAmplitudes/ANL/" + fnm);
 	
 	//skip the first two lines
 	ing.ignore(1000, '\n');
