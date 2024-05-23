@@ -44,7 +44,10 @@ void CalcCrossSection::GenerateEvent(double mom) {
     
     // Cascade
     m_cascade.SetKicked(event.Hadrons().size() - 1);
-    m_cascade.Evolve(event, m_nuc.get());
+
+    //Use the mean-free path algortihm ? Once it hits it hits
+//    m_cascade.Evolve(event, m_nuc.get());
+    m_cascade.MeanFreePath(event, m_nuc.get());
 
     // Analyze output
     spdlog::debug("Final Nucleons:");
@@ -52,8 +55,8 @@ void CalcCrossSection::GenerateEvent(double mom) {
 
     nevents++;
     for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::final_state || 
-	part.Status() == ParticleStatus::captured) {
+        if(part.Status() != ParticleStatus::background &&
+	part.Status() != ParticleStatus::external_test) {
             nhits++;
             break;
         }

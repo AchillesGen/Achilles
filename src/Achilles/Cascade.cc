@@ -350,7 +350,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         return;
     }
 
-    if(kickNuc->Status() != ParticleStatus::internal_test) {
+    if ( (kickNuc->Status() != ParticleStatus::internal_test ) && (kickNuc->Status() != ParticleStatus::external_test) ) {
         throw std::runtime_error("MeanFreePath: kickNuc must have status -3 "
                                  "in order to accumulate DistanceTraveled.");
     }
@@ -368,7 +368,11 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         }
 
         // Are we already outside nucleus?
-        if(kickNuc->Position().Magnitude() >= nucleus->Radius()) {
+	if (kickNuc->Position().Magnitude() >= nucleus->Radius() && kickNuc->Status() == ParticleStatus::external_test )
+	{
+		if (kickNuc->Position().Pz() > nucleus->Radius()) break;
+
+	} else if (kickNuc->Position().Magnitude() >= nucleus->Radius()) {
             kickNuc->Status() = ParticleStatus::final_state;
             break;
         }
