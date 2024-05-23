@@ -428,7 +428,8 @@ void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS)
 				}
 			}
 	
-			CS[iW] = 4.*W2/PF * CS[iW];
+//			CS[iW] = 2.*M_PI * 4.*W2/PF * CS[iW]; // unit 1/MeV^2
+			CS[iW] = 197.32*197.32 *10 *2.*M_PI * 4.*W2/PF * CS[iW]; // unit mB
 		}
 	
 		

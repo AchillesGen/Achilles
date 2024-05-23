@@ -380,7 +380,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
         if(hitIdx == SIZE_MAX) continue;
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        FinalizeMomentum(particles, idx, hitIdx);
+        FinalizeMomentum(particles, idx, hitIdx); 
         // Stop as soon as we hit anything
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }

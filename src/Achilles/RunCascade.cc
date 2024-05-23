@@ -246,9 +246,10 @@ void CalcTransparencyExternal::GenerateEvent(double kick_mom) {
     for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
 
     for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::internal_test) {
+        if(part.Status() == ParticleStatus::interacted) {
             ninteract++;
             distance += part.GetDistanceTraveled();
+	    break; //Break to only count 1
         } else if(part.Status() == ParticleStatus::captured) {
             ncaptured++;
             ninteract++;
@@ -258,6 +259,7 @@ void CalcTransparencyExternal::GenerateEvent(double kick_mom) {
 
 void CalcTransparencyExternal::PrintResults(std::ofstream &out) const {
     double transparency = 1 - ninteract / nevents;
+    fmt::print( " interact {}  with totevents {} ", ninteract, nevents);
     double error = sqrt(ninteract / nevents / nevents);
     fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
     fmt::print("  Average distance to interact: {}\n", distance / ninteract);
