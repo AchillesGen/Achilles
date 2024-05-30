@@ -65,6 +65,8 @@ void tokenize(const std::string &str, ContainerT &tokens, const std::string &del
     }
 }
 
+double ParseFraction(const std::string &);
+
 constexpr int LeviCivita(const int i, const int j, const int k, const int l) {
     return (i == j || i == k || i == l || j == k || j == l || k == l)
                ? 0

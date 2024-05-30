@@ -49,6 +49,7 @@ add_executable(achilles-testsuite
     # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_interaction_handler.cc
+    test_mbamplitudes.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
     PUBLIC physics mappers event_gen)

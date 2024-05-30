@@ -12,6 +12,8 @@ class MBAmplitudes {
         MBAmplitudes(const MBAmplitudes&) = default;
 
 	void readANL(int,int);
+	void readANLDelta();
+    bool readANLDeltaBlock(std::ifstream &file);
 	void printPWA(int iMB, int fMB, int L, int iJ, int iI);
 
 	double GetCG(int ichan, int twoJ, int twoIm, int twoIb) const{ return CGcof[ichan][(twoJ-1)/2][twoIm +2][twoIb+2];}
