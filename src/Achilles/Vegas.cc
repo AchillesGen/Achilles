@@ -13,6 +13,45 @@
 // #include "Achilles/MPI.hh"
 #endif
 
+bool achilles::operator==(const VegasParams &lhs, const VegasParams &rhs) {
+    return lhs.ncalls == rhs.ncalls && lhs.nrefine == rhs.nrefine && lhs.rtol == rhs.rtol &&
+           lhs.atol == rhs.atol && lhs.alpha == rhs.alpha && lhs.ninterations == rhs.ninterations;
+}
+
+bool achilles::operator==(const VegasSummary &lhs, const VegasSummary &rhs) {
+    return lhs.results == rhs.results && lhs.sum_results == rhs.sum_results;
+}
+
+void achilles::SaveState(std::ostream &os, const VegasParams &params) {
+    os << params.ncalls << " " << params.nrefine << " " << params.rtol << " " << params.atol << " "
+       << params.alpha << " " << params.ninterations;
+}
+
+void achilles::LoadState(std::istream &is, VegasParams &params) {
+    is >> params.ncalls >> params.nrefine >> params.rtol >> params.atol >> params.alpha >>
+        params.ninterations;
+}
+
+void achilles::SaveState(std::ostream &os, const VegasSummary &summary) {
+    summary.sum_results.SaveState(os);
+    os << " " << summary.results.size() << " ";
+    for(const auto &res : summary.results) {
+        res.SaveState(os);
+        os << " ";
+    }
+}
+
+void achilles::LoadState(std::istream &is, VegasSummary &summary) {
+    summary.sum_results.LoadState(is);
+    size_t nresults;
+    is >> nresults;
+    for(size_t i = 0; i < nresults; ++i) {
+        StatsData res;
+        res.LoadState(is);
+        summary.results.push_back(res);
+    }
+}
+
 void achilles::Vegas::operator()(const Func<double> &func) {
     std::vector<double> rans(grid.Dims());
     std::vector<double> train_data(grid.Dims() * grid.Bins());
@@ -48,7 +87,7 @@ void achilles::Vegas::Optimize(const Func<double> &func) {
         abs_err = current.Error();
         rel_err = abs_err / std::abs(current.Mean());
 
-        PrintIteration();
+        if(verbosity != Vegas::Verbosity::silent) PrintIteration();
         if(++irefine == params.nrefine) {
             Refine();
             irefine = 0;
@@ -84,6 +123,20 @@ void achilles::Vegas::PrintIteration() const {
                              summary.results.back().Error(), summary.Result().Mean(),
                              summary.Result().Error())
               << std::endl;
+}
+
+void achilles::Vegas::SaveState(std::ostream &os) const {
+    grid.SaveState(os);
+    os << " ";
+    achilles::SaveState(os, params);
+    os << " ";
+    achilles::SaveState(os, summary);
+}
+
+void achilles::Vegas::LoadState(std::istream &is) {
+    grid.LoadState(is);
+    achilles::LoadState(is, params);
+    achilles::LoadState(is, summary);
 }
 
 // Below are functions for preforming the modified Kahan Summation, to ensure

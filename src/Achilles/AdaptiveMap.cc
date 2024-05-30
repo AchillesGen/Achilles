@@ -5,28 +5,25 @@
 #include "Achilles/AdaptiveMap.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 
 using achilles::AdaptiveMap;
 
-bool AdaptiveMap::Deserialize(std::istream &in) {
-    in >> m_bins >> m_dims;
-    m_hist.resize((m_bins + 1) * m_dims);
-
-    for(auto &x : m_hist) in >> x;
-
-    return true;
-}
-
-bool AdaptiveMap::Serialize(std::ostream &out) const {
+void AdaptiveMap::SaveState(std::ostream &out) const {
     out << m_bins << ' ' << m_dims;
 
     for(const auto &x : m_hist) {
         out << ' ' << std::scientific
             << std::setprecision(std::numeric_limits<double>::max_digits10 - 1) << x;
     }
+}
 
-    return true;
+void AdaptiveMap::LoadState(std::istream &in) {
+    in >> m_bins >> m_dims;
+    m_hist.resize((m_bins + 1) * m_dims);
+
+    for(auto &x : m_hist) in >> x;
 }
 
 size_t AdaptiveMap::FindBin(size_t dim, double x) const {
@@ -159,4 +156,8 @@ void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {
     spdlog::trace("New Hist: [{}]", fmt::join(hist.begin(), hist.end(), ", "));
     m_bins = nsplit * m_bins;
     m_hist = hist;
+}
+
+bool achilles::AdaptiveMap::operator==(const AdaptiveMap &rhs) const {
+    return m_bins == rhs.m_bins && m_dims == rhs.m_dims && m_hist == rhs.m_hist;
 }

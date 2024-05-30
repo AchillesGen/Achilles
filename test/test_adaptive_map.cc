@@ -114,22 +114,6 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
     }
 }
 
-TEST_CASE("Serializing / Deserializing Adaptive Map", "[vegas]") {
-    achilles::AdaptiveMap map(4, 4);
-
-    std::stringstream data;
-    map.Serialize(data);
-
-    achilles::AdaptiveMap map2;
-    map2.Deserialize(data);
-
-    CHECK(map.Dims() == map2.Dims());
-    CHECK(map.Bins() == map2.Bins());
-
-    for(size_t i = 0; i < map.Dims(); ++i)
-        CHECK_THAT(map.Edges(i), Catch::Matchers::Approx(map2.Edges(i)));
-}
-
 TEST_CASE("YAML encoding / decoding Adaptive Map", "[vegas]") {
     achilles::AdaptiveMap map(4, 4);
 

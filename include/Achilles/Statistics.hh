@@ -134,7 +134,7 @@ class StatsData {
     }
     bool operator!=(const StatsData &other) const { return !(*this == other); }
 
-    void SaveState(std::ostream &os) {
+    void SaveState(std::ostream &os) const {
         const auto default_precision{os.precision()};
         os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
         os << n << " " << min << " " << max << " " << sum << " " << sum2 << " " << n_finite;
