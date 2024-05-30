@@ -2,7 +2,6 @@
 #include "Achilles/Beams.hh"
 #include "Achilles/Cascade.hh"
 #include "Achilles/Channels.hh"
-#include "Achilles/ComplexFmt.hh"
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
@@ -32,6 +31,7 @@ class SherpaInterface {};
 #include "plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
+#include "fmt/std.h"
 #include "yaml-cpp/yaml.h"
 
 achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs)

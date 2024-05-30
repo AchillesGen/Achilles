@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "fmt/core.h"
+#include "fmt/ranges.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"

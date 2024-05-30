@@ -1,6 +1,7 @@
 #include "Achilles/Settings.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 #include <functional>
 #include <iostream>
