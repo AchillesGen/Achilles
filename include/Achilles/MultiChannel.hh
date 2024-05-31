@@ -28,6 +28,14 @@ struct MultiChannelParams {
     static constexpr size_t nparams = 7;
 };
 
+bool operator==(const MultiChannelParams &lhs, const MultiChannelParams &rhs);
+bool operator==(const MultiChannelSummary &lhs, const MultiChannelSummary &rhs);
+
+void SaveState(std::ostream &os, const MultiChannelParams &params);
+void LoadState(std::istream &is, MultiChannelParams &params);
+void SaveState(std::ostream &os, const MultiChannelSummary &summary);
+void LoadState(std::istream &is, MultiChannelSummary &summary);
+
 class MultiChannel {
   public:
     MultiChannel() = default;
@@ -47,6 +55,11 @@ class MultiChannel {
 
     // Getting results
     MultiChannelSummary Summary();
+
+    // Cache Results
+    void SaveState(std::ostream &) const;
+    void LoadState(std::istream &);
+    bool operator==(const MultiChannel &) const;
 
     // YAML interface
     friend YAML::convert<achilles::MultiChannel>;
