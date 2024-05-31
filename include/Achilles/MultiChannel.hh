@@ -120,6 +120,11 @@ class MultiChannel {
     void LoadState(std::istream &);
     bool operator==(const MultiChannel &) const;
 
+    // Cache Results
+    void SaveState(std::ostream &) const;
+    void LoadState(std::istream &);
+    bool operator==(const MultiChannel &) const;
+
     // YAML interface
     friend YAML::convert<achilles::MultiChannel>;
 
