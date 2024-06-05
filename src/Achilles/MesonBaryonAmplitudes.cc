@@ -4,6 +4,7 @@
 
 #include "Achilles/MesonBaryonAmplitudes.hh"
 #include "Achilles/Legendre.hh"
+#include "Achilles/Utilities.hh"
 #include "Achilles/f_polynomial.hh"
 
 MBAmplitudes::MBAmplitudes()
@@ -16,6 +17,7 @@ MBAmplitudes::MBAmplitudes()
 	        readANL(ii,iff);
 	    }
 	}
+    readANLDelta();
 	nMBchan=4;
 	initIso();
 	initCChannels();
@@ -63,6 +65,62 @@ void MBAmplitudes::readANL(int i_i, int i_f)
 
 	ing.close();
 
+}
+
+void MBAmplitudes::readANLDelta() {
+    std::ifstream input_file;
+    input_file.open("./data/MesonBaryonAmplitudes/ANL/pwa-piDelta-pin.dat");
+    std::string line;
+
+    // Skip the first six lines
+    for(size_t i = 0; i < 6; i++) {
+        std::getline(input_file, line);
+    }
+
+    // Read all amplitude blocks
+    while(readANLDeltaBlock(input_file)) {
+        // Do nothing
+    }
+}
+
+bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
+    // Parse partial wave information
+    std::string line;
+    std::getline(input_file, line);
+    std::vector<std::string> tokens;
+    achilles::tokenize(line, tokens, " ");
+    std::string pwa = tokens[2]; 
+    int L = std::stoi(tokens[5]);
+    double S = achilles::ParseFraction(tokens[7]);
+
+    std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S << std::endl;
+
+    // Read the W value
+    std::getline(input_file, line);
+    tokens.clear();
+    achilles::tokenize(line, tokens, " ");
+    double W = std::stod(tokens[1]);
+
+    std::cout << W << std::endl;
+
+    // Read the amplitudes for each value of p
+    std::vector<std::pair<double, std::complex<double>>> amplitudes;
+    std::getline(input_file, line);
+    while(std::getline(input_file, line)) {
+        if(line.empty()) {
+            return true;
+        }
+        tokens.clear();
+        achilles::tokenize(line, tokens, " ");
+        double p = std::stod(tokens[0]);
+        double Ar = std::stod(tokens[1]);
+        double Ai = std::stod(tokens[2]);
+        std::complex<double> A{Ar, Ai};
+        amplitudes.push_back({p, A});
+        std::cout << p << " " << A << std::endl;
+    }
+
+    return false;
 }
 
 
