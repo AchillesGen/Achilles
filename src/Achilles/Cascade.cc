@@ -251,9 +251,10 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
                 continue;
             }
             FinalizeMomentum(particles, idx, hitIdx);
-            UpdateKicked(particles, newKicked);
-            spdlog::trace("newKicked size = {}", newKicked.size());
         }
+        // Updated the kicked list
+        // NOTE: Needs to be here in case there are two interactions in the same time step
+        UpdateKicked(particles, newKicked);
 
         // Replace kicked indices with new list
         kickedIdxs = newKicked;
@@ -350,13 +351,13 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         return;
     }
 
-    if ( (kickNuc->Status() != ParticleStatus::internal_test ) && (kickNuc->Status() != ParticleStatus::external_test) ) {
+    if((kickNuc->Status() != ParticleStatus::internal_test) &&
+       (kickNuc->Status() != ParticleStatus::external_test)) {
         throw std::runtime_error("MeanFreePath: kickNuc must have status -3 "
                                  "in order to accumulate DistanceTraveled.");
     }
     for(std::size_t step = 0; step < maxSteps; ++step) {
         AdaptiveStep(particles, distance);
-
 
         // if(kickNuc->IsUnstable()) {
         // Check if decay
@@ -369,11 +370,11 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         }
 
         // Are we already outside nucleus?
-	if (kickNuc->Position().Magnitude() >= nucleus->Radius() && kickNuc->Status() == ParticleStatus::external_test )
-	{
-		if (kickNuc->Position().Pz() > nucleus->Radius()) break;
+        if(kickNuc->Position().Magnitude() >= nucleus->Radius() &&
+           kickNuc->Status() == ParticleStatus::external_test) {
+            if(kickNuc->Position().Pz() > nucleus->Radius()) break;
 
-	} else if (kickNuc->Position().Magnitude() >= nucleus->Radius()) {
+        } else if(kickNuc->Position().Magnitude() >= nucleus->Radius()) {
             kickNuc->Status() = ParticleStatus::final_state;
             break;
         }
@@ -387,7 +388,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        FinalizeMomentum(particles, idx, hitIdx); 
+        FinalizeMomentum(particles, idx, hitIdx);
         // Stop as soon as we hit anything
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }
@@ -452,8 +453,11 @@ void Cascade::Escaped(Particles &particles) {
         // cascade)
         auto particle = &particles[*it];
         spdlog::debug("Kicked particle: {} at idx = {}", *particle, *it);
-        if(particle->Status() != ParticleStatus::propagating && particle->Status() != ParticleStatus::external_test)
+        if(particle->Status() != ParticleStatus::propagating &&
+           particle->Status() != ParticleStatus::external_test) {
+            spdlog::info("Particle: {}", *particle);
             throw std::domain_error("Invalid Particle in kicked list");
+        }
         // if(particle -> Status() == -2) {
         //     std::cout << particle -> Position().Pz() << " " << sqrt(radius2)
         //     << std::endl; std::cout << *particle << std::endl;

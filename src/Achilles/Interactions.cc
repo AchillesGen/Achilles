@@ -475,144 +475,139 @@ ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-
 InteractionResults MesonBaryonInteraction::CrossSection(const Particle &particle1,
-                                                  const Particle &particle2) const {
+                                                        const Particle &particle2) const {
     int pidm = particle1.ID();
-    int pidb = particle2.ID(); //Usually the case
+    int pidb = particle2.ID(); // Usually the case
 
-    if (particle1.Info().IntSpin() % 2 == 1)
-    {
-	//In this case what we thought was a meson has half-integer spin
-	pidb = particle2.ID();
-	pidm = particle1.ID();
+    if(particle1.Info().IntSpin() % 2 == 1) {
+        // In this case what we thought was a meson has half-integer spin
+        pidb = particle2.ID();
+        pidm = particle1.ID();
     }
 
-    //Could encapsulate all the following in one function, but here we make use of achilles utilities
-    int ichan = Amplitudes.GetCchannel(pidm, pidb);
+    // Could encapsulate all the following in one function, but here we make use of achilles
+    // utilities
+    int ichan = m_amps.GetCchannel(pidm, pidb);
 
     InteractionResults results;
-    if (ichan < 0){return results;} //return empty, no initial channel matches
+    if(ichan < 0) { return results; } // return empty, no initial channel matches
 
-    double W =  (particle1.Momentum() + particle2.Momentum()).M();
+    double W = (particle1.Momentum() + particle2.Momentum()).M();
 
-    std::vector<std::pair<double, int>> CS_fchan = Amplitudes.GetAllCSW(ichan,W);
+    auto CS_fchan = m_amps.GetAllCSW(ichan, W);
 
-    //Remove cross sections that are identically zero
-    for (auto & CS_i : CS_fchan)
-    {
-	double CS = CS_i.first;
-	if (CS > 0.){
-	    int fchan = CS_i.second;
-	    int meson_out = Amplitudes.MesonPID_Cchan(fchan);
-	    int baryon_out = Amplitudes.BaryonPID_Cchan(fchan);
-	    results.push_back( {{PID(meson_out), PID(baryon_out)}, CS} );
-	}
+    // Remove cross sections that are identically zero
+    for(auto &CS_i : CS_fchan) {
+        double CS = CS_i.first;
+        if(CS > 0.) {
+            int fchan = CS_i.second;
+            int meson_out = m_amps.MesonPID_Cchan(fchan);
+            int baryon_out = m_amps.BaryonPID_Cchan(fchan);
+            results.push_back({{PID(meson_out), PID(baryon_out)}, CS});
+        }
     }
 
     return results;
 }
 
-
 std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &particle1,
-                                                         const Particle &particle2,
-                                                         const std::vector<PID> &out_pids,
-                                                         Random &random) const {
-
-    //PIDs from initial states 
+                                                               const Particle &particle2,
+                                                               const std::vector<PID> &out_pids,
+                                                               Random &random) const {
+    // PIDs from initial states
     int ipidm = particle1.ID();
-    int ipidb = particle2.ID(); //Usually the case
+    int ipidb = particle2.ID(); // Usually the case
 
-    if (particle1.Info().IntSpin() % 2 == 1)
-    {
-	//In this case what we thought was a meson has half-integer spin
-	ipidb = particle2.ID();
-	ipidm = particle1.ID();
+    if(particle1.Info().IntSpin() % 2 == 1) {
+        // In this case what we thought was a meson has half-integer spin
+        ipidb = particle2.ID();
+        ipidm = particle1.ID();
     }
 
-    int ichan = Amplitudes.GetCchannel(ipidm, ipidb); //channel in
+    int ichan = m_amps.GetCchannel(ipidm, ipidb); // channel in
 
     int fpidm = int(out_pids[0]);
     int fpidb = int(out_pids[1]);
 
-    if (fpidm % 2 == 0) //Works for all, last number in pid should be 2*j except for the KS and KL ? these are not included here anyway
+    if(fpidm % 2 == 0) // Works for all, last number in pid should be 2*j except for the KS and KL ?
+                       // these are not included here anyway
     {
-	//In this case what we thought was a meson has half-integer spin
-	fpidb = fpidm;
-	fpidm = int(out_pids[1]);
+        // In this case what we thought was a meson has half-integer spin
+        fpidb = fpidm;
+        fpidm = int(out_pids[1]);
     }
-	
-    //Channel out
-    int fchan = Amplitudes.GetCchannel(fpidm,fpidb);
 
-    double W =  (particle1.Momentum() + particle2.Momentum()).M();
+    // Channel out
+    int fchan = m_amps.GetCchannel(fpidm, fpidb);
 
-    //Get angular distribution 
-    f_Polynomial poly_angles = Amplitudes.Get_CSpoly_W(W, ichan, fchan);
+    double W = (particle1.Momentum() + particle2.Momentum()).M();
 
-    //We convert the CS to the cdf later, could in principle get the CDF directly
-    //For this we need the values:
+    // Get angular distribution
+    f_Polynomial poly_angles = m_amps.Get_CSpoly_W(W, ichan, fchan);
+
+    // We convert the CS to the cdf later, could in principle get the CDF directly
+    // For this we need the values:
     double CSmin = poly_angles.eval_If(-1.);
     double CStot = poly_angles.eval_If(1.);
 
     std::vector<double> rans(2);
-    random.Generate(rans); //Between 0 and 1 ? 
-    
+    random.Generate(rans); // Between 0 and 1 ?
+
     double x = rans[0];
-//    if (x < 0 || x > 1) BIG Problem
+    //    if (x < 0 || x > 1) BIG Problem
 
-    //Bisection method, should be incapsulated elsewhere in the future
+    // Bisection method, should be incapsulated elsewhere in the future
     //
-    //Parameters for bisection
-    int Nmax = 40; //too much : Nmax*tol > 1 => should converge
+    // Parameters for bisection
+    int Nmax = 40; // too much : Nmax*tol > 1 => should converge
     int Nit = 0;
-    double tol = 0.05; //tolerance on cosine 
-    double eps = 0.00001; //tolerance on f(x) - c = 0
-
+    double tol = 0.05;    // tolerance on cosine
+    double eps = 0.00001; // tolerance on f(x) - c = 0
 
     double a = -1;
-    double b = 1; 
-    double fa = -1. - x; //For a well defined CDF we know these numbers 
-//    double fb = 1. - x;
+    double b = 1;
+    double fa = -1. - x; // For a well defined CDF we know these numbers
+    //    double fb = 1. - x;
     double fc, c;
-    while (Nit < Nmax)
-    {
-       c = (a + b)/2.;
-       fc = (poly_angles.eval_If(c) - CSmin)/CStot - x;
-       if ( ( std::abs(fc)  < eps) || ( (b-a)/2. < tol ) ) {break;}
-       if (fc/fa > 0) {
-           a = c; 
-	   fa = fc;
-       }else{
-           b = c;
-//           fb = fc;
-       }
-       	   Nit++;
+    while(Nit < Nmax) {
+        c = (a + b) / 2.;
+        fc = (poly_angles.eval_If(c) - CSmin) / CStot - x;
+        if((std::abs(fc) < eps) || ((b - a) / 2. < tol)) { break; }
+        if(fc / fa > 0) {
+            a = c;
+            fa = fc;
+        } else {
+            b = c;
+            //           fb = fc;
+        }
+        Nit++;
     }
-    
-    //if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even if, we'll still be close
 
-    //END bisection
-  
+    // if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even
+    // if, we'll still be close
+
+    // END bisection
+
     double cos_CMS = c;
-    double phi_CMS = rans[1]* 2 * M_PI;
-    double sin_CMS = sqrt(1.-c*c);
+    double phi_CMS = rans[1] * 2 * M_PI;
+    double sin_CMS = sqrt(1. - c * c);
     double sinphi = sin(phi_CMS);
     double cosphi = cos(phi_CMS);
 
-    //Could generate state here directly if outgoing state is same as initial
-    //More generally below, for arbitrary meson-baryon system created
+    // Could generate state here directly if outgoing state is same as initial
+    // More generally below, for arbitrary meson-baryon system created
 
-    //Masses of final-state particles
-    //Use particleInfo
+    // Masses of final-state particles
+    // Use particleInfo
     double mM = ParticleInfo(fpidm).Mass();
     double mB = ParticleInfo(fpidb).Mass();
 
-    //CMS momenta and energy of final-state particles
-    double s = W*W;
-    double mM2 = mM*mM;
-    double mB2 = mB*mB;
-    double pfCMS2 = 1./4/s * ( s + mM2 + mB2 - 2*s*(mM + mB) - 2*mM*mB );
+    // CMS momenta and energy of final-state particles
+    double s = W * W;
+    double mM2 = mM * mM;
+    double mB2 = mB * mB;
+    double pfCMS2 = 1. / 4 / s * (s + mM2 + mB2 - 2 * s * (mM + mB) - 2 * mM * mB);
     double pfCMS = sqrt(pfCMS2);
 
     double EmCMS = sqrt(pfCMS2 + mM2);
@@ -623,24 +618,25 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     FourVector p1Lab = particle1.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
 
-    //The angle is defined with respect to pCMS_initial
-    //We construct an orthogonal coordinate system
+    // The angle is defined with respect to pCMS_initial
+    // We construct an orthogonal coordinate system
     ThreeVector p_axis = p1CM.Vec3().Unit();
     ThreeVector p_perp;
 
-    if (p_axis.Py() == 0.){
-	//An arbitrary orthogonal vector is y
-	p_perp = {0.,1.,0.};
-    }else if (p_axis.Px() == 0){
-	//An arbitrary orthogonal vector is x
-	p_perp = {1.,0.,0.};
-    }else{
-	double norm = sqrt(1. - p_axis.Pz()*p_axis.Pz());
-	//An arbitrary orthonormal vector is
-	p_perp = {p_axis[1]/norm, -p_axis[0]/norm,0.};
+    if(p_axis.Py() == 0.) {
+        // An arbitrary orthogonal vector is y
+        p_perp = {0., 1., 0.};
+    } else if(p_axis.Px() == 0) {
+        // An arbitrary orthogonal vector is x
+        p_perp = {1., 0., 0.};
+    } else {
+        double norm = sqrt(1. - p_axis.Pz() * p_axis.Pz());
+        // An arbitrary orthonormal vector is
+        p_perp = {p_axis[1] / norm, -p_axis[0] / norm, 0.};
     }
 
-    ThreeVector p_out = pfCMS*(p_axis*cos_CMS + p_perp*sin_CMS*sinphi + p_perp.Cross(p_axis)*sin_CMS*cosphi); //Rotate p_out 
+    ThreeVector p_out = pfCMS * (p_axis * cos_CMS + p_perp * sin_CMS * sinphi +
+                                 p_perp.Cross(p_axis) * sin_CMS * cosphi); // Rotate p_out
 
     FourVector p1Out = FourVector(EmCMS, p_out[0], p_out[1], p_out[2]);
     FourVector p2Out = FourVector(EbCMS, -p_out[0], -p_out[1], -p_out[2]);
@@ -649,6 +645,6 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
-    //Not sure what to do with the positions here? !!! ?
+    // Not sure what to do with the positions here? !!! ?
     return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
