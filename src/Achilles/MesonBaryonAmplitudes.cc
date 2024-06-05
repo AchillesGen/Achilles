@@ -392,7 +392,7 @@ void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS)
 		std::complex<double> Amp_iso;
 
 		double mM = Mass_m[iMB_i];
-		double mB = Mass_b[iMB_f];
+		double mB = Mass_b[iMB_i];
 
 		double mM2 = mM*mM;
 		double mB2 = mB*mB;
@@ -408,6 +408,7 @@ void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS)
 			CS[iW] = 0.;
 
 			double PF = std::pow(W*W - mM2 - mB2,2) - Mfac;
+			if (PF < 0){continue;}
 
 			for (int L = 0 ; L < Lmax+1 ; L++)
 			{

@@ -369,6 +369,9 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
     std::ofstream results(filename);
 
+    //Setting raius for hydrogen here
+    if (nucleus->NProtons() == 1 && nucleus->NNucleons() == 1) { nucleus->SetRadius(0.84);}
+
     // Generate events
     fmt::print("Cascade running in {} mode\n", config["Cascade"]["Mode"].as<std::string>());
     fmt::print("  Generating {} events per momentum point\n", nevents);
