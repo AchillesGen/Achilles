@@ -553,9 +553,9 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     //We convert the CS to the cdf later, could in principle get the CDF directly
     //For this we need the values:
     double CSmin = poly_angles.eval_If(-1.);
-    double CStot = poly_angles.eval_If(1.);
+    double CStot = poly_angles.eval_If(1.) - CSmin;
 
-    std::vector<double> rans(2);
+    std::vector<double> rans(3);
     random.Generate(rans); //Between 0 and 1 ? 
     
     double x = rans[0];
@@ -589,6 +589,11 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
        }
        	   Nit++;
     }
+
+    //In this case the cosine is the center of the bin with a grid determined by 'tol' (it's binary search essentially)
+    //This leads to biased artifacts with the binwidth when making histograms
+    //Hence we select a random point in the bin here instead 
+    c = c  + tol*(rans[2] - 0.5);
     
     //if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even if, we'll still be close
 
@@ -612,7 +617,7 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     double s = W*W;
     double mM2 = mM*mM;
     double mB2 = mB*mB;
-    double pfCMS2 = 1./4/s * ( s + mM2 + mB2 - 2*s*(mM + mB) - 2*mM*mB );
+    double pfCMS2 = 1./4/s * ( s*s + mM2*mM2 + mB2*mB2 - 2*s*(mM2 + mB2) -2*mM2*mB2 );
     double pfCMS = sqrt(pfCMS2);
 
     double EmCMS = sqrt(pfCMS2 + mM2);

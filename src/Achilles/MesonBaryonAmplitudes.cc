@@ -17,7 +17,7 @@ MBAmplitudes::MBAmplitudes()
 	        readANL(ii,iff);
 	    }
 	}
-    readANLDelta();
+       readANLDelta(); //Dont have the data here
 	nMBchan=4;
 	initIso();
 	initCChannels();
