@@ -9,6 +9,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
@@ -23,6 +24,17 @@
 #pragma GCC diagnostic pop
 
 using namespace achilles;
+
+bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
+                                       const std::pair<PID, PID> &rhs) const {
+    PID a1 = lhs.first < lhs.second ? lhs.first : lhs.second;
+    PID a2 = lhs.first > lhs.second ? lhs.first : lhs.second;
+
+    PID b1 = rhs.first < rhs.second ? rhs.first : rhs.second;
+    PID b2 = rhs.first > rhs.second ? rhs.first : rhs.second;
+
+    return std::tie(a1, a2) < std::tie(b1, b2);
+}
 
 const std::map<std::string, double> HZETRN = {{"a", 5.0_MeV},
                                               {"b", 0.199 / sqrt(1_MeV)},
@@ -436,7 +448,12 @@ ConstantInteraction::ConstantInteraction(const YAML::Node &node) {
 }
 
 InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const Particle &p2) const {
-    return m_interactions.at({p1.ID(), p2.ID()});
+    try {
+        return m_interactions.at({p1.ID(), p2.ID()});
+    } catch(std::out_of_range &e) {
+        std::cout << p1 << " " << p2 << std::endl;
+        throw;
+    }
 }
 
 // TODO: Implement generic n-body final state phase space
@@ -549,9 +566,9 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     // We convert the CS to the cdf later, could in principle get the CDF directly
     // For this we need the values:
     double CSmin = poly_angles.eval_If(-1.);
-    double CStot = poly_angles.eval_If(1.);
+    double CStot = poly_angles.eval_If(1.) - CSmin;
 
-    std::vector<double> rans(2);
+    std::vector<double> rans(3);
     random.Generate(rans); // Between 0 and 1 ?
 
     double x = rans[0];
@@ -583,6 +600,13 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
         }
         Nit++;
     }
+    // In this case the cosine is the center of the bin with a grid determined by 'tol' (it's binary
+    // search essentially) This leads to biased artifacts with the binwidth when making histograms
+    // Hence we select a random point in the bin here instead
+    c = c + tol * (rans[2] - 0.5);
+
+    // if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even
+    // if, we'll still be close
 
     // if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even
     // if, we'll still be close
@@ -604,46 +628,77 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     double mB = ParticleInfo(fpidb).Mass();
 
     // CMS momenta and energy of final-state particles
+<<<<<<< Updated upstream
+    double s = W * W;
+    double mM2 = mM * mM;
+    double mB2 = mB * mB;
+    double pfCMS2 =
+        1. / 4 / s * (s * s + mM2 * mM2 + mB2 * mB2 - 2 * s * (mM2 + mB2) - 2 * mM2 * mB2);
+    double pfCMS = sqrt(pfCMS2);
+||||||| Stash base
     double s = W * W;
     double mM2 = mM * mM;
     double mB2 = mB * mB;
     double pfCMS2 = 1. / 4 / s * (s + mM2 + mB2 - 2 * s * (mM + mB) - 2 * mM * mB);
     double pfCMS = sqrt(pfCMS2);
+=======
+    // double s = W * W;
+    // double mM2 = mM * mM;
+    // double mB2 = mB * mB;
+    // double pfCMS2 = 1. / 4 / s * (s + mM2 + mB2 - 2 * sqrt(s) * (mM + mB) - 2 * mM * mB);
+    // double pfCMS = sqrt(pfCMS2);
+    // std::cout << pfCMS2 << " " << s << " " << mM2 << " " << mB2 << " " << 2*sqrt(s)*(mM+mB) << " " << 2*mM*mB << std::endl;
+    auto p01 = (particle1.Momentum() + particle2.Momentum());
+    auto s = p01.M2();
+    auto sqrts = sqrt(s);
+    auto boostVec = p01.BoostVector();
+    auto mom0 = particle1.Momentum().Boost(-boostVec);
+    Poincare zax(mom0, FourVector(1., 0., 0., 1.));
+>>>>>>> Stashed changes
 
-    double EmCMS = sqrt(pfCMS2 + mM2);
-    double EbCMS = W - EmCMS;
+    double EmCMS = sqrts / 2 * (1 + mM * mM / s - mB * mB / s);
+    double EbCMS = sqrts / 2 * (1 - mM * mM / s + mB * mB / s);
+    auto lambda = sqrt(pow(s - mM*mM - mB*mB, 2) - 4*mM*mM*mB*mB);
+    auto pfCMS = lambda / 2 / sqrts;
 
-    // Boost
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM);
+    // Generate outgoing momentum
+    FourVector p1Out = FourVector(EmCMS, pfCMS * sin_CMS * cosphi, pfCMS * sin_CMS * sinphi,
+                                   pfCMS * cos_CMS);
+    FourVector p2Out = FourVector(EbCMS, -pfCMS * sin_CMS * cosphi, -pfCMS * sin_CMS * sinphi,
+                                   -pfCMS * cos_CMS);
 
-    // The angle is defined with respect to pCMS_initial
-    // We construct an orthogonal coordinate system
-    ThreeVector p_axis = p1CM.Vec3().Unit();
-    ThreeVector p_perp;
+    // Rotate back
+    zax.RotateBack(p1Out);
+    zax.RotateBack(p2Out);
 
-    if(p_axis.Py() == 0.) {
-        // An arbitrary orthogonal vector is y
-        p_perp = {0., 1., 0.};
-    } else if(p_axis.Px() == 0) {
-        // An arbitrary orthogonal vector is x
-        p_perp = {1., 0., 0.};
-    } else {
-        double norm = sqrt(1. - p_axis.Pz() * p_axis.Pz());
-        // An arbitrary orthonormal vector is
-        p_perp = {p_axis[1] / norm, -p_axis[0] / norm, 0.};
-    }
+    // // Boost
+    // ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    // FourVector p1Lab = particle1.Momentum();
+    // FourVector p1CM = p1Lab.Boost(-boostCM);
 
-    ThreeVector p_out = pfCMS * (p_axis * cos_CMS + p_perp * sin_CMS * sinphi +
-                                 p_perp.Cross(p_axis) * sin_CMS * cosphi); // Rotate p_out
+    // // The angle is defined with respect to pCMS_initial
+    // // We construct an orthogonal coordinate system
+    // ThreeVector p_axis = p1CM.Vec3().Unit();
+    // ThreeVector p_perp;
 
-    FourVector p1Out = FourVector(EmCMS, p_out[0], p_out[1], p_out[2]);
-    FourVector p2Out = FourVector(EbCMS, -p_out[0], -p_out[1], -p_out[2]);
+    // if(p_axis.Py() == 0.) {
+    //     // An arbitrary orthogonal vector is y
+    //     p_perp = {0., 1., 0.};
+    // } else if(p_axis.Px() == 0) {
+    //     // An arbitrary orthogonal vector is x
+    //     p_perp = {1., 0., 0.};
+    // } else {
+    //     double norm = sqrt(1. - p_axis.Pz() * p_axis.Pz());
+    //     // An arbitrary orthonormal vector is
+    //     p_perp = {p_axis[1] / norm, -p_axis[0] / norm, 0.};
+    // }
+
+    // ThreeVector p_out = pfCMS * (p_axis * cos_CMS + p_perp * sin_CMS * sinphi +
+    //                              p_perp.Cross(p_axis) * sin_CMS * cosphi); // Rotate p_out
 
     // Boost back to lab frame
-    p1Out = p1Out.Boost(boostCM);
-    p2Out = p2Out.Boost(boostCM);
+    p1Out = p1Out.Boost(boostVec);
+    p2Out = p2Out.Boost(boostVec);
 
     // Not sure what to do with the positions here? !!! ?
     return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
