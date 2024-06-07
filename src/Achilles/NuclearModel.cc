@@ -511,6 +511,7 @@ std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
 }
 
 std::string Coherent::PhaseSpace(PID nuc_id) const {
+    if(nuc_id == PID::hydrogen()) throw achilles::InvalidChannel("Hydrogen nucleus");
     if(nuc_id == nucleus_pid) return PSName();
     throw achilles::InvalidChannel(
         fmt::format("Nucleus don't match: Model {}, Phasespace {}", nucleus_pid, nuc_id));
