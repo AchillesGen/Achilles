@@ -566,15 +566,27 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     //Parameters for bisection
     int Nmax = 40; //too much : Nmax*tol > 1 => should converge
     int Nit = 0;
-    double tol = 0.05; //tolerance on cosine 
+    double tol = 0.025; //tolerance on cosine 
     double eps = 0.00001; //tolerance on f(x) - c = 0
 
 
-    double a = -1;
-    double b = 1; 
-    double fa = -1. - x; //For a well defined CDF we know these numbers 
-//    double fb = 1. - x;
     double fc, c;
+    double b = 1; 
+    //random point to start bisection and get random bin definitions:
+    double a = -1 + rans[2]*2;
+    double fa = (poly_angles.eval_If(a) - CSmin)/CStot - x;
+
+    if (std::abs(fa) < tol){
+       //Found the solution
+       c = a;
+       Nit = Nmax + 1; 
+    }else if (fa > 0.){
+	//a is the upper limit instead of the lower
+	b = a;
+	a = -1;
+	fa = -x;
+    }   
+
     while (Nit < Nmax)
     {
        c = (a + b)/2.;
@@ -585,17 +597,9 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
 	   fa = fc;
        }else{
            b = c;
-//           fb = fc;
        }
        	   Nit++;
     }
-
-    //In this case the cosine is the center of the bin with a grid determined by 'tol' (it's binary search essentially)
-    //This leads to biased artifacts with the binwidth when making histograms
-    //Hence we select a random point in the bin here instead 
-    c = c  + tol*(rans[2] - 0.5);
-    
-    //if (Nit == Nmax){std::cout << "Max iterations !!" << std::endl;} shouldn't happen, and even if, we'll still be close
 
     //END bisection
   

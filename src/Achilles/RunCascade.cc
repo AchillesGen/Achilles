@@ -58,7 +58,6 @@ void CalcCrossSection::GenerateEvent(double mom) {
         if(part.Status() != ParticleStatus::background &&
 	part.Status() != ParticleStatus::external_test) {
             nhits++;
-//	    std::cout << part.Momentum() << "  " << part.ID() << std::endl;
             break;
         }
     }
