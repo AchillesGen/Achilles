@@ -33,6 +33,10 @@ class FourVector;
 class Potential;
 class Random;
 
+struct pid_compare {
+    bool operator()(const std::pair<PID, PID> &lhs, const std::pair<PID, PID> &rhs) const;
+};
+
 struct InteractionResult {
     std::vector<PID> particles;
     double cross_section;
@@ -290,7 +294,7 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
     ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
 
     // Variables
-    std::map<std::pair<PID, PID>, InteractionResults> m_interactions;
+    std::map<std::pair<PID, PID>, InteractionResults, pid_compare> m_interactions;
     std::vector<std::pair<PID, PID>> m_states;
 };
 

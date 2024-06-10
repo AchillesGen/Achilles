@@ -628,33 +628,18 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     double mB = ParticleInfo(fpidb).Mass();
 
     // CMS momenta and energy of final-state particles
-<<<<<<< Updated upstream
-    double s = W * W;
-    double mM2 = mM * mM;
-    double mB2 = mB * mB;
-    double pfCMS2 =
-        1. / 4 / s * (s * s + mM2 * mM2 + mB2 * mB2 - 2 * s * (mM2 + mB2) - 2 * mM2 * mB2);
-    double pfCMS = sqrt(pfCMS2);
-||||||| Stash base
-    double s = W * W;
-    double mM2 = mM * mM;
-    double mB2 = mB * mB;
-    double pfCMS2 = 1. / 4 / s * (s + mM2 + mB2 - 2 * s * (mM + mB) - 2 * mM * mB);
-    double pfCMS = sqrt(pfCMS2);
-=======
     // double s = W * W;
     // double mM2 = mM * mM;
     // double mB2 = mB * mB;
-    // double pfCMS2 = 1. / 4 / s * (s + mM2 + mB2 - 2 * sqrt(s) * (mM + mB) - 2 * mM * mB);
+    // double pfCMS2 =
+    //     1. / 4 / s * (s * s + mM2 * mM2 + mB2 * mB2 - 2 * s * (mM2 + mB2) - 2 * mM2 * mB2);
     // double pfCMS = sqrt(pfCMS2);
-    // std::cout << pfCMS2 << " " << s << " " << mM2 << " " << mB2 << " " << 2*sqrt(s)*(mM+mB) << " " << 2*mM*mB << std::endl;
     auto p01 = (particle1.Momentum() + particle2.Momentum());
     auto s = p01.M2();
     auto sqrts = sqrt(s);
     auto boostVec = p01.BoostVector();
     auto mom0 = particle1.Momentum().Boost(-boostVec);
     Poincare zax(mom0, FourVector(1., 0., 0., 1.));
->>>>>>> Stashed changes
 
     double EmCMS = sqrts / 2 * (1 + mM * mM / s - mB * mB / s);
     double EbCMS = sqrts / 2 * (1 - mM * mM / s + mB * mB / s);

@@ -13,10 +13,6 @@ namespace achilles {
 class Particle;
 class PID;
 
-struct pid_compare {
-    bool operator()(const std::pair<PID, PID> &lhs, const std::pair<PID, PID> &rhs) const;
-};
-
 class InteractionHandler {
     using Results = std::vector<InteractionResult>;
     using Channel = std::pair<PID, PID>;

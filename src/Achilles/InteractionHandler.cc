@@ -10,17 +10,6 @@ using achilles::InteractionHandler;
 using achilles::InteractionResult;
 using achilles::Particle;
 
-bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
-                                       const std::pair<PID, PID> &rhs) const {
-    PID a1 = lhs.first < lhs.second ? lhs.first : lhs.second;
-    PID a2 = lhs.first > lhs.second ? lhs.first : lhs.second;
-
-    PID b1 = rhs.first < rhs.second ? rhs.first : rhs.second;
-    PID b2 = rhs.first > rhs.second ? rhs.first : rhs.second;
-
-    return std::tie(a1, a2) < std::tie(b1, b2);
-}
-
 double InteractionHandler::TotalCrossSection(const Particle &p1, const Particle &p2) const {
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_interaction_indices.find(key);
