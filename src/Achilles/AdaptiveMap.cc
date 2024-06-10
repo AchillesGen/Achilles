@@ -5,6 +5,7 @@
 #include "Achilles/AdaptiveMap.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 
 using achilles::AdaptiveMap;

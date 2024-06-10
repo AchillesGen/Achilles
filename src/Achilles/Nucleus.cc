@@ -2,7 +2,10 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <regex>
+#pragma GCC diagnostic pop
 
 #include "spdlog/spdlog.h"
 

@@ -3,6 +3,7 @@
 
 // The classes in this file are inspired from the implementation found in Sherpa
 
+#include "fmt/ranges.h"
 #include <functional>
 #include <map>
 #include <memory>
