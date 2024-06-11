@@ -67,7 +67,9 @@ Nuclei:
         FilePotential: data/realOP_12C_EDAI.dat
         Function: configuration
         Configs: data/configurations/QMC_configs.out.gz
-      FermiGas: Local
+      FermiGas:
+        Type: Local
+        Params: []
       Potential: 
         Name: Schroedinger
         r0: 0.16

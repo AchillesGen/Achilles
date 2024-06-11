@@ -23,9 +23,9 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
-                 const double &kf, const std::string &densityFilename, const FermiGasType &fgType,
+                 const double &kf, const std::string &densityFilename, const FermiGas &fg,
                  std::unique_ptr<Density> _density)
-    : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType), density(std::move(_density)) {
+    : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)) {
     Initialize(Z, A);
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     // spdlog::info("Nucleus: inferring nuclear radius using 0.16
@@ -131,7 +131,7 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
 
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
                              const double &fermiMomentum, const std::string &densityFilename,
-                             const FermiGasType &fg_type, std::unique_ptr<Density> density) {
+                             const FermiGas &fg, std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -141,7 +141,7 @@ Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
         spdlog::info("Nucleus: parsing nuclear name '{0}', expecting a density "
                      "with A={1} total nucleons and Z={2} protons.",
                      name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg_type,
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg,
                        std::move(density));
     }
 
@@ -164,7 +164,19 @@ const std::string Nucleus::ToString() const noexcept {
 double Nucleus::FermiMomentum(const double &position) const noexcept {
     double rho = Rho(position);
     double result{};
-    switch(fermiGas) {
+    switch(fermi_gas.type) {
+    // TODO: This doesn't give 20% of the nucleons with momentum greater than the Fermi momentum
+    // It just changes the upper limit 20% of the time. Is this acceptable? Or do we need to change
+    // how the momentum is generated?
+    case FermiGasType::CorrelatedLocal:
+        {
+            double kF = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
+            if(Random::Instance().Uniform(0.0, 1.0) < fermi_gas.params[0]) {
+                result = fermi_gas.params[1];
+            } else {
+                result = kF;
+            }
+        } 
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
         break;
