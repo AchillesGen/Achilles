@@ -189,14 +189,12 @@ std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
 
 void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     for(size_t idx = 0; idx < particles.size(); ++idx) {
-        spdlog::debug("Particle: {}", particles[idx]);
         if(particles[idx].Status() == ParticleStatus::propagating) {
             if(m_potential_prop &&
                m_nucleus->GetPotential()->Hamiltonian(
                    particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
-                spdlog::debug("Adding propagating particle: {}", idx);
                 AddIntegrator(idx, particles[idx]);
                 newKicked.insert(idx);
             }
@@ -593,19 +591,22 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, 
 
     if (Absorption(event, particle1, particle2)) return;
 
-    auto modes = m_interactions.CrossSection(particle1, particle2);
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
+    auto modes = m_interactions.CrossSection(particle1, particle2);
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
     auto particles_out =
         m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
+
+    spdlog::trace("Outgoing particles:");
+    for(const auto &part : particles_out) spdlog::trace("- {}", part);
 
     // Check for Pauli Blocking
     bool hit = true;
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
     if(hit) {
-        std::vector<Particle> initial_part,final_part;
+        Particles initial_part, final_part;
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
         initial_part.push_back(particle1); 
@@ -617,7 +618,16 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, 
             part.Status() = ParticleStatus::propagating;
             part.SetFormationZone(particle1.Momentum(), part.Momentum());
             particles.push_back(part);
-            final_part.push_back(part);
+            final_part.push_back(particles.back());
+
+            // TODO: Work out the queue to minimize number of calls to AllowedInteractions
+            // Update queue of closest approach times
+            // for(size_t i = 0; i < particles.size(); ++i) {
+            //     if(particles[i].Status() != ParticleStatus::background) continue;
+            //     double closest = ClosestApproach(part, particles[i]);
+            //     spdlog::trace("Closest approach time({}) = {}", i, closest+currentTime);
+            //     if(closest > 0) { m_time_steps.push({closest+currentTime, {particles.size()-1, i}}); }
+            // }
         }
 
         // Add interaction to the event history
@@ -651,7 +661,7 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 
 bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2) noexcept {
 
-    Particles particles = event.Hadrons();
+    Particles &particles = event.Hadrons();
 
     Particle *initial_pion = nullptr;
     Particle *incoming_nucleon1 = nullptr;
@@ -730,14 +740,16 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     //spdlog::info("We're absorbing a pion!");
     //Let's absorb the pion!
     //First let's get the momentum of the incoming pion for the current interaction
-    auto combined_momentum = intermediate_pion->Momentum() + incoming_nucleon2->Momentum();
+    auto combined_momentum = intermediate_pion->Momentum().Vec3() + incoming_nucleon2->Momentum().Vec3();
 
     //Now let's reset the past node and fill it with our initial system positions
     auto new_average_position = (initial_pion->Position() + incoming_nucleon1->Position() + incoming_nucleon2->Position())/3.0;
     
     final_nucleon2 = *incoming_nucleon2;
-    final_nucleon2.SetMomentum(combined_momentum);
+    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(incoming_nucleon2->Info().Mass(), 2) + combined_momentum.Magnitude2())};
 
+    final_nucleon2.Status() = ParticleStatus::propagating;
+    particles.push_back(final_nucleon2);
     Particles absorption_initial;
     Particles absorption_final;
     
@@ -746,7 +758,7 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     absorption_initial.push_back(*incoming_nucleon2);
 
     absorption_final.push_back(*final_nucleon1);
-    absorption_final.push_back(final_nucleon2);
+    absorption_final.push_back(particles.back());
 
     // TO DO : Do we need pauli blocking for absorption?
     // Check for Pauli Blocking
@@ -766,8 +778,6 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
 
     intermediate_pion->Status() = ParticleStatus::interacted;
     incoming_nucleon2->Status() = ParticleStatus::interacted;
-    final_nucleon2.Status() = ParticleStatus::propagating;
-    particles.push_back(final_nucleon2);
 
     return true;
 }
