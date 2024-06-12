@@ -8,6 +8,8 @@
 
 namespace achilles {
 
+using Particles = std::vector<Particle>;
+
 class Nucleus;
 class NuclearRemnant;
 
@@ -66,14 +68,14 @@ class EventHistoryNode {
         return std::find_if(m_particles_out.begin(), m_particles_out.end(),
                             compare_momentum(part)) != m_particles_out.end();
     }
-    const std::vector<Particle> &ParticlesIn() const { return m_particles_in; }
-    std::vector<Particle> &ParticlesIn() { return m_particles_in; }
-    const std::vector<Particle> &ParticlesOut() const { return m_particles_out; }
-    std::vector<Particle> &ParticlesOut() { return m_particles_out; }
+    const Particles ParticlesIn() const { return m_particles_in; }
+    Particles &ParticlesIn() { return m_particles_in; }
+    const Particles &ParticlesOut() const { return m_particles_out; }
+    Particles &ParticlesOut() { return m_particles_out; }
     const ThreeVector &Position() const { return m_position; }
 
   private:
-    std::vector<Particle> m_particles_in{}, m_particles_out{};
+    Particles m_particles_in{}, m_particles_out{};
     size_t m_idx{};
     ThreeVector m_position{};
     StatusCode m_status;
@@ -112,12 +114,15 @@ class EventHistory {
     EventHistory() = default;
     EventHistory(const EventHistory &);
     EventHistory &operator=(const EventHistory &);
-    void AddVertex(ThreeVector position, const std::vector<Particle> &in = {},
-                   const std::vector<Particle> &out = {}, StatusCode status = StatusCode::cascade);
+    void AddVertex(ThreeVector position, const Particles &in = {},
+                   const Particles &out = {}, StatusCode status = StatusCode::cascade);
     void AddParticleIn(size_t idx, const Particle &part);
     void AddParticleOut(size_t idx, const Particle &part);
     void InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,
-                          const Particle &out_org, const std::vector<Particle> &other);
+                          const Particle &out_org, const Particles &other);
+
+    // Update particle statuses
+    void UpdateStatuses(const Particles &particles);
 
     // Accessors
     EventHistoryNode *Node(size_t idx) const;
@@ -140,6 +145,7 @@ class EventHistory {
   private:
     EventHistoryNode *FindNode(bool, const Particle &) const;
     EventHistoryNode *GetUniqueNode(StatusCode) const;
+    void UpdatePrevNode(const Particle &part);
     std::vector<std::unique_ptr<EventHistoryNode>> m_history{};
     size_t cur_idx{};
 };
