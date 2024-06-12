@@ -122,7 +122,9 @@ Particles Nucleus::GenerateConfig() {
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = Random::Instance().Uniform(0.0, FermiMomentum(position));
+    //    momentum[0] = Random::Instance().Uniform(0.0, FermiMomentum(position)); //To sample on a
+    //    sphere, need to take a cube-root.
+    momentum[0] = FermiMomentum(position) * pow(Random::Instance().Uniform(0.0, 1.0), 1. / 3.);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
@@ -168,21 +170,23 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
     // TODO: This doesn't give 20% of the nucleons with momentum greater than the Fermi momentum
     // It just changes the upper limit 20% of the time. Is this acceptable? Or do we need to change
     // how the momentum is generated?
-    case FermiGasType::CorrelatedLocal:
-        {
-            double kF = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
-            if(Random::Instance().Uniform(0.0, 1.0) < fermi_gas.params[0]) {
-                result = fermi_gas.params[1];
-            } else {
-                result = kF;
-            }
-        } 
+    case FermiGasType::CorrelatedLocal: {
+        double kF = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
+        if(Random::Instance().Uniform(0.0, 1.0) < fermi_gas.params[0]) {
+            result = fermi_gas.params[1];
+        } else {
+            result = kF;
+        }
+    }
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
         break;
     case FermiGasType::Global:
-        static constexpr double small = 1E-2;
-        result = rho < small ? small : fermiMomentum;
+        //        static constexpr double small = 1E-2; //This leads to a large small momentum
+        //        contribution at large radius, which is unrealistic, make small very snall ? result
+        //        = rho < small ? small : fermiMomentum;
+        result = fermiMomentum; // Better, but sampling is still srong, the pdf has p2 factor, need
+                                // to take cube-root somewhere
         break;
     }
 
