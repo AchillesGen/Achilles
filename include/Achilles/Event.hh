@@ -30,6 +30,7 @@ class Event {
     Event() = default;
     Event(Nucleus *, std::vector<FourVector>, double);
     Event(const Event &);
+    Event operator=(const Event &);
     MOCK ~Event() = default;
 
     void Finalize();

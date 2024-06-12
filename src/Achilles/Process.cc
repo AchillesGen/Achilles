@@ -171,6 +171,10 @@ void Process::SetID(achilles::NuclearModel *model) {
 }
 
 std::string Process::Name(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined())
+        return "Cascade";
+
     std::string name = backend->GetNuclearModel()->GetName();
     name += (m_id % 100) / 50 == 0 ? "CC" : "NC";
     // Add number of protons in initial state
@@ -187,6 +191,10 @@ std::string Process::Name(achilles::XSecBackend *backend) const {
 }
 
 std::string Process::Description(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined())
+        return "Cascade Only";
+
     std::string description = backend->GetNuclearModel()->GetName() + " ";
     std::stringstream ss;
     ss << m_info;
@@ -196,6 +204,10 @@ std::string Process::Description(achilles::XSecBackend *backend) const {
 }
 
 std::string Process::InspireHEP(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined())
+        return "";
+
     return backend->GetNuclearModel()->InspireHEP();
 }
 

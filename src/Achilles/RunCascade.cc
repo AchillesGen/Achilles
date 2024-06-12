@@ -4,6 +4,9 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/EventWriter.hh"
+#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "plugins/NuHepMC/NuHepMCWriter.hh"
 
 #include "spdlog/spdlog.h"
 
@@ -11,207 +14,62 @@
 #include <fstream>
 #include <stdexcept>
 
-using achilles::CascadeTest::CalcCrossSection;
-using achilles::CascadeTest::CalcCrossSectionMFP;
-using achilles::CascadeTest::CalcMeanFreePath;
-using achilles::CascadeTest::CalcTransparency;
-using achilles::CascadeTest::CalcTransparencyExternal;
-using achilles::CascadeTest::CalcTransparencyMFP;
+using achilles::CascadeTest::CascadeRunner;
 
-void CalcCrossSection::GenerateEvent(double mom) {
+
+void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, double radius, Nucleus *nuc) {
     // Generate a point in the beam of a given radius
     std::array<double, 2> beam_spot;
     while(true) {
-        beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-        beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-        if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius) break;
+        beam_spot[0] = radius * Random::Instance().Uniform(-1.0, 1.0);
+        beam_spot[1] = radius * Random::Instance().Uniform(-1.0, 1.0);
+        if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < radius * radius) break;
     }
 
     // Add test particle from the beam coming in on the z-axis
     // The test particle starts outside the nucleus by 5%
-    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
-    auto mass = achilles::ParticleInfo(m_pid).Mass();
+    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * nuc->Radius()};
+    auto mass = achilles::ParticleInfo(pid).Mass();
     FourVector momentum{sqrt(mom * mom + mass * mass), 0, 0, mom}; // Check this
-    Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
+    Particle testPart{pid, momentum, position, ParticleStatus::external_test};
 
     // Make an event instead, initialize with a nucleus, which generates a configuration
     std::vector<FourVector> momdummy = {};
-    Event event(m_nuc.get(), momdummy, 1.);
+    event = Event(nuc, momdummy, 1.);
+    event.Weight() = M_PI * radius * radius * 10 * 1e6; // radius in fm, result in nb
 
     // Add the test particle
     event.Hadrons().push_back(testPart);
-
-    // Cascade
-    m_cascade.SetKicked(event.Hadrons().size() - 1);
-
-    // Use the mean-free path algortihm ? Once it hits it hits
-    //    m_cascade.Evolve(event, m_nuc.get());
-    m_cascade.MeanFreePath(event, m_nuc.get());
-
-    // Analyze output
-    spdlog::debug("Final Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    nevents++;
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() != ParticleStatus::background &&
-           part.Status() != ParticleStatus::external_test) {
-            nhits++;
-            break;
-        }
-    }
 }
 
-void CalcCrossSection::PrintResults(std::ofstream &out) const {
-    double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
-    double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
-    fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
-    out << fmt::format("{},{}\n", xsec, error);
-}
-
-void CalcCrossSectionMFP::GenerateEvent(double mom) {
-    // Generate a point in the beam of a given radius
-    std::array<double, 2> beam_spot;
-    while(true) {
-        beam_spot[0] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-        beam_spot[1] = m_radius * Random::Instance().Uniform(-1.0, 1.0);
-        if(beam_spot[0] * beam_spot[0] + beam_spot[1] * beam_spot[1] < m_radius * m_radius) break;
-    }
-
-    // Add test particle from the beam coming in on the z-axis
-    // The test particle starts outside the nucleus by 5%
-    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * m_nuc->Radius()};
-    auto mass = achilles::ParticleInfo(m_pid).Mass();
-    FourVector momentum{sqrt(mom * mom + mass * mass), 0, 0,
-                        mom}; // Check this, different than before!
-    Particle testPart{m_pid, momentum, position, ParticleStatus::external_test};
-
-    // Todo: fix all the dummy stuff
-    std::vector<FourVector> momdummy;
-    Event event(m_nuc.get(), momdummy, 1.);
-
-    // Add the test particle
-    event.Hadrons().push_back(testPart);
-
-    // Cascade
-    // Todo : fix the call to NuWro or delete altogheter
-    m_cascade.SetKicked(event.Hadrons().size() - 1);
-    //    m_cascade.NuWro(event, m_nuc.get()); //No implementation for this ? Declared anyway
-    m_cascade.Evolve(event, m_nuc.get()); // No implementation for this ? Declared anyway
-
-    // Analyze output
-    spdlog::debug("Final Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    nevents++;
-
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::final_state ||
-           part.Status() == ParticleStatus::captured) {
-            nhits++;
-            break;
-        }
-    }
-}
-
-void CalcCrossSectionMFP::PrintResults(std::ofstream &out) const {
-    double xsec = nhits * M_PI * m_radius * m_radius / nevents * 10;
-    double error = sqrt(nhits) * M_PI * m_radius * m_radius / nevents * 10;
-    fmt::print("  Calculated xsec: {} +/- {} mb\n", xsec, error);
-    out << fmt::format("{},{}\n", xsec, error);
-}
-
-CalcMeanFreePath::CalcMeanFreePath(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade)
-    : RunMode(nuc, std::move(cascade)), m_pid{pid} {
-    m_hist = Histogram(100, 0.0, 2 * m_nuc->Radius(), "mfp");
-}
-
-void CalcMeanFreePath::GenerateEvent(double kick_mom) {
+void achilles::CascadeTest::InitTransparency(Event &event, PID, double mom, Nucleus *nuc) {
     double costheta = Random::Instance().Uniform(-1.0, 1.0);
     double sintheta = sqrt(1 - costheta * costheta);
     double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
 
-    ThreeVector position{}; // Always in the center
-    FourVector kick{kick_mom * sintheta * cos(phi), kick_mom * sintheta * sin(phi),
-                    kick_mom * costheta, sqrt(kick_mom * kick_mom + Constant::mN * Constant::mN)};
-    Particle testPart{m_pid, kick, position, ParticleStatus::internal_test};
-
-    std::vector<FourVector> momdummy;
-    Event event(m_nuc.get(), momdummy, 1.);
-    // Add the test particle
-    event.Hadrons().push_back(testPart);
-    // Cascade
-    m_cascade.SetKicked(event.Hadrons().size() - 1);
-
-    m_cascade.MeanFreePath(event, m_nuc.get());
-
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::internal_test) {
-            m_hist.Fill(part.GetDistanceTraveled());
-            break;
-        }
-    }
-}
-
-void CalcMeanFreePath::PrintResults(std::ofstream &out) const {
-    m_hist.Save(&out);
-    fmt::print("  Histogram saved\n");
-}
-
-void CalcTransparency::GenerateEvent(double kick_mom) {
-    double costheta = Random::Instance().Uniform(-1.0, 1.0);
-    double sintheta = sqrt(1 - costheta * costheta);
-    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
-
-    std::vector<FourVector> momdummy;
-    Event event(m_nuc.get(), momdummy, 1.);
+    std::vector<FourVector> momdummy = {};
+    event = Event(nuc, momdummy, 1.);
+    event.Weight() = 1.0/1000.0; // Only care about percentage, so remove factor of nb_to_pb
 
     size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
-    m_cascade.SetKicked(idx);
 
     auto kicked_particle = &(event.Hadrons()[idx]);
     auto mass = kicked_particle->Info().Mass();
-    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi),
-                    kick_mom * sintheta * sin(phi), kick_mom * costheta};
+    FourVector kick{sqrt(mom * mom + mass * mass), mom * sintheta * cos(phi),
+                    mom * sintheta * sin(phi), mom * costheta};
     kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
     kicked_particle->Status() = ParticleStatus::internal_test;
     kicked_particle->SetMomentum(kick);
-
-    spdlog::debug("Initial Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    m_cascade.MeanFreePath(event, m_nuc.get());
-    nevents++;
-
-    spdlog::debug("Final Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::internal_test) {
-            ninteract++;
-            distance += part.GetDistanceTraveled();
-        } else if(part.Status() == ParticleStatus::captured) {
-            ncaptured++;
-            ninteract++;
-        }
-    }
 }
 
-void CalcTransparency::PrintResults(std::ofstream &out) const {
-    double transparency = 1 - ninteract / nevents;
-    double error = sqrt(ninteract / nevents / nevents);
-    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
-    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
-    out << fmt::format("{},{}\n", transparency, error);
-}
-
-void CalcTransparencyExternal::GenerateEvent(double kick_mom) {
+void achilles::CascadeTest::InitTransparencyExternal(Event &event, PID pid, double mom, Nucleus *nuc) {
     double costheta = Random::Instance().Uniform(-1.0, 1.0);
     double sintheta = sqrt(1 - costheta * costheta);
     double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     std::vector<FourVector> momdummy;
-    Event event(m_nuc.get(), momdummy, 1.);
+    event = Event(nuc, momdummy, 1.);
+    event.Weight() = 1.0/1000.0; // Only care about percentage, so remove factor of nb_to_pb
 
     // We put the external particle at the position of a nucleon -> distribute according to density
     // Note: all this skips the configurations ?
@@ -225,92 +83,114 @@ void CalcTransparencyExternal::GenerateEvent(double kick_mom) {
     position = {position.Px() * sin(rth) * cos(rph), position.Py() * sin(rth) * sin(rph),
                 position.Pz() * cos(rth)};
 
-    auto mass = achilles::ParticleInfo(m_pid).Mass();
-    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi),
-                    kick_mom * sintheta * sin(phi), kick_mom * costheta};
+    auto mass = achilles::ParticleInfo(pid).Mass();
+    FourVector kick{sqrt(mom * mom + mass * mass), mom * sintheta * cos(phi),
+                    mom * sintheta * sin(phi), mom * costheta};
 
-    Particle testPart{m_pid, kick, position, ParticleStatus::internal_test};
+    Particle testPart{pid, kick, position, ParticleStatus::internal_test};
     //    testPart.SetFormationZone(kicked_particle->Momentum(), kick); -> this is implemented
     //    specifically for nucleons!
     event.Hadrons().push_back(testPart);
-    m_cascade.SetKicked(event.Hadrons().size() - 1);
+}
 
-    spdlog::debug("Initial Hadrons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
+CascadeRunner::CascadeRunner(const std::string &runcard) {
+    auto config = YAML::LoadFile(runcard);
+    // Initialize cascade
+    m_mode = config["Cascade"]["Mode"].as<CascadeMode>();
+    spdlog::debug("Cascade mode: {}", config["Cascade"]["Mode"].as<std::string>());
+    m_cascade = config["Cascade"].as<Cascade>();
+    m_params = config["Cascade"]["Params"].as<std::map<std::string, double>>();
+    m_pid = config["PID"].as<PID>();
+    requested_events = config["NEvents"].as<size_t>();
 
-    m_cascade.MeanFreePath(event, m_nuc.get());
-    nevents++;
+    // Initialize nucleus
+    m_nuc = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
 
-    spdlog::debug("Final Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
+    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
+    auto potential = achilles::PotentialFactory::Initialize(potential_name, m_nuc,
+                                                            config["Nucleus"]["Potential"]);
+    m_nuc->SetPotential(std::move(potential));
 
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::interacted) {
-            ninteract++;
-            distance += part.GetDistanceTraveled();
-            break; // Break to only count 1
-        } else if(part.Status() == ParticleStatus::captured) {
-            ncaptured++;
-            ninteract++;
+    // Setting radius for hydrogen here
+    if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
+
+    // Setup output
+    auto output = config["Output"];
+    bool zipped = true;
+    if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
+    spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
+    if(output["Format"].as<std::string>() == "Achilles") {
+        m_writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "HepMC3") {
+        m_writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+        m_writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
+    } else {
+        std::string msg = fmt::format("Achilles: Invalid output format requested {}",
+                                      output["Format"].as<std::string>());
+        throw std::runtime_error(msg);
+    }
+
+    // Setup dummy process group for writing the header
+    ProcessGroup group;
+    std::unique_ptr<Unweighter> unweighter = nullptr;
+    Process process(ProcessInfo(), std::move(unweighter));
+    group.AddProcess(std::move(process));
+    std::vector<ProcessGroup> process_groups;
+    process_groups.push_back(std::move(group));
+
+    // Write header
+    m_writer->WriteHeader(runcard, process_groups);
+}
+
+void CascadeRunner::GenerateEvent(double mom) {
+    // Generate a point based on the run mode
+    Event event;
+    switch(m_mode) {
+        case CascadeMode::CrossSection:
+            InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc.get());
+            break; 
+        case CascadeMode::Transparency:
+            InitTransparency(event, m_pid, mom, m_nuc.get());
+            break;
+        case CascadeMode::TransparencyExternal:
+            InitTransparencyExternal(event, m_pid, mom, m_nuc.get());
+            break;
+    }
+    // Set kicked indices
+    std::vector<Particle> initial_parts;
+    for(size_t i = 0; i < event.Hadrons().size(); ++i) {
+        if(event.Hadrons()[i].Status() == ParticleStatus::external_test ||
+           event.Hadrons()[i].Status() == ParticleStatus::internal_test) {
+            initial_parts.push_back(event.Hadrons()[i]);
+            m_cascade.SetKicked(i);
         }
     }
-}
 
-void CalcTransparencyExternal::PrintResults(std::ofstream &out) const {
-    double transparency = 1 - ninteract / nevents;
-    fmt::print(" interact {}  with totevents {} ", ninteract, nevents);
-    double error = sqrt(ninteract / nevents / nevents);
-    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
-    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
-    out << fmt::format("{},{}\n", transparency, error);
-}
+    // TEST: Once history works remove this
+    auto start = event.Hadrons();
 
-void CalcTransparencyMFP::GenerateEvent(double kick_mom) {
-    double costheta = Random::Instance().Uniform(-1.0, 1.0);
-    double sintheta = sqrt(1 - costheta * costheta);
-    double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
+    // Cascade
+    m_cascade.Evolve(event, m_nuc.get());
 
-    std::vector<FourVector> momdummy;
-    Event event(m_nuc.get(), momdummy, 1.);
-
-    size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
-    m_cascade.SetKicked(idx);
-
-    auto kicked_particle = &(event.Hadrons()[idx]);
-    auto mass = kicked_particle->Info().Mass();
-    FourVector kick{sqrt(kick_mom * kick_mom + mass * mass), kick_mom * sintheta * cos(phi),
-                    kick_mom * sintheta * sin(phi), kick_mom * costheta};
-    kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
-    kicked_particle->Status() = ParticleStatus::internal_test;
-    kicked_particle->SetMomentum(kick);
-
-    spdlog::debug("Initial Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    m_cascade.MeanFreePath_NuWro(event, m_nuc.get(), 10000);
-    nevents++;
-
-    spdlog::debug("Final Nucleons:");
-    for(const auto &part : event.Hadrons()) { spdlog::debug("  - {}", part); }
-
-    for(const auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::internal_test) {
-            ninteract++;
-            distance += part.GetDistanceTraveled();
-        } else if(part.Status() == ParticleStatus::captured) {
-            ncaptured++;
-            ninteract++;
+    // Write the event to file if an interaction happened
+    // if(event.History().size() > 0) {
+    // TEST: Once history works remove dummy vertex
+    if(start.size() != event.Hadrons().size()) {
+        std::vector<Particle> final_parts;
+        for(const auto &part : event.Hadrons()) {
+            if(part.Status() == ParticleStatus::final_state) {
+                final_parts.push_back(part);
+            }
         }
+        event.History().AddVertex({}, initial_parts, final_parts, EventHistoryNode::StatusCode::primary);
+        // Set status of the first interaction as the primary interaction
+        // event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
+        generated_events++;
+    } else {
+        event.Weight() = 0.0;
     }
-}
-
-void CalcTransparencyMFP::PrintResults(std::ofstream &out) const {
-    double transparency = 1 - ninteract / nevents;
-    double error = sqrt(ninteract / nevents / nevents);
-    fmt::print("  Calculated transparency: {} +/- {}\n", transparency, error);
-    fmt::print("  Average distance to interact: {}\n", distance / ninteract);
-    fmt::print("  Number of captured nucleons: {}\n", ncaptured);
-    out << fmt::format("{},{}\n", transparency, error);
+    m_writer->Write(event);
 }
 
 void achilles::CascadeTest::RunCascade(const std::string &runcard) {
@@ -321,66 +201,21 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    // Load setup
-    auto nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
-    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
-    auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
-                                                            config["Nucleus"]["Potential"]);
-    nucleus->SetPotential(std::move(potential));
-
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
-    auto nevents = config["NEvents"].as<size_t>();
 
-    // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config["Cascade"]["Mode"].as<std::string>());
-    auto mode = config["Cascade"]["Mode"].as<CascadeMode>();
-    auto cascade = config["Cascade"].as<Cascade>();
-    std::unique_ptr<RunMode> generator = nullptr;
-    switch(mode) {
-    case CascadeMode::CrossSection:
-        generator = std::make_unique<CalcCrossSection>(config["PID"].as<int>(), nucleus,
-                                                       std::move(cascade));
-        break;
-    case CascadeMode::CrossSectionMFP:
-        generator = std::make_unique<CalcCrossSectionMFP>(config["PID"].as<int>(), nucleus,
-                                                          std::move(cascade));
-        break;
-    case CascadeMode::MeanFreePath:
-        generator = std::make_unique<CalcMeanFreePath>(config["PID"].as<int>(), nucleus,
-                                                       std::move(cascade));
-        break;
-    case CascadeMode::Transparency:
-        generator = std::make_unique<CalcTransparency>(nucleus, std::move(cascade));
-        break;
-    case CascadeMode::TransparencyMFP:
-        generator = std::make_unique<CalcTransparencyMFP>(nucleus, std::move(cascade));
-        break;
-    case CascadeMode::TransparencyExternal:
-        generator = std::make_unique<CalcTransparencyExternal>(config["PID"].as<int>(), nucleus,
-                                                               std::move(cascade));
-        break;
-    }
-
-    // Open results file
-    std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
-    std::ofstream results(filename);
-
-    // Setting raius for hydrogen here
-    if(nucleus->NProtons() == 1 && nucleus->NNucleons() == 1) { nucleus->SetRadius(0.84); }
+    // Initialize CascadeRunner
+    CascadeTest::CascadeRunner generator(runcard);
 
     // Generate events
+    auto nevents = config["NEvents"].as<size_t>();
     fmt::print("Cascade running in {} mode\n", config["Cascade"]["Mode"].as<std::string>());
     fmt::print("  Generating {} events per momentum point\n", nevents);
     double current_mom = kick_mom[0];
     while(current_mom <= kick_mom[1]) {
-        generator->Reset();
-        for(size_t i = 0; i < nevents; ++i) { generator->GenerateEvent(current_mom); }
+        while(generator.NeedsEvents()) { generator.GenerateEvent(current_mom); }
 
+        generator.Reset();
         fmt::print("  Kick momentum: {} MeV\n", current_mom);
-        results << fmt::format("{},", current_mom);
-        generator->PrintResults(results);
         current_mom += kick_mom[2];
     }
-
-    results.close();
 }

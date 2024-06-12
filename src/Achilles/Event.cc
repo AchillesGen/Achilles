@@ -16,8 +16,24 @@ Event::Event(const Event &other) {
     m_mom = other.m_mom;
     m_wgt = other.m_wgt;
     m_leptons = other.m_leptons;
+    m_hadrons = other.m_hadrons;
     m_history = other.m_history;
     flux = other.flux;
+    m_process_id = other.m_process_id;
+}
+
+Event Event::operator=(const Event &other) {
+    if(this == &other) return *this;
+    m_nuc = other.m_nuc;
+    m_remnant = other.m_remnant;
+    m_mom = other.m_mom;
+    m_wgt = other.m_wgt;
+    m_leptons = other.m_leptons;
+    m_hadrons = other.m_hadrons;
+    m_history = other.m_history;
+    flux = other.flux;
+    m_process_id = other.m_process_id;
+    return *this;
 }
 
 void Event::Finalize() {
