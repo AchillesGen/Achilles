@@ -187,6 +187,7 @@ class ParticleInfo {
     int IntID() const noexcept {
         return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id);
     }
+    bool IsNucleon() const noexcept { return info->id == PID::proton() || info->id == PID::neutron(); }
     bool IsBaryon() const noexcept;
     bool IsHadron() const noexcept { return info->hadron; }
     bool IsBHadron() const noexcept;
