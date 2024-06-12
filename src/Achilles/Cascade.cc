@@ -469,10 +469,13 @@ void Cascade::Escaped(Particles &particles) {
         const double energy = particle->Momentum().E() - Constant::mN - potential;
         if(particle->Position().Magnitude2() > pow(radius, 2) &&
            particle->Status() != ParticleStatus::external_test) {
-            if(energy > 0)
+            // TODO: Figure out how to appropriately handle escaping vs. capturing
+            // It should not be returned to the background, since this can lead to
+            // interactions with other particles again
+            if(energy > 0 || !particle->Info().IsNucleon())
                 particle->Status() = ParticleStatus::final_state;
             else
-                particle->Status() = ParticleStatus::background;
+                particle->Status() = ParticleStatus::captured;
             it = kickedIdxs.erase(it);
         } else if(particle->Status() == ParticleStatus::external_test &&
                   particle->Position().Pz() > radius) {
