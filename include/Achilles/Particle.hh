@@ -318,6 +318,10 @@ class Particle {
 /// @return double: The time to closest approach between the two particles
 double ClosestApproach(const Particle &, const Particle &);
 
+// Comparisons for std::reference_wrapper<Particle> with Particle
+bool operator==(const std::reference_wrapper<Particle> &, const Particle &);
+bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
+
 } // namespace achilles
 
 namespace fmt {
@@ -329,6 +333,15 @@ template <> struct formatter<achilles::Particle> {
     auto format(const achilles::Particle &particle, FormatContext &ctx) const {
         return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
                          particle.Momentum(), particle.Position());
+    }
+};
+
+template <> struct formatter<std::reference_wrapper<achilles::Particle>> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const std::reference_wrapper<achilles::Particle> &particle, FormatContext &ctx) const {
+        return format_to(ctx.out(), "{}", particle.get());
     }
 };
 

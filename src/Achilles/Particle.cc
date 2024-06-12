@@ -95,8 +95,16 @@ std::istream &operator>>(std::istream &is, Particle &particle) {
 
 double ClosestApproach(const Particle &particle1, const Particle &particle2) {
     auto position = particle2.Position() - particle1.Position();
-    auto velocity = particle1.Beta() * Constant::C;
+    auto velocity = particle1.Beta() * Constant::HBARC;
     return position.Dot(velocity) / velocity.Magnitude2();
+}
+
+bool operator==(const std::reference_wrapper<Particle> &lhs, const Particle &rhs) {
+    return lhs.get() == rhs;
+}
+
+bool operator==(const Particle &lhs, const std::reference_wrapper<Particle> &rhs) {
+    return lhs == rhs.get();
 }
 
 } // namespace achilles
