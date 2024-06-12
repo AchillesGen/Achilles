@@ -212,10 +212,10 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     fmt::print("  Generating {} events per momentum point\n", nevents);
     double current_mom = kick_mom[0];
     while(current_mom <= kick_mom[1]) {
+        fmt::print("  Kick momentum: {} MeV\n", current_mom);
         while(generator.NeedsEvents()) { generator.GenerateEvent(current_mom); }
 
         generator.Reset();
-        fmt::print("  Kick momentum: {} MeV\n", current_mom);
         current_mom += kick_mom[2];
     }
 }
