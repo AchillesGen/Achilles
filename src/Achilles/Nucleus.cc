@@ -122,9 +122,8 @@ Particles Nucleus::GenerateConfig() {
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    //    momentum[0] = Random::Instance().Uniform(0.0, FermiMomentum(position)); //To sample on a
-    //    sphere, need to take a cube-root.
-    momentum[0] = FermiMomentum(position) * pow(Random::Instance().Uniform(0.0, 1.0), 1. / 3.);
+    // NOTE: To sample on a sphere, need to take a cube-root.
+    momentum[0] = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
@@ -177,6 +176,7 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
         } else {
             result = kF;
         }
+        break;
     }
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
