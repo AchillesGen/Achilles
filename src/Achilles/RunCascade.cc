@@ -1,6 +1,7 @@
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/EventHistory.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
@@ -22,7 +23,6 @@
 #include <stdexcept>
 
 using achilles::CascadeTest::CascadeRunner;
-
 
 void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, double radius, Nucleus *nuc) {
     // Generate a point in the beam of a given radius
@@ -165,34 +165,24 @@ void CascadeRunner::GenerateEvent(double mom) {
             break;
     }
     // Set kicked indices
-    std::vector<Particle> initial_parts;
     for(size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(event.Hadrons()[i].Status() == ParticleStatus::external_test ||
            event.Hadrons()[i].Status() == ParticleStatus::internal_test) {
-            initial_parts.push_back(event.Hadrons()[i]);
             m_cascade.SetKicked(i);
         }
     }
-
-    // TEST: Once history works remove this
-    auto start = event.Hadrons();
 
     // Cascade
     m_cascade.Evolve(event, m_nuc.get());
 
     // Write the event to file if an interaction happened
-    // if(event.History().size() > 0) {
-    // TEST: Once history works remove dummy vertex
-    if(start.size() != event.Hadrons().size()) {
-        std::vector<Particle> final_parts;
-        for(const auto &part : event.Hadrons()) {
-            if(part.Status() == ParticleStatus::final_state) {
-                final_parts.push_back(part);
-            }
-        }
-        event.History().AddVertex({}, initial_parts, final_parts, EventHistoryNode::StatusCode::primary);
+    if(event.History().size() > 0) {
         // Set status of the first interaction as the primary interaction
-        // event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
+        event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
+        // TODO: This is ugly, and the history should store references to the particles
+        // However, the first attempt to do this had issues when event.Hadrons() needed to
+        // be resized
+        event.History().UpdateStatuses(event.Hadrons());
         generated_events++;
     } else {
         event.Weight() = 0.0;
