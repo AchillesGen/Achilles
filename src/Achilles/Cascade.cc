@@ -250,7 +250,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
                 newKicked.insert(idx);
                 continue;
             }
-            FinalizeMomentum(particles, idx, hitIdx);
+            FinalizeMomentum(event, particles, idx, hitIdx);
         }
         // Updated the kicked list
         // NOTE: Needs to be here in case there are two interactions in the same time step
@@ -388,7 +388,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        FinalizeMomentum(particles, idx, hitIdx);
+        FinalizeMomentum(event, particles, idx, hitIdx);
         // Stop as soon as we hit anything
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }
@@ -436,7 +436,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
         Propagate(idx, kickNuc, step_prop);
         if(hitIdx == SIZE_MAX) continue;
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        FinalizeMomentum(particles, idx, hitIdx);
+        FinalizeMomentum(event, particles, idx, hitIdx);
         // Stop as soon as we hit anything
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }
@@ -587,9 +587,12 @@ std::size_t Cascade::Interacted(const Particles &particles, const Particle &kick
     return SIZE_MAX;
 }
 
-void Cascade::FinalizeMomentum(Particles &particles, size_t idx1, size_t idx2) noexcept {
+void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, size_t idx2) noexcept {
     Particle &particle1 = particles[idx1];
     Particle &particle2 = particles[idx2];
+
+    if (Absorption(event, particle1, particle2)) return;
+
     auto modes = m_interactions.CrossSection(particle1, particle2);
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
@@ -602,8 +605,11 @@ void Cascade::FinalizeMomentum(Particles &particles, size_t idx1, size_t idx2) n
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
     if(hit) {
+        std::vector<Particle> initial_part,final_part;
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
+        initial_part.push_back(particle1); 
+        initial_part.push_back(particle2);
 
         // Ensure outgoing particles are propagating and add to list of particles in event
         // and assign formation zone
@@ -611,7 +617,13 @@ void Cascade::FinalizeMomentum(Particles &particles, size_t idx1, size_t idx2) n
             part.Status() = ParticleStatus::propagating;
             part.SetFormationZone(particle1.Momentum(), part.Momentum());
             particles.push_back(part);
+            final_part.push_back(part);
         }
+
+        // Add interaction to the event history
+        // What do we use for the position? (How about average positions?)
+        auto average_position = (particle1.Position() + particle2.Position())/2.0;
+        event.History().AddVertex(average_position, initial_part, final_part, EventHistory::StatusCode::cascade);
     }
 }
 
@@ -635,4 +647,127 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
     double position3 = (pos_p1 + pos_p2).Magnitude();
     return m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1, position2,
                                                                position3);
+}
+
+bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2) noexcept {
+
+    Particles particles = event.Hadrons();
+
+    Particle *initial_pion = nullptr;
+    Particle *incoming_nucleon1 = nullptr;
+    Particle *incoming_nucleon2 = nullptr;
+    Particle *intermediate_pion = nullptr;
+    Particle *final_nucleon1 = nullptr;
+    Particle final_nucleon2;
+
+    bool nucleon_initial = false;
+    bool pion_initial = false;
+
+    Particles current_particles;
+    current_particles.push_back(particle1);
+    current_particles.push_back(particle2);
+
+    //Check to see if absorption is possible
+    for(auto &part : current_particles) {
+        if((std::abs(part.ID().AsInt()) == PID::pionp().AsInt()) || (part.ID() == PID::pion0())) {
+            pion_initial = true;
+            intermediate_pion = &part;
+        }
+        if((part.ID() == PID::proton()) || (part.ID() == PID::neutron())) {
+            nucleon_initial = true;
+            incoming_nucleon2 = &part;
+        }
+    }
+
+    if (!(pion_initial && nucleon_initial)) return false;
+
+    // Look for a previous pi-N elastic scattering
+    auto node = event.History().FindNodeOut(*intermediate_pion);
+
+    if(node == nullptr || !node->IsCascade() || node->ParticlesOut().size() != 2) return false;
+
+    auto in_particles = node->ParticlesIn();
+    auto out_particles = node->ParticlesOut();
+    bool prev_pion = false;
+    bool prev_nucleon = false;
+
+    //These are in initial particles of the previous pi-N scattering
+    for(auto &in_part : in_particles) {
+        if((in_part.ID() == PID::proton()) || (in_part.ID() == PID::neutron())) {
+            //Found initial nucleon 1
+            prev_nucleon = true;
+            incoming_nucleon1 = &in_part;
+
+        }
+        if((std::abs(in_part.ID().AsInt()) == PID::pionp().AsInt()) || (in_part.ID() == PID::pion0())) {
+            //Found initial pion
+            initial_pion = &in_part;
+            // Check if the intermediate pion PID is the same as the initial pion PID
+            prev_pion = initial_pion->ID() == intermediate_pion->ID();
+        }
+    }
+
+    if(!prev_pion) return false;
+
+    // These are the final particles of the previous pi-N scattering
+    // This pion is the intermediate
+    // This nucleon is the final nucleon1
+    for(auto &out_part : out_particles) {
+        if((out_part.ID() == PID::proton()) || (out_part.ID() == PID::neutron())) {
+            // Check if initial nucleon 1 and final nucleon 1 have same PID
+            prev_nucleon = prev_nucleon && out_part.ID() == incoming_nucleon1->ID();
+            //Found final nucleon 1
+            final_nucleon1 = &out_part;
+        }
+    }
+
+    if(!prev_nucleon ) return false;
+
+    auto abs_prob = 1.0;
+
+    if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
+    
+    //spdlog::info("We're absorbing a pion!");
+    //Let's absorb the pion!
+    //First let's get the momentum of the incoming pion for the current interaction
+    auto combined_momentum = intermediate_pion->Momentum() + incoming_nucleon2->Momentum();
+
+    //Now let's reset the past node and fill it with our initial system positions
+    auto new_average_position = (initial_pion->Position() + incoming_nucleon1->Position() + incoming_nucleon2->Position())/3.0;
+    
+    final_nucleon2 = *incoming_nucleon2;
+    final_nucleon2.SetMomentum(combined_momentum);
+
+    Particles absorption_initial;
+    Particles absorption_final;
+    
+    absorption_initial.push_back(*initial_pion);
+    absorption_initial.push_back(*incoming_nucleon1);
+    absorption_initial.push_back(*incoming_nucleon2);
+
+    absorption_final.push_back(*final_nucleon1);
+    absorption_final.push_back(final_nucleon2);
+
+    // TO DO : Do we need pauli blocking for absorption?
+    // Check for Pauli Blocking
+    //bool hit = true;
+    //for(const auto &part : absorption_final) hit &= !PauliBlocking(part);
+
+    //absorption = hit;
+
+    node->ResetParticles();
+    node->SetPosition(new_average_position);
+    for(const auto &in_part: absorption_initial) {
+        node->AddIncoming(in_part);
+    }
+    for(const auto &out_part: absorption_final) {
+        node->AddOutgoing(out_part);
+    }
+
+    intermediate_pion->Status() = ParticleStatus::interacted;
+    incoming_nucleon2->Status() = ParticleStatus::interacted;
+    final_nucleon2.Status() = ParticleStatus::propagating;
+    particles.push_back(final_nucleon2);
+
+    return true;
 }

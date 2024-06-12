@@ -19,6 +19,7 @@ namespace achilles {
 class Nucleus;
 class Particle;
 class Event;
+class PID;
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -185,8 +186,9 @@ class Cascade {
     std::size_t Interacted(const Particles &, const Particle &,
                            const InteractionDistances &) noexcept;
     void Escaped(Particles &);
-    void FinalizeMomentum(Particles &, size_t, size_t) noexcept;
+    void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
+    bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *, double);
     std::set<size_t> InitializeIntegrator(Event &);

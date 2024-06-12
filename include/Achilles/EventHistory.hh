@@ -39,7 +39,13 @@ class EventHistoryNode {
         : m_idx{idx}, m_position{position}, m_status{status} {}
     EventHistoryNode(const EventHistoryNode &) = default;
     void AddIncoming(const Particle &part) { m_particles_in.push_back(part); }
-    void AddOutgoing(const Particle &part) { m_particles_out.push_back(part); }
+    void AddOutgoing(const Particle &part) { m_particles_out.push_back(part); }    
+    void ResetParticles() {
+        m_particles_in.clear(); m_particles_out.clear(); 
+    }
+    void SetPosition(const ThreeVector &position) {
+        m_position = position;
+    }
 
     // Status functions
     StatusCode &Status() { return m_status; }
