@@ -10,6 +10,16 @@
 
 #include <optional>
 
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#error "Could not find includes: <filesystem> or <experimental/filesystem>"
+#endif
+
 namespace achilles {
 
 class Beam;
@@ -107,6 +117,13 @@ class ProcessGroup {
     // Metadata handlers
     std::vector<ProcessMetadata> Metadata() const;
     std::vector<int> ProcessIds() const;
+    // std::string UniqueID() const;
+
+    // Cache results
+    bool Save(const fs::path &) const;
+    bool Load(const fs::path &);
+
+    friend std::hash<ProcessGroup>;
 
   private:
     // Physics components

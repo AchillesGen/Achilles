@@ -17,6 +17,8 @@ namespace fs = std::experimental::filesystem;
 
 namespace achilles {
 
+class ProcessGroup;
+
 namespace SystemVariables {
     const std::string libPrefix = "@LIBPREFIX@";
     const std::string libSuffix = "@LIBSUFFIX@";
@@ -36,6 +38,7 @@ namespace PathVariables {
     const fs::path installFlux = installShare / "flux";
     const fs::path installData = installShare / "data";
     const fs::path installDefaults = installData / "default";
+    const fs::path cacheDefault = ".achilles/cache";
 }
 
 namespace Filesystem {
@@ -43,42 +46,63 @@ namespace Filesystem {
 std::vector<fs::path> AchillesPath();
 std::string FindFile(const std::string &filename, const std::string &head);
 
-}
+class Cache {
+  public:
+    Cache() = default;
+    Cache(const fs::path &path) : m_path{path} {}
+    Cache(const Cache &) = default;
+    Cache(Cache &&) = default;
+    Cache &operator=(const Cache &) = default;
+    Cache &operator=(Cache &&) = default;
+    ~Cache() = default;
 
-namespace Filesystem {
-    enum class FileType {
-        any = -1,
-        regular,
-        directory,
-        empty
-    };
+    const fs::path &Path() const { return m_path; }
+    fs::path &Path() { return m_path; }
 
-    std::vector<std::string> GetPluginPaths();
+    bool FindCachedState(std::size_t);
+    bool SaveState(const ProcessGroup&);
+    bool LoadState(ProcessGroup&);
 
-    template<typename T>
-    bool is_type(const T &path, FileType type) {
-        switch(type) {
-            case FileType::any:
-                return true;
-            case FileType::regular:
-                return fs::is_regular_file(path);
-            case FileType::directory:
-                return fs::is_directory(path);
-            case FileType::empty:
-                return fs::is_empty(path);
-        }
-        return false;
+  private:
+    fs::path m_path{PathVariables::cacheDefault};
+};
+
+enum class FileType {
+    any = -1,
+    regular,
+    directory,
+    empty
+};
+
+std::vector<std::string> GetPluginPaths();
+
+template<typename T>
+bool is_type(const T &path, FileType type) {
+    switch(type) {
+        case FileType::any:
+            return true;
+        case FileType::regular:
+            return fs::is_regular_file(path);
+        case FileType::directory:
+            return fs::is_directory(path);
+        case FileType::empty:
+            return fs::is_empty(path);
     }
+    return false;
+}
 
-    template<typename Func>
-    void RecurseDirectories(const fs::path &directory, Func f, FileType type = FileType::any) {
-        for(const auto &file_path : fs::recursive_directory_iterator(directory)) {
-            if(!is_type(file_path, type)) continue;
-            f(file_path);
-        }
+template<typename Func>
+void RecurseDirectories(const fs::path &directory, Func f, FileType type = FileType::any) {
+    for(const auto &file_path : fs::recursive_directory_iterator(directory)) {
+        if(!is_type(file_path, type)) continue;
+        f(file_path);
     }
 }
 
-}
+bool CreateDirectories(const fs::path &path);
+
+} // namespace Filesystem
+
+} // namespace achilles
 
 #endif

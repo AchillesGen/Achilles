@@ -404,3 +404,54 @@ achilles::AllProcessMetadata(const std::vector<ProcessGroup> &groups) {
 
     return data;
 }
+
+bool ProcessGroup::Save(const fs::path &cache_dir) const {
+    std::ofstream out_integrator(cache_dir / "integrator.achilles");
+    m_integrator.SaveState(out_integrator);
+
+    std::ofstream out_xsec(cache_dir / "xsec.achilles");
+    m_xsec.SaveState(out_xsec);
+
+    // TODO: Store some metadata for validation
+    std::ofstream out_metadata(cache_dir / "metadata.achilles");
+
+    std::ofstream out_state(cache_dir / "state.achilles");
+    out_state << b_optimize << " " << b_calc_weights << " " << m_maxweight << " ";
+    out_state << m_process_weights.size() << " ";
+    for(const auto &weight : m_process_weights) out_state << weight << " ";
+
+    return true;
+}
+
+// TODO: Add validation checks
+bool ProcessGroup::Load(const fs::path &cache_dir) {
+    std::ifstream in_integrator(cache_dir / "integrator.achilles");
+    m_integrator.LoadState(in_integrator);
+
+    std::ifstream in_xsec(cache_dir / "xsec.achilles");
+    m_xsec.LoadState(in_xsec);
+
+    // TODO: Load some metadata for validation
+    std::ifstream in_metadata(cache_dir / "metadata.achilles");
+
+    std::ifstream in_state(cache_dir / "state.achilles");
+    in_state >> b_optimize >> b_calc_weights >> m_maxweight;
+    size_t nweights;
+    in_state >> nweights;
+    m_process_weights.resize(nweights);
+    for(auto &weight : m_process_weights) in_state >> weight;
+
+    return true;
+}
+
+std::size_t std::hash<ProcessGroup>::operator()(const achilles::ProcessGroup &p) const {
+    std::size_t seed = 0;
+    for(const auto &process : p.Processes()) {
+        std::hash<achilles::Process> hasher;
+        seed ^= hasher(process) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    seed ^= std::hash<achilles::Beam>{}(*(p.m_beam.get())) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<achilles::Nucleus>{}(*(p.m_nucleus.get())) + 0x9e3779b9 + (seed << 6) +
+            (seed >> 2);
+    return seed;
+}

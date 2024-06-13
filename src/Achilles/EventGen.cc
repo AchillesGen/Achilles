@@ -120,6 +120,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
                        [&](ProcessGroup &group) { return !group.SetupIntegration(config.Root()); }),
         process_groups.end());
 
+    for(auto &group : process_groups) {
+        std::cout << std::hex << std::hash<ProcessGroup>{}(group) << std::endl;
+    }
+
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config.Exists("Main/DoRotate")) doRotate = config.GetAs<bool>("Main/DoRotate");
 
@@ -128,6 +132,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         doHardCuts = config.GetAs<bool>("Main/HardCuts");
         spdlog::info("Apply hard cuts? {}", doHardCuts);
         hard_cuts = config.GetAs<achilles::CutCollection>("HardCuts");
+        for(auto &group : process_groups) group.SetCuts(hard_cuts);
     }
 
     // Setup outputs
@@ -159,7 +164,24 @@ void achilles::EventGen::Initialize() {
         for(const auto &evt : events.events) { group.SingleEvent(evt, 1); }
         exit(0);
     }
-    // TODO: Save trained integrators
+
+    // Initialize cache
+    Filesystem::Cache cache;
+    if(config.Exists("Cache/Path")) cache.Path() = config.GetAs<std::string>("Cache/Path");
+
+    if(!config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load")) {
+        for(auto &group : process_groups) {
+            if(cache.FindCachedState(std::hash<ProcessGroup>{}(group))) {
+                // spdlog::debug("Loading cached state for {}", group);
+                if(!cache.LoadState(group)) {
+                    // TODO: Figure out how to stringify process group
+                    spdlog::warn("Failed to load cached state for {}",
+                                 std::hash<ProcessGroup>{}(group));
+                }
+            }
+        }
+    }
+
     spdlog::info("Starting optimization runs");
     for(auto &group : process_groups) {
         group.Optimize();
@@ -170,6 +192,14 @@ void achilles::EventGen::Initialize() {
         std::cout << "Estimated unweighting eff for this group: ";
         for(auto &process : group.Processes()) std::cout << process.UnweightEff() << " ";
         std::cout << std::endl;
+
+        if(!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save")) {
+            if(!cache.SaveState(group)) {
+                // TODO: Figure out how to stringify process group
+                spdlog::warn("Failed to save cached state for {}",
+                             std::hash<ProcessGroup>{}(group));
+            }
+        }
     }
     for(auto &wgt : m_group_weights) wgt /= m_max_weight;
     spdlog::info("Group weights: {}",
@@ -179,7 +209,7 @@ void achilles::EventGen::Initialize() {
 
 void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
-    runCascade = cascade == nullptr;
+    runCascade = cascade != nullptr;
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
     while(accepted < nevents) {
