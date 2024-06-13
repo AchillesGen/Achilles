@@ -19,7 +19,6 @@
 #include "spdlog/spdlog.h"
 
 #include <chrono>
-#include <fstream>
 #include <stdexcept>
 
 using achilles::CascadeTest::CascadeRunner;
@@ -184,6 +183,9 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     Random::Instance().Seed(seed);
 
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
+    if(kick_mom.size() != 2) {
+        throw std::runtime_error("CascadeRunner: KickMomentum must have 2 values: min, max");
+    }
 
     // Initialize CascadeRunner
     CascadeTest::CascadeRunner generator(runcard);
@@ -191,13 +193,9 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     // Generate events
     auto nevents = config["NEvents"].as<size_t>();
     fmt::print("Cascade running in {} mode\n", config["Cascade"]["Mode"].as<std::string>());
-    fmt::print("  Generating {} events per momentum point\n", nevents);
-    double current_mom = kick_mom[0];
-    while(current_mom <= kick_mom[1]) {
-        fmt::print("  Kick momentum: {} MeV\n", current_mom);
-        while(generator.NeedsEvents()) { generator.GenerateEvent(current_mom); }
-
-        generator.Reset();
-        current_mom += kick_mom[2];
+    fmt::print("  Generating {} events in range [{}, {}] MeV\n", nevents, kick_mom[0], kick_mom[1]);
+    while(generator.NeedsEvents()) {
+        auto current_mom = Random::Instance().Uniform(kick_mom[0], kick_mom[1]);
+        generator.GenerateEvent(current_mom);
     }
 }

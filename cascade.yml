@@ -35,6 +35,10 @@ Cascade:
             Outgoing: 
               - Outgoing: [3112, 2112]
                 CrossSection: 0
+          - Incoming: [3112, 2212]
+            Outgoing: 
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
           - Incoming: [321, 2212]
             Outgoing: 
               - Outgoing: [321, 2212]
@@ -83,7 +87,7 @@ Cascade:
   Params:
     radius: 10
 
-KickMomentum: [1500, 1500, 20]
+KickMomentum: [1500, 1500]
 NEvents: 4000
 PID: 211
 
