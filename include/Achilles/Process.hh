@@ -131,3 +131,13 @@ std::vector<int> AllProcessIDs(const std::vector<ProcessGroup> &);
 std::vector<ProcessMetadata> AllProcessMetadata(const std::vector<ProcessGroup> &);
 
 } // namespace achilles
+
+template <> struct std::hash<achilles::Process> {
+    std::size_t operator()(const achilles::Process &p) const {
+        return std::hash<achilles::ProcessInfo>{}(p.Info());
+    }
+};
+
+template <> struct std::hash<achilles::ProcessGroup> {
+    std::size_t operator()(const achilles::ProcessGroup &p) const;
+};

@@ -80,4 +80,10 @@ template <> struct convert<achilles::ProcessInfo> {
 
 } // namespace YAML
 
+template <> struct std::hash<achilles::ProcessInfo> {
+    std::size_t operator()(const achilles::ProcessInfo &p) const {
+        return std::hash<std::string>{}(fmt::format("{}", p));
+    }
+};
+
 #endif

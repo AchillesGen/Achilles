@@ -324,4 +324,10 @@ template <> struct convert<std::vector<std::shared_ptr<achilles::Nucleus>>> {
 };
 } // namespace YAML
 
+template <> struct std::hash<achilles::Nucleus> {
+    std::size_t operator()(const achilles::Nucleus &nuc) const {
+        return std::hash<int>{}(nuc.ID());
+    }
+};
+
 #endif // end of include guard: NUCLEUS_HH
