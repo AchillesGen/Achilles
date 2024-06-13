@@ -34,10 +34,11 @@ using Particles = std::vector<Particle>;
 class Nucleus {
   public:
     // Fermigas Model
-    enum FermiGasType { CorrelatedLocal, Local, Global, CorrelatedGlobal };
+    enum FermiGasType { Local, Global };
     struct FermiGas {
-        FermiGasType type;
-        std::vector<double> params;
+        FermiGasType type{FermiGasType::Local};
+        bool correlated = false;
+        double SRCfraction{0}, lambdaSRC{2.75};
     };
 
     /// @name Constructors and Destructors
@@ -54,7 +55,7 @@ class Nucleus {
     ///                to the density profile
     Nucleus() = default;
     Nucleus(const std::size_t &, const std::size_t &, const double &, const double &,
-            const std::string &, const FermiGas &, std::unique_ptr<Density>, const double &);
+            const std::string &, const FermiGas &, std::unique_ptr<Density>);
     Nucleus(const Nucleus &) = delete;
     Nucleus(Nucleus &&) = default;
     Nucleus &operator=(const Nucleus &) = delete;
@@ -210,7 +211,7 @@ class Nucleus {
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
     static Nucleus MakeNucleus(const std::string &, const double &, const double &,
-                               const std::string &, const FermiGas &, std::unique_ptr<Density>, const double &);
+                               const std::string &, const FermiGas &, std::unique_ptr<Density>);
 
     /// @name Stream Operators
     /// @{
@@ -223,12 +224,9 @@ class Nucleus {
   private:
     size_t nnucleons, nprotons, nneutrons;
     double binding{}, fermiMomentum{}, radius{};
-    FermiGas fermi_gas{FermiGasType::Local, {}};
+    FermiGas fermi_gas{};
     std::unique_ptr<Density> density;
     Interp1D rhoInterp;
-
-    double SRCfraction{};
-    double lambdaSRC = 2.75; //Could be user-supplied
 
     static const std::map<std::size_t, std::string> ZToName;
     static std::size_t NameToZ(const std::string &);
@@ -242,6 +240,25 @@ class Nucleus {
 } // namespace achilles
 
 namespace YAML {
+template <> struct convert<achilles::Nucleus::FermiGas> {
+    static bool decode(const Node &node, achilles::Nucleus::FermiGas &fg) {
+        if(node["Type"].as<std::string>() == "Local")
+            fg.type = achilles::Nucleus::FermiGasType::Local;
+        else if(node["Type"].as<std::string>() == "Global")
+            fg.type = achilles::Nucleus::FermiGasType::Global;
+        else
+            return false;
+
+        if(node["Correlated"]) fg.correlated = node["Correlated"].as<bool>();
+        if(fg.correlated) {
+            if(node["SRCfraction"]) fg.SRCfraction = node["SRCFraction"].as<double>();
+            if(node["LambdaSRC"]) fg.lambdaSRC = node["LambdaSRC"].as<double>();
+        }
+
+        return true;
+    }
+};
+
 template <> struct convert<achilles::Nucleus> {
     static bool decode(const Node &node, achilles::Nucleus &nuc) {
         std::string name = node["Name"].as<std::string>();
@@ -256,29 +273,12 @@ template <> struct convert<achilles::Nucleus> {
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
-	//For the correlated fermi gas
-	auto SRCfraction = 0.;
-	if (node["SRCfraction"])
-	{
-		SRCfraction = node["SRCfraction"].as<double>();
-	}
-
-        achilles::Nucleus::FermiGas fermi_gas;
-        if(node["FermiGas"]["Type"].as<std::string>() == "Local")
-            fermi_gas.type = achilles::Nucleus::FermiGasType::Local;
-        else if(node["FermiGas"]["Type"].as<std::string>() == "Global")
-            fermi_gas.type = achilles::Nucleus::FermiGasType::Global;
-        else if(node["FermiGas"]["Type"].as<std::string>() == "CorrelatedLocal") {
-            fermi_gas.type = achilles::Nucleus::FermiGasType::CorrelatedLocal;
-            fermi_gas.params = node["FermiGas"]["Params"].as<std::vector<double>>();
-        } else
-            return false;
-
+        auto fermi_gas = node["FermiGas"].as<achilles::Nucleus::FermiGas>();
         auto densityFile = node["Density"]["File"].as<std::string>();
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, fermi_gas,
-                                             std::move(configs), SRCfraction);
+                                             std::move(configs));
 
         return true;
     }
