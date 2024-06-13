@@ -408,6 +408,7 @@ achilles::AllProcessMetadata(const std::vector<ProcessGroup> &groups) {
 bool ProcessGroup::Save(const fs::path &cache_dir) const {
     std::ofstream out_integrator(cache_dir / "integrator.achilles");
     m_integrator.SaveState(out_integrator);
+    m_integrand.SaveState(out_integrator);
 
     std::ofstream out_xsec(cache_dir / "xsec.achilles");
     m_xsec.SaveState(out_xsec);
@@ -427,6 +428,7 @@ bool ProcessGroup::Save(const fs::path &cache_dir) const {
 bool ProcessGroup::Load(const fs::path &cache_dir) {
     std::ifstream in_integrator(cache_dir / "integrator.achilles");
     m_integrator.LoadState(in_integrator);
+    m_integrand.LoadState(in_integrator);
 
     std::ifstream in_xsec(cache_dir / "xsec.achilles");
     m_xsec.LoadState(in_xsec);

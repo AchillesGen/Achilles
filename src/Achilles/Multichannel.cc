@@ -134,7 +134,7 @@ void achilles::MultiChannel::SaveState(std::ostream &os) const {
     os << " " << channel_weights.size() << " ";
     for(const auto &wgt : channel_weights) { os << wgt << " "; }
     for(const auto &wgt : best_weights) { os << wgt << " "; }
-    os << min_diff;
+    os << min_diff << " ";
     os << std::setprecision(static_cast<int>(default_precision));
 }
 

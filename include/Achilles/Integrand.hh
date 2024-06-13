@@ -42,6 +42,18 @@ template <typename T> class Integrand {
     size_t NChannels() const { return channels.size(); }
     size_t NDims() const { return channels[0].NDims(); }
 
+    void SaveState(std::ostream &os) const {
+        os << channels.size() << " ";
+        for(const auto &channel : channels) { channel.integrator.SaveState(os); }
+    }
+    void LoadState(std::istream &is) {
+        size_t nchannels;
+        is >> nchannels;
+        if(nchannels != channels.size())
+            throw std::runtime_error("Integrand: Channel size mismatch");
+        for(auto &channel : channels) { channel.integrator.LoadState(is); }
+    }
+
     // Train integrator
     void InitializeTrain() {
         for(auto &channel : channels) {
