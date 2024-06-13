@@ -24,8 +24,8 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
                  const double &kf, const std::string &densityFilename, const FermiGas &fg,
-                 std::unique_ptr<Density> _density)
-    : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)) {
+                 std::unique_ptr<Density> _density, const double &SRCfrac = 0.)
+    : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)), SRCfraction{SRCfrac} {
     Initialize(Z, A);
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     // spdlog::info("Nucleus: inferring nuclear radius using 0.16
@@ -123,16 +123,56 @@ Particles Nucleus::GenerateConfig() {
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
     // NOTE: To sample on a sphere, need to take a cube-root.
-    momentum[0] = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+    momentum[0] = SampleMagnitudeMomentum(position);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     return ToCartesian(momentum);
 }
 
+double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
+
+    double p{};
+	
+    switch(fermi_gas.type) {
+
+    case FermiGasType::CorrelatedLocal: {
+
+	    //Using the same logic as for the correlatedGlobal, not sure if this makes full sense in this case!
+	    if (Random::Instance().Uniform(0.0,1.0) > SRCfraction){ 
+                 p = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+	    }else{
+		 double x = Random::Instance().Uniform(0.0, 1.0);
+		 p = FermiMomentum(position) / (1. + 1./lambdaSRC - x);
+	    }
+	    break;
+    }
+    case FermiGasType::Local:
+        p = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+        break;
+    case FermiGasType::Global:
+        p = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+	break;
+
+    case FermiGasType::CorrelatedGlobal: {
+	    if (Random::Instance().Uniform(0.0,1.0) > SRCfraction){ 
+                 p = FermiMomentum(position) * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+	    }else{
+		 double x = Random::Instance().Uniform(0.0, 1.0);
+		 p = FermiMomentum(position) / (1. + 1./lambdaSRC - x);
+	    }
+	    break;
+
+	}
+    }
+
+    return p;
+
+}
+
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
                              const double &fermiMomentum, const std::string &densityFilename,
-                             const FermiGas &fg, std::unique_ptr<Density> density) {
+                             const FermiGas &fg, std::unique_ptr<Density> density, const double &SRCfrac) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -143,7 +183,7 @@ Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
                      "with A={1} total nucleons and Z={2} protons.",
                      name, nucleons, protons);
         return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg,
-                       std::move(density));
+                       std::move(density), SRCfrac);
     }
 
     throw std::runtime_error(fmt::format("Invalid nucleus {}.", name));
@@ -188,6 +228,10 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
         result = fermiMomentum; // Better, but sampling is still srong, the pdf has p2 factor, need
                                 // to take cube-root somewhere
         break;
+
+    case FermiGasType::CorrelatedGlobal:
+	result = fermiMomentum;
+	break;
     }
 
     return result;

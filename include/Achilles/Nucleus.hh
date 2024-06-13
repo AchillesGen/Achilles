@@ -34,7 +34,7 @@ using Particles = std::vector<Particle>;
 class Nucleus {
   public:
     // Fermigas Model
-    enum FermiGasType { CorrelatedLocal, Local, Global };
+    enum FermiGasType { CorrelatedLocal, Local, Global, CorrelatedGlobal };
     struct FermiGas {
         FermiGasType type;
         std::vector<double> params;
@@ -54,7 +54,7 @@ class Nucleus {
     ///                to the density profile
     Nucleus() = default;
     Nucleus(const std::size_t &, const std::size_t &, const double &, const double &,
-            const std::string &, const FermiGas &, std::unique_ptr<Density>);
+            const std::string &, const FermiGas &, std::unique_ptr<Density>, const double &);
     Nucleus(const Nucleus &) = delete;
     Nucleus(Nucleus &&) = default;
     Nucleus &operator=(const Nucleus &) = delete;
@@ -165,6 +165,8 @@ class Nucleus {
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
     const std::array<double, 3> GenerateMomentum(const double &) noexcept;
 
+    double SampleMagnitudeMomentum(const double &position) noexcept;
+
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
     const std::string ToString() const noexcept;
@@ -208,7 +210,7 @@ class Nucleus {
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
     static Nucleus MakeNucleus(const std::string &, const double &, const double &,
-                               const std::string &, const FermiGas &, std::unique_ptr<Density>);
+                               const std::string &, const FermiGas &, std::unique_ptr<Density>, const double &);
 
     /// @name Stream Operators
     /// @{
@@ -224,6 +226,9 @@ class Nucleus {
     FermiGas fermi_gas{FermiGasType::Local, {}};
     std::unique_ptr<Density> density;
     Interp1D rhoInterp;
+
+    double SRCfraction{};
+    double lambdaSRC = 2.75; //Could be user-supplied
 
     static const std::map<std::size_t, std::string> ZToName;
     static std::size_t NameToZ(const std::string &);
@@ -251,6 +256,13 @@ template <> struct convert<achilles::Nucleus> {
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
+	//For the correlated fermi gas
+	auto SRCfraction = 0.;
+	if (node["SRCfraction"])
+	{
+		SRCfraction = node["SRCfraction"].as<double>();
+	}
+
         achilles::Nucleus::FermiGas fermi_gas;
         if(node["FermiGas"]["Type"].as<std::string>() == "Local")
             fermi_gas.type = achilles::Nucleus::FermiGasType::Local;
@@ -266,7 +278,7 @@ template <> struct convert<achilles::Nucleus> {
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
         nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, fermi_gas,
-                                             std::move(configs));
+                                             std::move(configs), SRCfraction);
 
         return true;
     }
