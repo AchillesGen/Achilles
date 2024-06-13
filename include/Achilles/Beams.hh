@@ -2,6 +2,7 @@
 #define BEAMS_HH
 
 #include "Achilles/Achilles.hh"
+#include "Achilles/Hashable.hh"
 #include "Achilles/Histogram.hh"
 #include <memory>
 #include <set>
