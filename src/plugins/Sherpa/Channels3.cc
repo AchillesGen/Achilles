@@ -12,30 +12,6 @@
 using namespace PHASIC;
 using namespace ATOOLS;
 
-template <> struct fmt::formatter<ATOOLS::Vec4<double>> {
-    char presentation = 'e';
-    constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
-        // Parse the presentation format and store it in the formatter:
-        auto it = ctx.begin(), end = ctx.end();
-        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-        // Check if reached the end of the range:
-        if(it != end && *it != '}') throw format_error("Invalid format");
-
-        // Return an iterator past the end of the parsed range:
-        return it;
-    }
-
-    template <typename FormatContext>
-    auto format(const ATOOLS::Vec4<double> &p, FormatContext &ctx) -> decltype(ctx.out()) {
-        // ctx.out() is an output iterator to write to
-        return format_to(ctx.out(),
-                         presentation == 'f' ? "Vec4({:.8f}, {:.8f}, {:.8f}, {:.8f})"
-                                             : "Vec4({:.8e}, {:.8e}, {:.8e}, {:.8e})",
-                         p[0], p[1], p[2], p[3]);
-    }
-};
-
 double GenChannel::SCut(size_t id) {
     if(id & 3) { id = (1 << m_n) - 1 - id; }
     double result = 0;
