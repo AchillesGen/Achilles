@@ -660,124 +660,77 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 }
 
 bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2) noexcept {
+    // Check if absorption is possible
+    // NOTE: Particle1 is always a propagating particle
+    // NOTE: Particle2 is always a background particle
+    if(!particle1.Info().IsPion() || !particle2.Info().IsNucleon()) return false;
 
     Particles &particles = event.Hadrons();
 
-    Particle *initial_pion = nullptr;
-    Particle *incoming_nucleon1 = nullptr;
-    Particle *incoming_nucleon2 = nullptr;
-    Particle *intermediate_pion = nullptr;
-    Particle *final_nucleon1 = nullptr;
+    Particle initial_pion;
+    Particle incoming_nucleon1;
+    Particle final_nucleon1;
     Particle final_nucleon2;
 
-    bool nucleon_initial = false;
-    bool pion_initial = false;
-
-    Particles current_particles;
-    current_particles.push_back(particle1);
-    current_particles.push_back(particle2);
-
-    //Check to see if absorption is possible
-    for(auto &part : current_particles) {
-        if((std::abs(part.ID().AsInt()) == PID::pionp().AsInt()) || (part.ID() == PID::pion0())) {
-            pion_initial = true;
-            intermediate_pion = &part;
-        }
-        if((part.ID() == PID::proton()) || (part.ID() == PID::neutron())) {
-            nucleon_initial = true;
-            incoming_nucleon2 = &part;
-        }
-    }
-
-    if (!(pion_initial && nucleon_initial)) return false;
-
     // Look for a previous pi-N elastic scattering
-    auto node = event.History().FindNodeOut(*intermediate_pion);
-
+    auto node = event.History().FindNodeOut(particle1);
     if(node == nullptr || !node->IsCascade() || node->ParticlesOut().size() != 2) return false;
 
-    auto in_particles = node->ParticlesIn();
-    auto out_particles = node->ParticlesOut();
-    bool prev_pion = false;
-    bool prev_nucleon = false;
-
-    //These are in initial particles of the previous pi-N scattering
-    for(auto &in_part : in_particles) {
-        if((in_part.ID() == PID::proton()) || (in_part.ID() == PID::neutron())) {
-            //Found initial nucleon 1
-            prev_nucleon = true;
-            incoming_nucleon1 = &in_part;
-
-        }
-        if((std::abs(in_part.ID().AsInt()) == PID::pionp().AsInt()) || (in_part.ID() == PID::pion0())) {
-            //Found initial pion
-            initial_pion = &in_part;
+    // These are in initial particles of the previous pi-N scattering
+    for(auto &in_part : node->ParticlesIn()) {
+        if(in_part.Info().IsNucleon()) {
+            // This is needed to ensure that the interaction was elastic
+            incoming_nucleon1 = in_part;
+        } else if(in_part.Info().IsPion()) {
             // Check if the intermediate pion PID is the same as the initial pion PID
-            prev_pion = initial_pion->ID() == intermediate_pion->ID();
+            if(in_part.ID() != particle1.ID()) return false;
+            // Found initial pion
+            initial_pion = in_part;
         }
     }
-
-    if(!prev_pion) return false;
 
     // These are the final particles of the previous pi-N scattering
     // This pion is the intermediate
     // This nucleon is the final nucleon1
-    for(auto &out_part : out_particles) {
-        if((out_part.ID() == PID::proton()) || (out_part.ID() == PID::neutron())) {
+    for(auto &out_part : node->ParticlesOut()) {
+        if(out_part.Info().IsNucleon()) {
             // Check if initial nucleon 1 and final nucleon 1 have same PID
-            prev_nucleon = prev_nucleon && out_part.ID() == incoming_nucleon1->ID();
-            //Found final nucleon 1
-            final_nucleon1 = &out_part;
+            if(out_part.ID() != incoming_nucleon1.ID()) return false;
+            // Found final nucleon 1
+            final_nucleon1 = out_part;
         }
     }
 
-    if(!prev_nucleon ) return false;
-
     auto abs_prob = 1.0;
-
     if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
     
-    //spdlog::info("We're absorbing a pion!");
-    //Let's absorb the pion!
-    //First let's get the momentum of the incoming pion for the current interaction
-    auto combined_momentum = intermediate_pion->Momentum().Vec3() + incoming_nucleon2->Momentum().Vec3();
+    // Let's absorb the pion!
+    // First let's get the momentum of the incoming pion for the current interaction
+    auto combined_momentum = particle1.Momentum().Vec3() + particle2.Momentum().Vec3();
 
-    //Now let's reset the past node and fill it with our initial system positions
-    auto new_average_position = (initial_pion->Position() + incoming_nucleon1->Position() + incoming_nucleon2->Position())/3.0;
+    // Now let's reset the past node and fill it with our initial system positions
+    auto new_average_position = (initial_pion.Position() + incoming_nucleon1.Position() + particle2.Position())/3.0;
     
-    final_nucleon2 = *incoming_nucleon2;
-    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(incoming_nucleon2->Info().Mass(), 2) + combined_momentum.Magnitude2())};
+    final_nucleon2 = particle2;
+    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(particle2.Mass(), 2) + combined_momentum.Magnitude2())};
 
     final_nucleon2.Status() = ParticleStatus::propagating;
-    particles.push_back(final_nucleon2);
-    Particles absorption_initial;
-    Particles absorption_final;
-    
-    absorption_initial.push_back(*initial_pion);
-    absorption_initial.push_back(*incoming_nucleon1);
-    absorption_initial.push_back(*incoming_nucleon2);
 
-    absorption_final.push_back(*final_nucleon1);
-    absorption_final.push_back(particles.back());
-
-    // TO DO : Do we need pauli blocking for absorption?
+    // TODO : Do we need pauli blocking for absorption?
     // Check for Pauli Blocking
-    //bool hit = true;
-    //for(const auto &part : absorption_final) hit &= !PauliBlocking(part);
+    // if(!PauliBlocking(final_nucleon2) || !PauliBlocking(*final_nucleon1)) return false;
 
-    //absorption = hit;
-
+    particles.push_back(final_nucleon2);
     node->ResetParticles();
     node->SetPosition(new_average_position);
-    for(const auto &in_part: absorption_initial) {
-        node->AddIncoming(in_part);
-    }
-    for(const auto &out_part: absorption_final) {
-        node->AddOutgoing(out_part);
-    }
+    node->AddIncoming(initial_pion);
+    node->AddIncoming(incoming_nucleon1);
+    node->AddIncoming(particle2);
+    node->AddOutgoing(final_nucleon1);
+    node->AddOutgoing(particles.back());
 
-    intermediate_pion->Status() = ParticleStatus::interacted;
-    incoming_nucleon2->Status() = ParticleStatus::interacted;
+    particle1.Status() = ParticleStatus::interacted;
+    particle2.Status() = ParticleStatus::interacted;
 
     return true;
 }
