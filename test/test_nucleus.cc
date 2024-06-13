@@ -24,6 +24,7 @@ const std::string dFile = "data/c12.prova.txt";
 TEST_CASE("Nucleus construction", "[Nucleus]") {
     auto fermiGas =
         GENERATE(achilles::Nucleus::FermiGasType::Local, achilles::Nucleus::FermiGasType::Global);
+    achilles::Nucleus::FermiGas fermi_gas = {fermiGas, {}};
 
     SECTION("Nucleus must have more nucleons than protons") {
         static constexpr std::size_t Z = 6, A = 12;
@@ -35,11 +36,11 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
 
         auto density1 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density1, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermiGas, std::move(density1)));
+        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermi_gas, std::move(density1)));
 
         auto density2 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density2, GetConfiguration()).TIMES(1).RETURN(particles);
-        achilles::Nucleus nuc(Z, A, 0, 0, dFile, fermiGas, std::move(density2));
+        achilles::Nucleus nuc(Z, A, 0, 0, dFile, fermi_gas, std::move(density2));
 
         CHECK(nuc.NNucleons() == A);
         CHECK(nuc.NProtons() == Z);
@@ -54,7 +55,7 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         std::string errorMsg = "Requires the number of protons to be less than the total";
         errorMsg += " number of nucleons. Got " + std::to_string(A);
         errorMsg += " protons and " + std::to_string(Z) + " nucleons";
-        CHECK_THROWS_WITH(achilles::Nucleus(A, Z, 0, 0, dFile, fermiGas, std::move(density3)),
+        CHECK_THROWS_WITH(achilles::Nucleus(A, Z, 0, 0, dFile, fermi_gas, std::move(density3)),
                           errorMsg);
     }
 
@@ -63,7 +64,7 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         REQUIRE_CALL(*density, GetConfiguration()).TIMES(0);
         static constexpr std::size_t Z = 6, A = 12;
 
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermiGas, std::move(density)),
+        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermi_gas, std::move(density)),
                           "Nucleus: Density file dummy.txt does not exist.");
     }
 
@@ -77,22 +78,22 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
 
         auto density1 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density1, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermiGas, std::move(density1)));
+        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermi_gas, std::move(density1)));
 
         auto density2 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density2, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A + 1, 0, 0, dFile, fermiGas, std::move(density2)),
+        CHECK_THROWS_WITH(achilles::Nucleus(Z, A + 1, 0, 0, dFile, fermi_gas, std::move(density2)),
                           "Invalid density function! Incorrect number of nucleons.");
 
         auto density3 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density3, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_THROWS_WITH(achilles::Nucleus(Z + 1, A, 0, 0, dFile, fermiGas, std::move(density3)),
+        CHECK_THROWS_WITH(achilles::Nucleus(Z + 1, A, 0, 0, dFile, fermi_gas, std::move(density3)),
                           "Invalid density function! Incorrect number of protons or neutrons.");
     }
 }
 
 TEST_CASE("Nuclear Configuration", "[Nucleus]") {
-    const auto fermiGas = achilles::Nucleus::FermiGasType::Global;
+    achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Global, {}};
     static constexpr size_t Z = 6;
     static constexpr double kf = 250;
 
@@ -114,7 +115,7 @@ TEST_CASE("Nuclear Configuration", "[Nucleus]") {
 }
 
 TEST_CASE("Make Nucleus", "[Nucleus]") {
-    const auto fermiGas = achilles::Nucleus::FermiGasType::Local;
+    achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Local, {}};
 
     SECTION("Creates a proper Nucleus") {
         auto name = GENERATE(table<std::string, size_t>({{"2H", 1},
