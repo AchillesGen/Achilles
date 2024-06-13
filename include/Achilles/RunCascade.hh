@@ -14,7 +14,6 @@ class Nucleus;
 enum class CascadeMode {
     CrossSection,
     Transparency,
-    TransparencyExternal
 };
 
 } // namespace achilles
@@ -28,8 +27,6 @@ template <> struct convert<achilles::CascadeMode> {
             mode = achilles::CascadeMode::CrossSection;
         else if(name == "Transparency")
             mode = achilles::CascadeMode::Transparency;
-        else if(name == "TransparencyExternal")
-            mode = achilles::CascadeMode::TransparencyExternal;
         else
             return false;
 
@@ -44,8 +41,7 @@ namespace achilles::CascadeTest {
 void RunCascade(const std::string &runcard);
 
 void InitCrossSection(Event&, PID, double, double, Nucleus*);
-void InitTransparency(Event&, PID, double, Nucleus*);
-void InitTransparencyExternal(Event&, PID, double, Nucleus*);
+void InitTransparency(Event&, PID, double, Nucleus*, bool external=false);
 
 class CascadeRunner {
   public:
