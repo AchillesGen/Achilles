@@ -146,7 +146,7 @@ if(ACHILLES_ENABLE_CASCADE_TEST)
     add_executable(achilles-cascade CascadeMain.cc RunCascade.cc)
     # TODO: Refactor the event_gen library to pull pieces unused by the cascade executable
     target_link_libraries(achilles-cascade PRIVATE project_warnings
-                                         PUBLIC event_gen docopt::docopt)
+                                         PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
