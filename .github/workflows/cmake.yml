@@ -91,7 +91,7 @@ jobs:
       run: ./test/achilles-fortran-testsuite
      
     - name: Code coverage
-      if: ${{ matrix.config.name == "Ubuntu Latest GCC" }}
+      if: ${{ matrix.config.cxx == 'g++' }}
       working-directory: ${{ github.workspace }}
       run: |
         lcov --directory . --capture --output-file coverage.info
