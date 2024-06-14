@@ -1,0 +1,35 @@
+name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - jxi24
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        If you have issues with compilation, please fill out a
+        compilation issues report. This form is for handling 
+        issues with running the code.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "A bug happened!"
+    validations:
+      required: true
+  - type: textarea
+    id: run-card
+    attributes:
+      label: Run card to reproduce
+      description: Please copy and paste your run card here. This will be automatically formatted into code, so no need for backticks.
+      render: yaml
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log information
+      description: Please copy and paste the relevant information from the log file here. This will be automatically formatted into code, so no need for backticks.
+      render: shell
