@@ -17,13 +17,11 @@ namespace fmt {
 
 template<>
 struct formatter<achilles::nuclear_pair> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::nuclear_pair &npair, FormatContext &ctx) {
+    auto format(const achilles::nuclear_pair &npair, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "[{}] -> [{}]",
                          join(npair.first.begin(), npair.first.end(), ", "),
                          join(npair.second.begin(), npair.second.end(), ", "));
@@ -32,13 +30,11 @@ struct formatter<achilles::nuclear_pair> {
 
 template<>
 struct formatter<achilles::nuclear_map> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext &ctx) {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }
 
-    template<typename FormatContext>
-    auto format(const achilles::nuclear_map &nmap, FormatContext &ctx) {
+    auto format(const achilles::nuclear_map &nmap, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "{{{}}}", join(nmap.begin(), nmap.end(), ", ")); 
     }
 };
@@ -74,6 +70,21 @@ struct Process_Info {
     }
 };
 
+}
+
+namespace fmt {
+
+template<>
+struct formatter<achilles::Process_Info> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::Process_Info &info, format_context &ctx) const -> format_context::iterator {
+        return format_to(ctx.out(), "Process_Info({}, PIDs = [{}], States = [{}])",
+                         info.m_model, fmt::join(info.m_ids.begin(), info.m_ids.end(), ", "), info.m_states);
+    }
+};
 }
 
 namespace YAML {

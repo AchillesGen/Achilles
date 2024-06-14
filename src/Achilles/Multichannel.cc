@@ -66,7 +66,7 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
 }
 
 void achilles::MultiChannel::PrintIteration() const {
-    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
             summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-            summary.Result().Mean(), summary.Result().Error()) << std::endl;
+            summary.Result().Mean(), summary.Result().Error());
 }

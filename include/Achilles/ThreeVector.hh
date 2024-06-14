@@ -336,4 +336,29 @@ ThreeVector operator*(const double&, const ThreeVector&) noexcept;
 
 }
 
+template<> struct fmt::formatter<achilles::ThreeVector> {
+    char presentation = 'e';
+    constexpr auto parse(format_parse_context& ctx) -> format_parse_context::iterator {
+        // Parse the presentation format and store it in the formatter:
+        auto it = ctx.begin(), end = ctx.end();
+        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+        // Check if reached the end of the range:
+        if(it != end && *it != '}')
+            throw format_error("Invalid format");
+
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    auto format(const achilles::ThreeVector& p, format_context& ctx) const -> format_context::iterator {
+        // ctx.out() is an output iterator to write to
+        return format_to(
+                ctx.out(),
+                presentation == 'f' ? "ThreeVector({:.8f}, {:.8f}, {:.8f})"
+                                    : "ThreeVector({:.8e}, {:.8e}, {:.8e})",
+                p.Px(), p.Py(), p.Pz());
+    }
+};
+
 #endif // end of include guard: THREEVECTOR_HH

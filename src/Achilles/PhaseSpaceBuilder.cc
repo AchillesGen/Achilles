@@ -24,6 +24,8 @@ PSBuilder& PSBuilder::Hadron(const std::string &mode, const std::vector<double> 
 }
 
 PSBuilder& PSBuilder::FinalState(const std::string &channel, const std::vector<double> &masses2) {
+    if(m_nlep != m_nhad && m_nlep != 2)
+        throw std::runtime_error("Achilles: Builtin final state can only handle 2->2 processes");
     phase_space->main = PSFactory<FinalStateMapper, std::vector<double>>::Build(channel, masses2);
     return *this;
 }

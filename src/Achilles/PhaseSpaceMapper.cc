@@ -54,11 +54,13 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
     swap(rans, hbeamRans);
 
     // Debugging
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
     spdlog::trace("  Lepton Beam Weight = {}", lwgt);
     spdlog::trace("  Hadron Beam Weight = {}", hwgt);
     spdlog::trace("  Phase Space Weight = {}", mwgt);
     spdlog::trace("  Weight = {}", wgt);
+#endif
 
     return wgt;
 }

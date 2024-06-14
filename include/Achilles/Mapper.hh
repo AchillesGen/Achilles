@@ -12,6 +12,8 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
+#include "Achilles/YAML/Beams.hh"
+
 namespace achilles {
 
 template<typename T>
@@ -53,6 +55,7 @@ class Mapper {
         double Smin() const {
             double smin = 0;
             for(const auto &mass : Masses()) {
+                spdlog::trace("Add mass {}", mass);
                 smin += sqrt(mass);
             }
             return smin*smin;

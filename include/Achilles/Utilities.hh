@@ -47,16 +47,16 @@ inline unsigned int Log2(unsigned int val) {
 }
 
 template<class ContainerT>
-void tokenize(const std::string& str, ContainerT& tokens,
-              const std::string& delimiters=" \n\t", bool trimEmpty=true) {
-    std::string::size_type lastPos = 0, length = str.length();
+void tokenize(const std::string_view& str, ContainerT& tokens,
+              const std::string_view& delimiters=" \n\t", bool trimEmpty=true) {
+    std::string_view::size_type lastPos = 0, length = str.length();
     
     using value_type = typename ContainerT::value_type;
     using size_type = typename ContainerT::size_type;
 
     while(lastPos < length+1) {
-        std::string::size_type pos = str.find_first_of(delimiters, lastPos);
-        if(pos == std::string::npos) pos = length;
+        std::string_view::size_type pos = str.find_first_of(delimiters, lastPos);
+        if(pos == std::string_view::npos) pos = length;
 
         if(pos != lastPos || !trimEmpty) {
             tokens.push_back(value_type(str.data()+lastPos,
@@ -66,8 +66,11 @@ void tokenize(const std::string& str, ContainerT& tokens,
     }
 }
 
-class FourVector;
+constexpr int LeviCivita(const int i, const int j, const int k, const int l) {
+    return (i==j||i==k||i==l||j==k||j==l||k==l) ? 0 : (i-j)*(i-k)*(i-l)*(j-k)*(j-l)*(k-l)/12;
+}
 
+class FourVector;
 bool CheckMasses(const std::vector<achilles::FourVector>&, const std::vector<double>&, double=1e-8);
 
 const std::array<double, 3> ToCartesian(const std::array<double, 3>& vec);
@@ -223,6 +226,67 @@ constexpr bool IsZero(const T &x, const T &tol) {
 template<typename T>
 T Sign(const T &a) {
   return a > 0 ? 1 : ( a < 0 ? -1 : 0 );
+}
+
+// From arxiv:2201.01678
+inline double Li2(double x) {
+    static constexpr std::array<double, 6> p{
+            0.9999999999999999502e+0,
+            -2.6883926818565423430e+0,
+            2.6477222699473109692e+0,
+            -1.1538559607887416355e+0,
+            2.0886077795020607837e-1,
+            -1.0859777134152463084e-2
+    };
+    static constexpr std::array<double, 7> q{
+            1.0000000000000000000e+0,
+            -2.9383926818565635485e+0,
+            3.2712093293018635389e+0,
+            -1.7076702173954289421e+0,
+            4.1596017228400603836e-1,
+            -3.9801343754084482956e-2,
+            8.2743668974466659035e-4
+    };
+    static constexpr double ZETA2 = M_PI*M_PI/6;
+    double result{};
+    double sign=1;
+
+    if(x < -1) {
+        result += log(1-x)*(0.5*log(1-x)-log(-x))-ZETA2;
+        x = 1/(1-x);
+    } else if(x == -1) {
+        return -ZETA2;
+    } else if(x < 0) {
+        sign = -1;
+        result += -1./2*ipow(log(1-x), 2);
+        x = x/(x-1);
+    } else if(x == 0) {
+        return 0;
+    } else if(x < 0.5) {
+        sign = 1;
+    } else if(x == 0.5) {
+        return ZETA2/2 - ipow(log(2), 2)/2;
+    } else if(x < 1) {
+        result += ZETA2 - log(x)*log(1-x);
+        x = 1-x;
+        sign = -1;
+    } else if(x == 1) {
+        return ZETA2;
+    } else if(x < 2) {
+        result += ZETA2 - log(x)*(log(1-1/x)+1./2*log(x));
+        x = 1-1/x;
+    } else if(x == 2) {
+        return M_PI*M_PI/4;
+    } else {
+        sign = -1;
+        result += ZETA2*2-1./2*ipow(log(x), 2);
+    }
+
+    double x2 = x*x;
+    double x4 = x2*x2;
+    double num = p[0]+p[1]*x+(p[2]+p[3]*x)*x2+(p[4]+p[5]*x)*x4;
+    double den = q[0]+q[1]*x+(q[2]+q[2]*x)*x2+(q[4]+q[5]*x+q[6]*x2)*x4;
+    return result + sign*x*num/den;
 }
 
 }
