@@ -87,12 +87,12 @@ TEST_CASE("I/O", "[Particle]") {
 }
 
 TEST_CASE("Closest Approach", "[Particle]") {
-    achilles::Particle part1(achilles::PID::proton(), {1, 0, 0, 1.0 / achilles::Constant::C});
+    achilles::Particle part1(achilles::PID::proton(), {1, 0, 0, 1.0 / achilles::Constant::HBARC});
     achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
 
     auto time = achilles::ClosestApproach(part1, part2);
     CHECK(time == Approx(1.0));
 
-    part1.Propagate(time / achilles::Constant::HBAR);
+    part1.Propagate(time);
     CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});
 }
