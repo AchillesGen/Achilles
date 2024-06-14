@@ -89,6 +89,15 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom, 
 
 CascadeRunner::CascadeRunner(const std::string &runcard) {
     auto config = YAML::LoadFile(runcard);
+    // Read momentum range to run over
+    m_mom_range = config["KickMomentum"].as<std::pair<double, double>>();
+    if(m_mom_range.first < 0.0) {
+        throw std::runtime_error("Achilles: Momentum range must be positive");
+    }
+    if(m_mom_range.first >= m_mom_range.second) {
+        throw std::runtime_error("Achilles: Momentum range must be increasing and non-zero");
+    }
+
     // Initialize cascade
     m_mode = config["Cascade"]["Mode"].as<CascadeMode>();
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Mode"].as<std::string>());
@@ -155,6 +164,8 @@ void CascadeRunner::GenerateEvent(double mom) {
             m_cascade.SetKicked(i);
         }
     }
+    // Scale event weight by momentum range
+    event.Weight() *= (m_mom_range.second - m_mom_range.first);
 
     // Cascade
     m_cascade.Evolve(event, m_nuc.get());
@@ -174,6 +185,18 @@ void CascadeRunner::GenerateEvent(double mom) {
     m_writer->Write(event);
 }
 
+void achilles::CascadeTest::CascadeRunner::run() {
+    fmt::print("Cascade running in {} mode\n", ToString(m_mode));
+    fmt::print("  Generating {} events in range [{}, {}] MeV\n", requested_events,
+               m_mom_range.first, m_mom_range.second);
+
+    // Generate events
+    while(NeedsEvents()) {
+        auto current_mom = Random::Instance().Uniform(m_mom_range.first, m_mom_range.second);
+        GenerateEvent(current_mom);
+    }
+}
+
 void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     auto config = YAML::LoadFile(runcard);
     auto seed = static_cast<unsigned int>(
@@ -182,20 +205,7 @@ void achilles::CascadeTest::RunCascade(const std::string &runcard) {
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
-    if(kick_mom.size() != 2) {
-        throw std::runtime_error("CascadeRunner: KickMomentum must have 2 values: min, max");
-    }
-
     // Initialize CascadeRunner
     CascadeTest::CascadeRunner generator(runcard);
-
-    // Generate events
-    auto nevents = config["NEvents"].as<size_t>();
-    fmt::print("Cascade running in {} mode\n", config["Cascade"]["Mode"].as<std::string>());
-    fmt::print("  Generating {} events in range [{}, {}] MeV\n", nevents, kick_mom[0], kick_mom[1]);
-    while(generator.NeedsEvents()) {
-        auto current_mom = Random::Instance().Uniform(kick_mom[0], kick_mom[1]);
-        generator.GenerateEvent(current_mom);
-    }
+    generator.run();
 }
