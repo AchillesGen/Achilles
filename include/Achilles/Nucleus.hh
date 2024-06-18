@@ -38,7 +38,7 @@ class Nucleus {
     struct FermiGas {
         FermiGasType type{FermiGasType::Local};
         bool correlated = false;
-        double SRCfraction{0}, lambdaSRC{2.75};
+        double SRCfraction{0.2}, lambdaSRC{2.75};
     };
 
     /// @name Constructors and Destructors
@@ -251,7 +251,7 @@ template <> struct convert<achilles::Nucleus::FermiGas> {
 
         if(node["Correlated"]) fg.correlated = node["Correlated"].as<bool>();
         if(fg.correlated) {
-            if(node["SRCfraction"]) fg.SRCfraction = node["SRCFraction"].as<double>();
+            if(node["SRCfraction"]) fg.SRCfraction = node["SRCfraction"].as<double>();
             if(node["LambdaSRC"]) fg.lambdaSRC = node["LambdaSRC"].as<double>();
         }
 
