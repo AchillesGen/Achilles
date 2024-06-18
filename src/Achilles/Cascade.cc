@@ -672,20 +672,29 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     Particle final_nucleon1;
     Particle final_nucleon2;
 
-    // Look for a previous pi-N elastic scattering
+    int initial_charge = 0;
+    int final_charge = 0;
+
+    // Look for a previous pi-N Elastic or CE scattering
     auto node = event.History().FindNodeOut(particle1);
     if(node == nullptr || !node->IsCascade() || node->ParticlesOut().size() != 2) return false;
 
+    bool CE=false;
+    bool elastic=false;
+
+    bool init_pion = false;
+    bool init_nuc = false;
+    bool out_nuc = false;
     // These are in initial particles of the previous pi-N scattering
     for(auto &in_part : node->ParticlesIn()) {
         if(in_part.Info().IsNucleon()) {
-            // This is needed to ensure that the interaction was elastic
+            // Found initial nucleon1
             incoming_nucleon1 = in_part;
+            init_nuc = true;
         } else if(in_part.Info().IsPion()) {
-            // Check if the intermediate pion PID is the same as the initial pion PID
-            if(in_part.ID() != particle1.ID()) return false;
             // Found initial pion
             initial_pion = in_part;
+            init_pion = true;
         }
     }
 
@@ -694,31 +703,55 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     // This nucleon is the final nucleon1
     for(auto &out_part : node->ParticlesOut()) {
         if(out_part.Info().IsNucleon()) {
-            // Check if initial nucleon 1 and final nucleon 1 have same PID
-            if(out_part.ID() != incoming_nucleon1.ID()) return false;
             // Found final nucleon 1
             final_nucleon1 = out_part;
+            out_nuc = true;
+            if(final_nucleon1.ID() == incoming_nucleon1.ID())
+                elastic = true;
+            else
+                CE = true;
         }
     }
 
+    // Makes sure that the we had pi-N -> pi-N 
+    if(!(init_pion && init_nuc && out_nuc)) return false;
+
     auto abs_prob = 1.0;
     if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
+
+    if(CE) {
+        //We charge exchanged the 1st interaction
+        final_nucleon2 = particle2;
+    }
+
+    if(elastic) {
+        //We need to charge exchange the 2nd interaction 
+        if (particle2.ID() == PID::proton())
+            final_nucleon2 = {PID::neutron(), particle2.Momentum(), particle2.Position()};
+        if (particle2.ID() == PID::neutron())
+            final_nucleon2 = {PID::proton(), particle2.Momentum(), particle2.Position()};
+    }
+
+    // Add up initial and final charges 
+    initial_charge = initial_pion.Info().IntCharge() + incoming_nucleon1.Info().IntCharge() + particle2.Info().IntCharge();
+    final_charge = final_nucleon1.Info().IntCharge() + final_nucleon2.Info().IntCharge();
+
+    if(initial_charge != final_charge) return false;
     
     // Let's absorb the pion!
     // First let's get the momentum of the incoming pion for the current interaction
     auto combined_momentum = particle1.Momentum().Vec3() + particle2.Momentum().Vec3();
 
     // Now let's reset the past node and fill it with our initial system positions
-    auto new_average_position = (initial_pion.Position() + incoming_nucleon1.Position() + particle2.Position())/3.0;
+    auto new_average_position = (initial_pion.Position() + incoming_nucleon1.Position() + final_nucleon2.Position())/3.0;
     
-    final_nucleon2 = particle2;
-    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(particle2.Mass(), 2) + combined_momentum.Magnitude2())};
+    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(final_nucleon2.Mass(), 2) + combined_momentum.Magnitude2())};
 
     final_nucleon2.Status() = ParticleStatus::propagating;
 
     // TODO : Do we need pauli blocking for absorption?
     // Check for Pauli Blocking
-    // if(!PauliBlocking(final_nucleon2) || !PauliBlocking(*final_nucleon1)) return false;
+     //if(!PauliBlocking(final_nucleon2) || !PauliBlocking(final_nucleon1)) return false;
 
     particles.push_back(final_nucleon2);
     node->ResetParticles();
