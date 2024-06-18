@@ -154,7 +154,7 @@ void CascadeRunner::GenerateEvent(double mom) {
             InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc.get());
             break; 
         case CascadeMode::Transparency:
-            InitTransparency(event, m_pid, mom, m_nuc.get(), m_params["external"]);
+            InitTransparency(event, m_pid, mom, m_nuc.get(), static_cast<bool>(m_params["external"]));
             break;
     }
     // Set kicked indices
