@@ -84,8 +84,6 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     MAKE_CONST_MOCK0(NProtons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(NNeutrons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(GetPotential, std::shared_ptr<achilles::Potential>(), noexcept override);
-    MAKE_CONST_MOCK0(ProtonsIDs, std::vector<size_t>(), noexcept override);
-    MAKE_CONST_MOCK0(NeutronsIDs, std::vector<size_t>(), noexcept override);
 };
 
 class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearModel> {

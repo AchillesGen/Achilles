@@ -391,7 +391,7 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
 
 void Cascade::Propagate(size_t idx, Particle *kickNuc) {
     if(m_potential_prop) {
-        integrators[idx].Step<2>(timeStep);
+        integrators[idx].Step<2>(localTimeStep);
         double energy = sqrt(pow(kickNuc->Info().Mass(), 2) + integrators[idx].P().P2());
         FourVector mom{integrators[idx].P(), energy};
         kickNuc->SetMomentum(mom);

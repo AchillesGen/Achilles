@@ -194,6 +194,8 @@ class Nucleus {
 
     double SampleMagnitudeMomentum(const double &position, const PID &) noexcept;
 
+    double SampleMagnitudeMomentum(const double &position) noexcept;
+
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
     const std::string ToString() const noexcept;
