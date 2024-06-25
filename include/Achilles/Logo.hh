@@ -1,9 +1,9 @@
 #pragma once
 
+#include "Achilles/Logging.hh"
 #include "Achilles/Version.hh"
 #include "fmt/core.h"
 #include "git.h"
-#include "Achilles/Logging.hh"
 
 inline void Splash() {
     fmt::print(R"splash(

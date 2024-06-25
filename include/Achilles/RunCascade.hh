@@ -18,8 +18,10 @@ enum class CascadeMode {
 
 inline std::string ToString(CascadeMode mode) {
     switch(mode) {
-        case CascadeMode::CrossSection: return "CrossSection"; 
-        case CascadeMode::Transparency: return "Transparency";
+    case CascadeMode::CrossSection:
+        return "CrossSection";
+    case CascadeMode::Transparency:
+        return "Transparency";
     }
     return "Unknown";
 }
@@ -48,8 +50,8 @@ namespace achilles::CascadeTest {
 
 void RunCascade(const std::string &runcard);
 
-void InitCrossSection(Event&, PID, double, double, Nucleus*);
-void InitTransparency(Event&, PID, double, Nucleus*, bool external=false);
+void InitCrossSection(Event &, PID, double, double, Nucleus *);
+void InitTransparency(Event &, PID, double, Nucleus *, bool external = false);
 
 class CascadeRunner {
   public:

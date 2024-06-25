@@ -91,8 +91,8 @@ class MBAmplitudes {
     const static int twoJmax = 9;
     std::complex<double> A_LJI[maxMBchan][maxMBchan][Wmax][Lmax + 1][2][2] = {{{{{{0.}}}}}};
 
-    double CGcof[maxMBchan][2][5][5] = {{{{
-        0.}}}}; // (I_3^{m}, I_3^{b}; Im, Ib | I , I_3) = CGcof[ichan][I-1/2][2I_3^m + 2][2I_3^b + 2]
+    double CGcof[maxMBchan][2][5][5] = {{{{0.}}}}; // (I_3^{m}, I_3^{b}; Im, Ib | I , I_3) =
+                                                   // CGcof[ichan][I-1/2][2I_3^m + 2][2I_3^b + 2]
 
     // Information for 'physical' (charge state) channels
     // These are numbered as in initchannels make
@@ -100,7 +100,7 @@ class MBAmplitudes {
 
     int nCchan = 0;
 
-    //int cC0_MBchannels[maxMBchan] = {0, 6, 8, 10};
+    // int cC0_MBchannels[maxMBchan] = {0, 6, 8, 10};
     int MBchan_Cchan[maxchannels];
     int twoIm_Cchan[maxchannels];
     int twoIb_Cchan[maxchannels];
@@ -120,8 +120,8 @@ class MBAmplitudes {
         A_Legendre; // Expansion coefficients of legendre polynomials
 
     // For angular distributions, expansion coefficients of H and G as polynomials
-    double H_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {{{
-        0.}}}; // H = P_n(x) * P_m(x)  = \sum a_k x^k, the coefficients a_k are H_poly[n][m]  saved
+    double H_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {
+        {{0.}}}; // H = P_n(x) * P_m(x)  = \sum a_k x^k, the coefficients a_k are H_poly[n][m] saved
 
     double G_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {{{0.}}}; // G = (1-x**2) P'_n(x) P'_m(x)
 };

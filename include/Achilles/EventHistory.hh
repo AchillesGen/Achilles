@@ -41,13 +41,12 @@ class EventHistoryNode {
         : m_idx{idx}, m_position{position}, m_status{status} {}
     EventHistoryNode(const EventHistoryNode &) = default;
     void AddIncoming(const Particle &part) { m_particles_in.push_back(part); }
-    void AddOutgoing(const Particle &part) { m_particles_out.push_back(part); }    
+    void AddOutgoing(const Particle &part) { m_particles_out.push_back(part); }
     void ResetParticles() {
-        m_particles_in.clear(); m_particles_out.clear(); 
+        m_particles_in.clear();
+        m_particles_out.clear();
     }
-    void SetPosition(const ThreeVector &position) {
-        m_position = position;
-    }
+    void SetPosition(const ThreeVector &position) { m_position = position; }
 
     // Status functions
     StatusCode &Status() { return m_status; }
@@ -114,8 +113,8 @@ class EventHistory {
     EventHistory() = default;
     EventHistory(const EventHistory &);
     EventHistory &operator=(const EventHistory &);
-    void AddVertex(ThreeVector position, const Particles &in = {},
-                   const Particles &out = {}, StatusCode status = StatusCode::cascade);
+    void AddVertex(ThreeVector position, const Particles &in = {}, const Particles &out = {},
+                   StatusCode status = StatusCode::cascade);
     void AddParticleIn(size_t idx, const Particle &part);
     void AddParticleOut(size_t idx, const Particle &part);
     void InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,

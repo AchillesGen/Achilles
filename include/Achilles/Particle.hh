@@ -344,7 +344,8 @@ template <> struct formatter<std::reference_wrapper<achilles::Particle>> {
     template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const std::reference_wrapper<achilles::Particle> &particle, FormatContext &ctx) const {
+    auto format(const std::reference_wrapper<achilles::Particle> &particle,
+                FormatContext &ctx) const {
         return format_to(ctx.out(), "{}", particle.get());
     }
 };

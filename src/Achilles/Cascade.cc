@@ -586,11 +586,12 @@ std::size_t Cascade::Interacted(const Particles &particles, const Particle &kick
     return SIZE_MAX;
 }
 
-void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, size_t idx2) noexcept {
+void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
+                               size_t idx2) noexcept {
     Particle &particle1 = particles[idx1];
     Particle &particle2 = particles[idx2];
 
-    if (Absorption(event, particle1, particle2)) return;
+    if(Absorption(event, particle1, particle2)) return;
 
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
     auto modes = m_interactions.CrossSection(particle1, particle2);
@@ -610,7 +611,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, 
         Particles initial_part, final_part;
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
-        initial_part.push_back(particle1); 
+        initial_part.push_back(particle1);
         initial_part.push_back(particle2);
 
         // Ensure outgoing particles are propagating and add to list of particles in event
@@ -627,14 +628,16 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1, 
             //     if(particles[i].Status() != ParticleStatus::background) continue;
             //     double closest = ClosestApproach(part, particles[i]);
             //     spdlog::trace("Closest approach time({}) = {}", i, closest+currentTime);
-            //     if(closest > 0) { m_time_steps.push({closest+currentTime, {particles.size()-1, i}}); }
+            //     if(closest > 0) { m_time_steps.push({closest+currentTime, {particles.size()-1,
+            //     i}}); }
             // }
         }
 
         // Add interaction to the event history
         // What do we use for the position? (How about average positions?)
-        auto average_position = (particle1.Position() + particle2.Position())/2.0;
-        event.History().AddVertex(average_position, initial_part, final_part, EventHistory::StatusCode::cascade);
+        auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
+        event.History().AddVertex(average_position, initial_part, final_part,
+                                  EventHistory::StatusCode::cascade);
     }
 }
 
@@ -680,8 +683,8 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     auto node = event.History().FindNodeOut(particle1);
     if(node == nullptr || !node->IsCascade() || node->ParticlesOut().size() != 2) return false;
 
-    bool CE=false;
-    bool elastic=false;
+    bool CE = false;
+    bool elastic = false;
 
     bool init_pion = false;
     bool init_nuc = false;
@@ -714,45 +717,48 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
         }
     }
 
-    // Makes sure that the we had pi-N -> pi-N 
+    // Makes sure that the we had pi-N -> pi-N
     if(!(init_pion && init_nuc && out_nuc)) return false;
 
     auto abs_prob = 1.0;
     if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
 
     if(CE) {
-        //We charge exchanged the 1st interaction
+        // We charge exchanged the 1st interaction
         final_nucleon2 = particle2;
     }
 
     if(elastic) {
-        //We need to charge exchange the 2nd interaction 
-        if (particle2.ID() == PID::proton())
+        // We need to charge exchange the 2nd interaction
+        if(particle2.ID() == PID::proton())
             final_nucleon2 = {PID::neutron(), particle2.Momentum(), particle2.Position()};
-        if (particle2.ID() == PID::neutron())
+        if(particle2.ID() == PID::neutron())
             final_nucleon2 = {PID::proton(), particle2.Momentum(), particle2.Position()};
     }
 
-    // Add up initial and final charges 
-    initial_charge = initial_pion.Info().IntCharge() + incoming_nucleon1.Info().IntCharge() + particle2.Info().IntCharge();
+    // Add up initial and final charges
+    initial_charge = initial_pion.Info().IntCharge() + incoming_nucleon1.Info().IntCharge() +
+                     particle2.Info().IntCharge();
     final_charge = final_nucleon1.Info().IntCharge() + final_nucleon2.Info().IntCharge();
 
     if(initial_charge != final_charge) return false;
-    
+
     // Let's absorb the pion!
     // First let's get the momentum of the incoming pion for the current interaction
     auto combined_momentum = particle1.Momentum().Vec3() + particle2.Momentum().Vec3();
 
     // Now let's reset the past node and fill it with our initial system positions
-    auto new_average_position = (initial_pion.Position() + incoming_nucleon1.Position() + final_nucleon2.Position())/3.0;
-    
-    final_nucleon2.Momentum() = {combined_momentum, sqrt(pow(final_nucleon2.Mass(), 2) + combined_momentum.Magnitude2())};
+    auto new_average_position =
+        (initial_pion.Position() + incoming_nucleon1.Position() + final_nucleon2.Position()) / 3.0;
+
+    final_nucleon2.Momentum() = {
+        combined_momentum, sqrt(pow(final_nucleon2.Mass(), 2) + combined_momentum.Magnitude2())};
 
     final_nucleon2.Status() = ParticleStatus::propagating;
 
     // TODO : Do we need pauli blocking for absorption?
     // Check for Pauli Blocking
-     //if(!PauliBlocking(final_nucleon2) || !PauliBlocking(final_nucleon1)) return false;
+    // if(!PauliBlocking(final_nucleon2) || !PauliBlocking(final_nucleon1)) return false;
 
     particles.push_back(final_nucleon2);
     node->ResetParticles();

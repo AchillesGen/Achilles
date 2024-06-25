@@ -133,11 +133,11 @@ double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
     // NOTE: To sample on a sphere, need to take a cube-root.
     double kf = FermiMomentum(position);
     if(fermi_gas.correlated) {
-        if (Random::Instance().Uniform(0.0,1.0) > fermi_gas.SRCfraction){ 
+        if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
             return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
-        }else{
+        } else {
             double x = Random::Instance().Uniform(0.0, 1.0);
-            return kf / (1. + 1./fermi_gas.lambdaSRC - x);
+            return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
         }
     }
     return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));

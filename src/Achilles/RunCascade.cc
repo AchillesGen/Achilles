@@ -2,10 +2,10 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventHistory.hh"
+#include "Achilles/EventWriter.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
-#include "Achilles/EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
@@ -23,7 +23,8 @@
 
 using achilles::CascadeTest::CascadeRunner;
 
-void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, double radius, Nucleus *nuc) {
+void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, double radius,
+                                             Nucleus *nuc) {
     // Generate a point in the beam of a given radius
     std::array<double, 2> beam_spot;
     auto beam_r = radius * std::sqrt(Random::Instance().Uniform(0.0, 1.0));
@@ -47,14 +48,15 @@ void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, 
     event.Hadrons().push_back(testPart);
 }
 
-void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom, Nucleus *nuc, bool external) {
+void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom, Nucleus *nuc,
+                                             bool external) {
     double costheta = Random::Instance().Uniform(-1.0, 1.0);
     double sintheta = sqrt(1 - costheta * costheta);
     double phi = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     std::vector<FourVector> momdummy = {};
     event = Event(nuc, momdummy, 1.);
-    event.Weight() = 1.0/1000.0; // Only care about percentage, so remove factor of nb_to_pb
+    event.Weight() = 1.0 / 1000.0; // Only care about percentage, so remove factor of nb_to_pb
 
     // Randomly select a particle from the nucleus
     size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
@@ -70,7 +72,8 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom, 
     } else {
         ThreeVector position = event.Hadrons()[idx].Position();
 
-        // Rotate to some other spot on the sphere so that it is not always on top of another nucleon
+        // Rotate to some other spot on the sphere so that it is not always on top of another
+        // nucleon
         double rth = M_PI * Random::Instance().Uniform(0., 1.);
         double rph = 2. * M_PI * Random::Instance().Uniform(0., 1.);
         position = {position.Px() * sin(rth) * cos(rph), position.Py() * sin(rth) * sin(rph),
@@ -150,12 +153,12 @@ void CascadeRunner::GenerateEvent(double mom) {
     // Generate a point based on the run mode
     Event event;
     switch(m_mode) {
-        case CascadeMode::CrossSection:
-            InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc.get());
-            break; 
-        case CascadeMode::Transparency:
-            InitTransparency(event, m_pid, mom, m_nuc.get(), static_cast<bool>(m_params["external"]));
-            break;
+    case CascadeMode::CrossSection:
+        InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc.get());
+        break;
+    case CascadeMode::Transparency:
+        InitTransparency(event, m_pid, mom, m_nuc.get(), static_cast<bool>(m_params["external"]));
+        break;
     }
     // Set kicked indices
     for(size_t i = 0; i < event.Hadrons().size(); ++i) {

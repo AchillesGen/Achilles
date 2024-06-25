@@ -7,9 +7,9 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
-#include "Achilles/ParticleInfo.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"

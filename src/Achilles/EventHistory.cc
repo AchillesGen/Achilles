@@ -22,11 +22,11 @@ EventHistory &EventHistory::operator=(const EventHistory &other) {
     return *this;
 }
 
-void EventHistory::AddVertex(ThreeVector position, const Particles &in,
-                             const Particles &out, StatusCode status) {
+void EventHistory::AddVertex(ThreeVector position, const Particles &in, const Particles &out,
+                             StatusCode status) {
     m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, status));
-    for(auto &part : in) { AddParticleIn(m_history.size()-1, part); }
-    for(auto &part : out) { AddParticleOut(m_history.size()-1, part); }
+    for(auto &part : in) { AddParticleIn(m_history.size() - 1, part); }
+    for(auto &part : out) { AddParticleOut(m_history.size() - 1, part); }
 }
 
 void EventHistory::AddParticleIn(size_t idx, const Particle &part) {
@@ -150,9 +150,7 @@ void EventHistory::UpdatePrevNode(const Particle &part) {
     auto node = FindNodeOut(part);
     if(!node) return;
     for(auto &outgoing : node->ParticlesOut()) {
-        if(comp(outgoing)) {
-            outgoing = part;
-        }
+        if(comp(outgoing)) { outgoing = part; }
     }
 }
 

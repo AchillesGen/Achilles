@@ -1,6 +1,6 @@
 #include "Achilles/Logging.hh"
-#include "Achilles/RunCascade.hh"
 #include "Achilles/Logo.hh"
+#include "Achilles/RunCascade.hh"
 #include "Achilles/Version.hh"
 
 #include "docopt.h"
