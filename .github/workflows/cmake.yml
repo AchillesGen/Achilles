@@ -14,60 +14,71 @@ jobs:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    # TODO: Get build matrix working for MacOS
+    strategy:
+      matrix:
+        config:
+          - {
+              name: "Ubuntu Latest GCC",
+              os: ubuntu-latest,
+              cc: "gcc", cxx: "g++",
+              coverage: "ON"
+            }
+          - {
+              name: "Ubuntu Latest Clang",
+              os: ubuntu-latest,
+              cc: "clang", cxx: "clang++",
+              coverage: "OFF"
+            }
 
-    # TODO: Get build matrix working
-    # name: ${{ matrix.config.name }}
-    # runs-on: ${{ matrix.config.os }}
-    # strategy:
-    #   matrix:
-    #     config:
-    #       - {
-    #           name: "Ubuntu Latest GCC", artifact: "Linux.tar.bz2",
-    #           os: ubuntu-latest,
-    #           cc: "gcc", cxx: "g++"
-    #         }
-    #       - {
-    #           name: "macOS Latest Clang", artifact: "macOS.tar.bz2",
-    #           os: macos-latest,
-    #           cc: "clang", cxx: "clang++"
-    #         }
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
-      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov cmake && sudo pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
 
     - name: Set up cache
       id: cache-cpm
       uses: actions/cache@v4
       with:
-        path: "**/cpm_modules"
-        key: ${{ github.workflow }}-cpm-modules-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake') }}
+        path: ~/cpm-cache
+        key: ${{ matrix.config.name }}-cpm-${{ hashFiles('**/') }}
+        restore-keys: |
+          ${{ matrix.config.name }}-cpm-
 
     - name: ccache 
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        create-symlink: true
+        path: .ccache
+        key: ${{ matrix.config.name }}-ccache-${{ github.sha }}
+        restore-keys: |
+          ${{ matrix.config.name }}-ccache-
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON -DACHILLES_COVERAGE=ON -DACHILLES_ENABLE_SHERPA=OFF
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON -DACHILLES_COVERAGE=${{ matrix.config.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx}}
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j4
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Test C++
+      working-directory: ${{ github.workspace }}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ./test/achilles-testsuite
+
+    - name: Test Fotran
+      working-directory: ${{ github.workspace }}/build
+      run: ./test/achilles-fortran-testsuite
      
     - name: Code coverage
-      working-directory: ${{github.workspace}}
+      if: ${{ matrix.config.cxx == 'g++' }}
+      working-directory: ${{ github.workspace }}
       run: |
         lcov --directory . --capture --output-file coverage.info
         lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info

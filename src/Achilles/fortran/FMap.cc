@@ -14,7 +14,6 @@ void map_insert(std::map<std::string, double> *map, const char *key, double valu
 
 double map_lookup(std::map<std::string, double> *map, const char *key) {
     std::string skey(key);
-    for(auto &pair : *map) { printf("key: %s, value: %f\n", pair.first.c_str(), pair.second); }
     if(map->find(skey) == map->end()) {
         return 0.0;
     } else {

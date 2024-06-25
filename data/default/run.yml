@@ -1,0 +1,43 @@
+Main:
+  NEvents: 100000
+  HardCuts: true
+  Output:
+      Format: HepMC3
+      Name: electron_1300_37.hepmc
+      Zipped: True
+
+Process:
+  Model: DarkNeutrinoPortal_Dirac_UFO
+  Final States: [11]
+  ParamCard: parameters.dat
+
+Beams:
+  - Beam:
+      PID: 11
+      Beam Params:
+        Type: Monochromatic
+        Energy: 1300
+
+Cascade:
+  Run: False
+  Interaction:
+    Name: GeantInteractions
+    GeantData: data/GeantData.hdf5
+  Step: 0.04
+  Probability: Cylinder
+
+NuclearModel:
+  Model: QESpectral
+  FormFactorFile: "FormFactors.yml"
+  SpectralP: data/pke12_tot.data
+  SpectralN: data/pke12_tot.data
+  Ward: False
+
+Nucleus: !include "data/default/12C.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 11
+    range: [35, 39]
+
+Options: !include "data/default/OptionDefaults.yml"

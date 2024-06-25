@@ -11,6 +11,8 @@
 #include <string>
 #include <utility>
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
@@ -69,6 +71,9 @@ class PID {
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }
+    static constexpr PID sigma0() { return PID{3212}; }
+    static constexpr PID sigmam() { return PID{3222}; }
+    static constexpr PID lambda0() { return PID{3122}; }
     // Dummy hadron
     static constexpr PID dummyHadron() { return PID{2212}; }
     // Common Elements
@@ -82,6 +87,10 @@ class PID {
         os << pid.id;
         return os;
     }
+
+    // Ensure id matches the numbering scheme defined at:
+    // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
+    bool valid_nucleus() const;
 
   private:
     // Ensure id matches the numbering scheme defined at:
@@ -322,10 +331,11 @@ template <> struct convert<achilles::ParticleInfoEntry> {
 namespace fmt {
 
 template <> struct formatter<achilles::PID> {
-    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
 
-    template <typename FormatContext>
-    auto format(const achilles::PID &pid, FormatContext &ctx) const {
+    auto format(const achilles::PID &pid, format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(), "{}", pid.AsInt());
     }
 };

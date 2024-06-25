@@ -22,7 +22,7 @@ void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
     // 3. Momentum of all outgoing parts of the leptonic tensor
     // 4. Momentum of all outgoing hadrons
     // 5. Momentum of all spectators
-    momentum.resize(nleptons + nhadrons);
+    momentum.resize(nleptons + nhadrons + nspectators);
     lbeam->GeneratePoint(momentum, lbeamRans);
     hbeam->GeneratePoint(momentum, hbeamRans);
     main->GeneratePoint(momentum, mainRans);
@@ -54,11 +54,13 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
     swap(rans, hbeamRans);
 
     // Debugging
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
     spdlog::trace("  Lepton Beam Weight = {}", lwgt);
     spdlog::trace("  Hadron Beam Weight = {}", hwgt);
     spdlog::trace("  Phase Space Weight = {}", mwgt);
     spdlog::trace("  Weight = {}", wgt);
+#endif
 
     return wgt;
 }

@@ -111,6 +111,11 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
     const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
     const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
     const auto &momentum = event.Momentum();
+
+    spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx,
+                  had_out_end_idx, momentum.size());
+    spdlog::trace("{}", m_info);
+
     lep_in = momentum[0];
     had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
                                      momentum.begin() + static_cast<int>(hadron_end_idx));
@@ -140,7 +145,7 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
     for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
         had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
     }
-    for(size_t i = 0; i < spect.size(); ++i) {
+    for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
         spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
     }
 }
@@ -228,6 +233,7 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
 }
 
 void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
+    spdlog::trace("Setting up leptons");
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     auto &process = m_processes[process_idx.value_or(0)];
@@ -278,9 +284,10 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
     for(const auto &process_node : node["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
         auto infos = model->AllowedStates(process_info);
-        const auto unweight_name = node["Unweighting"]["Name"].as<std::string>();
+        const auto unweight_name = node["Options"]["Unweighting"]["Name"].as<std::string>();
         for(auto &info : infos) {
-            auto unweighter = UnweighterFactory::Initialize(unweight_name, node["Unweighting"]);
+            auto unweighter =
+                UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
             Process process(info, std::move(unweighter));
             process.SetID(model);
             const auto multiplicity = info.Multiplicity();
@@ -316,8 +323,8 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
 
     // TODO: Fix scaling to be consistent with Chili paper
     m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
-    if(config["Initialize"]["Accuracy"])
-        m_integrator.Parameters().rtol = config["Initialize"]["Accuracy"].as<double>();
+    if(config["Options"]["Initialize"]["Accuracy"])
+        m_integrator.Parameters().rtol = config["Options"]["Initialize"]["Accuracy"].as<double>();
 
     return true;
 }
@@ -342,13 +349,17 @@ void ProcessGroup::Optimize() {
     b_calc_weights = false;
     b_optimize = false;
 
+    std::ofstream outfile("Results.txt");
+
     // Store max weight and weight vector
     m_process_weights.resize(m_processes.size());
     for(size_t i = 0; i < m_processes.size(); ++i) {
         m_process_weights[i] = m_processes[i].MaxWeight();
         m_maxweight += m_process_weights[i];
         spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+        outfile << m_processes[i].TotalCrossSection() << std::endl;
     }
+    outfile.close();
     spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
@@ -372,7 +383,6 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     for(const auto &momentum : event.Momentum()) {
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
-
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     SetupLeptons(event, process_opt);

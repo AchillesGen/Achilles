@@ -1,6 +1,7 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Constants.hh"
 
+#include "Achilles/ParticleInfo.hh"
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
@@ -11,6 +12,9 @@ achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     if(coherent) coherent->Evaluate(Q2, results);
     if(resonancevector) resonancevector->Evaluate(Q2, results);
     if(resonanceaxial) resonanceaxial->Evaluate(Q2, results);
+    if(mecvector) mecvector->Evaluate(Q2, results);
+    if(mecaxial) mecaxial->Evaluate(Q2, results);
+    if(hyperon) hyperon->Evaluate(Q2, results);
     return results;
 }
 
@@ -61,6 +65,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDipole::Construct(achil
 void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.FA = -gan1 / pow(1.0 + Q2 / MA / MA, 2);
     result.FAs = -gans / pow(1.0 + Q2 / MA / MA, 2);
+    result.FAP = 2.0 * Constant::mN2 / (Q2 + pow(ParticleInfo(211).Mass(), 2)) * result.FA;
 }
 
 // Axial Z-Expansion Form Factor
@@ -258,4 +263,74 @@ void achilles::ResonanceDummyAxialFormFactor::Evaluate(double Q2,
                                                        FormFactor::Values &result) const {
     spdlog::trace("ResonanceDummyAxialFormFactor: Q2 = {}", Q2);
     result.FresA = resA;
+}
+
+// MEC Vector form factors
+achilles::MECVectorFormFactor::MECVectorFormFactor(const YAML::Node &config) {
+    MvSq = config["MvSq"].as<double>();
+    cv3norm = config["cv3norm"].as<double>();
+    cv4norm = config["cv4norm"].as<double>();
+    cv5norm = config["cv5norm"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::MECVectorFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<MECVectorFormFactor>(type);
+    return std::make_unique<MECVectorFormFactor>(node);
+}
+
+void achilles::MECVectorFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("MECVectorFormFactor: Q2 = {}", Q2);
+    result.FmecV3 = cv3norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 4. / MvSq) * sqrt(3. / 2.);
+    result.FmecV4 = cv4norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 4. / MvSq) * sqrt(3. / 2.);
+    result.FmecV5 = cv5norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 0.776 / MvSq) * sqrt(3. / 2.);
+    result.Fpiem = result.Gep - result.Gen;
+}
+
+// MEC Axial form factors
+achilles::MECAxialFormFactor::MECAxialFormFactor(const YAML::Node &config) {
+    MaDeltaSq = config["MaDeltaSq"].as<double>();
+    ca5norm = config["ca5norm"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::MECAxialFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<MECAxialFormFactor>(type);
+    return std::make_unique<MECAxialFormFactor>(node);
+}
+
+void achilles::MECAxialFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("MECAxialFormFactor: Q2 = {}", Q2);
+    result.FmecA5 =
+        ca5norm / pow(1. + Q2 / MaDeltaSq, 2) / (1. + Q2 / 3. / MaDeltaSq) * sqrt(3. / 2.);
+}
+
+// Hyperon form factors
+achilles::HyperonFormFactor::HyperonFormFactor(const YAML::Node &config) {
+    dummy = config["dummy"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::HyperonFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<HyperonFormFactor>(type);
+    return std::make_unique<HyperonFormFactor>(node);
+}
+
+void achilles::HyperonFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("HyperonFormFactor: Q2 = {}", Q2);
+
+    double x = 0.73;
+    double lambda_ratio = Constant::mlambda / (Constant::mlambda + Constant::mn);
+    double sigmam_ratio = Constant::msigmam / (Constant::msigmam + Constant::mn);
+    double sigma0_ratio = Constant::msigma0 / (Constant::msigma0 + Constant::mn);
+
+    result.F1lam = -sqrt(3. / 2.) * result.F1p;
+    result.F2lam = -sqrt(3. / 2.) * lambda_ratio * result.F2p;
+    result.FAlam = -sqrt(3. / 2.) * ((1. + 2. * x) / 3.) * result.FA;
+    result.F1sigm = -(result.F1p + 2 * result.F1n);
+    result.F2sigm = -sigmam_ratio * (result.F2p + 2. * result.F2n);
+    result.FAsigm = (1. - 2. * x) * result.FA;
+    result.F1sig0 = -(1. / sqrt(2.)) * (result.F1p + 2. * result.F1n);
+    result.F2sig0 = -sigma0_ratio * (1. / sqrt(2.)) * (result.F2p + 2. * result.F2n);
+    result.FAsig0 = (1. - 2. * x) * result.FA / sqrt(2.);
 }

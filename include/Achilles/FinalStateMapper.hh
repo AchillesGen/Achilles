@@ -1,13 +1,13 @@
 #ifndef LEPTONIC_MAPPER_HH
 #define LEPTONIC_MAPPER_HH
 
+#include "Achilles/Factory.hh"
 #include "Achilles/Mapper.hh"
-#include "Achilles/PhaseSpaceFactory.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
-#pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
+// #pragma GCC diagnostic ignored "-Wimplicit-float-conversion"
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
 #include "ATOOLS/Math/Vector.H"
 #pragma GCC diagnostic pop
@@ -32,7 +32,7 @@ class FinalStateMapper : public Mapper<FourVector> {
 };
 
 class TwoBodyMapper : public FinalStateMapper,
-                      RegistrablePS<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
+                      Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
   public:
     TwoBodyMapper(const std::vector<double> &m) : FinalStateMapper(2), s2{m[0]}, s3{m[1]} {}
     static std::string Name() { return "TwoBody"; }
@@ -60,7 +60,7 @@ class TwoBodyMapper : public FinalStateMapper,
 };
 
 class ThreeBodyMapper : public FinalStateMapper,
-                        RegistrablePS<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
+                        Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
   public:
     ThreeBodyMapper(const std::vector<double> &m)
         : FinalStateMapper(3), s2{m[0]}, s3{m[1]}, s4{m[2]} {}

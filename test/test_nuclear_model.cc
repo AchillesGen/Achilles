@@ -17,8 +17,18 @@ TEST_CASE("CoherentModel", "[NuclearModel]") {
 NuclearModel:
     Nucleus: 1000060120
 )config");
-    YAML::Node ff = YAML::Load("vector: dummy\naxial: dummy\ncoherent: dummy\n"
-                               "resonancevector: dummy\nresonanceaxial: dummy\ndummy: dummy2");
+    YAML::Node ff = YAML::Load(R"form(
+vector: dummy
+axial: dummy
+coherent: dummy
+resonancevector: dummy
+resonanceaxial: dummy
+mecvector: dummy
+mecaxial: dummy
+hyperon: dummy
+
+dummy: dummy2
+)form");
 
     auto form_factor = std::make_unique<MockFormFactor>();
 
@@ -41,6 +51,18 @@ NuclearModel:
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
     REQUIRE_CALL(builder, ResonanceAxial(ff["resonanceaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeVector(ff["mecvector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeAxial(ff["mecaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, Hyperon(ff["hyperon"].as<std::string>(), ff["dummy"]))
         .TIMES(1)
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
@@ -88,7 +110,8 @@ NuclearModel:
         std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
         info_map[2][achilles::PID::photon()] = {
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FCoh, 1}};
-        auto output = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}},
+        auto output = model.CalcCurrents({{achilles::PID::carbon(), momentum[1]}},
+                                         {{achilles::PID::carbon(), momentum[3]}}, {},
                                          momentum[0] - momentum[2], info_map[2]);
         CHECK(output.size() == 1);
         auto results = output[achilles::PID::photon()];
@@ -117,8 +140,18 @@ NuclearModel:
   SpectralN: data/pke12_tot.data
   Ward: Coulomb
 )config");
-    YAML::Node ff = YAML::Load("vector: dummy\naxial: dummy\ncoherent: dummy\ndummy: dummy2\n"
-                               "resonancevector: dummy\nresonanceaxial: dummy");
+    YAML::Node ff = YAML::Load(R"form(
+vector: dummy
+axial: dummy
+coherent: dummy
+resonancevector: dummy
+resonanceaxial: dummy
+mecvector: dummy
+mecaxial: dummy
+hyperon: dummy
+
+dummy: dummy2
+)form");
 
     auto form_factor = std::make_unique<MockFormFactor>();
 
@@ -141,6 +174,18 @@ NuclearModel:
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
     REQUIRE_CALL(builder, ResonanceAxial(ff["resonanceaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeVector(ff["mecvector"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, MesonExchangeAxial(ff["mecaxial"].as<std::string>(), ff["dummy"]))
+        .TIMES(1)
+        .IN_SEQUENCE(seq)
+        .LR_RETURN(std::ref(builder));
+    REQUIRE_CALL(builder, Hyperon(ff["hyperon"].as<std::string>(), ff["dummy"]))
         .TIMES(1)
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
@@ -201,6 +246,8 @@ NuclearModel:
         }
     }
 
+    // TODO: This test is too sensitive to minor numerical changes. Need to find a way to better
+    // test
     SECTION("CalcCurrents") {
         std::vector<achilles::FourVector> momentum = {
             {1.30000000e+03, 0.00000000e+00, 0.00000000e+00, 1.30000000e+03},
@@ -231,9 +278,9 @@ NuclearModel:
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
-        auto output_p = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}},
+        auto output_p = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}}, {},
                                            momentum[0] - momentum[2], info_map[0]);
-        auto output_n = model.CalcCurrents({{2112, momentum[1]}}, {{2112, momentum[3]}},
+        auto output_n = model.CalcCurrents({{2112, momentum[1]}}, {{2112, momentum[3]}}, {},
                                            momentum[0] - momentum[2], info_map[1]);
         CHECK(output_p.size() == 1);
         auto results_p = output_p[achilles::PID::photon()];

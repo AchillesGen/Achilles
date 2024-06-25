@@ -47,7 +47,6 @@ contains
         class(model), pointer :: ptr
         integer :: i
 
-        if(associated(self % model_ptr)) deallocate(self % model_ptr)
         if(allocated(self % model_list)) then
             do i = 1, size(self % model_list)
                 if(trim(name) == trim(self % model_list(i) % name)) then

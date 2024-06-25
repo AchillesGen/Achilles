@@ -18,6 +18,8 @@ subroutine dirac_matrices_in(xmp_in,xmn_in,xmeta_in,xmpi0_in,xmpi1_in,pi_in,hbar
     pi=pi_in
     hbarc=hbarc_in
     xmnuc = (xmn + xmp)/2.0d0
+    !Initialize DCC code with constants from achilles
+    call pion_init(xmn,xmp,xmeta,xmpi0,xmpi1,pi,hbarc)
 end subroutine 
 
 subroutine current_init(p1_in,pp1_in,q_in,kpi_in)
@@ -99,21 +101,23 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
         DCC_mode = -1
    endif
 
+   !Hadronic invariant mass
    PpiN = kpi + pp1
    piNinv = PpiN(1)**2 - PpiN(2)**2 - PpiN(3)**2 - PpiN(4)**2
    piNinv = abs(piNinv)
 
+   !Q2 limits for DCC model
    Q2 = q(2)**2 + q(3)**2 + q(4)**2 - q(1)**2
    if (Q2.lt.0.0d0 .or. Q2.gt.5000000.0d0) then        
         J_mu(:,:,:) = (0.0d0,0.0d0)
         return
    endif
 
+   !W limits for DCC model
    if(sqrt(piNinv).lt.1076.957d0.or.sqrt(piNinv).gt.1400.0d0) then
         J_mu(:,:,:) = (0.0d0,0.0d0)
         return
    endif
-   ! print*, "DCC_mode = ", DCC_mode
 
    call amplitude(q,pp1,kpi,DCC_mode,0,hid1,mesid1,1,zjmup(:,:,:))
 
@@ -121,6 +125,8 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
    J_mu(1,2,:)=zjmup(-1,1,:)
    J_mu(2,1,:)=zjmup(1,-1,:)  
    J_mu(2,2,:)=zjmup(1,1,:)
+
+   !Convert current to appropriate units
    J_mu=J_mu*2.0d0*xmn/hbarc
    return
 end subroutine

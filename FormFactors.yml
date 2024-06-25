@@ -3,6 +3,9 @@ axial: AxialZExpansion
 coherent: Helm
 resonancevector: ResonanceVectorDummy 
 resonanceaxial: ResonanceAxialDummy 
+mecvector: MesonExchangeVector 
+mecaxial: MesonExchangeAxial
+hyperon: Hyperon
 
 VectorDummy:
   f1p: 1
@@ -34,7 +37,7 @@ AxialDipole:
 
 AxialZExpansion:
   tcut: 0.1753180641  # [GeV^2] 9*mpi^2 = 9*(0.13957)^2
-  t0: 0  # [GeV^2]
+  t0: -0.28  # [GeV^2]
   # Compare with footnote 13 of https://arxiv.org/pdf/1603.03048.pdf
   CC Params: [-0.759, 2.30, -0.6, -3.8, 2.3, 2.16, -0.896, -1.58, 0.823]
   Strange Params: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -90,3 +93,16 @@ Helm:
 Lovato:
   b: 0.994885
   c: [6.01084, 0.143785, -4.06675, 1.45063, -0.135216]
+
+MesonExchangeVector:
+  MvSq: 0.71
+  cv3norm: 2.13
+  cv4norm: -1.15
+  cv5norm: 0.48
+
+MesonExchangeAxial: 
+  MaDeltaSq: 1.1025
+  ca5norm: 1.2
+
+Hyperon:
+  dummy: 0.

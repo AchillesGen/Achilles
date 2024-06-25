@@ -13,8 +13,7 @@ void ParticleModule(py::module &m) {
         .value("internal_test", achilles::ParticleStatus::internal_test)
         .value("external_test", achilles::ParticleStatus::external_test)
         .value("propagating", achilles::ParticleStatus::propagating)
-        .value("background", achilles::ParticleStatus::background)
-        .value("escaped", achilles::ParticleStatus::escaped);
+        .value("background", achilles::ParticleStatus::background);
 
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle", py::module_local())
         // Constructors

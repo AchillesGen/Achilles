@@ -94,9 +94,8 @@ achilles::SquareWellPotential::Construct(std::shared_ptr<Nucleus>& nuc, const
 YAML::Node&) { return std::make_unique<SquareWellPotential>(nuc);
 }
 
-PotentialVals achilles::SquareWellPotential::operator()(const double&, const
-double &r) const { PotentialVals result; constexpr double potential_shift = 8;
-    result.rvector = -(sqrt(Constant::mN*Constant::mN +
+PotentialVals achilles::SquareWellPotential::operator()(double, double &r) const { PotentialVals
+result; constexpr double potential_shift = 8; result.rvector = -(sqrt(Constant::mN*Constant::mN +
 pow(m_nucleus->FermiMomentum(r), 2))
         - Constant::mN + potential_shift);
 

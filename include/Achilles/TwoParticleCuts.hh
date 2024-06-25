@@ -30,32 +30,6 @@ class TwoParticleCut : public CutBase<double> {
 TWO_PARTICLE_CUT(DeltaTheta);
 TWO_PARTICLE_CUT(InvariantMass);
 
-// class DeltaThetaCut : public TwoParticleCutFactory<DeltaThetaCut> {
-//     public:
-//         DeltaThetaCut() = default;
-//
-//         static std::string Name() { return "DeltaTheta"; }
-//         static std::unique_ptr<CutBase> InitializeCut(YAML::Node&);
-//
-//         bool MakeCut(const FourVector&, const FourVector&) override;
-//
-//     private:
-//         cut_range m_range;
-// };
-//
-// class InvariantMassCut : public TwoParticleCutFactory<InvariantMassCut> {
-//     public:
-//         InvariantMassCut() = default;
-//
-//         static std::string Name() { return "InvariantMass"; }
-//         static std::unique_ptr<CutBase> InitializeCut(YAML::Node&);
-//
-//         bool MakeCut(const FourVector&, const FourVector&) override;
-//
-//     private:
-//         cut_range m_range;
-// };
-
 } // namespace achilles
 
 #endif

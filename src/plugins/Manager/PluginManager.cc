@@ -1,13 +1,12 @@
 #include "plugins/Manager/PluginManager.hh"
 #include "Achilles/System.hh"
+#include "Achilles/Utilities.hh"
 #include "Achilles/Version.hh"
+
 #include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-#include <regex>
-#pragma GCC diagnostic pop
 #include <dlfcn.h>
+#include <regex>
 
 using achilles::Plugin::Manager;
 

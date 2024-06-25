@@ -40,16 +40,30 @@ struct ProcessInfo {
     }
 
     template <typename OStream> friend OStream &operator<<(OStream &os, const ProcessInfo &info) {
-        os << fmt::format(
-            "Process_Info([{}, {}] -> [{}, {}])", info.m_leptonic.first,
-            fmt::join(info.m_hadronic.first.begin(), info.m_hadronic.first.end(), ", "),
-            fmt::join(info.m_leptonic.second.begin(), info.m_leptonic.second.end(), ", "),
-            fmt::join(info.m_hadronic.second.begin(), info.m_hadronic.second.end(), ", "));
+        os << fmt::format("{}", info);
         return os;
     }
 };
 
 } // namespace achilles
+
+namespace fmt {
+
+template <> struct formatter<achilles::ProcessInfo> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::ProcessInfo &info, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(
+            ctx.out(), "ProcessInfo([{}, {}] -> [{}, {}])", info.m_leptonic.first,
+            fmt::join(info.m_hadronic.first.begin(), info.m_hadronic.first.end(), ", "),
+            fmt::join(info.m_leptonic.second.begin(), info.m_leptonic.second.end(), ", "),
+            fmt::join(info.m_hadronic.second.begin(), info.m_hadronic.second.end(), ", "));
+    }
+};
+} // namespace fmt
 
 namespace YAML {
 
@@ -65,21 +79,5 @@ template <> struct convert<achilles::ProcessInfo> {
 };
 
 } // namespace YAML
-
-namespace fmt {
-
-template <> struct formatter<achilles::ProcessInfo> {
-    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const achilles::ProcessInfo &procinfo, FormatContext &ctx) const {
-        std::stringstream ss;
-        ss << procinfo;
-
-        return format_to(ctx.out(), ss.str());
-    }
-};
-
-} // namespace fmt
 
 #endif

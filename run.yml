@@ -1,6 +1,6 @@
 Main:
-  NEvents: 100000
-  HardCuts: false
+  NEvents: 50000
+  HardCuts: true
   EventCuts: false
   DoRotate: false
   RunDecays: False
@@ -9,27 +9,17 @@ Main:
       Name: achilles.hepmc
       Zipped: True
 
-SherpaOptions:
-  Model: SMnu
-  ParamCard: parameters.dat
+SherpaOptions: !include "data/default/SherpaOptions.yml"
 
 Processes:
-  - Leptons: [14, [14]]
-
-Initialize:
-  Seed: 12345678
-  Accuracy: 1e-2
-
-Unweighting:
-  Name: Percentile
-  percentile: 99
+  - Leptons: [11, [11]]
 
 Beams:
   - Beam:
-      PID: 14
+      PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1300
+        Energy: 1108
 
 Cascade:
   Run: False
@@ -42,43 +32,20 @@ Cascade:
   PotentialProp: False
 
 NuclearModels:
-  - NuclearModel:
-      Model: QESpectral
-      FormFactorFile: "FormFactors.yml"
-      SpectralP: data/pke12_tot.data
-      SpectralN: data/pke12_tot.data
-      Ward: Landau
-  - NuclearModel:
-      Model: FortranModel
-      Name: RES_Spectral_Func
-      ConfigFile: data/info_pke.data  
-      FormFactorFile: "FormFactors.yml"
-      SpectralP: data/pke12_tot.data
-      SpectralN: data/pke12_tot.data
-      Ward: False
+  - NuclearModel: !include "data/default/QEOptions.yml"
+  #- NuclearModel: !include "data/default/IntfOptionsF.yml"
+  #- NuclearModel: !include "data/default/RESOptionsF.yml"
+  #- NuclearModel: !include "data/default/HyperonOptions.yml"
 
 Nuclei:
-  - Nucleus:
-      Name: 12C
-      Binding: 8.6
-      Fermi Momentum: 225
-      Density:
-        File: data/c12.prova.txt
-        FilePotential: data/realOP_12C_EDAI.dat
-        Function: configuration
-        Configs: data/configurations/QMC_configs.out.gz
-      FermiGas:
-        Type: Local
-        Params: []
-      Potential: 
-        Name: Schroedinger
-        r0: 0.16
-        Mode: 3
+  - Nucleus: !include "data/default/12C.yml"
 
 HardCuts:
   - Type: AngleTheta
     PIDs: 11
-    range: [35, 39]
+    range: [36.5, 38.5]
+
+Options: !include "data/default/OptionDefaults.yml"
 
 Backend:
   Name: Default

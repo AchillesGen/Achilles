@@ -64,8 +64,8 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         REQUIRE_CALL(*density, GetConfiguration()).TIMES(0);
         static constexpr std::size_t Z = 6, A = 12;
 
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermi_gas, std::move(density)),
-                          "Nucleus: Density file dummy.txt does not exist.");
+        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermiGas, std::move(density)),
+                          "Achilles: Could not load dummy.txt");
     }
 
     SECTION("Density must produce correct number of protons and neutrons") {

@@ -17,6 +17,7 @@ void achilles::MultiChannel::Adapt(const std::vector<double> &train) {
         sum_wgts += new_weights[i];
     }
 
+    if(sum_wgts == 0) return;
     double new_sum = 0;
     for(auto &wgt : new_weights) {
         if(wgt == 0) continue;
@@ -67,9 +68,7 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
 }
 
 void achilles::MultiChannel::PrintIteration() const {
-    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
-                             summary.results.size(), summary.results.back().Mean(),
-                             summary.results.back().Error(), summary.Result().Mean(),
-                             summary.Result().Error())
-              << std::endl;
+    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}", summary.results.size(),
+                 summary.results.back().Mean(), summary.results.back().Error(),
+                 summary.Result().Mean(), summary.Result().Error());
 }

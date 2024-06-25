@@ -29,12 +29,23 @@ namespace SystemVariables {
 }
 
 namespace PathVariables {
-    const std::string buildPath = "@BUILDPATH@/";
-    const std::string installPath = "@INSTALLPATH@/";
-    const std::string buildLibs = buildPath + "lib/";
-    const std::string installLibs = installPath + "lib/";
-    const std::string buildData = buildPath + "data/";
-    const std::string installData = installPath + "share/Achilles/data/";
+    const fs::path buildPath = "@BUILDPATH@";
+    const fs::path installPath = "@INSTALLPATH@";
+    const fs::path buildLibs = buildPath / "lib";
+    const fs::path installLibs = installPath / "lib";
+    const fs::path buildData = buildPath / "data";
+    const fs::path buildFlux = buildPath / "flux";
+    const fs::path installShare = installPath / "share/Achilles";
+    const fs::path installFlux = installShare / "flux";
+    const fs::path installData = installShare / "data";
+    const fs::path installDefaults = installData / "default";
+}
+
+namespace Filesystem {
+
+std::vector<fs::path> AchillesPath();
+std::string FindFile(const std::string &filename, const std::string &head);
+
 }
 
 namespace Filesystem {

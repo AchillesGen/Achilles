@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include "fmt/core.h"
+#include "fmt/format.h"
 #include "spdlog/fmt/ostr.h"
 
 #include "Achilles/FourVector.hh"
@@ -13,23 +15,25 @@
 
 namespace achilles {
 
-// TODO: Reorganize to match NuHepMC3 standard
+// The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
-    any = -4,
-    internal_test = -3,
-    external_test = -2,
-    propagating = -1,
-    background = 0,
-    initial_state = 1,
-    final_state = 2,
-    escaped = 3,
-    captured = 4,
-    decayed = 5,
-    beam = 6,
-    target = 7,
-    spectator = 8,
-    interacted = 9,
+    final_state = 1,
+    decayed = 2,
+    initial_state = 3,
+    beam = 4,
+    target = 11,
+    internal_test = 22,
+    external_test = 23,
+    propagating = 24,
+    background = 25,
+    captured = 26,
+    residue = 27,
+    spectator = 28,
+    interacted = 29,
 };
+inline auto format_as(achilles::ParticleStatus s) {
+    return fmt::underlying(s);
+}
 
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
@@ -64,7 +68,7 @@ class Particle {
     ///@param daughters: The daughter particles of the particle (default = Empty)
     Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
              ThreeVector pos = ThreeVector(),
-             const ParticleStatus &_status = static_cast<ParticleStatus>(0),
+             const ParticleStatus &_status = ParticleStatus::background,
              std::vector<int> _mothers = std::vector<int>(),
              std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
@@ -236,9 +240,7 @@ class Particle {
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
-    bool IsFinal() const noexcept {
-        return (status == ParticleStatus::escaped) || (status == ParticleStatus::final_state);
-    }
+    bool IsFinal() const noexcept { return status == ParticleStatus::final_state; }
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
@@ -327,10 +329,12 @@ bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
 namespace fmt {
 
 template <> struct formatter<achilles::Particle> {
-    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
 
-    template <typename FormatContext>
-    auto format(const achilles::Particle &particle, FormatContext &ctx) const {
+    auto format(const achilles::Particle &particle, format_context &ctx) const
+        -> format_context::iterator {
         return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
                          particle.Momentum(), particle.Position());
     }
@@ -363,8 +367,6 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "initial_state({})", static_cast<int>(status));
         case achilles::ParticleStatus::final_state:
             return format_to(ctx.out(), "final_state({})", static_cast<int>(status));
-        case achilles::ParticleStatus::escaped:
-            return format_to(ctx.out(), "escaped({})", static_cast<int>(status));
         case achilles::ParticleStatus::captured:
             return format_to(ctx.out(), "captured({})", static_cast<int>(status));
         case achilles::ParticleStatus::decayed:

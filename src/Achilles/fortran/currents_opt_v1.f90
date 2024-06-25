@@ -5,8 +5,7 @@ module dirac_matrices
     complex*16, private, parameter :: czero = (0.0d0,0.0d0)
     complex*16, private, parameter :: cone  = (1.0d0,0.0d0)
     complex*16, private, parameter :: ci    = (0.0d0,1.0d0)
-    real*8, private, parameter :: pi=acos(-1.0d0)    
-    real*8, private, save :: mqe, qval
+    real*8, private, parameter :: pi=acos(-1.0d0)  
     complex*16, private, save :: sig(3,2,2),id(2,2),id4(4,4),up(2),down(2)
     complex*16, allocatable,private, save :: up1(:,:),upp1(:,:), &
             &   ubarp1(:,:),ubarpp1(:,:)
@@ -26,7 +25,7 @@ subroutine dirac_matrices_in(xmn_in)
     
     real*8 :: xmn_in
     xmn=xmn_in
-   allocate(up1(nspin_in,4),upp1(nspin_f,4), &
+    allocate(up1(nspin_in,4),upp1(nspin_f,4), &
             &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4))
     sig(:,:,:)=czero
     id(:,:)=czero
@@ -138,11 +137,10 @@ subroutine det_Ja(f1v,f2v,fa)
      enddo
      J_1(:,:,mu)=J_1(:,:,mu)+f1v*gamma_mu(:,:,mu)
   enddo
-
-  !J_1(:,:,4,ip)=(w/q(4))*J_1(:,:,1,ip)
  
   do mu=1,4
-     J_1(:,:,mu)=J_1(:,:,mu)+fa(1)*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))
+     J_1(:,:,mu)=J_1(:,:,mu)+fa(1)*matmul(gamma_mu(:,:,mu),gamma_mu(:,:,5))&
+        &   +fa(2)*gamma_mu(:,:,5)*q(mu)/xmn
   enddo
 end subroutine det_Ja
 

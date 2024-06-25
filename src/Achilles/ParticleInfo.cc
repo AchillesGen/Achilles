@@ -1,4 +1,5 @@
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/System.hh"
 
 #include <iostream>
 #include <memory>
@@ -21,8 +22,15 @@ using achilles::PID;
 //     }
 // }
 
+bool PID::valid_nucleus() const {
+    long int L = id / 10000000 - 100;
+    long int Z = (id % 10000000) / 10000;
+    long int A = (id % 10000) / 10;
+    return L + Z < A;
+}
+
 void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
-    YAML::Node particleYAML = YAML::LoadFile(datafile);
+    YAML::Node particleYAML = YAML::LoadFile(Filesystem::FindFile(datafile, "ParticleInfo"));
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
         auto entry =

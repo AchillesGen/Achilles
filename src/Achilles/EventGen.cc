@@ -34,9 +34,8 @@ class SherpaInterface {};
 
 #include "yaml-cpp/yaml.h"
 
-achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs) {
-    config = YAML::LoadFile(configFile);
-
+achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs)
+    : config{configFile} {
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
@@ -44,41 +43,41 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config["Initialize"]["Seed"])
-        if(config["Initialize"]["Seed"].as<int>() > 0)
-            seed = config["Initialize"]["Seed"].as<unsigned int>();
+    if(config.Exists("Options/Initialize/Seed"))
+        if(config.GetAs<int>("Options/Initialize/Seed") > 0)
+            seed = config.GetAs<unsigned int>("Options/Initialize/Seed");
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
     // Load initial beam and nuclei
     // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
-    beam = std::make_shared<Beam>(config["Beams"].as<Beam>());
-    nuclei = config["Nuclei"].as<std::vector<std::shared_ptr<Nucleus>>>();
+    beam = std::make_shared<Beam>(config.GetAs<Beam>("Beams"));
+    nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config["Cascade"]["Run"].as<bool>());
-    if(config["Cascade"]["Run"].as<bool>()) {
-        cascade = std::make_unique<Cascade>(config["Cascade"].as<Cascade>());
+    spdlog::debug("Cascade mode: {}", config.GetAs<bool>("Cascade/Run"));
+    if(config.GetAs<bool>("Cascade/Run")) {
+        cascade = std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"));
     } else {
         cascade = nullptr;
     }
 
     // Initialize decays
-    runDecays = config["Main"]["RunDecays"].as<bool>();
+    runDecays = config.GetAs<bool>("Main/RunDecays");
 
     // Initialize Sherpa
-    if(config["Backend"]["Name"].as<std::string>().find("Sherpa") != std::string::npos ||
-       config["Backend"]["Name"].as<std::string>().find("BSM") != std::string::npos) {
+    auto backend = config.GetAs<std::string>("Backend/Name");
+    if(backend.find("Sherpa") != std::string::npos || backend.find("BSM") != std::string::npos) {
 #ifdef ACHILLES_SHERPA_INTERFACE
         p_sherpa = new achilles::SherpaInterface();
         std::string model_name = "SMnu";
-        if(config["SherpaOptions"]["Model"])
-            model_name = config["SherpaOptions"]["Model"].as<std::string>();
-        auto param_card = config["SherpaOptions"]["ParamCard"].as<std::string>();
+        if(config.Exists("SherpaOptions/Model"))
+            model_name = config.GetAs<std::string>("SherpaOptions/Model");
+        auto param_card = config.GetAs<std::string>("SherpaOptions/ParamCard");
         int qed = 0;
-        if(config["SherpaOptions"]["QEDShower"])
-            if(config["SherpaOptions"]["QEDShower"].as<bool>()) qed = 1;
+        if(config.Exists("SherpaOptions/QEDShower"))
+            if(config.GetAs<bool>("SherpaOptions/QEDShower")) qed = 1;
         shargs.push_back(fmt::format("ME_QED={}", qed));
         if(model_name == "SM") model_name = "SMnu";
         shargs.push_back("MODEL=" + model_name);
@@ -100,58 +99,63 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     for(const auto &nucleus : nuclei) {
         // Initialize the Nuclear models for each nuclei
         spdlog::debug("Initializing nuclear models");
-        auto models = LoadModels(config);
+        // TODO: Convert to using Settings object instead of calling Root()
+        auto models = LoadModels(config.Root());
         for(auto &model : models) {
-            auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
+            auto groups =
+                ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
                     spdlog::info("Found Process: {}", process.Info());
-                group.second.SetupBackend(config, std::move(model.second), p_sherpa);
+                group.second.SetupBackend(config.Root(), std::move(model.second), p_sherpa);
                 process_groups.push_back(std::move(group.second));
             }
         }
     }
 
     // Setup Multichannel integrators and remove invalid configurations
+    // TODO: Convert to using Settings object instead of calling Root()
     process_groups.erase(
         std::remove_if(process_groups.begin(), process_groups.end(),
-                       [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
+                       [&](ProcessGroup &group) { return !group.SetupIntegration(config.Root()); }),
         process_groups.end());
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
-    if(config["Main"]["DoRotate"]) doRotate = config["Main"]["DoRotate"].as<bool>();
+    if(config.Exists("Main/DoRotate")) doRotate = config.GetAs<bool>("Main/DoRotate");
 
     // Setup Cuts
-    if(config["Main"]["HardCuts"]) doHardCuts = config["Main"]["HardCuts"].as<bool>();
-    spdlog::info("Apply hard cuts? {}", doHardCuts);
-    hard_cuts = config["HardCuts"].as<achilles::CutCollection>();
-    for(auto &group : process_groups) group.SetCuts(hard_cuts);
+    if(config.Exists("Main/HardCuts")) {
+        doHardCuts = config.GetAs<bool>("Main/HardCuts");
+        spdlog::info("Apply hard cuts? {}", doHardCuts);
+        hard_cuts = config.GetAs<achilles::CutCollection>("HardCuts");
+        for(auto &group : process_groups) group.SetCuts(hard_cuts);
+    }
 
     // Setup outputs
-    auto output = config["Main"]["Output"];
     bool zipped = true;
-    if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
-    spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
-    if(output["Format"].as<std::string>() == "Achilles") {
-        writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
+    if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
+    auto format = config.GetAs<std::string>("Main/Output/Format");
+    auto name = config.GetAs<std::string>("Main/Output/Name");
+    spdlog::trace("Outputing as {} format", format);
+    if(format == "Achilles") {
+        writer = std::make_unique<AchillesWriter>(name, zipped);
 #ifdef ACHILLES_ENABLE_HEPMC3
-    } else if(output["Format"].as<std::string>() == "HepMC3") {
-        writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
-    } else if(output["Format"].as<std::string>() == "NuHepMC") {
-        writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
+    } else if(format == "HepMC3") {
+        writer = std::make_unique<HepMC3Writer>(name, zipped);
+    } else if(format == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(name, zipped);
 #endif
     } else {
-        std::string msg = fmt::format("Achilles: Invalid output format requested {}",
-                                      output["Format"].as<std::string>());
+        std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);
         throw std::runtime_error(msg);
     }
     writer->WriteHeader(configFile, process_groups);
 }
 
 void achilles::EventGen::Initialize() {
-    if(config["Backend"]["Options"]["DebugEvents"]) {
+    if(config.Exists("Backend/Options/DebugEvents")) {
         auto &group = process_groups[0];
-        DebugEvents events(config["Backend"]["Options"]["DebugEvents"].as<std::string>(),
+        DebugEvents events(config.GetAs<std::string>("Backend/Options/DebugEvents"),
                            group.Multiplicity());
         for(const auto &evt : events.events) { group.SingleEvent(evt, 1); }
         exit(0);
@@ -176,8 +180,8 @@ void achilles::EventGen::Initialize() {
 
 void achilles::EventGen::GenerateEvents() {
     outputEvents = true;
-    runCascade = config["Cascade"]["Run"].as<bool>();
-    const auto nevents = config["Main"]["NEvents"].as<size_t>();
+    runCascade = !(cascade == nullptr);
+    const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
     while(accepted < nevents) {
         static constexpr size_t statusUpdate = 1000;
@@ -234,9 +238,11 @@ bool achilles::EventGen::GenerateSingleEvent() {
         spdlog::debug("Runnning cascade");
         cascade->Evolve(event, group.GetNucleus());
 
+#ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons (Post Cascade):");
         size_t idx = 0;
         for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+#endif
     } else {
         for(auto &nucleon : event.Hadrons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {

@@ -56,8 +56,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         std::cout << drsdp << " " << drsdr << "\n";
         std::cout << disdp << " " << disdr << "\n";
 
-        auto stencilp = potential.derivative_p(nucleus.get(), plab, r, 0.01);
-        auto stencilr = potential.derivative_r(nucleus.get(), plab, r, 0.01);
+        auto stencilp = potential.derivative_p(plab, r, 0.01);
+        auto stencilr = potential.derivative_r(plab, r, 0.01);
 
         CHECK(drvdp == Approx(stencilp.rvector));
         CHECK(drvdr == Approx(stencilr.rvector));

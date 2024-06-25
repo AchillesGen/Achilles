@@ -1,7 +1,7 @@
-#ifndef PRINT_VEC_HH
-#define PRINT_VEC_HH
+#pragma once
 
 #include "ATOOLS/Math/Vector.H"
+#include "fmt/core.h"
 #include "spdlog/fmt/ostr.h"
 
 template <typename OStream> OStream &operator<<(OStream &os, const ATOOLS::Vec4D &vec4) {
@@ -9,4 +9,25 @@ template <typename OStream> OStream &operator<<(OStream &os, const ATOOLS::Vec4D
     return os;
 }
 
-#endif
+template <> struct fmt::formatter<ATOOLS::Vec4D> {
+    char presentation = 'e';
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        // Parse the presentation format and store it in the formatter:
+        auto it = ctx.begin(), end = ctx.end();
+        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+        // Check if reached the end of the range:
+        if(it != end && *it != '}') throw format_error("Invalid format");
+
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    auto format(const ATOOLS::Vec4D &p, format_context &ctx) const -> format_context::iterator {
+        // ctx.out() is an output iterator to write to
+        return format_to(ctx.out(),
+                         presentation == 'f' ? "ATOOLS::Vec4D({:.8f}, {:.8f}, {:.8f}, {:.8f})"
+                                             : "ATOOLS::Vec4D({:.8e}, {:.8e}, {:.8e}, {:.8e})",
+                         p[0], p[1], p[2], p[3]);
+    }
+};

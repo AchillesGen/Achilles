@@ -159,7 +159,7 @@ using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus> &, const YA
     public:
         SquareWellPotential(std::shared_ptr<Nucleus> nucleus) : m_nucleus{std::move(nucleus)} {}
 
-        PotentialVals operator()(const double&, const double &r) const override;
+        PotentialVals operator()(double, double r) const override;
         static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
         static std::string Name() { return "SquareWellPotential"; }
         std::string GetReference() const override { return ""; }

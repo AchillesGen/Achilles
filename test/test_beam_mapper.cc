@@ -34,7 +34,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
 
         SECTION("Forward") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({mN2});
+            mapper.SetMasses({0, achilles::Constant::mN2});
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, beam_rans);
             double wgt = mapper.GenerateWeight(mom, new_rans);
@@ -45,7 +45,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
 
         SECTION("Reverse") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({mN2});
+            mapper.SetMasses({0, achilles::Constant::mN2});
             double wgt = mapper.GenerateWeight({beam_mom}, new_rans);
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, new_rans);

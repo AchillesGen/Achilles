@@ -55,6 +55,9 @@ class SherpaInterface {
     int SherpaVerbosity(int loglevel) const;
     static FourVector ToAchilles(const ATOOLS::Vec4D &);
     static Particle ToAchilles(ATOOLS::Particle *);
+    ATOOLS::Cluster_Amplitude *
+    ConstructAmplitude(const std::vector<long> &fl,
+                       const std::vector<std::array<double, 4>> &p = {}) const;
 
     PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude *const ampl);
     COMIX::Single_Process *singleProcess;
@@ -76,7 +79,7 @@ class SherpaInterface {
     GenerateChannels(const std::vector<long> &fl) const;
     std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
 
-    MOCK LeptonCurrents CalcCurrent(const std::vector<int> &fl,
+    MOCK LeptonCurrents CalcCurrent(const std::vector<long> &fl,
                                     const std::vector<std::array<double, 4>> &p, const double &mu2);
     MOCK double CalcDifferential(const std::vector<long> &fl,
                                  const std::vector<std::array<double, 4>> &p, const double &mu2);

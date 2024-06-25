@@ -11,7 +11,9 @@ module libspectral_function
         type(c_ptr) :: ptr
     contains
         procedure :: normalization => spectral_normalization
-        procedure :: call => spectral_call
+        procedure :: callspectral => spectral_call
+        procedure :: callmom => mom_density_call
+        generic :: call => callspectral, callmom
         procedure :: self => spectral_self
     end type
 
@@ -59,5 +61,14 @@ contains
         double precision, intent(in), value :: p, e
         double precision :: spectral_call
         spectral_call = spectral_call_c(self%ptr, p, e)
+    end function
+
+
+    function mom_density_call(self, p)
+        implicit none
+        class(spectral_function), intent(in) :: self
+        double precision, intent(in), value :: p
+        double precision :: mom_density_call
+        mom_density_call = mom_density_call_c(self%ptr, p)
     end function
 end module

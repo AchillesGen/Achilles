@@ -13,6 +13,7 @@ module nuclear_model_test
         contains
             procedure :: init => test_init
             procedure :: currents => test_currents
+            procedure, nopass :: model_name => test_name
             procedure :: ps_name => test_ps
             procedure :: mode => test_mode
             procedure :: init_wgt => test_init_wgt
@@ -29,14 +30,17 @@ contains
     end subroutine
 
     subroutine register() bind(C, name="Register")
-        call factory%register_model("test", build_test)
+        type(test) :: model
+        call factory%register_model(model%model_name(), build_test)
     end subroutine
 
-    function test_init(self, filename)
+    function test_init(self, filename, params)
         use libutilities
+        use libmap
         class(test), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: test_init
@@ -71,25 +75,32 @@ contains
         test_mode = 1
     end function
 
+    function test_name()
+        character(len=:), allocatable :: test_name
+        test_name = "test"
+    end function
+
     function test_ps(self)
         class(test), intent(inout) :: self
         character(len=:), allocatable :: test_ps
         test_ps = "QESpectral"
     end function
 
-    subroutine test_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, qvec, ff, cur, nspin, nlorentz)
+    subroutine test_currents(self, pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvec, ff, cur, nspin, nlorentz)
         use iso_c_binding
         use libvectors
         use libmap
         class(test), intent(inout) :: self
-        integer(c_size_t), intent(in), value :: nin, nout, nspin, nlorentz
+        integer(c_size_t), intent(in), value :: nin, nout, nspect, nspin, nlorentz
         type(complex_map), intent(in) :: ff
         type(fourvector) :: qvec
-        type(fourvector), dimension(nin), intent(in) :: mom_in
-        type(fourvector), dimension(nout), intent(in) :: mom_out
         integer(c_long), dimension(nin), intent(in) :: pids_in
         integer(c_long), dimension(nout), intent(in) :: pids_out
-        complex(c_double_complex), dimension(nspin, nlorentz), intent(out) :: cur
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        type(fourvector), dimension(nin), intent(in) :: mom_in
+        type(fourvector), dimension(nout), intent(in) :: mom_out
+        type(fourvector), dimension(nspect), intent(in) :: mom_spect
+        complex(c_double_complex), dimension(nlorentz, nspin), intent(out) :: cur
 
         cur(1, 1) = 1
         cur(1, 2) = 2
@@ -109,15 +120,17 @@ contains
         cur(4, 4) = 16
     end subroutine
 
-    function test_init_wgt(self, pids, moms, nin, nproton, nneutron) result(wgt)
+    function test_init_wgt(self, pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron) result(wgt)
         use iso_c_binding
         use libvectors
         use libutilities
 
         class(test), intent(inout) :: self
-        integer(c_long), dimension(nin), intent(in) :: pids
-        type(fourvector), dimension(nin), intent(in) :: moms
-        integer(c_size_t), intent(in), value :: nin, nproton, nneutron
+        integer(c_long), dimension(nin), intent(in) :: pids_in
+        type(fourvector), dimension(nin), intent(in) :: mom_in
+        type(fourvector), dimension(nspect), intent(in) :: mom_spect
+        integer(c_long), dimension(nspect), intent(in) :: pids_spect
+        integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         real(c_double) :: wgt
 
         wgt = 1

@@ -52,9 +52,10 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         YAML::Node config = YAML::Load(R"config(
         Processes:
             - Leptons: [11, [11]]
-        Unweighting:
-            Name: Percentile
-            percentile: 99
+        Options:
+            Unweighting:
+                Name: Percentile
+                percentile: 99
         )config");
 
         MockNuclearModel model;

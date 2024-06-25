@@ -12,7 +12,7 @@ class PSBuilder;
 class PSMapper : public Mapper<FourVector> {
   public:
     friend class PSBuilder;
-    static PSBuilder build(size_t, size_t);
+    static PSBuilder build(size_t, size_t, size_t);
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
@@ -31,11 +31,12 @@ class PSMapper : public Mapper<FourVector> {
         node["FSMapper"] = main->ToYAML();
         return node;
     }
-    PSMapper(size_t _nleptons, size_t _nhadrons)
-        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)} {}
+    PSMapper(size_t _nleptons, size_t _nhadrons, size_t _nspectators)
+        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
+          nspectators{_nspectators} {}
 
   private:
-    size_t nleptons, nhadrons;
+    size_t nleptons, nhadrons, nspectators;
     Mapper_sptr<FourVector> lbeam{}, hbeam{};
     Mapper_ptr<FourVector> main{};
 };

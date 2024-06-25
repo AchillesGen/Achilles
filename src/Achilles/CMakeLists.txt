@@ -20,12 +20,27 @@ add_library(utilities SHARED
     ProcessInfo.cc
     Poincare.cc
     Unweighter.cc
+    Settings.cc
     System.cc
     Legendre.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
-                                PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11 
+                                PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
+if(ENABLE_AUTODIFF)
+target_compile_definitions(utilities PUBLIC AUTODIFF)
+target_link_libraries(utilities PUBLIC autodiff::autodiff)
+endif()
+if(ACHILLES_EVENT_DETAILS)
+target_compile_definitions(utilities PUBLIC ACHILLES_EVENT_DETAILS)
+endif()
 list(APPEND achilles_targets utilities)
+
+# add_library(interaction_plugin SHARED
+#     InteractionLoader.cc
+# )
+# target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
+#                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
+# )
 
 add_library(cuts SHARED
     OneParticleCuts.cc
@@ -33,7 +48,7 @@ add_library(cuts SHARED
     CombinedCuts.cc
 )
 target_link_libraries(cuts PRIVATE project_warnings
-                           PUBLIC utilities) #pybind11::pybind11 
+                           PUBLIC utilities) #pybind11::pybind11
 list(APPEND achilles_targets cuts)
 
 add_library(mappers SHARED
@@ -43,6 +58,7 @@ add_library(mappers SHARED
     HadronicMapper.cc
     QuasielasticTestMapper.cc
     PhaseSpaceBuilder.cc
+    Channels.cc
 )
 target_link_libraries(mappers PRIVATE project_warnings
                               PUBLIC utilities)
@@ -65,7 +81,6 @@ add_library(physics SHARED
     Interactions.cc
     InteractionHandler.cc
     SpectralFunction.cc
-    Channels.cc
     ElectronPDF.cc
     EventHistory.cc
     MesonBaryonAmplitudes.cc
@@ -84,7 +99,7 @@ if(ACHILLES_ENABLE_ROOT)
     endif()
 endif()
 target_link_libraries(physics PRIVATE project_warnings
-                      PUBLIC utilities cuts HighFive mappers)
+                      PUBLIC utilities cuts HighFive)
 list(APPEND achilles_targets physics)
 
 add_library(nuclear_models SHARED
@@ -93,7 +108,7 @@ add_library(nuclear_models SHARED
     Process.cc
 )
 target_link_libraries(nuclear_models PRIVATE project_options project_warnings
-                                     PUBLIC physics)
+                                     PUBLIC physics mappers)
 list(APPEND achilles_targets nuclear_models)
 
 add_subdirectory(fortran)
@@ -117,18 +132,18 @@ list(APPEND achilles_targets event_gen)
                             # pybind11_add_module(_achilles MODULE
                             #     # Main file
                             #     PyBindings.cc
-                            # 
+                            #
                             #     # Utilities
                             #     LoggingModule.cc
                             #     ConstantsModule.cc
                             #     InterpolationModule.cc
-                            # 
+                            #
                             #     # Physics objects
                             #     VectorModule.cc
                             #     ParticleModule.cc
                             #     ParticleInfoModule.cc
                             #     NucleusModule.cc
-                            # 
+                            #
                             #     # Calculation modules
                             #     InteractionsModule.cc
                             #     CascadeModule.cc
@@ -172,11 +187,12 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f 
+install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION include
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

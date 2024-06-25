@@ -20,14 +20,16 @@
 #include "docopt.h"
 
 #include <dlfcn.h>
+#include <filesystem>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
+namespace fs = std::filesystem;
 
 static const std::string USAGE =
     R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -38,6 +40,8 @@ static const std::string USAGE =
 
     Options:
       -v[v]                                 Increase verbosity level.
+      -l[l]                                 Increase log verbosity 
+                                            (Note: Log verbosity is never lower than total level)
       -h --help                             Show this screen.
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
@@ -61,22 +65,30 @@ int main(int argc, char *argv[]) {
                        true,                                          // show help if requested
                        fmt::format("achilles {}", ACHILLES_VERSION)); // version string
 
+    // Install signal handlers
+    std::signal(SIGTERM, SignalHandler);
+    std::signal(SIGSEGV, SignalHandler);
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGABRT, SignalHandler);
+
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 1);
     GitInformation();
     achilles::Plugin::Manager plugin_manager;
 
     if(args["--display-cuts"].asBool()) {
-        achilles::CutFactory<achilles::OneParticleCut>::DisplayCuts();
-        achilles::CutFactory<achilles::TwoParticleCut>::DisplayCuts();
+        achilles::CutFactory<achilles::OneParticleCut>::Display();
+        achilles::CutFactory<achilles::TwoParticleCut>::Display();
         return 0;
     }
 
     if(args["--display-ps"].asBool()) {
-        achilles::PSFactory<achilles::HadronicBeamMapper, size_t>::DisplayPhaseSpaces();
-        achilles::PSFactory<achilles::FinalStateMapper, std::vector<double>>::DisplayPhaseSpaces();
+        achilles::Factory<achilles::HadronicBeamMapper, const achilles::ProcessInfo &,
+                          size_t>::Display();
+        achilles::Factory<achilles::FinalStateMapper, std::vector<double>>::Display();
 #ifdef ACHILLES_SHERPA_INTERFACE
-        achilles::PSFactory<PHASIC::Channels, std::vector<double>>::DisplayPhaseSpaces();
+        achilles::Factory<PHASIC::Channels, std::vector<double>>::Display();
 #endif // ACHILLES_SHERPA_INTERFACE
         return 0;
     }
@@ -99,12 +111,30 @@ int main(int argc, char *argv[]) {
     }
 
     std::string runcard = "run.yml";
-    if(args["<input>"].isString()) runcard = args["<input>"].asString();
+    if(args["<input>"].isString())
+        runcard = args["<input>"].asString();
+    else {
+        // Ensure file exists, otherwise copy template file to current location
+        if(!fs::exists(runcard)) {
+            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
+                          "this location");
+            if(!fs::exists(achilles::PathVariables::installData)) {
+                fs::copy(achilles::PathVariables::buildData / fs::path("default/run.yml"),
+                         fs::current_path());
+            } else {
+                fs::copy(achilles::PathVariables::installData / fs::path("default/run.yml"),
+                         fs::current_path());
+            }
+            return 1;
+        }
+    }
 
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
-    GenerateEvents(runcard, shargs);
+    try {
+        GenerateEvents(runcard, shargs);
+    } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
 
     return 0;
 }

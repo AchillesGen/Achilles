@@ -26,7 +26,7 @@ TEST_CASE("ProcessInfo", "[ProcessInfo]") {
     }
 
     SECTION("Output correct") {
-        std::string expected = "Process_Info([11, 2212] -> [11, 2212])";
+        std::string expected = "ProcessInfo([11, 2212] -> [11, 2212])";
         std::stringstream output;
         output << info;
 
