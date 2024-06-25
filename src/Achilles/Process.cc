@@ -18,6 +18,27 @@ class SherpaInterface {};
 
 using achilles::Process;
 using achilles::ProcessGroup;
+using achilles::refParticles;
+
+refParticles Process::SelectParticles(const refParticles &protons, const refParticles &neutrons,
+                                      const std::vector<PID> &ids,
+                                      const std::vector<FourVector> &momenta,
+                                      ParticleStatus status) const {
+    refParticles result;
+    for(size_t i = 0; i < ids.size(); ++i) {
+        if(ids[i] == PID::proton()) {
+            result.push_back(protons[i]);
+        } else {
+            result.push_back(neutrons[i]);
+        }
+
+        auto &part = result.back().get();
+        part.Momentum() = momenta[i];
+        part.Status() = status;
+    }
+
+    return result;
+}
 
 void Process::SetupHadrons(Event &event) const {
     FourVector lep_in;
@@ -33,58 +54,51 @@ void Process::SetupHadrons(Event &event) const {
 
     // Handle coherent scattering as a special case
     if(ParticleInfo(m_info.m_hadronic.first[0]).IsNucleus()) {
-        event.CurrentNucleus()->Nucleons().clear();
+        event.Hadrons().clear();
+        event.Hadrons().resize(2);
         const auto id_in = m_info.m_hadronic.first[0];
         const auto id_out = m_info.m_hadronic.second[0];
 
         Particle initial(id_in, had_in[0]);
         initial.Status() = ParticleStatus::initial_state;
-        event.CurrentNucleus()->Nucleons().push_back(initial);
+        event.Hadrons()[0] = initial;
 
         Particle final(id_out, had_out[0]);
         final.Status() = ParticleStatus::final_state;
-        event.CurrentNucleus()->Nucleons().push_back(final);
+        event.Hadrons()[1] = final;
 
         return;
     }
 
-    // TODO: Optimize selection of nucleons.
-    //       Using pick doesn't ensure uniqueness and sample is extremely slow
-    // NOTE: This might be fixed now with the change to the Nucleus class
-    // TODO: Handle position dependent probabilities
-    auto protons = event.CurrentNucleus()->ProtonsIDs();
-    auto neutrons = event.CurrentNucleus()->NeutronsIDs();
-    std::vector<size_t> indices;
-    // size_t nprotons = 0, nneutrons = 0;
-    for(size_t i = 0; i < had_in.size(); ++i) {
-        if(m_info.m_hadronic.first[i] == PID::proton()) {
-            indices.push_back(Random::Instance().Pick(protons));
-        } else {
-            indices.push_back(Random::Instance().Pick(neutrons));
-        }
-    }
-    // Random::Instance().Sample(nprotons, protons, indices);
-    // Random::Instance().Sample(nneutrons, neutrons, indices);
+    // TODO: Handle hydrogen
 
-    // TODO: Propagate deltas away from interaction point
-    // TODO: Handle something like MEC+pion???
-    for(size_t i = 0; i < had_in.size(); ++i) {
-        auto &initial = event.CurrentNucleus()->Nucleons()[indices[i]];
-        initial.Momentum() = had_in[i];
-        initial.Status() = ParticleStatus::initial_state;
-    }
+    // Select initial state nucleons and spectators
+    auto protons = event.Protons(ParticleStatus::background);
+    auto neutrons = event.Neutrons(ParticleStatus::background);
+    size_t nsamples = m_info.m_hadronic.first.size() + m_info.m_spectator.size();
+    auto sampled_protons = Random::Instance().Sample(nsamples, protons);
+    auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
 
+    auto initial_states =
+        SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
+                        ParticleStatus::initial_state);
+    auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
+                                      ParticleStatus::spectator);
+
+    // Initialize final state hadrons
+    // TODO: Handle propagating deltas
+    // TODO: Handle selecting position for things like MEC+pion production
     size_t cur_idx = 0;
     ThreeVector position;
     for(size_t i = 0; i < had_out.size(); ++i) {
         Particle part(m_info.m_hadronic.second[i]);
         if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
-            position = event.CurrentNucleus()->Nucleons()[indices[cur_idx++]].Position();
+            position = initial_states[cur_idx++].get().Position();
         }
         part.Status() = ParticleStatus::propagating;
         part.Momentum() = had_out[i];
         part.Position() = position;
-        event.CurrentNucleus()->Nucleons().push_back(part);
+        event.Hadrons().push_back(part);
     }
 }
 
@@ -162,6 +176,9 @@ void Process::SetID(achilles::NuclearModel *model) {
 }
 
 std::string Process::Name(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined()) return "Cascade";
+
     std::string name = backend->GetNuclearModel()->GetName();
     name += (m_id % 100) / 50 == 0 ? "CC" : "NC";
     // Add number of protons in initial state
@@ -178,6 +195,9 @@ std::string Process::Name(achilles::XSecBackend *backend) const {
 }
 
 std::string Process::Description(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined()) return "Cascade Only";
+
     std::string description = backend->GetNuclearModel()->GetName() + " ";
     std::stringstream ss;
     ss << m_info;
@@ -187,11 +207,14 @@ std::string Process::Description(achilles::XSecBackend *backend) const {
 }
 
 std::string Process::InspireHEP(achilles::XSecBackend *backend) const {
+    // TODO: Clean this up to better handle the header writing for cascade mode
+    if(m_info.m_leptonic.first == PID::undefined()) return "";
+
     return backend->GetNuclearModel()->InspireHEP();
 }
 
 achilles::ProcessMetadata Process::Metadata(achilles::XSecBackend *backend) const {
-    return {ID(), Name(backend), Description(backend), ""};
+    return {ID(), Name(backend), Description(backend), InspireHEP(backend)};
 }
 
 std::vector<int> ProcessGroup::ProcessIds() const {

@@ -2,6 +2,8 @@
 #include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/Version.hh"
+
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 #include <dlfcn.h>
 #include <regex>

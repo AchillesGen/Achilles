@@ -2,7 +2,10 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <regex>
+#pragma GCC diagnostic pop
 
 #include "spdlog/spdlog.h"
 
@@ -20,9 +23,9 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
-                 const double &kf, const std::string &densityFilename, const FermiGasType &fgType,
+                 const double &kf, const std::string &densityFilename, const FermiGas &fg,
                  std::unique_ptr<Density> _density)
-    : binding(bEnergy), fermiMomentum(kf), fermiGas(fgType), density(std::move(_density)) {
+    : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)) {
     Initialize(Z, A);
     // TODO: Refactor elsewhere in the code, maybe make dynamic?
     // spdlog::info("Nucleus: inferring nuclear radius using 0.16
@@ -54,7 +57,7 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     // NOTE: This only is checked at startup, so if density returns a varying
     // number of nucleons it will not necessarily be caught
     auto particles = density->GetConfiguration();
-    if(particles.size() != nucleons.size())
+    if(particles.size() != nnucleons)
         throw std::runtime_error("Invalid density function! Incorrect number of nucleons.");
 
     std::size_t nProtons = 0, nNeutrons = 0;
@@ -76,12 +79,17 @@ void Nucleus::Initialize(size_t Z, size_t A) {
         throw std::runtime_error(errorMsg);
     }
 
-    nucleons.resize(A);
-    protons.resize(Z);
-    neutrons.resize(A - Z);
-    protonLoc.resize(Z);
-    neutronLoc.resize(A - Z);
+    nnucleons = A;
+    nprotons = Z;
+    nneutrons = A - Z;
 
+    // Based on PDG Monte-Carlo PIDs
+    // Nuclear codes are given as a 10 digit number:
+    // +/- 10LZZZAAAI
+    // L: number of strange baryons
+    // Z: number of protons
+    // A: number of nucleons
+    // I: excited state (0 is ground state)
     static constexpr int IDBase = 1000000000;
     static constexpr int ZBase = 10000;
     static constexpr int ABase = 10;
@@ -92,56 +100,9 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     if(Z == 1 && A == 1) is_hydrogen = true;
 }
 
-// achilles::PID Nucleus::ID() const {
-//     // Output format based on PDG Monte-Carlo PIDs
-//     // Nuclear codes are given as a 10 digit number:
-//     // +/- 10LZZZAAAI
-//     // L: number of strange baryons
-//     // Z: number of protons
-//     // A: number of nucleons
-//     // I: excited state (0 is ground state)
-//     static constexpr int IDBase = 1000000000;
-//     static constexpr int ZBase = 10000;
-//     static constexpr int ABase = 10;
-//     int ID = IDBase + ZBase*static_cast<int>(NProtons()) +
-//     ABase*static_cast<int>(NNucleons()); return PID{ID};
-// }
-
-void Nucleus::SetNucleons(Particles &_nucleons) noexcept {
-    std::swap(nucleons, _nucleons);
-    std::size_t idx = 0;
-    std::size_t proton_idx = 0;
-    std::size_t neutron_idx = 0;
-    for(auto particle : nucleons) {
-        if(particle.ID() == PID::proton()) {
-            protons[proton_idx] = particle;
-            protonLoc[proton_idx++] = idx++;
-        } else if(particle.ID() == PID::neutron()) {
-            neutrons[neutron_idx] = particle;
-            neutronLoc[neutron_idx++] = idx++;
-        }
-    }
-}
-
-void Nucleus::PrepareReaction(const PID &pid_probe) {
-    if(pid_probe == PID::proton()) {
-        std::size_t Z = protons.size();
-        protons.resize(Z + 1);
-        protonLoc.resize(Z + 1);
-    } else if(pid_probe == PID::neutron()) {
-        std::size_t N = neutrons.size();
-        neutrons.resize(N + 1);
-        neutronLoc.resize(N + 1);
-    }
-}
-
-void Nucleus::GenerateConfig() {
+Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
-    if(is_hydrogen) {
-        Particles particles = {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
-        SetNucleons(particles);
-        return;
-    }
+    if(is_hydrogen) { return {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}}; }
 
     // Get a configuration from the density function
     Particles particles = density->GetConfiguration();
@@ -156,23 +117,35 @@ void Nucleus::GenerateConfig() {
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;
     }
-
-    // Update the nucleons in the nucleus
-    SetNucleons(particles);
+    return particles;
 }
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = Random::Instance().Uniform(0.0, FermiMomentum(position));
+    momentum[0] = SampleMagnitudeMomentum(position);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     return ToCartesian(momentum);
 }
 
+double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
+    // NOTE: To sample on a sphere, need to take a cube-root.
+    double kf = FermiMomentum(position);
+    if(fermi_gas.correlated) {
+        if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
+            return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+        } else {
+            double x = Random::Instance().Uniform(0.0, 1.0);
+            return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
+        }
+    }
+    return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+}
+
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
                              const double &fermiMomentum, const std::string &densityFilename,
-                             const FermiGasType &fg_type, std::unique_ptr<Density> density) {
+                             const FermiGas &fg, std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
 
@@ -182,7 +155,7 @@ Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
         spdlog::info("Nucleus: parsing nuclear name '{0}', expecting a density "
                      "with A={1} total nucleons and Z={2} protons.",
                      name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg_type,
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg,
                        std::move(density));
     }
 
@@ -205,13 +178,16 @@ const std::string Nucleus::ToString() const noexcept {
 double Nucleus::FermiMomentum(const double &position) const noexcept {
     double rho = Rho(position);
     double result{};
-    switch(fermiGas) {
+    switch(fermi_gas.type) {
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
         break;
     case FermiGasType::Global:
-        static constexpr double small = 1E-2;
-        result = rho < small ? small : fermiMomentum;
+        //        static constexpr double small = 1E-2; //This leads to a large small momentum
+        //        contribution at large radius, which is unrealistic, make small very snall ? result
+        //        = rho < small ? small : fermiMomentum;
+        result = fermiMomentum; // Better, but sampling is still srong, the pdf has p2 factor, need
+                                // to take cube-root somewhere
         break;
     }
 

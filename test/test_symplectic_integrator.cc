@@ -3,6 +3,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/SymplecticIntegrator.hh"
+#include "Achilles/ThreeVector.hh"
 #include "mock_classes.hh"
 #include "spdlog/spdlog.h"
 

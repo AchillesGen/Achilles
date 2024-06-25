@@ -7,6 +7,7 @@ env:
   CMAKE_VERSION: 3.21.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 4.4
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
   build:
@@ -34,37 +35,22 @@ jobs:
 
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
 
     - name: Set up cache
       id: cache-cpm
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/cpm-cache
         key: ${{ matrix.config.name }}-cpm-${{ hashFiles('**/') }}
         restore-keys: |
           ${{ matrix.config.name }}-cpm-
 
-    - name: Download ccache 
-      id: ccache 
-      shell: cmake -P {0}
-      run: |
-        set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${ { runner.os } }.tar.xz")
-        file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
-
-    - name: ccache cache files 
-      uses: actions/cache@v3
+    - name: ccache 
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
         path: .ccache
         key: ${{ matrix.config.name }}-ccache-${{ github.sha }}

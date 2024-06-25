@@ -1,8 +1,6 @@
 #include "catch2/catch.hpp"
-#include "catch_utils.hh"
 #include "mock_classes.hh"
 
-#include "Achilles/Beams.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -20,7 +18,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1);
+    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN((particles));
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 
@@ -30,27 +28,31 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
         CHECK(event.Momentum()[2] == lepton1);
         CHECK(event.Momentum()[3] == hadron1);
     }
+}
 
-    SECTION("Event can be finalized") {
-        // Dummy carbon event
-        achilles::Particles final = {
-            {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
-            {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
-            {achilles::PID::proton(), hadron0},
-            {achilles::PID::proton(), hadron0},
-            {achilles::PID::proton(), hadron0},
-            {achilles::PID::proton(), hadron0},
-            {achilles::PID::proton(), hadron0},
-            {achilles::PID::neutron(), hadron0},
-            {achilles::PID::neutron(), hadron0},
-            {achilles::PID::neutron(), hadron0},
-            {achilles::PID::neutron(), hadron0},
-            {achilles::PID::neutron(), hadron0},
-            {achilles::PID::neutron(), hadron0}};
-        REQUIRE_CALL(*nuc, Nucleons()).LR_RETURN((final)).TIMES(AT_LEAST(13));
+TEST_CASE("Finalize Event", "[Event]") {
+    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
+    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
 
-        event.Finalize();
-        CHECK(event.Remnant().PID() == 1000050110);
-        CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
-    }
+    // Dummy carbon event
+    achilles::Particles final = {
+        {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
+        {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
+        {achilles::PID::proton(), hadron0},
+        {achilles::PID::proton(), hadron0},
+        {achilles::PID::proton(), hadron0},
+        {achilles::PID::proton(), hadron0},
+        {achilles::PID::proton(), hadron0},
+        {achilles::PID::neutron(), hadron0},
+        {achilles::PID::neutron(), hadron0},
+        {achilles::PID::neutron(), hadron0},
+        {achilles::PID::neutron(), hadron0},
+        {achilles::PID::neutron(), hadron0},
+        {achilles::PID::neutron(), hadron0}};
+
+    achilles::Event event{};
+    event.Hadrons() = final;
+    event.Finalize();
+    CHECK(event.Remnant().PID() == 1000050110);
+    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
 }

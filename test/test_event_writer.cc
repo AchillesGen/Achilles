@@ -37,7 +37,7 @@ TEST_CASE("Builtin", "[EventWriter]") {
             {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
         achilles::NuclearRemnant remnant(11, 5);
 
-        const MockEvent event;
+        const MockEvent event{};
         double wgt = 1.0;
         REQUIRE_CALL(event, Particles()).TIMES(1).LR_RETURN((particles));
         REQUIRE_CALL(event, Remnant()).TIMES(1).LR_RETURN((remnant));

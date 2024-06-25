@@ -13,7 +13,6 @@ module libevent
         ! Bind some functions to the type for cleaner syntax
         procedure :: self => get_ptr
         procedure :: momentum => event_momentum
-        procedure :: current_nucleus => event_nucleus 
     end type event
 
     interface event
@@ -45,15 +44,5 @@ contains
         integer(c_size_t), intent(in) :: i
 
         call event_momentum_c(this%ptr, i, event_momentum%self())
-    end function
-
-    function event_nucleus(this)
-        use libnucleus
-        implicit none
-
-        class(event), intent(in) :: this
-        type(nucleus) :: event_nucleus
-
-        call event_nucleus_c(this%ptr, event_nucleus%self())
     end function
 end module

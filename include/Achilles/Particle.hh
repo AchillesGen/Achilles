@@ -17,17 +17,20 @@ namespace achilles {
 
 // The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
+    any = 0,
     final_state = 1,
     decayed = 2,
     initial_state = 3,
     beam = 4,
     target = 11,
-    internal_test = 21,
-    external_test = 22,
-    propagating = 23,
-    background = 24,
-    captured = 25,
-    spectator = 26,
+    internal_test = 22,
+    external_test = 23,
+    propagating = 24,
+    background = 25,
+    captured = 26,
+    residue = 27,
+    spectator = 28,
+    interacted = 29,
 };
 inline auto format_as(achilles::ParticleStatus s) {
     return fmt::underlying(s);
@@ -244,6 +247,10 @@ class Particle {
     ///@return bool: True if a final state particle, False otherwise
     bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
 
+    /// Check to see if the particle should be written out
+    ///@return bool: True if the particle should be written out, False otherwise
+    bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
+
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
     void Propagate(const double &) noexcept;
@@ -308,6 +315,16 @@ class Particle {
     double distanceTraveled = 0.0;
 };
 
+/// Find the time to closest approach between two particles
+/// @param p1: The first particle
+/// @param p2: The second particle
+/// @return double: The time to closest approach between the two particles
+double ClosestApproach(const Particle &, const Particle &);
+
+// Comparisons for std::reference_wrapper<Particle> with Particle
+bool operator==(const std::reference_wrapper<Particle> &, const Particle &);
+bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
+
 } // namespace achilles
 
 namespace fmt {
@@ -321,6 +338,16 @@ template <> struct formatter<achilles::Particle> {
         -> format_context::iterator {
         return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
                          particle.Momentum(), particle.Position());
+    }
+};
+
+template <> struct formatter<std::reference_wrapper<achilles::Particle>> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const std::reference_wrapper<achilles::Particle> &particle,
+                FormatContext &ctx) const {
+        return format_to(ctx.out(), "{}", particle.get());
     }
 };
 
@@ -352,6 +379,8 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "target({})", static_cast<int>(status));
         case achilles::ParticleStatus::spectator:
             return format_to(ctx.out(), "spectator({})", static_cast<int>(status));
+        case achilles::ParticleStatus::interacted:
+            return format_to(ctx.out(), "cascade({})", static_cast<int>(status));
         default:
             return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
                              static_cast<int>(status));

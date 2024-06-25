@@ -22,6 +22,7 @@ add_library(utilities SHARED
     Unweighter.cc
     Settings.cc
     System.cc
+    Legendre.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
                                 PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
@@ -78,10 +79,11 @@ add_library(physics SHARED
     Configuration.cc
     Event.cc
     Interactions.cc
-    InteractionsFactory.cc
+    InteractionHandler.cc
     SpectralFunction.cc
     ElectronPDF.cc
     EventHistory.cc
+    MesonBaryonAmplitudes.cc
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)
@@ -154,10 +156,12 @@ target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles)
 
+# TODO: Change the name of the option to be more clear
 if(ACHILLES_ENABLE_CASCADE_TEST)
     add_executable(achilles-cascade CascadeMain.cc RunCascade.cc)
+    # TODO: Refactor the event_gen library to pull pieces unused by the cascade executable
     target_link_libraries(achilles-cascade PRIVATE project_warnings
-                                         PUBLIC physics docopt::docopt)
+                                         PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
