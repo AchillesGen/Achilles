@@ -5,8 +5,8 @@
 
 using achilles::Event;
 
-Event::Event(Nucleus *nuc, std::vector<FourVector> mom, double vwgt)
-    : m_nuc{nuc->NProtons(), nuc->NNeutrons()}, m_mom{std::move(mom)}, m_wgt{std::move(vwgt)} {
+Event::Event(std::shared_ptr<Nucleus> nuc, std::vector<FourVector> mom, double vwgt)
+    : m_nuc{nuc}, m_mom{std::move(mom)}, m_wgt{std::move(vwgt)} {
     m_hadrons = nuc->GenerateConfig();
 }
 

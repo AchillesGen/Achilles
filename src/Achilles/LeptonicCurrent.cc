@@ -5,6 +5,8 @@
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/Spinor.hh"
 
+#include "fmt/std.h"
+
 using achilles::LeptonicCurrent;
 
 void LeptonicCurrent::Initialize(const ProcessInfo &process) {

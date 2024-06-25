@@ -64,7 +64,7 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         REQUIRE_CALL(*density, GetConfiguration()).TIMES(0);
         static constexpr std::size_t Z = 6, A = 12;
 
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermiGas, std::move(density)),
+        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermi_gas, std::move(density)),
                           "Achilles: Could not load dummy.txt");
     }
 

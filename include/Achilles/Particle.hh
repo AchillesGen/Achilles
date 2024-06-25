@@ -17,6 +17,7 @@ namespace achilles {
 
 // The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
+    any = 0,
     final_state = 1,
     decayed = 2,
     initial_state = 3,

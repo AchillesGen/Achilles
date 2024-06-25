@@ -2,6 +2,7 @@
 #include "Achilles/Exception.hh"
 #include "Achilles/Utilities.hh"
 #include "fmt/std.h"
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 
 // Function to load the search path for Achilles files

@@ -12,7 +12,6 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
     const std::vector<double> beam_rans{0.5};
     std::vector<double> new_rans(1);
     static constexpr int nvars = 1;
-    double mN2 = pow(achilles::ParticleInfo(achilles::PID::neutron()).Mass(), 2);
 
     SECTION("Variables is passed through") {
         auto beam = std::make_shared<MockBeam>();

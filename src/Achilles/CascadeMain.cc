@@ -9,12 +9,14 @@
 static const std::string USAGE =
     R"(
     Usage:
-      achilles-cascade [<input>] [-v | -vv]
+      achilles-cascade [<input>] [-v | -vv] [-l | -ll]
       achilles-cascade (-h | --help)
       achilles-cascade --version
 
     Options:
       -v[v]            Increase verbosity level.
+      -l[l]            Increase log verbosity 
+                       (Note: Log verbosity is never lower than total level)
       -h --help        Show this screen.
       --version        Show version.
 )";
@@ -33,7 +35,8 @@ int main(int argc, char *argv[]) {
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 5);
     GitInformation();
 
     achilles::CascadeTest::RunCascade(runcard);

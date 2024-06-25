@@ -24,7 +24,7 @@
 using achilles::CascadeTest::CascadeRunner;
 
 void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, double radius,
-                                             Nucleus *nuc) {
+                                             std::shared_ptr<Nucleus> nuc) {
     // Generate a point in the beam of a given radius
     std::array<double, 2> beam_spot;
     auto beam_r = radius * std::sqrt(Random::Instance().Uniform(0.0, 1.0));
@@ -48,7 +48,8 @@ void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, 
     event.Hadrons().push_back(testPart);
 }
 
-void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom, Nucleus *nuc,
+void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
+                                             std::shared_ptr<Nucleus> nuc,
                                              bool external) {
     double costheta = Random::Instance().Uniform(-1.0, 1.0);
     double sintheta = sqrt(1 - costheta * costheta);
@@ -154,10 +155,10 @@ void CascadeRunner::GenerateEvent(double mom) {
     Event event;
     switch(m_mode) {
     case CascadeMode::CrossSection:
-        InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc.get());
+        InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc);
         break;
     case CascadeMode::Transparency:
-        InitTransparency(event, m_pid, mom, m_nuc.get(), static_cast<bool>(m_params["external"]));
+        InitTransparency(event, m_pid, mom, m_nuc, static_cast<bool>(m_params["external"]));
         break;
     }
     // Set kicked indices

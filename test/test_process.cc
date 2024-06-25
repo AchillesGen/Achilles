@@ -205,7 +205,7 @@ TEST_CASE("Correct metadata", "[Process]") {
 
     CHECK(metadata.id == 251);
     CHECK(metadata.name == "QESpectralNC1p0pi");
-    auto msg = fmt::format("QESpectral Process_Info([11, 2212] -> [11, 2212])");
+    auto msg = fmt::format("QESpectral ProcessInfo([11, 2212] -> [11, 2212])");
     CHECK(metadata.description == msg);
     CHECK(metadata.inspireHEP == "Isaacson:2022cwh");
 }

@@ -7,7 +7,7 @@
 #include "Achilles/ProcessInfo.hh"
 
 TEST_CASE("Initialize Event Parameters", "[Event]") {
-    MockNucleus nuc;
+    auto nuc = std::make_shared<MockNucleus>();
     auto beam = std::make_shared<MockBeam>();
     std::vector<double> rans{0};
     static constexpr achilles::FourVector lepton0{1000, 0, 0, 1000};
@@ -18,11 +18,9 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(nuc, NProtons()).TIMES(1).RETURN(6ul);
-    REQUIRE_CALL(nuc, NNeutrons()).TIMES(1).RETURN(6ul);
-    REQUIRE_CALL(nuc, GenerateConfig()).TIMES(1).RETURN((particles));
+    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN((particles));
     static constexpr double vegas_wgt = 10;
-    achilles::Event event(&nuc, moms, vegas_wgt);
+    achilles::Event event(nuc, moms, vegas_wgt);
 
     SECTION("Nucleus and Beam set correctly") {
         CHECK(event.Momentum()[0] == lepton0);

@@ -135,7 +135,7 @@ class Nucleus {
 
     /// Return the current Fermi Momentum of the nucleus
     ///@return double: The Fermi Momentum in MeV
-    // const double& FermiMomentum() const noexcept {return fermiMomentum;}
+    const double& FermiMomentum() const noexcept { return fermiMomentum; }
 
     /// Return the phenomenological potential
     ///@return std::shared_ptr<Potential>: The potential of the nucleus
@@ -155,10 +155,7 @@ class Nucleus {
 
     /// Return the Fermi momentum according to a given FG model
     ///@param position: The radius to calculate the density
-    double FermiMomentum(const double &) const noexcept; //
-
-    // Return kF
-    double FermiMomentum() const noexcept { return fermiMomentum; }
+    double FermiMomentum(const double &) const noexcept;
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}

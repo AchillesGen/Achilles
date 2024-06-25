@@ -28,7 +28,7 @@ using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 class Event {
   public:
     Event() = default;
-    Event(Nucleus *, std::vector<FourVector>, double);
+    Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
     Event(const Event &);
     Event operator=(const Event &);
     MOCK ~Event() = default;
@@ -40,8 +40,8 @@ class Event {
     MOCK const vMomentum &Momentum() const { return m_mom; }
     MOCK vMomentum &Momentum() { return m_mom; }
 
-    MOCK const std::pair<size_t, size_t> &CurrentNucleus() const { return m_nuc; }
-    MOCK std::pair<size_t, size_t> &CurrentNucleus() { return m_nuc; }
+    MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
+    MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
@@ -87,7 +87,7 @@ class Event {
     }
 
     // Variables
-    std::pair<size_t, size_t> m_nuc;
+    std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};
     vMomentum m_mom{};
     double m_wgt{};

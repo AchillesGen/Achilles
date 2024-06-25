@@ -7,6 +7,12 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/f_polynomial.hh"
 
+
+double PartialWaveAmpW::PMax(double w) const {
+    return 1/(2*w)*std::sqrt((pow(w*w - pow(mass_min_res, 2) - mass_spect*mass_spect, 2)
+                - 4*pow(mass_min_res, 2)*mass_spect*mass_spect)); 
+}
+
 MBAmplitudes::MBAmplitudes() {
     for(int ii = 0; ii < 4; ii++) {
         for(int iff = 0; iff < 4; iff++) { readANL(ii, iff); }
@@ -77,28 +83,30 @@ bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
     std::vector<std::string> tokens;
     achilles::tokenize(line, tokens, " ");
     std::string pwa = tokens[2];
-    int L = std::stoi(tokens[5]);
+    size_t L = std::stoull(tokens[5]);
     double S = achilles::ParseFraction(tokens[7]);
+    size_t spin = static_cast<size_t>(2*S);
+    auto [I, J] = FromPartialWave(pwa);
 
-    std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S << std::endl;
+    if(piDelta_pwa.find(PartialWave{L, J, I, spin}) == piDelta_pwa.end()) {
+        piDelta_pwa[PartialWave{L, J, I, spin}] = {};
+        std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S << std::endl;
+    }
 
     // Read the W value
     std::getline(input_file, line);
     tokens.clear();
     achilles::tokenize(line, tokens, " ");
-    double W = std::stod(tokens[1]);
-
-    std::cout << W << std::endl;
+    // double W = std::stod(tokens[1]);
 
     // Read the amplitudes for each value of p
     std::vector<std::pair<double, std::complex<double>>> amplitudes;
     std::getline(input_file, line);
     while(std::getline(input_file, line)) {
         if(line.empty()) {
-            double pmax = 1.0 / (2 * W) *
-                          sqrt(pow(W * W - pow(938.5 + 138.5, 2) - 138.5 * 138.5, 2) -
-                               4 * pow(938.5 + 138.5, 2) * 138.5 * 138.5);
-            std::cout << "pmax = " << pmax << std::endl;
+            // double pmax = 1.0 / (2 * W) *
+            //               sqrt(pow(W * W - pow(938.5 + 138.5, 2) - 138.5 * 138.5, 2) -
+            //                    4 * pow(938.5 + 138.5, 2) * 138.5 * 138.5);
             return true;
         }
         tokens.clear();
@@ -108,13 +116,12 @@ bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
         double Ai = std::stod(tokens[2]);
         std::complex<double> A{Ar, Ai};
         amplitudes.push_back({p, A});
-        std::cout << p << " " << A << std::endl;
     }
 
-    double pmax = 1.0 / (2 * W) *
-                  sqrt(pow(W * W - pow(938.5 + 138.5, 2) - 138.5 * 138.5, 2) -
-                       4 * pow(938.5 + 138.5, 2) * 138.5 * 138.5);
-    std::cout << "pmax = " << pmax << std::endl;
+    // double pmax = 1.0 / (2 * W) *
+    //               sqrt(pow(W * W - pow(938.5 + 138.5, 2) - 138.5 * 138.5, 2) -
+    //                    4 * pow(938.5 + 138.5, 2) * 138.5 * 138.5);
+    // std::cout << "pmax = " << pmax << std::endl;
 
     return false;
 }
@@ -568,6 +575,15 @@ f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f) const {
 
     //	return f_Polynomial(A_poly, 2*Lmax+1);
     return f_Polynomial(A_poly, 2 * Lmax);
+}
+
+std::tuple<size_t, size_t> MBAmplitudes::FromPartialWave(const std::string &pwa) const {
+    for(size_t i = 0; i < nPW; i++) {
+        if(pwa == PWnames[i]) {
+            return {twoI_vec[i], twoJ_vec[i]};
+        }
+    }
+    throw std::runtime_error("Unknown partial wave " + pwa);
 }
 
 double f_Polynomial::eval_f(double x) {

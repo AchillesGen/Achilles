@@ -1,9 +1,36 @@
 #pragma once
 
+#include "Achilles/Interpolation.hh"
 #include "f_polynomial.hh"
 #include <array>
 #include <complex>
+#include <iostream>
+#include <map>
 #include <vector>
+
+struct PartialWave {
+    size_t L, J, I, S;
+
+    bool operator<(const PartialWave &rhs) const {
+        if(L != rhs.L) return L < rhs.L;
+        if(J != rhs.J) return J < rhs.J;
+        if(I != rhs.I) return I < rhs.I;
+        return S < rhs.S;
+    }
+};
+
+struct PartialWaveAmp {
+    achilles::Interp1D real;
+    achilles::Interp1D imag;
+};
+
+struct PartialWaveAmpW {
+    std::vector<double> invariant_mass;
+    std::vector<PartialWaveAmp> pwa;
+    double mass_spect, mass_min_res;
+
+    double PMax(double) const;
+};
 
 class MBAmplitudes {
   public:
@@ -63,7 +90,9 @@ class MBAmplitudes {
     f_Polynomial Get_CSpoly_W(double W, int i_i, int i_f) const;
 
   private:
-    const static int nPW = 20;
+    std::tuple<size_t, size_t> FromPartialWave(const std::string &) const;
+
+    static constexpr int nPW = 20;
     std::string PWnames[nPW] = {"S11", "S31", "P11", "P13", "P31", "P33", "D13",
                                 "D15", "D33", "D35", "F15", "F17", "F35", "F37",
                                 "G17", "G19", "G37", "G39", "H19", "H39"};
@@ -72,7 +101,7 @@ class MBAmplitudes {
     int L_vec[nPW] = {0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5};
     int twoI_vec[nPW] = {1, 3, 1, 1, 3, 3, 1, 1, 3, 3, 1, 1, 3, 3, 1, 1, 3, 3, 1, 3};
 
-    const static int maxMBchan = 4;
+    static constexpr int maxMBchan = 4;
     int nMBchan = 0;
     std::string MBchannels[maxMBchan] = {"piN", "eta N", "K Lambda", "K Sigma"};
     double thresholds[maxMBchan] = {1080., 1490., 1615., 1690.}; // Minima in the datafiles
@@ -82,13 +111,13 @@ class MBAmplitudes {
     int twoIm_MBchannels[maxMBchan] = {2, 0, 1, 1};
     int twoIb_MBchannels[maxMBchan] = {1, 1, 0, 2};
 
-    const static int Wmax = 250;
+    static constexpr int Wmax = 250;
     int num_W[maxMBchan][maxMBchan] = {{0}};
 
     double w_vec[maxMBchan][maxMBchan][Wmax];
 
-    const static int Lmax = 5;
-    const static int twoJmax = 9;
+    static constexpr int Lmax = 5;
+    static constexpr int twoJmax = 9;
     std::complex<double> A_LJI[maxMBchan][maxMBchan][Wmax][Lmax + 1][2][2] = {{{{{{0.}}}}}};
 
     double CGcof[maxMBchan][2][5][5] = {{{{0.}}}}; // (I_3^{m}, I_3^{b}; Im, Ib | I , I_3) =
@@ -96,7 +125,7 @@ class MBAmplitudes {
 
     // Information for 'physical' (charge state) channels
     // These are numbered as in initchannels make
-    const static int maxchannels = 16; // piN(6) + eta N (2) + K Lamba (2) + K Sigma (6);
+    static constexpr int maxchannels = 16; // piN(6) + eta N (2) + K Lamba (2) + K Sigma (6);
 
     int nCchan = 0;
 
@@ -116,12 +145,13 @@ class MBAmplitudes {
 
     double CrossSectionsW[maxchannels][maxchannels][Wmax] = {{{0.}}};
 
-    std::array<std::array<double, 12>, 12>
-        A_Legendre; // Expansion coefficients of legendre polynomials
+    std::array<std::array<double, 12>, 12> A_Legendre; // Expansion coefficients of legendre polynomials
 
     // For angular distributions, expansion coefficients of H and G as polynomials
     double H_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {
         {{0.}}}; // H = P_n(x) * P_m(x)  = \sum a_k x^k, the coefficients a_k are H_poly[n][m] saved
 
     double G_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {{{0.}}}; // G = (1-x**2) P'_n(x) P'_m(x)
+
+    std::map<PartialWave, PartialWaveAmpW> piDelta_pwa;
 };

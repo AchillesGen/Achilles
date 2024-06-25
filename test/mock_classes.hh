@@ -73,7 +73,6 @@ class MockPotential : public trompeloeil::mock_interface<achilles::Potential> {
     IMPLEMENT_CONST_MOCK0(GetReference);
     achilles::PotentialVals operator()(double p, double r) const override { return call_op(p, r); }
     MAKE_CONST_MOCK2(call_op, achilles::PotentialVals(const double &, const double &));
-    IMPLEMENT_CONST_MOCK2(Hamiltonian);
 };
 
 class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
@@ -214,7 +213,6 @@ class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
     IMPLEMENT_MOCK1(AddProcess);
     IMPLEMENT_MOCK0(Validate);
     IMPLEMENT_MOCK4(SetupChannels);
-    IMPLEMENT_MOCK0(GetNuclearModel);
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }

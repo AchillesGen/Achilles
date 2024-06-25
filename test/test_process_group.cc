@@ -148,8 +148,6 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
     auto beam = std::make_shared<MockBeam>();
     auto nucleus = std::make_shared<MockNucleus>();
     REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);
-    REQUIRE_CALL(*nucleus, NProtons()).TIMES(1).RETURN(6ul);
-    REQUIRE_CALL(*nucleus, NNeutrons()).TIMES(1).RETURN(6ul);
 
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
