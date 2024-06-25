@@ -49,8 +49,7 @@ void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, 
 }
 
 void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
-                                             std::shared_ptr<Nucleus> nuc,
-                                             bool external) {
+                                             std::shared_ptr<Nucleus> nuc, bool external) {
     double costheta = Random::Instance().Uniform(-1.0, 1.0);
     double sintheta = sqrt(1 - costheta * costheta);
     double phi = Random::Instance().Uniform(0.0, 2 * M_PI);

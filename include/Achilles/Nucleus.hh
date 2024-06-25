@@ -135,7 +135,7 @@ class Nucleus {
 
     /// Return the current Fermi Momentum of the nucleus
     ///@return double: The Fermi Momentum in MeV
-    const double& FermiMomentum() const noexcept { return fermiMomentum; }
+    const double &FermiMomentum() const noexcept { return fermiMomentum; }
 
     /// Return the phenomenological potential
     ///@return std::shared_ptr<Potential>: The potential of the nucleus

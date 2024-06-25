@@ -145,7 +145,8 @@ class MBAmplitudes {
 
     double CrossSectionsW[maxchannels][maxchannels][Wmax] = {{{0.}}};
 
-    std::array<std::array<double, 12>, 12> A_Legendre; // Expansion coefficients of legendre polynomials
+    std::array<std::array<double, 12>, 12>
+        A_Legendre; // Expansion coefficients of legendre polynomials
 
     // For angular distributions, expansion coefficients of H and G as polynomials
     double H_poly[Lmax + 1][Lmax + 1][2 * Lmax + 1] = {

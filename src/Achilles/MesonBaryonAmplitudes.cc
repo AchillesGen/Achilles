@@ -7,10 +7,10 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/f_polynomial.hh"
 
-
 double PartialWaveAmpW::PMax(double w) const {
-    return 1/(2*w)*std::sqrt((pow(w*w - pow(mass_min_res, 2) - mass_spect*mass_spect, 2)
-                - 4*pow(mass_min_res, 2)*mass_spect*mass_spect)); 
+    return 1 / (2 * w) *
+           std::sqrt((pow(w * w - pow(mass_min_res, 2) - mass_spect * mass_spect, 2) -
+                      4 * pow(mass_min_res, 2) * mass_spect * mass_spect));
 }
 
 MBAmplitudes::MBAmplitudes() {
@@ -85,12 +85,13 @@ bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
     std::string pwa = tokens[2];
     size_t L = std::stoull(tokens[5]);
     double S = achilles::ParseFraction(tokens[7]);
-    size_t spin = static_cast<size_t>(2*S);
+    size_t spin = static_cast<size_t>(2 * S);
     auto [I, J] = FromPartialWave(pwa);
 
     if(piDelta_pwa.find(PartialWave{L, J, I, spin}) == piDelta_pwa.end()) {
         piDelta_pwa[PartialWave{L, J, I, spin}] = {};
-        std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S << std::endl;
+        std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S
+                  << std::endl;
     }
 
     // Read the W value
@@ -579,9 +580,7 @@ f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f) const {
 
 std::tuple<size_t, size_t> MBAmplitudes::FromPartialWave(const std::string &pwa) const {
     for(size_t i = 0; i < nPW; i++) {
-        if(pwa == PWnames[i]) {
-            return {twoI_vec[i], twoJ_vec[i]};
-        }
+        if(pwa == PWnames[i]) { return {twoI_vec[i], twoJ_vec[i]}; }
     }
     throw std::runtime_error("Unknown partial wave " + pwa);
 }
