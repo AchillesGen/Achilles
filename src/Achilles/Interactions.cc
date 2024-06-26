@@ -9,6 +9,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
@@ -24,10 +25,16 @@
 
 using namespace achilles;
 
-REGISTER_INTERACTION(GeantInteractions);
-// REGISTER_INTERACTION(GeantInteractionsDt);
-REGISTER_INTERACTION(NasaInteractions);
-REGISTER_INTERACTION(ConstantInteractions);
+bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
+                                       const std::pair<PID, PID> &rhs) const {
+    PID a1 = lhs.first < lhs.second ? lhs.first : lhs.second;
+    PID a2 = lhs.first > lhs.second ? lhs.first : lhs.second;
+
+    PID b1 = rhs.first < rhs.second ? rhs.first : rhs.second;
+    PID b2 = rhs.first > rhs.second ? rhs.first : rhs.second;
+
+    return std::tie(a1, a2) < std::tie(b1, b2);
+}
 
 const std::map<std::string, double> HZETRN = {{"a", 5.0_MeV},
                                               {"b", 0.199 / sqrt(1_MeV)},
@@ -47,7 +54,14 @@ const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, /
                                            {"alpha", 0.00369 / 1_MeV},
                                            {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
-double Interactions::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
+double Interaction::TotalCrossSection(const Particle &particle1, const Particle &particle2) const {
+    auto cross_sections = CrossSection(particle1, particle2);
+    double total = 0;
+    for(const auto &cross_section : cross_sections) total += cross_section.cross_section;
+    return total;
+}
+
+double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
     const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
     if(samePID) {
         if(pLab < 1.8_GeV) {
@@ -85,37 +99,7 @@ double Interactions::CrossSectionLab(bool samePID, const double &pLab) const noe
     }
 }
 
-achilles::Interactions::MomentumPair
-Interactions::FinalizeMomentum(const Particle &particle1, const Particle &particle2,
-                               std::shared_ptr<Potential>) const {
-    //    if(pot -> IsRelativistic())
-    //        throw std::runtime_error(fmt::format("{} is not compatible with a
-    //        relativistic potential.",
-    //                                             Name()));
-
-    // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum();
-    FourVector p1CM = p1Lab.Boost(-boostCM);
-
-    // Generate outgoing momentum
-    bool samePID = particle1.ID() == particle2.ID();
-    const double pcm = p1CM.Vec3().Magnitude();
-    std::array<double, 2> rans{};
-    Random::Instance().Generate(rans, 0.0, 1.0);
-    ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
-
-    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
-    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
-
-    // Boost back to lab frame
-    p1Out = p1Out.Boost(boostCM);
-    p2Out = p2Out.Boost(boostCM);
-
-    return {p1Out, p2Out};
-}
-
-GeantInteractions::GeantInteractions(const YAML::Node &node) {
+GeantInteraction::GeantInteraction(const YAML::Node &node) {
     auto filename = node["GeantData"].as<std::string>();
 
     // Initialize theta vector
@@ -142,7 +126,7 @@ GeantInteractions::GeantInteractions(const YAML::Node &node) {
     LoadData(true, dataPP);
 }
 
-void GeantInteractions::LoadData(bool samePID, const HighFive::Group &group) {
+void GeantInteraction::LoadData(bool samePID, const HighFive::Group &group) {
     // Load datasets
     HighFive::DataSet pcm(group.getDataSet("pcm"));
     HighFive::DataSet sigTot(group.getDataSet("sigtot"));
@@ -201,7 +185,8 @@ void GeantInteractions::LoadData(bool samePID, const HighFive::Group &group) {
     }
 }
 
-double GeantInteractions::CrossSection(const Particle &particle1, const Particle &particle2) const {
+InteractionResults GeantInteraction::CrossSection(const Particle &particle1,
+                                                  const Particle &particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(); //, p2Lab = particle2.Momentum();
@@ -211,9 +196,9 @@ double GeantInteractions::CrossSection(const Particle &particle1, const Particle
 
     try {
         if(samePID) {
-            return m_crossSectionPP(pcm / 1_GeV);
+            return {{{particle1.ID(), particle2.ID()}, m_crossSectionPP(pcm / 1_GeV)}};
         } else {
-            return m_crossSectionNP(pcm / 1_GeV);
+            return {{{particle1.ID(), particle2.ID()}, m_crossSectionNP(pcm / 1_GeV)}};
         }
     } catch(std::domain_error &e) {
         spdlog::trace("Using Nasa Interaction");
@@ -221,12 +206,38 @@ double GeantInteractions::CrossSection(const Particle &particle1, const Particle
         double s = (particle1.Momentum() + particle2.Momentum()).M2();
         double smin = pow(particle1.Mass(), 2) + pow(particle2.Mass(), 2);
         double plab = sqrt(pow(s, 2) / smin - s);
-        return Interactions::CrossSectionLab(samePID, plab);
+        return {{{particle1.ID(), particle2.ID()}, Interaction::CrossSectionLab(samePID, plab)}};
     }
 }
 
-ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double &pcm,
-                                            const std::array<double, 2> &rans) const {
+std::vector<Particle> GeantInteraction::GenerateMomentum(const Particle &particle1,
+                                                         const Particle &particle2,
+                                                         const std::vector<PID> &out_pids,
+                                                         Random &random) const {
+    // Boost to center of mass
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // Generate outgoing momentum
+    bool samePID = particle1.ID() == particle2.ID();
+    const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
+    ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
+
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostCM);
+    p2Out = p2Out.Boost(boostCM);
+
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+}
+
+ThreeVector GeantInteraction::MakeMomentum(bool samePID, double pcm,
+                                           const std::vector<double> &rans) const {
     double pR = pcm;
     double pTheta = CrossSectionAngle(samePID, pcm / 1_GeV, rans[0]);
     double pPhi = 2 * M_PI * rans[1];
@@ -234,8 +245,8 @@ ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double &pcm,
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-double GeantInteractions::CrossSectionAngle(bool samePID, const double &energy,
-                                            const double &ran) const {
+double GeantInteraction::CrossSectionAngle(bool samePID, const double &energy,
+                                           const double &ran) const {
     try {
         if(samePID)
             return m_thetaDistPP(energy, ran);
@@ -383,21 +394,298 @@ const {
 //}
 */
 
-double NasaInteractions::CrossSection(const Particle &particle1, const Particle &particle2) const {
+InteractionResults NasaInteraction::CrossSection(const Particle &particle1,
+                                                 const Particle &particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
     double s = (p1Lab + p2Lab).M2();
     double smin = pow(particle1.Mass() + particle2.Mass(), 2);
     double plab = sqrt(pow(s, 2) / smin - s);
-    return CrossSectionLab(samePID, plab);
+    return {{{particle1.ID(), particle2.ID()}, CrossSectionLab(samePID, plab)}};
 }
 
-ThreeVector NasaInteractions::MakeMomentum(bool, const double &pcm,
-                                           const std::array<double, 2> &rans) const {
+std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle1,
+                                                        const Particle &particle2,
+                                                        const std::vector<PID> &out_pids,
+                                                        Random &random) const {
+    // Boost to center of mass
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // Generate outgoing momentum
+    bool samePID = particle1.ID() == particle2.ID();
+    const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
+    ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
+
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostCM);
+    p2Out = p2Out.Boost(boostCM);
+
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+}
+
+ThreeVector NasaInteraction::MakeMomentum(bool, double pcm, const std::vector<double> &rans) const {
     double pR = pcm;
     double pTheta = acos(2 * rans[0] - 1);
     double pPhi = 2 * M_PI * rans[1];
 
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+}
+
+ConstantInteraction::ConstantInteraction(const YAML::Node &node) {
+    for(const auto &interactions : node["InitialStates"]) {
+        auto incoming = std::make_pair<PID, PID>(interactions["Incoming"][0].as<PID>(),
+                                                 interactions["Incoming"][1].as<PID>());
+        AddInteraction(incoming, interactions["Outgoing"].as<InteractionResults>());
+    }
+}
+
+InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const Particle &p2) const {
+    try {
+        return m_interactions.at({p1.ID(), p2.ID()});
+    } catch(std::out_of_range &e) {
+        std::cout << p1 << " " << p2 << std::endl;
+        throw;
+    }
+}
+
+// TODO: Implement generic n-body final state phase space
+std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &particle1,
+                                                            const Particle &particle2,
+                                                            const std::vector<PID> &out_pids,
+                                                            Random &random) const {
+    // Boost to center of mass
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // Generate outgoing momentum
+    bool samePID = particle1.ID() == particle2.ID();
+    const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);
+    ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
+
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostCM);
+    p2Out = p2Out.Boost(boostCM);
+
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+}
+
+ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,
+                                              const std::vector<double> &rans) const {
+    double pR = pcm;
+    double pTheta = acos(2 * rans[0] - 1);
+    double pPhi = 2 * M_PI * rans[1];
+
+    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+}
+
+InteractionResults MesonBaryonInteraction::CrossSection(const Particle &particle1,
+                                                        const Particle &particle2) const {
+    int pidm = particle1.ID();
+    int pidb = particle2.ID(); // Usually the case
+
+    if(particle1.Info().IntSpin() % 2 == 1) {
+        // In this case what we thought was a meson has half-integer spin
+        pidb = particle2.ID();
+        pidm = particle1.ID();
+    }
+
+    // Could encapsulate all the following in one function, but here we make use of achilles
+    // utilities
+    int ichan = m_amps.GetCchannel(pidm, pidb);
+
+    InteractionResults results;
+    if(ichan < 0) { return results; } // return empty, no initial channel matches
+
+    double W = (particle1.Momentum() + particle2.Momentum()).M();
+
+    auto CS_fchan = m_amps.GetAllCSW(ichan, W);
+
+    // Remove cross sections that are identically zero
+    for(auto &CS_i : CS_fchan) {
+        double CS = CS_i.first;
+        if(CS > 0.) {
+            int fchan = CS_i.second;
+            int meson_out = m_amps.MesonPID_Cchan(fchan);
+            int baryon_out = m_amps.BaryonPID_Cchan(fchan);
+            results.push_back({{PID(meson_out), PID(baryon_out)}, CS});
+        }
+    }
+
+    return results;
+}
+
+std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &particle1,
+                                                               const Particle &particle2,
+                                                               const std::vector<PID> &out_pids,
+                                                               Random &random) const {
+    // PIDs from initial states
+    int ipidm = particle1.ID();
+    int ipidb = particle2.ID(); // Usually the case
+
+    if(particle1.Info().IntSpin() % 2 == 1) {
+        // In this case what we thought was a meson has half-integer spin
+        ipidb = particle2.ID();
+        ipidm = particle1.ID();
+    }
+
+    int ichan = m_amps.GetCchannel(ipidm, ipidb); // channel in
+
+    int fpidm = int(out_pids[0]);
+    int fpidb = int(out_pids[1]);
+
+    if(fpidm % 2 == 0) // Works for all, last number in pid should be 2*j except for the KS and KL ?
+                       // these are not included here anyway
+    {
+        // In this case what we thought was a meson has half-integer spin
+        fpidb = fpidm;
+        fpidm = int(out_pids[1]);
+    }
+
+    // Channel out
+    int fchan = m_amps.GetCchannel(fpidm, fpidb);
+
+    double W = (particle1.Momentum() + particle2.Momentum()).M();
+
+    // Get angular distribution
+    f_Polynomial poly_angles = m_amps.Get_CSpoly_W(W, ichan, fchan);
+
+    // We convert the CS to the cdf later, could in principle get the CDF directly
+    // For this we need the values:
+    double CSmin = poly_angles.eval_If(-1.);
+    double CStot = poly_angles.eval_If(1.) - CSmin;
+
+    std::vector<double> rans(3);
+    random.Generate(rans); // Between 0 and 1 ?
+
+    double x = rans[0];
+    //    if (x < 0 || x > 1) BIG Problem
+
+    // Bisection method, should be incapsulated elsewhere in the future
+    //
+    // Parameters for bisection
+    int Nmax = 40; // too much : Nmax*tol > 1 => should converge
+    int Nit = 0;
+    double tol = 0.025;   // tolerance on cosine
+    double eps = 0.00001; // tolerance on f(x) - c = 0
+
+    double fc, c;
+    double b = 1;
+    // random point to start bisection and get random bin definitions:
+    double a = -1 + rans[2] * 2;
+    double fa = (poly_angles.eval_If(a) - CSmin) / CStot - x;
+
+    if(std::abs(fa) < tol) {
+        // Found the solution
+        c = a;
+        Nit = Nmax + 1;
+    } else if(fa > 0.) {
+        // a is the upper limit instead of the lower
+        b = a;
+        a = -1;
+        fa = -x;
+    }
+
+    while(Nit < Nmax) {
+        c = (a + b) / 2.;
+        fc = (poly_angles.eval_If(c) - CSmin) / CStot - x;
+        if((std::abs(fc) < eps) || ((b - a) / 2. < tol)) { break; }
+        if(fc / fa > 0) {
+            a = c;
+            fa = fc;
+        } else {
+            b = c;
+        }
+        Nit++;
+    }
+
+    // END bisection
+
+    double cos_CMS = c;
+    double phi_CMS = rans[1] * 2 * M_PI;
+    double sin_CMS = sqrt(1. - c * c);
+    double sinphi = sin(phi_CMS);
+    double cosphi = cos(phi_CMS);
+
+    // Could generate state here directly if outgoing state is same as initial
+    // More generally below, for arbitrary meson-baryon system created
+
+    // Masses of final-state particles
+    // Use particleInfo
+    double mM = ParticleInfo(fpidm).Mass();
+    double mB = ParticleInfo(fpidb).Mass();
+
+    // CMS momenta and energy of final-state particles
+    // double s = W * W;
+    // double mM2 = mM * mM;
+    // double mB2 = mB * mB;
+    // double pfCMS2 =
+    //     1. / 4 / s * (s * s + mM2 * mM2 + mB2 * mB2 - 2 * s * (mM2 + mB2) - 2 * mM2 * mB2);
+    // double pfCMS = sqrt(pfCMS2);
+    auto p01 = (particle1.Momentum() + particle2.Momentum());
+    auto s = p01.M2();
+    auto sqrts = sqrt(s);
+    auto boostVec = p01.BoostVector();
+    auto mom0 = particle1.Momentum().Boost(-boostVec);
+    Poincare zax(mom0, FourVector(1., 0., 0., 1.));
+
+    double EmCMS = sqrts / 2 * (1 + mM * mM / s - mB * mB / s);
+    double EbCMS = sqrts / 2 * (1 - mM * mM / s + mB * mB / s);
+    auto lambda = sqrt(pow(s - mM * mM - mB * mB, 2) - 4 * mM * mM * mB * mB);
+    auto pfCMS = lambda / 2 / sqrts;
+
+    // Generate outgoing momentum
+    FourVector p1Out =
+        FourVector(EmCMS, pfCMS * sin_CMS * cosphi, pfCMS * sin_CMS * sinphi, pfCMS * cos_CMS);
+    FourVector p2Out =
+        FourVector(EbCMS, -pfCMS * sin_CMS * cosphi, -pfCMS * sin_CMS * sinphi, -pfCMS * cos_CMS);
+
+    // Rotate back
+    zax.RotateBack(p1Out);
+    zax.RotateBack(p2Out);
+
+    // // Boost
+    // ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    // FourVector p1Lab = particle1.Momentum();
+    // FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // // The angle is defined with respect to pCMS_initial
+    // // We construct an orthogonal coordinate system
+    // ThreeVector p_axis = p1CM.Vec3().Unit();
+    // ThreeVector p_perp;
+
+    // if(p_axis.Py() == 0.) {
+    //     // An arbitrary orthogonal vector is y
+    //     p_perp = {0., 1., 0.};
+    // } else if(p_axis.Px() == 0) {
+    //     // An arbitrary orthogonal vector is x
+    //     p_perp = {1., 0., 0.};
+    // } else {
+    //     double norm = sqrt(1. - p_axis.Pz() * p_axis.Pz());
+    //     // An arbitrary orthonormal vector is
+    //     p_perp = {p_axis[1] / norm, -p_axis[0] / norm, 0.};
+    // }
+
+    // ThreeVector p_out = pfCMS * (p_axis * cos_CMS + p_perp * sin_CMS * sinphi +
+    //                              p_perp.Cross(p_axis) * sin_CMS * cosphi); // Rotate p_out
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostVec);
+    p2Out = p2Out.Boost(boostVec);
+
+    // Not sure what to do with the positions here? !!! ?
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }

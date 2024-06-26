@@ -2,7 +2,6 @@
 #include "Achilles/Potential.hh"
 #include "catch2/catch.hpp"
 #include "mock_classes.hh"
-#include <iostream>
 
 double stencil5(std::function<double(double)> f, double x, double h) {
     return (-f(x + 2 * h) + 8 * f(x + h) - 8 * f(x - h) - f(x - 2 * h)) / (12 * h);

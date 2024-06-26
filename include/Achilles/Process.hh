@@ -69,6 +69,12 @@ class Process {
     bool LoadState(std::istream &);
 
   private:
+    // Helper functions
+    refParticles SelectParticles(const refParticles &, const refParticles &,
+                                 const std::vector<PID> &, const std::vector<FourVector> &,
+                                 ParticleStatus) const;
+
+    // Variables
     ProcessInfo m_info;
     StatsData m_xsec{};
     std::unique_ptr<Unweighter> m_unweighter;

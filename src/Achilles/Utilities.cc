@@ -1,7 +1,17 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/FourVector.hh"
 #include "spdlog/spdlog.h"
+#include <sstream>
 #include <stdexcept>
+
+double achilles::ParseFraction(const std::string &frac) {
+    int num = 0, den = 1;
+    char slash;
+    std::istringstream iss(frac);
+    iss >> num >> slash >> den;
+    if(den == 0) throw std::invalid_argument("Denominator cannot be zero");
+    return static_cast<double>(num) / den;
+}
 
 bool achilles::CheckMasses(const std::vector<achilles::FourVector> &mom,
                            const std::vector<double> &masses, double eps) {

@@ -7,8 +7,8 @@ add_library(catch_main STATIC catch_main.cpp)
 target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
 target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
+# TODO: Fix commented out test files
 add_executable(achilles-testsuite 
-    # Files with tests 
     test_interp.cc
     test_vectors.cc
     test_utils.cc
@@ -28,6 +28,7 @@ add_executable(achilles-testsuite
     test_stats.cc
     test_vegas.cc
     test_multichannel.cc
+    # TODO: Rewrite tests for serializing the integrand results
     # test_integrand.cc
     test_spectral.cc
     test_spinor.cc
@@ -45,9 +46,11 @@ add_executable(achilles-testsuite
     test_poincare.cc
     test_process.cc
     test_process_group.cc
-    # NOTE: NuHepMC validator is broken, so the tests are broken
+    # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_cache.cc
+    test_interaction_handler.cc
+    test_mbamplitudes.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
     PUBLIC physics mappers event_gen)

@@ -6,6 +6,7 @@
 
 #include "Achilles/FourVector.hh"
 
+#include "Achilles/Particle.hh"
 #include "catch2/catch.hpp"
 
 // Inspiration taken from: https://github.com/catchorg/Catch2/issues/1467#issuecomment-473928075
@@ -149,6 +150,45 @@ class AllFourVectorApprox : public Catch::MatcherBase<std::vector<achilles::Four
 
   private:
     std::vector<achilles::FourVector> _vec;
+    double _epsilon{std::numeric_limits<double>::epsilon() * 100};
+    double _margin{0.0};
+};
+
+class AllParticleApprox : public Catch::MatcherBase<std::vector<achilles::Particle>> {
+  public:
+    AllParticleApprox(std::vector<achilles::Particle> t) : _vec(t) {}
+
+    bool match(const std::vector<achilles::Particle> &t) const override {
+        bool result = true;
+        for(size_t i = 0; i < t.size(); ++i) {
+            FourVectorApprox vector_matcher(_vec[i].Momentum());
+            result &= vector_matcher.epsilon(_epsilon).margin(_margin).match(t[i].Momentum());
+            result &= (t[i].ID() == _vec[i].ID());
+            result &= (t[i].Status() == _vec[i].Status());
+        }
+        return result;
+    }
+
+    AllParticleApprox &epsilon(double eps) {
+        _epsilon = eps;
+        return *this;
+    }
+
+    AllParticleApprox &margin(double margin) {
+        _margin = margin;
+        return *this;
+    }
+
+    std::string describe() const override {
+        std::ostringstream oss;
+        oss << "is approximately {";
+        for(const auto &elm : _vec) { oss << elm << ", "; }
+        oss << "\b\b}";
+        return oss.str();
+    }
+
+  private:
+    std::vector<achilles::Particle> _vec;
     double _epsilon{std::numeric_limits<double>::epsilon() * 100};
     double _margin{0.0};
 };

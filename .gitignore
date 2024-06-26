@@ -36,3 +36,5 @@ coverage.info
 .vscode/c_cpp_properties.json
 .vscode/settings.json
 install*
+doc-pm/
+Doxyfile

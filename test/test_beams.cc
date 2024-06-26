@@ -78,6 +78,25 @@ Beams:
         CHECK(beam.GenerateWeight(achilles::PID(13), {}, rans, 0) == 1.0);
     }
 
+    SECTION("Multiple Monochromatic Beams, throw on energy mismatch") {
+        YAML::Node beams = YAML::Load(R"beam(
+
+Beams:
+  - Beam:
+      PID: 12
+      Beam Params:
+        Type: Monochromatic
+        Energy: 100
+  - Beam:
+      PID: 13
+      Beam Params:
+        Type: Monochromatic
+        Energy: 200)beam");
+
+        CHECK_THROWS_WITH(beams["Beams"].as<achilles::Beam>(),
+                          "Beams must have the same minimum energies. Got 100 and 200");
+    }
+
     SECTION("Throw on Identical Beams") {
         YAML::Node beams = YAML::Load(R"beam(
 

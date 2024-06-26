@@ -64,6 +64,14 @@ std::ostream &operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
 ParticleInfo::ParticleDB ParticleInfo::particleDB;
 std::map<std::string, achilles::PID> ParticleInfo::nameToPID;
 
+bool ParticleInfo::IsNucleon() const noexcept {
+    return info->id == PID::proton() || info->id == PID::neutron();
+}
+
+bool ParticleInfo::IsPion() const noexcept {
+    return info->id == PID::pionp() || info->id == PID::pion0();
+}
+
 bool ParticleInfo::IsBaryon() const noexcept {
     if(IntID() % 10000 < 1000) return false;
     return true;

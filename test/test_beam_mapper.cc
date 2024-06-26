@@ -1,6 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "Achilles/BeamMapper.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Approx.hh"
 #include "mock_classes.hh"
 

@@ -39,6 +39,11 @@ class Nucleus {
   public:
     // Fermigas Model
     enum FermiGasType { Local, Global };
+    struct FermiGas {
+        FermiGasType type{FermiGasType::Local};
+        bool correlated = false;
+        double SRCfraction{0.2}, lambdaSRC{2.75};
+    };
 
     /// @name Constructors and Destructors
     /// @{
@@ -54,7 +59,7 @@ class Nucleus {
     ///                to the density profile
     Nucleus() = default;
     Nucleus(const std::size_t &, const std::size_t &, const double &, const double &,
-            const std::string &, const FermiGasType &, std::unique_ptr<Density>);
+            const std::string &, const FermiGas &, std::unique_ptr<Density>);
     Nucleus(const Nucleus &) = delete;
     Nucleus(Nucleus &&) = default;
     Nucleus &operator=(const Nucleus &) = delete;
@@ -67,10 +72,6 @@ class Nucleus {
     /// @name Setters
     /// @{
     /// These functions provide access to setting the parameters of the Nucleus object
-
-    /// Set the nucleons, protons, and neutrons of the nucleus
-    ///@param nucleons: The nucleons to be used for the nucleus
-    void SetNucleons(Particles &_nucleons) noexcept;
 
     /// Set the binding energy of the nucleus in MeV
     ///@param energy: The binding energy to be set in MeV
@@ -96,10 +97,6 @@ class Nucleus {
     /// @param radius: The radius to be set in fm
     void SetRadius(const double &_radius) noexcept { radius = _radius; }
 
-    /// Prepare nucleus to accept a hadronic probe
-    ///@param pid_probe: The PID of the particle that will interact
-    void PrepareReaction(const PID &pid_probe);
-
     /// Setup basic properties for nuclei, needed to setup hydrogen correctly
     ///@param protons: Number of protons
     ///@param nucleons: Number of nucleons
@@ -120,38 +117,17 @@ class Nucleus {
         return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
     }
 
-    /// Return a vector of the current nucleons
-    ///@return Particles: The current nucleons generated for the nucleus
-    MOCK Particles &Nucleons() noexcept { return nucleons; }
-    const Particles &Nucleons() const noexcept { return nucleons; }
-
-    /// Return a vector of the ids of the protons in the nucleus
-    ///@return std::vector<size_t>: The current ids of protons in nucleon vector
-    MOCK std::vector<size_t> ProtonsIDs() const noexcept { return protonLoc; }
-
-    /// Return a vector of the ids of the neutrons in the nucleus
-    ///@return std::vector<size_t>: The current ids of neutrons in nucleon vector
-    MOCK std::vector<size_t> NeutronsIDs() const noexcept { return neutronLoc; }
-
-    /// Return a vector of the current protons
-    ///@return Particles: The current protons generated for the nucleus
-    Particles &Protons() noexcept { return protons; }
-
-    /// Return a vector of the current neutrons
-    ///@return Particles: The current neutrons generated for the nucleus
-    Particles &Neutrons() noexcept { return neutrons; }
-
     /// Return the number of nucleons in the nucleus
     ///@return int: The number of nucleons in the nucleus
-    MOCK std::size_t NNucleons() const noexcept { return nucleons.size(); }
+    MOCK std::size_t NNucleons() const noexcept { return nnucleons; }
 
     /// Return the number of protons in the nucleus
     ///@return int: The number of protons in the nucleus
-    std::size_t NProtons() const noexcept { return protons.size(); }
+    MOCK std::size_t NProtons() const noexcept { return nprotons; }
 
     /// Return the number of neutrons in the nucleus
     ///@return int: The number of neutrons in the nucleus
-    std::size_t NNeutrons() const noexcept { return neutrons.size(); }
+    MOCK std::size_t NNeutrons() const noexcept { return nneutrons; }
 
     /// Return the current binding energy of the nucleus
     ///@return double: The binding energy in MeV
@@ -159,7 +135,7 @@ class Nucleus {
 
     /// Return the current Fermi Momentum of the nucleus
     ///@return double: The Fermi Momentum in MeV
-    // const double& FermiMomentum() const noexcept {return fermiMomentum;}
+    const double &FermiMomentum() const noexcept { return fermiMomentum; }
 
     /// Return the phenomenological potential
     ///@return std::shared_ptr<Potential>: The potential of the nucleus
@@ -179,10 +155,7 @@ class Nucleus {
 
     /// Return the Fermi momentum according to a given FG model
     ///@param position: The radius to calculate the density
-    double FermiMomentum(const double &) const noexcept; //
-
-    // Return kF
-    double FermiMomentum() const noexcept { return fermiMomentum; }
+    double FermiMomentum(const double &) const noexcept;
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
@@ -191,11 +164,13 @@ class Nucleus {
     /// @{
 
     /// Generate a configuration of the nucleus based on the density function
-    MOCK void GenerateConfig();
+    MOCK Particles GenerateConfig();
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
     const std::array<double, 3> GenerateMomentum(const double &) noexcept;
+
+    double SampleMagnitudeMomentum(const double &position) noexcept;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
@@ -240,7 +215,7 @@ class Nucleus {
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
     static Nucleus MakeNucleus(const std::string &, const double &, const double &,
-                               const std::string &, const FermiGasType &, std::unique_ptr<Density>);
+                               const std::string &, const FermiGas &, std::unique_ptr<Density>);
 
     /// @name Stream Operators
     /// @{
@@ -251,10 +226,9 @@ class Nucleus {
     /// @}
 
   private:
-    Particles nucleons, protons, neutrons;
-    std::vector<size_t> protonLoc, neutronLoc;
+    size_t nnucleons, nprotons, nneutrons;
     double binding{}, fermiMomentum{}, radius{};
-    FermiGasType fermiGas{FermiGasType::Local};
+    FermiGas fermi_gas{};
     std::unique_ptr<Density> density;
     Interp1D rhoInterp;
 
@@ -270,6 +244,25 @@ class Nucleus {
 } // namespace achilles
 
 namespace YAML {
+template <> struct convert<achilles::Nucleus::FermiGas> {
+    static bool decode(const Node &node, achilles::Nucleus::FermiGas &fg) {
+        if(node["Type"].as<std::string>() == "Local")
+            fg.type = achilles::Nucleus::FermiGasType::Local;
+        else if(node["Type"].as<std::string>() == "Global")
+            fg.type = achilles::Nucleus::FermiGasType::Global;
+        else
+            return false;
+
+        if(node["Correlated"]) fg.correlated = node["Correlated"].as<bool>();
+        if(fg.correlated) {
+            if(node["SRCfraction"]) fg.SRCfraction = node["SRCfraction"].as<double>();
+            if(node["LambdaSRC"]) fg.lambdaSRC = node["LambdaSRC"].as<double>();
+        }
+
+        return true;
+    }
+};
+
 template <> struct convert<achilles::Nucleus> {
     static bool decode(const Node &node, achilles::Nucleus &nuc) {
         std::string name = node["Name"].as<std::string>();
@@ -284,18 +277,11 @@ template <> struct convert<achilles::Nucleus> {
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
-        achilles::Nucleus::FermiGasType type = achilles::Nucleus::FermiGasType::Local;
-        if(node["FermiGas"].as<std::string>() == "Local")
-            type = achilles::Nucleus::FermiGasType::Local;
-        else if(node["FermiGas"].as<std::string>() == "Global")
-            type = achilles::Nucleus::FermiGasType::Global;
-        else
-            return false;
-
+        auto fermi_gas = node["FermiGas"].as<achilles::Nucleus::FermiGas>();
         auto densityFile = node["Density"]["File"].as<std::string>();
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
-        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, type,
+        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, fermi_gas,
                                              std::move(configs));
 
         return true;

@@ -3,6 +3,7 @@
 
 // The classes in this file are inspired from the implementation found in Sherpa
 
+#include "fmt/ranges.h"
 #include <functional>
 #include <map>
 #include <memory>
@@ -200,6 +201,8 @@ class ParticleInfo {
     int IntID() const noexcept {
         return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id);
     }
+    bool IsNucleon() const noexcept;
+    bool IsPion() const noexcept;
     bool IsBaryon() const noexcept;
     bool IsHadron() const noexcept { return info->hadron; }
     bool IsBHadron() const noexcept;
