@@ -13,7 +13,7 @@ bool InteractionFactory::Register(const std::string &name,
     return false;
 }
 
-std::unique_ptr<Interactions> InteractionFactory::Create(const YAML::Node &node) {
+std::unique_ptr<Interaction> InteractionFactory::Create(const YAML::Node &node) {
     auto name = node["Name"].as<std::string>();
     auto it = methods().find(name);
     if(it != methods().end()) return it->second(node);

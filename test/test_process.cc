@@ -6,6 +6,7 @@
 #include "Approx.hh"
 #include "mock_classes.hh"
 #include "trompeloeil.hpp"
+#include <utility>
 
 template <typename Type, std::size_t Size, std::size_t... Index>
 constexpr auto Iota_helper(std::index_sequence<Index...>) {
@@ -62,7 +63,7 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        const MockEvent event;
+        const MockEvent event{};
         REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
 
         process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
@@ -70,6 +71,47 @@ TEST_CASE("Handles events correctly", "[Process]") {
         CHECK_THAT(had_in, AllFourVectorApprox(had_in_exp));
         CHECK_THAT(lep_out, AllFourVectorApprox(lep_out_exp));
         CHECK_THAT(had_out, AllFourVectorApprox(had_out_exp));
+    }
+
+    SECTION("Extract Particles") {
+        info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+        auto expected = momentum[0] - momentum[2];
+        YAML::Node config;
+        auto unweight = std::make_unique<achilles::NoUnweighter>(config);
+        achilles::Process process(info, std::move(unweight));
+
+        const MockEvent event{};
+        REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
+
+        auto qvec = process.ExtractQ(event);
+        CHECK_THAT(qvec, FourVectorApprox(expected));
+    }
+
+    SECTION("Extract Q Vector") {
+        info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+        achilles::Particle lep_in;
+        achilles::Particle lep_in_expected{achilles::PID::electron(), {1.3e+03, 0.0, 0.0, 1.3e+03}};
+        std::vector<achilles::Particle> had_in, lep_out, had_out, spect;
+        std::vector<achilles::Particle> had_in_exp{
+            {achilles::PID::proton(), {1.1188e+04, 0.0, 0.0, 0.0}}};
+        std::vector<achilles::Particle> lep_out_exp{
+            {achilles::PID::electron(),
+             {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
+        std::vector<achilles::Particle> had_out_exp{
+            {achilles::PID::proton(),
+             {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
+        YAML::Node config;
+        auto unweight = std::make_unique<achilles::NoUnweighter>(config);
+        achilles::Process process(info, std::move(unweight));
+
+        const MockEvent event{};
+        REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
+
+        process.ExtractParticles(event, lep_in, had_in, lep_out, had_out, spect);
+        CHECK(lep_in == lep_in_expected);
+        CHECK_THAT(had_in, AllParticleApprox(had_in_exp));
+        CHECK_THAT(lep_out, AllParticleApprox(lep_out_exp));
+        CHECK_THAT(had_out, AllParticleApprox(had_out_exp));
     }
 
     SECTION("Setup Hadrons [Coherent]") {
@@ -85,14 +127,10 @@ TEST_CASE("Handles events correctly", "[Process]") {
         expected_nucleons.emplace_back(achilles::PID::carbon(), momentum[3]);
         expected_nucleons.back().Status() = achilles::ParticleStatus::final_state;
 
-        auto mnuc = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*mnuc, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
-        std::shared_ptr<achilles::Nucleus> nuc = mnuc;
-
         MockEvent event;
         const MockEvent &cevent = event;
         REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, CurrentNucleus()).TIMES(3).LR_RETURN(nuc);
+        REQUIRE_CALL(event, Hadrons()).TIMES(4).LR_RETURN(std::ref(nucleons));
 
         process.SetupHadrons(event);
 
@@ -117,17 +155,9 @@ TEST_CASE("Handles events correctly", "[Process]") {
         achilles::Process process(info, std::move(unweight));
 
         std::vector<achilles::Particle> nucleons{achilles::PID::proton(), achilles::PID::neutron()};
-
-        auto mnuc = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*mnuc, ProtonsIDs()).TIMES(1).RETURN(std::vector<size_t>{0});
-        REQUIRE_CALL(*mnuc, NeutronsIDs()).TIMES(1).RETURN(std::vector<size_t>{1});
-        REQUIRE_CALL(*mnuc, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
-        std::shared_ptr<achilles::Nucleus> nuc = mnuc;
-
-        MockEvent event;
-        const MockEvent &cevent = event;
-        REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, CurrentNucleus()).TIMES(AT_LEAST(5)).LR_RETURN(nuc);
+        achilles::Event event;
+        event.Momentum() = momentum;
+        event.Hadrons() = nucleons;
 
         process.SetupHadrons(event);
 
@@ -146,9 +176,36 @@ TEST_CASE("Handles events correctly", "[Process]") {
         expected_nucleons.emplace_back(pid2, momentum[3]);
         expected_nucleons.back().Status() = achilles::ParticleStatus::propagating;
 
+        nucleons = event.Hadrons();
         CHECK(nucleons.size() == expected_nucleons.size());
         CHECK(nucleons[0] == expected_nucleons[0]);
         CHECK(nucleons[1] == expected_nucleons[1]);
         CHECK(nucleons[2] == expected_nucleons[2]);
     }
+}
+
+TEST_CASE("Correct metadata", "[Process]") {
+    achilles::ProcessInfo info;
+    info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+    YAML::Node config;
+    auto unweight = std::make_unique<achilles::NoUnweighter>(config);
+    achilles::Process process(info, std::move(unweight));
+
+    MockBackend backend;
+    MockNuclearModel model;
+
+    REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Quasielastic);
+    REQUIRE_CALL(model, GetName()).TIMES(2).RETURN("QESpectral");
+    REQUIRE_CALL(model, InspireHEP()).TIMES(1).RETURN("Isaacson:2022cwh");
+    REQUIRE_CALL(backend, GetNuclearModel()).TIMES(3).LR_RETURN(&model);
+
+    process.SetID(&model);
+    auto metadata = process.Metadata(&backend);
+
+    CHECK(metadata.id == 251);
+    CHECK(metadata.name == "QESpectralNC1p0pi");
+    auto msg = fmt::format("QESpectral ProcessInfo([11, 2212] -> [11, 2212])");
+    CHECK(metadata.description == msg);
+    CHECK(metadata.inspireHEP == "Isaacson:2022cwh");
 }

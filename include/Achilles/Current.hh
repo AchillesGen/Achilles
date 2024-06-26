@@ -1,7 +1,5 @@
 #pragma once
 
-#include "fmt/std.h"
-
 #include <array>
 #include <complex>
 #include <stdexcept>

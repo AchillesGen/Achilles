@@ -1,57 +1,31 @@
 #include "Achilles/Logging.hh"
+#include "Achilles/Logo.hh"
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Version.hh"
 
 #include "docopt.h"
 #include "fmt/color.h"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#include "yaml-cpp/yaml.h"
-#pragma GCC diagnostic pop
-
-void Splash() {
-    fmt::print(R"splash(
-+=================================================================+
-|                                                                 | 
-|       d8b   db db    db  .o88b. db   db d888888b  .o88b.        |
-|       888o  88 88    88 d8P  Y8 88   88   `88'   d8P  Y8        |
-|       88V8o 88 88    88 8P      88ooo88    88    8P             |
-|       88 V8o88 88    88 8b      88~~~88    88    8b             |
-|       88  V888 88b  d88 Y8b  d8 88   88   .88.   Y8b  d8        |
-|       VP   V8P ~Y8888P'  `Y88P' YP   YP Y888888P  `Y88P'        |
-|                                                                 |
-+-----------------------------------------------------------------+
-|                                                                 |
-|    Version: {:52}|
-|    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,    | 
-|             Pedro A. Machado, Noemi Rocco                       | 
-|                                                                 |
-+=================================================================+
-
-)splash",
-               ACHILLES_VERSION);
-
-    fmt::print(fmt::emphasis::bold | fg(fmt::terminal_color::red),
-               "NOTE: You are running in cascade test mode. Hard interactions "
-               "are not included\n");
-}
-
 static const std::string USAGE =
     R"(
     Usage:
-      achilles-cascade [<input>] [-v | -vv]
+      achilles-cascade [<input>] [-v | -vv] [-l | -ll]
       achilles-cascade (-h | --help)
       achilles-cascade --version
 
     Options:
       -v[v]            Increase verbosity level.
+      -l[l]            Increase log verbosity 
+                       (Note: Log verbosity is never lower than total level)
       -h --help        Show this screen.
       --version        Show version.
 )";
 
 int main(int argc, char *argv[]) {
     Splash();
+    fmt::print(fmt::emphasis::bold | fg(fmt::terminal_color::red),
+               "NOTE: You are running in cascade test mode. Hard interactions "
+               "are not included\n");
     std::map<std::string, docopt::value> args =
         docopt::docopt(USAGE, {argv + 1, argv + argc},
                        true,                                          // show help if requested
@@ -61,7 +35,9 @@ int main(int argc, char *argv[]) {
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    CreateLogger(verbosity, log_verbosity, 5);
+    GitInformation();
 
     achilles::CascadeTest::RunCascade(runcard);
 

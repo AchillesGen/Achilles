@@ -3,9 +3,7 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/XSecBackend.hh"
-#include "Approx.hh"
 #include "mock_classes.hh"
-#include "trompeloeil.hpp"
 
 using achilles::RegistrableBackend;
 
@@ -149,8 +147,8 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
                                                 {achilles::PID::neutron()}};
     auto beam = std::make_shared<MockBeam>();
     auto nucleus = std::make_shared<MockNucleus>();
-    REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1);
-    REQUIRE_CALL(*nucleus, Nucleons()).TIMES(AT_LEAST(1)).LR_RETURN(nucleons);
+    REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);
+
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
@@ -194,9 +192,6 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
 
     SECTION("Generate") {
         auto optimize = false;
-        REQUIRE_CALL(*nucleus, ProtonsIDs()).TIMES(1).RETURN(std::vector<size_t>{0});
-        REQUIRE_CALL(*nucleus, NeutronsIDs()).TIMES(1).RETURN(std::vector<size_t>{1});
-        REQUIRE_CALL(*nucleus, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
         REQUIRE_CALL(*beam, EvaluateFlux(achilles::PID::electron(), momentum[0]))
             .TIMES(1)
             .LR_RETURN(flux);

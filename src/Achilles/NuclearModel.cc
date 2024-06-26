@@ -511,6 +511,7 @@ std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
 }
 
 std::string Coherent::PhaseSpace(PID nuc_id) const {
+    if(nuc_id == PID::hydrogen()) throw achilles::InvalidChannel("Hydrogen nucleus");
     if(nuc_id == nucleus_pid) return PSName();
     throw achilles::InvalidChannel(
         fmt::format("Nucleus don't match: Model {}, Phasespace {}", nucleus_pid, nuc_id));
@@ -599,12 +600,10 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
                                                   const FormFactorMap &ffVal) const {
     Current result;
     std::array<SpinMatrix, 4> gamma{};
-    auto mpi2 = pow(ParticleInfo(211).Mass(), 2);
-    auto ffAP = 2.0 * Constant::mN2 / (-qVec.M2() + mpi2) * ffVal.at(Type::FA);
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
         gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
-        gamma[mu] += ffAP * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] +=
@@ -734,7 +733,7 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] += std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
-                                                       sign * qVec[nu] / (2 * hyperon.Mass()));
+                                                       sign * qVec[nu] / (hyperon.Mass()));
             sign = -1;
         }
     }

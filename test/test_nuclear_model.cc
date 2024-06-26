@@ -261,7 +261,7 @@ dummy: dummy2
         value.F2p = 1;
         value.F2n = 1;
         value.FA = 1;
-        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(2).LR_RETURN((value));
+        REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(AT_LEAST(1)).LR_RETURN((value));
 
         // Require to build here or else form_factor is moved before expectations are set in next
         // test

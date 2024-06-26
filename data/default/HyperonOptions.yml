@@ -1,0 +1,6 @@
+Model: HyperonSpectral
+ConfigFile: data/info_pke.data 
+FormFactorFile: "FormFactors.yml"
+SpectralP: data/pke12_tot.data
+SpectralN: data/pke12_tot.data
+Ward: None
