@@ -117,7 +117,7 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         auto results = integrator.Summary();
 
         CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
-        CHECK(results.sum_results.Error() / results.sum_results.Mean() < rtol);
+        CHECK(results.LastResult().Error() / results.LastResult().Mean() < rtol);
     }
 }
 
