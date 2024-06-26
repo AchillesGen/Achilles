@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "fmt/core.h"
+#include "fmt/ranges.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -86,6 +87,10 @@ class PID {
     template <typename OStream> friend OStream &operator<<(OStream &os, const PID &pid) {
         os << pid.id;
         return os;
+    }
+    template <typename IStream> friend IStream &operator>>(IStream &is, PID &pid) {
+        is >> pid.id;
+        return is;
     }
 
     // Ensure id matches the numbering scheme defined at:

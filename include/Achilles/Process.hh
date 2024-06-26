@@ -10,6 +10,16 @@
 
 #include <optional>
 
+#if __has_include(<filesystem>)
+#include <filesystem>
+namespace fs = std::filesystem;
+#elif __has_include(<experimental/filesystem>)
+#include <experimental/filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#error "Could not find includes: <filesystem> or <experimental/filesystem>"
+#endif
+
 namespace achilles {
 
 class Beam;
@@ -53,6 +63,10 @@ class Process {
     void SetID(NuclearModel *);
     int ID() const { return m_id; }
     ProcessMetadata Metadata(XSecBackend *) const;
+
+    // Cache results
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
 
   private:
     // Helper functions
@@ -113,6 +127,13 @@ class ProcessGroup {
     // Metadata handlers
     std::vector<ProcessMetadata> Metadata() const;
     std::vector<int> ProcessIds() const;
+    // std::string UniqueID() const;
+
+    // Cache results
+    bool Save(const fs::path &) const;
+    bool Load(const fs::path &);
+
+    friend std::hash<ProcessGroup>;
 
   private:
     // Physics components
@@ -123,6 +144,7 @@ class ProcessGroup {
     CutCollection m_cuts;
 
     // Numerical components
+    bool NeedsOptimization() const;
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;
@@ -137,3 +159,13 @@ std::vector<int> AllProcessIDs(const std::vector<ProcessGroup> &);
 std::vector<ProcessMetadata> AllProcessMetadata(const std::vector<ProcessGroup> &);
 
 } // namespace achilles
+
+template <> struct std::hash<achilles::Process> {
+    std::size_t operator()(const achilles::Process &p) const {
+        return std::hash<achilles::ProcessInfo>{}(p.Info());
+    }
+};
+
+template <> struct std::hash<achilles::ProcessGroup> {
+    std::size_t operator()(const achilles::ProcessGroup &p) const;
+};

@@ -1,9 +1,12 @@
 #include "Achilles/System.hh"
 #include "Achilles/Exception.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Utilities.hh"
 #include "fmt/ranges.h"
 #include "fmt/std.h"
 #include "spdlog/spdlog.h"
+
+using achilles::Filesystem::Cache;
 
 // Function to load the search path for Achilles files
 std::vector<fs::path> achilles::Filesystem::AchillesPath() {
@@ -39,4 +42,33 @@ std::string achilles::Filesystem::FindFile(const std::string &filename, const st
     spdlog::warn("{}: Could not load {} from {}", head, filename,
                  fmt::join(dirs.begin(), dirs.end(), ":"));
     throw AchillesLoadError(filename);
+}
+
+bool Cache::FindCachedState(std::size_t hash) {
+    auto cachePath = Path() / fmt::format("{:x}", hash);
+    return fs::exists(cachePath);
+}
+
+bool Cache::SaveState(const ProcessGroup &group) {
+    auto cachePath = Path() / fmt::format("{:x}", std::hash<ProcessGroup>{}(group));
+    // TODO: Figure out how to stringify process group
+    // if(fs::exists(cachePath))
+    //     spdlog::warn("Cache: Overwriting existing cache for {}", group);
+
+    fs::create_directories(cachePath);
+
+    return group.Save(cachePath);
+}
+
+bool Cache::LoadState(ProcessGroup &group) {
+    auto cachePath = Path() / fmt::format("{:x}", std::hash<ProcessGroup>{}(group));
+    if(!fs::exists(cachePath)) {
+        // TODO: Figure out how to stringify process group
+        // spdlog::debug("Cache: Not found for {}", group);
+        return false;
+    }
+
+    fs::create_directories(cachePath);
+
+    return group.Load(cachePath);
 }
