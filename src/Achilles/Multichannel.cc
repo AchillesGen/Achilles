@@ -207,15 +207,17 @@ void achilles::MultiChannel::LoadState(std::istream &is) {
     achilles::LoadState(is, summary);
     size_t nweights;
     is >> nweights;
+    channel_weights.resize(nweights);
+    best_weights.resize(nweights);
     for(size_t i = 0; i < nweights; ++i) {
         double wgt;
         is >> wgt;
-        channel_weights.push_back(wgt);
+        channel_weights[i] = wgt;
     }
     for(size_t i = 0; i < nweights; ++i) {
         double wgt;
         is >> wgt;
-        best_weights.push_back(wgt);
+        best_weights[i] = wgt;
     }
     is >> min_diff;
 }

@@ -13,6 +13,8 @@
 
 #include "fmt/ranges.h"
 
+#include "fmt/ranges.h"
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -249,6 +251,20 @@ bool Process::LoadState(std::istream &is) {
     return true;
 }
 
+bool Process::SaveState(std::ostream &os) const {
+    m_info.SaveState(os);
+    m_xsec.SaveState(os);
+    m_unweighter->SaveState(os);
+    return true;
+}
+
+bool Process::LoadState(std::istream &is) {
+    m_info.LoadState(is);
+    m_xsec.LoadState(is);
+    m_unweighter->LoadState(is);
+    return true;
+}
+
 std::vector<int> ProcessGroup::ProcessIds() const {
     std::vector<int> data;
     for(auto &process : m_processes) { data.push_back(process.ID()); }
@@ -383,9 +399,9 @@ void ProcessGroup::Optimize() {
     // TODO: Clean up this control flow. It is a bit of a mess
     b_optimize = true;
 
-    spdlog::info("Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
-                 m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
-                 m_processes[0].Info().Multiplicity());
+void ProcessGroup::Optimize() {
+    // TODO: Clean up this control flow. It is a bit of a mess
+    b_optimize = true;
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
