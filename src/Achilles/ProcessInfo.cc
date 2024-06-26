@@ -50,3 +50,33 @@ int achilles::ProcessInfo::LeptonicCharge() const {
     for(const auto &part : m_leptonic.second) { charge += ParticleInfo(part).IntCharge(); }
     return charge / 3;
 }
+
+bool achilles::ProcessInfo::SaveState(std::ostream &os) const {
+    os << m_leptonic.first << " " << m_leptonic.second.size() << " ";
+    for(const auto &part : m_leptonic.second) os << part << " ";
+    os << m_hadronic.first.size() << " ";
+    for(const auto &part : m_hadronic.first) os << part << " ";
+    os << m_hadronic.second.size() << " ";
+    for(const auto &part : m_hadronic.second) os << part << " ";
+    os << m_spectator.size() << " ";
+    for(const auto &part : m_spectator) os << part << " ";
+    return true;
+}
+
+bool achilles::ProcessInfo::LoadState(std::istream &is) {
+    is >> m_leptonic.first;
+    size_t size;
+    is >> size;
+    m_leptonic.second.resize(size);
+    for(auto &part : m_leptonic.second) is >> part;
+    is >> size;
+    m_hadronic.first.resize(size);
+    for(auto &part : m_hadronic.first) is >> part;
+    is >> size;
+    m_hadronic.second.resize(size);
+    for(auto &part : m_hadronic.second) is >> part;
+    is >> size;
+    m_spectator.resize(size);
+    for(auto &part : m_spectator) is >> part;
+    return true;
+}

@@ -118,6 +118,10 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     return summary;
 }
 
+bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
+    return (rel_err > params.rtol) || summary.results.size() < params.niterations;
+}
+
 void achilles::MultiChannel::PrintIteration() const {
     spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}", summary.results.size(),
                  summary.results.back().Mean(), summary.results.back().Error(),
@@ -144,15 +148,17 @@ void achilles::MultiChannel::LoadState(std::istream &is) {
     achilles::LoadState(is, summary);
     size_t nweights;
     is >> nweights;
+    channel_weights.resize(nweights);
+    best_weights.resize(nweights);
     for(size_t i = 0; i < nweights; ++i) {
         double wgt;
         is >> wgt;
-        channel_weights.push_back(wgt);
+        channel_weights[i] = wgt;
     }
     for(size_t i = 0; i < nweights; ++i) {
         double wgt;
         is >> wgt;
-        best_weights.push_back(wgt);
+        best_weights[i] = wgt;
     }
     is >> min_diff;
 }

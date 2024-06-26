@@ -64,6 +64,10 @@ class Process {
     int ID() const { return m_id; }
     ProcessMetadata Metadata(XSecBackend *) const;
 
+    // Cache results
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
+
   private:
     ProcessInfo m_info;
     StatsData m_xsec{};
@@ -134,6 +138,7 @@ class ProcessGroup {
     CutCollection m_cuts;
 
     // Numerical components
+    bool NeedsOptimization() const;
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;

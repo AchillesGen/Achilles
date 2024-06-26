@@ -188,6 +188,8 @@ class MockUnweighter : public trompeloeil::mock_interface<achilles::Unweighter> 
     IMPLEMENT_MOCK1(AddEvent);
     IMPLEMENT_MOCK1(AcceptEvent);
     IMPLEMENT_MOCK0(MaxValue);
+    IMPLEMENT_CONST_MOCK1(SaveState);
+    IMPLEMENT_MOCK1(LoadState);
 };
 
 class MockProcess : public trompeloeil::mock_interface<achilles::Process> {

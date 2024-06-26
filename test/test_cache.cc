@@ -1,7 +1,9 @@
 #include "Achilles/MultiChannel.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Vegas.hh"
 #include "catch2/catch.hpp"
 #include "catch_utils.hh"
+#include "mock_classes.hh"
 
 #include "Achilles/Random.hh"
 #include "Achilles/Unweighter.hh"
@@ -220,4 +222,48 @@ TEST_CASE("Save/Load MultiChannel", "[Cache]") {
     multi2.LoadState(ss);
 
     CHECK(multi == multi2);
+}
+
+TEST_CASE("Save/Load ProcessInfo", "[Cache]") {
+    achilles::ProcessInfo info;
+    info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+    info.m_spectator = {};
+
+    std::stringstream ss;
+    info.SaveState(ss);
+
+    achilles::ProcessInfo info2;
+    info2.LoadState(ss);
+
+    CHECK(info == info2);
+}
+
+TEST_CASE("Save/Load Process", "[Cache]") {
+    auto unweighter = std::make_unique<MockUnweighter>();
+    REQUIRE_CALL(*unweighter, AddEvent(10)).TIMES(1000);
+    REQUIRE_CALL(*unweighter, MaxValue()).TIMES(1).RETURN(10);
+    REQUIRE_CALL(*unweighter, SaveState(trompeloeil::_)).TIMES(2);
+    achilles::ProcessInfo info;
+    info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
+    info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+    info.m_spectator = {};
+
+    achilles::Process process(info, std::move(unweighter));
+    for(size_t i = 0; i < 1000; ++i) process.AddWeight(10);
+
+    std::stringstream ss;
+    process.SaveState(ss);
+    process.SaveState(ss);
+    std::cout << ss.str() << std::endl;
+
+    auto unweighter2 = std::make_unique<MockUnweighter>();
+    REQUIRE_CALL(*unweighter2, LoadState(trompeloeil::_)).TIMES(1);
+    REQUIRE_CALL(*unweighter2, MaxValue()).TIMES(1).RETURN(10);
+    achilles::Process process2(info, std::move(unweighter2));
+    process2.LoadState(ss);
+
+    CHECK(process.Info() == process2.Info());
+    CHECK(process.MaxWeight() == process2.MaxWeight());
+    CHECK(process.TotalCrossSection() == process2.TotalCrossSection());
 }

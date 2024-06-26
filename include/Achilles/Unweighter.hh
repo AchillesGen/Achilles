@@ -20,7 +20,7 @@ class Unweighter {
     virtual void AddEvent(double) = 0;
     virtual double AcceptEvent(double) = 0;
     virtual double MaxValue() = 0;
-    virtual void SaveState(std::ostream &) = 0;
+    virtual void SaveState(std::ostream &) const = 0;
     virtual void LoadState(std::istream &) = 0;
 
     double Efficiency() const {
@@ -48,10 +48,10 @@ class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
         return weight;
     }
     double MaxValue() override { return m_max_weight; }
-    void SaveState(std::ostream &os) override {
+    void SaveState(std::ostream &os) const override {
         const auto default_precision{os.precision()};
         os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
-        os << m_max_weight << " " << m_accepted << " " << m_total;
+        os << m_max_weight << " " << m_accepted << " " << m_total << " ";
         os << std::setprecision(static_cast<int>(default_precision));
     }
     void LoadState(std::istream &is) override { is >> m_max_weight >> m_accepted >> m_total; }
@@ -72,9 +72,9 @@ class PercentileUnweighter : public Unweighter, RegistrableUnweighter<Percentile
     void AddEvent(double) override;
     double AcceptEvent(double) override;
     double MaxValue() override { return m_percentile.Get(); }
-    void SaveState(std::ostream &os) override {
+    void SaveState(std::ostream &os) const override {
         m_percentile.SaveState(os);
-        os << m_accepted << " " << m_total;
+        os << m_accepted << " " << m_total << " ";
     }
     void LoadState(std::istream &is) override {
         m_percentile.LoadState(is);

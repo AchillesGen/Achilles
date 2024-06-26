@@ -12,6 +12,7 @@ struct MultiChannelSummary {
     StatsData sum_results;
 
     StatsData Result() const { return sum_results; }
+    StatsData LastResult() const { return results.back(); }
 };
 
 struct MultiChannelParams {
@@ -54,7 +55,11 @@ class MultiChannel {
     template <typename T> double GenerateWeight(Integrand<T> &, const std::vector<T> &);
 
     // Getting results
+    bool HasResults() const { return summary.results.size() != 0; }
+    void UpdateSummary(bool update) { update_summary = update; }
     MultiChannelSummary Summary();
+    StatsData LastResult() const { return summary.LastResult(); }
+    bool NeedsOptimization(double) const;
 
     // Cache Results
     void SaveState(std::ostream &) const;
@@ -77,6 +82,7 @@ class MultiChannel {
     void PrintIteration() const;
     void MaxDifference(const std::vector<double> &);
 
+    bool update_summary{true};
     size_t ndims{};
     MultiChannelParams params{};
     std::vector<double> channel_weights, best_weights;
@@ -119,8 +125,10 @@ template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func
     Adapt(train_data);
     func.Train();
     MaxDifference(train_data);
-    summary.results.push_back(results);
-    summary.sum_results += results;
+    if(update_summary) {
+        summary.results.push_back(results);
+        summary.sum_results += results;
+    }
 }
 
 template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
@@ -147,9 +155,9 @@ double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vec
 
 template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func) {
     double rel_err = lim::max();
-    while((rel_err > params.rtol) || summary.results.size() < params.niterations) {
+    while(NeedsOptimization(rel_err)) {
         (*this)(func);
-        StatsData current = summary.sum_results;
+        StatsData current = summary.results.back();
         rel_err = current.Error() / std::abs(current.Mean());
 
         PrintIteration();

@@ -54,7 +54,7 @@ class Percentile {
         m_upper.clear();
     }
 
-    void SaveState(std::ostream &os) {
+    void SaveState(std::ostream &os) const {
         const auto default_precision{os.precision()};
         os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
         os << m_percentile << " ";
@@ -122,6 +122,7 @@ class StatsData {
     double Min() const { return min; }
     double Max() const { return max; }
     double Error() const { return sqrt(Variance()); }
+    double RelError() const { return Error() / std::abs(Mean()); }
 
     bool operator==(const StatsData &other) const {
         static constexpr double tol = 1e-6;
@@ -137,7 +138,7 @@ class StatsData {
     void SaveState(std::ostream &os) const {
         const auto default_precision{os.precision()};
         os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
-        os << n << " " << min << " " << max << " " << sum << " " << sum2 << " " << n_finite;
+        os << n << " " << min << " " << max << " " << sum << " " << sum2 << " " << n_finite << " ";
         os << std::setprecision(static_cast<int>(default_precision));
     }
     void LoadState(std::istream &is) { is >> n >> min >> max >> sum >> sum2 >> n_finite; }

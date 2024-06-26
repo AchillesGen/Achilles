@@ -36,13 +36,18 @@ struct ProcessInfo {
     int LeptonicCharge() const;
 
     bool operator==(const ProcessInfo &other) const {
-        return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic;
+        return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic &&
+               m_spectator == other.m_spectator;
+        ;
     }
 
     template <typename OStream> friend OStream &operator<<(OStream &os, const ProcessInfo &info) {
         os << fmt::format("{}", info);
         return os;
     }
+
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
 };
 
 } // namespace achilles

@@ -87,6 +87,10 @@ class PID {
         os << pid.id;
         return os;
     }
+    template <typename IStream> friend IStream &operator>>(IStream &is, PID &pid) {
+        is >> pid.id;
+        return is;
+    }
 
     // Ensure id matches the numbering scheme defined at:
     // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
