@@ -18,6 +18,9 @@ namespace fs = std::experimental::filesystem;
 #error "Could not find includes: <filesystem> or <experimental/filesystem>"
 #endif
 
+#include "fmt/ranges.h"
+#include "fmt/std.h"
+
 namespace achilles {
 
 class ProcessGroup;
@@ -63,8 +66,28 @@ class Cache {
     fs::path &Path() { return m_path; }
 
     bool FindCachedState(std::size_t);
-    bool SaveState(const ProcessGroup&);
-    bool LoadState(ProcessGroup&);
+    template <typename T> bool SaveState(const T &object) {
+        auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
+        // TODO: Figure out how to stringify the type
+        // if(fs::exists(cachePath))
+        //     spdlog::warn("Cache: Overwriting existing cache for {}", object);
+
+        fs::create_directories(cachePath);
+
+        return object.Save(cachePath);
+    }
+    template <typename T> bool LoadState(T& object) {
+        auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
+        if(!fs::exists(cachePath)) {
+            // TODO: Figure out how to stringify the type
+            // spdlog::debug("Cache: Not found for {}", object);
+            return false;
+        }
+
+        fs::create_directories(cachePath);
+
+        return object.Load(cachePath);
+    }
 
   private:
     fs::path m_path{PathVariables::cacheDefault};
