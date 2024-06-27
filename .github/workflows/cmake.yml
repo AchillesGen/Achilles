@@ -49,9 +49,13 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies
+    - name: Install dependencies (Ubuntu)
       if: ${{ matrix.config.os != 'macos-13' && matrix.config.os != 'macos-14' }}
       run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.config.os == 'macos-13' && matrix.config.os == 'macos-14' }}
+      run: /bin/sh -xc brew install gcc hdf5 cmake
 
     - name: Set up cache
       id: cache-cpm
