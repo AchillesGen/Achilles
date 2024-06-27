@@ -2,6 +2,7 @@
 #define BEAMS_HH
 
 #include "Achilles/Achilles.hh"
+#include "Achilles/Hashable.hh"
 #include "Achilles/Histogram.hh"
 #include <memory>
 #include <set>
@@ -139,6 +140,7 @@ class Beam {
     std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
 
     friend YAML::convert<Beam>;
+    friend std::hash<Beam>;
 
   private:
     int n_vars;
@@ -147,5 +149,25 @@ class Beam {
 };
 
 } // namespace achilles
+
+template <> struct std::hash<achilles::FluxType> {
+    std::size_t operator()(const achilles::FluxType &b) const {
+        size_t seed = 0;
+        achilles::utils::hash_combine(seed, b.Type(), b.MinEnergy(), b.MaxEnergy());
+        return seed;
+    }
+};
+
+template <> struct std::hash<achilles::Beam> {
+    std::size_t operator()(const achilles::Beam &b) const {
+        std::size_t seed = 0;
+        for(const auto &beam : b.m_beams) {
+            seed ^= std::hash<int>{}(beam.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<achilles::FluxType>{}(*(beam.second.get())) + 0x9e3779b9 +
+                    (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
 
 #endif

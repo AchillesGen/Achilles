@@ -2,6 +2,7 @@
 #define STATISTICS_HH
 
 #include <algorithm>
+#include <iomanip>
 #include <limits>
 
 #include <cmath>
@@ -53,6 +54,27 @@ class Percentile {
         m_upper.clear();
     }
 
+    void SaveState(std::ostream &os) const {
+        const auto default_precision{os.precision()};
+        os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
+        os << m_percentile << " ";
+        os << m_lower.size() << " ";
+        for(const auto &x : m_lower) os << x << " ";
+        os << m_upper.size() << " ";
+        for(const auto &x : m_upper) os << x << " ";
+        os << std::setprecision(static_cast<int>(default_precision));
+    }
+    void LoadState(std::istream &is) {
+        is >> m_percentile;
+        size_t size;
+        is >> size;
+        m_lower.resize(size);
+        for(auto &x : m_lower) is >> x;
+        is >> size;
+        m_upper.resize(size);
+        for(auto &x : m_upper) is >> x;
+    }
+
   private:
     double m_percentile;
     std::vector<double> m_lower, m_upper;
@@ -100,6 +122,7 @@ class StatsData {
     double Min() const { return min; }
     double Max() const { return max; }
     double Error() const { return sqrt(Variance()); }
+    double RelError() const { return Error() / std::abs(Mean()); }
 
     bool operator==(const StatsData &other) const {
         static constexpr double tol = 1e-6;
@@ -111,6 +134,14 @@ class StatsData {
         return equal;
     }
     bool operator!=(const StatsData &other) const { return !(*this == other); }
+
+    void SaveState(std::ostream &os) const {
+        const auto default_precision{os.precision()};
+        os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
+        os << n << " " << min << " " << max << " " << sum << " " << sum2 << " " << n_finite << " ";
+        os << std::setprecision(static_cast<int>(default_precision));
+    }
+    void LoadState(std::istream &is) { is >> n >> min >> max >> sum >> sum2 >> n_finite; }
 
     friend YAML::convert<achilles::StatsData>;
 

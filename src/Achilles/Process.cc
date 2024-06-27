@@ -7,6 +7,8 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 
+#include "fmt/ranges.h"
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -217,6 +219,20 @@ achilles::ProcessMetadata Process::Metadata(achilles::XSecBackend *backend) cons
     return {ID(), Name(backend), Description(backend), InspireHEP(backend)};
 }
 
+bool Process::SaveState(std::ostream &os) const {
+    m_info.SaveState(os);
+    m_xsec.SaveState(os);
+    m_unweighter->SaveState(os);
+    return true;
+}
+
+bool Process::LoadState(std::istream &is) {
+    m_info.LoadState(is);
+    m_xsec.LoadState(is);
+    m_unweighter->LoadState(is);
+    return true;
+}
+
 std::vector<int> ProcessGroup::ProcessIds() const {
     std::vector<int> data;
     for(auto &process : m_processes) { data.push_back(process.ID()); }
@@ -326,37 +342,50 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
     return true;
 }
 
-void ProcessGroup::Optimize() {
-    b_optimize = true;
+bool ProcessGroup::NeedsOptimization() const {
+    if(!m_integrator.HasResults()) return true;
+    double rel_err = m_integrator.LastResult().RelError();
+    return m_integrator.NeedsOptimization(rel_err);
+}
 
-    spdlog::info("Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
-                 m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
-                 m_processes[0].Info().Multiplicity());
+void ProcessGroup::Optimize() {
+    // TODO: Clean up this control flow. It is a bit of a mess
+    b_optimize = true;
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
     };
     m_integrand.Function() = func;
-    m_integrator.Optimize(m_integrand);
-
-    spdlog::info("Calculating maximum weight");
-    b_calc_weights = true;
-    m_integrator.Parameters().ncalls = 100000;
-    for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
-    b_calc_weights = false;
-    b_optimize = false;
-
-    std::ofstream outfile("Results.txt");
-
-    // Store max weight and weight vector
-    m_process_weights.resize(m_processes.size());
-    for(size_t i = 0; i < m_processes.size(); ++i) {
-        m_process_weights[i] = m_processes[i].MaxWeight();
-        m_maxweight += m_process_weights[i];
-        spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
-        outfile << m_processes[i].TotalCrossSection() << std::endl;
+    if(NeedsOptimization()) {
+        spdlog::info(
+            "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
+            m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
+            m_processes[0].Info().Multiplicity());
+        m_integrator.Optimize(m_integrand);
     }
-    outfile.close();
+
+    // Ensure that the integrator does not save these results into the summary
+    m_integrator.UpdateSummary(false);
+    if(m_maxweight == 0) {
+        spdlog::info("Calculating maximum weight");
+        b_calc_weights = true;
+        m_integrator.Parameters().ncalls = 100000;
+        for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
+        b_calc_weights = false;
+
+        // Store max weight and weight vector
+        m_process_weights.resize(m_processes.size());
+        for(size_t i = 0; i < m_processes.size(); ++i) {
+            m_process_weights[i] = m_processes[i].MaxWeight();
+            m_maxweight += m_process_weights[i];
+            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+        }
+    } else {
+        for(size_t i = 0; i < m_processes.size(); ++i) {
+            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+        }
+    }
+    b_optimize = false;
     spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
@@ -426,4 +455,68 @@ achilles::AllProcessMetadata(const std::vector<ProcessGroup> &groups) {
     }
 
     return data;
+}
+
+bool ProcessGroup::Save(const fs::path &cache_dir) const {
+    std::ofstream out_processes(cache_dir / "processes.achilles");
+    out_processes << m_processes.size() << " ";
+    for(const auto &process : m_processes) process.SaveState(out_processes);
+
+    std::ofstream out_integrator(cache_dir / "integrator.achilles");
+    m_integrator.SaveState(out_integrator);
+    m_integrand.SaveState(out_integrator);
+
+    std::ofstream out_xsec(cache_dir / "xsec.achilles");
+    m_xsec.SaveState(out_xsec);
+
+    // TODO: Store some metadata for validation
+    std::ofstream out_metadata(cache_dir / "metadata.achilles");
+
+    std::ofstream out_state(cache_dir / "state.achilles");
+    out_state << b_optimize << " " << b_calc_weights << " " << m_maxweight << " ";
+    out_state << m_process_weights.size() << " ";
+    for(const auto &weight : m_process_weights) out_state << weight << " ";
+
+    return true;
+}
+
+// TODO: Add validation checks
+bool ProcessGroup::Load(const fs::path &cache_dir) {
+    std::ifstream in_processes(cache_dir / "processes.achilles");
+    size_t nprocesses;
+    in_processes >> nprocesses;
+    if(nprocesses != m_processes.size())
+        throw std::runtime_error("ProcessGroup: Number of processes does not match cache");
+    for(auto &process : m_processes) process.LoadState(in_processes);
+
+    std::ifstream in_integrator(cache_dir / "integrator.achilles");
+    m_integrator.LoadState(in_integrator);
+    m_integrand.LoadState(in_integrator);
+
+    std::ifstream in_xsec(cache_dir / "xsec.achilles");
+    m_xsec.LoadState(in_xsec);
+
+    // TODO: Load some metadata for validation
+    std::ifstream in_metadata(cache_dir / "metadata.achilles");
+
+    std::ifstream in_state(cache_dir / "state.achilles");
+    in_state >> b_optimize >> b_calc_weights >> m_maxweight;
+    size_t nweights;
+    in_state >> nweights;
+    m_process_weights.resize(nweights);
+    for(auto &weight : m_process_weights) in_state >> weight;
+
+    return true;
+}
+
+std::size_t std::hash<ProcessGroup>::operator()(const achilles::ProcessGroup &p) const {
+    std::size_t seed = 0;
+    for(const auto &process : p.Processes()) {
+        std::hash<achilles::Process> hasher;
+        seed ^= hasher(process) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    seed ^= std::hash<achilles::Beam>{}(*(p.m_beam.get())) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    seed ^= std::hash<achilles::Nucleus>{}(*(p.m_nucleus.get())) + 0x9e3779b9 + (seed << 6) +
+            (seed >> 2);
+    return seed;
 }

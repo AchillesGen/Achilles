@@ -61,6 +61,14 @@ struct VegasSummary {
     StatsData Result() const { return sum_results; }
 };
 
+bool operator==(const VegasParams &lhs, const VegasParams &rhs);
+bool operator==(const VegasSummary &lhs, const VegasSummary &rhs);
+
+void SaveState(std::ostream &os, const VegasParams &params);
+void LoadState(std::istream &is, VegasParams &params);
+void SaveState(std::ostream &os, const VegasSummary &summary);
+void LoadState(std::istream &is, VegasSummary &summary);
+
 class Vegas {
   public:
     enum class Verbosity { silent, normal, verbose, very_verbose };
@@ -84,9 +92,12 @@ class Vegas {
     }
     AdaptiveMap Grid() const { return grid; }
     AdaptiveMap &Grid() { return grid; }
-    // bool Serialize(std::ostream &out) const {
-    //
-    // }
+
+    bool operator==(const Vegas &rhs) const {
+        return grid == rhs.grid && summary == rhs.summary && params == rhs.params;
+    }
+    void SaveState(std::ostream &os) const;
+    void LoadState(std::istream &is);
 
     // Training the integratvegor
     void operator()(const Func<double> &);

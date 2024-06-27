@@ -11,7 +11,6 @@ namespace achilles {
 template <typename T> struct Channel {
     Vegas integrator;
     std::unique_ptr<Mapper<T>> mapping;
-    double weight{};
     std::vector<double> train_data;
     std::vector<double> rans;
 
@@ -42,6 +41,18 @@ template <typename T> class Integrand {
     Channel<T> &GetChannel(size_t idx) { return channels[idx]; }
     size_t NChannels() const { return channels.size(); }
     size_t NDims() const { return channels[0].NDims(); }
+
+    void SaveState(std::ostream &os) const {
+        os << channels.size() << " ";
+        for(const auto &channel : channels) { channel.integrator.SaveState(os); }
+    }
+    void LoadState(std::istream &is) {
+        size_t nchannels;
+        is >> nchannels;
+        if(nchannels != channels.size())
+            throw std::runtime_error("Integrand: Channel size mismatch");
+        for(auto &channel : channels) { channel.integrator.LoadState(is); }
+    }
 
     // Train integrator
     void InitializeTrain() {
