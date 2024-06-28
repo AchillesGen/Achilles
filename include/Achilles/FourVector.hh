@@ -391,6 +391,7 @@ class FourVector {
 
   private:
     std::array<double, 4> vec;
+    static constexpr double tolerance = 1e-12;
 };
 
 FourVector operator*(const double &, const FourVector &) noexcept;
