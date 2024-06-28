@@ -12,8 +12,7 @@ FourVector::FourVector(const ThreeVector &other, const double &E) noexcept
 
 double FourVector::M() const noexcept {
     double mass2 = M2();
-    if(std::abs(mass2) < tolerance)
-        return 0.0;
+    if(std::abs(mass2) < tolerance) return 0.0;
     return std::sqrt(M2());
 }
 
