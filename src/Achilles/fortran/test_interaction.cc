@@ -5,7 +5,6 @@
 #include <iostream>
 
 int main() {
-
     const YAML::Node name = YAML::Load("Name: Constant");
     achilles::FortranInteraction interaction(name);
     achilles::Particle part1{};
@@ -15,6 +14,6 @@ int main() {
     fmt::print("{}\n", result);
 
     std::array<double, 2> rans{0.5, 0.5};
-    achilles::ThreeVector mom = interaction.MakeMomentum(true, 100, rans); 
+    achilles::ThreeVector mom = interaction.MakeMomentum(true, 100, rans);
     fmt::print("{}\n", mom);
 }

@@ -4,12 +4,11 @@
 namespace achilles {
 
 class PDFBase {
-    public:
-        virtual ~PDFBase() = default;
-        virtual double operator()(double, double) const = 0;
+  public:
+    virtual ~PDFBase() = default;
+    virtual double operator()(double, double) const = 0;
 };
 
-}
-
+} // namespace achilles
 
 #endif

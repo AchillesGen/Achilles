@@ -1,7 +1,7 @@
 .coverage
 __pycache__/*
 *.pyc
-*cache*
+*.cache*
 .DS_Store
 *.so
 *.egg-info/
@@ -36,3 +36,5 @@ coverage.info
 .vscode/c_cpp_properties.json
 .vscode/settings.json
 install*
+doc-pm/
+Doxyfile

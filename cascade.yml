@@ -7,24 +7,90 @@ Nucleus:
   Fermi Momentum: 225
   Density:
     File: data/c12.prova.txt
+    FilePotential: data/realOP_12C_EDAI.dat
     Function: configuration
-    Config Type: QMC
-  FermiGas: Local
-  Potential:
-    Name: Wiringa
+    Configs: data/configurations/QMC_configs.out.gz
+  FermiGas:
+    Type: Local
+    Params: []
+  Potential: 
+    Name: Schroedinger
     r0: 0.16
+    Mode: 3
 
 Cascade:
-  Mode: CrossSectionMFP
-  Interaction: 
-    Name: GeantInteractions
-    GeantData: data/GeantData.hdf5
+  Mode: CrossSection
+  Interactions: 
+    - Name: GeantInteraction
+      Options:
+        GeantData: data/GeantData.hdf5
+    - Name: MesonBaryonInteraction
+      Options:
+      # We currently don't have interactions with strange baryons in the initial state
+      # Therefore, we set their cross sections to zero by hand
+    - Name: ConstantInteraction
+      Options:
+        InitialStates:
+          - Incoming: [3112, 2112]
+            Outgoing: 
+              - Outgoing: [3112, 2112]
+                CrossSection: 0
+          - Incoming: [3112, 2212]
+            Outgoing: 
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [321, 2212]
+            Outgoing: 
+              - Outgoing: [321, 2212]
+                CrossSection: 0
+          - Incoming: [321, 2112]
+            Outgoing: 
+              - Outgoing: [321, 2112]
+                CrossSection: 0
+          - Incoming: [3122, 2212]
+            Outgoing: 
+              - Outgoing: [3122, 2212]
+                CrossSection: 0
+          - Incoming: [3122, 2112]
+            Outgoing: 
+              - Outgoing: [3122, 2112]
+                CrossSection: 0
+          - Incoming: [3212, 2212]
+            Outgoing: 
+              - Outgoing: [3212, 2212]
+                CrossSection: 0
+          - Incoming: [3212, 2112]
+            Outgoing: 
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2112]
+            Outgoing: 
+              - Outgoing: [3222, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2212]
+            Outgoing: 
+              - Outgoing: [3222, 2212]
+                CrossSection: 0
+          - Incoming: [311, 2112]
+            Outgoing: 
+              - Outgoing: [311, 2112]
+                CrossSection: 0
+          - Incoming: [311, 2212]
+            Outgoing: 
+              - Outgoing: [311, 2212]
+                CrossSection: 0
   Step: 0.04
   Probability: Gaussian
   InMedium: None
   PotentialProp: False
+  Algorithm: Base
+  Params:
+    radius: 10
 
-KickMomentum: [20, 2000, 20]
-NEvents: 100
-SaveAs: pC_xsec_mfp
-PID: 2212
+KickMomentum: [1500, 1500]
+NEvents: 4000
+PID: 211
+
+Output:
+  Format: NuHepMC
+  Name: cascade.hepmc

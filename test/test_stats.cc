@@ -12,7 +12,7 @@ TEST_CASE("Statistics class", "[vegas]") {
         for(const auto &val : vals) {
             data += val;
             mean += val;
-            mean2 += val*val;
+            mean2 += val * val;
             if(val < min) min = val;
             if(val > max) max = val;
         }
@@ -24,7 +24,8 @@ TEST_CASE("Statistics class", "[vegas]") {
         CHECK(data.Min() == min);
         CHECK(data.Max() == max);
         CHECK(data.Mean() == Approx(mean));
-        CHECK(data.Variance() == Approx((mean2 - mean*mean)/static_cast<double>(vals.size()-1)));
+        CHECK(data.Variance() ==
+              Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
     }
 
     SECTION("Adding multiple StatsData together") {
@@ -33,11 +34,13 @@ TEST_CASE("Statistics class", "[vegas]") {
         double mean = 0, mean2 = 0, min = achilles::lim::max(), max = achilles::lim::min();
         bool odd = true;
         for(const auto &val : vals) {
-            if(odd) data1 += val;
-            else data2 += val;
+            if(odd)
+                data1 += val;
+            else
+                data2 += val;
             odd = !odd;
             mean += val;
-            mean2 += val*val;
+            mean2 += val * val;
             if(val < min) min = val;
             if(val > max) max = val;
         }
@@ -50,16 +53,15 @@ TEST_CASE("Statistics class", "[vegas]") {
         CHECK(data.Min() == min);
         CHECK(data.Max() == max);
         CHECK(data.Mean() == Approx(mean));
-        CHECK(data.Variance() == Approx((mean2 - mean*mean)/static_cast<double>(vals.size()-1)));
+        CHECK(data.Variance() ==
+              Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
     }
 }
 
 TEST_CASE("YAML encoding / decoding StatsData", "[vegas]") {
     achilles::StatsData data1, data2;
     auto vals = GENERATE(take(100, randomVector(100)));
-    for(const auto &val : vals) {
-        data1 += val;
-    }
+    for(const auto &val : vals) { data1 += val; }
 
     YAML::Node node;
     node["Stats"] = data1;

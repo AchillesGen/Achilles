@@ -1,0 +1,41 @@
+name: Compilation Issue
+description: File an issue with compilation
+title: "[Compilation]: "
+labels: ["compilation"]
+assignees:
+  - jxi24
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+        If you found a bug when running the code, please fill out a
+        bug report. This form is for handling issues with compiling the code.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Also tell us, what did you expect to happen?
+      placeholder: Tell us what you see!
+      value: "Error compiling"
+    validations:
+      required: true
+  - type: input
+    id: compiler
+    attributes:
+      label: Compiler used
+      description: What compiler did you use? Please include the version number
+      placeholder: "Example: gcc-14.1.1"
+    validations:
+      required: true
+  - type: textarea
+    id: os
+    attributes:
+      label: Operating system used
+      description: |
+        Which operating system are you running on?
+        Please include information pertaining to your system as well.
+      placeholder: "Example: Mac-OSX Sonoma 14.0 with M2 Chip"
+    validations:
+      required: true
+

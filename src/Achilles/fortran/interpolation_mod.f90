@@ -10,8 +10,6 @@ module libinterpolate
         private
         type(c_ptr) :: ptr
     contains
-        final :: delete_interp1d
-
         procedure :: min => interp1d_min
         procedure :: max => interp1d_max
         procedure :: call => interp1d_call
@@ -25,8 +23,6 @@ module libinterpolate
         private
         type(c_ptr) :: ptr
     contains
-        final :: delete_interp2d
-
         procedure :: xmin => interp2d_xmin
         procedure :: xmax => interp2d_xmax
         procedure :: ymin => interp2d_ymin

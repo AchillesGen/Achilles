@@ -4,21 +4,20 @@ namespace nuchic {
 namespace Integrator {
 
 class QuadratureIntegrator : public BaseIntegrator {
-    public:
-        QuadratureIntegrator(bool cache=true) : BaseIntegrator(cache) {}
-        QuadratureIntegrator(const FunctionS& f, bool cache=true) : BaseIntegrator(f, cache) {}
-        QuadratureIntegrator(const FunctionV& f, bool cache=true) : BaseIntegrator(f, cache) {}
-        QuadratureIntegrator(const QuadratureIntegrator&) = default;
-        QuadratureIntegrator(QuadratureIntegrator&&) = default;
-        QuadratureIntegrator& operator=(const QuadratureIntegrator&) = default;
-        QuadratureIntegrator& operator=(QuadratureIntegrator&&) = default;
+  public:
+    QuadratureIntegrator(bool cache = true) : BaseIntegrator(cache) {}
+    QuadratureIntegrator(const FunctionS &f, bool cache = true) : BaseIntegrator(f, cache) {}
+    QuadratureIntegrator(const FunctionV &f, bool cache = true) : BaseIntegrator(f, cache) {}
+    QuadratureIntegrator(const QuadratureIntegrator &) = default;
+    QuadratureIntegrator(QuadratureIntegrator &&) = default;
+    QuadratureIntegrator &operator=(const QuadratureIntegrator &) = default;
+    QuadratureIntegrator &operator=(QuadratureIntegrator &&) = default;
 
-        ~QuadratureIntegrator() override = default;
+    ~QuadratureIntegrator() override = default;
 
-        virtual double Integrate(const double&, const double&, double&) = 0;
-        virtual std::vector<double> IntegrateVec(const double&, const double&, double&) = 0;
+    virtual double Integrate(const double &, const double &, double &) = 0;
+    virtual std::vector<double> IntegrateVec(const double &, const double &, double &) = 0;
 };
 
-
-} // end Integrator namespace
-} // end nuchic namespace
+} // namespace Integrator
+} // namespace nuchic

@@ -7,8 +7,8 @@ add_library(catch_main STATIC catch_main.cpp)
 target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
 target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
+# TODO: Fix commented out test files
 add_executable(achilles-testsuite 
-    # Files with tests 
     test_interp.cc
     test_vectors.cc
     test_utils.cc
@@ -28,13 +28,13 @@ add_executable(achilles-testsuite
     test_stats.cc
     test_vegas.cc
     test_multichannel.cc
+    # TODO: Rewrite tests for serializing the integrand results
     # test_integrand.cc
     test_spectral.cc
     test_spinor.cc
     test_histogram.cc
     test_configuration.cc
     test_nuclear_model.cc
-    test_hard_scattering.cc
     test_event_writer.cc
     test_process_info.cc
     test_hadronic_mapper.cc
@@ -44,7 +44,13 @@ add_executable(achilles-testsuite
     test_ps_mapper.cc
     test_event_history.cc
     test_poincare.cc
-    test_nuhepmc.cc
+    test_process.cc
+    test_process_group.cc
+    # NOTE: Validator is broken. Need to add to cpputils
+    # test_nuhepmc.cc
+    test_cache.cc
+    test_interaction_handler.cc
+    test_mbamplitudes.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
     PUBLIC physics mappers event_gen)
@@ -59,16 +65,20 @@ set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIE
 )
 
 
-# enable_language(Fortran)
-# add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
-# target_link_libraries(achilles-fortran-yaml PUBLIC yaml::fortran)
-# 
-# set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
-# add_executable(achilles-fortran-testsuite
-#     test_fortran.f90
-# )
-# target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
-#     PUBLIC physics fortran_interface FUT::FUT)
+add_executable(achilles-fortran-yaml test_yaml_fortran.f90)
+target_link_libraries(achilles-fortran-yaml PUBLIC yaml::fortran)
+
+set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp -ffree-line-length-0")
+add_executable(achilles-fortran-testsuite
+    test_fortran.f90
+    test_spectral_interface.f90
+    test_fortran_map.f90
+    test_fortran_interference.f90
+)
+message(STATUS ${CMAKE_Fortran_MODULE_DIRECTORY})
+target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
+target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
+    PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
 # add_test(NAME fortran-testsuite

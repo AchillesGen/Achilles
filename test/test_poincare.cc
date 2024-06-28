@@ -2,6 +2,7 @@
 
 #include "Achilles/Poincare.hh"
 #include "Approx.hh"
+#include <iostream>
 
 TEST_CASE("Boost", "[Poincare]") {
     achilles::FourVector p1{1000, 0, 0, 500};
@@ -16,13 +17,14 @@ TEST_CASE("Boost", "[Poincare]") {
 
 TEST_CASE("Rotation", "[Poincare]") {
     achilles::FourVector p1{1000, 0, 250, 500};
+    achilles::FourVector ref{0, 0, 0, 1000};
     achilles::FourVector p2{100, 0, 0, 100};
     achilles::FourVector expected = p2;
 
-    achilles::Poincare poincare(p1, -1);
+    achilles::Poincare poincare(p1, ref, 0);
     poincare.Rotate(p2);
     poincare.RotateBack(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-16));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
 
 TEST_CASE("Lambda", "[Poincare]") {

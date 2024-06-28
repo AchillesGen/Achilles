@@ -1,11 +1,11 @@
-#include "Achilles/PyBindings.hh"
-#include "Achilles/ThreeVector.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PyBindings.hh"
+#include "Achilles/ThreeVector.hh"
 
 // These are for convenience
-using achilles::Particle;
 using achilles::FourVector;
+using achilles::Particle;
 using achilles::ThreeVector;
 
 void ParticleModule(py::module &m) {
@@ -17,12 +17,11 @@ void ParticleModule(py::module &m) {
 
     py::class_<Particle, std::shared_ptr<Particle>>(m, "Particle", py::module_local())
         // Constructors
-        .def(py::init<const int&, const FourVector&, const ThreeVector&,
-                      const int&, const std::vector<int>&, const std::vector<int>&>(),
+        .def(py::init<const int &, const FourVector &, const ThreeVector &, const int &,
+                      const std::vector<int> &, const std::vector<int> &>(),
              py::arg("pid") = 0, py::arg("momentum") = FourVector(),
              py::arg("position") = ThreeVector(), py::arg("status") = 0,
-             py::arg("mothers") = std::vector<int>(),
-             py::arg("daughters") = std::vector<int>())
+             py::arg("mothers") = std::vector<int>(), py::arg("daughters") = std::vector<int>())
         // Setters
         .def("set_position", &Particle::SetPosition)
         .def("set_momentum", &Particle::SetMomentum)
@@ -64,10 +63,6 @@ void ParticleModule(py::module &m) {
         .def("__repr__", &Particle::ToString);
 
     m.def("check_instances", [](py::list l) {
-        return py::make_tuple(
-            py::isinstance<Particle>(l[0]),
-            py::isinstance<Particle>(l[1])
-        );
+        return py::make_tuple(py::isinstance<Particle>(l[0]), py::isinstance<Particle>(l[1]));
     });
-
 }

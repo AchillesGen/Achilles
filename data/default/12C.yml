@@ -5,7 +5,7 @@ Density:
   File: data/c12.prova.txt
   FilePotential: data/realOP_12C_EDAI.dat
   Function: configuration
-  Config Type: QMC
+  Configs: data/configurations/QMC_configs.out.gz
 FermiGas: Local
 Potential: 
   Name: Schroedinger

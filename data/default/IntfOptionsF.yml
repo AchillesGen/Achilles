@@ -1,0 +1,6 @@
+Model: FortranModel
+Name: Intf_Spectral_Func
+ConfigFile: data/intf_info.data 
+FormFactorFile: "FormFactors.yml"
+ModelParamsFile: "data/intf_params.yml"
+Ward: None
