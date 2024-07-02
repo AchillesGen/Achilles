@@ -221,6 +221,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
     m_nucleus = nucleus;
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
+    m_pion_abs = 0;
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -236,12 +237,15 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
             spdlog::trace("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
             // Update formation zones
-            if(kickNuc->InFormationZone()) {
+            if(kickNuc->InFormationZone() && !kickNuc->Info().IsPion()) {
                 Propagate(idx, kickNuc, distance);
                 kickNuc->UpdateFormationZone(timeStep);
                 newKicked.insert(idx);
                 continue;
             }
+
+            // Check if pion absorption is allowed
+            m_pion_abs = PionAbsorption(event, kickNuc);
 
             auto hitIdx = algorithm(this, idx, particles);
             if(hitIdx == SIZE_MAX) {
@@ -565,7 +569,11 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
 double Cascade::GetXSec(const Particle &particle1, const Particle &particle2) const {
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
     auto fact = InMediumCorrection(particle1, particle2);
-    return m_interactions.TotalCrossSection(particle1, particle2) * fact;
+    double xsec = m_interactions.TotalCrossSection(particle1, particle2) * fact;
+    if(m_pion_abs != 0) {
+        xsec += m_interactions.TotalAbsorptionRate(particle1, particle2) / m_pion_abs;
+    }
+    return xsec;
 }
 
 /// Decide whether or not an interaction occured.
@@ -595,10 +603,18 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
     auto modes = m_interactions.CrossSection(particle1, particle2);
+    if(m_pion_abs) {
+        auto modes2 = m_pion_abs_model.AsborptionRate(particle1, particle2) / m_pion_abs;
+        modes.insert(modes.end(), modes2.begin(), modes2.end());
+    }
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
-    auto particles_out =
-        m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
+    if(mode.particles.size() == 1 && !ParticleInfo(mode.particles[0]).IsResonance()) {
+        // Do absorption
+    } else {
+        auto particles_out = m_interactions.GenerateMomentum(particle1, particle2, mode.particles,
+                                                             Random::Instance());
+    }
 
     spdlog::trace("Outgoing particles:");
     for(const auto &part : particles_out) spdlog::trace("- {}", part);
@@ -633,11 +649,14 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
             // }
         }
 
-        // Add interaction to the event history
-        // What do we use for the position? (How about average positions?)
-        auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
-        event.History().AddVertex(average_position, initial_part, final_part,
-                                  EventHistory::StatusCode::cascade);
+        if(m_pion_abs != 0) {
+        } else {
+            // Add interaction to the event history
+            // What do we use for the position? (How about average positions?)
+            auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
+            event.History().AddVertex(average_position, initial_part, final_part,
+                                      EventHistory::StatusCode::cascade);
+        }
     }
 }
 
