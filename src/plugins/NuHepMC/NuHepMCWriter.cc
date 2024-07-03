@@ -1,5 +1,10 @@
 #include "Plugins/NuHepMC/NuHepMCWriter.hh"
 
+#define HEPMC3_USE_COMPRESSION 1
+#define HEPMC3_Z_SUPPORT 1
+#define HEPMC3_LZMA_SUPPORT 1
+#define HEPMC3_BZ2_SUPPORT 1
+
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -18,6 +23,10 @@
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenParticle.h"
 #include "HepMC3/GenVertex.h"
+
+#include "HepMC3/WriterAscii.h"
+#include "HepMC3/WriterGZ.h"
+#include "HepMC3/Writerprotobuf.h"
 
 #include "spdlog/spdlog.h"
 
