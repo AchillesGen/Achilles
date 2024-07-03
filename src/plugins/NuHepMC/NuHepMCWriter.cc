@@ -8,7 +8,7 @@
 
 #include "gzstream/gzstream.h"
 
-//this needs to go first as it enables dependency flags in the below headers
+// this needs to go first as it enables dependency flags in the below headers
 #include "NuHepMC/HepMC3Features.hxx"
 
 #include "NuHepMC/WriterUtils.hxx"
