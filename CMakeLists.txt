@@ -125,7 +125,7 @@ endif()
 
 # Add dependencies
 include(CMake/CPM.cmake)
-add_subdirectory(external)
+include(external/CMakeLists.txt)
 
 # Configure system specific variables for loading shared libraries
 set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
