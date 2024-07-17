@@ -7,86 +7,100 @@ env:
   CMAKE_VERSION: 3.21.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 4.4
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    # TODO: Get build matrix working for MacOS
+    strategy:
+      matrix:
+        config:
+          - {
+              name: "Ubuntu Latest GCC",
+              os: ubuntu-latest,
+              cc: "gcc", cxx: "g++",
+              coverage: "ON"
+            }
+          - {
+              name: "Ubuntu Latest Clang",
+              os: ubuntu-latest,
+              cc: "clang", cxx: "clang++",
+              coverage: "OFF"
+            }
+          - {
+              name: "MacOS 13",
+              os: macos-13,
+              cc: "clang", cxx: "clang++",
+              coverage: "OFF"
+            }
+          - {
+              name: "MacOS 14",
+              os: macos-14,
+              cc: "clang", cxx: "clang++",
+              coverage: "OFF"
+            }
 
-    # TODO: Get build matrix working
-    # name: ${{ matrix.config.name }}
-    # runs-on: ${{ matrix.config.os }}
-    # strategy:
-    #   matrix:
-    #     config:
-    #       - {
-    #           name: "Ubuntu Latest GCC", artifact: "Linux.tar.bz2",
-    #           os: ubuntu-latest,
-    #           cc: "gcc", cxx: "g++"
-    #         }
-    #       - {
-    #           name: "macOS Latest Clang", artifact: "macOS.tar.bz2",
-    #           os: macos-latest,
-    #           cc: "clang", cxx: "clang++"
-    #         }
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - name: Install dependencies
-      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.config.os != 'macos-13' && matrix.config.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.config.os == 'macos-13' || matrix.config.os == 'macos-14' }}
+      run: |
+        brew update
+        brew install gcc
+        brew install hdf5
+        brew install cmake
+        brew install gfortran
 
     - name: Set up cache
       id: cache-cpm
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/cpm-cache
-        key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+        key: ${{ matrix.config.name }}-cpm-${{ hashFiles('**/') }}
         restore-keys: |
-          ${{ runner.os }}-cpm-
+          ${{ matrix.config.name }}-cpm-
 
-    - name: Download ccache 
-      id: ccache 
-      shell: cmake -P {0}
-      run: |
-        set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${ { runner.os } }.tar.xz")
-        file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
-
-    - name: ccache cache files 
-      uses: actions/cache@v3
+    - name: ccache 
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        path: .ccache
-        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        create-symlink: True
+        key: ${{ matrix.config.name }}-ccache-${{ github.sha }}
         restore-keys: |
           ${{ matrix.config.name }}-ccache-
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_TESTING=ON -DCOVERAGE=ON -DCPM_SOURCE_CACHE=~/cpm-cache -DENABLE_BSM=OFF -DENABLE_HEPMC3=OFF
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON -DACHILLES_COVERAGE=${{ matrix.config.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx}}
 
     - name: Build
       # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j4
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Test C++
+      working-directory: ${{ github.workspace }}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ./test/achilles-testsuite
+
+    - name: Test Fotran
+      working-directory: ${{ github.workspace }}/build
+      run: ./test/achilles-fortran-testsuite
      
     - name: Code coverage
-      working-directory: ${{github.workspace}}
+      if: ${{ matrix.config.cxx == 'g++' }}
+      working-directory: ${{ github.workspace }}
       run: |
         lcov --directory . --capture --output-file coverage.info
         lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info

@@ -1,20 +1,20 @@
-#ifndef INTERACTIONS_HH
-#define INTERACTIONS_HH
+#pragma once
 
 #include <array>
 #include <map>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
-#include "Achilles/ThreeVector.hh"
+#include "Achilles/Factory.hh"
 #include "Achilles/Interpolation.hh"
+#include "Achilles/MesonBaryonAmplitudes.hh"
+#include "Achilles/ParticleInfo.hh"
+#include "Achilles/ThreeVector.hh"
 
-// #include "H5Cpp.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
-#if defined(__clang__)
-#elif defined(__GNUC__) || defined(__GNUG__)
+#ifndef __clang__
 #pragma GCC diagnostic ignored "-Wuseless-cast"
 #endif
 #pragma GCC diagnostic ignored "-Wnull-dereference"
@@ -31,262 +31,289 @@ namespace achilles {
 class Particle;
 class FourVector;
 class Potential;
+class Random;
+
+struct pid_compare {
+    bool operator()(const std::pair<PID, PID> &lhs, const std::pair<PID, PID> &rhs) const;
+};
+
+struct InteractionResult {
+    std::vector<PID> particles;
+    double cross_section;
+};
+
+using InteractionResults = std::vector<InteractionResult>;
 
 /// Base class for implementing interaction models. These interaction models focus on the
 /// interactions that occur between hadrons during the intranuclear cascade. This base class
 /// is **not** to be used to inherit from for modeling the hard interactions between leptons
 /// and the nucleus.
-class Interactions {
-    public:
-        /// @name Constructors and Destructors
-        ///@{
+class Interaction {
+  public:
+    /// @name Constructors and Destructors
+    ///@{
 
-        /// Base class constructor
-        Interactions() = default;
-        Interactions(const Interactions&) = default;
-        Interactions(Interactions&&) = default;
-        Interactions& operator=(const Interactions&) = default;
-        Interactions& operator=(Interactions&&) = default;
+    /// Base class constructor
+    Interaction() = default;
+    Interaction(const Interaction &) = default;
+    Interaction(Interaction &&) = default;
+    Interaction &operator=(const Interaction &) = default;
+    Interaction &operator=(Interaction &&) = default;
 
-        /// Base class constructor for classes that need data files
-        // Interactions(const std::string& data) {}
+    /// Base class constructor for classes that need data files
+    // Interactions(const std::string& data) {}
 
-        /// Default destructor
-        virtual ~Interactions() = default;
-        ///@}
+    /// Default destructor
+    virtual ~Interaction() = default;
+    ///@}
 
-        /// Function to determine the cross-section between two particles
-        ///@param part1: The first particle involved with the interaction
-        ///@param part2: The second particle involved with the interaction
-        ///@return double: The cross-section
-        virtual double CrossSection(const Particle&, const Particle&) const = 0;
+    /// Function to list all implemented interactions between two particles
+    ///@return std::vector<std::pair<PID, PID>>: List of all interactions
+    virtual std::vector<std::pair<PID, PID>> InitialStates() const = 0;
 
-        /// Function to generate momentum for the particles after an interaction
-        ///@param samePID: Used to determine if the two particles are the same type
-        ///@param p1CM: The momentum of the first particle in the center of mass frame
-        ///@param pcm: The center of mass momentum
-        ///@param rans: An array containing two random numbers used to generate phase space
-        virtual ThreeVector MakeMomentum(bool, const double&,
-                                         const std::array<double, 2>&) const = 0;
+    /// Function that returns the total cross-section between two particles
+    ///@param part1: The first particle involved with the interaction
+    ///@param part2: The second particle involved with the interaction
+    ///@return double: The cross-section
+    virtual double TotalCrossSection(const Particle &, const Particle &) const;
 
-        using MomentumPair = std::pair<FourVector, FourVector>;
-        virtual MomentumPair FinalizeMomentum(const Particle&,
-                                              const Particle&,
-                                              std::shared_ptr<Potential>) const;
-        virtual std::string Name() const = 0;
-    protected:
-        double CrossSectionLab(bool, const double&) const noexcept;
+    /// Function to determine the cross-section between two particles
+    /// broken down into all possible final state channels
+    ///@param part1: The first particle involved with the interaction
+    ///@param part2: The second particle involved with the interaction
+    ///@return double: The cross-section
+    virtual InteractionResults CrossSection(const Particle &, const Particle &) const = 0;
+
+    /// Function to generate the final state particles
+    ///@param part1: The first particle involved with the interaction
+    ///@param part2: The second particle involved with the interaction
+    ///@param out_pids: The final state particles to generate
+    ///@param rands: The random numbers to use in the generation
+    ///@return std::vector<Particle>: The final state particles
+    virtual std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                                   const std::vector<PID> &out_pids,
+                                                   Random &) const = 0;
+
+    virtual std::string GetName() const = 0;
+    static std::string Name() { return "Interaction"; }
+
+  protected:
+    double CrossSectionLab(bool, const double &) const noexcept;
 };
 
+template <typename Derived>
+using RegistrableInteraction = Registrable<Interaction, Derived, const YAML::Node &>;
+using InteractionFactory = Factory<Interaction, const YAML::Node &>;
 
-/// The InteractionFactory creates a method of generating an interaction model for the 
-/// intranuclear cascade at runtime by a string in the run card. This allows the user to 
-/// test how different interaction models may effect results without having to recompile any
-/// code.
-class InteractionFactory {
-    public:
-        /// Typedef for easier coding
-        using TCreateMethod = std::unique_ptr<Interactions>(*)(const YAML::Node&);
+class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteraction> {
+  public:
+    NasaInteraction() = default;
+    NasaInteraction(const YAML::Node &){};
 
-        InteractionFactory() = delete;
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<NasaInteraction>(data);
+    }
 
-        /// Register a new Interactions subclass to the factory
-        ///@param name: The name of the subclass
-        ///@param funcCreate: The Create function of the subclass
-        ///@return bool: True if the class was registered to the factory, False if the
-        ///              registration failed
-        static bool Register(const std::string&, TCreateMethod);
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return NasaInteraction::Name(); }
+    static std::string Name() { return "NasaInteraction"; }
 
-        /// Create an instance of the desired subclass based on the input string
-        ///@param name: Name of the subclass object to be created
-        ///@return std::shared_ptr<Interactions>: A pointer to the interaction subclass object
-        ///     (**NOTE**: Returns nullptr if name is not registered)
-        static std::unique_ptr<Interactions> Create(const YAML::Node&);
+    // These functions are defined in the base class
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        return {{PID::proton(), PID::proton()},
+                {PID::neutron(), PID::proton()},
+                {PID::neutron(), PID::neutron()}};
+    }
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
 
-        /// Produce a list of all the registered interactions
-        static void Display();
-
-    private:
-        static auto &methods() {
-            static std::unordered_map<std::string, TCreateMethod> map;
-            return map;
-        }
-};
-
-#define REGISTER_INTERACTION(interaction) \
-    bool interaction::registered = InteractionFactory::Register(interaction::GetName(), \
-                                                                interaction::Create)
-class NasaInteractions : public Interactions {
-    public:
-        NasaInteractions(const YAML::Node&) {};
-
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
-            return std::make_unique<NasaInteractions>(data);
-        }
-
-        static std::string GetName() { return "NasaInteractions"; }
-        std::string Name() const override { return NasaInteractions::GetName(); }
-
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override;
-    private:
-        static bool registered;
+  private:
+    ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
 };
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
-class GeantInteractions : public Interactions {
-    public:
-        ///@name Constructors and Destructors
-        ///@{
+class GeantInteraction : public Interaction, RegistrableInteraction<GeantInteraction> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
 
-        /// Initialize GeantInteractions class. This loads data from an input file
-        ///@param filename: The location of the Geant4 hdf5 data file
-        GeantInteractions(const YAML::Node&);
-        GeantInteractions(const GeantInteractions&) = default;
-        GeantInteractions(GeantInteractions&&) = default;
-        GeantInteractions& operator=(const GeantInteractions&) = default;
-        GeantInteractions& operator=(GeantInteractions&&) = default;
+    /// Initialize GeantInteractions class. This loads data from an input file
+    ///@param filename: The location of the Geant4 hdf5 data file
+    GeantInteraction(const YAML::Node &);
+    GeantInteraction(const GeantInteraction &) = default;
+    GeantInteraction(GeantInteraction &&) = default;
+    GeantInteraction &operator=(const GeantInteraction &) = default;
+    GeantInteraction &operator=(GeantInteraction &&) = default;
 
-        /// Generate a GeantInteractions object. This is used in the InteractionFactory.
-        ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
-            return std::make_unique<GeantInteractions>(data);
-        }
+    /// Generate a GeantInteractions object. This is used in the InteractionFactory.
+    ///@param data: The location of the data file to load containing the Geant4 cross-sections
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<GeantInteraction>(data);
+    }
 
-        /// Default Destructor
-        ~GeantInteractions() override = default;
-        ///@}
+    /// Default Destructor
+    ~GeantInteraction() override = default;
+    ///@}
 
-        /// Returns the name of the class, used in the InteractionFactory
-        ///@return std::string: The name of the class
-        static std::string GetName() { return "GeantInteractions"; }
-        std::string Name() const override { return GeantInteractions::GetName(); }
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return GeantInteraction::Name(); }
+    static std::string Name() { return "GeantInteraction"; }
 
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override;
-    private:
-        // Functions
-        double CrossSectionAngle(bool, const double&, const double&) const;
-        void LoadData(bool, const HighFive::Group&);
+    // These functions are defined in the base class
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        return {{PID::proton(), PID::proton()},
+                {PID::neutron(), PID::proton()},
+                {PID::neutron(), PID::neutron()}};
+    }
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
 
-        // Variables
-        std::vector<double> m_theta, m_cdf;
-        std::vector<double> m_pcmPP, m_xsecPP;
-        std::vector<double> m_pcmNP, m_xsecNP;
-        Interp1D m_crossSectionPP, m_crossSectionNP;
-        Interp2D m_thetaDistPP, m_thetaDistNP;
-        static bool registered;
+  private:
+    // Functions
+    double CrossSectionAngle(bool, const double &, const double &) const;
+    void LoadData(bool, const HighFive::Group &);
+    ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
+
+    // Variables
+    std::vector<double> m_theta, m_cdf;
+    std::vector<double> m_pcmPP, m_xsecPP;
+    std::vector<double> m_pcmNP, m_xsecNP;
+    Interp1D m_crossSectionPP, m_crossSectionNP;
+    Interp2D m_thetaDistPP, m_thetaDistNP;
 };
 
-/*
+class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonBaryonInteraction> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
+
+    /// Initialize MesonBaryonInteraction class. This loads data from an input file
+    MesonBaryonInteraction() = default;
+    MesonBaryonInteraction(const YAML::Node &){};
+
+    /// Generate a object. This is used in the InteractionFactory.
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<MesonBaryonInteraction>(data);
+    }
+
+    /// Default Destructor
+    ~MesonBaryonInteraction() override = default;
+    ///@}
+
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return MesonBaryonInteraction::Name(); }
+    static std::string Name() { return "MesonBaryonInteraction"; }
+
+    // List off all InitialStates
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        std::vector<std::pair<PID, PID>> states;
+
+        int nChan = m_amps.NChargeChannels();
+
+        for(int i = 0; i < nChan; i++) {
+            int pidm = m_amps.MesonPID_Cchan(i);
+            int pidb = m_amps.BaryonPID_Cchan(i);
+            states.push_back({PID(pidm), PID(pidb)});
+        }
+        return states;
+    }
+
+    // Cross sections and pairs of PIDs for all possible final states
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
+  private:
+    // Variables
+    MBAmplitudes m_amps; // Contains all the mesonBaryon information
+};
+
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn
 /// interactions that occur during the intranuclear cascade.
-class GeantInteractionsDt : public Interactions {
-    public:
-        ///@name Constructors and Destructors
-        ///@{
+class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantInteraction> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
 
-        /// Initialize GeantInteractionsDt class. This loads data from an input file
-        ///@param filename: The location of the Geant4 hdf5 data file
-        GeantInteractionsDt(const YAML::Node&);
-        GeantInteractionsDt(const GeantInteractionsDt&) = default;
-        GeantInteractionsDt(GeantInteractionsDt&&) = default;
-        GeantInteractionsDt& operator=(const GeantInteractionsDt&) = default;
-        GeantInteractionsDt& operator=(GeantInteractionsDt&&) = default;
+    /// Initialize ConstantInteractions class for testing purposes.
+    ConstantInteraction() = default;
+    /// Initialize ConstantInteractions class. This loads data from an input file
+    ///@param node: The constant interactions to load
+    ConstantInteraction(const YAML::Node &);
+    ConstantInteraction(const ConstantInteraction &) = default;
+    ConstantInteraction(ConstantInteraction &&) = default;
+    ConstantInteraction &operator=(const ConstantInteraction &) = default;
+    ConstantInteraction &operator=(ConstantInteraction &&) = default;
 
-        /// Generate a GeantInteractionsDt object. This is used in the InteractionFactory.
-        ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
-            return std::make_unique<GeantInteractionsDt>(data);
+    /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
+    ///@param data: The location of the data file to load containing the Geant4 cross-sections
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<ConstantInteraction>(data);
+    }
+
+    /// Default Destructor
+    ~ConstantInteraction() override = default;
+    ///@}
+
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return ConstantInteraction::Name(); }
+    static std::string Name() { return "ConstantInteraction"; }
+
+    // These functions are defined in the base class
+    std::vector<std::pair<PID, PID>> InitialStates() const override { return m_states; }
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
+    // These functions are for testing only
+    void AddInteraction(const std::pair<PID, PID> &state, const InteractionResults &results) {
+        if(m_interactions.find(state) != m_interactions.end()) {
+            auto msg =
+                fmt::format("Initial state: [{}, {}] already exists", state.first, state.second);
+            throw std::runtime_error("Initial state already exists");
         }
+        m_interactions[state] = results;
+        m_states.push_back(state);
+    }
 
-        /// Default Destructor
-        ~GeantInteractionsDt() override = default;
-        ///@}
+  private:
+    ThreeVector MakeMomentum(bool, double, const std::vector<double> &) const;
 
-        /// Returns the name of the class, used in the InteractionFactory
-        ///@return std::string: The name of the class
-        static std::string GetName() { return "GeantInteractionsDt"; }
-        std::string Name() const override { return GeantInteractionsDt::GetName(); }
-
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override;
-        ThreeVector MakeMomentum(bool, const double&,
-                                 const std::array<double, 2>&) const override { return {}; }
-        MomentumPair FinalizeMomentum(const Particle&,
-                                      const Particle&,
-                                      std::shared_ptr<Potential>) const override;
-    private:
-        // Functions
-        double CrossSectionAngle(bool, const double&, const double&) const { return 0; }
-        void LoadData(bool, const std::string&);
-        std::vector<double> ReadBlock(std::ifstream &file, size_t nlines=1) const;
-
-        // Variables
-        Interp1D m_crossSectionPP, m_crossSectionNP;
-        Interp2D m_pdfPP, m_pdfNP;
-        static bool registered;
-};
-*/
-
-/// Class for implementing an interaction model based on the Geant4 cross-section data. This
-/// interaction model contains information about the angular distribution of pp, pn, and nn
-/// interactions that occur during the intranuclear cascade.
-class ConstantInteractions : public Interactions {
-    public:
-        ///@name Constructors and Destructors
-        ///@{
-
-        /// Initialize ConstantInteractions class. This loads data from an input file
-        ///@param filename: The location of the Geant4 hdf5 data file
-        ConstantInteractions(const YAML::Node& xsec) : m_xsec(xsec["CrossSection"].as<double>()) {}
-        ConstantInteractions(const ConstantInteractions&) = default;
-        ConstantInteractions(ConstantInteractions&&) = default;
-        ConstantInteractions& operator=(const ConstantInteractions&) = default;
-        ConstantInteractions& operator=(ConstantInteractions&&) = default;
-
-        /// Generate a ConstantInteractions object. This is used in the InteractionFactory.
-        ///@param data: The location of the data file to load containing the Geant4 cross-sections
-        static std::unique_ptr<Interactions> Create(const YAML::Node& data) {
-            return std::make_unique<ConstantInteractions>(data);
-        }
-
-        /// Default Destructor
-        ~ConstantInteractions() override = default;
-        ///@}
-
-        /// Returns the name of the class, used in the InteractionFactory
-        ///@return std::string: The name of the class
-        static std::string GetName() { return "ConstantInteractions"; }
-        std::string Name() const override { return ConstantInteractions::GetName(); }
-
-        // These functions are defined in the base class
-        static bool IsRegistered() noexcept { return registered; }
-        double CrossSection(const Particle&, const Particle&) const override { return m_xsec; }
-        ThreeVector MakeMomentum(bool, const double& pcm,
-                                 const std::array<double, 2>& rans) const override {
-            double ctheta = 2*rans[0]-1;
-            double stheta = sqrt(1-ctheta*ctheta);
-            double phi = 2*M_PI*rans[1];
-            return pcm*ThreeVector(stheta*cos(phi), stheta*sin(phi), ctheta);
-        }
-
-    private:
-        // Variables
-        double m_xsec;
-        static bool registered;
+    // Variables
+    std::map<std::pair<PID, PID>, InteractionResults, pid_compare> m_interactions;
+    std::vector<std::pair<PID, PID>> m_states;
 };
 
-}
+} // namespace achilles
 
-#endif // end of include guard: INTERACTIONS_HH
+namespace YAML {
+template <> struct convert<achilles::InteractionResult> {
+    static bool decode(const Node &node, achilles::InteractionResult &result) {
+        result.particles = node["Outgoing"].as<std::vector<achilles::PID>>();
+        result.cross_section = node["CrossSection"].as<double>();
+        return true;
+    }
+};
+
+template <> struct convert<std::vector<achilles::InteractionResult>> {
+    static bool decode(const Node &node, std::vector<achilles::InteractionResult> &results) {
+        for(auto result : node) results.push_back(result.as<achilles::InteractionResult>());
+        return true;
+    }
+};
+
+} // namespace YAML

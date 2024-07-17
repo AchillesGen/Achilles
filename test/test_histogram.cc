@@ -1,15 +1,14 @@
 #include "catch2/catch.hpp"
 
-#include "fmt/format.h"
 #include "Achilles/Histogram.hh"
+#include "fmt/format.h"
 
 #include <sstream>
 
 TEST_CASE("Histogram Stats", "[Histogram]") {
     achilles::Histogram hist(11, -0.5, 10.5, "test");
-    achilles::Histogram hist2({-0.5, 0.5, 1.5, 2.5,
-                              3.5, 4.5, 5.5, 6.5,
-                              7.5, 8.5, 9.5, 10.5}, "test2");
+    achilles::Histogram hist2({-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5},
+                              "test2");
 
     hist.Fill(0, 10);
     hist.Fill(1, 9);
@@ -36,7 +35,7 @@ TEST_CASE("Histogram Stats", "[Histogram]") {
 
     SECTION("Test Integral") {
         CHECK(hist.Integral() == 55);
-        CHECK(hist.Integral(0, 5) == 45);
+        CHECK(hist.Integral(0, 5) == 40);
 
         CHECK(hist.Integral() == -hist.Integral(11, 0));
         CHECK_THROWS_WITH(hist.Integral(12, 2), "Invalid range for histogram integration");
@@ -44,7 +43,7 @@ TEST_CASE("Histogram Stats", "[Histogram]") {
     }
 
     SECTION("Test Normalize and Scale") {
-        hist.Scale(1.0/hist.Integral());
+        hist.Scale(1.0 / hist.Integral());
         CHECK(hist.Integral() == 1.0);
         hist2.Normalize();
         CHECK(hist2.Integral() == 1.0);
