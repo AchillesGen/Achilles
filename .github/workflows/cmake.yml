@@ -52,10 +52,8 @@ jobs:
       if: ${{ matrix.config.os == 'macos-13' || matrix.config.os == 'macos-14' }}
       run: |
         brew update
-        brew install gcc
         brew install hdf5
         brew install cmake
-        brew install gfortran
 
     - name: Set up cache
       id: cache-cpm
