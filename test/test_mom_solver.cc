@@ -22,7 +22,8 @@ TEST_CASE("CM Momentum Delta solver", "[DeltaFunctions]") {
 
     double sinTheta = sqrt(0.75);
     CHECK(p1 + p2 == p3 + p4);
-    CHECK_THAT(p3, FourVectorApprox(achilles::FourVector(p1.E(), 100 * sinTheta, 0, 100 * cosTheta)).margin(1e-8));
+    CHECK_THAT(p3, FourVectorApprox(achilles::FourVector(p1.E(), 100 * sinTheta, 0, 100 * cosTheta))
+                       .margin(1e-8));
 }
 
 TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {
