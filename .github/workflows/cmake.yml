@@ -23,25 +23,25 @@ jobs:
           - {
               name: "Ubuntu Latest GCC",
               os: ubuntu-latest,
-              cc: "gcc", cxx: "g++",
+              cc: "gcc", cxx: "g++", fort: "gfortran",
               coverage: "ON"
             }
           - {
               name: "Ubuntu Latest Clang",
               os: ubuntu-latest,
-              cc: "clang", cxx: "clang++",
+              cc: "clang", cxx: "clang++", fort: "gfortran",
               coverage: "OFF"
             }
           - {
               name: "MacOS 13",
               os: macos-13,
-              cc: "clang", cxx: "clang++",
+              cc: "clang", cxx: "clang++", fort: "gfortran-14",
               coverage: "OFF"
             }
           - {
               name: "MacOS 14",
               os: macos-14,
-              cc: "clang", cxx: "clang++",
+              cc: "clang", cxx: "clang++", fort: "gfortran-14",
               coverage: "OFF"
             }
 
@@ -51,16 +51,14 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.config.os != 'macos-13' && matrix.config.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.config.os == 'macos-13' || matrix.config.os == 'macos-14' }}
       run: |
         brew update
-        brew install gcc
         brew install hdf5
         brew install cmake
-        brew install gfortran
 
     - name: Set up cache
       id: cache-cpm
@@ -82,7 +80,11 @@ jobs:
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON -DACHILLES_COVERAGE=${{ matrix.config.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx}}
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON
+        -DACHILLES_COVERAGE=${{ matrix.config.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache
+        -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx}} 
+        -DCMAKE_Fortran_COMPILER=${{ matrix.config.fort }}
 
     - name: Build
       # Build your program with the given configuration
