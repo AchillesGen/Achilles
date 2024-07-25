@@ -2,6 +2,7 @@
 #include <iostream>
 #include <map>
 
+#include "Achilles/Event.hh"
 #include "Achilles/Potential.hh"
 #include "spdlog/spdlog.h"
 
@@ -54,7 +55,9 @@ const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, /
                                            {"alpha", 0.00369 / 1_MeV},
                                            {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
-double Interaction::TotalCrossSection(const Particle &particle1, const Particle &particle2) const {
+double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
+    const auto &particle1 = event.Hadrons()[part1];
+    const auto &particle2 = event.Hadrons()[part2];
     auto cross_sections = CrossSection(particle1, particle2);
     double total = 0;
     for(const auto &cross_section : cross_sections) total += cross_section.cross_section;

@@ -31,6 +31,7 @@ enum class ParticleStatus : int {
     residue = 27,
     spectator = 28,
     interacted = 29,
+    absorp_partner = 99,
 };
 inline auto format_as(achilles::ParticleStatus s) {
     return fmt::underlying(s);

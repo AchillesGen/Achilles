@@ -28,6 +28,7 @@
 
 namespace achilles {
 
+class Event;
 class Particle;
 class FourVector;
 class Potential;
@@ -72,10 +73,11 @@ class Interaction {
     virtual std::vector<std::pair<PID, PID>> InitialStates() const = 0;
 
     /// Function that returns the total cross-section between two particles
+    ///@param Event: The current event
     ///@param part1: The first particle involved with the interaction
     ///@param part2: The second particle involved with the interaction
     ///@return double: The cross-section
-    virtual double TotalCrossSection(const Particle &, const Particle &) const;
+    virtual double TotalCrossSection(Event &, size_t, size_t) const;
 
     /// Function to determine the cross-section between two particles
     /// broken down into all possible final state channels
@@ -296,6 +298,82 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
     // Variables
     std::map<std::pair<PID, PID>, InteractionResults, pid_compare> m_interactions;
     std::vector<std::pair<PID, PID>> m_states;
+};
+
+class PionAbsorption : public Interaction {
+  public:
+    /// Initialize PionAbsorption Helper class
+    PionAbsorption() = default;
+    PionAbsorption(const YAML::Node &){};
+
+    // List off all InitialStates
+    std::vector<std::pair<PID, PID>> InitialStates() const override {
+        return {{PID::pion0(), PID::proton()},  {PID::pionp(), PID::proton()},
+                {-PID::pionp(), PID::proton()}, {PID::pion0(), PID::neutron()},
+                {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()}};
+    }
+
+    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
+  private:
+};
+
+class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionOneStep> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
+
+    /// Initialize PionAbsorptionOneStep class
+    PionAbsorptionOneStep() = default;
+    PionAbsorptionOneStep(const YAML::Node &){};
+
+    /// Generate a object. This is used in the InteractionFactory.
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<PionAbsorptionOneStep>(data);
+    }
+
+    /// Default Destructor
+    ~PionAbsorptionOneStep() override = default;
+    ///@}
+
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return PionAbsorptionOneStep::Name(); }
+    static std::string Name() { return "PionAbsorptionOneStep"; }
+
+  private:
+    Particle FindClosest(Event &, double) const;
+};
+
+class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionTwoStep> {
+  public:
+    ///@name Constructors and Destructors
+    ///@{
+
+    /// Initialize PionAbsorptionTwoStep class
+    PionAbsorptionTwoStep() = default;
+    PionAbsorptionTwoStep(const YAML::Node &){};
+
+    /// Generate a object. This is used in the InteractionFactory.
+    static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
+        return std::make_unique<PionAbsorptionTwoStep>(data);
+    }
+
+    /// Default Destructor
+    ~PionAbsorptionTwoStep() override = default;
+    ///@}
+
+    /// Returns the name of the class, used in the InteractionFactory
+    ///@return std::string: The name of the class
+    std::string GetName() const override { return PionAbsorptionTwoStep::Name(); }
+    static std::string Name() { return "PionAbsorptionTwoStep"; }
+
+  private:
+    bool CheckHistory(Event &) const;
 };
 
 } // namespace achilles

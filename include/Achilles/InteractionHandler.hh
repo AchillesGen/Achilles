@@ -23,7 +23,7 @@ class InteractionHandler {
     InteractionHandler &operator=(const InteractionHandler &) = delete;
     InteractionHandler(InteractionHandler &&) = default;
     InteractionHandler &operator=(InteractionHandler &&) = default;
-    double TotalCrossSection(const Particle &, const Particle &) const;
+    double TotalCrossSection(Event &, size_t, size_t) const;
     std::vector<InteractionResult> CrossSection(const Particle &, const Particle &) const;
     std::vector<Particle> GenerateMomentum(const Particle &, const Particle &,
                                            const std::vector<PID> &, Random &&) const;

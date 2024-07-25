@@ -183,9 +183,8 @@ class Cascade {
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
     const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
-    double GetXSec(const Particle &, const Particle &) const;
-    std::size_t Interacted(const Particles &, const Particle &,
-                           const InteractionDistances &) noexcept;
+    double GetXSec(Event &, size_t, size_t) const;
+    std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
     void Escaped(Particles &);
     void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
@@ -195,8 +194,8 @@ class Cascade {
     std::set<size_t> InitializeIntegrator(Event &);
     void UpdateKicked(Particles &, std::set<size_t> &);
     void Validate(const Particles &);
-    size_t BaseAlgorithm(size_t, Particles &);
-    size_t MFPAlgorithm(size_t, Particles &);
+    size_t BaseAlgorithm(size_t, Event &);
+    size_t MFPAlgorithm(size_t, Event &);
     double InMediumCorrection(const Particle &, const Particle &) const;
 
     // Variables
@@ -204,7 +203,7 @@ class Cascade {
     double distance{}, timeStep{};
     InteractionHandler m_interactions{};
     std::function<double(double, double)> probability;
-    std::function<size_t(Cascade *, size_t, Particles &)> algorithm;
+    std::function<size_t(Cascade *, size_t, Event &)> algorithm;
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;

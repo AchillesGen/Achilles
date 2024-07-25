@@ -22,13 +22,13 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
       m_potential_prop(potential_prop) {
     switch(alg) {
     case Algorithm::Base:
-        algorithm = [&](Cascade *cascade, size_t idx, Particles &particles) -> size_t {
-            return cascade->BaseAlgorithm(idx, particles);
+        algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
+            return cascade->BaseAlgorithm(idx, event);
         };
         break;
     case Algorithm::MFP:
-        algorithm = [&](Cascade *cascade, size_t idx, Particles &particles) -> size_t {
-            return cascade->MFPAlgorithm(idx, particles);
+        algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
+            return cascade->MFPAlgorithm(idx, event);
         };
         break;
     }
@@ -87,83 +87,85 @@ void Cascade::Kick(Event &event, const FourVector &energyTransfer,
     kicked->SetMomentum(kicked->Momentum() + energyTransfer);
 }
 
-std::size_t Cascade::GetInter(Particles &particles, const Particle &kickedPart,
-                              double &stepDistance) {
-    std::vector<std::size_t> index_same, index_diff;
+std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
+    throw std::logic_error("Cascade: MFPAlgorithm is currently not working with pions");
+    /*
+        std::vector<std::size_t> index_same, index_diff;
 
-    for(std::size_t i = 0; i < particles.size(); ++i) {
-        if(particles[i].Status() != ParticleStatus::background) continue;
-        if(particles[i].ID() == kickedPart.ID())
-            index_same.push_back(i);
-        else
-            index_diff.push_back(i);
-    }
+        for(std::size_t i = 0; i < particles.size(); ++i) {
+            if(particles[i].Status() != ParticleStatus::background) continue;
+            if(particles[i].ID() == kickedPart.ID())
+                index_same.push_back(i);
+            else
+                index_diff.push_back(i);
+        }
 
-    if(index_diff.size() == 0 && index_same.size() == 0) return SIZE_MAX;
+        if(index_diff.size() == 0 && index_same.size() == 0) return SIZE_MAX;
 
-    double position = kickedPart.Position().Magnitude();
-    auto p1 = kickedPart.Momentum();
-    double mass = kickedPart.Info().Mass();
+        double position = kickedPart.Position().Magnitude();
+        auto p1 = kickedPart.Momentum();
+        double mass = kickedPart.Info().Mass();
 
-    auto mom = m_nucleus->GenerateMomentum(position);
-    double energy = pow(kickedPart.Info().Mass(), 2);
-    for(auto p : mom) energy += p * p;
-    std::size_t idxSame = SIZE_MAX;
-    double xsecSame = 0;
-    if(index_same.size() != 0) {
-        idxSame = Random::Instance().Pick(index_same);
-        particles[idxSame].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+        auto mom = m_nucleus->GenerateMomentum(position);
+        double energy = pow(kickedPart.Info().Mass(), 2);
+        for(auto p : mom) energy += p * p;
+        std::size_t idxSame = SIZE_MAX;
+        double xsecSame = 0;
+        if(index_same.size() != 0) {
+            idxSame = Random::Instance().Pick(index_same);
+            particles[idxSame].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
 
-        auto p2 = particles[idxSame].Momentum();
-        double fact = 1.0;
-        if(m_medium == InMedium::NonRelativistic)
-            fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
+            auto p2 = particles[idxSame].Momentum();
+            double fact = 1.0;
+            if(m_medium == InMedium::NonRelativistic)
+                fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
 
-        xsecSame = GetXSec(kickedPart, particles[idxSame]) * fact;
-    }
+            xsecSame = GetXSec(kickedPart, particles[idxSame]) * fact;
+        }
 
-    auto otherMass = kickedPart.ID() == PID::proton() ? ParticleInfo(PID::neutron()).Mass()
-                                                      : ParticleInfo(PID::proton()).Mass();
-    energy = otherMass * otherMass;
-    for(auto p : mom) energy += p * p;
-    std::size_t idxDiff = SIZE_MAX;
-    double xsecDiff = 0;
-    if(index_diff.size() != 0) {
-        idxDiff = Random::Instance().Pick(index_diff);
-        particles[idxDiff].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+        auto otherMass = kickedPart.ID() == PID::proton() ? ParticleInfo(PID::neutron()).Mass()
+                                                          : ParticleInfo(PID::proton()).Mass();
+        energy = otherMass * otherMass;
+        for(auto p : mom) energy += p * p;
+        std::size_t idxDiff = SIZE_MAX;
+        double xsecDiff = 0;
+        if(index_diff.size() != 0) {
+            idxDiff = Random::Instance().Pick(index_diff);
+            particles[idxDiff].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
 
-        auto p2 = particles[idxSame].Momentum();
-        double fact = 1.0;
-        if(m_medium == InMedium::NonRelativistic)
-            fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
+            auto p2 = particles[idxSame].Momentum();
+            double fact = 1.0;
+            if(m_medium == InMedium::NonRelativistic)
+                fact = m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position);
 
-        xsecDiff = GetXSec(kickedPart, particles[idxDiff]) * fact;
-    }
+            xsecDiff = GetXSec(kickedPart, particles[idxDiff]) * fact;
+        }
 
-    double rhoSame = 0.0;
-    double rhoDiff = 0.0;
-    if(position < m_nucleus->Radius()) {
-        // TODO: Adjust below to handle non-isosymmetric nuclei
-        rhoSame = m_nucleus->Rho(position) * 2 * static_cast<double>(index_same.size()) /
-                  static_cast<double>(particles.size());
-        rhoDiff = m_nucleus->Rho(position) * 2 * static_cast<double>(index_diff.size()) /
-                  static_cast<double>(particles.size());
-    }
-    if(rhoSame <= 0.0 && rhoDiff <= 0.0) return SIZE_MAX;
-    double lambda_tilde = 1.0 / (xsecSame / 10 * rhoSame + xsecDiff / 10 * rhoDiff);
-    double lambda = -log(Random::Instance().Uniform(0.0, 1.0)) * lambda_tilde;
+        double rhoSame = 0.0;
+        double rhoDiff = 0.0;
+        if(position < m_nucleus->Radius()) {
+            // TODO: Adjust below to handle non-isosymmetric nuclei
+            rhoSame = m_nucleus->Rho(position) * 2 * static_cast<double>(index_same.size()) /
+                      static_cast<double>(particles.size());
+            rhoDiff = m_nucleus->Rho(position) * 2 * static_cast<double>(index_diff.size()) /
+                      static_cast<double>(particles.size());
+        }
+        if(rhoSame <= 0.0 && rhoDiff <= 0.0) return SIZE_MAX;
+        double lambda_tilde = 1.0 / (xsecSame / 10 * rhoSame + xsecDiff / 10 * rhoDiff);
+        double lambda = -log(Random::Instance().Uniform(0.0, 1.0)) * lambda_tilde;
 
-    if(lambda > stepDistance) return SIZE_MAX;
+        if(lambda > stepDistance) return SIZE_MAX;
 
-    stepDistance = lambda;
-    double ichoice = Random::Instance().Uniform(0.0, 1.0);
-    if(ichoice < xsecSame / (xsecSame + xsecDiff)) {
-        particles[idxSame].SetPosition(kickedPart.Position());
-        return idxSame;
-    }
+        stepDistance = lambda;
+        double ichoice = Random::Instance().Uniform(0.0, 1.0);
+        if(ichoice < xsecSame / (xsecSame + xsecDiff)) {
+            particles[idxSame].SetPosition(kickedPart.Position());
+            return idxSame;
+        }
 
-    particles[idxDiff].SetPosition(kickedPart.Position());
-    return idxDiff;
+        particles[idxDiff].SetPosition(kickedPart.Position());
+        return idxDiff;
+    */
 }
 
 void Cascade::Reset() {
@@ -221,7 +223,6 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
     m_nucleus = nucleus;
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
-    m_pion_abs = 0;
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -244,10 +245,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
                 continue;
             }
 
-            // Check if pion absorption is allowed
-            m_pion_abs = PionAbsorption(event, kickNuc);
-
-            auto hitIdx = algorithm(this, idx, particles);
+            auto hitIdx = algorithm(this, idx, event);
             if(hitIdx == SIZE_MAX) {
                 newKicked.insert(idx);
                 continue;
@@ -269,19 +267,19 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
     Reset();
 }
 
-size_t Cascade::BaseAlgorithm(size_t idx, Particles &particles) {
+size_t Cascade::BaseAlgorithm(size_t idx, Event &event) {
     // Get allowed interactions
-    auto dist2 = AllowedInteractions(particles, idx);
+    auto dist2 = AllowedInteractions(event.Hadrons(), idx);
     if(dist2.size() == 0) { return SIZE_MAX; }
 
     // Get interaction
-    return Interacted(particles, particles[idx], dist2);
+    return Interacted(event, idx, dist2);
 }
 
-size_t Cascade::MFPAlgorithm(size_t idx, Particles &particles) {
+size_t Cascade::MFPAlgorithm(size_t idx, Event &event) {
     double step_prop = distance;
-    Particle *kickNuc = &particles[idx];
-    auto hitIdx = GetInter(particles, *kickNuc, step_prop);
+    Particle *kickNuc = &event.Hadrons()[idx];
+    auto hitIdx = GetInter(event.Hadrons(), *kickNuc, step_prop);
     Propagate(idx, kickNuc, step_prop);
     return hitIdx;
 }
@@ -386,7 +384,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         if(nearby_particles.size() == 0) continue;
 
         // Did we hit?
-        auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
+        auto hitIdx = Interacted(event, idx, nearby_particles);
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
@@ -566,24 +564,21 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
     return results;
 }
 
-double Cascade::GetXSec(const Particle &particle1, const Particle &particle2) const {
+double Cascade::GetXSec(Event &event, size_t idx1, size_t idx2) const {
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
-    auto fact = InMediumCorrection(particle1, particle2);
-    double xsec = m_interactions.TotalCrossSection(particle1, particle2) * fact;
-    if(m_pion_abs != 0) {
-        xsec += m_interactions.TotalAbsorptionRate(particle1, particle2) / m_pion_abs;
-    }
-    return xsec;
+    // TODO: Handle the in-medium effects for different processes
+    auto fact = InMediumCorrection(event.Hadrons()[idx1], event.Hadrons()[idx2]);
+    return m_interactions.TotalCrossSection(event, idx1, idx2) * fact;
 }
 
 /// Decide whether or not an interaction occured.
 /// The total probability is normalized to the cross section "sigma" when
 /// integrated over the plane.
-std::size_t Cascade::Interacted(const Particles &particles, const Particle &kickedParticle,
+std::size_t Cascade::Interacted(Event &event, size_t kicked,
                                 const InteractionDistances &dists) noexcept {
     for(auto dist : dists) {
         // Cross section in mb
-        const double xsec = GetXSec(kickedParticle, particles[dist.first]);
+        const double xsec = GetXSec(event, kicked, dist.first);
         // 1 barn = 100 fm^2, so 1 mb = 0.1 fm^2.
         // Thus: (xsec [mb]) x (0.1 [fm^2]/ 1 [mb]) = 0.1 xsec [fm^2]
         // dist.second is fm^2; factor of 10 converts mb to fm^2
@@ -599,22 +594,12 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     Particle &particle1 = particles[idx1];
     Particle &particle2 = particles[idx2];
 
-    if(Absorption(event, particle1, particle2)) return;
-
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
     auto modes = m_interactions.CrossSection(particle1, particle2);
-    if(m_pion_abs) {
-        auto modes2 = m_pion_abs_model.AsborptionRate(particle1, particle2) / m_pion_abs;
-        modes.insert(modes.end(), modes2.begin(), modes2.end());
-    }
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
-    if(mode.particles.size() == 1 && !ParticleInfo(mode.particles[0]).IsResonance()) {
-        // Do absorption
-    } else {
-        auto particles_out = m_interactions.GenerateMomentum(particle1, particle2, mode.particles,
-                                                             Random::Instance());
-    }
+    auto particles_out =
+        m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
 
     spdlog::trace("Outgoing particles:");
     for(const auto &part : particles_out) spdlog::trace("- {}", part);
@@ -622,6 +607,11 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     // Check for Pauli Blocking
     bool hit = true;
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
+
+    for(auto &part : event.Hadrons()) {
+        if(part.Status() == ParticleStatus::absorp_partner)
+            part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
+    }
 
     if(hit) {
         Particles initial_part, final_part;
@@ -649,14 +639,12 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
             // }
         }
 
-        if(m_pion_abs != 0) {
-        } else {
-            // Add interaction to the event history
-            // What do we use for the position? (How about average positions?)
-            auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
-            event.History().AddVertex(average_position, initial_part, final_part,
-                                      EventHistory::StatusCode::cascade);
-        }
+        // Add interaction to the event history
+        // TODO: What do we use for the position? (How about average positions?)
+        // TODO: How to best include the absorp_partner
+        auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
+        event.History().AddVertex(average_position, initial_part, final_part,
+                                  EventHistory::StatusCode::cascade);
     }
 }
 
