@@ -609,7 +609,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
     for(auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::absorp_partner)
+        if(part.Status() == ParticleStatus::absorption_partner)
             part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
     }
 
