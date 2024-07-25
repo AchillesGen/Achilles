@@ -692,3 +692,12 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     // Not sure what to do with the positions here? !!! ?
     return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
+
+PionInteraction::PionInteraction(const YAML::Node &node) {
+    auto hard_scatter_node = node["HardScatter"];
+    auto absorption_node = node["Absorption"];
+    hard_scatter = InteractionFactory::Initialize(hard_scatter_node["Name"].as<std::string>(),
+                                                  hard_scatter_node["Options"]);
+    absorption = InteractionFactory::Initialize(absorption_node["Name"].as<std::string>(),
+                                                absorption_node["Options"]);
+}
