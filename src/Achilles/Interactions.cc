@@ -9,6 +9,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
@@ -56,9 +57,7 @@ const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, /
                                            {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
 double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
-    const auto &particle2 = event.Hadrons()[part2];
-    auto cross_sections = CrossSection(particle1, particle2);
+    auto cross_sections = CrossSection(event, part1, part2);
     double total = 0;
     for(const auto &cross_section : cross_sections) total += cross_section.cross_section;
     return total;
@@ -188,8 +187,13 @@ void GeantInteraction::LoadData(bool samePID, const HighFive::Group &group) {
     }
 }
 
-InteractionResults GeantInteraction::CrossSection(const Particle &particle1,
-                                                  const Particle &particle2) const {
+InteractionResults GeantInteraction::CrossSection(Event &event, 
+                                                  size_t part1,
+                                                  size_t part2) const {
+
+    const auto &particle1 = event.Hadrons()[part1];
+    const auto &particle2 = event.Hadrons()[part2];
+
     bool samePID = particle1.ID() == particle2.ID();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(); //, p2Lab = particle2.Momentum();
@@ -397,8 +401,13 @@ const {
 //}
 */
 
-InteractionResults NasaInteraction::CrossSection(const Particle &particle1,
-                                                 const Particle &particle2) const {
+InteractionResults NasaInteraction::CrossSection(Event &event, 
+                                                  size_t part1,
+                                                  size_t part2) const {
+
+    const auto &particle1 = event.Hadrons()[part1];
+    const auto &particle2 = event.Hadrons()[part2];
+
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
@@ -450,7 +459,13 @@ ConstantInteraction::ConstantInteraction(const YAML::Node &node) {
     }
 }
 
-InteractionResults ConstantInteraction::CrossSection(const Particle &p1, const Particle &p2) const {
+InteractionResults ConstantInteraction::CrossSection(Event &event, 
+                                                  size_t part1,
+                                                  size_t part2) const {
+
+    const auto &p1 = event.Hadrons()[part1];
+    const auto &p2 = event.Hadrons()[part2];
+
     try {
         return m_interactions.at({p1.ID(), p2.ID()});
     } catch(std::out_of_range &e) {
@@ -495,8 +510,13 @@ ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,
     return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
 }
 
-InteractionResults MesonBaryonInteraction::CrossSection(const Particle &particle1,
-                                                        const Particle &particle2) const {
+InteractionResults MesonBaryonInteraction::CrossSection(Event &event, 
+                                                  size_t part1,
+                                                  size_t part2) const {
+
+    const auto &particle1 = event.Hadrons()[part1];
+    const auto &particle2 = event.Hadrons()[part2];
+
     int pidm = particle1.ID();
     int pidb = particle2.ID(); // Usually the case
 
@@ -693,6 +713,111 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
 
+bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t part2) const {
+    absorption_partner = FindClosest(event, part1, part2);
+    return true;
+}
+
+Particle PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t part2) const {
+    const auto &particle2 = event.Hadrons()[part2];
+
+    //Start shortest distance at well beyond nuclear diameter D ~ 10 fm = 1e-11 mm
+    double shortest_distance = 6/Constant::HBARC;
+    size_t closest_idx;
+
+    //Particle 2 is the incoming nucleon
+    for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
+        if(i == part1 || i == part2) continue;
+            if (!event.Hadrons()[i].Info().IsNucleon()) continue;
+        auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
+        if (distance < shortest_distance) {
+            shortest_distance = distance;
+            closest_idx = i;
+        }
+    }
+
+    return event.Hadrons()[closest_idx];
+
+}
+
+InteractionResults PionAbsorption::CrossSection(Event &event, 
+                                                  size_t part1,
+                                                  size_t part2) const {
+
+    const auto &particle1 = event.Hadrons()[part1];
+    const auto &particle2 = event.Hadrons()[part2];
+
+    InteractionResults results;
+
+    if(!AllowedAbsorption(event, part1, part2)) return results;
+
+    absorption_partner.Status() = ParticleStatus::absorption_partner;
+
+    auto density = event.CurrentNucleus()->Rho(particle1.Position().Magnitude());
+    auto pion_energy = particle1.E();
+    auto pion_mass = particle1.Mass();
+    auto pion_momentum = sqrt(pow(pion_energy,2) - pow(pion_mass,2));
+
+    double B = .035*pion_mass; // should be pion mass, which pion?
+
+    double swave_cross_section = (4.0*M_PI/pion_momentum)*(1 + pion_energy/(2.*pion_mass))*B*density; // need to multiply by density first
+
+    // TODO
+    //Insert logic for allowed outgoing states
+    results.push_back({{particle2.ID(), absorption_partner.ID()}, swave_cross_section});
+    return results;
+
+}
+
+std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &particle1,
+                                                               const Particle &particle2,
+                                                               const std::vector<PID> &out_pids,
+                                                               Random &random) const {
+
+    // Boost to center of mass
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
+    FourVector p1Lab = particle1.Momentum();
+    FourVector p1CM = p1Lab.Boost(-boostCM);
+
+    // Generate outgoing momentum
+    const double pcm = p1CM.Vec3().Magnitude();
+    std::vector<double> rans(2);
+    random.Generate(rans);    
+
+    double pR = pcm;
+    double pTheta = acos(2 * rans[0] - 1);
+    double pPhi = 2 * M_PI * rans[1];
+
+    auto momentum = ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+
+    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
+    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+
+    // Boost back to lab frame
+    p1Out = p1Out.Boost(boostCM);
+    p2Out = p2Out.Boost(boostCM);
+
+    // TODO
+    // write momentum conservation unit test
+    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+
+}
+
+bool PionAbsorptionTwoStep::AllowedAbsorption(Event &, size_t, size_t) const {
+    return false;
+}
+
+
+std::vector<Particle> PionAbsorptionTwoStep::GenerateMomentum(const Particle &,
+                                                               const Particle &,
+                                                               const std::vector<PID> &,
+                                                               Random &) const {
+    return {};
+
+}
+
+
+
 PionInteraction::PionInteraction(const YAML::Node &node) {
     auto hard_scatter_node = node["HardScatter"];
     auto absorption_node = node["Absorption"];
@@ -700,4 +825,35 @@ PionInteraction::PionInteraction(const YAML::Node &node) {
                                                   hard_scatter_node["Options"]);
     absorption = InteractionFactory::Initialize(absorption_node["Name"].as<std::string>(),
                                                 absorption_node["Options"]);
+}
+
+std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle1,
+                                                               const Particle &particle2,
+                                                               const std::vector<PID> &out_pids,
+                                                               Random &random) const {
+
+    bool is_pion = false;
+    for(const auto &pid: out_pids) {
+        if(ParticleInfo(pid).IsPion()) {
+            is_pion = true;
+            break;
+        }
+    }
+
+    if(is_pion) return hard_scatter->GenerateMomentum(particle1, particle2, out_pids, random);
+    return absorption->GenerateMomentum(particle1, particle2, out_pids, random);
+
+}
+
+
+
+InteractionResults PionInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
+    auto Quasielastic_xsec = hard_scatter->CrossSection(event, part1, part2);
+    auto Absorption_xsec = absorption->CrossSection(event, part1, part2);
+
+    InteractionResults results = Quasielastic_xsec;
+    results.insert(results.begin(), Absorption_xsec.begin(), Absorption_xsec.end());   
+
+    return results;
+
 }

@@ -595,7 +595,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     Particle &particle2 = particles[idx2];
 
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
-    auto modes = m_interactions.CrossSection(particle1, particle2);
+    auto modes = m_interactions.CrossSection(event, idx1, idx2);
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
     auto particles_out =
