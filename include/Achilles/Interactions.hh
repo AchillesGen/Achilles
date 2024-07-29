@@ -10,6 +10,7 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Particle.hh"
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
@@ -29,7 +30,6 @@
 namespace achilles {
 
 class Event;
-class Particle;
 class FourVector;
 class Potential;
 class Random;
@@ -84,7 +84,7 @@ class Interaction {
     ///@param part1: The first particle involved with the interaction
     ///@param part2: The second particle involved with the interaction
     ///@return double: The cross-section
-    virtual InteractionResults CrossSection(const Particle &, const Particle &) const = 0;
+    virtual InteractionResults CrossSection(Event &, size_t, size_t) const = 0;
 
     /// Function to generate the final state particles
     ///@param part1: The first particle involved with the interaction
@@ -127,7 +127,7 @@ class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteracti
                 {PID::neutron(), PID::proton()},
                 {PID::neutron(), PID::neutron()}};
     }
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;
@@ -173,7 +173,7 @@ class GeantInteraction : public Interaction, RegistrableInteraction<GeantInterac
                 {PID::neutron(), PID::proton()},
                 {PID::neutron(), PID::neutron()}};
     }
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;
@@ -230,7 +230,7 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
     }
 
     // Cross sections and pairs of PIDs for all possible final states
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
@@ -276,7 +276,7 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
 
     // These functions are defined in the base class
     std::vector<std::pair<PID, PID>> InitialStates() const override { return m_states; }
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;
@@ -313,13 +313,11 @@ class PionAbsorption : public Interaction {
                 {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()}};
     }
 
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
 
-    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
-                                           const std::vector<PID> &out_pids,
-                                           Random &) const override;
-
-  private:
+  protected:
+    virtual bool AllowedAbsorption(Event &, size_t, size_t) const = 0;
+    mutable Particle absorption_partner;
 };
 
 class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionOneStep> {
@@ -345,8 +343,14 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
     std::string GetName() const override { return PionAbsorptionOneStep::Name(); }
     static std::string Name() { return "PionAbsorptionOneStep"; }
 
+
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
   private:
-    Particle FindClosest(Event &, double) const;
+    Particle FindClosest(Event &, size_t, size_t) const;
+    bool AllowedAbsorption(Event &, size_t, size_t) const override;
 };
 
 class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionTwoStep> {
@@ -372,8 +376,14 @@ class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<Pion
     std::string GetName() const override { return PionAbsorptionTwoStep::Name(); }
     static std::string Name() { return "PionAbsorptionTwoStep"; }
 
+
+    std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+                                           const std::vector<PID> &out_pids,
+                                           Random &) const override;
+
   private:
     bool CheckHistory(Event &) const;
+    bool AllowedAbsorption(Event &, size_t, size_t) const override;
 };
 
 class PionInteraction : public Interaction, RegistrableInteraction<PionInteraction> {
@@ -406,7 +416,7 @@ class PionInteraction : public Interaction, RegistrableInteraction<PionInteracti
                 {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()}};
     }
 
-    InteractionResults CrossSection(const Particle &, const Particle &) const override;
+    InteractionResults CrossSection(Event &, size_t, size_t) const override;
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
