@@ -9,8 +9,8 @@
 #include "Achilles/Factory.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
-#include "Achilles/ParticleInfo.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
@@ -343,7 +343,6 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
     std::string GetName() const override { return PionAbsorptionOneStep::Name(); }
     static std::string Name() { return "PionAbsorptionOneStep"; }
 
-
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;
@@ -375,7 +374,6 @@ class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<Pion
     ///@return std::string: The name of the class
     std::string GetName() const override { return PionAbsorptionTwoStep::Name(); }
     static std::string Name() { return "PionAbsorptionTwoStep"; }
-
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
