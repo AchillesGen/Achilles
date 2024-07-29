@@ -1,6 +1,6 @@
 #include "Achilles/InteractionHandler.hh"
-#include "Achilles/Interactions.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Random.hh"
@@ -12,7 +12,6 @@ using achilles::InteractionResult;
 using achilles::Particle;
 
 double InteractionHandler::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
-
     const auto &p1 = event.Hadrons()[part1];
     const auto &p2 = event.Hadrons()[part2];
 
@@ -26,11 +25,11 @@ double InteractionHandler::TotalCrossSection(Event &event, size_t part1, size_t 
     return m_interactions[it->second]->TotalCrossSection(event, part1, part2);
 }
 
-std::vector<InteractionResult> InteractionHandler::CrossSection(Event &event, size_t part1, size_t part2) const {
-
+std::vector<InteractionResult> InteractionHandler::CrossSection(Event &event, size_t part1,
+                                                                size_t part2) const {
     const auto &p1 = event.Hadrons()[part1];
     const auto &p2 = event.Hadrons()[part2];
-    
+
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
