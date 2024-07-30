@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "Achilles/Interactions.hh"
+#include "Achilles/Utilities.hh"
 #include "yaml-cpp/yaml.h"
 
 namespace achilles {
@@ -47,9 +48,21 @@ template <> struct convert<achilles::InteractionHandler> {
     static bool decode(const Node &node, achilles::InteractionHandler &handler) {
         handler = achilles::InteractionHandler();
         for(const auto &interaction : node) {
-            auto interaction_obj = achilles::InteractionFactory::Initialize(
-                interaction["Name"].as<std::string>(), interaction["Options"]);
-            handler.RegisterInteraction(std::move(interaction_obj));
+            // TODO: Move this logic to be better contained in the Settings or Factory classes
+            try {
+                auto interaction_obj = achilles::InteractionFactory::Initialize(
+                    interaction["Name"].as<std::string>(), interaction["Options"]);
+                handler.RegisterInteraction(std::move(interaction_obj));
+            } catch(std::out_of_range &e) {
+                spdlog::error(
+                    "InteractionHandler: Requested interaction \"{}\", did you mean \"{}\"",
+                    interaction["Name"].as<std::string>(),
+                    achilles::GetSuggestion(achilles::InteractionFactory::List(),
+                                            interaction["Name"].as<std::string>()));
+                spdlog::error(
+                    "InteractionHandler: Run `achilles --display-int-models` to see all options");
+                exit(-1);
+            }
         }
         return true;
     }

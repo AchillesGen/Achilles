@@ -7,6 +7,8 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 
+#include "Achilles/Unweighter.hh"
+#include "Achilles/Utilities.hh"
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -299,15 +301,22 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
         auto infos = model->AllowedStates(process_info);
         const auto unweight_name = node["Options"]["Unweighting"]["Name"].as<std::string>();
         for(auto &info : infos) {
-            auto unweighter =
-                UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
-            Process process(info, std::move(unweighter));
-            process.SetID(model);
-            const auto multiplicity = info.Multiplicity();
-            if(groups.find(multiplicity) == groups.end()) {
-                groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
+            try {
+                auto unweighter =
+                    UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
+                Process process(info, std::move(unweighter));
+                process.SetID(model);
+                const auto multiplicity = info.Multiplicity();
+                if(groups.find(multiplicity) == groups.end()) {
+                    groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
+                }
+                groups.at(multiplicity).AddProcess(std::move(process));
+            } catch(std::out_of_range &e) {
+                spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
+                              unweight_name,
+                              achilles::GetSuggestion(UnweighterFactory::List(), unweight_name));
+                exit(-1);
             }
-            groups.at(multiplicity).AddProcess(std::move(process));
         }
     }
 
