@@ -713,12 +713,12 @@ Particle PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t p
 
     // Start shortest distance at well beyond nuclear diameter D ~ 10 fm = 1e-11 mm
     double shortest_distance = 6 / Constant::HBARC;
-    size_t closest_idx;
+    size_t closest_idx = 0;
 
     // Particle 2 is the incoming nucleon
     for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(i == part1 || i == part2) continue;
-        if(!event.Hadrons()[i].Info().IsNucleon()) continue;
+        if(!event.Hadrons()[i].IsBackground()) continue;
         auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
         if(distance < shortest_distance) {
             shortest_distance = distance;
