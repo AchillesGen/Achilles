@@ -43,10 +43,11 @@ add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
   NAME NuHepMC_CPPUtils
-  GIT_TAG achilles_test
+  GIT_TAG main
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
-  OPTIONS "BUILTIN_HEPMC3 ON"
-          "HEPMC3_ENABLE_PYTHON OFF"
+  OPTIONS "NuHepMC_CPPUtils_BUILTIN_HEPMC3 ON"
+          "NuHepMC_CPPUtils_PYTHON_ENABLED OFF"
+          "NuHepMC_CPPUtils_PROTOBUF_INTERFACE OFF"
 )
 
 CPMAddPackage(
