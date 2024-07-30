@@ -730,7 +730,7 @@ Particle PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t p
 }
 
 InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size_t part2) const {
-    //const auto &particle1 = event.Hadrons()[part1];
+    // const auto &particle1 = event.Hadrons()[part1];
 
     spdlog::debug("Did we get inside pion absorption cross section");
     const auto &particle2 = event.Hadrons()[part2];
