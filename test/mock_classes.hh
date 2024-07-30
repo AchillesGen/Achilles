@@ -115,7 +115,7 @@ class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaI
 class MockInteraction : public trompeloeil::mock_interface<achilles::Interaction> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_CONST_MOCK0(InitialStates);
-    IMPLEMENT_CONST_MOCK2(CrossSection);
+    IMPLEMENT_CONST_MOCK3(CrossSection);
     IMPLEMENT_CONST_MOCK4(GenerateMomentum);
     IMPLEMENT_CONST_MOCK0(GetName);
 };
