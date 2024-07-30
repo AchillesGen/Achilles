@@ -9,6 +9,7 @@
 #include "Achilles/Factory.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
+#include "Achilles/OsetAbsorption.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
@@ -318,6 +319,8 @@ class PionAbsorption : public Interaction {
   protected:
     virtual bool AllowedAbsorption(Event &, size_t, size_t) const = 0;
     mutable Particle absorption_partner;
+
+    OsetAbsCrossSection Oset_abs; // Contains Oset absorption cross sections
 };
 
 class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionOneStep> {
@@ -404,8 +407,8 @@ class PionInteraction : public Interaction, RegistrableInteraction<PionInteracti
 
     /// Returns the name of the class, used in the InteractionFactory
     ///@return std::string: The name of the class
-    std::string GetName() const override { return PionAbsorptionTwoStep::Name(); }
-    static std::string Name() { return "PionAbsorptionTwoStep"; }
+    std::string GetName() const override { return PionInteraction::Name(); }
+    static std::string Name() { return "PionInteraction"; }
 
     // List off all InitialStates
     std::vector<std::pair<PID, PID>> InitialStates() const override {

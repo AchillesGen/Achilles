@@ -730,7 +730,9 @@ Particle PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t p
 }
 
 InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
+    //const auto &particle1 = event.Hadrons()[part1];
+
+    spdlog::debug("Did we get inside pion absorption cross section");
     const auto &particle2 = event.Hadrons()[part2];
 
     InteractionResults results;
@@ -739,20 +741,11 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
 
     absorption_partner.Status() = ParticleStatus::absorption_partner;
 
-    auto density = event.CurrentNucleus()->Rho(particle1.Position().Magnitude());
-    auto pion_energy = particle1.E();
-    auto pion_mass = particle1.Mass();
-    auto pion_momentum = sqrt(pow(pion_energy, 2) - pow(pion_mass, 2));
-
-    double B = .035 * pion_mass; // should be pion mass, which pion?
-
-    double swave_cross_section = (4.0 * M_PI / pion_momentum) *
-                                 (1 + pion_energy / (2. * pion_mass)) * B *
-                                 density; // need to multiply by density first
+    double oset_abs_xsec = Oset_abs.AbsorptionCrossSection(event, part1, part2);
 
     // TODO
     // Insert logic for allowed outgoing states
-    results.push_back({{particle2.ID(), absorption_partner.ID()}, swave_cross_section});
+    results.push_back({{particle2.ID(), absorption_partner.ID()}, oset_abs_xsec});
     return results;
 }
 
