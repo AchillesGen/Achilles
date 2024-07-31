@@ -703,30 +703,51 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
 }
 
+PionAbsorption::PionAbsorption(const YAML::Node &) {
+    states[{PID::pionp(), PID::proton()}] = {{PID::neutron(), {PID::proton(), PID::neutron()}},
+                                             {PID::neutron(), {PID::neutron(), PID::proton()}}};
+}
+
 bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t part2) const {
-    absorption_partner = FindClosest(event, part1, part2);
+    auto closest = FindClosest(event, part1, part2);
+    auto modes = states.at({event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID()});
+
+    m_states.clear();
+    for(const auto &mode : modes) {
+        if(mode.absorption_partner == PID::proton()) {
+            m_states.push_back({closest.first, mode.outgoing});
+        } else {
+            m_states.push_back({closest.second, mode.outgoing});
+        }
+    }
+
     return true;
 }
 
-Particle PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t part2) const {
+std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_t part1,
+                                                             size_t part2) const {
     const auto &particle2 = event.Hadrons()[part2];
 
     // Start shortest distance at well beyond nuclear diameter D ~ 10 fm = 1e-11 mm
-    double shortest_distance = 6 / Constant::HBARC;
-    size_t closest_idx = 0;
+    double shortest_p_distance = 6 / Constant::HBARC;
+    double shortest_n_distance = 6 / Constant::HBARC;
+    size_t closest_p_idx = SIZE_MAX, closest_n_idx = SIZE_MAX;
 
     // Particle 2 is the incoming nucleon
     for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(i == part1 || i == part2) continue;
         if(!event.Hadrons()[i].IsBackground()) continue;
         auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
-        if(distance < shortest_distance) {
-            shortest_distance = distance;
-            closest_idx = i;
+        if(distance < shortest_p_distance && event.Hadrons()[i].ID() == PID::proton()) {
+            shortest_p_distance = distance;
+            closest_p_idx = i;
+        } else if(distance < shortest_n_distance && event.Hadrons()[i].ID() == PID::neutron()) {
+            shortest_n_distance = distance;
+            closest_n_idx = i;
         }
     }
 
-    return event.Hadrons()[closest_idx];
+    return {closest_p_idx, closest_n_idx};
 }
 
 InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size_t part2) const {
@@ -776,6 +797,12 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
     // Boost back to lab frame
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
+
+    spdlog::info("Absorption: Pin = {}, Pout = {} -> PSum = {}",
+                 particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum(),
+                 p1Out + p2Out,
+                 particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum() -
+                     p1Out - p2Out);
 
     // TODO
     // write momentum conservation unit test

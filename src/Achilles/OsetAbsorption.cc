@@ -1,13 +1,8 @@
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-
+#include "Achilles/OsetAbsorption.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
-#include "Achilles/OsetAbsorption.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Utilities.hh"
 
 using achilles::OsetAbsCrossSection;
 

@@ -1,19 +1,10 @@
 #pragma once
 
-#include "Achilles/Interpolation.hh"
-#include "Achilles/Particle.hh"
-#include <array>
-#include <complex>
-#include <iostream>
-#include <map>
-#include <vector>
+#include <cmath>
 
 namespace achilles {
 
 class Event;
-class FourVector;
-class Potential;
-class Random;
 
 class OsetAbsCrossSection {
   public:

@@ -305,7 +305,7 @@ class PionAbsorption : public Interaction {
   public:
     /// Initialize PionAbsorption Helper class
     PionAbsorption() = default;
-    PionAbsorption(const YAML::Node &){};
+    PionAbsorption(const YAML::Node &);
 
     // List off all InitialStates
     std::vector<std::pair<PID, PID>> InitialStates() const override {
@@ -321,6 +321,14 @@ class PionAbsorption : public Interaction {
     mutable Particle absorption_partner;
 
     OsetAbsCrossSection Oset_abs; // Contains Oset absorption cross sections
+
+    struct InteractionStates {
+        PID absorption_partner;
+        std::vector<PID> outgoing;
+    };
+
+    using InteractionMap = std::map<std::pair<PID, PID>, std::vector<InteractionStates>>;
+    InteractionMap states;
 };
 
 class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionOneStep> {
@@ -351,8 +359,9 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
                                            Random &) const override;
 
   private:
-    Particle FindClosest(Event &, size_t, size_t) const;
+    std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
     bool AllowedAbsorption(Event &, size_t, size_t) const override;
+    mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 
 class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionTwoStep> {
