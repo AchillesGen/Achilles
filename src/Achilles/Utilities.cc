@@ -248,7 +248,7 @@ size_t achilles::LevenshteinDistance(const std::string_view &src, const std::str
         size_t prev_col = cost[0]++;
         for(size_t j = 1; j <= target.size(); ++j) {
             size_t ins_del = std::min(prev_col, cost[j]) + 1;
-            size_t edit = prev_diag + (source[i - 1] != target[j - 1]);
+            size_t edit = prev_diag + 5 * (source[i - 1] != target[j - 1]);
 
             prev_col = std::min(ins_del, edit);
             prev_diag = cost[j];

@@ -91,8 +91,8 @@ TEST_CASE("Suggested option", "[Utilities]") {
     std::vector<std::string> opts = {"Quasielastic", "Resonance", "MesonExchangeCurrent",
                                      "DeepInelasticScattering", "ShallowInelasticScattering"};
 
-    std::vector<std::string> queries = {"Quasilatics", "esonces", "MesonExchCurr",
-                                        "DeepInelScattering", "ShalInelScattering"};
+    std::vector<std::string> queries = {"Quasilatics", "esonces", "MesonExchCurr", "DeepInelScat",
+                                        "ShalInelScattering"};
 
     size_t i = 0;
     for(const auto &query : queries) {
