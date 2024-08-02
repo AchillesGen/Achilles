@@ -238,7 +238,10 @@ class Particle {
 
     /// Check to see if the particle is a propagating particle in the nucleus
     ///@return bool: True if a propagating particle, False otherwise
-    bool IsPropagating() const noexcept { return status == ParticleStatus::propagating; }
+    bool IsPropagating() const noexcept {
+        return status == ParticleStatus::propagating || status == ParticleStatus::external_test ||
+               status == ParticleStatus::internal_test;
+    }
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
