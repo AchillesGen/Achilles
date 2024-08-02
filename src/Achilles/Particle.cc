@@ -22,6 +22,7 @@ void Particle::Propagate(const double &time) noexcept {
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
+    if(formationZone > 0) formationZone -= time;
     position += propDist;
 }
 

@@ -189,12 +189,13 @@ std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
 
 void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     for(size_t idx = 0; idx < particles.size(); ++idx) {
-        if(particles[idx].Status() == ParticleStatus::propagating) {
+        if(particles[idx].IsPropagating()) {
             if(m_potential_prop &&
                m_nucleus->GetPotential()->Hamiltonian(
                    particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
+                spdlog::debug("Adding particle: {}", particles[idx]);
                 AddIntegrator(idx, particles[idx]);
                 newKicked.insert(idx);
             }
@@ -203,7 +204,9 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
 }
 
 void Cascade::Validate(const Particles &particles) {
+    spdlog::trace("End of Event Status:");
     for(auto particle : particles) {
+        spdlog::trace("{}", particle);
         if(particle.Status() == ParticleStatus::propagating) {
             for(auto p : particles) spdlog::error("{}", p);
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
@@ -211,16 +214,49 @@ void Cascade::Validate(const Particles &particles) {
     }
 }
 
-void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
+void Cascade::PropagateAll(Particles &particles, double step) const {
+    for(auto &particle : particles) {
+        if(particle.IsPropagating()) { particle.Propagate(step); }
+    }
+}
+
+void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
+                     [[maybe_unused]] const std::size_t &maxSteps) {
     // Set all propagating particles as kicked for the cascade
     for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
     // Run the cascade
+    currentTime = 0;
     m_nucleus = nucleus;
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
+    for(const auto &kicked : kickedIdxs) {
+        for(size_t i = 0; i < particles.size(); ++i) {
+            if(particles[i].Status() != ParticleStatus::background) continue;
+            double closest = ClosestApproach(particles[kicked], particles[i]);
+            spdlog::debug("Closest approach time({}, {}) = {}", kicked, i, closest);
+            if(closest > 0) { m_time_steps.push({closest, {kicked, i}}); }
+        }
+    }
+
+    // while(!m_time_steps.empty()) {
+    //     timeStep = m_time_steps.top().time - currentTime;
+    //     auto [kicked, hit] = m_time_steps.top().idxs;
+    //     m_time_steps.pop();
+    //     PropagateAll(particles, timeStep);
+    //     currentTime += timeStep;
+    //     if(HasInteraction(particles, kicked, hit)) {
+    //         spdlog::trace("Kicked = {}", kicked);
+    //         spdlog::trace("Hit = {}", hit);
+    //         FinalizeMomentum(event, particles, kicked, hit);
+    //         // tmp = m_time_steps;
+    //         // pop_println("After Interaction", tmp);
+    //         // if(m_time_steps.empty()) throw;
+    //     }
+    //     Escaped(particles);
+    // }
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -237,17 +273,14 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
 
             // Update formation zones
             if(kickNuc->InFormationZone()) {
-                Propagate(idx, kickNuc, distance);
-                kickNuc->UpdateFormationZone(timeStep);
-                newKicked.insert(idx);
+                Propagate(idx, kickNuc);
                 continue;
             }
 
             auto hitIdx = algorithm(this, idx, particles);
-            if(hitIdx == SIZE_MAX) {
-                newKicked.insert(idx);
-                continue;
-            }
+            if(hitIdx == SIZE_MAX) { continue; }
+            spdlog::trace("Kicked = {}", idx);
+            spdlog::trace("Hit = {}", hitIdx);
             FinalizeMomentum(event, particles, idx, hitIdx);
         }
         // Updated the kicked list
@@ -271,18 +304,22 @@ size_t Cascade::BaseAlgorithm(size_t idx, Particles &particles) {
     if(dist2.size() == 0) { return SIZE_MAX; }
 
     // Get interaction
-    return Interacted(particles, particles[idx], dist2);
+    return Interacted(particles, idx, dist2);
 }
 
 size_t Cascade::MFPAlgorithm(size_t idx, Particles &particles) {
     double step_prop = distance;
     Particle *kickNuc = &particles[idx];
     auto hitIdx = GetInter(particles, *kickNuc, step_prop);
-    Propagate(idx, kickNuc, step_prop);
+    PropagateSpace(idx, kickNuc, step_prop);
     return hitIdx;
 }
 
 void Cascade::AddIntegrator(size_t idx, const Particle &part) {
+    // Only add if not already there
+    if(integrators.find(idx) != integrators.end()) return;
+
+    // Otherwise setup integrator
     static constexpr double omega = 20;
     auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p,
                                std::shared_ptr<Potential> potential) {
@@ -311,10 +348,9 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
                              dHamiltonian_dr, dHamiltonian_dp, omega);
 }
 
-void Cascade::Propagate(size_t idx, Particle *kickNuc, double step) {
-    double localTimeStep = step / (kickNuc->Beta().Magnitude());
+void Cascade::Propagate(size_t idx, Particle *kickNuc) {
     if(m_potential_prop) {
-        integrators[idx].Step<2>(localTimeStep);
+        integrators[idx].Step<2>(timeStep);
         double energy = sqrt(pow(kickNuc->Info().Mass(), 2) + integrators[idx].P().P2());
         FourVector mom{integrators[idx].P(), energy};
         kickNuc->SetMomentum(mom);
@@ -323,8 +359,14 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc, double step) {
         auto pos_new = kickNuc->Position();
         kickNuc->DistanceTraveled() += (pos_new - pos_old).Magnitude();
     } else {
-        kickNuc->SpacePropagate(step);
+        kickNuc->Propagate(timeStep);
     }
+}
+
+void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, double step) {
+    auto beta = kickNuc->Beta().Magnitude();
+    timeStep = step / (beta * Constant::HBARC);
+    Propagate(idx, kickNuc);
 }
 
 // TODO: Switch to using reference_wrapper to reduce copying
@@ -362,7 +404,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         // }
 
         if(kickNuc->InFormationZone()) {
-            Propagate(idx, kickNuc, distance);
+            Propagate(idx, kickNuc);
             kickNuc->UpdateFormationZone(timeStep);
             continue;
         }
@@ -382,7 +424,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         if(nearby_particles.size() == 0) continue;
 
         // Did we hit?
-        auto hitIdx = Interacted(particles, *kickNuc, nearby_particles);
+        auto hitIdx = Interacted(particles, idx, nearby_particles);
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
@@ -431,7 +473,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
         double step_prop = distance;
         // Did we hit?
         auto hitIdx = GetInter(particles, *kickNuc, step_prop);
-        Propagate(idx, kickNuc, step_prop);
+        PropagateSpace(idx, kickNuc, step_prop);
         if(hitIdx == SIZE_MAX) continue;
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
         FinalizeMomentum(event, particles, idx, hitIdx);
@@ -446,40 +488,25 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
 // TODO: Rewrite to have the logic built into the Nucleus class
 void Cascade::Escaped(Particles &particles) {
     const auto radius = m_nucleus->Radius();
-    for(auto it = kickedIdxs.begin(); it != kickedIdxs.end();) {
-        // Nucleon outside nucleus (will check if captured or escaped after
-        // cascade)
-        auto particle = &particles[*it];
-        spdlog::debug("Kicked particle: {} at idx = {}", *particle, *it);
-        if(particle->Status() != ParticleStatus::propagating &&
-           particle->Status() != ParticleStatus::external_test) {
-            spdlog::info("Particle: {}", *particle);
-            throw std::domain_error("Invalid Particle in kicked list");
+    for(auto &particle : particles) {
+        if(!particle.IsPropagating()) continue;
+        if(particle.Status() == ParticleStatus::external_test) {
+            if(particle.Position().Z() < radius) continue;
         }
-        // if(particle -> Status() == -2) {
-        //     std::cout << particle -> Position().Pz() << " " << sqrt(radius2)
-        //     << std::endl; std::cout << *particle << std::endl;
-        // }
         // TODO: Use the code from src/Achilles/Nucleus.cc:108 to properly
         // handle
         //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
-        const double energy = particle->Momentum().E() - Constant::mN - potential;
-        if(particle->Position().Magnitude2() > pow(radius, 2) &&
-           particle->Status() != ParticleStatus::external_test) {
+        const double energy = particle.Momentum().E() - Constant::mN - potential;
+        if(particle.Position().Magnitude2() > pow(radius, 2)) {
+            spdlog::debug("Particle: {} escaping", particle);
             // TODO: Figure out how to appropriately handle escaping vs. capturing
             // It should not be returned to the background, since this can lead to
             // interactions with other particles again
-            if(energy > 0 || !particle->Info().IsNucleon())
-                particle->Status() = ParticleStatus::final_state;
+            if(energy > 0 || !particle.Info().IsNucleon())
+                particle.Status() = ParticleStatus::final_state;
             else
-                particle->Status() = ParticleStatus::captured;
-            it = kickedIdxs.erase(it);
-        } else if(particle->Status() == ParticleStatus::external_test &&
-                  particle->Position().Pz() > radius) {
-            it = kickedIdxs.erase(it);
-        } else {
-            ++it;
+                particle.Status() = ParticleStatus::captured;
         }
     }
 }
@@ -536,7 +563,7 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
 
     // Build planes
     const ThreeVector point1 = particles[idx].Position();
-    Propagate(idx, &particles[idx], distance);
+    Propagate(idx, &particles[idx]);
     const ThreeVector point2 = particles[idx].Position();
     auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
     auto distance2 = (point2 - point1).Dot(normedMomentum);
@@ -562,6 +589,23 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
     return results;
 }
 
+bool Cascade::HasInteraction(Particles &particles, size_t kicked, size_t hit) const {
+    if(!particles[kicked].IsPropagating() ||
+       particles[hit].Status() != ParticleStatus::background || particles[kicked].InFormationZone())
+        return false;
+    // Get distance between points
+    const auto distance2 = (particles[kicked].Position() - particles[hit].Position()).Magnitude2();
+    const auto xsec = GetXSec(particles[kicked], particles[hit]);
+    spdlog::trace("dist2[{}, {}] = {}", kicked, hit, distance2);
+    const double prob = probability(distance2, xsec / 10);
+    if(Random::Instance().Uniform(0.0, 1.0) < prob) {
+        spdlog::debug("Accepted interaction with: {}, {} => distance2: {}, xsec: {}, prob: {}",
+                      kicked + 1, hit + 1, distance2, xsec, prob);
+        return true;
+    }
+    return false;
+}
+
 double Cascade::GetXSec(const Particle &particle1, const Particle &particle2) const {
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
     auto fact = InMediumCorrection(particle1, particle2);
@@ -571,8 +615,9 @@ double Cascade::GetXSec(const Particle &particle1, const Particle &particle2) co
 /// Decide whether or not an interaction occured.
 /// The total probability is normalized to the cross section "sigma" when
 /// integrated over the plane.
-std::size_t Cascade::Interacted(const Particles &particles, const Particle &kickedParticle,
+std::size_t Cascade::Interacted(const Particles &particles, size_t kicked,
                                 const InteractionDistances &dists) noexcept {
+    auto kickedParticle = particles[kicked];
     for(auto dist : dists) {
         // Cross section in mb
         const double xsec = GetXSec(kickedParticle, particles[dist.first]);
@@ -580,6 +625,7 @@ std::size_t Cascade::Interacted(const Particles &particles, const Particle &kick
         // Thus: (xsec [mb]) x (0.1 [fm^2]/ 1 [mb]) = 0.1 xsec [fm^2]
         // dist.second is fm^2; factor of 10 converts mb to fm^2
         const double prob = probability(dist.second, xsec / 10);
+        spdlog::trace("dist2[{}, {}] = {}", kicked, dist.first, dist.second);
         if(Random::Instance().Uniform(0.0, 1.0) < prob) return dist.first;
     }
 
