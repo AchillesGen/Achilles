@@ -103,6 +103,8 @@ target_link_libraries(physics PRIVATE project_warnings
                       PUBLIC utilities cuts HighFive)
 list(APPEND achilles_targets physics)
 
+add_subdirectory(CascadeInteractions)
+
 add_library(nuclear_models SHARED
     NuclearModel.cc
     XSecBackend.cc
@@ -127,7 +129,8 @@ target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings
-                                PUBLIC physics mappers fortran_interface nuclear_models) #fortran_interface
+                                PUBLIC physics mappers fortran_interface nuclear_models
+                                       AchillesCascadeInteractions) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
                             # pybind11_add_module(_achilles MODULE

@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 
+#include "Achilles/CascadeInteractions/ConstantInteractions.hh"
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
