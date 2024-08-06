@@ -195,6 +195,10 @@ void achilles::CascadeTest::CascadeRunner::run() {
 
     // Generate events
     while(NeedsEvents()) {
+        static constexpr size_t statusUpdate = 1000;
+        if(generated_events% statusUpdate == 0) {
+            fmt::print("Generated {} / {} events\r", generated_events, requested_events);
+        }
         auto current_mom = Random::Instance().Uniform(m_mom_range.first, m_mom_range.second);
         GenerateEvent(current_mom);
     }

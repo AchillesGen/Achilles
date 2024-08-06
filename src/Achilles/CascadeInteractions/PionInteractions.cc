@@ -23,15 +23,15 @@ std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle
                                                         const Particle &particle2,
                                                         const std::vector<PID> &out_pids,
                                                         Random &random) const {
-    bool is_pion = false;
+    bool is_meson = false;
     for(const auto &pid : out_pids) {
-        if(ParticleInfo(pid).IsPion()) {
-            is_pion = true;
+        if(ParticleInfo(pid).IsBoson()) {
+            is_meson = true;
             break;
         }
     }
 
-    if(is_pion) return hard_scatter->GenerateMomentum(particle1, particle2, out_pids, random);
+    if(is_meson) return hard_scatter->GenerateMomentum(particle1, particle2, out_pids, random);
     return absorption->GenerateMomentum(particle1, particle2, out_pids, random);
 }
 

@@ -13,14 +13,12 @@ class PionAbsorption : public Interaction {
     PionAbsorption() = default;
     PionAbsorption(const YAML::Node &);
 
-    // List off all InitialStates
-    std::vector<std::pair<PID, PID>> InitialStates() const override;
-
     InteractionResults CrossSection(Event &, size_t, size_t) const override;
+
+    std::vector<std::pair<PID, PID>> InitialStates() const override;
 
   protected:
     virtual bool AllowedAbsorption(Event &, size_t, size_t) const = 0;
-    mutable Particle absorption_partner;
 
     OsetAbsCrossSection Oset_abs; // Contains Oset absorption cross sections
 
@@ -31,6 +29,8 @@ class PionAbsorption : public Interaction {
 
     using InteractionMap = std::map<std::pair<PID, PID>, std::vector<InteractionStates>>;
     InteractionMap states;
+    mutable std::vector<Particle> absorption_partners;
+    mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 
 class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionOneStep> {
@@ -40,7 +40,7 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
 
     /// Initialize PionAbsorptionOneStep class
     PionAbsorptionOneStep() = default;
-    PionAbsorptionOneStep(const YAML::Node &){};
+    PionAbsorptionOneStep(const YAML::Node &node) : PionAbsorption(node) {};
 
     /// Generate a object. This is used in the InteractionFactory.
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
@@ -63,7 +63,6 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
   private:
     std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
     bool AllowedAbsorption(Event &, size_t, size_t) const override;
-    mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 
 class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionTwoStep> {
