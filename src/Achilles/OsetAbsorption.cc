@@ -14,7 +14,7 @@ double OsetAbsCrossSection::AbsorptionCrossSection(Event &event, size_t part1, s
     auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(pion.Position().Magnitude());
     auto fermi_energy = sqrt(pow(fermi_momentum, 2) + pow(Constant::mN, 2));
     auto pion_kinetic_energy = pion.E() - pion.Mass();
-    auto pion_momentum = sqrt(pion.E() * pion.E() - pion.Mass() * pion.Mass());
+    auto pion_momentum = pion.Momentum().P();
 
     // Compute cms quantities
     // assumes nucleon at rest?
@@ -50,9 +50,6 @@ double OsetAbsCrossSection::AbsorptionCrossSection(Event &event, size_t part1, s
     else
         absNNN *= pow(densityFraction, 2.0 * beta);
 
-    // absNN and absNNN are multiplied by number of nucleons to get proper
-    // cross section normalization
-    // fSelfEnergyAbsorption = 2.0 * absNN + 3.0 * absNNN;
     auto self_energy_absorption = absNN + absNNN;
 
     // this one goes to the delta propagator
@@ -79,12 +76,12 @@ double OsetAbsCrossSection::AbsorptionCrossSection(Event &event, size_t part1, s
     const double pXsecAbsorption = pAborptionFactor * pXsecCommon * self_energy_absorption;
 
     // constant factor for s-wave absorption cross section
-    static const double sAbsorptionFactor = 4.0 * M_PI * 197.327 * 10.0 * ImB0;
+    static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
 
     // absorption s-wave cross section (see sec. 3.3)
     const double sXsecAbsorption = sAbsorptionFactor / pion_momentum * density *
                                    (1.0 + pion.E() / 2.0 / Constant::mN) /
-                                   pow(pion.Mass() / 197.327, 4.0);
+                                   pow(pion.Mass() / Constant::HBARC, 4.0);
 
     // total absorption cross section coming from both s- and p-waves
     return pXsecAbsorption + sXsecAbsorption;
@@ -96,7 +93,7 @@ double OsetAbsCrossSection::DeltaReduction(const double pion_E, const double pio
     // assuming nucleon at rest
     const double deltaEnergy = pion_E + Constant::mN;
 
-    const double pion_p = pion_E - pion_mass;
+    const double pion_p = sqrt(pion_E*pion_E - pion_mass*pion_mass);
     // nucleon energy in CMS
     const double energy_cms = sqrt(momentum_cms * momentum_cms + pow(Constant::mN, 2));
     // fermiEnergy calculated from density

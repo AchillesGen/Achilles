@@ -69,7 +69,7 @@ bool ParticleInfo::IsNucleon() const noexcept {
 }
 
 bool ParticleInfo::IsPion() const noexcept {
-    return info->id == PID::pionp() || info->id == PID::pion0();
+    return info->id == PID::pionp() || info->id == PID::pion0() || info->id == -PID::pionp();
 }
 
 bool ParticleInfo::IsBaryon() const noexcept {
