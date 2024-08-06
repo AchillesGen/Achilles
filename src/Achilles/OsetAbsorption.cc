@@ -93,7 +93,7 @@ double OsetAbsCrossSection::DeltaReduction(const double pion_E, const double pio
     // assuming nucleon at rest
     const double deltaEnergy = pion_E + Constant::mN;
 
-    const double pion_p = sqrt(pion_E*pion_E - pion_mass*pion_mass);
+    const double pion_p = sqrt(pion_E * pion_E - pion_mass * pion_mass);
     // nucleon energy in CMS
     const double energy_cms = sqrt(momentum_cms * momentum_cms + pow(Constant::mN, 2));
     // fermiEnergy calculated from density
