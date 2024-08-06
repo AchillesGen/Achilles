@@ -6,28 +6,27 @@
 using namespace achilles;
 
 PionAbsorption::PionAbsorption(const YAML::Node &) {
-    //Maps of pion + nucleon as key
-    //value is vector of pairs (absorption partner, outgoing final states)
+    // Maps of pion + nucleon as key
+    // value is vector of pairs (absorption partner, outgoing final states)
     states[{PID::pionp(), PID::proton()}] = {{PID::neutron(), {PID::proton(), PID::proton()}}};
 
     states[{PID::pionp(), PID::neutron()}] = {{PID::neutron(), {PID::proton(), PID::neutron()}},
-                                             {PID::neutron(), {PID::neutron(), PID::proton()}},
-                                             {PID::proton(), {PID::proton(), PID::proton()}}};
+                                              {PID::neutron(), {PID::neutron(), PID::proton()}},
+                                              {PID::proton(), {PID::proton(), PID::proton()}}};
 
     states[{-PID::pionp(), PID::proton()}] = {{PID::neutron(), {PID::neutron(), PID::neutron()}},
-                                             {PID::proton(), {PID::neutron(), PID::proton()}},
-                                             {PID::proton(), {PID::proton(), PID::neutron()}}};
+                                              {PID::proton(), {PID::neutron(), PID::proton()}},
+                                              {PID::proton(), {PID::proton(), PID::neutron()}}};
 
     states[{-PID::pionp(), PID::neutron()}] = {{PID::proton(), {PID::neutron(), PID::neutron()}}};
 
     states[{PID::pion0(), PID::proton()}] = {{PID::proton(), {PID::proton(), PID::proton()}},
-                                            {PID::neutron(), {PID::proton(), PID::neutron()}},
-                                            {PID::neutron(), {PID::neutron(), PID::proton()}}};
+                                             {PID::neutron(), {PID::proton(), PID::neutron()}},
+                                             {PID::neutron(), {PID::neutron(), PID::proton()}}};
 
     states[{PID::pion0(), PID::neutron()}] = {{PID::neutron(), {PID::neutron(), PID::neutron()}},
-                                            {PID::proton(), {PID::neutron(), PID::proton()}},
-                                            {PID::proton(), {PID::proton(), PID::neutron()}}};
-
+                                              {PID::proton(), {PID::neutron(), PID::proton()}},
+                                              {PID::proton(), {PID::proton(), PID::neutron()}}};
 }
 
 std::vector<std::pair<PID, PID>> PionAbsorption::InitialStates() const {
@@ -55,13 +54,13 @@ bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t
     return true;
 }
 
-
-std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_t part1, size_t part2) const {
+std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_t part1,
+                                                             size_t part2) const {
     // Particle 2 is the incoming nucleon
     const auto &particle2 = event.Hadrons()[part2];
 
-    double shortest_p_distance = 10000; //fm^2
-    double shortest_n_distance = 10000; //fm^2
+    double shortest_p_distance = 10000; // fm^2
+    double shortest_n_distance = 10000; // fm^2
     size_t closest_p_idx = SIZE_MAX, closest_n_idx = SIZE_MAX;
 
     for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
@@ -81,49 +80,51 @@ std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_
     return {closest_p_idx, closest_n_idx};
 }
 
-
 InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size_t part2) const {
     const auto &particle2 = event.Hadrons()[part2];
 
     InteractionResults results;
 
-    //Fills m_states which is a vector of <absorption partner idx, <out PID1, outPID2>>
+    // Fills m_states which is a vector of <absorption partner idx, <out PID1, outPID2>>
     if(!AllowedAbsorption(event, part1, part2)) return results;
 
     auto oset_abs_xsec = Oset_abs.AbsorptionCrossSection(event, part1, part2);
 
     // Nuclear Physics A568 (1994) 855-872 Table 1
-    auto opposite_isospin_xsec = (5./6.)*oset_abs_xsec;
-    auto same_isospin_xsec = (1./6.)*oset_abs_xsec;
+    auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
+    auto same_isospin_xsec = (1. / 6.) * oset_abs_xsec;
 
     auto same_isospin_counter = 0;
     auto opp_isospin_counter = 0;
 
-    for (const auto & state: m_states) {
+    for(const auto &state : m_states) {
         size_t abs_partner_idx = state.first;
         spdlog::debug("abs idx = {}", abs_partner_idx);
         if(abs_partner_idx == SIZE_MAX) continue;
         absorption_partners.push_back(event.Hadrons()[abs_partner_idx]);
-        if (event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
+        if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
             same_isospin_counter += 1;
-        }
-        else {
+        } else {
             opp_isospin_counter += 1;
-
         }
     }
 
-    for (const auto & state: m_states) {
+    for(const auto &state : m_states) {
         size_t abs_partner_idx = state.first;
         if(abs_partner_idx == SIZE_MAX) continue;
-        
-        if (event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
-            results.push_back({state.second,same_isospin_xsec/same_isospin_counter});
-            spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}", event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(), event.Hadrons()[abs_partner_idx].ID(), state.second[0], state.second[1], same_isospin_xsec/same_isospin_counter);
-        }
-        else {
-            results.push_back({state.second,opposite_isospin_xsec/opp_isospin_counter});
-            spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}", event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(), event.Hadrons()[abs_partner_idx].ID(), state.second[0], state.second[1], opposite_isospin_xsec/opp_isospin_counter);
+
+        if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
+            results.push_back({state.second, same_isospin_xsec / same_isospin_counter});
+            spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}",
+                          event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(),
+                          event.Hadrons()[abs_partner_idx].ID(), state.second[0], state.second[1],
+                          same_isospin_xsec / same_isospin_counter);
+        } else {
+            results.push_back({state.second, opposite_isospin_xsec / opp_isospin_counter});
+            spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}",
+                          event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(),
+                          event.Hadrons()[abs_partner_idx].ID(), state.second[0], state.second[1],
+                          opposite_isospin_xsec / opp_isospin_counter);
         }
     }
 
@@ -136,10 +137,13 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
                                                               Random &random) const {
     Particle absorption_partner;
 
-    auto partner_charge = (ParticleInfo(out_pids[0]).IntCharge() + ParticleInfo(out_pids[1]).IntCharge() - particle1.Info().IntCharge() - particle2.Info().IntCharge())/3;
+    auto partner_charge =
+        (ParticleInfo(out_pids[0]).IntCharge() + ParticleInfo(out_pids[1]).IntCharge() -
+         particle1.Info().IntCharge() - particle2.Info().IntCharge()) /
+        3;
 
-    for (const auto & partner: absorption_partners) {
-        if(partner.Info().IntCharge()/3 == partner_charge) {
+    for(const auto &partner : absorption_partners) {
+        if(partner.Info().IntCharge() / 3 == partner_charge) {
             absorption_partner = partner;
             break;
         }
@@ -149,7 +153,8 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     spdlog::debug("we chose pion absorption!");
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
+    ThreeVector boostCM =
+        (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
 
     FourVector p1CM = particle1.Momentum().Boost(-boostCM);
     FourVector p2CM = particle2.Momentum().Boost(-boostCM);
@@ -157,15 +162,13 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     FourVector pTotalCM = p1CM + p2CM + p3CM;
     auto sqrts = pTotalCM.M();
-    const double pcm = sqrt(sqrts*sqrts/4.0);
+    const double pcm = sqrt(sqrts * sqrts / 4.0);
     std::vector<double> rans(2);
     random.Generate(rans);
-
 
     double pR = pcm;
     double pTheta = acos(2 * rans[0] - 1);
     double pPhi = 2 * M_PI * rans[1];
-
 
     auto momentum = ThreeVector(ToCartesian({pR, pTheta, pPhi}));
     FourVector p1Out = FourVector(sqrts / 2.0, momentum[0], momentum[1], momentum[2]);
