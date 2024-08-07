@@ -647,8 +647,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     auto particles_out =
         m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
 
-    spdlog::trace("Outgoing particles:");
-    for(const auto &part : particles_out) spdlog::trace("- {}", part);
+    spdlog::debug("Outgoing particles:");
+    for(const auto &part : particles_out) spdlog::debug("- {}", part);
 
     // Check for Pauli Blocking
     bool hit = true;
@@ -660,11 +660,15 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
         if(part.Info().IsPion()) pionFS = true;
-        spdlog::debug("outgoing part = {}", part.ID());
     }
 
     // turn PB off for pion absorption
-    if(pionIS && !pionFS) hit = true;
+    if(pionIS && !pionFS) {
+        hit = true;
+        spdlog::debug("Checking pion abs mom");
+        spdlog::debug("Particle1 ({}): {}, Particle2 ({}): {}",particle1.ID(),particle1.Momentum().Vec3().Magnitude(), particle2.ID(),particle2.Momentum().Vec3().Magnitude());
+        spdlog::debug("Pion abs FS mom: {}, {}",particles_out[0].Momentum().Vec3().Magnitude(),particles_out[1].Momentum().Vec3().Magnitude());
+    }
 
     for(auto &part : event.Hadrons()) {
         if(part.Status() == ParticleStatus::absorption_partner)

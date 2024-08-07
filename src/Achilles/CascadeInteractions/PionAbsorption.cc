@@ -150,31 +150,47 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
     spdlog::debug("we chose pion absorption!");
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
+    spdlog::debug("{}: {}",particle1.ID(),particle1.Momentum());
+    spdlog::debug("{}: {}",particle2.ID(),particle2.Momentum());
+    spdlog::debug("{}: {}",absorption_partner.ID(),absorption_partner.Momentum());
 
     FourVector p1CM = particle1.Momentum().Boost(-boostCM);
     FourVector p2CM = particle2.Momentum().Boost(-boostCM);
     FourVector p3CM = absorption_partner.Momentum().Boost(-boostCM);
 
     FourVector pTotalCM = p1CM + p2CM + p3CM;
-    auto sqrts = pTotalCM.M();
-    const double pcm = sqrt(sqrts*sqrts/4.0);
+    auto s = pTotalCM.M2();
+    auto sqrts = sqrt(s);
+
+    auto ma = ParticleInfo(out_pids[0]).Mass();
+    auto mb = ParticleInfo(out_pids[0]).Mass();
+
+    const double Eacms = sqrts / 2 * (1 + ma * ma / s - mb * mb / s);
+    const double Ebcms = sqrts / 2 * (1 + mb * mb / s - ma * ma / s);
+    auto lambda = sqrt(pow(s - ma * ma - mb * mb, 2) - 4 * ma * ma * mb * mb);
+    auto pfCMS = lambda / 2 / sqrts;
+
     std::vector<double> rans(2);
     random.Generate(rans);
 
+    double cos_cms = 2 * rans[0] - 1;
+    double sin_cms = sqrt(1. - cos_cms * cos_cms);
+    double phi_cms = 2 * M_PI * rans[1];
+    double cosphi_cms = cos(phi_cms);
+    double sinphi_cms = sin(phi_cms); 
 
-    double pR = pcm;
-    double pTheta = acos(2 * rans[0] - 1);
-    double pPhi = 2 * M_PI * rans[1];
+
+    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms);
+    FourVector pbOut = FourVector(Ebcms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms);
+
+    paOut = paOut.Boost(boostCM);
+    pbOut = pbOut.Boost(boostCM);
 
 
-    auto momentum = ThreeVector(ToCartesian({pR, pTheta, pPhi}));
-    FourVector p1Out = FourVector(sqrts / 2.0, momentum[0], momentum[1], momentum[2]);
-    FourVector p2Out = pTotalCM - p1Out;
+    spdlog::debug("out1: {}", paOut.Momentum());
+    spdlog::debug("out2: {}", pbOut.Momentum());
 
-    p1Out = p1Out.Boost(boostCM);
-    p2Out = p2Out.Boost(boostCM);
-
-    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+    return {{out_pids[0], paOut, particle1.Position()}, {out_pids[1], pbOut, particle2.Position()}};
 }
 
 bool PionAbsorptionTwoStep::AllowedAbsorption(Event &, size_t, size_t) const {
