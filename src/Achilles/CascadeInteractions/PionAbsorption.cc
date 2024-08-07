@@ -153,7 +153,8 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     spdlog::debug("we chose pion absorption!");
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
+    ThreeVector boostCM =
+        (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
     spdlog::debug("{}: {}", particle2.ID(), particle2.Momentum());
     spdlog::debug("{}: {}", absorption_partner.ID(), absorption_partner.Momentum());
@@ -182,11 +183,12 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
     double sin_cms = sqrt(1. - cos_cms * cos_cms);
     double phi_cms = 2 * M_PI * rans[1];
     double cosphi_cms = cos(phi_cms);
-    double sinphi_cms = sin(phi_cms); 
+    double sinphi_cms = sin(phi_cms);
 
-
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms);
+    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
+                                  pfCMS * cos_cms);
+    FourVector pbOut = FourVector(Ebcms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
+                                  pfCMS * cos_cms);
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);

@@ -666,8 +666,11 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     if(pionIS && !pionFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");
-        spdlog::debug("Particle1 ({}): {}, Particle2 ({}): {}",particle1.ID(),particle1.Momentum().Vec3().Magnitude(), particle2.ID(),particle2.Momentum().Vec3().Magnitude());
-        spdlog::debug("Pion abs FS mom: {}, {}",particles_out[0].Momentum().Vec3().Magnitude(),particles_out[1].Momentum().Vec3().Magnitude());
+        spdlog::debug("Particle1 ({}): {}, Particle2 ({}): {}", particle1.ID(),
+                      particle1.Momentum().Vec3().Magnitude(), particle2.ID(),
+                      particle2.Momentum().Vec3().Magnitude());
+        spdlog::debug("Pion abs FS mom: {}, {}", particles_out[0].Momentum().Vec3().Magnitude(),
+                      particles_out[1].Momentum().Vec3().Magnitude());
     }
 
     for(auto &part : event.Hadrons()) {
