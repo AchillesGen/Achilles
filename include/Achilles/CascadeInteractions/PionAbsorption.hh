@@ -40,7 +40,7 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
 
     /// Initialize PionAbsorptionOneStep class
     PionAbsorptionOneStep() = default;
-    PionAbsorptionOneStep(const YAML::Node &node) : PionAbsorption(node) {};
+    PionAbsorptionOneStep(const YAML::Node &node) : PionAbsorption(node){};
 
     /// Generate a object. This is used in the InteractionFactory.
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
