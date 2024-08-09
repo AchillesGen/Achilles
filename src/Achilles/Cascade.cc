@@ -197,7 +197,7 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
                    particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
-                spdlog::debug("Adding particle: {}", particles[idx]);
+                spdlog::trace("Adding particle: {}", particles[idx]);
                 AddIntegrator(idx, particles[idx]);
                 newKicked.insert(idx);
             }
@@ -663,6 +663,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     }
 
     // turn PB off for pion absorption
+    // turn PB off for all pion reactions for now
+    //if(pionIS) {
     if(pionIS && !pionFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");
@@ -715,7 +717,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.ID() != PID::proton() || particle.ID() != PID::neutron()) return false;
+    if(particle.ID() != PID::proton() && particle.ID() != PID::neutron()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }

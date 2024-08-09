@@ -3,6 +3,7 @@ add_library(AchillesCascadeInteractions SHARED
     NasaInteractions.cc
     ConstantInteractions.cc
     MesonBaryonInteractions.cc
+    OsetMesonBaryonInteractions.cc
     PionAbsorption.cc
     PionInteractions.cc
 )
