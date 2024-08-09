@@ -1,9 +1,9 @@
 #include <cmath>
 
-#include "nuchic/Integrators/Adzint.hh"
+#include "Achilles/Integrators/Adzint.hh"
 #include "spdlog/spdlog.h"
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
 Adzint::Adzint(const int &iacta_, const int &iactb_, bool cache)
     : AdaptiveIntegrator(cache), iacta(iacta_), iactb(iactb_) {}

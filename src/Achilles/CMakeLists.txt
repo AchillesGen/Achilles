@@ -23,6 +23,7 @@ add_library(utilities SHARED
     Settings.cc
     System.cc
     Legendre.cc
+    ClebschGordan.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
                                 PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
@@ -34,6 +35,8 @@ if(ACHILLES_EVENT_DETAILS)
 target_compile_definitions(utilities PUBLIC ACHILLES_EVENT_DETAILS)
 endif()
 list(APPEND achilles_targets utilities)
+
+add_subdirectory(Integrators)
 
 # add_library(interaction_plugin SHARED
 #     InteractionLoader.cc

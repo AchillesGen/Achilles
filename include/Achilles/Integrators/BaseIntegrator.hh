@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-namespace nuchic {
+namespace achilles {
 namespace Integrator {
 
 using FunctionS = std::function<double(const double &)>;
@@ -50,6 +50,6 @@ class BaseIntegrator {
 };
 
 } // namespace Integrator
-} // namespace nuchic
+} // namespace achilles
 
 #endif

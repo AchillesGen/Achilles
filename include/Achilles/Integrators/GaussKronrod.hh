@@ -1,9 +1,9 @@
 #ifndef GAUSSKRONROD_HH
 #define GAUSSKRONROD_HH
 
-#include "nuchic/Integrators/QuadratureIntegrator.hh"
+#include "Achilles/Integrators/QuadratureIntegrator.hh"
 
-namespace nuchic {
+namespace achilles {
 namespace Integrator {
 
 class GaussKronrod : public QuadratureIntegrator {
@@ -22,6 +22,6 @@ class GaussKronrod : public QuadratureIntegrator {
 };
 
 } // namespace Integrator
-} // namespace nuchic
+} // namespace achilles
 
 #endif

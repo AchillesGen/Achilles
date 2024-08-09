@@ -7,6 +7,7 @@
 using achilles::OsetAbsCrossSection;
 
 OsetAbsCrossSection::OsetAbsCrossSection() {}
+
 double OsetAbsCrossSection::AbsorptionCrossSection(Event &event, size_t part1, size_t) const {
     // Get pion and nucleus information
     const auto &pion = event.Hadrons()[part1];
