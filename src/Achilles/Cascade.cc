@@ -643,7 +643,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.ID() != PID::proton() || particle.ID() != PID::neutron()) return false;
+    if(particle.ID() != PID::proton() && particle.ID() != PID::neutron()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
