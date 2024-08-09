@@ -280,20 +280,13 @@ bool achilles::EventGen::GenerateSingleEvent() {
             }
         }
     }
+    // Update particle statuses in history to account for after the cascade
+    event.History().UpdateStatuses(event.Hadrons());
 
 #ifdef ACHILLES_SHERPA_INTERFACE
     // Running Sherpa interface if requested
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
-
-    // TODO: Figure out how to best handle tracking this with the cascade and decays
-    std::vector<Particle> final_part;
-    for(const auto &part : event.Particles()) {
-        if(part.IsFinal()) final_part.push_back(part);
-    }
-    init_parts.push_back(init_lep);
-    event.History().AddVertex(init_parts[0].Position(), propagating, final_part,
-                              EventHistory::StatusCode::cascade);
 
     writer->Write(event);
     return true;

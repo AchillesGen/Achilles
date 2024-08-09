@@ -74,16 +74,25 @@ void Process::SetupHadrons(Event &event) const {
 
     // TODO: Handle hydrogen
 
-    // Select initial state nucleons and spectators
+    // NOTE: The initial state and spectator have to be handled separately
+    //       to ensure that they aren't the same particle
+    // Select initial state nucleons
     auto protons = event.Protons(ParticleStatus::background);
     auto neutrons = event.Neutrons(ParticleStatus::background);
-    size_t nsamples = m_info.m_hadronic.first.size() + m_info.m_spectator.size();
+    size_t nsamples = m_info.m_hadronic.first.size();
     auto sampled_protons = Random::Instance().Sample(nsamples, protons);
     auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
 
     auto initial_states =
         SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
                         ParticleStatus::initial_state);
+
+    // Select spectator nucleons
+    nsamples = m_info.m_spectator.size();
+    protons = event.Protons(ParticleStatus::background);
+    neutrons = event.Neutrons(ParticleStatus::background);
+    sampled_protons = Random::Instance().Sample(nsamples, protons);
+    sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
     auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
                                       ParticleStatus::spectator);
 
