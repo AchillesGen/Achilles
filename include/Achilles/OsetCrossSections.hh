@@ -1,8 +1,8 @@
 #pragma once
 
+#include "Achilles/Particle.hh"
 #include <cmath>
 #include <map>
-#include "Achilles/Particle.hh"
 
 namespace achilles {
 
@@ -13,22 +13,29 @@ class OsetCrossSection {
     OsetCrossSection();
 
     double AbsCrossSection(Event &event, size_t part1, size_t part2) const;
-    std::map<std::pair<PID,PID>,double> QECrossSection(Event &event, size_t part1, size_t part2) const;
+    std::map<std::pair<PID, PID>, double> QECrossSection(Event &event, size_t part1,
+                                                         size_t part2) const;
 
   private:
-    double DensityFraction(double density) const {return density/fNormalDensity;}
-    double KEFraction(double pion_KE, double pion_mass) const {return pion_KE/pion_mass;}
-    double CouplingFactor(double pion_mass) const {return fCouplingConstant/pion_mass/pion_mass;}
+    double DensityFraction(double density) const { return density / fNormalDensity; }
+    double KEFraction(double pion_KE, double pion_mass) const { return pion_KE / pion_mass; }
+    double CouplingFactor(double pion_mass) const {
+        return fCouplingConstant / pion_mass / pion_mass;
+    }
 
     inline double QuadraticFunction(const double &x, const double *a) const {
         return a[0] * x * x + a[1] * x + a[2];
     }
 
-    double SelfEnergyAbsNN(const double pion_KE, const double pion_mass, const double density) const;
-    double SelfEnergyAbsNNN(const double pion_KE, const double pion_mass, const double density) const;
+    double SelfEnergyAbsNN(const double pion_KE, const double pion_mass,
+                           const double density) const;
+    double SelfEnergyAbsNNN(const double pion_KE, const double pion_mass,
+                            const double density) const;
     double SelfEnergyQE(const double pion_KE, const double pion_mass, const double density) const;
-    double ReducedHalfWidth(const double pionE, const double pion_mass, const double cms_mom, const double fermimom, const double sqrts) const;
-    double PXSecCommon(const double pionE, const double pion_mass, const double cms_mom, const double fermimom, const double sqrts, const double density) const;
+    double ReducedHalfWidth(const double pionE, const double pion_mass, const double cms_mom,
+                            const double fermimom, const double sqrts) const;
+    double PXSecCommon(const double pionE, const double pion_mass, const double cms_mom,
+                       const double fermimom, const double sqrts, const double density) const;
 
     const double fConstFactor = 1.0 / 12.0 / M_PI;
     const double fCouplingConstant = 0.36 * 4.0 * M_PI;
@@ -52,8 +59,7 @@ class OsetCrossSection {
     // s-wave parametrization (see sec. 3.1)
     const double fCoefSigma[3] = {-0.01334, 0.06889, 0.19753};
     const double fCoefB[3] = {-0.01866, 0.06602, 0.21972};
-    const double fCoefD[3] = {-0.08229, 0.37062,-0.03130};
-
+    const double fCoefD[3] = {-0.08229, 0.37062, -0.03130};
 };
 
 } // namespace achilles

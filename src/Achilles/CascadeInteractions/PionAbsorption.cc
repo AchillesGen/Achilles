@@ -37,8 +37,9 @@ std::vector<std::pair<PID, PID>> PionAbsorption::InitialStates() const {
 
 bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t part2) const {
     auto closest = FindClosest(event, part1, part2);
-    //spdlog::debug("closest: {}, {}", closest.first, closest.second);
-    //spdlog::debug("part1: {}, part2: {}", event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID());
+    // spdlog::debug("closest: {}, {}", closest.first, closest.second);
+    // spdlog::debug("part1: {}, part2: {}", event.Hadrons()[part1].ID(),
+    // event.Hadrons()[part2].ID());
 
     auto modes = states.at({event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID()});
 
@@ -67,7 +68,7 @@ std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_
         if(i == part1 || i == part2) continue;
         if(!event.Hadrons()[i].IsBackground()) continue;
         auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
-        //spdlog::debug("distance = {}", distance);
+        // spdlog::debug("distance = {}", distance);
         if(distance < shortest_p_distance && event.Hadrons()[i].ID() == PID::proton()) {
             shortest_p_distance = distance;
             closest_p_idx = i;
@@ -76,7 +77,7 @@ std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_
             closest_n_idx = i;
         }
     }
-    //spdlog::debug("p idx = {}, n idx = {}", closest_p_idx, closest_n_idx);
+    // spdlog::debug("p idx = {}, n idx = {}", closest_p_idx, closest_n_idx);
     return {closest_p_idx, closest_n_idx};
 }
 
@@ -89,8 +90,8 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
     if(!AllowedAbsorption(event, part1, part2)) return results;
 
     auto oset_abs_xsec = Oset.AbsCrossSection(event, part1, part2);
-    //spdlog::debug("Oset abs xsec = {}", oset_abs_xsec);
-    //oset_abs_xsec = 0.0;
+    // spdlog::debug("Oset abs xsec = {}", oset_abs_xsec);
+    // oset_abs_xsec = 0.0;
 
     // Nuclear Physics A568 (1994) 855-872 Table 1
     auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
@@ -101,7 +102,7 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
 
     for(const auto &state : m_states) {
         size_t abs_partner_idx = state.first;
-        //spdlog::debug("abs idx = {}", abs_partner_idx);
+        // spdlog::debug("abs idx = {}", abs_partner_idx);
         if(abs_partner_idx == SIZE_MAX) continue;
         absorption_partners.push_back(event.Hadrons()[abs_partner_idx]);
         if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
@@ -189,8 +190,8 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
                                   pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms,
-                                  -pfCMS * cos_cms);
+    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
+                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);

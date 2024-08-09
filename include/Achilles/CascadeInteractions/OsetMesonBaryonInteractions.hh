@@ -7,7 +7,8 @@
 
 namespace achilles {
 
-class OsetMesonBaryonInteraction : public Interaction, RegistrableInteraction<OsetMesonBaryonInteraction> {
+class OsetMesonBaryonInteraction : public Interaction,
+                                   RegistrableInteraction<OsetMesonBaryonInteraction> {
   public:
     ///@name Constructors and Destructors
     ///@{
@@ -42,7 +43,7 @@ class OsetMesonBaryonInteraction : public Interaction, RegistrableInteraction<Os
 
   private:
     // Variables
-    std::map<std::pair<PID,PID>,std::vector<std::pair<PID,PID>>> in_out_states;
+    std::map<std::pair<PID, PID>, std::vector<std::pair<PID, PID>>> in_out_states;
 
   protected:
     OsetCrossSection Oset; // Contains Oset absorption cross sections

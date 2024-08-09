@@ -664,7 +664,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     // turn PB off for pion absorption
     // turn PB off for all pion reactions for now
-    //if(pionIS) {
+    // if(pionIS) {
     if(pionIS && !pionFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");

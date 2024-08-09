@@ -11,49 +11,48 @@ OsetMesonBaryonInteraction::OsetMesonBaryonInteraction(const YAML::Node &) {
     in_out_states[{PID::pionp(), PID::proton()}] = {{PID::pionp(), PID::proton()}};
 
     in_out_states[{PID::pionp(), PID::neutron()}] = {{PID::pionp(), PID::neutron()},
-                                                    {PID::pion0(), PID::proton()}};
+                                                     {PID::pion0(), PID::proton()}};
 
     in_out_states[{PID::pion0(), PID::proton()}] = {{PID::pion0(), PID::proton()},
                                                     {PID::pionp(), PID::neutron()}};
 
-
     in_out_states[{PID::pion0(), PID::neutron()}] = {{PID::pion0(), PID::neutron()},
-                                                    {-PID::pionp(), PID::proton()}};
+                                                     {-PID::pionp(), PID::proton()}};
 
     in_out_states[{-PID::pionp(), PID::proton()}] = {{-PID::pionp(), PID::proton()},
-                                                    {PID::pion0(), PID::neutron()}};
+                                                     {PID::pion0(), PID::neutron()}};
 
     in_out_states[{-PID::pionp(), PID::neutron()}] = {{-PID::pionp(), PID::neutron()}};
-
 }
 
 InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t part1,
-                                                        size_t part2) const {
+                                                            size_t part2) const {
     const auto &particle1 = event.Hadrons()[part1];
     const auto &particle2 = event.Hadrons()[part2];
 
-    auto sqrts  = (particle1.Momentum() + particle2.Momentum()).M();
+    auto sqrts = (particle1.Momentum() + particle2.Momentum()).M();
 
     auto QECrossSections = Oset.QECrossSection(event, part1, part2);
 
     InteractionResults results;
 
     spdlog::debug("Incoming:");
-    spdlog::debug("{}",particle1);
-    spdlog::debug("{}",particle2);
+    spdlog::debug("{}", particle1);
+    spdlog::debug("{}", particle2);
     // Vector of pairs of outgoing states
-    auto outgoing_states = in_out_states.at({particle1.ID(),particle2.ID()});
-    for(const auto & state: outgoing_states) {
+    auto outgoing_states = in_out_states.at({particle1.ID(), particle2.ID()});
+    for(const auto &state : outgoing_states) {
         spdlog::debug("Outgoing:");
-        spdlog::debug("{} + {}",state.first,state.second);
+        spdlog::debug("{} + {}", state.first, state.second);
         PID outgoing_pi_PID = state.first;
 
-        auto outgoing_masses = ParticleInfo(outgoing_pi_PID).Mass() + ParticleInfo(state.second).Mass();
-        if (sqrts < outgoing_masses) continue;
+        auto outgoing_masses =
+            ParticleInfo(outgoing_pi_PID).Mass() + ParticleInfo(state.second).Mass();
+        if(sqrts < outgoing_masses) continue;
 
-        double CS = QECrossSections[{particle1.ID(),outgoing_pi_PID}];
+        double CS = QECrossSections[{particle1.ID(), outgoing_pi_PID}];
         if(CS == 0.) continue;
-        results.push_back({{outgoing_pi_PID,state.second},CS});
+        results.push_back({{outgoing_pi_PID, state.second}, CS});
     }
 
     return results;
@@ -66,15 +65,14 @@ std::vector<std::pair<PID, PID>> OsetMesonBaryonInteraction::InitialStates() con
 }
 
 std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particle &particle1,
-                                                               const Particle &particle2,
-                                                               const std::vector<PID> &out_pids,
-                                                               Random &random) const {
-    //TODO implement S wave and P wave outgoing angles from Oset
+                                                                   const Particle &particle2,
+                                                                   const std::vector<PID> &out_pids,
+                                                                   Random &random) const {
+    // TODO implement S wave and P wave outgoing angles from Oset
 
     spdlog::debug("We chose pion QE scattering");
     // Boost to center of mass
-    ThreeVector boostCM =
-        (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
     spdlog::debug("{}: {}", particle2.ID(), particle2.Momentum());
 
@@ -96,7 +94,6 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
     auto lambda = sqrt(pow(s - ma * ma - mb * mb, 2) - 4. * ma * ma * mb * mb);
     auto pfCMS = lambda / 2. / sqrts;
 
-
     std::vector<double> rans(2);
     random.Generate(rans);
 
@@ -108,8 +105,8 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
 
     FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
                                   pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms,
-                                  -pfCMS * cos_cms);
+    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
+                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
