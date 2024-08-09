@@ -5,6 +5,7 @@ add_library(AchillesCascadeInteractions SHARED
     MesonBaryonInteractions.cc
     PionAbsorption.cc
     PionInteractions.cc
+    DeltaInteractions.cc
 )
 target_link_libraries(AchillesCascadeInteractions PRIVATE project_options project_warnings
-                                                  PUBLIC physics)
+                                                  PUBLIC physics AchillesIntegrator)
