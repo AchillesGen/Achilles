@@ -197,7 +197,7 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
                    particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
-                spdlog::debug("Adding particle: {}", particles[idx]);
+                spdlog::trace("Adding particle: {}", particles[idx]);
                 AddIntegrator(idx, particles[idx]);
                 newKicked.insert(idx);
             }
@@ -663,6 +663,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     }
 
     // turn PB off for pion absorption
+    // turn PB off for all pion reactions for now
+    // if(pionIS) {
     if(pionIS && !pionFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");

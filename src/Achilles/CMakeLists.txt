@@ -87,7 +87,7 @@ add_library(physics SHARED
     ElectronPDF.cc
     EventHistory.cc
     MesonBaryonAmplitudes.cc
-    OsetAbsorption.cc
+    OsetCrossSections.cc
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)
