@@ -110,7 +110,7 @@ void achilles::Vegas::Refine() {
 
 achilles::VegasSummary achilles::Vegas::Summary() const {
     std::cout << "Final integral = "
-              << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)", summary.Result().Mean(),
+              << fmt::format("{:^8.5e} +/- {:^8.5e} nb ({:^8.5e} %)", summary.Result().Mean(),
                              summary.Result().Error(),
                              summary.Result().Error() / summary.Result().Mean() * 100)
               << std::endl;
@@ -118,7 +118,7 @@ achilles::VegasSummary achilles::Vegas::Summary() const {
 }
 
 void achilles::Vegas::PrintIteration() const {
-    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e} nb   {:^8.5e} +/- {:^8.5e} nb",
                              summary.results.size(), summary.results.back().Mean(),
                              summary.results.back().Error(), summary.Result().Mean(),
                              summary.Result().Error())
