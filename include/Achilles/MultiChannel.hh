@@ -74,7 +74,7 @@ class MultiChannel {
     void TrainChannels();
     template <typename T> void RefineChannels(Integrand<T> &func) {
         params.iteration = 0;
-        params.ncalls *= 2;
+        params.ncalls = static_cast<size_t>(static_cast<double>(params.ncalls) * 1.2);
         for(auto &channel : func.Channels()) {
             if(channel.integrator.Grid().Bins() < 200) channel.integrator.Refine();
         }
