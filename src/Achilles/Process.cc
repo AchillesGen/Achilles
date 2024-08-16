@@ -3,6 +3,7 @@
 #include "Achilles/Channels.hh"
 #include "Achilles/Exceptions.hh"
 #include "Achilles/FinalStateMapper.hh"
+#include "Achilles/MultiChannel.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -335,7 +336,11 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
     } catch(const InvalidChannel &) { return false; }
 
     // TODO: Fix scaling to be consistent with Chili paper
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
+    MultiChannelParams multichannel_params;
+    if(config["Options"]["Initialize"]["Parameters"])
+        multichannel_params =
+            config["Options"]["Initialize"]["Parameters"].as<MultiChannelParams>();
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params);
     if(config["Options"]["Initialize"]["Accuracy"])
         m_integrator.Parameters().rtol = config["Options"]["Initialize"]["Accuracy"].as<double>();
 

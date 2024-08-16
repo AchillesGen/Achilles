@@ -218,20 +218,20 @@ template <> struct convert<achilles::MultiChannelParams> {
         node["beta"] = rhs.beta;
         node["min_alpha"] = rhs.min_alpha;
         node["iteration"] = rhs.iteration;
+        node["rescale_factor"] = rhs.rescale_factor;
 
         return node;
     }
 
     static bool decode(const Node &node, achilles::MultiChannelParams &rhs) {
-        if(node.size() != rhs.nparams) return false;
-
-        rhs.ncalls = node["NCalls"].as<size_t>();
-        rhs.niterations = node["NIterations"].as<size_t>();
-        rhs.rtol = node["rtol"].as<double>();
-        rhs.nrefine = node["nrefine"].as<size_t>();
-        rhs.beta = node["beta"].as<double>();
-        rhs.min_alpha = node["min_alpha"].as<double>();
-        rhs.iteration = node["iteration"].as<size_t>();
+        if(node["NCalls"]) rhs.ncalls = node["NCalls"].as<size_t>();
+        if(node["NIterations"]) rhs.niterations = node["NIterations"].as<size_t>();
+        if(node["rtol"]) rhs.rtol = node["rtol"].as<double>();
+        if(node["nrefine"]) rhs.nrefine = node["nrefine"].as<size_t>();
+        if(node["beta"]) rhs.beta = node["beta"].as<double>();
+        if(node["min_alpha"]) rhs.min_alpha = node["min_alpha"].as<double>();
+        if(node["iteration"]) rhs.iteration = node["iteration"].as<size_t>();
+        if(node["rescale_factor"]) rhs.rescale_factor = node["rescale_factor"].as<double>();
 
         return true;
     }
