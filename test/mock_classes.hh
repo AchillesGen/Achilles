@@ -175,7 +175,6 @@ class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<achilles:
     IMPLEMENT_MOCK1(SetMasses);
     IMPLEMENT_CONST_MOCK0(Masses);
     IMPLEMENT_MOCK1(SetGaugeBosonMass);
-    IMPLEMENT_CONST_MOCK0(ToYAML);
 };
 
 class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {

@@ -18,7 +18,7 @@ module res_spectral_model
             procedure :: frame => res_spec_frame
             procedure :: init_wgt => res_spec_init_wgt
             procedure :: cleanup => res_spec_cleanup
-            procedure :: inspirehep => res_inspirehep
+            procedure, nopass :: inspirehep => res_inspirehep
     end type
 
 contains

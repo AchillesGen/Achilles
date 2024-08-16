@@ -18,7 +18,7 @@ module nuclear_model_test
             procedure :: mode => test_mode
             procedure :: init_wgt => test_init_wgt
             procedure :: cleanup => test_cleanup
-            procedure :: inspirehep => test_inspirehep
+            procedure, nopass :: inspirehep => test_inspirehep
     end type
 
 contains

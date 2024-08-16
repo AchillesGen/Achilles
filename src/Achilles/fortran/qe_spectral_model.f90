@@ -17,7 +17,7 @@ module qe_spectral_model
             procedure :: mode => qe_spec_mode
             procedure :: init_wgt => qe_spec_init_wgt
             procedure :: cleanup => qe_spec_cleanup
-            procedure :: inspirehep => qe_inspirehep
+            procedure, nopass :: inspirehep => qe_inspirehep
     end type
 
 contains

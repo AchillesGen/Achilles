@@ -198,7 +198,6 @@ class DoubleMapperCache : public achilles::Mapper<double> {
         return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
     }
     size_t NDims() const override { return 1; }
-    YAML::Node ToYAML() const override { return YAML::Node(); }
 
   private:
     size_t m_channel;

@@ -18,7 +18,7 @@ module nuclear_model
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
             procedure(nm_init_wgt), deferred :: init_wgt
-            procedure(nm_inspirehep), deferred :: inspirehep
+            procedure(nm_inspirehep), deferred, nopass :: inspirehep
     end type model
 
     abstract interface

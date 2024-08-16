@@ -30,12 +30,6 @@ class Channels3 : public Channels {
     double GenerateWeight(const std::vector<Vec4D> &, std::vector<double> &) override = 0;
     void GeneratePoint(std::vector<Vec4D> &, const std::vector<double> &) override = 0;
     size_t NDims() const override { return 5; }
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Name"] = m_name;
-        result["Masses"] = std::vector<double>{s2, s3, s4, s5};
-        return result;
-    }
 };
 
 class C3_0 : public Channels3, achilles::Registrable<Channels, C3_0, std::vector<double>> {

@@ -17,7 +17,7 @@ module intf_spectral_model
             procedure :: mode => intf_spec_mode
             procedure :: init_wgt => intf_spec_init_wgt
             procedure :: cleanup => intf_spec_cleanup
-            procedure :: inspirehep => intf_inspirehep
+            procedure, nopass :: inspirehep => intf_inspirehep
     end type
 
     integer :: compute_1body = 1

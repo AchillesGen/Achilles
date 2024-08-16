@@ -15,7 +15,6 @@ class DummyMapper : public achilles::Mapper<double> {
         return 1.0;
     }
     size_t NDims() const override { return 1; }
-    YAML::Node ToYAML() const override { return YAML::Node(); }
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {

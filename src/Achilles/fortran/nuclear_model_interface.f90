@@ -56,7 +56,7 @@ contains
         endif
 
         i = this%size + 1
-        this%model_holder(i) = model
+        this%model_holder(i) = model_in
         this%size = i
     end subroutine
 

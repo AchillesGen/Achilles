@@ -115,7 +115,6 @@ add_subdirectory(fortran)
 list(APPEND achilles_targets fortran_interface)
 
 add_library(event_gen SHARED
-    # TODO: Move to its own library
     EventGen.cc
     Debug.cc
     EventWriter.cc
