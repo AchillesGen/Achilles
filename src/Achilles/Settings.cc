@@ -29,6 +29,10 @@ Settings::Settings(const std::string &filename) {
     CheckRequired();
 }
 
+Settings::Settings(const YAML::Node &node) {
+    m_settings = node;
+}
+
 void Settings::Print() const {
     std::cout << m_settings << std::endl;
 }
