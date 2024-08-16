@@ -131,9 +131,11 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
         integrand.AddChannel(std::move(channel));
     }
     static constexpr size_t ncalls = 1000, nitn_min = 2;
+    static constexpr double rescale_factor = 2;
     static constexpr double rtol = 1;
     achilles::MultiChannel integrator(1, integrand.NChannels(),
                                       achilles::MultiChannelParams{ncalls, nitn_min, rtol});
+    integrator.Parameters().rescale_factor = rescale_factor;
     integrator.Optimize(integrand);
     auto results1 = integrator.Summary();
 

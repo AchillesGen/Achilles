@@ -213,7 +213,7 @@ TEST_CASE("Save/Load MultiChannel", "[Cache]") {
         channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         integrand.AddChannel(std::move(channel));
     }
-    achilles::MultiChannel multi(1, integrand.NChannels(), {1000, 10, 1e-2, 1, 0.25, 1e-5, 0});
+    achilles::MultiChannel multi(1, integrand.NChannels(), {5000, 3, 1e-2, 1, 0.25, 1e-5, 1.5, 0});
     multi.Optimize(integrand);
     std::stringstream ss;
     multi.SaveState(ss);
@@ -255,7 +255,6 @@ TEST_CASE("Save/Load Process", "[Cache]") {
     std::stringstream ss;
     process.SaveState(ss);
     process.SaveState(ss);
-    std::cout << ss.str() << std::endl;
 
     auto unweighter2 = std::make_unique<MockUnweighter>();
     REQUIRE_CALL(*unweighter2, LoadState(trompeloeil::_)).TIMES(1);
