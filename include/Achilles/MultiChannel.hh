@@ -20,13 +20,15 @@ struct MultiChannelParams {
     double rtol{rtol_default};
     size_t nrefine{nrefine_default};
     double beta{beta_default}, min_alpha{min_alpha_default};
+    double rescale_factor{rescale_factor_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr size_t ncalls_default{10000}, nint_default{7};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
-    static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr size_t nparams = 7;
+    static constexpr double beta_default{1.00}, min_alpha_default{1e-5};
+    static constexpr double rescale_factor_default{1.44};
+    static constexpr size_t nparams = 8;
 };
 
 bool operator==(const MultiChannelParams &lhs, const MultiChannelParams &rhs);
@@ -74,9 +76,10 @@ class MultiChannel {
     void TrainChannels();
     template <typename T> void RefineChannels(Integrand<T> &func) {
         params.iteration = 0;
-        params.ncalls = static_cast<size_t>(static_cast<double>(params.ncalls) * 1.2);
+        params.ncalls =
+            static_cast<size_t>(static_cast<double>(params.ncalls) * params.rescale_factor);
         for(auto &channel : func.Channels()) {
-            if(channel.integrator.Grid().Bins() < 200) channel.integrator.Refine();
+            if(channel.integrator.Grid().Bins() < 100) channel.integrator.Refine();
         }
     }
     void PrintIteration() const;
