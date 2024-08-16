@@ -17,6 +17,7 @@ module qe_spectral_model
             procedure :: mode => qe_spec_mode
             procedure :: init_wgt => qe_spec_init_wgt
             procedure :: cleanup => qe_spec_cleanup
+            procedure :: inspirehep => qe_inspirehep
     end type
 
 contains
@@ -73,6 +74,11 @@ contains
     function qe_spec_name() !...name of the model
         character(len=:), allocatable :: qe_spec_name
         qe_spec_name = "QE_Spectral_Func"
+    end function
+
+    function qe_inspirehep() !...reference for the model
+        character(len=:), allocatable :: qe_inspirehep
+        qe_inspirehep = "" ! TODO: Add inspirehep information
     end function
 
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh

@@ -18,6 +18,7 @@ module res_spectral_model
             procedure :: frame => res_spec_frame
             procedure :: init_wgt => res_spec_init_wgt
             procedure :: cleanup => res_spec_cleanup
+            procedure :: inspirehep => res_inspirehep
     end type
 
 contains
@@ -80,6 +81,11 @@ contains
     function res_spec_name() !..name of the model
         character(len=:), allocatable :: res_spec_name
         res_spec_name = "RES_Spectral_Func"
+    end function
+
+    function res_inspirehep() !...reference for the model
+        character(len=:), allocatable :: res_inspirehep
+        res_inspirehep = "" ! TODO: Add inspirehep information
     end function
 
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc

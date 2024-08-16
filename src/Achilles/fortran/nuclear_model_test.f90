@@ -18,6 +18,7 @@ module nuclear_model_test
             procedure :: mode => test_mode
             procedure :: init_wgt => test_init_wgt
             procedure :: cleanup => test_cleanup
+            procedure :: inspirehep => test_inspirehep
     end type
 
 contains
@@ -30,8 +31,8 @@ contains
     end subroutine
 
     subroutine register() bind(C, name="Register")
-        type(test) :: model
-        call factory%register_model(model%model_name(), build_test)
+        type(test) :: cur_model
+        call factory%register_model(cur_model%model_name(), build_test)
     end subroutine
 
     function test_init(self, filename, params)
@@ -78,6 +79,11 @@ contains
     function test_name()
         character(len=:), allocatable :: test_name
         test_name = "test"
+    end function
+
+    function test_inspirehep()
+        character(len=:), allocatable :: test_inspirehep
+        test_inspirehep = "Isaacson:2022cwh"
     end function
 
     function test_ps(self)
