@@ -5,7 +5,10 @@
 #include "Achilles/AdaptiveMap.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
 #include "fmt/ranges.h"
+#pragma GCC diagnostic pop
 #include "spdlog/spdlog.h"
 
 using achilles::AdaptiveMap;

@@ -18,7 +18,10 @@ namespace fs = std::experimental::filesystem;
 #error "Could not find includes: <filesystem> or <experimental/filesystem>"
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
 #include "fmt/ranges.h"
+#pragma GCC diagnostic pop
 #include "fmt/std.h"
 
 namespace achilles {
