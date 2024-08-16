@@ -123,9 +123,12 @@ bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
 }
 
 void achilles::MultiChannel::PrintIteration() const {
-    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}", summary.results.size(),
-                 summary.results.back().Mean(), summary.results.back().Error(),
-                 summary.Result().Mean(), summary.Result().Error());
+    spdlog::info(
+        "{:3d}   {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)    {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)",
+        summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
+        summary.results.back().Error() / summary.results.back().Mean() * 100,
+        summary.Result().Mean(), summary.Result().Error(),
+        summary.Result().Error() / summary.Result().Mean() * 100);
 }
 
 void achilles::MultiChannel::SaveState(std::ostream &os) const {
