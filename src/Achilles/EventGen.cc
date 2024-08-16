@@ -50,7 +50,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     Random::Instance().Seed(seed);
 
     // Load initial beam and nuclei
-    // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config.GetAs<Beam>("Beams"));
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
@@ -169,11 +168,9 @@ void achilles::EventGen::Initialize() {
     if(!config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load")) {
         for(auto &group : process_groups) {
             if(cache.FindCachedState(std::hash<ProcessGroup>{}(group))) {
-                // spdlog::debug("Loading cached state for {}", group);
+                spdlog::debug("Loading cached state for {}", group);
                 if(!cache.LoadState(group)) {
-                    // TODO: Figure out how to stringify process group
-                    spdlog::warn("Failed to load cached state for {}",
-                                 std::hash<ProcessGroup>{}(group));
+                    spdlog::warn("Failed to load cached state for {}", group);
                 }
             }
         }
@@ -192,9 +189,7 @@ void achilles::EventGen::Initialize() {
 
         if(!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save")) {
             if(!cache.SaveState(group)) {
-                // TODO: Figure out how to stringify process group
-                spdlog::warn("Failed to save cached state for {}",
-                             std::hash<ProcessGroup>{}(group));
+                spdlog::warn("Failed to save cached state for {}", group);
             }
         }
     }
