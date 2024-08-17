@@ -164,8 +164,7 @@ TEST_CASE("Three Vector Functions work as expected", "[Vectors]") {
         achilles::ThreeVector p1(3, 3, 3), p2(1.0 / sqrt(3), 1.0 / sqrt(3), 1.0 / sqrt(3));
         auto p1Unit = p1.Unit();
 
-        CHECK((p1Unit[0] == Approx(p2[0]) && p1Unit[1] == Approx(p2[1]) &&
-               p1Unit[2] == Approx(p2[2])));
+        CHECK_THAT(p1Unit, ThreeVectorWithinRel(p2, 1e-12));
         CHECK(p1 / p1.Magnitude() == p1.Unit());
     }
 }
@@ -258,29 +257,27 @@ TEST_CASE("Four Vector Functions work as expected", "[Vectors]") {
         auto p4 = p1.Boost(beta).Boost(-beta.Px(), -beta.Py(), -beta.Pz());
 
         CHECK(partway != p1);
-        CHECK((p3[0] == Approx(p1[0]) && p3[1] == Approx(p1[1]) && p3[2] == Approx(p1[2]) &&
-               p3[3] == Approx(p1[3])));
-        CHECK((p4[0] == Approx(p1[0]) && p4[1] == Approx(p1[1]) && p4[2] == Approx(p1[2]) &&
-               p4[3] == Approx(p1[3])));
+        CHECK_THAT(p3, FourVectorWithinRel(p1, 1e-12));
+        CHECK_THAT(p4, FourVectorWithinRel(p1, 1e-12));
 
         achilles::FourVector pMass(sqrt(100 + 4), 0, 0, 2);
         beta = pMass.BoostVector();
-        CHECK(pMass.Boost(-beta).M() == Approx(10));
+        CHECK_THAT(pMass.Boost(-beta).M(), Catch::Matchers::WithinRel(10, 1e-12));
     }
 
     SECTION("Rapidity") {
         achilles::FourVector p1(4, 1, 2, 3);
         constexpr double rapidity = 0.9729550745276566;
 
-        CHECK(p1.Rapidity() == Approx(rapidity));
+        CHECK_THAT(p1.Rapidity(), Catch::Matchers::WithinRel(rapidity, 1e-12));
     }
 
     SECTION("Angle between vectors") {
         achilles::FourVector p1(4, 1, 0, 3), p2(4, 3, 0, 1);
         double t1 = p1.Theta(), t2 = p2.Theta();
 
-        CHECK(std::cos(t1 - t2) == Approx(p1.CosAngle(p2)));
-        CHECK(std::abs(t1 - t2) == Approx(p1.Angle(p2)));
+        CHECK_THAT(std::cos(t1 - t2), Catch::Matchers::WithinRel(p1.CosAngle(p2), 1e-12));
+        CHECK_THAT(std::abs(t1 - t2), Catch::Matchers::WithinRel(p1.Angle(p2), 1e-12));
     }
 
     SECTION("DeltaR") {
@@ -300,15 +297,14 @@ TEST_CASE("Rotations", "[Vectors]") {
         achilles::FourVector p(4, 1, 2, 3);
         auto rotMat = p.AlignZ();
         auto result = p.Rotate(rotMat);
+        achilles::FourVector expected(4, 0, 0, p.P());
 
-        CHECK(result[0] == p[0]);
-        CHECK(result[1] == Approx(0).margin(eps));
-        CHECK(result[2] == Approx(0).margin(eps));
-        CHECK(result[3] == Approx(p.P()).margin(eps));
+        CHECK_THAT(result, FourVectorWithinRel(expected, eps));
     }
 
     SECTION("Three Vectors") {
         achilles::ThreeVector x(1, 0, 0), y(0, 1, 0), z(0, 0, 1);
+        achilles::ThreeVector expected(1.0 / sqrt(2.0), 1.0 / sqrt(2.0), 0);
 
         auto mat = x.Align(y);
         auto rotX = x.Rotate(mat);
@@ -320,9 +316,7 @@ TEST_CASE("Rotations", "[Vectors]") {
         constexpr std::array<double, 3> angles{0, 0, M_PI / 4};
         rotX = x.Rotate(angles);
         spdlog::info("rotX: {}", rotX);
-        CHECK(rotX[0] == Approx(1.0 / sqrt(2.0)).margin(eps));
-        CHECK(rotX[1] == Approx(1.0 / sqrt(2.0)).margin(eps));
-        CHECK(rotX[2] == Approx(0.0).margin(eps));
+        CHECK_THAT(rotX, ThreeVectorWithinRel(expected, eps));
     }
 }
 
