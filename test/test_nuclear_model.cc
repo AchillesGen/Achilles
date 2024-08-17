@@ -1,5 +1,5 @@
 #include "Achilles/Current.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Particle.hh"

@@ -1,5 +1,5 @@
 #include "Achilles/MultiChannel.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 #include "catch_utils.hh"
 
 constexpr double s0 = -10.0;

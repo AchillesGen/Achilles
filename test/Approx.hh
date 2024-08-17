@@ -7,7 +7,7 @@
 #include "Achilles/FourVector.hh"
 
 #include "Achilles/Particle.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 
 // Inspiration taken from: https://github.com/catchorg/Catch2/issues/1467#issuecomment-473928075
 

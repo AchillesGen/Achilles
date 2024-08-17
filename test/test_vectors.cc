@@ -1,6 +1,7 @@
 #include <sstream>
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
+#include "matchers.hh"
 
 #include "Achilles/FourVector.hh"
 #include "Achilles/ThreeVector.hh"

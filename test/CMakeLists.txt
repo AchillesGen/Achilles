@@ -1,11 +1,6 @@
 # Load Catch2 information into variables
 include(FetchContent)
 FetchContent_GetProperties(catch2)
-include(${catch2_SOURCE_DIR}/contrib/Catch.cmake)
-
-add_library(catch_main STATIC catch_main.cpp)
-target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
-target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 # TODO: Fix commented out test files
 add_executable(achilles-testsuite 
@@ -60,6 +55,8 @@ target_link_libraries(achilles-testsuite PRIVATE project_options project_warning
 if(ENABLE_BSM)
     target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
 endif()
+target_link_libraries(achilles-testsuite PUBLIC Catch2::Catch2WithMain trompeloeil)
+target_compile_definitions(achilles-testsuite PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
@@ -84,7 +81,9 @@ target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MOD
 target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
     PUBLIC physics fortran_interface FUT::FUT)
 
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
+include(Catch)
 # add_test(NAME fortran-testsuite
 #          COMMAND achilles-fortran-testsuite)
 catch_discover_tests(achilles-testsuite

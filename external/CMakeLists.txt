@@ -81,7 +81,7 @@ if(ACHILLES_ENABLE_TESTING)
     CPMAddPackage(
         NAME catch2
         GITHUB_REPOSITORY catchorg/Catch2
-        GIT_TAG v2.13.6
+        GIT_TAG v3.7.0
         OPTIONS
             "CATCH_ENABLE_COVERAGE"
     )
@@ -91,7 +91,7 @@ if(ACHILLES_ENABLE_TESTING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 47
+        VERSION 48
     )
 
     # Fortran Unit Tests

@@ -1,5 +1,5 @@
 #include "Achilles/Process.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Particle.hh"

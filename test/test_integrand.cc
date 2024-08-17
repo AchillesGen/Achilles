@@ -1,5 +1,5 @@
 #include "Achilles/Integrand.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 
 double dummy_func(const std::vector<double> &, double) {
     return 1.0;

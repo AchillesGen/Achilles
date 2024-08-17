@@ -3,7 +3,7 @@
 
 // Inspired from Catch2/examples/300-Gen-OwnGenerator.cpp
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 #include <random>
 #include <string>
 

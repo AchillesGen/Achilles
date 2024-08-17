@@ -1,6 +1,6 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_all.hpp"
 #include "mock_classes.hh"
 
 double stencil5(std::function<double(double)> f, double x, double h) {
