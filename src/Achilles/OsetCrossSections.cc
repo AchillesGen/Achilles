@@ -76,8 +76,9 @@ std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &ev
     auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude());
     auto pion_momentum = pion.Momentum().P();
 
-    double protfrac = (event.CurrentNucleus()->NNeutrons() - event.CurrentNucleus()->NProtons()) /
-                      event.CurrentNucleus()->NNucleons();
+    double protfrac = static_cast<double>(event.CurrentNucleus()->NNeutrons() -
+                                          event.CurrentNucleus()->NProtons()) /
+                      static_cast<double>(event.CurrentNucleus()->NNucleons());
 
     // Let's consider an average nucleon with <P^2> = (3/5)kf^2
     double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum, 2);
