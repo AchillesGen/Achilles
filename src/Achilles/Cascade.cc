@@ -367,7 +367,7 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc) {
 
 void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, double step) {
     auto beta = kickNuc->Beta().Magnitude();
-    timeStep = step / (beta * Constant::HBARC);
+    timeStep = step / beta;
     Propagate(idx, kickNuc);
 }
 
@@ -521,7 +521,7 @@ void Cascade::AdaptiveStep(const Particles &particles, const double &stepDistanc
         if(particles[idx].Beta().Magnitude() > beta) beta = particles[idx].Beta().Magnitude();
     }
 
-    timeStep = stepDistance / (beta * Constant::HBARC);
+    timeStep = stepDistance / beta;
 }
 
 /// Determine whether "test_point" is between two parallel planes defined by

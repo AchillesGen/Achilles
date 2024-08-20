@@ -7,11 +7,11 @@
 using namespace achilles;
 
 void Particle::SetFormationZone(const FourVector &p1, const FourVector &p2) noexcept {
-    formationZone = p1.E() / std::abs(Constant::mN * Constant::mN - p1 * p2);
+    formationZone = p1.E() / std::abs(Constant::mN * Constant::mN - p1 * p2) * Constant::HBARC;
 }
 
 void Particle::Propagate(const double &time) noexcept {
-    const double dist = momentum.P() / momentum.E() * time * Constant::HBARC;
+    const double dist = momentum.P() / momentum.E() * time;
 
     const double theta = momentum.Theta();
     const double phi = momentum.Phi();
@@ -40,7 +40,7 @@ void Particle::SpacePropagate(const double &dist) noexcept {
 }
 
 void Particle::BackPropagate(const double &time) noexcept {
-    const double dist = momentum.P() / momentum.E() * time * Constant::HBARC;
+    const double dist = momentum.P() / momentum.E() * time;
 
     const double theta = momentum.Theta();
     const double phi = momentum.Phi();
@@ -50,6 +50,8 @@ void Particle::BackPropagate(const double &time) noexcept {
     const double propDistZ = dist * std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
+    if(status == ParticleStatus::internal_test) distanceTraveled -= propDist.Magnitude();
+    if(formationZone != 0) formationZone += time;
     position -= propDist;
 }
 
