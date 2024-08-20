@@ -50,6 +50,7 @@ add_executable(achilles-testsuite
     # test_nuhepmc.cc
     test_cache.cc
     test_interaction_handler.cc
+    test_decays.cc
     test_mbamplitudes.cc
     test_delta.cc
     test_clebsch_gordan.cc
