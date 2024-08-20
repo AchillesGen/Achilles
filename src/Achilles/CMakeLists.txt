@@ -81,6 +81,7 @@ add_library(physics SHARED
     Interactions.cc
     InteractionHandler.cc
     SpectralFunction.cc
+    WignerDistribution.cc
     ElectronPDF.cc
     EventHistory.cc
     MesonBaryonAmplitudes.cc
