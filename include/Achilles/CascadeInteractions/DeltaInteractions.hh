@@ -13,7 +13,7 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     friend struct YAML::convert<DeltaInteraction::Mode>;
 
   public:
-    DeltaInteraction() = default;
+    DeltaInteraction();
     DeltaInteraction(const YAML::Node &);
 
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {

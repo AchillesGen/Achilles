@@ -9,7 +9,7 @@
 
 using namespace achilles;
 
-DeltaInteraction::DeltaInteraction(const YAML::Node &node) :
+DeltaInteraction::DeltaInteraction() : 
     sigma_max{{{PID::pionp(), PID::proton()}, 700},
         {{-PID::pionp(), PID::proton()}, 70},
         {{-PID::pionp(), PID::neutron()}, 700},
@@ -24,7 +24,9 @@ DeltaInteraction::DeltaInteraction(const YAML::Node &node) :
         {{PID::pion0(), PID::proton()}, {PID::deltap()}},
         {{PID::pion0(), PID::neutron()}, {PID::delta0()}},
     }
-{
+{}
+
+DeltaInteraction::DeltaInteraction(const YAML::Node &node) : DeltaInteraction() {
     node["Mode"].as<DeltaInteraction::Mode>();
 }
 
