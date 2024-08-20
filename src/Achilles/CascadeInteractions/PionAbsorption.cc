@@ -90,8 +90,6 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
     if(!AllowedAbsorption(event, part1, part2)) return results;
 
     auto oset_abs_xsec = Oset.AbsCrossSection(event, part1, part2);
-    // spdlog::debug("Oset abs xsec = {}", oset_abs_xsec);
-    // oset_abs_xsec = 0.0;
 
     // Nuclear Physics A568 (1994) 855-872 Table 1
     auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;

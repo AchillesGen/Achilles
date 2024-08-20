@@ -32,9 +32,9 @@ class OsetCrossSection {
     double SelfEnergyAbsNNN(const double pion_KE, const double pion_mass,
                             const double density) const;
     double SelfEnergyQE(const double pion_KE, const double pion_mass, const double density) const;
-    double ReducedHalfWidth(const double pionE, const double pion_mass, const double cms_mom,
+    double ReducedHalfWidth(const double nucE, const double pionE, const double pion_mass, const double cms_mom,
                             const double fermimom, const double sqrts) const;
-    double PXSecCommon(const double pionE, const double pion_mass, const double cms_mom,
+    double PXSecCommon(const double nucE, const double pionE, const double pion_mass, const double cms_mom,
                        const double fermimom, const double sqrts, const double density) const;
 
     const double fConstFactor = 1.0 / 12.0 / M_PI;

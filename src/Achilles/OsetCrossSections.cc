@@ -20,11 +20,19 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto pion_kinetic_energy = pion.E() - pion.Mass();
     auto pion_momentum = pion.Momentum().P();
 
+    
+    auto delta_fourvector = pion.Momentum() + nucleon.Momentum();
+    auto s = delta_fourvector.M2();
+    auto sqrts = sqrt(s);
+    
+
     // Let's consider an average nucleon
+    /*
     double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum, 2);
     double deltaE = pion.E() + sqrt(0.6 * pow(fermi_momentum, 2) + pow(Constant::mN, 2));
     double s = deltaE * deltaE - deltamomsq;
     double sqrts = sqrt(s);
+    */
 
     double wcm = (s - pow(Constant::mN, 2) + pow(pion.Mass(), 2)) / (2. * sqrts);
     double cms_mom2 = wcm * wcm - pow(pion.Mass(), 2);
@@ -37,7 +45,7 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto cms_mom = pion_momentum * Constant::mN / sqrts;
     */
     // ----- ABSORPTION ----- //
-    auto pXsecCommon = PXSecCommon(pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density);
+    auto pXsecCommon = PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density);
 
     // constant factor for p-wave absorption cross section
     static const double pAbsorptionFactor = 4.0 / 9.0;
@@ -93,10 +101,10 @@ std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &ev
     // constant factor for p-wave absorption cross section
     static const double pAbsorptionFactor = 4.0 / 9.0;
 
-    const double pXsecTotalQel =
+    double pXsecTotalQel =
         pAbsorptionFactor *
-        PXSecCommon(pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density) *
-        ReducedHalfWidth(pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts);
+        PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density) *
+        ReducedHalfWidth(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts);
 
     const double ksi = (sqrts - Constant::mN - pion.Mass()) / pion.Mass();
 
@@ -159,13 +167,13 @@ double OsetCrossSection::SelfEnergyQE(const double pion_KE, const double pion_ma
     return QuadraticFunction(x, fCoefCQ) * pow(DensityFraction(density), alpha);
 }
 
-double OsetCrossSection::PXSecCommon(const double pionE, const double pion_mass,
+double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, const double pion_mass,
                                      const double cms_mom, const double fermimom,
                                      const double sqrts, const double density) const {
     // Compute delta prop sq
     auto pionKE = pionE - pion_mass;
     auto pion_momentum = sqrt(pionE * pionE - pion_mass * pion_mass);
-    auto reduced_halfwidth = ReducedHalfWidth(pionE, pion_mass, cms_mom, fermimom, sqrts);
+    auto reduced_halfwidth = ReducedHalfWidth(nucE, pionE, pion_mass, cms_mom, fermimom, sqrts);
     // real and imaginary part of delta denominator (see eq. 2.23)
     const double re_delta = sqrts - Constant::mdelta;
     const double im_delta = reduced_halfwidth + SelfEnergyAbsNN(pionKE, pion_mass, density) +
@@ -181,7 +189,7 @@ double OsetCrossSection::PXSecCommon(const double pionE, const double pion_mass,
     return pXsecCommon;
 }
 
-double OsetCrossSection::ReducedHalfWidth(const double pionE, const double pion_mass,
+double OsetCrossSection::ReducedHalfWidth(const double nucE, const double pionE, const double pion_mass,
                                           const double cms_mom, const double fermimom,
                                           const double sqrts) const {
     auto fermi_energy = sqrt(pow(fermimom, 2) + pow(Constant::mN, 2));
@@ -189,7 +197,9 @@ double OsetCrossSection::ReducedHalfWidth(const double pionE, const double pion_
     auto coupling_factor = CouplingFactor(pion_mass);
 
     // Use average nucleon momentumsq
-    double deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN, 2));
+    //double deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN, 2));
+
+    auto deltaE = pionE + nucE;
 
     // auto deltaEnergy = pionE + Constant::mN;
 
