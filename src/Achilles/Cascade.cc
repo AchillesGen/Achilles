@@ -273,6 +273,11 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
             Particle *kickNuc = &particles[idx];
             spdlog::trace("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
+            // Attempt decay of unstable particles
+            if(!kickNuc->Info().IsStable()) {
+                if(Decay(event, idx)) continue;
+            }
+
             // Update formation zones
             if(kickNuc->InFormationZone() && !kickNuc->Info().IsPion()) {
                 Propagate(idx, kickNuc);
@@ -845,6 +850,38 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
 
     particle1.Status() = ParticleStatus::interacted;
     particle2.Status() = ParticleStatus::interacted;
+
+    return true;
+}
+
+bool Cascade::Decay(Event &event, size_t idx) const {
+    auto &part = event.Hadrons()[idx];
+    double lifetime = Constant::HBAR / part.Info().Width();
+    double decay_prob = exp(-timeStep / lifetime);
+    // Should we attempt a decay in this time step
+    if(Random::Instance().Uniform(0.0, 1.0) < decay_prob) return false;
+
+    // Look up in decay handler
+    auto particles_out = m_decays.Decay(part);
+
+    for(const auto &out : particles_out) {
+        if(PauliBlocking(out)) return false;
+    }
+
+    part.Status() = ParticleStatus::decayed;
+
+    // Ensure outgoing particles are propagating and add to list of particles in event
+    // and assign formation zone
+    std::vector<Particle> final;
+    for(auto &out : particles_out) {
+        out.Status() = ParticleStatus::propagating;
+        out.SetFormationZone(out.Momentum(), part.Momentum());
+        event.Hadrons().push_back(out);
+        final.push_back(event.Hadrons().back());
+    }
+
+    // Add decay to the event history
+    event.History().AddVertex(part.Position(), {part}, final, EventHistory::StatusCode::decay);
 
     return true;
 }

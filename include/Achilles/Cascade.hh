@@ -5,6 +5,7 @@
 #include <queue>
 #include <vector>
 
+#include "Achilles/DecayHandler.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
@@ -201,11 +202,14 @@ class Cascade {
     double InMediumCorrection(const Particle &, const Particle &) const;
     void PropagateAll(Particles &, double) const;
     bool HasInteraction(Event &, size_t, size_t) const;
+    bool Decay(Event &, size_t) const;
 
     // Variables
     std::set<std::size_t> kickedIdxs;
     double distance{}, timeStep{}, currentTime{};
     InteractionHandler m_interactions{};
+    // TODO: Allow user to define externally which file to use
+    DecayHandler m_decays{"data/decays.yml"};
     std::function<double(double, double)> probability;
     std::function<size_t(Cascade *, size_t, Event &)> algorithm;
     Nucleus *m_nucleus;
