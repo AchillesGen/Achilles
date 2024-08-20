@@ -20,11 +20,9 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto pion_kinetic_energy = pion.E() - pion.Mass();
     auto pion_momentum = pion.Momentum().P();
 
-    
     auto delta_fourvector = pion.Momentum() + nucleon.Momentum();
     auto s = delta_fourvector.M2();
     auto sqrts = sqrt(s);
-    
 
     // Let's consider an average nucleon
     /*
@@ -45,7 +43,8 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto cms_mom = pion_momentum * Constant::mN / sqrts;
     */
     // ----- ABSORPTION ----- //
-    auto pXsecCommon = PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density);
+    auto pXsecCommon =
+        PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density);
 
     // constant factor for p-wave absorption cross section
     static const double pAbsorptionFactor = 4.0 / 9.0;
@@ -189,15 +188,15 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
     return pXsecCommon;
 }
 
-double OsetCrossSection::ReducedHalfWidth(const double nucE, const double pionE, const double pion_mass,
-                                          const double cms_mom, const double fermimom,
-                                          const double sqrts) const {
+double OsetCrossSection::ReducedHalfWidth(const double nucE, const double pionE,
+                                          const double pion_mass, const double cms_mom,
+                                          const double fermimom, const double sqrts) const {
     auto fermi_energy = sqrt(pow(fermimom, 2) + pow(Constant::mN, 2));
 
     auto coupling_factor = CouplingFactor(pion_mass);
 
     // Use average nucleon momentumsq
-    //double deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN, 2));
+    // double deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN, 2));
 
     auto deltaE = pionE + nucE;
 
