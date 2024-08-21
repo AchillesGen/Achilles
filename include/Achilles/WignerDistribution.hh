@@ -11,6 +11,7 @@ namespace achilles {
 class WignerDistribution {
   public:
     WignerDistribution(const std::string &);
+    WignerDistribution() = default;
 
     // Functions
     std::vector<double> Momentum() const { return mom; }
@@ -19,18 +20,19 @@ class WignerDistribution {
     std::vector<double> &Radius() { return radius; }
     double MinMomentum() const { return mom.front(); }
     double MaxMomentum() const { return mom.back(); }
+    double MaxWeight(double r) const;
     double MinRadius() const { return radius.front(); }
     double MaxRadius() const { return radius.back(); }
     double Normalization() const { return norm; }
 
     // Interpolators
-    double operator()(double p) const;
+    double operator()(double r) const;
     double operator()(double p, double r) const;
 
   private:
     double norm{};
-    std::vector<double> mom, radius, wigner, dp_p;
-    Interp1D mom_func;
+    std::vector<double> mom, radius, wigner, dr_r;
+    Interp1D rho_func;
     Interp2D func;
 };
 
