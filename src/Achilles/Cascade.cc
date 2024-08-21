@@ -215,6 +215,13 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
     // Set all propagating particles as kicked for the cascade
     for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
+        else if(event.Hadrons()[idx].Status() == ParticleStatus::background) {
+            auto mom3 = ThreeVector(nucleus->GenerateMomentum(event.Hadrons()[idx].Position().Magnitude()));
+            spdlog::info("generated mom = {}", mom3);
+            auto mass = event.Hadrons()[idx].Info().Mass();
+            auto energy = sqrt(mom3*mom3 + mass*mass);
+            event.Hadrons()[idx].Momentum() = {mom3,energy};
+        }
     }
 
     // Run the cascade
@@ -608,6 +615,10 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
     if(hit) {
+
+        spdlog::info("fermigas weight = {}", m_nucleus->FermiGasWeight(particle2));
+        event.Weight() *= m_nucleus->FermiGasWeight(particle2);
+
         Particles initial_part, final_part;
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;

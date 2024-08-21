@@ -66,6 +66,10 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
         if(particle.ID() == PID::neutron()) nNeutrons++;
     }
 
+    if(fermi_gas.type == FermiGasType::Wigner) {
+        wigner_d = WignerDistribution(fermi_gas.wignerFile);
+    }
+
     if(nProtons != NProtons() || nNeutrons != NNeutrons())
         throw std::runtime_error("Invalid density function! Incorrect number "
                                  "of protons or neutrons.");
@@ -109,10 +113,10 @@ Particles Nucleus::GenerateConfig() {
 
     for(Particle &particle : particles) {
         // Set momentum for each nucleon
-        auto mom3 = GenerateMomentum(particle.Position().Magnitude());
-        double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
-        for(auto mom : mom3) energy2 += mom * mom;
-        particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
+        //auto mom3 = GenerateMomentum(particle.Position().Magnitude());
+        //double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
+        //for(auto mom : mom3) energy2 += mom * mom;
+        //particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
 
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;
@@ -120,7 +124,7 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
+const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) {
     std::array<double, 3> momentum{};
     momentum[0] = SampleMagnitudeMomentum(position);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
@@ -129,18 +133,39 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) no
     return ToCartesian(momentum);
 }
 
-double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
+double Nucleus::SampleMagnitudeMomentum(const double &position) {
     // NOTE: To sample on a sphere, need to take a cube-root.
     double kf = FermiMomentum(position);
-    if(fermi_gas.correlated) {
-        if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
-            return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
-        } else {
-            double x = Random::Instance().Uniform(0.0, 1.0);
-            return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
+    if(fermi_gas.type == FermiGasType::Wigner) {
+        //auto integral = wigner_d(position);
+        auto max_wigner_value = wigner_d.MaxWeight(radius);
+        while(true) {
+            auto sample_mom = Random::Instance().Uniform(0.0,1.0) * wigner_d.MaxMomentum();
+            spdlog::info("sample mom = {}", sample_mom);
+            auto wigner_value = wigner_d(sample_mom, position);
+            spdlog::info("wigner value = {}", wigner_value);
+            spdlog::info("max wigner value = {}", max_wigner_value);
+            if(std::abs(wigner_value)/max_wigner_value < Random::Instance().Uniform(0.0,1.0)) return sample_mom;
         }
     }
-    return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+
+    else if(fermi_gas.type == FermiGasType::Local) {
+        if(fermi_gas.correlated) {
+            if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
+                return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+            } else {
+                double x = Random::Instance().Uniform(0.0, 1.0);
+                return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
+            }
+        }
+    }
+    else return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+
+    #if defined(_MSC_VER) && !defined(__clang__) // MSVC
+    __assume(false);
+    #else // GCC, Clang
+    __builtin_unreachable();
+    #endif
 }
 
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
@@ -179,6 +204,7 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
     double rho = Rho(position);
     double result{};
     switch(fermi_gas.type) {
+    case FermiGasType::Wigner:
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
         break;
@@ -192,4 +218,14 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
     }
 
     return result;
+}
+
+double Nucleus::FermiGasWeight(const Particle &p) const {
+    switch(fermi_gas.type) {
+        case FermiGasType::Wigner:
+            return std::copysign(1.0,wigner_d(p.Momentum().P(),p.Position().Magnitude()));
+        case FermiGasType::Global:
+        case FermiGasType::Local:
+            return 1.0;
+    }
 }

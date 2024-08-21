@@ -10,6 +10,7 @@
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/Configuration.hh"
+#include "Achilles/WignerDistribution.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interpolation.hh"
@@ -38,11 +39,12 @@ using Particles = std::vector<Particle>;
 class Nucleus {
   public:
     // Fermigas Model
-    enum FermiGasType { Local, Global };
+    enum FermiGasType { Local, Global, Wigner};
     struct FermiGas {
         FermiGasType type{FermiGasType::Local};
         bool correlated = false;
         double SRCfraction{0.2}, lambdaSRC{2.75};
+        std::string wignerFile = "";
     };
 
     /// @name Constructors and Destructors
@@ -168,9 +170,11 @@ class Nucleus {
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-    const std::array<double, 3> GenerateMomentum(const double &) noexcept;
+    const std::array<double, 3> GenerateMomentum(const double &);
 
-    double SampleMagnitudeMomentum(const double &position) noexcept;
+    double SampleMagnitudeMomentum(const double &position);
+
+    double FermiGasWeight(const Particle &) const;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
@@ -229,6 +233,7 @@ class Nucleus {
     size_t nnucleons, nprotons, nneutrons;
     double binding{}, fermiMomentum{}, radius{};
     FermiGas fermi_gas{};
+    WignerDistribution wigner_d;
     std::unique_ptr<Density> density;
     Interp1D rhoInterp;
 
@@ -246,7 +251,15 @@ class Nucleus {
 namespace YAML {
 template <> struct convert<achilles::Nucleus::FermiGas> {
     static bool decode(const Node &node, achilles::Nucleus::FermiGas &fg) {
-        if(node["Type"].as<std::string>() == "Local")
+        if(node["Type"].as<std::string>() == "Wigner") {
+            fg.type = achilles::Nucleus::FermiGasType::Wigner;
+            if(!node["WignerFile"]) { 
+                std::string errorMsg = "Wigner type momentum distriubtion requires Wigner Distribution file with key: \"WignerFile\"";
+                throw std::runtime_error(errorMsg);
+            }
+            fg.wignerFile = node["WignerFile"].as<std::string>();
+        }
+        else if(node["Type"].as<std::string>() == "Local")
             fg.type = achilles::Nucleus::FermiGasType::Local;
         else if(node["Type"].as<std::string>() == "Global")
             fg.type = achilles::Nucleus::FermiGasType::Global;
@@ -258,6 +271,7 @@ template <> struct convert<achilles::Nucleus::FermiGas> {
             if(node["SRCfraction"]) fg.SRCfraction = node["SRCfraction"].as<double>();
             if(node["LambdaSRC"]) fg.lambdaSRC = node["LambdaSRC"].as<double>();
         }
+
 
         return true;
     }
