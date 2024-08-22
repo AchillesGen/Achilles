@@ -155,9 +155,9 @@ double Nucleus::SampleMagnitudeMomentum(const double &position) {
                 return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
             }
         }
+        else return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
     }
-    else return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
-
+    
     #if defined(_MSC_VER) && !defined(__clang__) // MSVC
     __assume(false);
     #else // GCC, Clang
