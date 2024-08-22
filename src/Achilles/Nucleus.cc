@@ -134,23 +134,19 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) {
 }
 
 double Nucleus::SampleMagnitudeMomentum(const double &position) {
-    // NOTE: To sample on a sphere, need to take a cube-root.
     double kf = FermiMomentum(position);
-    if(fermi_gas.type == FermiGasType::Wigner && position < wigner_d.MaxRadius()) {
-        //auto integral = wigner_d(position);
+    if(fermi_gas.type == FermiGasType::Wigner && position < wigner_d.MaxRadius() && position > wigner_d.MaxRadius()) {
         auto max_wigner_value = wigner_d.MaxWeight(position);
-        //spdlog::info("Trying to generate momentum for r = {}", position);
         while(true) {
             auto sample_mom = Random::Instance().Uniform(0.0,1.0) * wigner_d.MaxMomentum();
-            //spdlog::info("sample mom = {}", sample_mom / Constant::HBARC);
-            auto wigner_value = wigner_d(sample_mom, position);
-            //spdlog::info("wigner value = {}", wigner_value * pow(Constant::HBARC,3));
-            //spdlog::info("max wigner value = {}", max_wigner_value * pow(Constant::HBARC,3));
+            auto wigner_value = wigner_d(position,sample_mom);
             if(std::abs(wigner_value)/max_wigner_value < Random::Instance().Uniform(0.0,1.0)) return sample_mom;
         }
     }
 
-    else if(fermi_gas.type == FermiGasType::Local || (fermi_gas.type == FermiGasType::Wigner && position > wigner_d.MaxRadius())) {
+
+    // NOTE: To sample on a sphere, need to take a cube-root.
+    else if(fermi_gas.type == FermiGasType::Local || (fermi_gas.type == FermiGasType::Wigner && (position > wigner_d.MaxRadius() || position < wigner_d.MinRadius()))) {
         if(fermi_gas.correlated) {
             if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
                 return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
@@ -224,7 +220,7 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
 double Nucleus::FermiGasWeight(const Particle &p) const {
     switch(fermi_gas.type) {
         case FermiGasType::Wigner:
-            return std::copysign(1.0,wigner_d(p.Momentum().P(),p.Position().Magnitude()));
+            return std::copysign(1.0,wigner_d(p.Position().Magnitude(), p.Momentum().P()));
         case FermiGasType::Global:
         case FermiGasType::Local:
             return 1.0;

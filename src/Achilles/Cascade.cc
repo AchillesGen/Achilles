@@ -217,7 +217,6 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus, const std::size_t
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
         else if(event.Hadrons()[idx].Status() == ParticleStatus::background) {
             auto mom3 = ThreeVector(nucleus->GenerateMomentum(event.Hadrons()[idx].Position().Magnitude()));
-            spdlog::info("generated mom = {}", mom3);
             auto mass = event.Hadrons()[idx].Info().Mass();
             auto energy = sqrt(mom3*mom3 + mass*mass);
             event.Hadrons()[idx].Momentum() = {mom3,energy};
@@ -616,7 +615,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     if(hit) {
 
-        spdlog::info("fermigas weight = {}", m_nucleus->FermiGasWeight(particle2));
+        //spdlog::info("fermigas weight = {}", m_nucleus->FermiGasWeight(particle2));
         event.Weight() *= m_nucleus->FermiGasWeight(particle2);
 
         Particles initial_part, final_part;

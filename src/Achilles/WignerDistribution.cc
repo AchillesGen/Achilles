@@ -60,14 +60,15 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
     rho_func.SetPolyOrder(3);
 
     // Setup spectral function interpolator
-    func = Interp2D(mom, radius, wigner, InterpolationType::Polynomial);
+    func = Interp2D(radius, mom, wigner, InterpolationType::Polynomial);
     func.SetPolyOrder(3, 1);
 }
 
-double WignerDistribution::operator()(double p, double r) const {
+double WignerDistribution::operator()(double r, double p) const {
     if(p < mom.front() || p > mom.back() || r < radius.front() || r > radius.back()) return 0;
 
-    auto result = func(p, r) / norm;
+    auto result = func(r, p) / norm;
+    //spdlog::info("r = {}, p = {}, W = {}", r, p /Constant::HBARC, result* pow(Constant::HBARC,3));
     return result;
     //return result > 0 ? result : 0;
 }
@@ -80,7 +81,9 @@ double WignerDistribution::operator()(double r) const {
 }
 
 double WignerDistribution::MaxWeight(double r) const {
-    auto absfunc = [&](double p) {return -std::abs(this->operator()(p,r));};
+    auto absfunc = [&](double p) {return -std::abs(this->operator()(r,p));};
     Brent brent(absfunc);
-    return -absfunc(brent.Minimize(mom.front(), mom.back()));
+    auto maxmomweight = brent.Minimize(mom.front(), mom.back());
+    //spdlog::info("found maximum = {} at p = {}", -absfunc(maxmomweight) * pow(Constant::HBARC,3), maxmomweight /Constant::HBARC);
+    return -absfunc(maxmomweight);
 }
