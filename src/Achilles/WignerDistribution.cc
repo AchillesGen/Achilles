@@ -68,7 +68,8 @@ double WignerDistribution::operator()(double p, double r) const {
     if(p < mom.front() || p > mom.back() || r < radius.front() || r > radius.back()) return 0;
 
     auto result = func(p, r) / norm;
-    return result > 0 ? result : 0;
+    return result;
+    //return result > 0 ? result : 0;
 }
 
 double WignerDistribution::operator()(double r) const {
