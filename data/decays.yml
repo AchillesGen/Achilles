@@ -4,72 +4,59 @@
     AngularMom: 2
 
 2214:
-  - BranchingRatio: 0.497
+  - BranchingRatio: 0.3315
     OutIDs: [211, 2112]
     AngularMom: 2
-  - BranchingRatio: 0.497
+  - BranchingRatio: 0.663
     OutIDs: [111, 2212]
     AngularMom: 2
-  - BranchingRatio: 0.006
+  - BranchingRatio: 0.0055
     OutIDs: [22, 2212]
     AngularMom: 1
 
 2114:
-  - BranchingRatio: 0.497
+  - BranchingRatio: 0.663
     OutIDs: [111, 2112]
     AngularMom: 2
-  - BranchingRatio: 0.497
+  - BranchingRatio: 0.3315
     OutIDs: [-211, 2212]
     AngularMom: 2
-  - BranchingRatio: 0.006
+  - BranchingRatio: 0.0055
     OutIDs: [22, 2112]
     AngularMom: 1
 
+1114:
+  - BranchingRatio: 1.000
+    OutIDs: [-211, 2112]
+    AngularMom: 2
+
 202112:
-  - BranchingRatio: 0.325
+  - BranchingRatio: 0.6
     OutIDs: [111, 2112]
     AngularMom: 2
-  - BranchingRatio: 0.325
-    OutIDs: [-211, 2212]
-    AngularMom: 2
-  - BranchingRatio: 0.0875
-    OutIDs: [111, 2114]
-    AngularMom: 2
-  - BranchingRatio: 0.0875
-    OutIDs: [-211, 2214]
-    AngularMom: 2
-  - BranchingRatio: 0.058333333
+  - BranchingRatio: 0.2
     OutIDs: [111, 111, 2112]
     AngularMom: 1
-  - BranchingRatio: 0.058333333
+  - BranchingRatio: 0.2
     OutIDs: [-211, 211, 2112]
     AngularMom: 1
-  - BranchingRatio: 0.058333333
-    OutIDs: [-211, 111, 2212]
+  - BranchingRatio: 9e-5
+    OutIDs: [22, 2212]
     AngularMom: 1
 
 202212:
-  - BranchingRatio: 0.325
+  - BranchingRatio: 0.3
     OutIDs: [111, 2212]
     AngularMom: 2
-  - BranchingRatio: 0.325
+  - BranchingRatio: 0.3
     OutIDs: [211, 2112]
     AngularMom: 2
-  - BranchingRatio: 0.058333333
-    OutIDs: [211, 2114]
-    AngularMom: 2
-  - BranchingRatio: 0.058333333
-    OutIDs: [111, 2214]
-    AngularMom: 2
-  - BranchingRatio: 0.058333333
-    OutIDs: [-211, 2224]
-    AngularMom: 2
-  - BranchingRatio: 0.058333333
+  - BranchingRatio: 0.15
     OutIDs: [-211, 211, 2212]
     AngularMom: 1
-  - BranchingRatio: 0.058333333
+  - BranchingRatio: 0.15
     OutIDs: [111, 111, 2212]
     AngularMom: 1
-  - BranchingRatio: 0.058333333
-    OutIDs: [211, 111, 2112]
+  - BranchingRatio: 0.00035
+    OutIDs: [22, 2212]
     AngularMom: 1
