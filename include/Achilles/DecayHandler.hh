@@ -19,9 +19,11 @@ struct DecayMode {
 
 class DecayHandler {
   public:
+    DecayHandler() = default;
     DecayHandler(const std::string &, double tolerance = 1e-8);
     std::vector<Particle> Decay(const Particle &) const;
     std::vector<DecayMode> AllowedDecays(PID) const;
+    double BranchingRatio(PID, std::vector<PID>) const;
 
   private:
     std::vector<double> BranchingRatios(const Particle &) const;
