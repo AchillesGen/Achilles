@@ -23,6 +23,7 @@ add_library(utilities SHARED
     Settings.cc
     System.cc
     Legendre.cc
+    ReferenceHandler.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
                                 PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
