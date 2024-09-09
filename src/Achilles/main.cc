@@ -7,6 +7,7 @@
 #include "Achilles/Logo.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/ReferenceHandler.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
@@ -70,6 +71,12 @@ int main(int argc, char *argv[]) {
     std::signal(SIGSEGV, SignalHandler);
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGABRT, SignalHandler);
+
+    // Ensure reference handle is initialized
+    achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
+                                 "Main Achilles reference"};
+    auto &ref_handler = achilles::ReferenceHandler::Handle();
+    ref_handler.AddReference(main_ref);
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));

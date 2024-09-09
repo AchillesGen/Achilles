@@ -50,7 +50,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     Random::Instance().Seed(seed);
 
     // Load initial beam and nuclei
-    // TODO: Allow for multiple nuclei
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config.GetAs<Beam>("Beams"));
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
@@ -99,29 +98,26 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     for(const auto &nucleus : nuclei) {
         // Initialize the Nuclear models for each nuclei
         spdlog::debug("Initializing nuclear models");
-        // TODO: Convert to using Settings object instead of calling Root()
-        auto models = LoadModels(config.Root());
+        auto models = LoadModels(config);
         for(auto &model : models) {
-            auto groups =
-                ProcessGroup::ConstructGroups(config.Root(), model.second.get(), beam, nucleus);
+            auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
                     spdlog::info("Found Process: {}", process.Info());
-                group.second.SetupBackend(config.Root(), std::move(model.second), p_sherpa);
+                group.second.SetupBackend(config, std::move(model.second), p_sherpa);
                 process_groups.push_back(std::move(group.second));
             }
         }
     }
 
     // Setup Multichannel integrators and remove invalid configurations
-    // TODO: Convert to using Settings object instead of calling Root()
     process_groups.erase(
         std::remove_if(process_groups.begin(), process_groups.end(),
-                       [&](ProcessGroup &group) { return !group.SetupIntegration(config.Root()); }),
+                       [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
         process_groups.end());
 
     for(auto &group : process_groups) {
-        std::cout << std::hex << std::hash<ProcessGroup>{}(group) << std::endl;
+        spdlog::trace("{} has hash {:x}", group, std::hash<ProcessGroup>{}(group));
     }
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
@@ -172,11 +168,9 @@ void achilles::EventGen::Initialize() {
     if(!config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load")) {
         for(auto &group : process_groups) {
             if(cache.FindCachedState(std::hash<ProcessGroup>{}(group))) {
-                // spdlog::debug("Loading cached state for {}", group);
+                spdlog::debug("Loading cached state for {}", group);
                 if(!cache.LoadState(group)) {
-                    // TODO: Figure out how to stringify process group
-                    spdlog::warn("Failed to load cached state for {}",
-                                 std::hash<ProcessGroup>{}(group));
+                    spdlog::warn("Failed to load cached state for {}", group);
                 }
             }
         }
@@ -195,9 +189,7 @@ void achilles::EventGen::Initialize() {
 
         if(!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save")) {
             if(!cache.SaveState(group)) {
-                // TODO: Figure out how to stringify process group
-                spdlog::warn("Failed to save cached state for {}",
-                             std::hash<ProcessGroup>{}(group));
+                spdlog::warn("Failed to save cached state for {}", group);
             }
         }
     }

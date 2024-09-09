@@ -23,6 +23,7 @@ add_library(utilities SHARED
     Settings.cc
     System.cc
     Legendre.cc
+    ReferenceHandler.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
                                 PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
@@ -115,7 +116,6 @@ add_subdirectory(fortran)
 list(APPEND achilles_targets fortran_interface)
 
 add_library(event_gen SHARED
-    # TODO: Move to its own library
     EventGen.cc
     Debug.cc
     EventWriter.cc

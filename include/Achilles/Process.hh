@@ -7,6 +7,7 @@
 #include "Achilles/Statistics.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/XSecBackend.hh"
+#include "fmt/base.h"
 
 #include <optional>
 
@@ -27,6 +28,7 @@ class FourVector;
 class NuclearModel;
 class Nucleus;
 class SherpaInterface;
+class Settings;
 
 struct ProcessMetadata {
     int id;
@@ -103,18 +105,18 @@ class ProcessGroup {
     // Handling physics objects
     Beam *GetBeam() { return m_beam.get(); }
     Nucleus *GetNucleus() { return m_nucleus.get(); }
-    void SetupBackend(const YAML::Node &, std::unique_ptr<NuclearModel>, SherpaInterface *);
+    void SetupBackend(const Settings &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
     void SetupLeptons(Event &, std::optional<size_t>) const;
 
     // Initialize processes and process groups
-    static std::map<size_t, ProcessGroup> ConstructGroups(const YAML::Node &, NuclearModel *,
+    static std::map<size_t, ProcessGroup> ConstructGroups(const Settings &, NuclearModel *,
                                                           std::shared_ptr<Beam>,
                                                           std::shared_ptr<Nucleus>);
 
     Integrand<FourVector> &GetIntegrand() { return m_integrand; }
     const Integrand<FourVector> &GetIntegrand() const { return m_integrand; }
-    bool SetupIntegration(const YAML::Node &);
+    bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
     Event GenerateEvent();
@@ -169,3 +171,29 @@ template <> struct std::hash<achilles::Process> {
 template <> struct std::hash<achilles::ProcessGroup> {
     std::size_t operator()(const achilles::ProcessGroup &p) const;
 };
+
+namespace fmt {
+
+template <> struct formatter<achilles::Process> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::Process &process, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(ctx.out(), "Process[{}]", process.Info());
+    }
+};
+
+template <> struct formatter<achilles::ProcessGroup> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::ProcessGroup &group, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(ctx.out(), "ProcessGroup[{}]", fmt::join(group.Processes(), ", "));
+    }
+};
+
+} // namespace fmt

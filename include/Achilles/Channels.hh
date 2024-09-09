@@ -29,7 +29,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, const ProcessInfo &info,
                           .Hadron(model->PhaseSpace(nuc_id))
                           .FinalState(T::Name(), gauge_boson_mass)
                           .build();
-    AdaptiveMap map(channel.mapping->NDims(), 2);
+    AdaptiveMap map(channel.mapping->NDims(), 100);
     channel.integrator = Vegas(map, VegasParams{});
     return channel;
 }

@@ -1,11 +1,12 @@
+#include "Achilles/Settings.hh"
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
 
-#include "Achilles/NuclearModel.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/Exceptions.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Poincare.hh"
@@ -184,11 +185,11 @@ YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>());
 }
 
-NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
+NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
     NuclearModel::ModelMap models;
 
     std::set<std::string> model_names;
-    for(const auto &model_config : node["NuclearModels"]) {
+    for(const auto &model_config : settings["NuclearModels"]) {
         const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
         auto model = NuclearModelFactory::Initialize(name, model_config);
         if(model_names.find(model->GetName()) != model_names.end()) {

@@ -41,9 +41,9 @@ contains
         allocate(this%model_holder(this%capacity))
     end subroutine
 
-    subroutine model_vect_add_model(this, model)
+    subroutine model_vect_add_model(this, model_in)
         class(model_vect), intent(inout) :: this
-        type(model_holder), intent(in) :: model
+        type(model_holder), intent(in) :: model_in
         integer(c_size_t) :: i
 
         if(.not. this%initialized) then
@@ -56,15 +56,15 @@ contains
         endif
 
         i = this%size + 1
-        this%model_holder(i) = model
+        this%model_holder(i) = model_in
         this%size = i
     end subroutine
 
-    function model_vect_get_model(this, idx) result(model)
+    function model_vect_get_model(this, idx) result(model_out)
         class(model_vect), intent(in) :: this
         integer(c_size_t), intent(in) :: idx
-        type(model_holder) :: model
-        model = this%model_holder(idx)
+        type(model_holder) :: model_out
+        model_out = this%model_holder(idx)
     end function
 
     subroutine model_vect_resize(this, new_size)
@@ -146,12 +146,12 @@ contains
         logical :: init_model
         character(len=:), allocatable :: fname
         type(map) :: params_dict
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
+        cur_model = models%get_model(idx)
         fname = c2fstring(name)
         params_dict = map(params)
-        init_model = model%model_ptr%init(fname,params_dict)
+        init_model = cur_model%model_ptr%init(fname,params_dict)
     end function
 
     subroutine clean_event(cur, size) bind(C, name="CleanUpEvent")
@@ -170,11 +170,11 @@ contains
     subroutine clean_model(idx) bind(C, name="CleanUpModel")
         implicit none
         integer(c_size_t), intent(in), value :: idx
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
-        deallocate(model%model_ptr)
-        nullify(model%model_ptr)
+        cur_model = models%get_model(idx)
+        deallocate(cur_model%model_ptr)
+        nullify(cur_model%model_ptr)
     end subroutine
 
     function get_mode(idx) bind(C, name="GetMode")
@@ -182,10 +182,10 @@ contains
         implicit none
         integer(c_size_t), intent(in), value :: idx
         integer(c_int) :: get_mode
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
-        get_mode = model%model_ptr%mode()
+        cur_model = models%get_model(idx)
+        get_mode = cur_model%model_ptr%mode()
     end function
 
     function get_frame(idx) bind(C, name="GetFrame")
@@ -193,10 +193,10 @@ contains
         implicit none
         integer(c_size_t), intent(in), value :: idx
         integer(c_int) :: get_frame
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
-        get_frame = model%model_ptr%frame()
+        cur_model = models%get_model(idx)
+        get_frame = cur_model%model_ptr%frame()
     end function
 
     function get_model_name(idx) bind(C, name="ModelName")
@@ -207,10 +207,10 @@ contains
         type(c_ptr) :: get_model_name
         type(c_ptr) :: tmp
         character(len=:), allocatable :: fname
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
-        fname = model%model_ptr%model_name()
+        cur_model = models%get_model(idx)
+        fname = cur_model%model_ptr%model_name()
         get_model_name = f2cstring(fname)
     end function
 
@@ -222,10 +222,10 @@ contains
         type(c_ptr) :: get_ps_name
         type(c_ptr) :: tmp
         character(len=:), allocatable :: fname
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
-        model = models%get_model(idx)
-        fname = model%model_ptr%ps_name()
+        cur_model = models%get_model(idx)
+        fname = cur_model%model_ptr%ps_name()
         get_ps_name = f2cstring(fname)
     end function
 
@@ -252,7 +252,7 @@ contains
         type(fourvector) :: qvector
         type(complex_map) :: ff_dict
         integer(c_size_t) :: i
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
         do i=1,nin
             mom_in(i) = fourvector(moms(1, i), moms(2, i), moms(3, i), moms(4, i))
@@ -268,8 +268,8 @@ contains
 
         qvector = fourvector(qvec(1), qvec(2), qvec(3), qvec(4))
         ff_dict = complex_map(ff)
-        model = models%get_model(idx)
-        call model%model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvector, ff_dict, cur, nspin, nlorentz)
+        cur_model = models%get_model(idx)
+        call cur_model%model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvector, ff_dict, cur, nspin, nlorentz)
     end subroutine
 
     function get_init_wgt(idx, pids_in, pids_spect, pmom, nin, nspect, nproton, nneutron) result(wgt) bind(c, name="GetInitialStateWeight")
@@ -286,7 +286,7 @@ contains
         integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         real(c_double) :: wgt
         integer(c_size_t) :: i
-        type(model_holder) :: model
+        type(model_holder) :: cur_model
 
         do i=1,nin
             mom_in(i) = fourvector(pmom(1, i), pmom(2, i), pmom(3, i), pmom(4, i))
@@ -296,7 +296,22 @@ contains
             mom_spect(i) = fourvector(pmom(1, nin+i), pmom(2, nin+i), pmom(3, nin+i), pmom(4, nin+i))
         enddo
 
-        model = models%get_model(idx)
-        wgt = model%model_ptr%init_wgt(pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron)
+        cur_model = models%get_model(idx)
+        wgt = cur_model%model_ptr%init_wgt(pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron)
     end function get_init_wgt
+
+    function get_inspirehep(idx) bind(C, name="GetInspireHEP")
+        use iso_c_binding
+        use libutilities
+        implicit none
+        integer(c_size_t), intent(in), value :: idx
+        type(c_ptr) :: get_inspirehep
+        type(c_ptr) :: tmp
+        character(len=:), allocatable :: fname
+        type(model_holder) :: cur_model
+
+        cur_model = models%get_model(idx)
+        fname = cur_model%model_ptr%inspirehep()
+        get_inspirehep = f2cstring(fname)
+    end function
 end module

@@ -48,7 +48,6 @@ template <typename T> class Mapper {
         spdlog::trace("  Rans:");
         for(const auto &r : rans) spdlog::trace("    - {}: {}", idx++, r);
     }
-    virtual YAML::Node ToYAML() const = 0;
 
   protected:
     double Smin() const {
