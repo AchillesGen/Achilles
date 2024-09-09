@@ -115,7 +115,7 @@ if(ACHILLES_ENABLE_ROOT)
                 string(REGEX REPLACE [=[^[-//]D]=] "" _flag ${_flag})
                 set_property(TARGET ROOT::Flags APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${_flag})
         endforeach()
-        
+
         # This also fixes a bug in the linker flags
         separate_arguments(ROOT_EXE_LINKER_FLAGS)
         set_property(TARGET ROOT::Flags_CXX APPEND PROPERTY
@@ -164,8 +164,8 @@ endif()
 
 # Testing
 if(ACHILLES_ENABLE_TESTING)
-    if(ACHILLES_COVERAGE) 
-        target_compile_options(project_options INTERFACE --coverage) 
+    if(ACHILLES_COVERAGE)
+        target_compile_options(project_options INTERFACE --coverage)
         target_link_libraries(project_options INTERFACE gcov)
     endif()
     target_compile_definitions(project_options INTERFACE TESTING)

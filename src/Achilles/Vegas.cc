@@ -118,9 +118,28 @@ achilles::VegasSummary achilles::Vegas::Summary() const {
 }
 
 void achilles::Vegas::PrintIteration() const {
+<<<<<<< Updated upstream
     std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e} nb   {:^8.5e} +/- {:^8.5e} nb",
                              summary.results.size(), summary.results.back().Mean(),
                              summary.results.back().Error(), summary.Result().Mean(),
+=======
+    std::vector<double> values = {
+        summary.results.back().Mean(),
+        summary.results.back().Error(),
+        summary.Result().Mean(),
+        summary.Result().Error()};
+    for (double item : values) {
+        if (std::isnan(item)) {
+            spdlog::error("Unexpected nan encountered in MultiChannel. Aborting.");
+            throw std::runtime_error("Encountered nan in MultiChannel.");
+        }
+    }
+    std::cout << fmt::format("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+                             summary.results.size(),
+                             summary.results.back().Mean(),
+                             summary.results.back().Error(),
+                             summary.Result().Mean(),
+>>>>>>> Stashed changes
                              summary.Result().Error())
               << std::endl;
 }

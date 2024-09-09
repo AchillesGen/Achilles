@@ -118,6 +118,7 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     return summary;
 }
 
+<<<<<<< Updated upstream
 bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
     return (rel_err > params.rtol) || summary.results.size() < params.niterations;
 }
@@ -169,4 +170,23 @@ void achilles::MultiChannel::LoadState(std::istream &is) {
 bool achilles::MultiChannel::operator==(const MultiChannel &rhs) const {
     return ndims == rhs.ndims && params == rhs.params && channel_weights == rhs.channel_weights &&
            best_weights == rhs.best_weights && min_diff == rhs.min_diff && summary == rhs.summary;
+=======
+void achilles::MultiChannel::PrintIteration() const {
+    std::vector<double> values = {
+        summary.results.back().Mean(),
+        summary.results.back().Error(),
+        summary.Result().Mean(),
+        summary.Result().Error()};
+    for (double item : values) {
+        if (std::isnan(item)) {
+            spdlog::error("Unexpected nan encountered in MultiChannel. Aborting.");
+            throw std::runtime_error("Encountered nan in MultiChannel.");
+        }
+    }
+    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
+        summary.results.size(),
+        summary.results.back().Mean(),
+        summary.results.back().Error(),
+        summary.Result().Mean(),summary.Result().Error());
+>>>>>>> Stashed changes
 }
