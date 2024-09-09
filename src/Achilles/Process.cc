@@ -13,6 +13,7 @@
 
 #include "fmt/ranges.h"
 
+#include "Achilles/Settings.hh"
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
