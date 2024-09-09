@@ -118,18 +118,24 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     return summary;
 }
 
-<<<<<<< Updated upstream
 bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
     return (rel_err > params.rtol) || summary.results.size() < params.niterations;
 }
 
 void achilles::MultiChannel::PrintIteration() const {
+    std::array<double, 4> values = {summary.results.back().Mean(), summary.results.back().Error(),
+                                    summary.Result().Mean(), summary.Result().Error()};
+    for(double item : values) {
+        if(std::isnan(item)) {
+            spdlog::error("Unexpected nan encountered in MultiChannel. Aborting.");
+            throw std::runtime_error("Encountered nan in MultiChannel.");
+        }
+    }
+
     spdlog::info(
         "{:3d}   {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)    {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)",
-        summary.results.size(), summary.results.back().Mean(), summary.results.back().Error(),
-        summary.results.back().Error() / summary.results.back().Mean() * 100,
-        summary.Result().Mean(), summary.Result().Error(),
-        summary.Result().Error() / summary.Result().Mean() * 100);
+        summary.results.size(), values[0], values[1], values[1] / values[0] * 100, values[2],
+        values[3], values[3] / values[2] * 100);
 }
 
 void achilles::MultiChannel::SaveState(std::ostream &os) const {
@@ -170,23 +176,4 @@ void achilles::MultiChannel::LoadState(std::istream &is) {
 bool achilles::MultiChannel::operator==(const MultiChannel &rhs) const {
     return ndims == rhs.ndims && params == rhs.params && channel_weights == rhs.channel_weights &&
            best_weights == rhs.best_weights && min_diff == rhs.min_diff && summary == rhs.summary;
-=======
-void achilles::MultiChannel::PrintIteration() const {
-    std::vector<double> values = {
-        summary.results.back().Mean(),
-        summary.results.back().Error(),
-        summary.Result().Mean(),
-        summary.Result().Error()};
-    for (double item : values) {
-        if (std::isnan(item)) {
-            spdlog::error("Unexpected nan encountered in MultiChannel. Aborting.");
-            throw std::runtime_error("Encountered nan in MultiChannel.");
-        }
-    }
-    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}",
-        summary.results.size(),
-        summary.results.back().Mean(),
-        summary.results.back().Error(),
-        summary.Result().Mean(),summary.Result().Error());
->>>>>>> Stashed changes
 }
