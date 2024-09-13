@@ -47,6 +47,8 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
 
     double NNElastic(double, PID, PID) const;
 
+    void printmode() const {spdlog::debug("mode = {}", static_cast<int>(mode) );}
+
     // Calculation based on https://doi.org/10.1016/0375-9474(94)90405-7
     const std::map<std::pair<PID, PID>, double> sigma_max;
     const std::map<std::pair<PID, PID>, std::vector<PID>> outgoing;
