@@ -857,10 +857,11 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
 }
 
 bool Cascade::Decay(Event &event, size_t idx) const {
-    auto &part = event.Hadrons()[idx];
-    double lifetime = Constant::HBAR / part.Info().Width();
+    auto part = event.Hadrons()[idx];
+    double lifetime = Constant::HBARC / part.Info().Width();
     double decay_prob = exp(-timeStep / lifetime);
     // Should we attempt a decay in this time step
+    spdlog::trace("decay prob = {}, {}, {}", decay_prob, timeStep, lifetime);
     if(Random::Instance().Uniform(0.0, 1.0) < decay_prob) return false;
 
     // Look up in decay handler
@@ -870,12 +871,16 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         if(PauliBlocking(out)) return false;
     }
 
-    part.Status() = ParticleStatus::decayed;
+    event.Hadrons()[idx].Status() = ParticleStatus::decayed;
 
     // Ensure outgoing particles are propagating and add to list of particles in event
     // and assign formation zone
     std::vector<Particle> final;
     for(auto &out : particles_out) {
+        if(std::isnan(out.Momentum()[0])) {
+            spdlog::error("Nan momenutm in decay");
+            spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
+        }
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());
         event.Hadrons().push_back(out);
@@ -883,7 +888,8 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     }
 
     // Add decay to the event history
-    event.History().AddVertex(part.Position(), {part}, final, EventHistory::StatusCode::decay);
+    event.History().AddVertex(part.Position(), {event.Hadrons()[idx]}, final,
+                              EventHistory::StatusCode::decay);
 
     return true;
 }

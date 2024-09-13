@@ -1,7 +1,10 @@
 #ifndef ACHILLES_CASCADEINTERACTIONS_DELTAINTERACTIONS
 #define ACHILLES_CASCADEINTERACTIONS_DELTAINTERACTIONS
 
+#include "Achilles/DecayHandler.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/Interpolation.hh"
+#include "Achilles/Units.hh"
 
 namespace achilles {
 
@@ -33,10 +36,11 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
                                            Random &) const override;
 
     std::pair<double, double> TestNNElastic(double sqrts) const;
-    double TestInelastic1Pi(double sqrts, size_t type) const;
     double TestDeltaDSigma(bool iresonance, double sqrts, double mdelta) const;
     double TestDeltaDSigmaDOmegaDM(double cost, double sqrts, double mdelta, PID);
     double TestDeltaSigma(double sqrts) const;
+    double TestNPiSigma(const Particle &p1, const Particle &p2, PID res) const;
+    void TestInterpolation() const;
 
   private:
     Mode mode;
@@ -50,29 +54,33 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     static constexpr double beta = 300;
     double vfunc(double q) const { return beta * beta / (beta * beta + q * q); }
 
-    struct NNInelastic1PiParams {
-        double norm, a, b, n1, n2;
-    };
-    static constexpr NNInelastic1PiParams pppi0{61.3, 1.52, 2.50, 6.18, 3.48};
-    static constexpr NNInelastic1PiParams pnpip{122.6, 1.52, 2.50, 6.18, 3.48};
-    static constexpr NNInelastic1PiParams pppim{24.9, 3.30, 0.85, 1.93, 0.002};
-    static constexpr NNInelastic1PiParams pnpi0{7.25, 0.88, 0, 2.31, 3.64};
-    static constexpr std::array<NNInelastic1PiParams, 4> inelastic_1pi_params{pppi0, pnpip, pppim,
-                                                                              pnpi0};
-    double NNInelastic1PiBackground(double, const NNInelastic1PiParams &) const;
-    double NNResonance1Pi(double, PID, PID, PID) const;
+    // Npi to Delta
+    double SigmaNPi2Delta(const Particle &, const Particle &, PID) const;
 
     // NN to NDelta and NDelta to NN
-    double pcm2(double, double, double) const;
-    double NN2NDelta(const Particle &p1, const Particle &p2);
-    double NDelta2NN(const Particle &p1, const Particle &p2);
-    double SigmaNN2NDelta(double sqrts, PID delta_id) const;
+    double Pcm2(double, double, double) const;
+    double SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) const;
+    double SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, PID nucleon, double mdelta) const;
     double DSigmaDM(bool iresonance, double sqrts, double mdelta, PID delta_id) const;
     double MatNN2NDelta(double t, double u, double mdelta, PID delta_id) const;
+
+    // Functions to cache integrals to speed up code
+    static constexpr double sqrts_min = 1000 / 1_GeV, sqrts_max = 10000 / 1_GeV;
+    static constexpr double mass_min = 1000 / 1_GeV, mass_max = 4000 / 1_GeV;
+    static constexpr size_t nsqrts = 101, nmass = 101;
+    void InitializeInterpolators();
+    double SigmaNN2NDeltaInterp(double sqrts, double pcm, PID delta_id) const;
+    double DSigmaDMInterp(bool iresonance, double sqrts, double mdeltda, PID delta_id) const;
+    Interp1D dsigma_ndelta;
+    Interp2D dsigma_dm_ndelta;
+    Interp2D dsigma_res_ndelta;
 
     // TODO: Should be moved out of the class
     double GetEffectiveWidth(PID id, double mass, double mass1, double mass2,
                              size_t angular_mom) const;
+    double GetPartialWidth(PID res, double mass, PID id1, PID id2) const;
+    double GenerateMass(PID res, Random &ran, double smax) const;
+    DecayHandler decay_handler;
 };
 
 } // namespace achilles

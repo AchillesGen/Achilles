@@ -16,7 +16,7 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     SECTION("Add Entry to database") {
         const auto size = achilles::ParticleInfo::Database().size();
         auto entry = std::make_shared<achilles::ParticleInfoEntry>(
-            achilles::PID(123456789), 0, 0, 0, 0, 0, 0, 0, true, false, "test", "anti-test");
+            achilles::PID(123456789), 0, 0, 0, 0, 0, 0, 0, 0, true, false, "test", "anti-test");
         achilles::ParticleInfo info(entry);
 
         CHECK(achilles::ParticleInfo::Database().size() == size + 1);
@@ -32,7 +32,7 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     SECTION("Valid properties are returned") {
         // dummy particle
         auto entry = std::make_shared<achilles::ParticleInfoEntry>(
-            achilles::PID(123456789), 10, 1, 1, 1, 1, 1, 0, true, false, "test", "anti-test");
+            achilles::PID(123456789), 10, 1, 1, 1, 1, 1, 1, 0, true, false, "test", "anti-test");
         achilles::ParticleInfo info(entry);
         achilles::ParticleInfo ainfo(entry, true);
 

@@ -17,6 +17,7 @@ DecayHandler::DecayHandler(const std::string &filename, double tolerance) {
                             decay_mode["AngularMom"].as<size_t>(),
                             decay_mode["OutIDs"].as<std::vector<PID>>()};
             br_total += decay.branching_ratio;
+            std::sort(decay.out_ids.begin(), decay.out_ids.end());
             m_decays[pid].push_back(decay);
         }
 
@@ -56,6 +57,16 @@ std::vector<double> DecayHandler::BranchingRatios(const Particle &part) const {
 
 std::vector<achilles::DecayMode> DecayHandler::AllowedDecays(PID pid) const {
     return m_decays.at(pid);
+}
+
+double DecayHandler::BranchingRatio(PID res, std::vector<PID> out) const {
+    spdlog::trace("Getting BranchingRatio for {} -> {}", res, fmt::join(out, ","));
+    auto decays = m_decays.at(res);
+    std::sort(out.begin(), out.end());
+    for(const auto &decay : decays) {
+        if(decay.out_ids == out) return decay.branching_ratio;
+    }
+    return 0;
 }
 
 std::vector<achilles::Particle>

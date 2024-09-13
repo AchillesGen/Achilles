@@ -7,7 +7,7 @@
 using achilles::PID;
 
 TEST_CASE("Parsing database", "[DecayHandler]") {
-    achilles::DecayHandler decay("data/decays.txt");
+    achilles::DecayHandler decay("data/decays.yml");
 
     auto decays = decay.AllowedDecays(PID::deltapp());
     double br = 0;
@@ -17,7 +17,7 @@ TEST_CASE("Parsing database", "[DecayHandler]") {
 }
 
 TEST_CASE("Two body decay", "[DecayHandler]") {
-    achilles::DecayHandler decay("data/decays.txt");
+    achilles::DecayHandler decay("data/decays.yml");
 
     auto mom =
         GENERATE(take(30, randomMomentum(1000, achilles::ParticleInfo(PID::deltapp()).Mass())));
