@@ -25,7 +25,7 @@ Particles:
     # Mesons
     - Particle: [111, 134.977,      0.0, 0, 0, 2, 0, 1, 1, true, true, pion0, pion0]
     - Particle: [211, 139.571,      0.0, 3, 0, 2, 0, 1, 0, true, true, pion+, pion-]
-    - Particle: [221, 547.862,  1.31e-9, 0, 0, 0, 0, 0, 1, true, true, eta, eta]
+    - Particle: [221, 547.862,  1.31e-9, 0, 0, 0, 0, 1, 1, true, true, eta, eta]
     - Particle: [130, 497.611, 1.28e-14, 0, 0, 1, 0, 1, 1, true, true, KL0, KL0]
     - Particle: [310, 497.611, 7.35e-12, 0, 0, 1, 0, 0, 1, true, true, KS0, KS0]
     - Particle: [311, 497.611,      0.0, 0, 0, 1, 0, 1, 1, true, true, K0, anti-K0]
