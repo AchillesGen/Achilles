@@ -658,19 +658,19 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     // Check for Pauli Blocking
     bool hit = true;
     bool pionIS = false;
-    bool pionFS = false;
+    bool baryonFS = true;
 
     if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
-        if(part.Info().IsPion()) pionFS = true;
+        if(!part.Info().IsBaryon()) baryonFS = false;
     }
 
     // turn PB off for pion absorption
     // turn PB off for all pion reactions for now
     // if(pionIS) {
-    if(pionIS && !pionFS) {
+    /*if(pionIS && baryonFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");
         spdlog::debug("Particle1 ({}): {}, Particle2 ({}): {}", particle1.ID(),
@@ -679,6 +679,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         spdlog::debug("Pion abs FS mom: {}, {}", particles_out[0].Momentum().Vec3().Magnitude(),
                       particles_out[1].Momentum().Vec3().Magnitude());
     }
+    */
 
     for(auto &part : event.Hadrons()) {
         if(part.Status() == ParticleStatus::absorption_partner)
@@ -710,6 +711,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
             //     i}}); }
             // }
         }
+
 
         // Add interaction to the event history
         // TODO: What do we use for the position? (How about average positions?)

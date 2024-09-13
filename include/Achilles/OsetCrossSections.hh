@@ -38,6 +38,8 @@ class OsetCrossSection {
                        const double cms_mom, const double fermimom, const double sqrts,
                        const double density) const;
 
+    double avgrelvelocity(const double pion_mom, const double pionE, const double kf, const double rho) const;
+
     const double fConstFactor = 1.0 / 12.0 / M_PI;
     const double fCouplingConstant = 0.36 * 4.0 * M_PI;
     const double fNormalDensity = 0.17; // fm-3

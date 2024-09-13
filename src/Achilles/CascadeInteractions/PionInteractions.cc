@@ -25,13 +25,16 @@ std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle
                                                         Random &random) const {
     bool is_meson = false;
     for(const auto &pid : out_pids) {
+        // If there is a meson in the final state set flag to true
         if(ParticleInfo(pid).IsBoson()) {
             is_meson = true;
             break;
         }
     }
 
+    //Meson in final state means we use MB generate momentum
     if(is_meson) return hard_scatter->GenerateMomentum(particle1, particle2, out_pids, random);
+    //No meson in final state maens we use pion absorption to generate momentum
     return absorption->GenerateMomentum(particle1, particle2, out_pids, random);
 }
 
