@@ -179,9 +179,9 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
     auto reduced_halfwidth = ReducedHalfWidth(nucE, pionE, pion_mass, cms_mom, fermimom, sqrts);
     // real and imaginary part of delta denominator (see eq. 2.23)
     const double re_delta = sqrts - Constant::mdelta;
-    const double im_delta = reduced_halfwidth + SelfEnergyAbsNN(pionKE, pion_mass, 2*density) +
-                            SelfEnergyAbsNNN(pionKE, pion_mass, 2*density) +
-                            SelfEnergyQE(pionKE, pion_mass, 2*density);
+    const double im_delta = reduced_halfwidth + SelfEnergyAbsNN(pionKE, pion_mass, density) +
+                            SelfEnergyAbsNNN(pionKE, pion_mass, density) +
+                            SelfEnergyQE(pionKE, pion_mass, density);
 
     // Compute delta proopagator squared
     auto delta_propagator2 = 1.0 / (re_delta * re_delta + im_delta * im_delta);
