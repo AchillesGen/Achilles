@@ -23,7 +23,7 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
 };
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
-                 const double &kf, const std::string &densityFilename, const FermiGas &fg,
+                 const double &kf, const std::string &protondensityFilename, const std::string &neutrondensityFilename, const FermiGas &fg,
                  std::unique_ptr<Density> _density)
     : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)) {
     Initialize(Z, A);
@@ -32,26 +32,49 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     // nucleons/fm^3."); constexpr double nucDensity = 0.16; radius =
     // std::cbrt(static_cast<double>(A) / (4 / 3 * M_PI * nucDensity));
 
-    auto densityPathFile = Filesystem::FindFile(densityFilename, "Nucleus");
-    std::ifstream densityFile(densityPathFile);
-    if(!densityFile.is_open())
-        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", densityPathFile));
+    //Density for protons
+    auto protondensityPathFile = Filesystem::FindFile(protondensityFilename, "Nucleus");
+    std::ifstream protondensityFile(protondensityPathFile);
+    if(!protondensityFile.is_open())
+        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", protondensityPathFile));
     std::string lineContent;
 
     constexpr size_t HeaderLength = 16;
-    for(size_t i = 0; i < HeaderLength; ++i) { std::getline(densityFile, lineContent); }
+    for(size_t i = 0; i < HeaderLength; ++i) { std::getline(protondensityFile, lineContent); }
 
-    double radius_{}, density_{}, densityErr{};
-    std::vector<double> vecRadius, vecDensity;
+    double protonradius_{}, protondensity_{}, protondensityErr{};
+    std::vector<double> protonvecRadius, protonvecDensity;
     constexpr double minDensity = 1E-6;
-    while(densityFile >> radius_ >> density_ >> densityErr) {
-        if(density_ < minDensity && radius == 0) radius = radius_;
-        vecRadius.push_back(std::move(radius_));
-        vecDensity.push_back(std::move(density_));
+    while(protondensityFile >> protonradius_ >> protondensity_ >> protondensityErr) {
+        if(protondensity_ < minDensity && radius == 0) radius = protonradius_;
+        protonvecRadius.push_back(std::move(protonradius_));
+        protonvecDensity.push_back(std::move(protondensity_));
     }
 
-    rhoInterp.SetData(vecRadius, vecDensity);
-    rhoInterp.CubicSpline();
+    protonrhoInterp.SetData(protonvecRadius, protonvecDensity);
+    protonrhoInterp.CubicSpline();
+
+    //Density for neutrons
+    auto neutrondensityPathFile = Filesystem::FindFile(neutrondensityFilename, "Nucleus");
+    std::ifstream neutrondensityFile(neutrondensityPathFile);
+    if(!neutrondensityFile.is_open())
+        throw std::runtime_error(fmt::format("Nucleus: Issue opening file {}.", neutrondensityPathFile));
+    //std::string lineContent;
+
+    //constexpr size_t HeaderLength = 16;
+    for(size_t i = 0; i < HeaderLength; ++i) { std::getline(neutrondensityFile, lineContent); }
+
+    double neutronradius_{}, neutrondensity_{}, neutrondensityErr{};
+    std::vector<double> neutronvecRadius, neutronvecDensity;
+    //constexpr double minDensity = 1E-6;
+    while(neutrondensityFile >> neutronradius_ >> neutrondensity_ >> neutrondensityErr) {
+        //if(density_ < minDensity && radius == 0) radius = radius_;
+        neutronvecRadius.push_back(std::move(neutronradius_));
+        neutronvecDensity.push_back(std::move(neutrondensity_));
+    }
+
+    neutronrhoInterp.SetData(neutronvecRadius, neutronvecDensity);
+    neutronrhoInterp.CubicSpline();
 
     // Ensure the number of protons and neutrons are correct
     // NOTE: This only is checked at startup, so if density returns a varying
@@ -144,7 +167,7 @@ double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
 }
 
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
-                             const double &fermiMomentum, const std::string &densityFilename,
+                             const double &fermiMomentum, const std::string &protondensityFilename, const std::string &neutrondensityFilename,
                              const FermiGas &fg, std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
     std::smatch match;
@@ -155,7 +178,7 @@ Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
         spdlog::info("Nucleus: parsing nuclear name '{0}', expecting a density "
                      "with A={1} total nucleons and Z={2} protons.",
                      name, nucleons, protons);
-        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, densityFilename, fg,
+        return Nucleus(protons, nucleons, bEnergy, fermiMomentum, protondensityFilename, neutrondensityFilename, fg,
                        std::move(density));
     }
 

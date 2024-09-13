@@ -59,7 +59,7 @@ class Nucleus {
     ///                to the density profile
     Nucleus() = default;
     Nucleus(const std::size_t &, const std::size_t &, const double &, const double &,
-            const std::string &, const FermiGas &, std::unique_ptr<Density>);
+            const std::string &, const std::string &, const FermiGas &, std::unique_ptr<Density>);
     Nucleus(const Nucleus &) = delete;
     Nucleus(Nucleus &&) = default;
     Nucleus &operator=(const Nucleus &) = delete;
@@ -150,7 +150,25 @@ class Nucleus {
     ///@return double: The density at the input radius
     MOCK double Rho(const double &position) const noexcept {
         // return position > rhoInterp.max() ? 0 : rhoInterp(position);
-        return position > radius ? 0 : rhoInterp(position);
+        return position > radius ? 0 : protonrhoInterp(position);
+    }
+    ///@}
+
+    /// Return the density of the nucleus at a given location
+    ///@param position: The radius to calculate the density at
+    ///@return double: The density at the input radius
+    MOCK double ProtonRho(const double &position) const noexcept {
+        // return position > rhoInterp.max() ? 0 : rhoInterp(position);
+        return position > radius ? 0 : protonrhoInterp(position);
+    }
+    ///@}
+
+    /// Return the density of the nucleus at a given location
+    ///@param position: The radius to calculate the density at
+    ///@return double: The density at the input radius
+    MOCK double NeutronRho(const double &position) const noexcept {
+        // return position > rhoInterp.max() ? 0 : rhoInterp(position);
+        return position > radius ? 0 : neutronrhoInterp(position);
     }
     ///@}
 
@@ -216,7 +234,7 @@ class Nucleus {
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
     static Nucleus MakeNucleus(const std::string &, const double &, const double &,
-                               const std::string &, const FermiGas &, std::unique_ptr<Density>);
+                               const std::string &, const std::string &, const FermiGas &, std::unique_ptr<Density>);
 
     /// @name Stream Operators
     /// @{
@@ -231,7 +249,8 @@ class Nucleus {
     double binding{}, fermiMomentum{}, radius{};
     FermiGas fermi_gas{};
     std::unique_ptr<Density> density;
-    Interp1D rhoInterp;
+    Interp1D protonrhoInterp;
+    Interp1D neutronrhoInterp;
 
     static const std::map<std::size_t, std::string> ZToName;
     static std::size_t NameToZ(const std::string &);
@@ -279,10 +298,11 @@ template <> struct convert<achilles::Nucleus> {
         auto kf = node["Fermi Momentum"].as<double>();
 
         auto fermi_gas = node["FermiGas"].as<achilles::Nucleus::FermiGas>();
-        auto densityFile = node["Density"]["File"].as<std::string>();
+        auto protondensityFile = node["Density"]["ProtonFile"].as<std::string>();
+        auto neutrondensityFile = node["Density"]["NeutronFile"].as<std::string>();
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
-        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, densityFile, fermi_gas,
+        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, protondensityFile, neutrondensityFile, fermi_gas,
                                              std::move(configs));
 
         return true;
