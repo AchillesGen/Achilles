@@ -660,16 +660,17 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     bool pionIS = false;
     bool baryonFS = true;
 
+    //Did we start with pions
     if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
+        //Are there any mesons in the final state?
         if(!part.Info().IsBaryon()) baryonFS = false;
     }
 
-    // turn PB off for pion absorption
-    // turn PB off for all pion reactions for now
-    // if(pionIS) {
+    // If there are pions in in the initial state
+    // and no mesons in the final state
     /*if(pionIS && baryonFS) {
         hit = true;
         spdlog::debug("Checking pion abs mom");
@@ -678,8 +679,14 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
                       particle2.Momentum().Vec3().Magnitude());
         spdlog::debug("Pion abs FS mom: {}, {}", particles_out[0].Momentum().Vec3().Magnitude(),
                       particles_out[1].Momentum().Vec3().Magnitude());
-    }
-    */
+        if(PauliBlocking(particles_out[0]) || PauliBlocking(particles_out[1])) {
+            spdlog::info("Pauliblocked in absorption");
+            spdlog::info("outgoing part 1 ({}): {}", particles_out[0].ID(),particles_out[0].Momentum().Vec3().Magnitude());
+            spdlog::info("part 1 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[0].Position().Magnitude()));
+            spdlog::info("outgoing part 2 ({}): {}", particles_out[1].ID(),particles_out[1].Momentum().Vec3().Magnitude());
+            spdlog::info("part 2 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[1].Position().Magnitude()));
+        }
+    }*/   
 
     for(auto &part : event.Hadrons()) {
         if(part.Status() == ParticleStatus::absorption_partner)
