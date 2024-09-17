@@ -84,7 +84,7 @@ contains
 
     function intf_inspirehep() !...reference for the model
         character(len=:), allocatable :: intf_inspirehep
-        intf_inspirehep = "" ! TODO: Add inspirehep information
+        intf_inspirehep = "Lovato:2023khk" ! TODO: Add inspirehep information
     end function
 
     function intf_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
