@@ -1,6 +1,6 @@
 CPMAddPackage(
     NAME fmt
-    GIT_TAG ca8eeb0
+    GIT_TAG 11.0.0
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
