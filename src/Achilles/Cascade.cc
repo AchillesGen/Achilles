@@ -205,13 +205,41 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     }
 }
 
-void Cascade::Validate(const Particles &particles) {
+void Cascade::Validate(Event &event) {
     spdlog::trace("End of Event Status:");
-    for(auto particle : particles) {
-        spdlog::trace("{}", particle);
+    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
+        auto &particle = event.Hadrons()[idx];
         if(particle.Status() == ParticleStatus::propagating) {
-            for(auto p : particles) spdlog::error("{}", p);
+            for(auto p : event.Hadrons()) spdlog::error("{}", p);
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+        }
+        if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {
+            static constexpr size_t nwarns = 10;
+            static size_t iwarns = 0;
+            if(iwarns < nwarns) {
+                spdlog::warn("Cascade: Resonance did not decay before escaping, decaying now");
+            } else if(iwarns == nwarns) {
+                spdlog::warn("Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
+            }
+            iwarns++;
+
+            // Force decay
+            auto particles_out = m_decays.Decay(particle);
+            event.Hadrons()[idx].Status() = ParticleStatus::decayed;
+
+            // Ensure outgoing particles are propagating and add to list of particles in event
+            // and assign formation zone
+            std::vector<Particle> final;
+            for(auto &out : particles_out) {
+                out.Status() = ParticleStatus::final_state;
+                out.Position() = event.Hadrons()[idx].Position();
+                event.Hadrons().push_back(out);
+                final.push_back(event.Hadrons().back());
+            }
+
+            // Add decay to the event history
+            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]}, final,
+                                        EventHistory::StatusCode::decay);
         }
     }
 }
@@ -301,7 +329,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
         Escaped(particles);
     }
 
-    Validate(particles);
+    Validate(event);
     Reset();
 }
 
