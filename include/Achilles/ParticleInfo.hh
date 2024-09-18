@@ -207,6 +207,7 @@ class ParticleInfo {
         return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id);
     }
     bool IsNucleon() const noexcept;
+    bool IsDelta() const noexcept;
     bool IsPion() const noexcept;
     bool IsResonance() const noexcept { return IsHadron() && !IsStable(); }
     bool IsBaryon() const noexcept;

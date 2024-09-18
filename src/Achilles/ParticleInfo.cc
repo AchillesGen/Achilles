@@ -67,6 +67,11 @@ bool ParticleInfo::IsNucleon() const noexcept {
     return info->id == PID::proton() || info->id == PID::neutron();
 }
 
+bool ParticleInfo::IsDelta() const noexcept {
+    return info->id == PID::deltapp() || info->id == PID::deltap()
+        || info->id == PID::delta0() || info->id == PID::deltam();
+}
+
 bool ParticleInfo::IsPion() const noexcept {
     return info->id == PID::pionp() || info->id == PID::pion0() || info->id == -PID::pionp();
 }
