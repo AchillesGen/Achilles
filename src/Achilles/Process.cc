@@ -76,18 +76,27 @@ void Process::SetupHadrons(Event &event) const {
 
     // TODO: Handle hydrogen
 
-    // Select initial state nucleons and spectators
+    // Select initial state nucleons
     auto protons = event.Protons(ParticleStatus::background);
     auto neutrons = event.Neutrons(ParticleStatus::background);
-    size_t nsamples = m_info.m_hadronic.first.size() + m_info.m_spectator.size();
+    size_t nsamples = m_info.m_hadronic.first.size();
     auto sampled_protons = Random::Instance().Sample(nsamples, protons);
     auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
 
     auto initial_states =
         SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
                         ParticleStatus::initial_state);
+    spdlog::debug("Selected initial states: {}", fmt::join(initial_states, ", "));
+
+    // Sample for spectators
+    protons = event.Protons(ParticleStatus::background);
+    neutrons = event.Neutrons(ParticleStatus::background);
+    nsamples = m_info.m_hadronic.first.size();
+    sampled_protons = Random::Instance().Sample(nsamples, protons);
+    sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
     auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
                                       ParticleStatus::spectator);
+    spdlog::debug("Selected spectators states: {}", fmt::join(initial_states, ", "));
 
     // Initialize final state hadrons
     // TODO: Handle propagating deltas
