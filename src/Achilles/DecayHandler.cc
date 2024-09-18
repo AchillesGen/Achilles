@@ -61,7 +61,7 @@ std::vector<achilles::DecayMode> DecayHandler::AllowedDecays(PID pid) const {
 
 double DecayHandler::BranchingRatio(PID res, std::vector<PID> out) const {
     spdlog::trace("Getting BranchingRatio for {} -> {}", res, fmt::join(out, ","));
-    auto decays = m_decays.at(res);
+    const auto &decays = m_decays.at(res);
     std::sort(out.begin(), out.end());
     for(const auto &decay : decays) {
         if(decay.out_ids == out) return decay.branching_ratio;

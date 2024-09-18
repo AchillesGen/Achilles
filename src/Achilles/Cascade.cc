@@ -219,7 +219,8 @@ void Cascade::Validate(Event &event) {
             if(iwarns < nwarns) {
                 spdlog::warn("Cascade: Resonance did not decay before escaping, decaying now");
             } else if(iwarns == nwarns) {
-                spdlog::warn("Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
+                spdlog::warn(
+                    "Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
             }
             iwarns++;
 
@@ -238,8 +239,8 @@ void Cascade::Validate(Event &event) {
             }
 
             // Add decay to the event history
-            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]}, final,
-                                        EventHistory::StatusCode::decay);
+            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
+                                      final, EventHistory::StatusCode::decay);
         }
     }
 }
@@ -677,6 +678,9 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     auto modes = m_interactions.CrossSection(event, idx1, idx2);
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
+    spdlog::debug("Selected Mode: {}, {} -> {}", particle1.ID(), particle2.ID(),
+                  fmt::join(mode.particles, ","));
+
     auto particles_out =
         m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
 
@@ -688,12 +692,12 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     bool pionIS = false;
     bool baryonFS = true;
 
-    //Did we start with pions
+    // Did we start with pions
     if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
-        //Are there any mesons in the final state?
+        // Are there any mesons in the final state?
         if(!part.Info().IsBaryon()) baryonFS = false;
     }
 
@@ -709,17 +713,19 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
                       particles_out[1].Momentum().Vec3().Magnitude());
         if(PauliBlocking(particles_out[0]) || PauliBlocking(particles_out[1])) {
             spdlog::info("Pauliblocked in absorption");
-            spdlog::info("outgoing part 1 ({}): {}", particles_out[0].ID(),particles_out[0].Momentum().Vec3().Magnitude());
-            spdlog::info("part 1 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[0].Position().Magnitude()));
-            spdlog::info("outgoing part 2 ({}): {}", particles_out[1].ID(),particles_out[1].Momentum().Vec3().Magnitude());
-            spdlog::info("part 2 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[1].Position().Magnitude()));
+            spdlog::info("outgoing part 1 ({}): {}",
+    particles_out[0].ID(),particles_out[0].Momentum().Vec3().Magnitude()); spdlog::info("part 1
+    Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[0].Position().Magnitude()));
+            spdlog::info("outgoing part 2 ({}): {}",
+    particles_out[1].ID(),particles_out[1].Momentum().Vec3().Magnitude()); spdlog::info("part 2
+    Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[1].Position().Magnitude()));
         }
-    }*/   
+    }*/
 
-    for(auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::absorption_partner)
-            part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
-    }
+    // for(auto &part : event.Hadrons()) {
+    //     if(part.Status() == ParticleStatus::absorption_partner)
+    //         part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
+    // }
 
     if(hit) {
         Particles initial_part, final_part;
@@ -732,7 +738,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         // and assign formation zone
         for(auto &part : particles_out) {
             part.Status() = ParticleStatus::propagating;
-            part.SetFormationZone(particle1.Momentum(), part.Momentum());
+            if(part.Info().IsNucleon())
+                part.SetFormationZone(particle1.Momentum(), part.Momentum());
             particles.push_back(part);
             final_part.push_back(particles.back());
 
@@ -746,7 +753,6 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
             //     i}}); }
             // }
         }
-
 
         // Add interaction to the event history
         // TODO: What do we use for the position? (How about average positions?)
