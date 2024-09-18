@@ -114,5 +114,6 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
     spdlog::debug("out1: {}, {}", out_pids[0], paOut.Momentum());
     spdlog::debug("out2: {}, {}", out_pids[1], pbOut.Momentum());
 
-    return {{out_pids[0], paOut, particle1.Position()}, {out_pids[1], pbOut, particle2.Position()}};
+    return {Particle{out_pids[0], paOut, particle1.Position()},
+            Particle{out_pids[1], pbOut, particle2.Position()}};
 }

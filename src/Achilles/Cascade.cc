@@ -847,9 +847,9 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     if(elastic) {
         // We need to charge exchange the 2nd interaction
         if(particle2.ID() == PID::proton())
-            final_nucleon2 = {PID::neutron(), particle2.Momentum(), particle2.Position()};
+            final_nucleon2 = Particle{PID::neutron(), particle2.Momentum(), particle2.Position()};
         if(particle2.ID() == PID::neutron())
-            final_nucleon2 = {PID::proton(), particle2.Momentum(), particle2.Position()};
+            final_nucleon2 = Particle{PID::proton(), particle2.Momentum(), particle2.Position()};
     }
 
     // Add up initial and final charges

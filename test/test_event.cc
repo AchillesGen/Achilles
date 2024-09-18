@@ -6,6 +6,8 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
 
+using achilles::Particle;
+
 TEST_CASE("Initialize Event Parameters", "[Event]") {
     auto nuc = std::make_shared<MockNucleus>();
     auto beam = std::make_shared<MockBeam>();
@@ -16,7 +18,7 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
 
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
-    achilles::Particles particles = {{achilles::PID::proton(), hadron0}};
+    achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
 
     REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN((particles));
     static constexpr double vegas_wgt = 10;
@@ -36,19 +38,19 @@ TEST_CASE("Finalize Event", "[Event]") {
 
     // Dummy carbon event
     achilles::Particles final = {
-        {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
-        {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
-        {achilles::PID::proton(), hadron0},
-        {achilles::PID::proton(), hadron0},
-        {achilles::PID::proton(), hadron0},
-        {achilles::PID::proton(), hadron0},
-        {achilles::PID::proton(), hadron0},
-        {achilles::PID::neutron(), hadron0},
-        {achilles::PID::neutron(), hadron0},
-        {achilles::PID::neutron(), hadron0},
-        {achilles::PID::neutron(), hadron0},
-        {achilles::PID::neutron(), hadron0},
-        {achilles::PID::neutron(), hadron0}};
+        Particle{achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
+        Particle{achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state},
+        Particle{achilles::PID::proton(), hadron0},
+        Particle{achilles::PID::proton(), hadron0},
+        Particle{achilles::PID::proton(), hadron0},
+        Particle{achilles::PID::proton(), hadron0},
+        Particle{achilles::PID::proton(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0},
+        Particle{achilles::PID::neutron(), hadron0}};
 
     achilles::Event event{};
     event.Hadrons() = final;

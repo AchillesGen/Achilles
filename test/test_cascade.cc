@@ -7,8 +7,10 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 
+using achilles::Particle;
+
 TEST_CASE("Initialize Cascade", "[Cascade]") {
-    achilles::Particles particles = {{achilles::PID::proton()}, {achilles::PID::neutron()}};
+    achilles::Particles particles = {Particle{achilles::PID::proton()}, Particle{achilles::PID::neutron()}};
 
     SECTION("Kick Nucleon") {
         achilles::InteractionHandler interaction;
@@ -33,7 +35,7 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
 }
 
 TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
-    achilles::Particles hadrons = {{achilles::PID::proton(),
+    achilles::Particles hadrons = {Particle{achilles::PID::proton(),
                                     {1000, 100, 0, 0},
                                     {0, 0, 0},
                                     achilles::ParticleStatus::propagating}};
@@ -123,15 +125,15 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
 }
 
 TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
-    achilles::Particles hadrons = {{achilles::PID::proton(),
+    achilles::Particles hadrons = {Particle{achilles::PID::proton(),
                                     {1000, 100, 0, 0},
                                     {0, 0, 0},
                                     achilles::ParticleStatus::propagating},
-                                   {achilles::PID::proton(),
+                                   Particle{achilles::PID::proton(),
                                     {achilles::Constant::mN, 0, 0, 0},
                                     {0.5, 0, 0},
                                     achilles::ParticleStatus::background},
-                                   {achilles::PID::neutron(),
+                                   Particle{achilles::PID::neutron(),
                                     {achilles::Constant::mN, 0, 0, 0},
                                     {3, 0, 0},
                                     achilles::ParticleStatus::background}};
@@ -243,11 +245,11 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
 
 TEST_CASE("Mean Free Path", "[Cascade]") {
     achilles::Particles hadrons = {
-        {achilles::PID::proton(),
+        Particle{achilles::PID::proton(),
          {100, 0, 0, 1000},
          {0, 0, 0},
          achilles::ParticleStatus::internal_test},
-        {achilles::PID::proton(),
+        Particle{achilles::PID::proton(),
          {100, 0, 0, 1000},
          {0, 0, -1},
          achilles::ParticleStatus::background},

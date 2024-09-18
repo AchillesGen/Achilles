@@ -125,7 +125,7 @@ void Nucleus::Initialize(size_t Z, size_t A) {
 
 Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
-    if(is_hydrogen) { return {{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}}; }
+    if(is_hydrogen) { return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}}; }
 
     // Get a configuration from the density function
     Particles particles = density->GetConfiguration();

@@ -7,6 +7,8 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
 
+using achilles::Particle;
+
 TEST_CASE("Builtin", "[EventWriter]") {
     SECTION("Write Header") {
         std::stringstream ss;
@@ -33,8 +35,8 @@ TEST_CASE("Builtin", "[EventWriter]") {
         static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
         static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
         achilles::Particles particles = {
-            {achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
-            {achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
+            Particle{achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
+            Particle{achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
         achilles::NuclearRemnant remnant(11, 5);
 
         const MockEvent event{};

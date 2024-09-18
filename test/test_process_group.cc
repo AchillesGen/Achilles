@@ -6,6 +6,7 @@
 #include "mock_classes.hh"
 
 using achilles::RegistrableBackend;
+using achilles::Particle;
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
 
@@ -143,8 +144,8 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
     constexpr double ps_wgt = 1;
     constexpr double flux = 1;
 
-    std::vector<achilles::Particle> nucleons = {{achilles::PID::proton()},
-                                                {achilles::PID::neutron()}};
+    std::vector<achilles::Particle> nucleons = {Particle{achilles::PID::proton()},
+                                                Particle{achilles::PID::neutron()}};
     auto beam = std::make_shared<MockBeam>();
     auto nucleus = std::make_shared<MockNucleus>();
     REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);
