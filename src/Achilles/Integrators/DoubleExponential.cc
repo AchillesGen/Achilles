@@ -11,6 +11,7 @@ double DoubleExponential::Integrate(const double &x1, const double &x2, const do
     if(!initialized) {
         size_t idx = 0;
         for(auto &row : table) row = GeneratePoint(idx++);
+        initialized = true;
     }
 
     static constexpr int izx = 5;
@@ -102,15 +103,15 @@ double DoubleExponential::Integrate(const double &x1, const double &x2, const do
             err = pow(10, static_cast<int>(std::min(0.0, max)));
         }
 
-        spdlog::debug("Iteration {} (value, error): {}, {}", k, s1, err);
-        spdlog::debug("Number of evaluations = {}", evals);
+        spdlog::trace("Iteration {} (value, error): {}, {}", k, s1, err);
+        spdlog::trace("Number of evaluations = {}", evals);
 
         if(k > 3 && err < eps1) {
-            spdlog::debug("Result (value, error): {}, {}", s1, err);
+            spdlog::trace("Result (value, error): {}, {}", s1, err);
             return s1;
         }
         if(k >= 3 && err < eps2) {
-            spdlog::debug("Result (value, error): {}, {}", s1, err);
+            spdlog::trace("Result (value, error): {}, {}", s1, err);
             return s1;
         }
     }
