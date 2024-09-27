@@ -385,7 +385,9 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
     bool same_iso = id1 == id2;
     double mn = (ParticleInfo(id1).Mass() + ParticleInfo(id2).Mass()) / 2 / 1.0_GeV;
     double threshold = sqrts * sqrts - 4 * mn * mn;
+    if(threshold < 0) return 0;
     double plab = sqrts / (2 * mn) * sqrt(threshold);
+    spdlog::debug("NNElastic: {}, {}, {}, {}, {}, {}", sqrts, id1, id2, mn, threshold, plab);
 
     if(same_iso) {
         if(plab < 0.425) {
