@@ -17,7 +17,7 @@ std::vector<std::pair<PID, PID>> PionInteraction::InitialStates() const {
     return {{PID::pion0(), PID::proton()},  {PID::pionp(), PID::proton()},
             {-PID::pionp(), PID::proton()}, {PID::pion0(), PID::neutron()},
             {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()},
-            {PID::eta(), PID::neutron()}, {PID::eta(), PID::proton()}};
+            {PID::eta(), PID::neutron()},   {PID::eta(), PID::proton()}};
 }
 
 std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle1,
@@ -33,9 +33,9 @@ std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle
         }
     }
 
-    //Meson in final state means we use MB generate momentum
+    // Meson in final state means we use MB generate momentum
     if(is_meson) return hard_scatter->GenerateMomentum(particle1, particle2, out_pids, random);
-    //No meson in final state maens we use pion absorption to generate momentum
+    // No meson in final state maens we use pion absorption to generate momentum
     return absorption->GenerateMomentum(particle1, particle2, out_pids, random);
 }
 

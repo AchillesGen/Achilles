@@ -69,19 +69,19 @@ class Particle {
     ///@param mothers: The mother particles of the particle (default = Empty)
     ///@param daughters: The daughter particles of the particle (default = Empty)
     explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
-             ThreeVector pos = ThreeVector(),
-             const ParticleStatus &_status = ParticleStatus::background,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+                      ThreeVector pos = ThreeVector(),
+                      const ParticleStatus &_status = ParticleStatus::background,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
           mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
         formationZone = 0;
     }
 
     explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), const int &_status = 0,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+                      ThreeVector pos = ThreeVector(), const int &_status = 0,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(pid), momentum(mom), position(std::move(pos)),
           status(static_cast<ParticleStatus>(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
@@ -89,9 +89,10 @@ class Particle {
     }
 
     explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+                      ThreeVector pos = ThreeVector(),
+                      ParticleStatus _status = ParticleStatus::background,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
           status(std::move(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {

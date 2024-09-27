@@ -9,8 +9,8 @@
 
 #include "mock_classes.hh"
 
-using achilles::PID;
 using achilles::Particle;
+using achilles::PID;
 
 TEST_CASE("Map ordering indpendent of key order", "[InteractionHandler]") {
     achilles::pid_compare compare;

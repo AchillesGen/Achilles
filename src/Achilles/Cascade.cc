@@ -219,7 +219,8 @@ void Cascade::Validate(Event &event) {
             if(iwarns < nwarns) {
                 spdlog::warn("Cascade: Resonance did not decay before escaping, decaying now");
             } else if(iwarns == nwarns) {
-                spdlog::warn("Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
+                spdlog::warn(
+                    "Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
             }
             iwarns++;
 
@@ -238,8 +239,8 @@ void Cascade::Validate(Event &event) {
             }
 
             // Add decay to the event history
-            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]}, final,
-                                        EventHistory::StatusCode::decay);
+            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
+                                      final, EventHistory::StatusCode::decay);
         }
     }
 }

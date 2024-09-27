@@ -6,8 +6,8 @@
 #include "Achilles/XSecBackend.hh"
 #include "mock_classes.hh"
 
-using achilles::RegistrableBackend;
 using achilles::Particle;
+using achilles::RegistrableBackend;
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
 

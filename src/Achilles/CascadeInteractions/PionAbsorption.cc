@@ -33,7 +33,7 @@ std::vector<std::pair<PID, PID>> PionAbsorption::InitialStates() const {
     return {{PID::pion0(), PID::proton()},  {PID::pionp(), PID::proton()},
             {-PID::pionp(), PID::proton()}, {PID::pion0(), PID::neutron()},
             {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()},
-            {PID::eta(), PID::neutron()}, {PID::eta(), PID::proton()}};
+            {PID::eta(), PID::neutron()},   {PID::eta(), PID::proton()}};
 }
 
 bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t part2) const {

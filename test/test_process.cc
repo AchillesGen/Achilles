@@ -98,10 +98,10 @@ TEST_CASE("Handles events correctly", "[Process]") {
             Particle{achilles::PID::proton(), {1.1188e+04, 0.0, 0.0, 0.0}}};
         std::vector<achilles::Particle> lep_out_exp{
             Particle{achilles::PID::electron(),
-             {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
+                     {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
         std::vector<achilles::Particle> had_out_exp{
             Particle{achilles::PID::proton(),
-             {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
+                     {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
         YAML::Node config;
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));

@@ -10,8 +10,8 @@
 #include "yaml-cpp/yaml.h"
 
 using achilles::operator""_GeV;
-using achilles::ProcessInfo;
 using achilles::Particle;
+using achilles::ProcessInfo;
 
 TEST_CASE("CoherentModel", "[NuclearModel]") {
     YAML::Node config = YAML::Load(R"config(
@@ -279,10 +279,12 @@ dummy: dummy2
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
-        auto output_p = model.CalcCurrents({Particle{2212, momentum[1]}}, {Particle{2212, momentum[3]}}, {},
-                                           momentum[0] - momentum[2], info_map[0]);
-        auto output_n = model.CalcCurrents({Particle{2112, momentum[1]}}, {Particle{2112, momentum[3]}}, {},
-                                           momentum[0] - momentum[2], info_map[1]);
+        auto output_p =
+            model.CalcCurrents({Particle{2212, momentum[1]}}, {Particle{2212, momentum[3]}}, {},
+                               momentum[0] - momentum[2], info_map[0]);
+        auto output_n =
+            model.CalcCurrents({Particle{2112, momentum[1]}}, {Particle{2112, momentum[3]}}, {},
+                               momentum[0] - momentum[2], info_map[1]);
         CHECK(output_p.size() == 1);
         auto results_p = output_p[achilles::PID::photon()];
         CHECK(results_p.size() == model.NSpins());

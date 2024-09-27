@@ -234,7 +234,8 @@ class Nucleus {
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
     static Nucleus MakeNucleus(const std::string &, const double &, const double &,
-                               const std::string &, const std::string &, const FermiGas &, std::unique_ptr<Density>);
+                               const std::string &, const std::string &, const FermiGas &,
+                               std::unique_ptr<Density>);
 
     /// @name Stream Operators
     /// @{
@@ -302,8 +303,8 @@ template <> struct convert<achilles::Nucleus> {
         auto neutrondensityFile = node["Density"]["NeutronFile"].as<std::string>();
         auto configs = std::make_unique<achilles::DensityConfiguration>(
             node["Density"]["Configs"].as<std::string>());
-        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, protondensityFile, neutrondensityFile, fermi_gas,
-                                             std::move(configs));
+        nuc = achilles::Nucleus::MakeNucleus(name, binding, kf, protondensityFile,
+                                             neutrondensityFile, fermi_gas, std::move(configs));
 
         return true;
     }

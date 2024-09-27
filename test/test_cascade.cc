@@ -10,7 +10,8 @@
 using achilles::Particle;
 
 TEST_CASE("Initialize Cascade", "[Cascade]") {
-    achilles::Particles particles = {Particle{achilles::PID::proton()}, Particle{achilles::PID::neutron()}};
+    achilles::Particles particles = {Particle{achilles::PID::proton()},
+                                     Particle{achilles::PID::neutron()}};
 
     SECTION("Kick Nucleon") {
         achilles::InteractionHandler interaction;
@@ -36,9 +37,9 @@ TEST_CASE("Initialize Cascade", "[Cascade]") {
 
 TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     achilles::Particles hadrons = {Particle{achilles::PID::proton(),
-                                    {1000, 100, 0, 0},
-                                    {0, 0, 0},
-                                    achilles::ParticleStatus::propagating}};
+                                            {1000, 100, 0, 0},
+                                            {0, 0, 0},
+                                            achilles::ParticleStatus::propagating}};
     constexpr double radius = 1;
 
     auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
@@ -126,17 +127,17 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
 
 TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     achilles::Particles hadrons = {Particle{achilles::PID::proton(),
-                                    {1000, 100, 0, 0},
-                                    {0, 0, 0},
-                                    achilles::ParticleStatus::propagating},
+                                            {1000, 100, 0, 0},
+                                            {0, 0, 0},
+                                            achilles::ParticleStatus::propagating},
                                    Particle{achilles::PID::proton(),
-                                    {achilles::Constant::mN, 0, 0, 0},
-                                    {0.5, 0, 0},
-                                    achilles::ParticleStatus::background},
+                                            {achilles::Constant::mN, 0, 0, 0},
+                                            {0.5, 0, 0},
+                                            achilles::ParticleStatus::background},
                                    Particle{achilles::PID::neutron(),
-                                    {achilles::Constant::mN, 0, 0, 0},
-                                    {3, 0, 0},
-                                    achilles::ParticleStatus::background}};
+                                            {achilles::Constant::mN, 0, 0, 0},
+                                            {3, 0, 0},
+                                            achilles::ParticleStatus::background}};
     constexpr double radius = 4;
 
     auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
@@ -246,13 +247,13 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
 TEST_CASE("Mean Free Path", "[Cascade]") {
     achilles::Particles hadrons = {
         Particle{achilles::PID::proton(),
-         {100, 0, 0, 1000},
-         {0, 0, 0},
-         achilles::ParticleStatus::internal_test},
+                 {100, 0, 0, 1000},
+                 {0, 0, 0},
+                 achilles::ParticleStatus::internal_test},
         Particle{achilles::PID::proton(),
-         {100, 0, 0, 1000},
-         {0, 0, -1},
-         achilles::ParticleStatus::background},
+                 {100, 0, 0, 1000},
+                 {0, 0, -1},
+                 achilles::ParticleStatus::background},
     };
     constexpr double radius = 2;
 

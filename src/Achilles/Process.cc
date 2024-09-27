@@ -7,9 +7,9 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
-#include "Achilles/Settings.hh"
 
 #include "fmt/ranges.h"
 

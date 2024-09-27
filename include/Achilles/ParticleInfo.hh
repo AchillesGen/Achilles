@@ -71,7 +71,7 @@ class PID {
     // Mesons
     static constexpr PID pion0() { return PID{111}; }
     static constexpr PID pionp() { return PID{211}; }
-    static constexpr PID eta()   { return PID{221}; }
+    static constexpr PID eta() { return PID{221}; }
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }
