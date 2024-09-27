@@ -689,16 +689,16 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     // Check for Pauli Blocking
     bool hit = true;
-    bool pionIS = false;
-    bool baryonFS = true;
+    // bool pionIS = false;
+    // bool baryonFS = true;
 
     // Did we start with pions
-    if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
+    // if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
         // Are there any mesons in the final state?
-        if(!part.Info().IsBaryon()) baryonFS = false;
+        // if(!part.Info().IsBaryon()) baryonFS = false;
     }
 
     // If there are pions in in the initial state
@@ -765,7 +765,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.Info().IsNucleon() || particle.Info().IsDelta()) return false;
+    if(particle.Info().IsPion() || particle.Info().IsDelta()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
