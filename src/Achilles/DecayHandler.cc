@@ -31,13 +31,16 @@ DecayHandler::DecayHandler(const std::string &filename, double tolerance) {
 }
 
 std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const {
+    spdlog::debug("Decaying: {}", part);
     auto boost = part.Momentum().BoostVector();
     double m2 = part.Momentum().M2();
 
     // Select decay channel
     auto ratios = BranchingRatios(part);
+    spdlog::trace("Branching Rations: {}", fmt::join(ratios, ","));
     auto idx = Random::Instance().SelectIndex(ratios);
     auto mode = m_decays.at(part.ID())[idx];
+    spdlog::trace("Decaying to mode: {}", mode);
 
     std::vector<Particle> outgoing;
     if(mode.out_ids.size() == 2)
