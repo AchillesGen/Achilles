@@ -216,5 +216,6 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     p2Out = p2Out.Boost(boostVec);
 
     // Not sure what to do with the positions here? !!! ?
-    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+    return {Particle{out_pids[0], p1Out, particle1.Position()},
+            Particle{out_pids[1], p2Out, particle2.Position()}};
 }

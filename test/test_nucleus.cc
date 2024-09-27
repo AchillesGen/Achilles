@@ -36,11 +36,11 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
 
         auto density1 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density1, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermi_gas, std::move(density1)));
+        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, dFile, fermi_gas, std::move(density1)));
 
         auto density2 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density2, GetConfiguration()).TIMES(1).RETURN(particles);
-        achilles::Nucleus nuc(Z, A, 0, 0, dFile, fermi_gas, std::move(density2));
+        achilles::Nucleus nuc(Z, A, 0, 0, dFile, dFile, fermi_gas, std::move(density2));
 
         CHECK(nuc.NNucleons() == A);
         CHECK(nuc.NProtons() == Z);
@@ -55,8 +55,8 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         std::string errorMsg = "Requires the number of protons to be less than the total";
         errorMsg += " number of nucleons. Got " + std::to_string(A);
         errorMsg += " protons and " + std::to_string(Z) + " nucleons";
-        CHECK_THROWS_WITH(achilles::Nucleus(A, Z, 0, 0, dFile, fermi_gas, std::move(density3)),
-                          errorMsg);
+        CHECK_THROWS_WITH(
+            achilles::Nucleus(A, Z, 0, 0, dFile, dFile, fermi_gas, std::move(density3)), errorMsg);
     }
 
     SECTION("Nucleus needs valid density file") {
@@ -64,8 +64,9 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
         REQUIRE_CALL(*density, GetConfiguration()).TIMES(0);
         static constexpr std::size_t Z = 6, A = 12;
 
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A, 0, 0, "dummy.txt", fermi_gas, std::move(density)),
-                          "Achilles: Could not load dummy.txt");
+        CHECK_THROWS_WITH(
+            achilles::Nucleus(Z, A, 0, 0, "dummy.txt", "dummy.txt", fermi_gas, std::move(density)),
+            "Achilles: Could not load dummy.txt");
     }
 
     SECTION("Density must produce correct number of protons and neutrons") {
@@ -78,17 +79,19 @@ TEST_CASE("Nucleus construction", "[Nucleus]") {
 
         auto density1 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density1, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, fermi_gas, std::move(density1)));
+        CHECK_NOTHROW(achilles::Nucleus(Z, A, 0, 0, dFile, dFile, fermi_gas, std::move(density1)));
 
         auto density2 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density2, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_THROWS_WITH(achilles::Nucleus(Z, A + 1, 0, 0, dFile, fermi_gas, std::move(density2)),
-                          "Invalid density function! Incorrect number of nucleons.");
+        CHECK_THROWS_WITH(
+            achilles::Nucleus(Z, A + 1, 0, 0, dFile, dFile, fermi_gas, std::move(density2)),
+            "Invalid density function! Incorrect number of nucleons.");
 
         auto density3 = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density3, GetConfiguration()).TIMES(1).RETURN(particles);
-        CHECK_THROWS_WITH(achilles::Nucleus(Z + 1, A, 0, 0, dFile, fermi_gas, std::move(density3)),
-                          "Invalid density function! Incorrect number of protons or neutrons.");
+        CHECK_THROWS_WITH(
+            achilles::Nucleus(Z + 1, A, 0, 0, dFile, dFile, fermi_gas, std::move(density3)),
+            "Invalid density function! Incorrect number of protons or neutrons.");
     }
 }
 
@@ -106,7 +109,7 @@ TEST_CASE("Nuclear Configuration", "[Nucleus]") {
     auto density = std::make_unique<MockDensity>();
     REQUIRE_CALL(*density, GetConfiguration()).TIMES(2).RETURN(particles);
 
-    achilles::Nucleus nuc(Z, 2 * Z, 0, kf, dFile, fermiGas, std::move(density));
+    achilles::Nucleus nuc(Z, 2 * Z, 0, kf, dFile, dFile, fermiGas, std::move(density));
     auto config_particles = nuc.GenerateConfig();
     for(const auto &part : config_particles) {
         CHECK(part.Momentum().P() < kf);
@@ -137,7 +140,7 @@ TEST_CASE("Make Nucleus", "[Nucleus]") {
         auto density = std::make_unique<MockDensity>();
         REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
 
-        auto nuc = achilles::Nucleus::MakeNucleus(std::get<0>(name), 0, 0, dFile, fermiGas,
+        auto nuc = achilles::Nucleus::MakeNucleus(std::get<0>(name), 0, 0, dFile, dFile, fermiGas,
                                                   std::move(density));
         CHECK(nuc.NNucleons() == 2 * std::get<1>(name));
         CHECK(nuc.NProtons() == std::get<1>(name));
@@ -164,8 +167,8 @@ TEST_CASE("Make Nucleus", "[Nucleus]") {
             }
         }
         if(!bad_random)
-            CHECK_THROWS_WITH(
-                achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, fermiGas, std::move(density)),
-                fmt::format("Invalid nucleus: {} does not exist.", match[2].str()));
+            CHECK_THROWS_WITH(achilles::Nucleus::MakeNucleus(name, 0, 0, dFile, dFile, fermiGas,
+                                                             std::move(density)),
+                              fmt::format("Invalid nucleus: {} does not exist.", match[2].str()));
     }
 }

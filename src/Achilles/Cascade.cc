@@ -677,6 +677,9 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     auto modes = m_interactions.CrossSection(event, idx1, idx2);
     auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
+    spdlog::debug("Selected Mode: {}, {} -> {}", particle1.ID(), particle2.ID(),
+                  fmt::join(mode.particles, ","));
+
     auto particles_out =
         m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
 
@@ -685,16 +688,16 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     // Check for Pauli Blocking
     bool hit = true;
-    bool pionIS = false;
-    bool baryonFS = true;
+    // bool pionIS = false;
+    // bool baryonFS = true;
 
-    //Did we start with pions
-    if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
+    // Did we start with pions
+    // if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
     for(const auto &part : particles_out) {
         hit &= !PauliBlocking(part);
-        //Are there any mesons in the final state?
-        if(!part.Info().IsBaryon()) baryonFS = false;
+        // Are there any mesons in the final state?
+        // if(!part.Info().IsBaryon()) baryonFS = false;
     }
 
     // If there are pions in in the initial state
@@ -709,17 +712,19 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
                       particles_out[1].Momentum().Vec3().Magnitude());
         if(PauliBlocking(particles_out[0]) || PauliBlocking(particles_out[1])) {
             spdlog::info("Pauliblocked in absorption");
-            spdlog::info("outgoing part 1 ({}): {}", particles_out[0].ID(),particles_out[0].Momentum().Vec3().Magnitude());
-            spdlog::info("part 1 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[0].Position().Magnitude()));
-            spdlog::info("outgoing part 2 ({}): {}", particles_out[1].ID(),particles_out[1].Momentum().Vec3().Magnitude());
-            spdlog::info("part 2 Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[1].Position().Magnitude()));
+            spdlog::info("outgoing part 1 ({}): {}",
+    particles_out[0].ID(),particles_out[0].Momentum().Vec3().Magnitude()); spdlog::info("part 1
+    Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[0].Position().Magnitude()));
+            spdlog::info("outgoing part 2 ({}): {}",
+    particles_out[1].ID(),particles_out[1].Momentum().Vec3().Magnitude()); spdlog::info("part 2
+    Fermi momentum = {}",m_nucleus->FermiMomentum(particles_out[1].Position().Magnitude()));
         }
-    }*/   
+    }*/
 
-    for(auto &part : event.Hadrons()) {
-        if(part.Status() == ParticleStatus::absorption_partner)
-            part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
-    }
+    // for(auto &part : event.Hadrons()) {
+    //     if(part.Status() == ParticleStatus::absorption_partner)
+    //         part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
+    // }
 
     if(hit) {
         Particles initial_part, final_part;
@@ -732,7 +737,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         // and assign formation zone
         for(auto &part : particles_out) {
             part.Status() = ParticleStatus::propagating;
-            part.SetFormationZone(particle1.Momentum(), part.Momentum());
+            if(part.Info().IsNucleon())
+                part.SetFormationZone(particle1.Momentum(), part.Momentum());
             particles.push_back(part);
             final_part.push_back(particles.back());
 
@@ -747,7 +753,6 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
             // }
         }
 
-
         // Add interaction to the event history
         // TODO: What do we use for the position? (How about average positions?)
         // TODO: How to best include the absorp_partner
@@ -759,7 +764,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.ID() != PID::proton() && particle.ID() != PID::neutron()) return false;
+    if(particle.Info().IsPion() || particle.Info().IsDelta()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
@@ -847,9 +852,9 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     if(elastic) {
         // We need to charge exchange the 2nd interaction
         if(particle2.ID() == PID::proton())
-            final_nucleon2 = {PID::neutron(), particle2.Momentum(), particle2.Position()};
+            final_nucleon2 = Particle{PID::neutron(), particle2.Momentum(), particle2.Position()};
         if(particle2.ID() == PID::neutron())
-            final_nucleon2 = {PID::proton(), particle2.Momentum(), particle2.Position()};
+            final_nucleon2 = Particle{PID::proton(), particle2.Momentum(), particle2.Position()};
     }
 
     // Add up initial and final charges

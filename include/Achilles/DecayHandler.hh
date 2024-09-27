@@ -33,4 +33,18 @@ class DecayHandler {
 
 } // namespace achilles
 
+namespace fmt {
+
+template <> struct formatter<achilles::DecayMode> {
+    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
+
+    template <typename FormatContext>
+    auto format(const achilles::DecayMode &mode, FormatContext &ctx) const {
+        return format_to(ctx.out(), "Mode[{{{}}}, Br={}]", fmt::join(mode.out_ids, ", "),
+                         mode.branching_ratio);
+    }
+};
+
+} // namespace fmt
+
 #endif

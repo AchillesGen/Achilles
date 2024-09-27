@@ -68,7 +68,7 @@ class Particle {
     ///@param status: The status code of the particle (default = 0)
     ///@param mothers: The mother particles of the particle (default = Empty)
     ///@param daughters: The daughter particles of the particle (default = Empty)
-    Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
+    explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
              ThreeVector pos = ThreeVector(),
              const ParticleStatus &_status = ParticleStatus::background,
              std::vector<int> _mothers = std::vector<int>(),
@@ -78,7 +78,7 @@ class Particle {
         formationZone = 0;
     }
 
-    Particle(const long int &pid, const FourVector &mom = FourVector(),
+    explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
              ThreeVector pos = ThreeVector(), const int &_status = 0,
              std::vector<int> _mothers = std::vector<int>(),
              std::vector<int> _daughters = std::vector<int>()) noexcept
@@ -88,7 +88,7 @@ class Particle {
         formationZone = 0;
     }
 
-    Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
+    explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
              ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
              std::vector<int> _mothers = std::vector<int>(),
              std::vector<int> _daughters = std::vector<int>()) noexcept

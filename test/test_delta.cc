@@ -97,3 +97,35 @@ TEST_CASE("TestInterp", "[DeltaSpeed]") {
     achilles::DeltaInteraction delta;
     delta.TestInterpolation();
 }
+
+TEST_CASE("P D+ -> N D", "[Delta2]") {
+    auto plab_vec = achilles::Linspace(0.01, 2.0, 201);
+    achilles::DeltaInteraction delta;
+    std::ofstream file("pdpp.txt");
+    file << fmt::format("plab,sigma1,sigma2\n");
+
+    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0, 0, 0});
+    achilles::Particle p2(2214);
+    achilles::PID delta_id1(2214), delta_id2(2224);
+    achilles::PID nucleon_id1(2212), nucleon_id2(2112);
+    for(const auto &plab : plab_vec) {
+        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
+        file << fmt::format("{:.3e},{:.3e},{:.3e}\n", plab,
+                            delta.TestNDelta2NDelta(p2, p1, delta_id1, nucleon_id1),
+                            delta.TestNDelta2NDelta(p2, p1, delta_id2, nucleon_id2));
+    }
+
+    file.close();
+
+    file = std::ofstream("pdpp_dm.txt");
+    file << fmt::format("mass,sigma1,sigma2\n");
+
+    auto mass_vec = achilles::Linspace(0.938, 2.2, 201);
+    double plab = 1.0;
+    for(const auto &mass : mass_vec) {
+        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(mass * 1_GeV, 2)), 0, 0, plab * 1_GeV};
+        file << fmt::format("{:.3e},{:.3e},{:.3e}\n", mass,
+                            delta.TestNDelta2NDelta(p2, p1, delta_id1, nucleon_id1),
+                            delta.TestNDelta2NDelta(p2, p1, delta_id2, nucleon_id2));
+    }
+}

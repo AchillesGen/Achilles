@@ -10,6 +10,7 @@
 #include "mock_classes.hh"
 
 using achilles::PID;
+using achilles::Particle;
 
 TEST_CASE("Map ordering indpendent of key order", "[InteractionHandler]") {
     achilles::pid_compare compare;
@@ -71,14 +72,15 @@ TEST_CASE("Validate Interactions", "[InteractionHandler]") {
         std::runtime_error, Catch::Matchers::Message(msg));
 
     msg = fmt::format("Cross section not registered for particles: [211, 2212]");
-    achilles::Particles particles = {{PID::pionp(), {}}, {PID::proton(), {}}};
+    achilles::Particles particles = {Particle{PID::pionp(), {}}, Particle{PID::proton(), {}}};
     MockEvent event;
     REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(2));
     REQUIRE_THROWS_MATCHES(handler.CrossSection(event, 0, 1), std::runtime_error,
                            Catch::Matchers::Message(msg));
 
     msg = fmt::format("Phase space not registered for particles: [211, 2212]");
-    REQUIRE_THROWS_MATCHES(handler.GenerateMomentum({PID::pionp(), {}}, {PID::proton(), {}}, {},
+    REQUIRE_THROWS_MATCHES(handler.GenerateMomentum(Particle{PID::pionp(), {}},
+                                                    Particle{PID::proton(), {}}, {},
                                                     achilles::Random::Instance()),
                            std::runtime_error, Catch::Matchers::Message(msg));
 }

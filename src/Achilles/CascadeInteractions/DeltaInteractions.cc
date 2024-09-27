@@ -4,6 +4,8 @@
 #include "Achilles/Distributions.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
+#include "Achilles/Interpolation.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
 #include <stdexcept>
@@ -28,11 +30,15 @@ DeltaInteraction::DeltaInteraction() :
 {
     decay_handler = DecayHandler{"data/decays.yml"};
     InitializeInterpolators();
+    // TestInterpolation();
+    // throw;
 }
 
 DeltaInteraction::DeltaInteraction(const YAML::Node &node) : DeltaInteraction() {
     node["Mode"].as<DeltaInteraction::Mode>();
 }
+
+DeltaInteraction::~DeltaInteraction() {}
 
 std::vector<std::pair<PID, PID>> DeltaInteraction::InitialStates() const {
     return {
@@ -89,44 +95,46 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
         // TODO: Clean up this logic
         if(particle1.ID() == PID::neutron() && particle2.ID() == PID::neutron()) {
             PID delta_id = PID::delta0();
-            double delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            double delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::neutron(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::neutron()}, delta_xsec / 2});
             spdlog::debug("nn -> nDelta0: sigma = {}", delta_xsec);
 
             delta_id = PID::deltam();
-            delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::proton(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::proton()}, delta_xsec / 2});
             spdlog::debug("nn -> pDelta-: sigma = {}", delta_xsec);
         } else if(particle1.ID() == PID::proton() && particle2.ID() == PID::proton()) {
             PID delta_id = PID::deltap();
-            double delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            double delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::proton(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::proton()}, delta_xsec / 2});
             spdlog::debug("pp -> pDelta+: sigma = {}", delta_xsec);
 
             delta_id = PID::deltapp();
-            delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::neutron(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::neutron()}, delta_xsec / 2});
             spdlog::debug("pp -> nDelta++: sigma = {}", delta_xsec);
         } else {
             PID delta_id = PID::delta0();
-            double delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            double delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::proton(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::proton()}, delta_xsec / 2});
             spdlog::debug("np -> pDelta0: sigma = {}", delta_xsec);
 
             delta_id = PID::deltap();
-            delta_xsec = SigmaNN2NDelta(sqrts, p1CM, delta_id);
+            delta_xsec = SigmaNN2NDeltaInterp(sqrts, p1CM, delta_id);
             results.push_back({{PID::neutron(), delta_id}, delta_xsec / 2});
             results.push_back({{delta_id, PID::neutron()}, delta_xsec / 2});
             spdlog::debug("np -> nDelta+: sigma = {}", delta_xsec);
         }
     } else if(particle1.Info().IsResonance()) {
+        // NDelta -> NN
         double xsec =
             SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(), particle1.Momentum().M());
+        spdlog::debug("NDelta -> NN: sigma = {}", xsec);
         // TODO: Clean up this logic
         if(particle1.ID() == PID::deltapp() && particle2.ID() == PID::neutron()) {
             results.push_back({{PID::proton(), PID::proton()}, xsec});
@@ -143,8 +151,22 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
         } else if(particle1.ID() == PID::deltam() && particle2.ID() == PID::proton()) {
             results.push_back({{PID::neutron(), PID::neutron()}, xsec});
         }
-        spdlog::debug("NDelta -> NN: sigma = {}", xsec);
-        // TODO: Add rates for NDelta -> NDelta
+
+        // NDelta -> NDelta
+        // NOTE: Assume cross section is the same up to isospin
+        xsec = SigmaNDelta2NDelta(particle1, particle2, PID::deltap(), PID::neutron());
+        for(const auto &delta_id : {PID::deltapp(), PID::deltap(), PID::delta0(), PID::deltam()}) {
+            for(const auto &nuc_id : {PID::proton(), PID::neutron()}) {
+                double iso = GetIso(
+                    particle1.Info().IntCharge() / 3, particle2.Info().IntCharge() / 3,
+                    ParticleInfo(nuc_id).IntCharge() / 3, ParticleInfo(delta_id).IntCharge() / 3);
+                if(iso == 0) continue;
+                spdlog::debug("{}, {} -> {}, {}: sigma = {}", particle1.ID(), particle2.ID(),
+                              delta_id, nuc_id, xsec * iso);
+                results.push_back({{delta_id, nuc_id}, xsec * iso / 2});
+                results.push_back({{nuc_id, delta_id}, xsec * iso / 2});
+            }
+        }
     } else if(particle1.Info().IsPion()) {
         // Delta channels
         int charge = particle1.Info().IntCharge() + particle2.Info().IntCharge();
@@ -170,7 +192,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         auto mom = particle1.Momentum() + particle2.Momentum();
         auto position = ran.Uniform(0.0, 1.0) < 0.5 ? particle1.Position() : particle2.Position();
         if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
-        return {{out_ids[0], mom, position, ParticleStatus::propagating}};
+        return {Particle{out_ids[0], mom, position, ParticleStatus::propagating}};
     }
 
     // Boost to center of mass
@@ -185,7 +207,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     ParticleInfo info_a(out_ids[0]);
     double ma;
     if(info_a.IsResonance()) {
-        ma = GenerateMass(out_ids[0], ran, sqrts);
+        ma = GenerateMass(particle1, particle2, out_ids[0], out_ids[1], ran, sqrts);
         spdlog::trace("ma = {}, pid = {}", ma, out_ids[0]);
     } else {
         ma = info_a.Mass();
@@ -194,7 +216,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     ParticleInfo info_b(out_ids[1]);
     double mb;
     if(info_b.IsResonance()) {
-        mb = GenerateMass(out_ids[1], ran, sqrts);
+        mb = GenerateMass(particle1, particle2, out_ids[1], out_ids[0], ran, sqrts);
         spdlog::trace("mb = {}, pid = {}", mb, out_ids[1]);
     } else {
         mb = info_b.Mass();
@@ -234,7 +256,8 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         spdlog::error("pbOut = {}", pbOut);
     }
 
-    return {{out_ids[0], paOut, particle1.Position()}, {out_ids[1], pbOut, particle2.Position()}};
+    return {Particle{out_ids[0], paOut, particle1.Position()},
+            Particle{out_ids[1], pbOut, particle2.Position()}};
 
     // TODO: Implement higher than 2-body interactions
 }
@@ -256,6 +279,11 @@ double DeltaInteraction::TestDeltaSigma(double sqrts) const {
 
 double DeltaInteraction::TestNPiSigma(const Particle &p1, const Particle &p2, PID res) const {
     return SigmaNPi2Delta(p1, p2, res);
+}
+
+double DeltaInteraction::TestNDelta2NDelta(const Particle &p1, const Particle &p2, PID delta_out,
+                                           PID nout) const {
+    return SigmaNDelta2NDelta(p1, p2, delta_out, nout);
 }
 
 double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, PID res) const {
@@ -285,8 +313,8 @@ double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, 
     spdlog::trace("pcm2 = {}", pcm2);
     if(pcm2 <= 0) return 0;
 
-    double gamma_in = GetPartialWidth(res, res_mass, p1.ID(), p2.ID());
     double gamma_tot = GetEffectiveWidth(res, res_mass, p1.Mass() / 1_GeV, p2.Mass() / 1_GeV, 1);
+    double gamma_in = decay_handler.BranchingRatio(res, {p1.ID(), p2.ID()}) * gamma_tot;
 
     spdlog::trace("gamma_in = {}, gamma_tot = {}", gamma_in, gamma_tot);
     if(std::abs(gamma_in) < 1e-8 || std::abs(gamma_tot) < 1e-8) return 0;
@@ -296,12 +324,6 @@ double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, 
            (pow(pow(res_mass, 2) - pow(res_info.Mass() / 1_GeV, 2), 2) +
             gamma_tot * gamma_tot * pow(res_info.Mass() / 1_GeV, 2)) *
            Constant::HBARC2 / 1_GeV / 1_GeV;
-}
-
-double DeltaInteraction::GetPartialWidth(PID id, double mass, PID id1, PID id2) const {
-    return decay_handler.BranchingRatio(id, {id1, id2}) *
-           GetEffectiveWidth(id, mass, ParticleInfo(id1).Mass() / 1_GeV,
-                             ParticleInfo(id2).Mass() / 1_GeV, 1);
 }
 
 double DeltaInteraction::GetEffectiveWidth(PID id, double mass, double mass1, double mass2,
@@ -363,7 +385,9 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
     bool same_iso = id1 == id2;
     double mn = (ParticleInfo(id1).Mass() + ParticleInfo(id2).Mass()) / 2 / 1.0_GeV;
     double threshold = sqrts * sqrts - 4 * mn * mn;
+    if(threshold < 0) return 0;
     double plab = sqrts / (2 * mn) * sqrt(threshold);
+    spdlog::debug("NNElastic: {}, {}, {}, {}, {}, {}", sqrts, id1, id2, mn, threshold, plab);
 
     if(same_iso) {
         if(plab < 0.425) {
@@ -421,16 +445,17 @@ double DeltaInteraction::SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, 
     return DSigmaDM(true, sqrts, mass / 1_GeV, delta_id) * 8.0 / 3.0 * isofactor / (pcm / 1_GeV);
 }
 
-double DeltaInteraction::GenerateMass(PID res, Random &ran, double sqrts) const {
+double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PID res, PID other,
+                                      Random &ran, double sqrts) const {
     // TODO: Expand to other resonances
     if(res == PID::deltapp() || res == PID::deltap() || res == PID::delta0() ||
        res == PID::deltam()) {
-        const double mn =
-            (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2;
-        const double mpi =
-            (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3;
+        // TODO: Figure out a better way to handle this,
+        // we always choose the heavier particles to ensure that it is always kinematically allowed
+        const double mn = ParticleInfo(PID::neutron()).Mass();
+        const double mpi = ParticleInfo(PID::pionp()).Mass();
         double smin = pow(mn + mpi, 2);
-        double smax = pow(sqrts - mn, 2);
+        double smax = pow(sqrts - ParticleInfo(other).Mass(), 2);
 
         // Parameters for generating according to BW (should be most efficient)
         double m2 = pow(ParticleInfo(res).Mass(), 2);
@@ -438,13 +463,41 @@ double DeltaInteraction::GenerateMass(PID res, Random &ran, double sqrts) const 
         double ymax = atan((smin - m2) / mw);
         double ymin = atan((smax - m2) / mw);
 
-        double max_val = DSigmaDM(0, sqrts / 1_GeV, sqrt(m2) / 1_GeV, res);
+        bool is_nd_nd = p1.Info().IsResonance();
+        double max_val = 0;
+        double md = sqrt(m2) / 1_GeV;
+        if(is_nd_nd) {
+            auto func = [&](double mass) {
+                double spectral = SpectralDelta(res, mass / 1_GeV);
+                auto val = -DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
+                                        ParticleInfo(other).Mass() / 1_GeV,
+                                        p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+                return val;
+            };
+            Brent brent(func);
+            double m_max = brent.Minimize(sqrt(smin), sqrt(smax));
+            double spectral = SpectralDelta(res, m_max / 1_GeV);
+            max_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
+                                  ParticleInfo(other).Mass() / 1_GeV, p1.Momentum().M() / 1_GeV,
+                                  m_max / 1_GeV, spectral);
+        } else {
+            max_val = DSigmaDM(0, sqrts / 1_GeV, md, res);
+        }
 
         while(true) {
             double s = m2 + mw * tan(ymin + ran.Uniform(0.0, 1.0) * (ymax - ymin));
             double mass = sqrt(s);
-            if(DSigmaDM(0, sqrts / 1_GeV, mass / 1_GeV, res) / max_val > ran.Uniform(0.0, 1.0))
-                return mass;
+            double func_val = 0;
+            if(is_nd_nd) {
+                double spectral = SpectralDelta(res, mass / 1_GeV);
+                func_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
+                                       ParticleInfo(other).Mass() / 1_GeV,
+                                       p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+            } else {
+                func_val = DSigmaDM(0, sqrts / 1_GeV, mass / 1_GeV, res);
+            }
+            spdlog::debug("func_val = {}, max_val = {}", func_val, max_val);
+            if(func_val / max_val > ran.Uniform(0.0, 1.0)) return mass;
         }
     } else {
         throw std::runtime_error("DeltaInteraction: Only delta resonances implemented for now!");
@@ -453,32 +506,44 @@ double DeltaInteraction::GenerateMass(PID res, Random &ran, double sqrts) const 
 
 void DeltaInteraction::InitializeInterpolators() {
     auto sqrts_vec = Linspace(sqrts_min, sqrts_max, nsqrts);
-    auto mass_vec = Linspace(mass_min, mass_max, nmass);
-    std::vector<double> dsigma(nsqrts), dsigma_dm(nsqrts * nmass), res(nsqrts * nmass);
-    size_t idx1 = 0, idx2 = 0;
+    // auto mass_vec = Linspace(mass_min, mass_max, nmass);
+    std::vector<double> sqrts_valid;
+    std::vector<double> dsigma; //, dsigma_dm(nsqrts * nmass), res(nsqrts * nmass);
     for(const auto &sqrts : sqrts_vec) {
-        dsigma[idx1++] = SigmaNN2NDelta(sqrts, 1_GeV, PID::deltapp());
-        for(const auto &mass : mass_vec) {
-            dsigma_dm[idx2] = DSigmaDM(false, sqrts, mass, PID::deltapp());
-            res[idx2++] = DSigmaDM(true, sqrts, mass, PID::deltapp());
-        }
+        double result = SigmaNN2NDelta(sqrts, 1_GeV, PID::deltapp());
+        if(result == 0) continue;
+        sqrts_valid.push_back(sqrts);
+        dsigma.push_back(result);
+        // for(const auto &mass : mass_vec) {
+        //     dsigma_dm[idx2] = DSigmaDM(false, sqrts, mass, PID::deltapp());
+        //     res[idx2++] = DSigmaDM(true, sqrts, mass, PID::deltapp());
+        // }
     }
+    sqrts_min = sqrts_valid.front();
+    sqrts_max = sqrts_valid.back();
 
-    Interp1D interp_sigma(sqrts_vec, dsigma);
-    interp_sigma.CubicSpline();
+    Interp1D interp_sigma(sqrts_valid, dsigma, InterpolationType::Polynomial);
+    interp_sigma.SetPolyOrder(3);
     dsigma_ndelta = interp_sigma;
 
-    Interp2D interp_dm(sqrts_vec, mass_vec, dsigma_dm);
-    interp_dm.BicubicSpline();
-    dsigma_dm_ndelta = interp_dm;
+    // Interp2D interp_dm(sqrts_vec, mass_vec, dsigma_dm);
+    // interp_dm.BicubicSpline();
+    // dsigma_dm_ndelta = interp_dm;
 
-    Interp2D interp_res(sqrts_vec, mass_vec, res);
-    interp_res.BicubicSpline();
-    dsigma_res_ndelta = interp_res;
+    // Interp2D interp_res(sqrts_vec, mass_vec, res);
+    // interp_res.BicubicSpline();
+    // dsigma_res_ndelta = interp_res;
 }
 
 double DeltaInteraction::SigmaNN2NDeltaInterp(double sqrts, double pcm, PID delta_id) const {
-    if(sqrts < sqrts_min || sqrts > sqrts_max) return SigmaNN2NDelta(sqrts, pcm, delta_id);
+    if(sqrts < sqrts_min)
+        return 0;
+    else if(sqrts > sqrts_max) {
+        double result = SigmaNN2NDelta(sqrts, pcm, delta_id);
+        spdlog::info("Interpolating: {}, {}, {}, {}, {}", sqrts, sqrts_min, sqrts_max, delta_id,
+                     result);
+        return result;
+    }
 
     double sigma = dsigma_ndelta(sqrts);
     if(sigma < 0) return 0;
@@ -503,12 +568,10 @@ double DeltaInteraction::DSigmaDMInterp(bool iresonance, double sqrts, double md
 void DeltaInteraction::TestInterpolation() const {
     for(size_t i = 0; i < 2000; ++i) {
         double sqrts = Random::Instance().Uniform(sqrts_min, sqrts_max);
-        // double interp = SigmaNN2NDeltaInterp(sqrts, 750, PID::deltapp());
+        double interp = SigmaNN2NDeltaInterp(sqrts, 750, PID::deltapp());
         double exact = SigmaNN2NDelta(sqrts, 750, PID::deltapp());
-        spdlog::info("{}", exact);
-        // spdlog::info("sqrts = {}: |{} - {}| = {} ({})", sqrts, exact, interp,
-        // std::abs(exact-interp),
-        //              std::abs(exact-interp)/std::abs(exact));
+        spdlog::info("sqrts = {}: |{} - {}| = {} ({})", sqrts, exact, interp,
+                     std::abs(exact - interp), std::abs(exact - interp) / std::abs(exact));
         // for(size_t j = 0; j < 20; ++j) {
         //     double mass = Random::Instance().Uniform(mass_min, mass_max);
         //     double interp_dm = DSigmaDMInterp(false, sqrts, mass, PID::deltapp());
@@ -606,4 +669,107 @@ double DeltaInteraction::MatNN2NDelta(double t, double u, double sdelta, PID del
     return pow(fps * gp / mpi, 2) *
            (pow(ft, 4) * zt * pt * pt * m1 + pow(fu, 4) * zu * pu * pu * m2 +
             pow(ft * fu, 2) * sqrt(zt * zu) * pt * pu * m12);
+}
+
+double DeltaInteraction::GetIso(int n1, int delta1, int n2, int delta2) const {
+    // Rotate isospins to have incoming proton
+    if(n1 == 0) {
+        n2 = 1 - n2;
+        delta2 = 1 - delta2;
+        n1 = 1;
+        n2 = 1 - delta1;
+    }
+
+    // Take from Table B.8 from O. Buss et al. / Physics Reports 512 (2012) 1–124
+    if(delta1 == 2 && delta2 == 2 && n2 == 1)
+        return 9.0 / 4.0;
+    else if(delta1 == 1) {
+        if(delta2 == 2 && n2 == 0)
+            return 3;
+        else if(delta2 == 1 && n2 == 1)
+            return 0.25;
+    } else if(delta1 == 0) {
+        if(delta2 == 0 && n2 == 1)
+            return 0.25;
+        else if(delta2 == 1 && n2 == 0)
+            return 4;
+    } else if(delta1 == -1) {
+        if(delta2 == -1 && n2 == 1)
+            return 9.0 / 4.0;
+        else if(delta2 == 0 && n2 == 0)
+            return 3;
+    }
+
+    return 0;
+}
+
+double DeltaInteraction::SpectralDelta(PID delta, double mass) const {
+    double m0 = ParticleInfo(delta).Mass() / 1_GeV;
+    double gamma = ParticleInfo(delta).Width() / 1_GeV;
+
+    return 1 / M_PI * mass * gamma / (pow(m0 * m0 - mass * mass, 2) + mass * mass * gamma * gamma);
+}
+
+double DeltaInteraction::SigmaNDelta2NDelta(const Particle &p1, const Particle &p2, PID delta_out,
+                                            PID nucleon_out) const {
+    double sqrts = (p1.Momentum() + p2.Momentum()).M() / 1_GeV;
+    double mn2 = ParticleInfo(nucleon_out).Mass() / 1_GeV;
+
+    // Integrate over outgoing mass
+    auto dsigmadm = [&](double mu2) {
+        double spectral = SpectralDelta(delta_out, mu2);
+        return DSigmaND2ND(sqrts, p2.Momentum().M() / 1_GeV, mn2, p1.Momentum().M() / 1_GeV, mu2,
+                           spectral);
+    };
+
+    Integrator::DoubleExponential integrator(dsigmadm);
+    return integrator.Integrate(0.938 + 0.138, sqrts - mn2, 1e-6, 1e-4);
+}
+
+double DeltaInteraction::DSigmaND2ND(double sqrts, double mn1, double mn2, double mu1, double mu2,
+                                     double spectral) const {
+    static constexpr double eps = 1e-8;
+    if(sqrts < mn2 + mu2 + eps) return 0;
+    double pcm_initial = sqrt(Pcm2(sqrts * sqrts, mn1 * mn1, mu1 * mu1));
+    double pcm_final = sqrt(Pcm2(sqrts * sqrts, mn2 * mn2, mu2 * mu2));
+    double factor = pcm_final / pcm_initial * 2 * mu2 / pow(8 * M_PI * sqrts, 2) *
+                    Constant::HBARC2 / 1_GeV / 1_GeV;
+
+    double e1 = sqrt(mn1 * mn1 + pcm_initial * pcm_initial);
+    double e3 = sqrt(mn2 * mn2 + pcm_final * pcm_final);
+
+    // Integrate over Omega (does not depend on phi)
+    auto dsigmadomega = [&](double cost) {
+        double sint = sqrt(1 - cost * cost);
+        FourVector p1(e1, 0, 0, pcm_initial);
+        FourVector p3(e3, pcm_final * sint, 0, pcm_final * cost);
+        double t = (p1 - p3).M2();
+        return MatNDelta2NDelta(t, mu1, mu2);
+    };
+
+    Integrator::DoubleExponential integrator(dsigmadomega);
+    return integrator.Integrate(-1, 1, 1e-12, 1e-8) * factor * 2 * M_PI * spectral;
+}
+
+// This calculation is based on Eq. (B.11) from O. Buss et al. / Physics Reports 512 (2012) 1–124
+double DeltaInteraction::MatNDelta2NDelta(double t, double mu1, double mu2) const {
+    static const double mpi =
+        (ParticleInfo(PID::pion0()).Mass() + 2 * ParticleInfo(PID::pionp()).Mass()) / 2 / 1_GeV;
+    static const double mpi2 = mpi * mpi;
+
+    static const double mn =
+        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
+    static const double mn2 = mn * mn;
+
+    static constexpr double ga = 1.267, fpi = 92.4 / 1_GeV, lambda2 = 0.63 * 0.63;
+    const double fnnpi = mpi * ga / (2 * fpi);
+    const double fddpi = 9.0 / 5.0 * fnnpi;
+    const double ft = (lambda2 - mpi2) / (lambda2 - t);
+
+    return pow(fnnpi * fddpi / mpi2, 2) / 8 * pow(ft, 4) / pow(t - mpi2, 2) * 16 *
+           pow(mu1 + mu2, 2) * mn2 * t / (9 * pow(mu1 * mu2, 2)) *
+           (-mu1 * mu1 + 2 * mu1 * mu2 - mu2 * mu2 + t) *
+           (pow(mu1, 4) - 2 * pow(mu1, 3) * mu2 + 12 * mu1 * mu1 * mu2 * mu2 -
+            2 * mu1 * pow(mu2, 3) + pow(mu2, 4) - 2 * mu1 * mu1 * t + 2 * mu1 * mu2 * t -
+            2 * mu2 * mu2 * t + t * t);
 }

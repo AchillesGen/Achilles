@@ -195,7 +195,7 @@ void achilles::CascadeTest::CascadeRunner::run() {
 
     // Generate events
     while(NeedsEvents()) {
-        static constexpr size_t statusUpdate = 1000;
+        static constexpr size_t statusUpdate = 100;
         if(generated_events % statusUpdate == 0) {
             fmt::print("Generated {} / {} events\r", generated_events, requested_events);
         }

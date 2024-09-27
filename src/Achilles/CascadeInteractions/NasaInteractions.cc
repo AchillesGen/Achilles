@@ -47,7 +47,8 @@ std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle
     p1Out = p1Out.Boost(boostCM);
     p2Out = p2Out.Boost(boostCM);
 
-    return {{out_pids[0], p1Out, particle1.Position()}, {out_pids[1], p2Out, particle2.Position()}};
+    return {Particle{out_pids[0], p1Out, particle1.Position()},
+            Particle{out_pids[1], p2Out, particle2.Position()}};
 }
 
 ThreeVector NasaInteraction::MakeMomentum(bool, double pcm, const std::vector<double> &rans) const {
