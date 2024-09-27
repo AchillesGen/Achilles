@@ -32,7 +32,8 @@ PionAbsorption::PionAbsorption(const YAML::Node &) {
 std::vector<std::pair<PID, PID>> PionAbsorption::InitialStates() const {
     return {{PID::pion0(), PID::proton()},  {PID::pionp(), PID::proton()},
             {-PID::pionp(), PID::proton()}, {PID::pion0(), PID::neutron()},
-            {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()}};
+            {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()},
+            {PID::eta(), PID::neutron()}, {PID::eta(), PID::proton()}};
 }
 
 bool PionAbsorptionOneStep::AllowedAbsorption(Event &event, size_t part1, size_t part2) const {
@@ -85,6 +86,7 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
     const auto &particle2 = event.Hadrons()[part2];
 
     InteractionResults results;
+    if(!event.Hadrons()[part1].Info().IsPion()) return results;
 
     // Fills m_states which is a vector of <absorption partner idx, <out PID1, outPID2>>
     if(!AllowedAbsorption(event, part1, part2)) return results;

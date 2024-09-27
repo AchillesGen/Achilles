@@ -196,7 +196,7 @@ class Cascade {
     void PropagateSpace(size_t, Particle *, double);
     std::set<size_t> InitializeIntegrator(Event &);
     void UpdateKicked(Particles &, std::set<size_t> &);
-    void Validate(const Particles &);
+    void Validate(Event &);
     size_t BaseAlgorithm(size_t, Event &);
     size_t MFPAlgorithm(size_t, Event &);
     double InMediumCorrection(const Particle &, const Particle &) const;

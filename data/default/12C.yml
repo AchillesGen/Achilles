@@ -7,7 +7,12 @@ Density:
   FilePotential: data/realOP_12C_EDAI.dat
   Function: configuration
   Configs: data/configurations/QMC_configs.out.gz
-FermiGas: Local
+FermiGas:
+  Type: Local
+  Correlated: False
+  SRCfraction: 0.2
+  LambdaSRC: 2.75
+  Params: []
 Potential: 
   Name: Schroedinger
   r0: 0.16

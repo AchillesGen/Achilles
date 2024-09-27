@@ -16,7 +16,8 @@ PionInteraction::PionInteraction(const YAML::Node &node) {
 std::vector<std::pair<PID, PID>> PionInteraction::InitialStates() const {
     return {{PID::pion0(), PID::proton()},  {PID::pionp(), PID::proton()},
             {-PID::pionp(), PID::proton()}, {PID::pion0(), PID::neutron()},
-            {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()}};
+            {PID::pionp(), PID::neutron()}, {-PID::pionp(), PID::neutron()},
+            {PID::eta(), PID::neutron()}, {PID::eta(), PID::proton()}};
 }
 
 std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle1,
