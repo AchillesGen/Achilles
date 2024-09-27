@@ -2,14 +2,14 @@ Main:
   NEvents: 100000
   HardCuts: true
   Output:
-      Format: HepMC3
+      Format: NuHepMC
       Name: electron_1300_37.hepmc
       Zipped: True
 
-Process:
-  Model: DarkNeutrinoPortal_Dirac_UFO
-  Final States: [11]
-  ParamCard: parameters.dat
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [11, [11]]
 
 Beams:
   - Beam:
@@ -20,18 +20,78 @@ Beams:
 
 Cascade:
   Run: False
-  Interaction:
-    Name: GeantInteractions
-    GeantData: data/GeantData.hdf5
+  Interactions:
+    - Name: GeantInteraction
+      Options:
+        GeantData: data/GeantData.hdf5
+    - Name: PionInteraction
+      Options: 
+        HardScatter: 
+          Name: MesonBaryonInteraction
+          Options:
+        Absorption:
+          Name: PionAbsorptionOneStep
+          Options:
+    - Name: ConstantInteraction
+      Options:
+        InitialStates:
+          - Incoming: [3112, 2112]
+            Outgoing: 
+              - Outgoing: [3112, 2112]
+                CrossSection: 0
+          - Incoming: [3112, 2212]
+            Outgoing: 
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [321, 2212]
+            Outgoing: 
+              - Outgoing: [321, 2212]
+                CrossSection: 0
+          - Incoming: [321, 2112]
+            Outgoing: 
+              - Outgoing: [321, 2112]
+                CrossSection: 0
+          - Incoming: [3122, 2212]
+            Outgoing: 
+              - Outgoing: [3122, 2212]
+                CrossSection: 0
+          - Incoming: [3122, 2112]
+            Outgoing: 
+              - Outgoing: [3122, 2112]
+                CrossSection: 0
+          - Incoming: [3212, 2212]
+            Outgoing: 
+              - Outgoing: [3212, 2212]
+                CrossSection: 0
+          - Incoming: [3212, 2112]
+            Outgoing: 
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2112]
+            Outgoing: 
+              - Outgoing: [3222, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2212]
+            Outgoing: 
+              - Outgoing: [3222, 2212]
+                CrossSection: 0
+          - Incoming: [311, 2112]
+            Outgoing: 
+              - Outgoing: [311, 2112]
+                CrossSection: 0
+          - Incoming: [311, 2212]
+            Outgoing: 
+              - Outgoing: [311, 2212]
+                CrossSection: 0
   Step: 0.04
-  Probability: Cylinder
+  Probability: Gaussian
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
 
-NuclearModel:
-  Model: QESpectral
-  FormFactorFile: "FormFactors.yml"
-  SpectralP: data/pke12_tot.data
-  SpectralN: data/pke12_tot.data
-  Ward: False
+NuclearModels:
+ - NuclearModel: !include "data/default/QEOptionsF.yml"
+ - NuclearModel: !include "data/default/RESOptionsF.yml"
 
 Nucleus: !include "data/default/12C.yml"
 
@@ -41,3 +101,7 @@ HardCuts:
     range: [35, 39]
 
 Options: !include "data/default/OptionDefaults.yml"
+
+Backend:
+  Name: Default
+  Options: []
