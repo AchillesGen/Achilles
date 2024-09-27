@@ -1,9 +1,12 @@
 Main:
-  NEvents: 100000
+  NEvents: 50000
   HardCuts: true
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
   Output:
       Format: NuHepMC
-      Name: electron_1300_37.hepmc
+      Name: achilles.hepmc
       Zipped: True
 
 SherpaOptions: !include "data/default/SherpaOptions.yml"
@@ -16,7 +19,7 @@ Beams:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1300
+        Energy: 1108
 
 Cascade:
   Run: False
@@ -90,15 +93,18 @@ Cascade:
   Algorithm: Base
 
 NuclearModels:
- - NuclearModel: !include "data/default/QEOptionsF.yml"
- - NuclearModel: !include "data/default/RESOptionsF.yml"
+  - NuclearModel: !include "data/default/QEOptions.yml"
+  #- NuclearModel: !include "data/default/IntfOptionsF.yml"
+  #- NuclearModel: !include "data/default/RESOptionsF.yml"
+  #- NuclearModel: !include "data/default/HyperonOptions.yml"
 
-Nucleus: !include "data/default/12C.yml"
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
 
 HardCuts:
   - Type: AngleTheta
     PIDs: 11
-    range: [35, 39]
+    range: [36.5, 38.5]
 
 Options: !include "data/default/OptionDefaults.yml"
 

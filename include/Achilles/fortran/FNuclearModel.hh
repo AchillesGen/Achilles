@@ -20,6 +20,7 @@ void GetCurrents(size_t, long *pids_in, long *pids_out, long *pids_spect, achill
                  size_t nspins, size_t nlorentz);
 double GetInitialStateWeight(size_t, long *pids_in, long *pids_spect, achilles::FourVector *mom,
                              size_t nin, size_t nspect, size_t nproton, size_t nneutron);
+char *GetInspireHEP(size_t);
 }
 
 namespace achilles {
@@ -43,9 +44,8 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     static std::string Name() { return "FortranModel"; }
     std::string PSName() const override { return ModelPS(m_model); }
 
-    // TODO: Allow fortran codes to fill these out
     std::string GetName() const override { return ModelName(m_model); }
-    std::string InspireHEP() const override { return ""; }
+    std::string InspireHEP() const override { return GetInspireHEP(m_model); }
 
     // Method needed to register fortran models at start-up
     static void RegisterModels() { RegisterAll(); }

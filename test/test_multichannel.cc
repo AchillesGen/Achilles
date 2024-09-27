@@ -35,7 +35,6 @@ class DoubleMapper : public achilles::Mapper<double> {
         return 1.0 / (1.0 + sms0 * sms0) / std::acos(-1.0);
     }
     size_t NDims() const override { return 1; }
-    YAML::Node ToYAML() const override { return YAML::Node(); }
 
   private:
     size_t m_channel;
@@ -131,9 +130,11 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
         integrand.AddChannel(std::move(channel));
     }
     static constexpr size_t ncalls = 1000, nitn_min = 2;
+    static constexpr double rescale_factor = 2;
     static constexpr double rtol = 1;
     achilles::MultiChannel integrator(1, integrand.NChannels(),
                                       achilles::MultiChannelParams{ncalls, nitn_min, rtol});
+    integrator.Parameters().rescale_factor = rescale_factor;
     integrator.Optimize(integrand);
     auto results1 = integrator.Summary();
 

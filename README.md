@@ -34,13 +34,7 @@ these codes can be found in the next [section](#-optional-dependencies).
 To build Achilles with these default options can be done with:
 ```bash
 mkdir build && cd build
-<<<<<<< HEAD
-cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/Sherpa
-||||||| f3f2871
-cmake .. -DSHERPA_ROOT_DIR=/path/to/Sherpa
-=======
 cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/sherpa
->>>>>>> dev
 make -jN
 ```
 
@@ -50,6 +44,9 @@ to the above `cmake` command. If HepMC3 is not present, Achilles will install He
 ### Optional Dependencies
 
 #### HepMC3
+
+By default, Achilles will install HepMC3 for you.
+Alternatively, you can install it yourself.
 
 The HepMC3 code can be found [here](https://gitlab.cern.ch/hepmc/HepMC3), and has details on building and
 installing the code. Achilles requires HepMC3 version 3.2.5 or newer.
@@ -76,15 +73,15 @@ To disable the requirement of Sherpa, add the option `-DENABLE_BSM=OFF` to the c
 
 ### CMake Options
 
+A non-exhaustive list of useful CMake options includes:
+
 | Option                  | Meaning                                                                         |
 | ------                  | -------                                                                         |
-| `ENABLE_TESTING`        | Build the Achilles test suite                                                   |
-| `ENABLE_GZIP`           | Compile the code with the ability to directly compress event files              |
-| `ENABLE_CASCADE_TEST`   | Build the executable to only run the cascade (pA cross section or transparency) |
-| `ENABLE_POTENTIAL_TEST` | Build executable to test different potentials                                   |
-| `ENABLE_BSM`            | Build the BSM interface                                                         |
-| `ENABLE_HEPMC3`         | Build the HepMC3 interface                                                      |
-
+| `ACHILLES_ENABLE_TESTING`        | Build the Achilles test suite                                                   |
+| `ACHILLES_ENABLE_GZIP`           | Compile the code with the ability to directly compress event files              |
+| `ACHILLES_ENABLE_CASCADE_TEST`   | Build the executable to only run the cascade (pA cross section or transparency) |
+| `ACHILLES_ENABLE_POTENTIAL_TEST` | Build executable to test different potentials                                   |
+| `CMAKE_BUILD_TYPE=Debug`         | Build the executable with debug symbols enabled                                |
 ## Running Achilles
 
 The main Achilles executable can be found at `bin/achilles` after building the code. Running `./bin/achilles --help` will provide all the different command line options available to the user. Currently, these are:
@@ -131,7 +128,7 @@ Registered Two Particle cuts:
 These options for different cuts can be expressed in the run card as described [below](#-run-card), and
 in more details in the [wiki](https://github.com/AchillesGen/Achilles/wiki) and the manual.
 
-### Runtime Options 
+### Runtime Options
 
 #### Run card
 
@@ -143,7 +140,7 @@ These sections are:
 4. The unweighting method to use
 5. The incoming beam
 6. Settings for the cascade
-7. Settings for the nuclear interaction model 
+7. Settings for the nuclear interaction model
 8. Settings for the nucleus
 9. Any cuts to apply during the generation of the events
 
@@ -167,8 +164,8 @@ The _Initialization_ section describes the initialization of the generator, and 
  - The random seed to use for event generation for reproducibility (`Seed`)
  - The accuracy for the warm-up run of the integrator to achieve before generating events (`Accuracy`)
 
-The _Unweighting_ section sets up the methodology for unweighting the events. This has one required setting 
-as the `Name` of the unweighting procedure. Each unweighting procedure has their own set of options 
+The _Unweighting_ section sets up the methodology for unweighting the events. This has one required setting
+as the `Name` of the unweighting procedure. Each unweighting procedure has their own set of options
 described in detail in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Unweighting).
 
 The _Beams_ section provides the means to setup all possible incoming neutrino fluxes.
@@ -178,11 +175,11 @@ in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Beams).
 
 The _Cascade_ section determines the setup of the cascade. The options used to define the cascade are:
  - If the cascade should be ran (`Run`)
- - A sub-section on the calculation of particle interactions to use. This requires the `Name` of the 
+ - A sub-section on the calculation of particle interactions to use. This requires the `Name` of the
    interaction model, which can be found using `./bin/achilles --display-int-models`. Additional details
    for the settings for each model can be found in
    the [wiki](https://github.com/AchillesGen/Achilles/wiki/Cascade).
- - The maximum step size to take during the cascade 
+ - The maximum step size to take during the cascade
  - The probability model for determining interactions.
    Currently, only `Cylinder` and `Gaussian` are implemented.
  - If the nucleons should be propagated in a nuclear potential (`PotentialProp`)
@@ -194,17 +191,17 @@ primary interaction is defined. The required options are:
    section.
  - Additional required options depend on the nuclear model used
    and can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nuclear-Models).
-   
+
 The _Nucleus_ section defines the nucleus for interactions. Currently, only a single isotope and nucleus is
 supported to be run at a time. The required options are:
  - The name of the nucleus given as the number of nucleons followed by the chemical symbol (_i.e._ "12C").
  - The Fermi momentum is needed.
- - The setup for the density and configuration. 
+ - The setup for the density and configuration.
    Details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nucleus).
  - The Fermi gas mode for the cascade. Current options are "Local" and "Global".
- - The nuclear potential to use. 
+ - The nuclear potential to use.
    Details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nucleus).
-   
+
 The last section is the _Hard Cuts_ section and defines the cuts to be made on the particles after the
 generation of the phase space, but before the cascade. These are used for example to limit the phase
 space generated for electron scattering experiments like e4v to more efficiently generate events.
@@ -231,12 +228,22 @@ For additional details on the parameters for each form factor, see the [wiki](ht
 
 The Beyond the Standard Model handling within Achilles is handled via an interface to Sherpa and Comix.
 Therefore, in order to add a model to Achilles, you have to process the UFO files through the Sherpa interface.
-This can be done with the command `Sherpa-generate-model`, which takes as an input the path to a UFO model 
+This can be done with the command `Sherpa-generate-model`, which takes as an input the path to a UFO model
 file. Additionally, the model needs to include modifications to handle the interactions with the nucleus which
 are currently not automated by FeynRules. Further details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/BSM).
 
 The UFO files for the Dark Neutrino portal model () are included in the repository in the folder `UFO`.
 To add this model to be available to Achilles, run the command `Sherpa-generate-model --ncore=N UFO/DarkNeutrinoPortal_Dirac_UFO`. An example run card and parameter card are also provided as `run_hnl.yml` and `hnl_parameters.dat`. Events can be generated with this example file using `./bin/achilles run_hnl.yml`.
+
+## Testing Achilles
+
+If the code was configured with `ACHILLES_ENABLE_TESTING=ON`, the test suite can be run using
+
+```
+./test/achilles-testsuite
+```
+after compilation.
+Tests for the cascade and for potential potential are toggled on or off at the time of compilation (see [CMake Options](#cmake-options) above.)
 
 ## Citing Achilles
 
@@ -272,7 +279,7 @@ If you use Achilles for a BSM calculation, please cite the following three refer
     pages = "096006",
     year = "2022"
 }
-``` 
+```
 
 ```
 @article{Hoche:2014kca,

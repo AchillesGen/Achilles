@@ -107,7 +107,7 @@ void achilles::MultiChannel::MaxDifference(const std::vector<double> &train) {
 achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     summary.best_weights = best_weights;
     std::cout << "Final integral = "
-              << fmt::format("{:^8.5e} +/- {:^8.5e} ({:^8.5e} %)", summary.Result().Mean(),
+              << fmt::format("{:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)", summary.Result().Mean(),
                              summary.Result().Error(),
                              summary.Result().Error() / summary.Result().Mean() * 100)
               << std::endl;
@@ -123,9 +123,19 @@ bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
 }
 
 void achilles::MultiChannel::PrintIteration() const {
-    spdlog::info("{:3d}   {:^8.5e} +/- {:^8.5e}    {:^8.5e} +/- {:^8.5e}", summary.results.size(),
-                 summary.results.back().Mean(), summary.results.back().Error(),
-                 summary.Result().Mean(), summary.Result().Error());
+    std::array<double, 4> values = {summary.results.back().Mean(), summary.results.back().Error(),
+                                    summary.Result().Mean(), summary.Result().Error()};
+    for(double item : values) {
+        if(std::isnan(item)) {
+            spdlog::error("Unexpected nan encountered in MultiChannel. Aborting.");
+            throw std::runtime_error("Encountered nan in MultiChannel.");
+        }
+    }
+
+    spdlog::info(
+        "{:3d}   {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)    {:^8.5e} +/- {:^8.5e} nb ( {:^4.2g} %)",
+        summary.results.size(), values[0], values[1], values[1] / values[0] * 100, values[2],
+        values[3], values[3] / values[2] * 100);
 }
 
 void achilles::MultiChannel::SaveState(std::ostream &os) const {

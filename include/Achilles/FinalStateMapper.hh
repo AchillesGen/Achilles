@@ -24,7 +24,6 @@ class FinalStateMapper : public Mapper<FourVector> {
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
     size_t NDims() const override { return 3 * nout - 4; }
-    YAML::Node ToYAML() const override = 0;
     static std::string Name() { return "Final State"; }
 
   private:
@@ -46,12 +45,6 @@ class TwoBodyMapper : public FinalStateMapper,
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Name"] = Name();
-        result["Masses"] = std::vector<double>{s2, s3};
-        return result;
-    }
 
   private:
     const double s2, s3;
@@ -93,12 +86,6 @@ class ThreeBodyMapper : public FinalStateMapper,
     double Isotropic2Weight(const FourVector &p1, const FourVector &p2, double &ran1, double &ran2,
                             double ctmin, double ctmax);
     void Boost(int lflag, const FourVector &q, const FourVector &ph, FourVector &p);
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Name"] = Name();
-        result["Masses"] = std::vector<double>{s2, s3, s4};
-        return result;
-    }
     void SetGaugeBosonMass(double mass) override { m_mass = mass; }
 
   private:
@@ -119,13 +106,6 @@ class SherpaMapper : public FinalStateMapper {
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
     // size_t NDims() const override { return sherpa_mapper -> NDims(); }
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Name"] = "SherpaMapper";
-        result["Sherpa"] = sherpa_mapper->ToYAML();
-        result["Dim"] = NDims();
-        return result;
-    }
 
   private:
     Mapper_ptr<ATOOLS::Vec4D> sherpa_mapper;

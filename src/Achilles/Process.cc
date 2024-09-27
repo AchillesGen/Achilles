@@ -3,12 +3,14 @@
 #include "Achilles/Channels.hh"
 #include "Achilles/Exceptions.hh"
 #include "Achilles/FinalStateMapper.hh"
+#include "Achilles/MultiChannel.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
-
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
+#include "Achilles/Settings.hh"
+
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -300,15 +302,15 @@ size_t ProcessGroup::SelectProcess() const {
     return Random::Instance().SelectIndex(m_process_weights);
 }
 
-std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &node,
+std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &settings,
                                                              NuclearModel *model,
                                                              std::shared_ptr<Beam> beam,
                                                              std::shared_ptr<Nucleus> nucleus) {
     std::map<size_t, ProcessGroup> groups;
-    for(const auto &process_node : node["Processes"]) {
+    for(const auto &process_node : settings["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
         auto infos = model->AllowedStates(process_info);
-        const auto unweight_name = node["Options"]["Unweighting"]["Name"].as<std::string>();
+        const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
         for(auto &info : infos) {
             try {
                 auto unweighter =
@@ -332,11 +334,11 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const YAML::Node &n
     return groups;
 }
 
-void ProcessGroup::SetupBackend(const YAML::Node &node, std::unique_ptr<NuclearModel> model,
+void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {
-    auto backend_name = node["Backend"]["Name"].as<std::string>();
+    auto backend_name = settings.GetAs<std::string>("Backend/Name");
     m_backend = XSecBuilder(backend_name)
-                    .AddOptions(node["Backend"]["Options"])
+                    .AddOptions(settings["Backend/Options"])
                     .AddNuclearModel(std::move(model))
                     .AddSherpa(sherpa)
                     .build();
@@ -344,7 +346,7 @@ void ProcessGroup::SetupBackend(const YAML::Node &node, std::unique_ptr<NuclearM
     for(auto &process : m_processes) m_backend->AddProcess(process);
 }
 
-bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
+bool ProcessGroup::SetupIntegration(const Settings &config) {
     if(m_processes.size() == 0)
         throw std::runtime_error("ProcessGroup: Number of processes found is zero!");
 
@@ -352,10 +354,12 @@ bool ProcessGroup::SetupIntegration(const YAML::Node &config) {
         m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
-    // TODO: Fix scaling to be consistent with Chili paper
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), {1000, 2});
-    if(config["Options"]["Initialize"]["Accuracy"])
-        m_integrator.Parameters().rtol = config["Options"]["Initialize"]["Accuracy"].as<double>();
+    MultiChannelParams multichannel_params;
+    if(config.Exists("Options/Initialize/Parameters"))
+        multichannel_params = config.GetAs<MultiChannelParams>("Options/Initialize/Parameters");
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params);
+    if(config.Exists("Options/Initialize/Accuracy"))
+        m_integrator.Parameters().rtol = config.GetAs<double>("Options/Initialize/Accuracy");
 
     return true;
 }

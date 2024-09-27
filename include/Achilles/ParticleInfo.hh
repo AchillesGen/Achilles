@@ -3,7 +3,6 @@
 
 // The classes in this file are inspired from the implementation found in Sherpa
 
-#include "fmt/ranges.h"
 #include <functional>
 #include <map>
 #include <memory>
@@ -12,7 +11,10 @@
 #include <utility>
 
 #include "fmt/core.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
 #include "fmt/ranges.h"
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"

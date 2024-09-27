@@ -18,11 +18,6 @@ class HadronicBeamMapper : public Mapper<FourVector> {
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
     size_t NDims() const override = 0;
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Idx"] = m_idx;
-        return result;
-    }
     static std::string Name() { return "Hadronic Initial State"; }
 
   protected:

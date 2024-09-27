@@ -1,15 +1,15 @@
-Name: 12C
+Name: 40Ar
 Binding: 8.6
-Fermi Momentum: 225
+Fermi Momentum: 250
 Density:
-  ProtonFile: data/c12.prova.txt
-  NeutronFile: data/c12.prova.txt
+  ProtonFile: data/rho_Ar_p.txt
+  NeutronFile: data/rho_Ar_n.txt
   FilePotential: data/realOP_12C_EDAI.dat
   Function: configuration
-  Configs: data/configurations/QMC_configs.out.gz
+  Configs: data/configurations/AR40_configs_RMF_achilles.out.gz
 FermiGas:
   Type: Local
-  Correlated: False
+  Correlated: True
   SRCfraction: 0.2
   LambdaSRC: 2.75
   Params: []

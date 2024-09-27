@@ -26,7 +26,6 @@ class DummyHadron : public achilles::HadronicBeamMapper,
         return 1.0;
     }
     size_t NDims() const override { return 0; }
-    YAML::Node ToYAML() const override { return YAML::Node(); }
 };
 
 class DummyFS : public achilles::FinalStateMapper,
@@ -46,7 +45,6 @@ class DummyFS : public achilles::FinalStateMapper,
                           std::vector<double> &) override {
         return 1.0;
     }
-    YAML::Node ToYAML() const override { return YAML::Node(); }
 };
 
 TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {

@@ -18,6 +18,7 @@ module nuclear_model
             procedure(nm_psname), deferred :: ps_name
             procedure(nm_currents), deferred :: currents 
             procedure(nm_init_wgt), deferred :: init_wgt
+            procedure(nm_inspirehep), deferred, nopass :: inspirehep
     end type model
 
     abstract interface
@@ -43,6 +44,10 @@ module nuclear_model
 
         function nm_name()
             character(len=:), allocatable :: nm_name
+        end function
+
+        function nm_inspirehep()
+            character(len=:), allocatable :: nm_inspirehep
         end function
 
         function nm_psname(self)

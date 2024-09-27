@@ -8,6 +8,9 @@
 
 #include "gzstream/gzstream.h"
 
+// this needs to go first as it enables dependency flags in the below headers
+#include "NuHepMC/HepMC3Features.hxx"
+
 #include "NuHepMC/WriterUtils.hxx"
 #include "NuHepMC/make_writer.hxx"
 
@@ -124,6 +127,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     NuHepMC::GC2::SetExposureNEvents(run, nevents);
 
     file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
+    if(!file->run_info()) { throw; }
     spdlog::trace("Finished writing Header");
 }
 

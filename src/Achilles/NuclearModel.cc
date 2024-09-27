@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include "Achilles/Settings.hh"
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
@@ -185,11 +186,11 @@ YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
     return YAML::LoadFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>());
 }
 
-NuclearModel::ModelMap achilles::LoadModels(const YAML::Node &node) {
+NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
     NuclearModel::ModelMap models;
 
     std::set<std::string> model_names;
-    for(const auto &model_config : node["NuclearModels"]) {
+    for(const auto &model_config : settings["NuclearModels"]) {
         const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
         // TODO: Move this logic to be better contained in the Settings or Factory classes
         // TODO: Figure out how to handle this for fortran models???

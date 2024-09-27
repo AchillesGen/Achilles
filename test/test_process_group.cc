@@ -1,3 +1,4 @@
+#include "Achilles/Settings.hh"
 #include "catch2/catch.hpp"
 
 #include "Achilles/ParticleInfo.hh"
@@ -73,7 +74,8 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         REQUIRE_CALL(model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
         REQUIRE_CALL(model, Mode()).TIMES(2).RETURN(achilles::NuclearMode::Quasielastic);
         REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Resonance);
-        auto groups = achilles::ProcessGroup::ConstructGroups(config, &model, beam, nucleus);
+        auto groups = achilles::ProcessGroup::ConstructGroups(achilles::Settings(config), &model,
+                                                              beam, nucleus);
         CHECK(groups.size() == 2);
         CHECK(groups.at(4).Processes().size() == 2);
         CHECK(groups.at(5).Processes().size() == 1);

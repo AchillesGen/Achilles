@@ -15,7 +15,8 @@ achilles::FourVector achilles::SolveDelta(const achilles::FourVector &p1,
     const auto pcm = (p1 + p2).Boost(-beta);
     const double sinTheta = sqrt(1 - pow(cosTheta, 2));
     auto _func = [&](double energy) {
-        double p3Mag = sqrt(energy * energy - m3 * m3);
+        double p3Mag2 = energy * energy - m3 * m3;
+        double p3Mag = std::abs(p3Mag2) < 1e-8 ? 0 : sqrt(p3Mag2);
         FourVector p3(energy, p3Mag * sinTheta * cos(phi), p3Mag * sinTheta * sin(phi),
                       p3Mag * cosTheta);
         return s - 2 * pcm * p3 + m3 * m3 - m4 * m4;
