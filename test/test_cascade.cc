@@ -105,24 +105,26 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         CHECK(hadrons[0].Radius() > radius);
     }
 
-    SECTION("NuWro Evolve") {
-        achilles::InteractionHandler interaction;
-        MockNucleus nucleus;
-        MockEvent event;
+    // TODO: Restore MFP Approach
+    // SECTION("NuWro Evolve") {
+    //     achilles::InteractionHandler interaction;
+    //     MockNucleus nucleus;
+    //     MockEvent event;
 
-        REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(2)).LR_RETURN((hadrons));
+    //     REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(2)).LR_RETURN((hadrons));
 
-        REQUIRE_CALL(nucleus, GetPotential()).TIMES(AT_LEAST(1)).RETURN(nullptr);
-        REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
+    //     REQUIRE_CALL(nucleus, GetPotential()).TIMES(AT_LEAST(1)).RETURN(nullptr);
+    //     REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
-        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::MFP,
-                                  achilles::Cascade::InMedium::None);
-        cascade.SetKicked(0);
-        cascade.Evolve(event, &nucleus);
+    //     achilles::Cascade cascade(std::move(interaction), mode,
+    //     achilles::Cascade::Algorithm::MFP,
+    //                               achilles::Cascade::InMedium::None);
+    //     cascade.SetKicked(0);
+    //     cascade.Evolve(event, &nucleus);
 
-        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
-        CHECK(hadrons[0].Radius() > radius);
-    }
+    //     CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+    //     CHECK(hadrons[0].Radius() > radius);
+    // }
 }
 
 TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {

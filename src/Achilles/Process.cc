@@ -314,7 +314,7 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
         for(auto &info : infos) {
             try {
                 auto unweighter =
-                    UnweighterFactory::Initialize(unweight_name, node["Options"]["Unweighting"]);
+                    UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
                 Process process(info, std::move(unweighter));
                 process.SetID(model);
                 const auto multiplicity = info.Multiplicity();

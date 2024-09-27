@@ -98,7 +98,7 @@ std::istream &operator>>(std::istream &is, Particle &particle) {
 
 double ClosestApproach(const Particle &particle1, const Particle &particle2) {
     auto position = particle2.Position() - particle1.Position();
-    auto velocity = particle1.Beta() * Constant::HBARC;
+    auto velocity = particle1.Beta();
     return position.Dot(velocity) / velocity.Magnitude2();
 }
 
