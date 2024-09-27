@@ -14,6 +14,9 @@
 #include "fmt/ranges.h"
 
 #include "Achilles/Settings.hh"
+#include "Achilles/Unweighter.hh"
+#include "Achilles/Utilities.hh"
+
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
