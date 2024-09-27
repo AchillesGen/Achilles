@@ -1,9 +1,9 @@
 #ifndef NEWTONCOTES_HH
 #define NEWTONCOTES_HH
 
-#include "nuchic/Integrators/QuadratureIntegrator.hh"
+#include "Achilles/Integrators/QuadratureIntegrator.hh"
 
-namespace nuchic {
+namespace achilles {
 namespace Integrator {
 
 class NewtonCotes : public QuadratureIntegrator {
@@ -26,6 +26,6 @@ class NewtonCotes : public QuadratureIntegrator {
 };
 
 } // namespace Integrator
-} // namespace nuchic
+} // namespace achilles
 
 #endif

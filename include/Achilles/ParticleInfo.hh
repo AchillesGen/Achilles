@@ -71,9 +71,16 @@ class PID {
     // Mesons
     static constexpr PID pion0() { return PID{111}; }
     static constexpr PID pionp() { return PID{211}; }
+    static constexpr PID eta() { return PID{221}; }
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }
+    static constexpr PID nstarp() { return PID{202212}; }
+    static constexpr PID nstar0() { return PID{202112}; }
+    static constexpr PID deltapp() { return PID{2224}; }
+    static constexpr PID deltap() { return PID{2214}; }
+    static constexpr PID delta0() { return PID{2114}; }
+    static constexpr PID deltam() { return PID{1114}; }
     static constexpr PID sigma0() { return PID{3212}; }
     static constexpr PID sigmam() { return PID{3222}; }
     static constexpr PID lambda0() { return PID{3122}; }
@@ -112,9 +119,8 @@ class ParticleInfo;
 class ParticleInfoEntry {
   public:
     ParticleInfoEntry() : id(PID::undefined()) {}
-    ParticleInfoEntry(const PID &, const double &, const double &, const int &, const int &,
-                      const int &, const int &, const int &, const bool &, const bool &,
-                      std::string, std::string);
+    ParticleInfoEntry(PID, double, double, int, int, int, int, int, int, bool, bool, std::string,
+                      std::string);
 
     ParticleInfoEntry(const ParticleInfoEntry &info) = default;
     ParticleInfoEntry(ParticleInfoEntry &&info) = default;
@@ -128,13 +134,13 @@ class ParticleInfoEntry {
                width == other.width && icharge == other.icharge && strong == other.strong &&
                spin == other.spin && stable == other.stable && majorana == other.majorana &&
                massive == other.massive && hadron == other.hadron && idname == other.idname &&
-               antiname == other.antiname;
+               antiname == other.antiname && isospin == other.isospin;
     }
     bool operator!=(const ParticleInfoEntry &other) const noexcept { return !(*this == other); }
 
     std::string ToString() const noexcept {
-        return fmt::format("{:10d} {:20s} {:20s} {: .4e}    {:.4e}", static_cast<int>(id), idname,
-                           antiname, mass, width);
+        return fmt::format("{:10d} {:20s} {:20s} {:^8d} {: .4e}    {:.4e}", static_cast<int>(id),
+                           idname, antiname, stable, mass, width);
     }
 
     friend class ParticleInfo;
@@ -144,7 +150,7 @@ class ParticleInfoEntry {
   private:
     PID id;
     double mass{}, hmass{}, width{};
-    int icharge{}, strong{};
+    int icharge{}, strong{}, isospin{};
     int spin{}, stable{}, majorana{};
     bool massive{};
     bool hadron{};
@@ -204,11 +210,14 @@ class ParticleInfo {
         return anti ? -static_cast<int>(info->id) : static_cast<int>(info->id);
     }
     bool IsNucleon() const noexcept;
+    bool IsDelta() const noexcept;
     bool IsPion() const noexcept;
+    bool IsResonance() const noexcept { return IsHadron() && !IsStable(); }
     bool IsBaryon() const noexcept;
     bool IsHadron() const noexcept { return info->hadron; }
     bool IsBHadron() const noexcept;
     bool IsCHadron() const noexcept;
+    bool IsSHadron() const noexcept;
     bool IsAnti() const noexcept { return anti; }
     bool IsFermion() const noexcept { return IntSpin() % 2 == 1; }
     bool IsBoson() const noexcept { return IntSpin() % 2 == 0; }
@@ -238,7 +247,14 @@ class ParticleInfo {
     bool IsMassive() const noexcept { return info->mass != 0 ? info->massive : false; }
     double Mass() const noexcept { return info->massive ? info->mass : 0.0; }
     double Width() const noexcept { return info->width; }
+    double IsoSpin() const noexcept { return info->isospin / 2.0; }
+    // Q = Y/2 + I_3, Y = B+S+C => I_3 = Q - (B + S + C)/2
+    double IsoSpinZ() const noexcept {
+        return Charge() - (IsBaryon() + HasStrange() + HasCharm()) / 2.0;
+    }
     size_t NSpins() const noexcept;
+    bool HasStrange() const noexcept { return IsSHadron(); }
+    bool HasCharm() const noexcept { return IsCHadron(); }
 
     double GenerateLifeTime() const;
 
@@ -302,6 +318,7 @@ template <> struct convert<achilles::ParticleInfoEntry> {
         node.push_back(partInfo.width);
         node.push_back(partInfo.icharge);
         node.push_back(partInfo.strong);
+        node.push_back(partInfo.isospin);
         node.push_back(partInfo.spin);
         node.push_back(partInfo.stable);
         node.push_back(partInfo.majorana);
@@ -314,20 +331,21 @@ template <> struct convert<achilles::ParticleInfoEntry> {
     }
 
     static bool decode(const Node &node, achilles::ParticleInfoEntry &partInfo) {
-        if(!node.IsSequence() || node.size() != 12) { return false; }
+        if(!node.IsSequence() || node.size() != 13) { return false; }
 
         partInfo.id = static_cast<achilles::PID>(node[0].as<int>());
         partInfo.mass = node[1].as<double>();
         partInfo.width = node[2].as<double>();
         partInfo.icharge = node[3].as<int>();
         partInfo.strong = node[4].as<int>();
-        partInfo.spin = node[5].as<int>();
-        partInfo.stable = node[6].as<int>();
-        partInfo.majorana = node[7].as<int>();
-        partInfo.massive = node[8].as<bool>();
-        partInfo.hadron = node[9].as<bool>();
-        partInfo.idname = node[10].as<std::string>();
-        partInfo.antiname = node[11].as<std::string>();
+        partInfo.isospin = node[5].as<int>();
+        partInfo.spin = node[6].as<int>();
+        partInfo.stable = node[7].as<int>();
+        partInfo.majorana = node[8].as<int>();
+        partInfo.massive = node[9].as<bool>();
+        partInfo.hadron = node[10].as<bool>();
+        partInfo.idname = node[11].as<std::string>();
+        partInfo.antiname = node[12].as<std::string>();
 
         return true;
     }

@@ -1,4 +1,5 @@
 #include "Achilles/InteractionHandler.hh"
+#include "Achilles/Event.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
@@ -10,7 +11,10 @@ using achilles::InteractionHandler;
 using achilles::InteractionResult;
 using achilles::Particle;
 
-double InteractionHandler::TotalCrossSection(const Particle &p1, const Particle &p2) const {
+double InteractionHandler::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
+    const auto &p1 = event.Hadrons()[part1];
+    const auto &p2 = event.Hadrons()[part2];
+
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
@@ -18,11 +22,14 @@ double InteractionHandler::TotalCrossSection(const Particle &p1, const Particle 
             fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
         throw std::runtime_error(msg);
     }
-    return m_interactions[it->second]->TotalCrossSection(p1, p2);
+    return m_interactions[it->second]->TotalCrossSection(event, part1, part2);
 }
 
-std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &p1,
-                                                                const Particle &p2) const {
+std::vector<InteractionResult> InteractionHandler::CrossSection(Event &event, size_t part1,
+                                                                size_t part2) const {
+    const auto &p1 = event.Hadrons()[part1];
+    const auto &p2 = event.Hadrons()[part2];
+
     auto key = std::make_pair(p1.ID(), p2.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
@@ -30,7 +37,7 @@ std::vector<InteractionResult> InteractionHandler::CrossSection(const Particle &
             fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
         throw std::runtime_error(msg);
     }
-    return m_interactions[it->second]->CrossSection(p1, p2);
+    return m_interactions[it->second]->CrossSection(event, part1, part2);
 }
 
 std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, const Particle &p2,

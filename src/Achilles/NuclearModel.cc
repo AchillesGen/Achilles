@@ -1,4 +1,5 @@
 #include "Achilles/Settings.hh"
+#include <stdexcept>
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
@@ -191,22 +192,32 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
     std::set<std::string> model_names;
     for(const auto &model_config : settings["NuclearModels"]) {
         const auto name = model_config["NuclearModel"]["Model"].as<std::string>();
-        auto model = NuclearModelFactory::Initialize(name, model_config);
-        if(model_names.find(model->GetName()) != model_names.end()) {
-            auto msg = fmt::format(
-                "NuclearModels: Multiple definitions for model {}, skipping second model",
-                model->GetName());
-            spdlog::warn(msg);
-            continue;
+        // TODO: Move this logic to be better contained in the Settings or Factory classes
+        // TODO: Figure out how to handle this for fortran models???
+        try {
+            auto model = NuclearModelFactory::Initialize(name, model_config);
+            if(model_names.find(model->GetName()) != model_names.end()) {
+                auto msg = fmt::format(
+                    "NuclearModels: Multiple definitions for model {}, skipping second model",
+                    model->GetName());
+                spdlog::warn(msg);
+                continue;
+            }
+            model_names.insert(model->GetName());
+            if(models.find(model->Mode()) != models.end()) {
+                auto msg =
+                    fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
+                                ToString(model->Mode()));
+                throw std::runtime_error(msg);
+            }
+            model->SetTransform();
+            models[model->Mode()] = std::move(model);
+        } catch(std::out_of_range &e) {
+            spdlog::error("NuclearModel: Requested model \"{}\", did you mean \"{}\"", name,
+                          achilles::GetSuggestion(achilles::NuclearModelFactory::List(), name));
+            spdlog::error("NuclearModel: Run `achilles --display-nuc-models` to see all options");
+            exit(-1);
         }
-        model_names.insert(model->GetName());
-        if(models.find(model->Mode()) != models.end()) {
-            auto msg = fmt::format("NuclearModels: Multiple nuclear models for mode {} defined!",
-                                   ToString(model->Mode()));
-            throw std::runtime_error(msg);
-        }
-        model->SetTransform();
-        models[model->Mode()] = std::move(model);
     }
 
     return models;

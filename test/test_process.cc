@@ -8,6 +8,8 @@
 #include "trompeloeil.hpp"
 #include <utility>
 
+using achilles::Particle;
+
 template <typename Type, std::size_t Size, std::size_t... Index>
 constexpr auto Iota_helper(std::index_sequence<Index...>) {
     return std::array<Type, Size>{Index...};
@@ -93,13 +95,13 @@ TEST_CASE("Handles events correctly", "[Process]") {
         achilles::Particle lep_in_expected{achilles::PID::electron(), {1.3e+03, 0.0, 0.0, 1.3e+03}};
         std::vector<achilles::Particle> had_in, lep_out, had_out, spect;
         std::vector<achilles::Particle> had_in_exp{
-            {achilles::PID::proton(), {1.1188e+04, 0.0, 0.0, 0.0}}};
+            Particle{achilles::PID::proton(), {1.1188e+04, 0.0, 0.0, 0.0}}};
         std::vector<achilles::Particle> lep_out_exp{
-            {achilles::PID::electron(),
-             {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
+            Particle{achilles::PID::electron(),
+                     {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
         std::vector<achilles::Particle> had_out_exp{
-            {achilles::PID::proton(),
-             {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
+            Particle{achilles::PID::proton(),
+                     {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
         YAML::Node config;
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
@@ -154,7 +156,8 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        std::vector<achilles::Particle> nucleons{achilles::PID::proton(), achilles::PID::neutron()};
+        std::vector<achilles::Particle> nucleons{Particle(achilles::PID::proton()),
+                                                 Particle(achilles::PID::neutron())};
         achilles::Event event;
         event.Momentum() = momentum;
         event.Hadrons() = nucleons;

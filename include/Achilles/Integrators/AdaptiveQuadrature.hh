@@ -3,9 +3,9 @@
 
 #include <memory>
 
-#include "nuchic/Integrators/AdaptiveIntegrator.hh"
+#include "Achilles/Integrators/AdaptiveIntegrator.hh"
 
-namespace nuchic {
+namespace achilles {
 namespace Integrator {
 
 class QuadratureIntegrator;
@@ -36,6 +36,6 @@ class AdaptiveQuadrature : AdaptiveIntegrator {
 };
 
 } // namespace Integrator
-} // namespace nuchic
+} // namespace achilles
 
 #endif

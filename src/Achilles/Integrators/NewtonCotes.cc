@@ -1,6 +1,7 @@
-#include "nuchic/Integrators/NewtonCotes.hh"
+#include "Achilles/Integrators/NewtonCotes.hh"
+#include <stdexcept>
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
 NewtonCotes::NewtonCotes(const size_t &order, bool closed)
     : QuadratureIntegrator(), m_order(order) {

@@ -280,6 +280,10 @@ inline double Li2(double x) {
     return result + sign * x * num / den;
 }
 
+// TODO: Figure out a better place for these functions (maybe with an improved Settings class?)
+size_t LevenshteinDistance(const std::string_view &src, const std::string_view &tgt);
+std::string_view GetSuggestion(const std::vector<std::string> &opts, const std::string &query);
+
 } // namespace achilles
 
 #endif // end of include guard: UTILITIES_HH

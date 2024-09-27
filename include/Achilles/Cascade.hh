@@ -2,8 +2,10 @@
 #define CASCADE_HH
 
 #include <array>
+#include <queue>
 #include <vector>
 
+#include "Achilles/DecayHandler.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
@@ -183,33 +185,47 @@ class Cascade {
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
     const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
-    double GetXSec(const Particle &, const Particle &) const;
-    std::size_t Interacted(const Particles &, const Particle &,
-                           const InteractionDistances &) noexcept;
+    double GetXSec(Event &, size_t, size_t) const;
+    std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
     void Escaped(Particles &);
     void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
     bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
-    void Propagate(size_t, Particle *, double);
+    void Propagate(size_t, Particle *);
+    void PropagateSpace(size_t, Particle *, double);
     std::set<size_t> InitializeIntegrator(Event &);
     void UpdateKicked(Particles &, std::set<size_t> &);
-    void Validate(const Particles &);
-    size_t BaseAlgorithm(size_t, Particles &);
-    size_t MFPAlgorithm(size_t, Particles &);
+    void Validate(Event &);
+    size_t BaseAlgorithm(size_t, Event &);
+    size_t MFPAlgorithm(size_t, Event &);
     double InMediumCorrection(const Particle &, const Particle &) const;
+    void PropagateAll(Particles &, double) const;
+    bool HasInteraction(Event &, size_t, size_t) const;
+    bool Decay(Event &, size_t) const;
 
     // Variables
     std::set<std::size_t> kickedIdxs;
-    double distance{}, timeStep{};
+    double distance{}, timeStep{}, currentTime{};
     InteractionHandler m_interactions{};
+    // TODO: Allow user to define externally which file to use
+    DecayHandler m_decays{"data/decays.yml"};
     std::function<double(double, double)> probability;
-    std::function<size_t(Cascade *, size_t, Particles &)> algorithm;
+    std::function<size_t(Cascade *, size_t, Event &)> algorithm;
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
     std::map<size_t, SymplecticIntegrator> integrators;
     std::string m_probability_name;
+
+    struct queue_entry {
+        double time;
+        std::pair<size_t, size_t> idxs;
+        bool operator>(const queue_entry &rhs) const { return time > rhs.time; }
+    };
+
+    std::priority_queue<queue_entry, std::vector<queue_entry>, std::greater<queue_entry>>
+        m_time_steps;
 };
 
 } // namespace achilles
