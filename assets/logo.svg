@@ -25,10 +25,10 @@
      inkscape:cy="97.984796"
      inkscape:window-width="1920"
      inkscape:window-height="1043"
-     inkscape:window-x="3840"
+     inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g1" />
+     inkscape:current-layer="svg4" />
   <!-- Background circle (nucleus) -->
   <circle
      cx="100"
@@ -88,12 +88,14 @@
   </g>
   <!-- Text -->
   <text
-     x="100"
-     y="180"
+     x="98.318176"
+     y="177.00055"
      font-family="Arial, sans-serif"
-     font-size="22"
+     font-size="20.907px"
      fill="#2c3e50"
      text-anchor="middle"
      font-weight="bold"
-     id="text4">ACHILLES</text>
+     id="text4"
+     transform="scale(1.0289747,0.97184119)"
+     style="stroke-width:0.950318">ACHILLES</text>
 </svg>
