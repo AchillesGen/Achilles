@@ -1,4 +1,6 @@
-# <span style="font-variant:small-caps;">Achilles</span>
+<h1 align="center">
+  <img src="/assets/logo.svg" alt="Achilles" width="25%"/>
+</h1>
 
 [![CMake Build Matrix](https://github.com/AchillesGen/Achilles/actions/workflows/cmake.yml/badge.svg)](https://github.com/AchillesGen/Achilles/actions/workflows/cmake.yml)
 
