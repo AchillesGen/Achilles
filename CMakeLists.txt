@@ -70,9 +70,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/CMake)
 # Ensure compiler supports filesystem and needed compiler flags
 find_package(Filesystem REQUIRED)
 
-# Find HDF5
-find_package(HDF5 REQUIRED COMPONENTS CXX)
-
 # Find ZLIB to read gzip files
 if(ACHILLES_ENABLE_GZIP)
 find_package(ZLIB REQUIRED)
