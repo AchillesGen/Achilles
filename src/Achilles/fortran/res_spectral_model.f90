@@ -85,7 +85,7 @@ contains
 
     function res_inspirehep() !...reference for the model
         character(len=:), allocatable :: res_inspirehep
-        res_inspirehep = "" ! TODO: Add inspirehep information
+        res_inspirehep = "Nakamura:2015rta,Rocco:2019gfb" ! TODO: Add inspirehep information
     end function
 
     function res_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh, HadronicMapper.cc
