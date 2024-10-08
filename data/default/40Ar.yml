@@ -9,7 +9,7 @@ Density:
   Configs: data/configurations/AR40_configs_RMF_achilles.out.gz
 FermiGas:
   Type: Local
-  Correlated: True
+  Correlated: False
   SRCfraction: 0.2
   LambdaSRC: 2.75
   Params: []
