@@ -137,8 +137,8 @@ dummy: dummy2
 TEST_CASE("QESpectralModel", "[NuclearModel]") {
     YAML::Node config = YAML::Load(R"config(
 NuclearModel:
-  SpectralP: data/pke12_tot.data
-  SpectralN: data/pke12_tot.data
+  SpectralP: data/Spectral_Functions/pke12p_tot.data
+  SpectralN: data/Spectral_Functions/pke12n_tot.data
   Ward: Coulomb
 )config");
     YAML::Node ff = YAML::Load(R"form(
