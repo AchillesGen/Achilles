@@ -190,7 +190,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
                               size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
-    std::string InspireHEP() const override { return ""; }
+    std::string InspireHEP() const override { return "Rocco:2018mwt"; }
     std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods

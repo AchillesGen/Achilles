@@ -94,7 +94,7 @@ Cascade:
 
 NuclearModels:
   - NuclearModel: !include "data/default/QEOptions.yml"
-  #- NuclearModel: !include "data/default/IntfOptionsF.yml"
+  - NuclearModel: !include "data/default/IntfOptionsF.yml"
   #- NuclearModel: !include "data/default/RESOptionsF.yml"
   #- NuclearModel: !include "data/default/HyperonOptions.yml"
 

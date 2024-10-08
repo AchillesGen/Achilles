@@ -78,7 +78,7 @@ contains
 
     function qe_inspirehep() !...reference for the model
         character(len=:), allocatable :: qe_inspirehep
-        qe_inspirehep = "" ! TODO: Add inspirehep information
+        qe_inspirehep = "Rocco:2018mwt" ! TODO: Add inspirehep information
     end function
 
     function qe_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
