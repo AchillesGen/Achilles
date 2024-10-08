@@ -3,7 +3,7 @@
 #include <iostream>
 
 TEST_CASE("Overestimate of Spectral Function", "[spectral]") {
-    const std::string filename = "data/pke12_tot.data";
+    const std::string filename = "data/Spectral_Functions/pke12p_tot.data";
     std::ifstream data(filename);
     size_t nep{}, np{};
     data >> nep >> np;
