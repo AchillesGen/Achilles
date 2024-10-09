@@ -5,6 +5,7 @@
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
+#include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
@@ -16,7 +17,7 @@
 #else
 namespace achilles {
 class SherpaInterface {};
-} // namespace achilles
+} // namespace achilless
 #endif
 
 #ifdef ACHILLES_ENABLE_HEPMC3
@@ -116,9 +117,21 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
                        [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
         process_groups.end());
 
+
+    std::vector<ProcessMetadata> metadata;
     for(auto &group : process_groups) {
         spdlog::trace("{} has hash {:x}", group, std::hash<ProcessGroup>{}(group));
+        auto group_data = group.Metadata();
+        metadata.insert(metadata.end(), group_data.begin(), group_data.end());
     }
+
+    for(const auto &data : metadata) {
+        achilles::Reference ref{achilles::ReferenceType::inspire, data.inspireHEP,
+                                 data.name};
+        ReferenceHandler::Handle().AddReference(ref);
+    }
+    
+
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config.Exists("Main/DoRotate")) doRotate = config.GetAs<bool>("Main/DoRotate");
@@ -184,8 +197,10 @@ void achilles::EventGen::Initialize() {
         spdlog::info("Group weights: {} / {}",
                      fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "), m_max_weight);
         std::cout << "Estimated unweighting eff for this group: ";
-        for(auto &process : group.Processes()) std::cout << process.UnweightEff() << " ";
-        std::cout << std::endl;
+        for(auto &process : group.Processes()) {
+            std::cout << process.UnweightEff() << " ";
+            std::cout << std::endl;
+        }
 
         if(!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save")) {
             if(!cache.SaveState(group)) {
