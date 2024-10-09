@@ -5,11 +5,11 @@
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
-#include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -17,7 +17,7 @@
 #else
 namespace achilles {
 class SherpaInterface {};
-} // namespace achilless
+} // namespace achilles
 #endif
 
 #ifdef ACHILLES_ENABLE_HEPMC3
@@ -117,7 +117,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
                        [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
         process_groups.end());
 
-
     std::vector<ProcessMetadata> metadata;
     for(auto &group : process_groups) {
         spdlog::trace("{} has hash {:x}", group, std::hash<ProcessGroup>{}(group));
@@ -126,12 +125,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     }
 
     for(const auto &data : metadata) {
-        achilles::Reference ref{achilles::ReferenceType::inspire, data.inspireHEP,
-                                 data.name};
+        achilles::Reference ref{achilles::ReferenceType::inspire, data.inspireHEP, data.name};
         ReferenceHandler::Handle().AddReference(ref);
     }
-    
-
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config.Exists("Main/DoRotate")) doRotate = config.GetAs<bool>("Main/DoRotate");
