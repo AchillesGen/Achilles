@@ -18,7 +18,7 @@
 #else
 namespace achilles {
 class SherpaInterface {};
-} // namespace achilles
+} // namespace achilless
 #endif
 
 #ifdef ACHILLES_ENABLE_HEPMC3
@@ -133,6 +133,14 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         achilles::Reference ref{achilles::ReferenceType::inspire, data.inspireHEP, data.name};
         ReferenceHandler::Handle().AddReference(ref);
     }
+
+    for(const auto &data : metadata) {
+        achilles::Reference ref{achilles::ReferenceType::inspire, data.inspireHEP,
+                                 data.name};
+        ReferenceHandler::Handle().AddReference(ref);
+    }
+    
+
 
     // Decide whether to rotate events to be measured w.r.t. the lepton plane
     if(config.Exists("Main/DoRotate")) doRotate = config.GetAs<bool>("Main/DoRotate");
