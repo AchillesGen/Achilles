@@ -1,7 +1,15 @@
 #ifndef SYSTEM_HH
 #define SYSTEM_HH
 
+#if defined(__clang__)
 #include "spdlog/spdlog.h"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#include "spdlog/spdlog.h"
+#pragma GCC diagnostic pop
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <regex>
