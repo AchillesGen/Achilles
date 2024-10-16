@@ -1,6 +1,7 @@
 #ifndef SYSTEM_HH
 #define SYSTEM_HH
 
+#include "spdlog/spdlog.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <regex>
@@ -23,10 +24,6 @@ namespace fs = std::experimental::filesystem;
 #include "fmt/ranges.h"
 #pragma GCC diagnostic pop
 #include "fmt/std.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#include "spdlog/spdlog.h"
-#pragma GCC diagnostic pop
 
 namespace achilles {
 
