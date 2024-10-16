@@ -54,6 +54,7 @@ using ConstYAMLVisitor = YAMLVisitor<true>;
 class Settings {
   public:
     Settings(const std::string &filename);
+    Settings(const YAML::Node &node);
     static Settings &MainSettings() { return main_settings; }
     static void LoadMainSettings(const std::string &filename) {
         main_settings = Settings(filename);

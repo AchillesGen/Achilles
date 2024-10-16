@@ -1,3 +1,4 @@
+#include "Achilles/Settings.hh"
 #include "catch2/catch.hpp"
 
 #include "Achilles/ParticleInfo.hh"
@@ -5,6 +6,7 @@
 #include "Achilles/XSecBackend.hh"
 #include "mock_classes.hh"
 
+using achilles::Particle;
 using achilles::RegistrableBackend;
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
@@ -72,7 +74,8 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         REQUIRE_CALL(model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
         REQUIRE_CALL(model, Mode()).TIMES(2).RETURN(achilles::NuclearMode::Quasielastic);
         REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Resonance);
-        auto groups = achilles::ProcessGroup::ConstructGroups(config, &model, beam, nucleus);
+        auto groups = achilles::ProcessGroup::ConstructGroups(achilles::Settings(config), &model,
+                                                              beam, nucleus);
         CHECK(groups.size() == 2);
         CHECK(groups.at(4).Processes().size() == 2);
         CHECK(groups.at(5).Processes().size() == 1);
@@ -143,8 +146,8 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
     constexpr double ps_wgt = 1;
     constexpr double flux = 1;
 
-    std::vector<achilles::Particle> nucleons = {{achilles::PID::proton()},
-                                                {achilles::PID::neutron()}};
+    std::vector<achilles::Particle> nucleons = {Particle{achilles::PID::proton()},
+                                                Particle{achilles::PID::neutron()}};
     auto beam = std::make_shared<MockBeam>();
     auto nucleus = std::make_shared<MockNucleus>();
     REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);

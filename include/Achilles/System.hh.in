@@ -1,6 +1,15 @@
 #ifndef SYSTEM_HH
 #define SYSTEM_HH
 
+#if defined(__clang__)
+#include "spdlog/spdlog.h"
+#elif defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#include "spdlog/spdlog.h"
+#pragma GCC diagnostic pop
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 #include <regex>
@@ -18,7 +27,10 @@ namespace fs = std::experimental::filesystem;
 #error "Could not find includes: <filesystem> or <experimental/filesystem>"
 #endif
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
 #include "fmt/ranges.h"
+#pragma GCC diagnostic pop
 #include "fmt/std.h"
 
 namespace achilles {
@@ -68,24 +80,18 @@ class Cache {
     bool FindCachedState(std::size_t);
     template <typename T> bool SaveState(const T &object) {
         auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
-        // TODO: Figure out how to stringify the type
-        // if(fs::exists(cachePath))
-        //     spdlog::warn("Cache: Overwriting existing cache for {}", object);
-
+        if(fs::exists(cachePath))
+            spdlog::warn("Cache: Overwriting existing cache for {}", object);
         fs::create_directories(cachePath);
-
         return object.Save(cachePath);
     }
     template <typename T> bool LoadState(T& object) {
         auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
         if(!fs::exists(cachePath)) {
-            // TODO: Figure out how to stringify the type
-            // spdlog::debug("Cache: Not found for {}", object);
+            spdlog::debug("Cache: Not found for {}", object);
             return false;
         }
-
         fs::create_directories(cachePath);
-
         return object.Load(cachePath);
     }
 

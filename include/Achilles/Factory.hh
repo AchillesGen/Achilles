@@ -45,6 +45,12 @@ template <typename Base, typename... Args> class Factory {
         fmt::print("Registered {}:\n", Base::Name());
         for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);
     }
+
+    static std::vector<std::string> List() {
+        std::vector<std::string> results;
+        for(const auto &registered : Registry()) results.push_back(registered.first);
+        return results;
+    }
 };
 
 template <typename Base, typename Derived, typename... Args> class Registrable {

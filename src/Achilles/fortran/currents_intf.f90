@@ -172,7 +172,7 @@ subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
     logical :: has_axial_in
 
-    ! 1 if neutrinos 0 else
+    ! 1 if (anti)neutrinos 0 else
     if(has_axial_in .eqv. .false.) then
         ax = 0  
     else

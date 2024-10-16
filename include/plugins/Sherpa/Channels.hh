@@ -54,12 +54,6 @@ class GenChannel : public Channels,
     }
     size_t NDims() const override { return 3 * m_nout - 4; }
     void WriteChannel() const;
-    YAML::Node ToYAML() const override {
-        YAML::Node result;
-        result["Name"] = m_name;
-        result["Masses"] = m_s;
-        return result;
-    }
     static std::unique_ptr<Channels> Construct(const std::vector<double> &s) {
         return std::make_unique<GenChannel>(s.size(), s);
     }

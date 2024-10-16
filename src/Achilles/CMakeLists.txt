@@ -23,6 +23,8 @@ add_library(utilities SHARED
     Settings.cc
     System.cc
     Legendre.cc
+    ClebschGordan.cc
+    ReferenceHandler.cc
 )
 target_link_libraries(utilities PRIVATE project_warnings
                                 PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
@@ -34,6 +36,8 @@ if(ACHILLES_EVENT_DETAILS)
 target_compile_definitions(utilities PUBLIC ACHILLES_EVENT_DETAILS)
 endif()
 list(APPEND achilles_targets utilities)
+
+add_subdirectory(Integrators)
 
 # add_library(interaction_plugin SHARED
 #     InteractionLoader.cc
@@ -80,10 +84,12 @@ add_library(physics SHARED
     Event.cc
     Interactions.cc
     InteractionHandler.cc
+    DecayHandler.cc
     SpectralFunction.cc
     ElectronPDF.cc
     EventHistory.cc
     MesonBaryonAmplitudes.cc
+    OsetCrossSections.cc
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)
@@ -102,6 +108,8 @@ target_link_libraries(physics PRIVATE project_warnings
                       PUBLIC utilities cuts HighFive)
 list(APPEND achilles_targets physics)
 
+add_subdirectory(CascadeInteractions)
+
 add_library(nuclear_models SHARED
     NuclearModel.cc
     XSecBackend.cc
@@ -115,7 +123,6 @@ add_subdirectory(fortran)
 list(APPEND achilles_targets fortran_interface)
 
 add_library(event_gen SHARED
-    # TODO: Move to its own library
     EventGen.cc
     Debug.cc
     EventWriter.cc
@@ -126,7 +133,8 @@ target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings
-                                PUBLIC physics mappers fortran_interface nuclear_models) #fortran_interface
+                                PUBLIC physics mappers fortran_interface nuclear_models
+                                       AchillesCascadeInteractions) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
                             # pybind11_add_module(_achilles MODULE

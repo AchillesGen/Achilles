@@ -56,7 +56,7 @@ TEST_CASE("Propagate", "[Particle]") {
     SECTION("Time propagation") {
         part.Propagate(1);
         CHECK_THAT(part.Position(), IsVectorApprox<achilles::ThreeVector>(
-                                        achilles::ThreeVector{achilles::Constant::HBARC / 10, 0, 0})
+                                        achilles::ThreeVector{part.Momentum().P() / part.E(), 0, 0})
                                         .margin(eps));
         part.BackPropagate(1);
         CHECK_THAT(
@@ -91,7 +91,7 @@ TEST_CASE("Closest Approach", "[Particle]") {
     achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
 
     auto time = achilles::ClosestApproach(part1, part2);
-    CHECK(time == Approx(1.0));
+    CHECK(time == Approx(achilles::Constant::HBARC));
 
     part1.Propagate(time);
     CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});

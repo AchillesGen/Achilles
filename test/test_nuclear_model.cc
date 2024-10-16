@@ -10,6 +10,7 @@
 #include "yaml-cpp/yaml.h"
 
 using achilles::operator""_GeV;
+using achilles::Particle;
 using achilles::ProcessInfo;
 
 TEST_CASE("CoherentModel", "[NuclearModel]") {
@@ -110,8 +111,8 @@ dummy: dummy2
         std::vector<achilles::NuclearModel::FFInfoMap> info_map(3);
         info_map[2][achilles::PID::photon()] = {
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FCoh, 1}};
-        auto output = model.CalcCurrents({{achilles::PID::carbon(), momentum[1]}},
-                                         {{achilles::PID::carbon(), momentum[3]}}, {},
+        auto output = model.CalcCurrents({Particle{achilles::PID::carbon(), momentum[1]}},
+                                         {Particle{achilles::PID::carbon(), momentum[3]}}, {},
                                          momentum[0] - momentum[2], info_map[2]);
         CHECK(output.size() == 1);
         auto results = output[achilles::PID::photon()];
@@ -136,8 +137,8 @@ dummy: dummy2
 TEST_CASE("QESpectralModel", "[NuclearModel]") {
     YAML::Node config = YAML::Load(R"config(
 NuclearModel:
-  SpectralP: data/pke12_tot.data
-  SpectralN: data/pke12_tot.data
+  SpectralP: data/Spectral_Functions/pke12p_tot.data
+  SpectralN: data/Spectral_Functions/pke12n_tot.data
   Ward: Coulomb
 )config");
     YAML::Node ff = YAML::Load(R"form(
@@ -278,10 +279,12 @@ dummy: dummy2
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F1n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::F2n, 1},
             achilles::FormFactorInfo{achilles::FormFactorInfo::Type::FA, 1}};
-        auto output_p = model.CalcCurrents({{2212, momentum[1]}}, {{2212, momentum[3]}}, {},
-                                           momentum[0] - momentum[2], info_map[0]);
-        auto output_n = model.CalcCurrents({{2112, momentum[1]}}, {{2112, momentum[3]}}, {},
-                                           momentum[0] - momentum[2], info_map[1]);
+        auto output_p =
+            model.CalcCurrents({Particle{2212, momentum[1]}}, {Particle{2212, momentum[3]}}, {},
+                               momentum[0] - momentum[2], info_map[0]);
+        auto output_n =
+            model.CalcCurrents({Particle{2112, momentum[1]}}, {Particle{2112, momentum[3]}}, {},
+                               momentum[0] - momentum[2], info_map[1]);
         CHECK(output_p.size() == 1);
         auto results_p = output_p[achilles::PID::photon()];
         CHECK(results_p.size() == model.NSpins());

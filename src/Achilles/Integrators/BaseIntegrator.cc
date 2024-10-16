@@ -1,6 +1,6 @@
-#include "nuchic/Integrators/BaseIntegrator.hh"
+#include "Achilles/Integrators/BaseIntegrator.hh"
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
 BaseIntegrator::BaseIntegrator(bool cache) : m_cache(cache) {
     m_func = nullptr;

@@ -86,3 +86,17 @@ TEST_CASE("GridSpace Generation", "[Utilities]") {
         CHECK(points == points2);
     }
 }
+
+TEST_CASE("Suggested option", "[Utilities]") {
+    std::vector<std::string> opts = {"Quasielastic", "Resonance", "MesonExchangeCurrent",
+                                     "DeepInelasticScattering", "ShallowInelasticScattering"};
+
+    std::vector<std::string> queries = {"Quasilatics", "esonces", "MesonExchCurr", "DeepInelScat",
+                                        "ShalInelScattering"};
+
+    size_t i = 0;
+    for(const auto &query : queries) {
+        auto result = achilles::GetSuggestion(opts, query);
+        CHECK(result == opts[i++]);
+    }
+}

@@ -20,6 +20,7 @@ class PID;
 class PSBuilder;
 class Spinor;
 class Process;
+class Settings;
 
 enum class NuclearMode : int {
     None = -1,
@@ -147,7 +148,7 @@ template <typename Derived>
 using RegistrableNuclearModel = Registrable<NuclearModel, Derived, const YAML::Node &>;
 using NuclearModelFactory = Factory<NuclearModel, const YAML::Node &>;
 
-NuclearModel::ModelMap LoadModels(const YAML::Node &);
+NuclearModel::ModelMap LoadModels(const Settings &);
 
 class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
   public:
@@ -189,7 +190,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
                               size_t) const override;
     std::string GetName() const override { return QESpectral::Name(); }
-    std::string InspireHEP() const override { return ""; }
+    std::string InspireHEP() const override { return "Rocco:2018mwt"; }
     std::string PSName() const override { return "OneBodySpectral"; }
 
     // Required factory methods

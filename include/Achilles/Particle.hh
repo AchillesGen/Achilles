@@ -31,6 +31,7 @@ enum class ParticleStatus : int {
     residue = 27,
     spectator = 28,
     interacted = 29,
+    absorption_partner = 99,
 };
 inline auto format_as(achilles::ParticleStatus s) {
     return fmt::underlying(s);
@@ -67,30 +68,31 @@ class Particle {
     ///@param status: The status code of the particle (default = 0)
     ///@param mothers: The mother particles of the particle (default = Empty)
     ///@param daughters: The daughter particles of the particle (default = Empty)
-    Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
-             ThreeVector pos = ThreeVector(),
-             const ParticleStatus &_status = ParticleStatus::background,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
+                      ThreeVector pos = ThreeVector(),
+                      const ParticleStatus &_status = ParticleStatus::background,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
           mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
         formationZone = 0;
     }
 
-    Particle(const long int &pid, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), const int &_status = 0,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
+                      ThreeVector pos = ThreeVector(), const int &_status = 0,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(pid), momentum(mom), position(std::move(pos)),
           status(static_cast<ParticleStatus>(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
         formationZone = 0;
     }
 
-    Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
+                      ThreeVector pos = ThreeVector(),
+                      ParticleStatus _status = ParticleStatus::background,
+                      std::vector<int> _mothers = std::vector<int>(),
+                      std::vector<int> _daughters = std::vector<int>()) noexcept
         : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
           status(std::move(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
@@ -237,7 +239,10 @@ class Particle {
 
     /// Check to see if the particle is a propagating particle in the nucleus
     ///@return bool: True if a propagating particle, False otherwise
-    bool IsPropagating() const noexcept { return status == ParticleStatus::propagating; }
+    bool IsPropagating() const noexcept {
+        return status == ParticleStatus::propagating || status == ParticleStatus::external_test ||
+               status == ParticleStatus::internal_test;
+    }
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise

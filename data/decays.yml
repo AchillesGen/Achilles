@@ -1,0 +1,93 @@
+2224:
+  - BranchingRatio: 1.000
+    OutIDs: [211, 2212]
+    AngularMom: 2
+
+2214:
+  - BranchingRatio: 0.3315
+    OutIDs: [211, 2112]
+    AngularMom: 2
+  - BranchingRatio: 0.663
+    OutIDs: [111, 2212]
+    AngularMom: 2
+  - BranchingRatio: 0.0055
+    OutIDs: [22, 2212]
+    AngularMom: 1
+
+2114:
+  - BranchingRatio: 0.663
+    OutIDs: [111, 2112]
+    AngularMom: 2
+  - BranchingRatio: 0.3315
+    OutIDs: [-211, 2212]
+    AngularMom: 2
+  - BranchingRatio: 0.0055
+    OutIDs: [22, 2112]
+    AngularMom: 1
+
+1114:
+  - BranchingRatio: 1.000
+    OutIDs: [-211, 2112]
+    AngularMom: 2
+
+3122:
+  - BranchingRatio: 0.639
+    OutIDs: [2212, -211]
+    AngularMom: 2
+  - BranchingRatio: 0.358
+    OutIDs: [2112, 111]
+    AngularMom: 2
+
+3212:
+  - BranchingRatio: 1.000
+    OutIDs: [22, 3122]
+    AngularMom: 1
+
+3112:
+  - BranchingRatio: 1.000
+    OutIDs: [2112, -211]
+    AngularMom: 2
+
+3222:
+  - BranchingRatio: 0.5157
+    OutIDs: [2212, 111]
+    AngularMom: 2
+  - BranchingRatio: 0.4831
+    OutIDs: [2122, 211]
+    AngularMom: 2
+
+202112:
+  - BranchingRatio: 0.6
+    OutIDs: [111, 2112]
+    AngularMom: 2
+  - BranchingRatio: 0.2
+    OutIDs: [111, 111, 2112]
+    AngularMom: 1
+  - BranchingRatio: 0.2
+    OutIDs: [-211, 211, 2112]
+    AngularMom: 1
+  - BranchingRatio: 9e-5
+    OutIDs: [22, 2212]
+    AngularMom: 1
+
+202212:
+  - BranchingRatio: 0.3
+    OutIDs: [111, 2212]
+    AngularMom: 2
+  - BranchingRatio: 0.3
+    OutIDs: [211, 2112]
+    AngularMom: 2
+  - BranchingRatio: 0.15
+    OutIDs: [-211, 211, 2212]
+    AngularMom: 1
+  - BranchingRatio: 0.15
+    OutIDs: [111, 111, 2212]
+    AngularMom: 1
+  - BranchingRatio: 0.00035
+    OutIDs: [22, 2212]
+    AngularMom: 1
+
+111:
+  - BranchingRatio: 1.0
+    OutIDs: [22, 22]
+    AngularMom: 2

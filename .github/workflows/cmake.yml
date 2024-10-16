@@ -48,14 +48,18 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.config.os != 'macos-13' && matrix.config.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.config.cc }} cmake && sudo pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.config.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.config.os == 'macos-13' || matrix.config.os == 'macos-14' }}
       run: |
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
         brew install cmake
@@ -100,11 +104,11 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       run: ./test/achilles-fortran-testsuite
      
-    - name: Code coverage
-      if: ${{ matrix.config.cxx == 'g++' }}
-      working-directory: ${{ github.workspace }}
-      run: |
-        lcov --directory . --capture --output-file coverage.info
-        lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info
-        lcov --list coverage.info
-        bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+      # - name: Code coverage
+      #   if: ${{ matrix.config.cxx == 'g++' }}
+      #   working-directory: ${{ github.workspace }}
+      #   run: |
+      #     lcov --directory . --capture --output-file coverage.info
+      #     lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info
+      #     lcov --list coverage.info
+      #     bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"

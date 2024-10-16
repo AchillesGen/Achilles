@@ -1,14 +1,19 @@
-#include "nuchic/Integrators/DoubleExponential.hh"
+#include "Achilles/Integrators/DoubleExponential.hh"
 #include "spdlog/spdlog.h"
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
-constexpr size_t GeneratePower2(size_t curr, size_t) {
-    return static_cast<size_t>(1 << curr);
-}
+bool DoubleExponential::initialized = false;
+std::array<DEPoint, _size> DoubleExponential::table = {};
 
 double DoubleExponential::Integrate(const double &x1, const double &x2, const double &ceps1,
                                     const double &ceps2) {
+    if(!initialized) {
+        size_t idx = 0;
+        for(auto &row : table) row = GeneratePoint(idx++);
+        initialized = true;
+    }
+
     static constexpr int izx = 5;
     double ax = (x2 - x1) / 2;
     double bx = (x2 + x1) / 2;
@@ -16,7 +21,7 @@ double DoubleExponential::Integrate(const double &x1, const double &x2, const do
     double t1, t2, tw1, tw2;
 
     static constexpr size_t phases = _phases + 1;
-    static constexpr auto ip = generate_array<phases>(GeneratePower2);
+    static constexpr std::array<size_t, phases> ip = {1, 2, 4, 8, 16, 32, 64};
 
     size_t evals = 0;
     double sum = 0.0, s1 = 0.0, s2 = 0.0, s3 = 0.0;
@@ -98,25 +103,31 @@ double DoubleExponential::Integrate(const double &x1, const double &x2, const do
             err = pow(10, static_cast<int>(std::min(0.0, max)));
         }
 
-        spdlog::debug("Iteration {} (value, error): {}, {}", k, s1, err);
-        spdlog::debug("Number of evaluations = {}", evals);
+        spdlog::trace("Iteration {} (value, error): {}, {}", k, s1, err);
+        spdlog::trace("Number of evaluations = {}", evals);
 
         if(k > 3 && err < eps1) {
-            spdlog::debug("Result (value, error): {}, {}", s1, err);
+            spdlog::trace("Result (value, error): {}, {}", s1, err);
             return s1;
         }
         if(k >= 3 && err < eps2) {
-            spdlog::debug("Result (value, error): {}, {}", s1, err);
+            spdlog::trace("Result (value, error): {}, {}", s1, err);
             return s1;
         }
     }
 
-    spdlog::warn("DoubleExponential: Failed to converge (value, error): {}, {}", s1, err);
+    if(s1 != 0)
+        spdlog::warn("DoubleExponential: Failed to converge (value, error): {}, {}", s1, err);
     return s1;
 }
 
 std::vector<double> DoubleExponential::IntegrateVec(const double &x1, const double &x2,
                                                     const double &ceps1, const double &ceps2) {
+    if(!initialized) {
+        size_t idx = 0;
+        for(auto &row : table) row = GeneratePoint(idx++);
+    }
+
     static constexpr int izx = 5;
     double ax = (x2 - x1) / 2;
     double bx = (x2 + x1) / 2;
@@ -124,7 +135,7 @@ std::vector<double> DoubleExponential::IntegrateVec(const double &x1, const doub
     static size_t size = FunctionVec(x1).size();
 
     static constexpr size_t phases = _phases + 1;
-    static constexpr auto ip = generate_array<phases>(GeneratePower2);
+    static constexpr std::array<size_t, phases> ip = {1, 2, 4, 8, 16, 32, 64};
 
     size_t evals = 0;
     std::vector<double> sum(size, 0.0), s1(size, 0.0), s2(size, 0.0), s3(size, 0.0);

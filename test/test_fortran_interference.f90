@@ -20,7 +20,7 @@ contains
         integer(8) :: pid_in, pid_out, pid_spect
         type(map) :: params
 
-        file = 'data/intf_info.data'
+        file = 'data/info_intf_C12.data'
         call params%init()
         call params%insert('fpind', 0.54d0)
         call params%insert('fstar', 2.13d0)

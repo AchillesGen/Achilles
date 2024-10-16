@@ -112,6 +112,8 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     addParameter(argv, "CSS_ENHANCE=S{a}{e+}{e-} 0");
     addParameter(argv, "CSS_ENHANCE=S{a}{e-}{e+} 0");
     addParameter(argv, "NLO_SUBTRACTION_SCHEME=2");
+    addParameter(argv, "HDH_SET_WIDTHS=1");
+    addParameter(argv, "HARD_DECAYS=1");
     // add additional commandline parameters
     for(const auto &arg : args) addParameter(argv, arg);
     // Initialise Sherpa and return.

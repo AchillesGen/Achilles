@@ -17,6 +17,7 @@ module intf_spectral_model
             procedure :: mode => intf_spec_mode
             procedure :: init_wgt => intf_spec_init_wgt
             procedure :: cleanup => intf_spec_cleanup
+            procedure, nopass :: inspirehep => intf_inspirehep
     end type
 
     integer :: compute_1body = 1
@@ -79,6 +80,11 @@ contains
     function intf_spec_name() !...name of the model
         character(len=:), allocatable :: intf_spec_name
         intf_spec_name = "Intf_Spectral_Func"
+    end function
+
+    function intf_inspirehep() !...reference for the model
+        character(len=:), allocatable :: intf_inspirehep
+        intf_inspirehep = "Lovato:2023khk" ! TODO: Add inspirehep information
     end function
 
     function intf_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
