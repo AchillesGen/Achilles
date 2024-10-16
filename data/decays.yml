@@ -30,6 +30,32 @@
     OutIDs: [-211, 2112]
     AngularMom: 2
 
+3122:
+  - BranchingRatio: 0.639
+    OutIDs: [2212, -211]
+    AngularMom: 2
+  - BranchingRatio: 0.358
+    OutIDs: [2112, 111]
+    AngularMom: 2
+
+3212:
+  - BranchingRatio: 1.000
+    OutIDs: [22, 3122]
+    AngularMom: 1
+
+3112:
+  - BranchingRatio: 1.000
+    OutIDs: [2112, -211]
+    AngularMom: 2
+
+3222:
+  - BranchingRatio: 0.5157
+    OutIDs: [2212, 111]
+    AngularMom: 2
+  - BranchingRatio: 0.4831
+    OutIDs: [2122, 211]
+    AngularMom: 2
+
 202112:
   - BranchingRatio: 0.6
     OutIDs: [111, 2112]

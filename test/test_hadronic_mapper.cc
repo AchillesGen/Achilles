@@ -1,4 +1,7 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "catch2/catch.hpp"
+#pragma GCC diagnostic pop
 
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
