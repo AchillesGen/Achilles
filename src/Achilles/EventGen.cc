@@ -283,8 +283,6 @@ bool achilles::EventGen::GenerateSingleEvent() {
             }
         }
     }
-    // Update particle statuses in history to account for after the cascade
-    event.History().UpdateStatuses(event.Hadrons());
 
     // Update particle statuses in history to account for after the cascade
     event.History().UpdateStatuses(event.Hadrons());
