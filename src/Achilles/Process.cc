@@ -78,6 +78,9 @@ void Process::SetupHadrons(Event &event) const {
 
     // TODO: Handle hydrogen
 
+    // NOTE: The initial state and spectator have to be handled separately
+    //       to ensure that they aren't the same particle
+
     // Select initial state nucleons
     auto protons = event.Protons(ParticleStatus::background);
     auto neutrons = event.Neutrons(ParticleStatus::background);
