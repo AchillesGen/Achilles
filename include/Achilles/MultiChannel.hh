@@ -21,7 +21,7 @@ struct MultiChannelParams {
     double beta{beta_default}, min_alpha{min_alpha_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr size_t ncalls_default{10000}, nint_default{7};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
     static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
