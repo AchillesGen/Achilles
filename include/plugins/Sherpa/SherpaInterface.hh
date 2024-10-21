@@ -2,6 +2,7 @@
 #define achilles__plugins__SherpaInterface_hh
 
 #include "Achilles/Current.hh"
+#include "Achilles/ParticleInfo.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -14,7 +15,6 @@
 #include "Achilles/Achilles.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/ParticleInfo.hh"
 
 #include <array>
 #include <complex>
@@ -77,7 +77,7 @@ class SherpaInterface {
 
     std::vector<std::unique_ptr<PHASIC::Channels>>
     GenerateChannels(const std::vector<long> &fl) const;
-    std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
+    std::vector<long> MomentumMap(const std::vector<long> &fl) const;
 
     MOCK LeptonCurrents CalcCurrent(const std::vector<long> &fl,
                                     const std::vector<std::array<double, 4>> &p, const double &mu2);

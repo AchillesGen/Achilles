@@ -32,7 +32,7 @@ struct ProcessInfo {
     size_t Multiplicity() const;
     std::vector<double> Masses() const;
     std::vector<long> Ids() const;
-    std::map<size_t, long> m_mom_map;
+    std::vector<long> m_mom_map;
     int LeptonicCharge() const;
 
     bool operator==(const ProcessInfo &other) const {
