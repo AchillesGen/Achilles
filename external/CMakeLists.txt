@@ -1,3 +1,5 @@
+set(achilles_install "")
+
 CPMAddPackage(
     NAME fmt
     GIT_TAG 11.0.0
@@ -15,7 +17,10 @@ CPMAddPackage(
         "SPDLOG_BUILD_SHARED ON"
         "SPDLOG_INSTALL ON"
 )
+if(NOT TARGET spdlog::spdlog)
 add_library(spdlog::spdlog ALIAS spdlog)
+list(APPEND achilles_install spdlog)
+endif()
 
 CPMAddPackage(
     NAME docopt

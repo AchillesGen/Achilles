@@ -77,13 +77,19 @@ find_package(Filesystem REQUIRED)
 
 # Find ZLIB to read gzip files
 if(ACHILLES_ENABLE_GZIP)
-find_package(ZLIB REQUIRED)
+    find_package(ZLIB REQUIRED)
 endif()
 
 if(ACHILLES_ENABLE_SHERPA)
-# Find Sherpa
-find_package(SHERPA REQUIRED)
-find_package(ZLIB REQUIRED)
+    # Find Sherpa
+    find_package(SHERPA-MC REQUIRED)
+    MESSAGE(STATUS "Found Sherpa Version: ${SHERPA-MC_VERSION}")
+    if(SHERPA-MC_VERSION VERSION_GREATER_EQUAL 3.0.0)
+        MESSAGE(STATUS "Using Sherpa-3 interface")
+        set(SHERPA3 TRUE)
+        set(UFO_VERSION 2.0)
+    endif()
+    find_package(ZLIB REQUIRED)
 endif()
 
 # Find ROOT if needed
