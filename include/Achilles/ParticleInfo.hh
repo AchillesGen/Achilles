@@ -21,6 +21,8 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
+#include "fmt/ranges.h"
+
 namespace achilles {
 class ParticleInfoEntry;
 // class ParticleInfo;
@@ -370,7 +372,7 @@ template <> struct formatter<std::vector<achilles::PID>> {
 
     template <typename FormatContext>
     auto format(const std::vector<achilles::PID> &pids, FormatContext &ctx) {
-        return format_to(ctx.out(), "[{}]", join(pids.begin(), pids.end(), ", "));
+        return format_to(ctx.out(), "[{}]", join(pids, ", "));
     }
 };
 
