@@ -913,91 +913,79 @@ V_150 = Vertex(name = 'V_150',
 V_151 = Vertex(name = 'V_151',
                particles = [ P.antiproton, P.proton, P.a ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_96, (0,0,1):C.GC_96},
-               form_factors = [ 'F1p', 'F2p' ])
+               lorentz = [ L.FFVp1, L.FFVp2 ],
+               couplings = {(0,0):C.GC_96, (0,1):C.GC_106})
 
 V_152 = Vertex(name = 'V_152',
                particles = [ P.antineutron, P.neutron, P.a ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_96, (0,0,1):C.GC_96},
-               form_factors = [ 'F1n', 'F2n' ])
+               lorentz = [ L.FFVn1, L.FFVn2 ],
+               couplings = {(0,0):C.GC_96, (0,1):C.GC_106})
 
 V_153 = Vertex(name = 'V_153',
                particles = [ P.antiproton, P.proton, P.Z ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_97, (0,0,1):C.GC_98,
-                            (0,0,2):C.GC_97, (0,0,3):C.GC_98,
-                            (0,0,4):C.GC_98},
-               form_factors = [ 'F1p', 'F1n', 'F2p', 'F2n', 'FA' ])
+               lorentz = [ L.FFVp1, L.FFVn1, L.FFVp2, L.FFVn2, L.FFVA ],
+               couplings = {(0,0):C.GC_97, (0,1):C.GC_98,
+                            (0,2):C.GC_107, (0,3):C.GC_108,
+                            (0,4):C.GC_98})
 
 V_154 = Vertex(name = 'V_154',
                particles = [ P.antineutron, P.neutron, P.Z ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_97, (0,0,1):C.GC_98,
-                            (0,0,2):C.GC_97, (0,0,3):C.GC_98,
-                            (0,0,4):C.GC_98},
-               form_factors = [ 'F1n', 'F1p', 'F2n', 'F2p', 'FA' ])
+               lorentz = [ L.FFVn1, L.FFVp1, L.FFVn2, L.FFVp2, L.FFVA ],
+               couplings = {(0,0):C.GC_97, (0,1):C.GC_98,
+                            (0,2):C.GC_107, (0,3):C.GC_108,
+                            (0,4):C.GC_98})
 
 V_155 = Vertex(name = 'V_155',
                particles = [ P.antiproton, P.neutron, P.W__plus__ ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_99, (0,0,1):C.GC_100,
-                            (0,0,2):C.GC_99, (0,0,3):C.GC_100,
-                            (0,0,4):C.GC_99},
-               form_factors = [ 'F1p', 'F1n', 'F2p', 'F2n', 'FA' ])
+               lorentz = [ L.FFVp1, L.FFVn1, L.FFVp2, L.FFVn2, L.FFVA ],
+               couplings = {(0,0):C.GC_99, (0,1):C.GC_100,
+                            (0,2):C.GC_109, (0,3):C.GC_110,
+                            (0,4):C.GC_99})
 
 V_156 = Vertex(name = 'V_156',
                particles = [ P.antineutron, P.proton, P.W__minus__ ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_99, (0,0,1):C.GC_100,
-                            (0,0,2):C.GC_99, (0,0,3):C.GC_100,
-               		        (0,0,4):C.GC_99},
-               form_factors = [ 'F1p', 'F1n', 'F2p', 'F2n', 'FA' ])        		    
+               lorentz = [ L.FFVp1, L.FFVn1, L.FFVp2, L.FFVn2, L.FFVA ],
+               couplings = {(0,0):C.GC_99, (0,1):C.GC_100,
+                            (0,2):C.GC_109, (0,3):C.GC_110,
+               		        (0,4):C.GC_99})
 
 V_157 = Vertex(name = 'V_157',
                particles = [ P.antiproton, P.proton, P.Z_D ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_101, (0,0,1):C.GC_101},
-               form_factors = [ 'F1p', 'F2p' ])
+               lorentz = [ L.FFVp1, L.FFVp2 ],
+               couplings = {(0,0):C.GC_101, (0,1):C.GC_101})
 
 V_158 = Vertex(name = 'V_158',
                particles = [ P.antineutron, P.neutron, P.Z_D ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_101, (0,0,1):C.GC_101},
-               form_factors = [ 'F1n', 'F2n' ])
+               lorentz = [ L.FFVn1, L.FFVn2 ],
+               couplings = {(0,0):C.GC_101, (0,1):C.GC_101})
 
 V_159 = Vertex(name = 'V_159',
                particles = [ P.anticarbon, P.carbon, P.a ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_102},
-               form_factors = [ 'FCoh' ])
+               lorentz = [ L.VSSCoh ],
+               couplings = {(0,0):C.GC_102})
 
 V_160 = Vertex(name = 'V_160',
                particles = [ P.anticarbon, P.carbon, P.Z_D ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_103},
-               form_factors = [ 'FCoh' ])
+               lorentz = [ L.VSSCoh ],
+               couplings = {(0,0):C.GC_103})
 
 V_159 = Vertex(name = 'V_161',
                particles = [ P.antiargon, P.argon, P.a ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_104},
-               form_factors = [ 'FCoh' ])
+               lorentz = [ L.VSSCoh ],
+               couplings = {(0,0):C.GC_104})
 
 V_160 = Vertex(name = 'V_162',
                particles = [ P.antiargon, P.argon, P.Z_D ],
                color = [ '1' ],
-               lorentz = [ L.FFV1 ],
-               couplings = {(0,0,0):C.GC_105},
-               form_factors = [ 'FCoh' ])
+               lorentz = [ L.VSSCoh ],
+               couplings = {(0,0):C.GC_105})
