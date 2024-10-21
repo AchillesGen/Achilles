@@ -306,6 +306,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
             if(!kickNuc->Info().IsStable()) {
                 if(Decay(event, idx)) continue;
             }
+            spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
             // Update formation zones
             if(kickNuc->InFormationZone() && !kickNuc->Info().IsPion()) {

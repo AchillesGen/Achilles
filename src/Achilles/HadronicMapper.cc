@@ -174,17 +174,17 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
-    spdlog::trace("  point[0] = {}", point[0]);
-    spdlog::trace("  dp = {}", dp);
-    spdlog::trace("  cosT_min = {}", cosT_max);
-    spdlog::trace("  cosT_max = {}", cosT_max);
-    spdlog::trace("  cosT = {}", cosT);
-    spdlog::trace("  mom = {}", mom);
-    spdlog::trace("  energy = {}", energy);
-    spdlog::trace("  emax = {}", emax);
-    spdlog::trace("  s = {}", (point[0] + point[1]).M2());
-    spdlog::trace("  s_min = {}", Smin());
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    // spdlog::trace("  point[0] = {}", point[0]);
+    // spdlog::trace("  dp = {}", dp);
+    // spdlog::trace("  cosT_min = {}", cosT_max);
+    // spdlog::trace("  cosT_max = {}", cosT_max);
+    // spdlog::trace("  cosT = {}", cosT);
+    // spdlog::trace("  mom = {}", mom);
+    // spdlog::trace("  energy = {}", energy);
+    // spdlog::trace("  emax = {}", emax);
+    // spdlog::trace("  s = {}", (point[0] + point[1]).M2());
+    // spdlog::trace("  s_min = {}", Smin());
 }
 
 double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,

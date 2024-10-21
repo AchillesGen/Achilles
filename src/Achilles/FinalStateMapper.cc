@@ -107,7 +107,7 @@ void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vec
     // auto GammaN_mass = pGammaN.M();
     // spdlog::debug("GammaN invariant mass = {}", GammaN_mass);
 
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
 double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
@@ -142,7 +142,7 @@ double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
     wt *= Isotropic2Weight(mom[2], mom[3], rans[3], rans[4], m_ctmin, m_ctmax);
 
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, (3 * 3.) - 4.);
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     return 1 / wt;
 }
 
