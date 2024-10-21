@@ -429,3 +429,23 @@ GC_104 = Coupling(name = 'GC_104',
 GC_105 = Coupling(name = 'GC_105',
                   value = '18*eeps*complex(0,1)',
                   order = {'NP':1})
+
+GC_106 = Coupling(name = 'GC_106',
+                 value = '(ee)',
+                 order = {'QED':1})
+
+GC_107 = Coupling(name = 'GC_107',
+                 value = '(cw*ee)/(2.*sw) - (ee*sw)/(2.*cw)',
+                 order = {'QED':1})
+
+GC_108 = Coupling(name = 'GC_108',
+                 value = '-(cw*ee)/(2.*sw)',
+                 order = {'QED':1})
+
+GC_109 = Coupling(name = 'GC_109',
+                 value = '(ee)/(sw*cmath.sqrt(2)*2)',
+                 order = {'QED':1})
+
+GC_110 = Coupling(name = 'GC_110',
+                  value = '-(ee)/(sw*cmath.sqrt(2)*2)',
+                  order = {'QED':1})
