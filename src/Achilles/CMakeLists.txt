@@ -47,7 +47,7 @@ add_library(mappers SHARED
 target_link_libraries(mappers PRIVATE project_warnings
                               PUBLIC utilities)
 if(ACHILLES_ENABLE_SHERPA)
-    list(APPEND achilles_targets sherpa)
+    list(APPEND achilles_targets sherpa SherpaAchillesInput)
     target_compile_definitions(mappers PUBLIC ACHILLES_SHERPA_INTERFACE)
     target_link_libraries(mappers PUBLIC sherpa)
 endif()
@@ -168,7 +168,7 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f
+install(TARGETS ${achilles_targets} ${achilles_install} yaml-cpp fmt #pybind11 fortran_interface_f
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
