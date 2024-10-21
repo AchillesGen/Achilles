@@ -5,6 +5,7 @@
 
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "fmt/ranges.h"
 
 namespace achilles {
 
@@ -140,11 +141,11 @@ class EventHistory {
 
 struct PrintVisitor : HistoryVisitor {
     std::string data;
-    void visit(achilles::EventHistoryNode *node) {
-        data +=
-            fmt::format("Node({}, {{{}}} -> {{{}}})\n", achilles::ToString(node->Status()),
-                        fmt::join(node->ParticlesIn().begin(), node->ParticlesIn().end(), ", "),
-                        fmt::join(node->ParticlesOut().begin(), node->ParticlesOut().end(), ", "));
+    void visit(achilles::EventHistoryNode *) {
+        data += " ";
+        // fmt::format("Node({}, {{{}}} -> {{{}}})\n", achilles::ToString(node->Status()),
+        //             fmt::join(node->ParticlesIn(), ", "),
+        //             fmt::join(node->ParticlesOut(), ", "));
     }
 };
 

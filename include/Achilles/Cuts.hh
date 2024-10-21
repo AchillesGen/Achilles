@@ -4,7 +4,10 @@
 #include <utility>
 
 #include "Achilles/ParticleInfo.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
 #include "fmt/ranges.h"
+#pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"

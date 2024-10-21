@@ -5,6 +5,7 @@
 #include "Achilles/AdaptiveMap.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
+#include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 
 using achilles::AdaptiveMap;
@@ -153,8 +154,8 @@ void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {
     }
 
     // Store the new histogram information
-    spdlog::trace("Old Hist: [{}]", fmt::join(m_hist.begin(), m_hist.end(), ", "));
-    spdlog::trace("New Hist: [{}]", fmt::join(hist.begin(), hist.end(), ", "));
+    spdlog::trace("Old Hist: [{}]", fmt::join(m_hist, ", "));
+    spdlog::trace("New Hist: [{}]", fmt::join(hist, ", "));
     m_bins = nsplit * m_bins;
     m_hist = hist;
 }
