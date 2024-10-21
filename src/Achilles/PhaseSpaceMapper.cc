@@ -28,7 +28,7 @@ void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
     main->GeneratePoint(momentum, mainRans);
 
     // Debugging
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
 }
 
 double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
@@ -54,11 +54,11 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
     swap(rans, hbeamRans);
 
     // Debugging
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
-    spdlog::trace("  Lepton Beam Weight = {}", lwgt);
-    spdlog::trace("  Hadron Beam Weight = {}", hwgt);
-    spdlog::trace("  Phase Space Weight = {}", mwgt);
-    spdlog::trace("  Weight = {}", wgt);
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
+    // spdlog::trace("  Lepton Beam Weight = {}", lwgt);
+    // spdlog::trace("  Hadron Beam Weight = {}", hwgt);
+    // spdlog::trace("  Phase Space Weight = {}", mwgt);
+    // spdlog::trace("  Weight = {}", wgt);
 
     return wgt;
 }

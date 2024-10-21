@@ -30,7 +30,7 @@ void achilles::AchillesWriter::WriteHeader(const std::string &filename,
 void achilles::AchillesWriter::Write(const Event &event) {
     *m_out << fmt::format("Event: {}\n", ++nEvents);
     *m_out << fmt::format("  Particles:\n");
-    for(const auto &part : event.Particles()) { *m_out << fmt::format("  - {}\n", part); }
+    // for(const auto &part : event.Particles()) { *m_out << fmt::format("  - {}\n", part); }
     *m_out << fmt::format("  - {}\n", event.Remnant());
     *m_out << fmt::format("  Weight: {}\n", event.Weight());
 }

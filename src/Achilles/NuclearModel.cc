@@ -3,8 +3,8 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Process.hh"
 #include "Achilles/Poincare.hh"
+#include "Achilles/Process.hh"
 #include "Achilles/Spinor.hh"
 
 using achilles::Coherent;
@@ -113,15 +113,11 @@ void NuclearModel::TransformFrame(Event &event, const Process &process, bool for
 
 void NuclearModel::TransformQZ(Event &event, const Process &process, bool forward) {
     if(forward) {
-        auto q = process.ExtractQ(event); 
+        auto q = process.ExtractQ(event);
         rotation = q.AlignZ();
-        for(auto &mom : event.Momentum()) {
-            mom = mom.Rotate(rotation);
-        }
+        for(auto &mom : event.Momentum()) { mom = mom.Rotate(rotation); }
     } else {
-        for(auto &mom : event.Momentum()) {
-            mom = mom.RotateBack(rotation);
-        }
+        for(auto &mom : event.Momentum()) { mom = mom.RotateBack(rotation); }
     }
 }
 
@@ -379,7 +375,6 @@ void NuclearModel::LandauGauge(VCurrent &cur, const FourVector &q) const {
     for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
 }
 
-
 // TODO: Clean this up such that the nucleus isn't loaded twice, and that it works with multiple
 // nuclei
 Coherent::Coherent(const YAML::Node &config, const YAML::Node &form_factor,
@@ -450,23 +445,22 @@ QESpectral::QESpectral(const YAML::Node &config, const YAML::Node &form_factor,
 
 NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had_in,
                                                 const std::vector<Particle> &had_out,
-                                                const std::vector<Particle> &,
-                                                const FourVector &q, const FFInfoMap &ff) const {
-
+                                                const std::vector<Particle> &, const FourVector &q,
+                                                const FFInfoMap &ff) const {
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
 
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
+    // auto free_energy = sqrt(pIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     auto omega = qVec.E();
-    qVec.E() = qVec.E() + pIn.E() - free_energy;
+    // qVec.E() = qVec.E() + pIn.E() - free_energy;
 
     Currents results;
 
     // Setup spinors
-    pIn.E() = free_energy;
+    // pIn.E() = free_energy;
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pOut);
     ubar[1] = UBarSpinor(1, pOut);
@@ -506,7 +500,8 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     return std::make_unique<QESpectral>(config, form_factor);
 }
 
-double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons, const std::vector<Particle> &, size_t nprotons,
+double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
+                                      const std::vector<Particle> &, size_t nprotons,
                                       size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     const double removal_energy = Constant::mN - nucleons[0].E();
@@ -542,6 +537,7 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
         for(size_t j = 0; j < 2; ++j) {
             VCurrent subcur;
             for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
+            spdlog::debug("m_j[{}, {}] = ({})", i, j, fmt::join(subcur, ", "));
             result.push_back(subcur);
         }
     }

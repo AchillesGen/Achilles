@@ -39,11 +39,11 @@ void Event::Finalize() {
 
 void Event::Display() const {
     spdlog::trace("Leptons:");
-    size_t idx = 0;
-    for(const auto &particle : Leptons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    // size_t idx = 0;
+    // for(const auto &particle : Leptons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
     spdlog::trace("Hadrons:");
-    idx = 0;
-    for(const auto &particle : Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    // idx = 0;
+    // for(const auto &particle : Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
     spdlog::trace("Weight: {}", Weight());
 }
 

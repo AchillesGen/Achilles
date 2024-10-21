@@ -11,7 +11,7 @@ void BeamMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector
     // static constexpr double eps=5;
     point[m_idx] =
         m_beam->Flux(beam_id, rans, (Smin() - Masses().back()) / (2 * sqrt(Masses().back())));
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
 }
 
 double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vector<double> &rans) {
@@ -21,8 +21,8 @@ double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vec
     // static constexpr double eps=5;
     auto wgt = m_beam->GenerateWeight(beam_id, point[m_idx], rans,
                                       (Smin() - Masses().back()) / (2 * sqrt(Masses().back())));
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
-    spdlog::trace("  Beam weight = {}", wgt);
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    // spdlog::trace("  Beam weight = {}", wgt);
     return 1.0 / wgt;
 }
 

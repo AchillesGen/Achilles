@@ -193,7 +193,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSte
         std::vector<size_t> newKicked{};
         for(auto idx : kickedIdxs) {
             Particle *kickNuc = &particles[idx];
-            spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
+            //            spdlog::debug("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
             // Update formation zones
             if(kickNuc->InFormationZone()) {
@@ -256,7 +256,7 @@ void Cascade::Evolve(std::shared_ptr<Nucleus> nucleus, const std::size_t &maxSte
     for(auto particle : particles) {
         if(particle.Status() == ParticleStatus::propagating) {
             std::cout << "\n";
-            for(auto p : particles) spdlog::error("{}", p);
+            //            for(auto p : particles) spdlog::error("{}", p);
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
     }

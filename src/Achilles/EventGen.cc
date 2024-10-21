@@ -235,8 +235,9 @@ bool achilles::EventGen::GenerateSingleEvent() {
         cascade->Evolve(&event);
 
         spdlog::trace("Hadrons (Post Cascade):");
-        size_t idx = 0;
-        for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+        // size_t idx = 0;
+        // for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle);
+        // }
     } else {
         for(auto &nucleon : event.CurrentNucleus()->Nucleons()) {
             if(nucleon.Status() == ParticleStatus::propagating) {

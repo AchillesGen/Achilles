@@ -43,9 +43,9 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     mom[2] = mom[2].Boost(boostVec);
     mom[3] = mom[3].Boost(boostVec);
 
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
-    spdlog::trace("  s = {}, lambda = {}", s, lambda);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
+    // spdlog::trace("  s = {}, lambda = {}", s, lambda);
 }
 
 double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
@@ -62,11 +62,11 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
 
     auto factor = pcm / ecm / (16 * M_PI * M_PI);
     auto wgt = 1.0 / dCos / dPhi / factor;
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  ct: {}", p2.CosTheta());
-    spdlog::trace("  pcm: {}", pcm);
-    spdlog::trace("  ecm: {}", ecm);
-    spdlog::trace("  Weight: {}", wgt);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // spdlog::trace("  ct: {}", p2.CosTheta());
+    // spdlog::trace("  pcm: {}", pcm);
+    // spdlog::trace("  ecm: {}", ecm);
+    // spdlog::trace("  Weight: {}", wgt);
 
     return wgt;
 }
@@ -102,7 +102,7 @@ void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vec
     // auto GammaN_mass = pGammaN.M();
     // spdlog::debug("GammaN invariant mass = {}", GammaN_mass);
 
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
 double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
@@ -137,7 +137,7 @@ double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
     wt *= Isotropic2Weight(mom[2], mom[3], rans[3], rans[4], m_ctmin, m_ctmax);
 
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, (3 * 3.) - 4.);
-    Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
     return 1 / wt;
 }
 
