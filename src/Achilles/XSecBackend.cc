@@ -46,7 +46,8 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
-                                       const std::vector<Particle> &p_in, const std::vector<Particle> &p_spect) const {
+                                       const std::vector<Particle> &p_in,
+                                       const std::vector<Particle> &p_spect) const {
     auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
     return initial_wgt;
 }
@@ -102,12 +103,15 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         auto hadron_current2 = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
-            if(hadron_current.find(boson) == hadron_current.end() || hadron_current2.find(boson) == hadron_current2.end()) continue;
+            if(hadron_current.find(boson) == hadron_current.end() ||
+               hadron_current2.find(boson) == hadron_current2.end())
+                continue;
             const auto &hcurrent = hadron_current[boson];
             const auto &hcurrent2 = hadron_current2[boson];
             for(const auto &lcurrent_spin : lcurrent.second) {
                 for(size_t i = 0; i < hcurrent.size(); ++i) {
-                    amps2 += 2*std::real(lcurrent_spin * hcurrent[i] * std::conj(lcurrent_spin * hcurrent2[i]));
+                    amps2 += 2 * std::real(lcurrent_spin * hcurrent[i] *
+                                           std::conj(lcurrent_spin * hcurrent2[i]));
 
                     spdlog::debug("amps2 = {}", amps2);
                 }
@@ -173,12 +177,12 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     }
 
     if(multiplicity == 2) {
-        Channel<FourVector> channel0 =
-            BuildChannel<TwoBodyMapper>(m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(
+            m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
-        Channel<FourVector> channel0 =
-            BuildChannel<ThreeBodyMapper>(m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 = BuildChannel<ThreeBodyMapper>(
+            m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
 }
@@ -224,18 +228,24 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
         for(auto &elm : amp) elm = 0;
 
     double amps2 = 0;
-    for(const auto &lcurrent : lepton_current) {
-        auto boson = lcurrent.first;
-        if(hadron_current.find(boson) == hadron_current.end()) continue;
-        const auto &hcurrent = hadron_current[boson];
-        for(size_t i = 0; i < nlep_spins; ++i) {
-            // FIXME: this to be correct!!!
-            size_t idx = ((i & ~1ul) << 2) + ((i & 1ul) << 1);
-            idx = idx == 2 ? 10 : 2;
-            for(size_t j = 0; j < nhad_spins; ++j) {
-                amps2 += std::norm(lcurrent.second[i] * hcurrent[j]);
+    // Loop over lepton spin
+    for(size_t i = 0; i < nlep_spins; ++i) {
+        // FIXME: this to be correct!!!
+        size_t idx = ((i & ~1ul) << 2) + ((i & 1ul) << 1);
+        idx = idx == 2 ? 10 : 2;
+        // Loop over hadron spin
+        for(size_t j = 0; j < nhad_spins; ++j) {
+            std::complex<double> amp = 0;
+            // Loop over boson
+            for(const auto &lcurrent : lepton_current) {
+                auto boson = lcurrent.first;
+                if(hadron_current.find(boson) == hadron_current.end()) continue;
+                const auto &hcurrent = hadron_current[boson];
+                spdlog::debug("A[{}][{}] = {}", i, j, lcurrent.second[i] * hcurrent[j]);
+                amp += lcurrent.second[i] * hcurrent[j];
                 spin_amps[0][idx] += lcurrent.second[i] * hcurrent[j];
             }
+            amps2 += std::norm(amp);
         }
     }
     p_sherpa->FillAmplitudes(spin_amps);
@@ -244,24 +254,31 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}, ps_weight = {}", flux, initial_wgt,
+                  amps2 * SpinAvg(process_info), event.Weight());
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
 achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<FourVector> &p,
                                                             const ProcessInfo &info) const {
+    spdlog::trace("Converting momenta to Sherpa format");
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<int> pids;
-    spdlog::debug("mom map: {}", info.m_mom_map.size());
-    for(const auto &elm : info.m_mom_map) {
-        pids.push_back(static_cast<int>(elm.second));
-        mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
-        spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(), mom[elm.first][0],
-                      mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]);
+    std::vector<long> pids(info.m_mom_map.size());
+    // TODO: Somehow pass sorted information to momentum gen
+    pids[0] = info.m_mom_map.at(0);
+    mom[0] = (p[1] / 1_GeV).Momentum();
+    pids[1] = info.m_mom_map.at(1);
+    mom[1] = (p[0] / 1_GeV).Momentum();
+    for(size_t i = 2; i < p.size(); ++i) {
+        pids[i] = info.m_mom_map.at(i);
+        mom[i] = (p[i] / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
+    spdlog::trace("Passing calculation to Sherpa");
     auto currents = p_sherpa->CalcCurrent(pids, mom, mu2);
+    spdlog::trace("{}", currents.size());
 
     for(auto &current : currents) {
         spdlog::trace("Current for {}", current.first);
@@ -282,27 +299,26 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
-                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-                                      process_info.m_spectator.size(),
-                                      beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel = achilles::BuildGenChannel(
+            m_model.get(), process_info.m_leptonic.second.size() + 1,
+            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
 }
 
-void achilles::BSMBackend::SetOptions(const YAML::Node &) {
-    // auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
-    // const auto vectorFF = config["vector"].as<std::string>();
-    // const auto axialFF = config["axial"].as<std::string>();
-    // const auto coherentFF = config["coherent"].as<std::string>();
-    // auto ff = FormFactorBuilder()
-    //               .Vector(vectorFF, config[vectorFF])
-    //               .AxialVector(axialFF, config[axialFF])
-    //               .Coherent(coherentFF, config[coherentFF])
-    //               .build();
-    // FormFactorInterface::SetFormFactor(std::move(ff));
+void achilles::BSMBackend::SetOptions(const YAML::Node &options) {
+    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    const auto vectorFF = config["vector"].as<std::string>();
+    const auto axialFF = config["axial"].as<std::string>();
+    const auto coherentFF = config["coherent"].as<std::string>();
+    auto ff = FormFactorBuilder()
+                  .Vector(vectorFF, config[vectorFF])
+                  .AxialVector(axialFF, config[axialFF])
+                  .Coherent(coherentFF, config[coherentFF])
+                  .build();
+    FormFactorInterface::SetFormFactor(std::move(ff));
 }
 
 achilles::SherpaBackend::SherpaBackend() {}
@@ -314,6 +330,7 @@ void achilles::SherpaBackend::AddProcess(Process &process) {
         spdlog::error("Cannot initialize hard process");
         exit(1);
     }
+    process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
 double achilles::SherpaBackend::CrossSection(const Event &event, const Process &process) const {
@@ -321,10 +338,18 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     auto info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<long> pids = process.Info().Ids();
-    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = (p[i] / 1_GeV).Momentum(); }
+    std::vector<long> pids(p.size());
+    // TODO: Somehow pass sorted information to momentum gen
+    pids[0] = info.m_mom_map.at(0);
+    mom[0] = (p[1] / 1_GeV).Momentum();
+    pids[1] = info.m_mom_map.at(1);
+    mom[1] = (p[0] / 1_GeV).Momentum();
+    for(size_t i = 2; i < p.size(); ++i) {
+        pids[i] = info.m_mom_map.at(i);
+        mom[i] = (p[i] / 1_GeV).Momentum();
+    }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
-    static constexpr double mu2 = 100;
+    static constexpr double mu2 = 1;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
     spdlog::trace("|M|^2 = {}", amps2);
     if(std::isnan(amps2)) amps2 = 0;
@@ -347,11 +372,10 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
-            achilles::BuildGenChannel(m_model.get(), process_info.m_leptonic.second.size() + 1,
-                                      process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-                                      process_info.m_spectator.size(),
-                                      beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel = achilles::BuildGenChannel(
+            m_model.get(), process_info.m_leptonic.second.size() + 1,
+            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
+            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
