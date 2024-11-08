@@ -2,7 +2,10 @@
 
 #include "Achilles/Beams.hh"
 #include "Achilles/YAML/Beams.hh"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 #include <iostream>
 
