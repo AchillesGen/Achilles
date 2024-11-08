@@ -14,7 +14,7 @@
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic pop
 
 namespace achilles {

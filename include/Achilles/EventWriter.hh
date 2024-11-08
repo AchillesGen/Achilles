@@ -9,7 +9,7 @@
 
 #if GZIP
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
 #endif
