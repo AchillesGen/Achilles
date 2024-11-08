@@ -43,6 +43,7 @@ NuclearModel::NuclearModel(const YAML::Node &config,
                         .Hyperon(hyperonFF, config[hyperonFF])
                         .build();
     ffbuilder.Reset();
+    spdlog::debug("Finished");
 }
 
 void NuclearModel::SetTransform() {
@@ -170,20 +171,26 @@ void NuclearModel::TransformQZ(Event &event, const Process &process, bool forwar
 }
 
 YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
+    static bool copied = false;
     std::string filename = config["NuclearModel"]["FormFactorFile"].as<std::string>();
     try {
         return YAML::LoadFile(Filesystem::FindFile(filename, "NuclearModel"));
     } catch(const AchillesLoadError &e) {
-        spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as "
-                     "FormFactorsDefault.yml",
-                     PathVariables::installDefaults / "FormFactors.yml");
-        fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+        if(!copied) {
+            spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as "
+                         "FormFactorsDefault.yml",
+                         PathVariables::installDefaults / "FormFactors.yml");
+            fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+            copied = true;
+        }
         return YAML::LoadFile("FormFactorsDefault.yml");
     }
 }
 
 YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
-    return YAML::LoadFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>());
+    auto filename = Filesystem::FindFile(
+        config["NuclearModel"]["ModelParamsFile"].as<std::string>(), "NuclearModel");
+    return YAML::LoadFile(filename);
 }
 
 NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {

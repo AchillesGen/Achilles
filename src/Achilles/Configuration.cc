@@ -3,12 +3,13 @@
 #include "Achilles/Configuration.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/System.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
 #ifdef GZIP
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "gzstream/gzstream.h"
 #pragma GCC diagnostic pop
 #else
@@ -16,12 +17,14 @@
 #endif
 
 achilles::DensityConfiguration::DensityConfiguration(const std::string &filename) {
+    const std::string file_with_path =
+        Filesystem::FindFile(filename.c_str(), "DensityConfiguration");
     spdlog::debug("Loading density configurations from {}", filename);
     // Load configuration
 #ifdef GZIP
-    igzstream configs(filename.c_str());
+    igzstream configs(file_with_path.c_str());
 #else
-    std::ifstream configs(filename.c_str());
+    std::ifstream configs(file_with_path);
 #endif
     if(!configs.good()) throw std::runtime_error("Invalid file " + filename);
     std::string line;
