@@ -1,6 +1,7 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/System.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -32,6 +33,8 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
 
     // Load Configuration, currently sets up spectral functions only
     auto filename = config["NuclearModel"]["ConfigFile"].as<std::string>();
+    filename = Filesystem::FindFile(filename, "FNuclearModel");
+    spdlog::trace("FNuclearModel: Config file at {}", filename);
     size_t len = filename.size();
     auto cfilename = std::make_unique<char[]>(len + 1);
     strcpy(cfilename.get(), filename.c_str());

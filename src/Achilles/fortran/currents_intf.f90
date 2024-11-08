@@ -30,10 +30,12 @@ module dirac_matrices_intf
 contains
 
 subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in)
+    use libsystem
     implicit none
     integer*4 :: i,j
     real*8 :: xmd_in,xmn_in,xmpi_in,xmrho_in
     real*8 :: fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in
+    character(len=:), allocatable :: datafile
     xmd=xmd_in
     xmn=xmn_in
     xmpi=xmpi_in
@@ -79,7 +81,8 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fp
 
     ! Read in delta potential and
     ! set up 1D interpolation
-    open(10, file='data/rho_0p5.dat')
+    datafile = find_file('data/rho_0p5.dat', 'Currents_IntF')
+    open(10, file=trim(datafile))
     read(10,*) np_del
     allocate(pdel(np_del),pot_del(np_del))
     do i=1,np_del

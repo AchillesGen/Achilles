@@ -7,6 +7,7 @@ add_library(fortran_interface SHARED
     particle_mod.f90
     particle_info_mod.f90
     logging_mod.f90
+    system_mod.f90
     interaction_mod.f90
     interpolation_mod.f90
     # hardscattering_mod.f90
@@ -50,6 +51,7 @@ add_library(fortran_interface SHARED
     FProcessInfo.cc
     FNuclearModel.cc
     FSpectralFunction.cc
+    FSystem.cc
 )
 target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
                                         PUBLIC physics nuclear_models)
