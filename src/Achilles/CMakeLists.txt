@@ -169,21 +169,21 @@ if(ACHILLES_ENABLE_CASCADE_TEST)
     add_executable(achilles-cascade CascadeMain.cc RunCascade.cc)
     # TODO: Refactor the event_gen library to pull pieces unused by the cascade executable
     target_link_libraries(achilles-cascade PRIVATE project_warnings
-                                         PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
+                                           PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
 if(ACHILLES_ENABLE_POTENTIAL_TEST)
     add_executable(achilles-potential PotentialMain.cc RunPotential.cc)
     target_link_libraries(achilles-potential PRIVATE project_warnings
-                                           PUBLIC physics docopt::docopt)
+                                             PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-potential)
 endif()
 
 if(ACHILLES_ENABLE_PRECOMPUTED)
     add_executable(achilles-precomputed Precomputed.cc PrecomputedMain.cc)
     target_link_libraries(achilles-precomputed PRIVATE project_warnings
-                                               PUBLIC physics event_gen docopt::docopt)
+                                               PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-precomputed)
 endif()
 
