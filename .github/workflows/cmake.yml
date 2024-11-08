@@ -88,7 +88,7 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
           -DACHILLES_COVERAGE=${{ matrix.config.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.config.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.config.cxx}} \
-          -DCMAKE_Fortran_COMPILER=${{ matrix.config.fort }}
+          -DCMAKE_Fortran_COMPILER=${{ matrix.config.fort }} -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/install
 
     - name: Build
       # Build your program with the given configuration
@@ -103,6 +103,17 @@ jobs:
     - name: Test Fotran
       working-directory: ${{ github.workspace }}/build
       run: ./test/achilles-fortran-testsuite
+
+    - name: Install
+      working-directory: ${{ github.workspace }}
+      run: cmake --install ${{ github.workspace }}/build
+
+    - name: Simple test run
+      working-directory: ${{ github.workspace }}/install
+      run: |
+        cp ../run.yml .
+        cp ../data/default/FormFactors.yml .
+        ./bin/achilles 
      
       # - name: Code coverage
       #   if: ${{ matrix.config.cxx == 'g++' }}
