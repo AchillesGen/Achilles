@@ -90,6 +90,8 @@ void achilles::Brent::GetBracket(double &a, double &b, double &c, double &fa, do
     fc = m_func(c);
     double u, fu;
 
+    spdlog::trace("Bracket start: a = {}, f(a) = {}, b = {}, f(b) = {}, c = {}, f(c) = {}", a, fa,
+                  b, fb, c, fc);
     // Keep updating guess until we bracket, start with parabolic extrapolation
     while(fb > fc) {
         double r = (b - a) * (fb - fc);
@@ -107,12 +109,14 @@ void achilles::Brent::GetBracket(double &a, double &b, double &c, double &fa, do
                 b = u;
                 fa = fb;
                 fb = fu;
+                spdlog::trace("Bracket is: {}, {}, {}", a, b, c);
 
                 return;
                 // Minimum between a and u
             } else if(fu > fb) {
                 c = u;
                 fc = fu;
+                spdlog::trace("Bracket is: {}, {}, {}", a, b, c);
 
                 return;
             }
@@ -139,12 +143,25 @@ void achilles::Brent::GetBracket(double &a, double &b, double &c, double &fa, do
         shift(a, b, c, u);
         shift(fa, fb, fc, fu);
     }
+
+    bool cond1 = (fb < fc && fb <= fa) || (fb < fa && fb <= fc);
+    bool cond2 = (a < b && b < c) || (c < b && b < a);
+    if(!(cond1 && cond2)) { spdlog::error("Could not bracket!! Try different initial points"); }
 }
 
 double achilles::Brent::Minimize(const double &ax, const double &bx, const double &cx) const {
     double a = ax, b = bx, c = cx;
     double fa{}, fb{}, fc{};
-    if(c > 1E98) { GetBracket(a, b, c, fa, fb, fc); }
+    if(c > 1E98) {
+        GetBracket(a, b, c, fa, fb, fc);
+    } else {
+        if(a > c) std::swap(a, c);
+        if(!(a < b && b < c)) spdlog::error("Brent: Bracketing not valid!");
+        fa = m_func(a);
+        fb = m_func(b);
+        fc = m_func(c);
+    }
+    spdlog::trace("Finding minimum with a = {}, b = {}, c = {}", a, b, c);
 
     double d = 0.0, e = 0.0;
     double x, w, v, u;
@@ -153,6 +170,14 @@ double achilles::Brent::Minimize(const double &ax, const double &bx, const doubl
     // Initialize
     x = w = v = b;
     fw = fv = fx = fb;
+
+    if(a < c)
+        b = c;
+    else {
+        a = c;
+        b = a;
+    }
+
     double xm = 0;
     for(size_t it = 0; it < itmax; ++it) {
         xm = 0.5 * (a + b);
@@ -160,6 +185,9 @@ double achilles::Brent::Minimize(const double &ax, const double &bx, const doubl
         double tol2 = 4.0 * tol1;
 
         // Test for minimum
+        spdlog::trace("a = {}, b = {}", a, b);
+        spdlog::trace("(x - xm) = ({} - {}) = {}, tol2 - 0.5 * (b - a) = {}", x, xm, x - xm,
+                      tol2 - 0.5 * (b - a));
         if(std::abs(x - xm) <= (tol2 - 0.5 * (b - a))) { return x; }
 
         // Construct a trial parabolic fit

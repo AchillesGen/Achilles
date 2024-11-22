@@ -21,6 +21,7 @@ class WignerDistribution {
     double MinMomentum() const { return mom.front(); }
     double MaxMomentum() const { return mom.back(); }
     double MaxWeight(double r) const;
+    double MaxAbsWeight(double r) const;
     double MinRadius() const { return radius.front(); }
     double MaxRadius() const { return radius.back(); }
     double Normalization() const { return norm; }

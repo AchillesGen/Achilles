@@ -1,10 +1,10 @@
 #include "Achilles/WignerDistribution.hh"
-#include "Achilles/System.hh"
 #include "Achilles/Constants.hh"
+#include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
 #include "spdlog/spdlog.h"
-#include <set>
 #include <fstream>
+#include <set>
 
 using achilles::WignerDistribution;
 
@@ -16,10 +16,10 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
     mom.resize(np);
     radius.resize(nr);
     wigner.resize(nr * np);
-    dr_r.resize(nr);    
+    dr_r.resize(nr);
     std::vector<double> dp_p(np);
 
-    double k,r,w,e;
+    double k, r, w, e;
     std::set<double> radius_set;
     std::set<double> mom_set;
 
@@ -28,7 +28,7 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
             data >> r >> k >> w >> e;
             radius_set.insert(r);
             mom_set.insert(k * Constant::HBARC);
-            wigner[j * np + i] = (w / pow(Constant::HBARC,3));
+            wigner[j * np + i] = (w / pow(Constant::HBARC, 3));
         }
     }
 
@@ -42,18 +42,22 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
 
     // Compute n(k)
     for(size_t i = 0; i < np; ++i) {
-        for(size_t j = 0; j < nr; ++j) { 
-            dp_p[i] += wigner[j * np + i] * radius[j] * radius[j] * 4 * M_PI * hr; 
+        for(size_t j = 0; j < nr; ++j) {
+            dp_p[i] += wigner[j * np + i] * radius[j] * radius[j] * 4 * M_PI * hr;
         }
     }
 
     // Compute rho(r)
     for(size_t j = 0; j < nr; ++j) {
-        for(size_t i = 0; i < np; ++i) { dr_r[j] += std::abs(wigner[j * np + i]) * mom[i] * mom[i] * 4 * M_PI * hp / pow(2 * M_PI,3);}
+        for(size_t i = 0; i < np; ++i) {
+            dr_r[j] +=
+                std::abs(wigner[j * np + i]) * mom[i] * mom[i] * 4 * M_PI * hp / pow(2 * M_PI, 3);
+        }
     }
 
-    for(size_t i = 0; i < np; ++i) { norm += mom[i] * mom[i] * dp_p[i] * 4 * M_PI * hp / pow(2 * M_PI,3); }
-
+    for(size_t i = 0; i < np; ++i) {
+        norm += mom[i] * mom[i] * dp_p[i] * 4 * M_PI * hp / pow(2 * M_PI, 3);
+    }
 
     // Setup momentum distribution interpolator
     rho_func = Interp1D(radius, dr_r, InterpolationType::Polynomial);
@@ -68,9 +72,10 @@ double WignerDistribution::operator()(double r, double p) const {
     if(p < mom.front() || p > mom.back() || r < radius.front() || r > radius.back()) return 0;
 
     auto result = func(r, p) / norm;
-    //spdlog::info("r = {}, p = {}, W = {}", r, p /Constant::HBARC, result* pow(Constant::HBARC,3));
+    // spdlog::info("r = {}, p = {}, W = {}", r, p /Constant::HBARC, result*
+    // pow(Constant::HBARC,3));
     return result;
-    //return result > 0 ? result : 0;
+    // return result > 0 ? result : 0;
 }
 
 double WignerDistribution::operator()(double r) const {
@@ -81,9 +86,15 @@ double WignerDistribution::operator()(double r) const {
 }
 
 double WignerDistribution::MaxWeight(double r) const {
-    auto absfunc = [&](double p) {return -std::abs(this->operator()(r,p));};
+    auto wgt_func = [&](double p) { return -p * p * this->operator()(r, p); };
+    Brent brent(wgt_func);
+    auto maxmomweight = brent.Minimize(mom.front(), 200, mom.back());
+    return -wgt_func(maxmomweight);
+}
+
+double WignerDistribution::MaxAbsWeight(double r) const {
+    auto absfunc = [&](double p) { return -p * p * std::abs(this->operator()(r, p)); };
     Brent brent(absfunc);
-    auto maxmomweight = brent.Minimize(mom.front(), mom.back());
-    //spdlog::info("found maximum = {} at p = {}", -absfunc(maxmomweight) * pow(Constant::HBARC,3), maxmomweight /Constant::HBARC);
+    auto maxmomweight = brent.Minimize(mom.front(), 200, mom.back());
     return -absfunc(maxmomweight);
 }

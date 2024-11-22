@@ -113,10 +113,10 @@ Particles Nucleus::GenerateConfig() {
 
     for(Particle &particle : particles) {
         // Set momentum for each nucleon
-        //auto mom3 = GenerateMomentum(particle.Position().Magnitude());
-        //double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
-        //for(auto mom : mom3) energy2 += mom * mom;
-        //particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
+        // auto mom3 = GenerateMomentum(particle.Position().Magnitude());
+        // double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
+        // for(auto mom : mom3) energy2 += mom * mom;
+        // particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
 
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;
@@ -135,34 +135,33 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) {
 
 double Nucleus::SampleMagnitudeMomentum(const double &position) {
     double kf = FermiMomentum(position);
-    if(fermi_gas.type == FermiGasType::Wigner && position < wigner_d.MaxRadius() && position > wigner_d.MaxRadius()) {
-        auto max_wigner_value = wigner_d.MaxWeight(position);
+    if(fermi_gas.type == FermiGasType::Wigner && position < wigner_d.MaxRadius() &&
+       position > wigner_d.MinRadius()) {
+        auto max_wigner_value = wigner_d.MaxAbsWeight(position);
         while(true) {
-            auto sample_mom = Random::Instance().Uniform(0.0,1.0) * wigner_d.MaxMomentum();
-            auto wigner_value = wigner_d(position,sample_mom);
-            if(std::abs(wigner_value)/max_wigner_value < Random::Instance().Uniform(0.0,1.0)) return sample_mom;
+            auto sample_mom = Random::Instance().Uniform(0.0, 1.0) * wigner_d.MaxMomentum();
+            auto wigner_value = pow(sample_mom, 2) * wigner_d(position, sample_mom);
+            if(std::abs(wigner_value) / max_wigner_value < Random::Instance().Uniform(0.0, 1.0))
+                return sample_mom;
         }
-    }
-
-
-    // NOTE: To sample on a sphere, need to take a cube-root.
-    else if(fermi_gas.type == FermiGasType::Local || (fermi_gas.type == FermiGasType::Wigner && (position > wigner_d.MaxRadius() || position < wigner_d.MinRadius()))) {
+    } else {
         if(fermi_gas.correlated) {
             if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
+                // NOTE: To sample on a sphere, need to take a cube-root.
                 return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
             } else {
                 double x = Random::Instance().Uniform(0.0, 1.0);
                 return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
             }
-        }
-        else return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
+        } else
+            return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
     }
-    
-    #if defined(_MSC_VER) && !defined(__clang__) // MSVC
+
+#if defined(_MSC_VER) && !defined(__clang__) // MSVC
     __assume(false);
-    #else // GCC, Clang
+#else // GCC, Clang
     __builtin_unreachable();
-    #endif
+#endif
 }
 
 Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
@@ -219,10 +218,14 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
 
 double Nucleus::FermiGasWeight(const Particle &p) const {
     switch(fermi_gas.type) {
-        case FermiGasType::Wigner:
-            return std::copysign(1.0,wigner_d(p.Position().Magnitude(), p.Momentum().P()));
-        case FermiGasType::Global:
-        case FermiGasType::Local:
-            return 1.0;
+    case FermiGasType::Wigner: {
+        auto position = p.Position().Magnitude();
+        auto max_wigner_value = wigner_d.MaxWeight(position);
+        return std::copysign(1.0, wigner_d(position, p.Momentum().P()) / max_wigner_value);
+    }
+    case FermiGasType::Global:
+    case FermiGasType::Local:
+    default:
+        return 1.0;
     }
 }
