@@ -220,8 +220,8 @@ double Nucleus::FermiGasWeight(const Particle &p) const {
     switch(fermi_gas.type) {
     case FermiGasType::Wigner: {
         auto position = p.Position().Magnitude();
-        auto max_wigner_value = wigner_d.MaxWeight(position);
-        return std::copysign(1.0, wigner_d(position, p.Momentum().P()) / max_wigner_value);
+        auto max_wigner_sign= wigner_d.MaxAbsWeightSign(position);
+        return std::copysign(1.0, wigner_d(position, p.Momentum().P())/max_wigner_sign);
     }
     case FermiGasType::Global:
     case FermiGasType::Local:

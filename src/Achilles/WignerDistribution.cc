@@ -85,16 +85,17 @@ double WignerDistribution::operator()(double r) const {
     return result > 0 ? result : 0;
 }
 
-double WignerDistribution::MaxWeight(double r) const {
-    auto wgt_func = [&](double p) { return -p * p * this->operator()(r, p); };
-    Brent brent(wgt_func);
-    auto maxmomweight = brent.Minimize(mom.front(), 200, mom.back());
-    return -wgt_func(maxmomweight);
+double WignerDistribution::MaxAbsWeightSign(double r) const {
+    auto absfunc = [&](double p) { return -p * p * std::abs(this->operator()(r, p)); };
+    Brent brent(absfunc);
+    auto maxweight_mom = brent.Minimize(mom.front(), 200, mom.back());
+    return std::copysign(1.0, this->operator()(r, maxweight_mom));
 }
 
 double WignerDistribution::MaxAbsWeight(double r) const {
     auto absfunc = [&](double p) { return -p * p * std::abs(this->operator()(r, p)); };
     Brent brent(absfunc);
-    auto maxmomweight = brent.Minimize(mom.front(), 200, mom.back());
-    return -absfunc(maxmomweight);
+    auto maxweight_mom = brent.Minimize(mom.front(), 200, mom.back());
+
+    return -absfunc(maxweight_mom);
 }

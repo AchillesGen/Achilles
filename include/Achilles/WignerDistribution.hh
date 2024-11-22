@@ -20,7 +20,7 @@ class WignerDistribution {
     std::vector<double> &Radius() { return radius; }
     double MinMomentum() const { return mom.front(); }
     double MaxMomentum() const { return mom.back(); }
-    double MaxWeight(double r) const;
+    double MaxAbsWeightSign(double r) const;
     double MaxAbsWeight(double r) const;
     double MinRadius() const { return radius.front(); }
     double MaxRadius() const { return radius.back(); }
