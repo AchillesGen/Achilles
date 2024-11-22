@@ -141,7 +141,7 @@ double Nucleus::SampleMagnitudeMomentum(const double &position) {
         while(true) {
             auto sample_mom = Random::Instance().Uniform(0.0, 1.0) * wigner_d.MaxMomentum();
             auto wigner_value = pow(sample_mom, 2) * wigner_d(position, sample_mom);
-            if(std::abs(wigner_value) / max_wigner_value < Random::Instance().Uniform(0.0, 1.0))
+            if(std::abs(wigner_value) / max_wigner_value > Random::Instance().Uniform(0.0, 1.0)) 
                 return sample_mom;
         }
     } else {
