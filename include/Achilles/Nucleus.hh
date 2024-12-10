@@ -176,6 +176,11 @@ class Nucleus {
     ///@param position: The radius to calculate the density
     double FermiMomentum(const double &) const noexcept;
 
+    /// Return the radius that corresponds to a specific Fermi Momentum
+    /// for a given FG model
+    ///@param momentum: The momentum to calculate the max radius at
+    double MaxRadius(double) const;
+
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
 
@@ -259,7 +264,7 @@ class Nucleus {
 
     FourVector m_recoil{};
     std::shared_ptr<Potential> potential;
-    bool is_hydrogen{false};
+    bool is_hydrogen{false}, is_free_neutron{false};
 };
 
 } // namespace achilles
@@ -292,6 +297,13 @@ template <> struct convert<achilles::Nucleus> {
         if(name == "1H") {
             spdlog::info("Nucleus: creating hydrogen nucleus.");
             nuc.Initialize(1, 1);
+            return true;
+        }
+
+        // Special case for free neutrons
+        if(name == "1N") {
+            spdlog::info("Nucleus: creating free neutron.");
+            nuc.Initialize(0, 1);
             return true;
         }
 

@@ -195,7 +195,7 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
-install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt #pybind11 fortran_interface_f
+install(TARGETS ${achilles_targets} spdlog yaml-cpp #pybind11 fortran_interface_f
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

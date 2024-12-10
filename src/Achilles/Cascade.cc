@@ -842,7 +842,7 @@ bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2)
     // Makes sure that the we had pi-N -> pi-N
     if(!(init_pion && init_nuc && out_nuc)) return false;
 
-    auto abs_prob = 1.0;
+    auto abs_prob = 0.0;
     if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
 
     if(CE) {

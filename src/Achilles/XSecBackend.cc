@@ -45,10 +45,9 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
     return Constant::HBARC2 / flux * to_nb;
 }
 
-double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
-                                       const std::vector<Particle> &p_in,
+double XSecBackend::InitialStateFactor(const Event &event, const std::vector<Particle> &p_in,
                                        const std::vector<Particle> &p_spect) const {
-    auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
+    auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, event);
     return initial_wgt;
 }
 
@@ -124,9 +123,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
     if(std::isnan(amps2)) amps2 = 0;
 
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
-    size_t nprotons = event.CurrentNucleus()->NProtons();
-    size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(event, hadron_in, spect);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
     double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
@@ -248,9 +245,7 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
     p_sherpa->FillAmplitudes(spin_amps);
 
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
-    size_t nprotons = event.CurrentNucleus()->NProtons();
-    size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(event, hadron_in, spect);
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
@@ -337,9 +332,7 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
     process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
-    size_t nprotons = event.CurrentNucleus()->NProtons();
-    size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(event, hadron_in, spect);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
     return amps2 * flux * initial_wgt * event.Weight();
 }

@@ -330,6 +330,24 @@ double ClosestApproach(const Particle &, const Particle &);
 bool operator==(const std::reference_wrapper<Particle> &, const Particle &);
 bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
 
+// Filtering functions
+using vParticles = std::vector<Particle>;
+using refParticles = std::vector<std::reference_wrapper<Particle>>;
+using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
+
+template <class UnaryPred>
+crefParticles FilterParticles(const vParticles &particles, UnaryPred pred) {
+    crefParticles result;
+    std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+    return result;
+}
+
+template <class UnaryPred> refParticles FilterParticles(vParticles &particles, UnaryPred pred) {
+    refParticles result;
+    std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+    return result;
+}
+
 } // namespace achilles
 
 namespace fmt {

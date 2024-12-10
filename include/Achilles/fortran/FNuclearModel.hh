@@ -36,8 +36,8 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const std::vector<Particle> &, const FourVector &,
                           const FFInfoMap &) const override;
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
-                              size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                              const Event &) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

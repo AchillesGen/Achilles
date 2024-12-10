@@ -1,5 +1,6 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 
 using achilles::FortranModel;
@@ -128,8 +129,8 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
 
 // Returns weight from nuclear ground state (i.e. SF or FG)
 double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in,
-                                        const std::vector<Particle> &had_spect, size_t nproton,
-                                        size_t nneutron) const {
+                                        const std::vector<Particle> &had_spect,
+                                        const Event &event) const {
     if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
 
     size_t nin = had_in.size();
@@ -146,6 +147,9 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in,
         pids_spect.push_back(part.ID());
         moms.push_back(part.Momentum());
     }
+
+    size_t nproton = event.CurrentNucleus()->NProtons();
+    size_t nneutron = event.CurrentNucleus()->NNeutrons();
 
     return GetInitialStateWeight(m_model, pids_in.data(), pids_spect.data(), moms.data(), nin,
                                  nspect, nproton, nneutron);

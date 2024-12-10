@@ -40,8 +40,9 @@ achilles::VectorDipole::Construct(achilles::FFType type, const YAML::Node &node)
 
 void achilles::VectorDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.Gep = 1.0 / pow(1.0 + Q2 / lambda / lambda, 2);
-    result.Gen = -muN * Q2 * result.Gep / (1 + 5.6 * Q2 / pow(Constant::mp / 1_GeV, 2)) /
-                 (4 * pow(Constant::mp / 1_GeV, 2));
+    // TODO: Double check this, and make it an option to be zero or non-zero
+    result.Gen = 0; //-muN * Q2 * result.Gep / (1 + 5.6 * Q2 / pow(Constant::mp / 1_GeV, 2)) /
+                    // (4 * pow(Constant::mp / 1_GeV, 2));
     result.Gmp = muP * result.Gep;
     result.Gmn = muN * result.Gep;
 

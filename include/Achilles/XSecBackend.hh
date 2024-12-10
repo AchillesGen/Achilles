@@ -32,7 +32,7 @@ class XSecBackend {
 
   protected:
     double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
-    double InitialStateFactor(size_t, size_t, const std::vector<Particle> &,
+    double InitialStateFactor(const Event &, const std::vector<Particle> &,
                               const std::vector<Particle> &) const;
     double SpinAvg(const ProcessInfo &) const;
 

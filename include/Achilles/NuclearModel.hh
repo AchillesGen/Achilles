@@ -114,7 +114,7 @@ class NuclearModel {
     virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const;
     virtual size_t NSpins() const;
     virtual double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
-                                      size_t, size_t) const = 0;
+                                      const Event &) const = 0;
 
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
@@ -161,8 +161,8 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
                           const FFInfoMap &) const override;
     std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
-                              size_t) const override {
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                              const Event &) const override {
         return 1;
     }
     std::string GetName() const override { return Coherent::Name(); }
@@ -187,8 +187,8 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
                           const std::vector<Particle> &, const FourVector &,
                           const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
-                              size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                              const Event &) const override;
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return "Rocco:2018mwt"; }
     std::string PSName() const override { return "OneBodySpectral"; }
@@ -205,6 +205,37 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
     mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
+};
+
+class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
+  public:
+    QEFermiGas(const YAML::Node &, const YAML::Node &, FormFactorBuilder &);
+
+    NuclearMode Mode() const override { return NuclearMode::Quasielastic; }
+    std::string PhaseSpace(PID) const override;
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
+    size_t NSpins() const override { return 4; }
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                              const Event &) const override;
+    std::string GetName() const override { return QESpectral::Name(); }
+    std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "OneBodyFG"; }
+
+    // Required factory methods
+    static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
+    static std::string Name() { return "QEFermiGas"; }
+
+  private:
+    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                            const FourVector &, const FormFactorMap &) const;
+
+    const WardGauge m_ward;
+    // TODO: This is a code smell. Should figure out a better solution
+    mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
 };
 
 class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpectral> {
@@ -217,8 +248,8 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
                           const std::vector<Particle> &, const FourVector &,
                           const FFInfoMap &) const override;
     size_t NSpins() const override { return 4; }
-    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
-                              size_t) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
+                              const Event &) const override;
     std::string GetName() const override { return HyperonSpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
     std::string PSName() const override { return "OneBodySpectral"; }
@@ -235,6 +266,7 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
     mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
 };
 
 } // namespace achilles

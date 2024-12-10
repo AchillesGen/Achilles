@@ -19,6 +19,7 @@
 using achilles::Coherent;
 using achilles::HyperonSpectral;
 using achilles::NuclearModel;
+using achilles::QEFermiGas;
 using achilles::QESpectral;
 using Type = achilles::FormFactorInfo::Type;
 
@@ -542,6 +543,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
                                                 const std::vector<Particle> &, const FourVector &q,
                                                 const FFInfoMap &ff) const {
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
 
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
@@ -595,14 +597,15 @@ std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
 }
 
 double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
-                                      const std::vector<Particle> &, size_t nprotons,
-                                      size_t nneutrons) const {
+                                      const std::vector<Particle> &, const Event &event) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
+    if(is_free_neutron) return nucleons[0].ID() == PID::proton() ? 0 : 1;
     const double removal_energy = Constant::mN - nucleons[0].E();
+
     return nucleons[0].ID() == PID::proton()
-               ? static_cast<double>(nprotons) *
+               ? static_cast<double>(event.CurrentNucleus()->NProtons()) *
                      spectral_proton(nucleons[0].Momentum().P(), removal_energy)
-               : static_cast<double>(nneutrons) *
+               : static_cast<double>(event.CurrentNucleus()->NNeutrons()) *
                      spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
 }
 
@@ -636,9 +639,14 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
 }
 
 std::string QESpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen()) return PSName();
-    is_hydrogen = true;
-    return Coherent::Name();
+    if(nuc_id == PID::hydrogen()) {
+        is_hydrogen = true;
+        return Coherent::Name();
+    } else if(nuc_id == PID::free_neutron()) {
+        is_free_neutron = true;
+        return Coherent::Name();
+    }
+    return PSName();
 }
 
 // TODO: Clean this interface up
@@ -655,6 +663,7 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
                                                      const FourVector &q,
                                                      const FFInfoMap &ff) const {
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
 
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
@@ -706,14 +715,16 @@ std::unique_ptr<NuclearModel> HyperonSpectral::Construct(const YAML::Node &confi
 }
 
 double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
-                                           const std::vector<Particle> &, size_t nprotons,
-                                           size_t nneutrons) const {
+                                           const std::vector<Particle> &,
+                                           const Event &event) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
+    if(is_free_neutron) return nucleons[0].ID() == PID::proton() ? 0 : 1;
     const double removal_energy = Constant::mN - nucleons[0].E();
+
     return nucleons[0].ID() == PID::proton()
-               ? static_cast<double>(nprotons) *
+               ? static_cast<double>(event.CurrentNucleus()->NProtons()) *
                      spectral_proton(nucleons[0].Momentum().P(), removal_energy)
-               : static_cast<double>(nneutrons) *
+               : static_cast<double>(event.CurrentNucleus()->NNeutrons()) *
                      spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
 }
 
@@ -761,7 +772,136 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
 }
 
 std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen()) return PSName();
-    is_hydrogen = true;
-    return Coherent::Name();
+    if(nuc_id == PID::hydrogen()) {
+        is_hydrogen = true;
+        return Coherent::Name();
+    } else if(nuc_id == PID::free_neutron()) {
+        is_free_neutron = true;
+        return Coherent::Name();
+    }
+    return PSName();
+}
+
+// TODO: Clean this interface up
+QEFermiGas::QEFermiGas(const YAML::Node &config, const YAML::Node &form_factor,
+                       FormFactorBuilder &builder = FormFactorBuilder::Instance())
+    : NuclearModel(form_factor, builder),
+      m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())} {}
+
+NuclearModel::Currents QEFermiGas::CalcCurrents(const std::vector<Particle> &had_in,
+                                                const std::vector<Particle> &had_out,
+                                                const std::vector<Particle> &, const FourVector &q,
+                                                const FFInfoMap &ff) const {
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
+
+    auto pIn = had_in[0].Momentum();
+    auto pOut = had_out[0].Momentum();
+    auto qVec = q;
+    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
+    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
+    auto omega = qVec.E();
+    qVec.E() = qVec.E() + pIn.E() - free_energy;
+
+    Currents results;
+
+    // Setup spinors
+    pIn.E() = free_energy;
+    std::array<Spinor, 2> ubar, u;
+    ubar[0] = UBarSpinor(-1, pOut);
+    ubar[1] = UBarSpinor(1, pOut);
+    u[0] = USpinor(-1, -pIn);
+    u[1] = USpinor(1, -pIn);
+
+    // Calculate nucleon contributions
+    for(const auto &formFactor : ff) {
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
+                      ffVal[Type::FA]);
+        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        for(auto &subcur : current) {
+            // Correct the Ward identity
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, q, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, q, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, q);
+                break;
+            }
+        }
+        results[formFactor.first] = current;
+    }
+    return results;
+}
+
+std::unique_ptr<NuclearModel> QEFermiGas::Construct(const YAML::Node &config) {
+    auto form_factor = LoadFormFactor(config);
+    return std::make_unique<QEFermiGas>(config, form_factor);
+}
+
+double QEFermiGas::InitialStateWeight(const std::vector<Particle> &nucleons,
+                                      const std::vector<Particle> &, const Event &event) const {
+    if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
+    if(is_free_neutron) return nucleons[0].ID() == PID::proton() ? 0 : 1;
+
+    double radius = event.CurrentNucleus()->MaxRadius(nucleons[0].Momentum().P());
+
+    if(nucleons[0].ID() == PID::proton()) {
+        auto filter = [radius](const Particle &p) {
+            return p.ID() == PID::proton() && p.Radius() <= radius;
+        };
+        return static_cast<double>(FilterParticles(event.Hadrons(), filter).size());
+    } else {
+        auto filter = [radius](const Particle &p) {
+            return p.ID() == PID::neutron() && p.Radius() <= radius;
+        };
+        return static_cast<double>(FilterParticles(event.Hadrons(), filter).size());
+    }
+}
+
+NuclearModel::Current QEFermiGas::HadronicCurrent(const std::array<Spinor, 2> &ubar,
+                                                  const std::array<Spinor, 2> &u,
+                                                  const FourVector &qVec,
+                                                  const FormFactorMap &ffVal) const {
+    Current result;
+    std::array<SpinMatrix, 4> gamma{};
+    for(size_t mu = 0; mu < 4; ++mu) {
+        gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
+        double sign = 1;
+        for(size_t nu = 0; nu < 4; ++nu) {
+            gamma[mu] +=
+                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
+                                              sign * qVec[nu] / (2 * Constant::mN));
+            sign = -1;
+        }
+    }
+
+    for(size_t i = 0; i < 2; ++i) {
+        for(size_t j = 0; j < 2; ++j) {
+            VCurrent subcur;
+            for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
+            result.push_back(subcur);
+        }
+    }
+    return result;
+}
+
+std::string QEFermiGas::PhaseSpace(PID nuc_id) const {
+    if(nuc_id == PID::hydrogen()) {
+        is_hydrogen = true;
+        return Coherent::Name();
+    } else if(nuc_id == PID::free_neutron()) {
+        is_free_neutron = true;
+        return Coherent::Name();
+    }
+    return PSName();
 }

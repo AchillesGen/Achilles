@@ -56,6 +56,7 @@ class Event {
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
+    // TODO: Extract into its own set class or independent from event class at a minimum
     crefParticles Protons(ParticleStatus = ParticleStatus::any) const;
     refParticles Protons(ParticleStatus = ParticleStatus::any);
     crefParticles Neutrons(ParticleStatus = ParticleStatus::any) const;
@@ -73,19 +74,6 @@ class Event {
     const int &ProcessId() const { return m_process_id; }
 
   private:
-    // Helper functions
-    template <class UnaryPred>
-    crefParticles FilterParticles(const vParticles &particles, UnaryPred pred) const {
-        crefParticles result;
-        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
-        return result;
-    }
-    template <class UnaryPred> refParticles FilterParticles(vParticles &particles, UnaryPred pred) {
-        refParticles result;
-        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
-        return result;
-    }
-
     // Variables
     std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};

@@ -28,14 +28,14 @@ class HadronicBeamMapper : public Mapper<FourVector> {
     size_t m_idx;
 };
 
-class QESpectralMapper
+class OneBodySpectral
     : public HadronicBeamMapper,
-      Registrable<HadronicBeamMapper, QESpectralMapper, const ProcessInfo &, size_t> {
+      Registrable<HadronicBeamMapper, OneBodySpectral, const ProcessInfo &, size_t> {
   public:
-    QESpectralMapper(const ProcessInfo &info, size_t idx);
+    OneBodySpectral(const ProcessInfo &info, size_t idx);
     static std::string Name() { return "OneBodySpectral"; }
     static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
-        return std::make_unique<QESpectralMapper>(info, idx);
+        return std::make_unique<OneBodySpectral>(info, idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
@@ -47,6 +47,23 @@ class QESpectralMapper
     static constexpr double dPhi = 2 * M_PI;
     // static constexpr double dp = 800;
     // static constexpr double dE = 400;
+};
+
+class OneBodyFG : public HadronicBeamMapper,
+                  Registrable<HadronicBeamMapper, OneBodyFG, const ProcessInfo &, size_t> {
+  public:
+    OneBodyFG(const ProcessInfo &info, size_t idx);
+    static std::string Name() { return "OneBodyFG"; }
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<OneBodyFG>(info, idx);
+    }
+
+    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
+    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    size_t NDims() const override { return 4; }
+
+  private:
+    static constexpr double dPhi = 2 * M_PI;
 };
 
 class CoherentMapper

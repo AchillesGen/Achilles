@@ -33,6 +33,20 @@ ONE_PARTICLE_CUT(AngleTheta);
 ONE_PARTICLE_CUT(TransverseMomentum);
 ONE_PARTICLE_CUT(ETheta2);
 
+class Q2Cut : public OneParticleCut, RegistrableCut<OneParticleCut, Q2Cut> {
+  public:
+    Q2Cut(const YAML::Node &node);
+    static std::string Name() { return "Q2Cut"; }
+    static std::unique_ptr<OneParticleCut> Construct(const YAML::Node &node) {
+        return std::make_unique<Q2Cut>(node);
+    }
+    bool MakeCut(const FourVector &) const override;
+
+  private:
+    PID m_pid;
+    double m_beam;
+};
+
 // class EnergyCut : public OneParticleCut, RegistrableCut<OneParticleCut, EnergyCut> {
 //     public:
 //         EnergyCut(const YAML::Node &node) : OneParticleCut(node) {}

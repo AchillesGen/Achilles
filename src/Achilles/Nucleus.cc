@@ -122,14 +122,18 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     int ID = IDBase + ZBase * static_cast<int>(Z) + ABase * static_cast<int>(A);
     m_pid = PID{ID};
 
-    // Set flag to handle special case of hydrogen
+    // Set flag to handle special case of hydrogen and free neutrons
     if(Z == 1 && A == 1) is_hydrogen = true;
+    if(Z == 0 && A == 1) is_free_neutron = true;
 }
 
 Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
     if(is_hydrogen) {
         return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
+    }
+    if(is_free_neutron) {
+        return {Particle{PID::neutron(), {ParticleInfo(PID::neutron()).Mass(), 0, 0, 0}}};
     }
 
     // Get a configuration from the density function
@@ -217,6 +221,25 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
         //        = rho < small ? small : fermiMomentum;
         result = fermiMomentum; // Better, but sampling is still srong, the pdf has p2 factor, need
                                 // to take cube-root somewhere
+        break;
+    }
+
+    return result;
+}
+
+double Nucleus::MaxRadius(double momentum) const {
+    double result{};
+    switch(fermi_gas.type) {
+    case FermiGasType::Local: {
+        double rho = pow(momentum / Constant::HBARC, 3) / (3 * M_PI * M_PI);
+        auto func = [&](double r) { return Rho(r) - rho; };
+        Brent brent(func);
+        try {
+            result = brent.CalcRoot(0, radius);
+        } catch(std::domain_error &e) { result = radius; }
+    } break;
+    case FermiGasType::Global:
+        result = radius;
         break;
     }
 
