@@ -76,6 +76,9 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
     // Setup spectral function interpolator
     func = Interp2D(radius, mom, wigner, InterpolationType::Polynomial);
     func.SetPolyOrder(3, 1);
+
+    avgk_func = Interp1D(radius,avgk_r,InterpolationType::Polynomial);
+    avgk_func.SetPolyOrder(3);
 }
 
 double WignerDistribution::operator()(double r, double p) const {
