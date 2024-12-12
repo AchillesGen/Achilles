@@ -275,6 +275,10 @@ class Particle {
     ///@return std::string: a string representation of the particle
     std::string ToString() const noexcept;
 
+    /// Determine if two particles have the same PID
+    ///@return bool: True if particles have the same PID
+    bool SamePID(const Particle &) const noexcept;
+
     /// Determine if two particles are the same particle
     ///@param other: Particle to compare against
     ///@return bool: True if the particles are the same, otherwise False

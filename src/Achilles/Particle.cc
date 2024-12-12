@@ -67,6 +67,10 @@ bool Particle::operator==(const Particle &other) const noexcept {
     return true;
 }
 
+bool Particle::SamePID(const Particle &part) const noexcept {
+    return ID() == part.ID();
+}
+
 std::string Particle::ToString() const noexcept {
     return "Particle(" + std::to_string(info.IntID()) + ", " + momentum.ToString() + ", " +
            position.ToString() + ", " + std::to_string(static_cast<int>(status)) + ")";
