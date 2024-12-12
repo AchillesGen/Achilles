@@ -17,6 +17,7 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
     radius.resize(nr);
     wigner.resize(nr * np);
     dr_r.resize(nr);
+    avgk_r.resize(nr);
     std::vector<double> dp_p(np);
 
     double k, r, w, e;
@@ -55,6 +56,15 @@ WignerDistribution::WignerDistribution(const std::string &filename) {
         }
     }
 
+    //Compute average momentum at fixed r
+    for(size_t j = 0; j < nr; ++j) {
+        for(size_t i = 0; i < np; ++i) {
+            avgk_r[j] +=
+                std::abs(wigner[j * np + i]) * pow(mom[i],3) * 4 * M_PI * hp / pow(2 * M_PI, 3) / dr_r[j];
+        }
+        //spdlog::info("Average momentum = {} at r = {}", avgk_r[j],radius[j]);
+    }
+
     for(size_t i = 0; i < np; ++i) {
         norm += mom[i] * mom[i] * dp_p[i] * 4 * M_PI * hp / pow(2 * M_PI, 3);
     }
@@ -83,6 +93,10 @@ double WignerDistribution::operator()(double r) const {
 
     auto result = rho_func(r) / norm;
     return result > 0 ? result : 0;
+}
+
+double WignerDistribution::FermiMomentum(double r) const {
+    return avgk_func(r) * 4. / 3.;
 }
 
 double WignerDistribution::MaxAbsWeightSign(double r) const {

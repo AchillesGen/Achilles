@@ -20,6 +20,7 @@ class WignerDistribution {
     std::vector<double> &Radius() { return radius; }
     double MinMomentum() const { return mom.front(); }
     double MaxMomentum() const { return mom.back(); }
+    double FermiMomentum(double r) const;
     double MaxAbsWeightSign(double r) const;
     double MaxAbsWeight(double r) const;
     double MinRadius() const { return radius.front(); }
@@ -32,8 +33,8 @@ class WignerDistribution {
 
   private:
     double norm{};
-    std::vector<double> mom, radius, wigner, dr_r;
-    Interp1D rho_func;
+    std::vector<double> mom, radius, wigner, dr_r, avgk_r;
+    Interp1D rho_func, avgk_func;
     Interp2D func;
 };
 
