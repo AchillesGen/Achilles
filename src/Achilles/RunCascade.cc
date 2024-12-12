@@ -6,6 +6,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Constants.hh"
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
@@ -152,12 +153,36 @@ CascadeRunner::CascadeRunner(const std::string &runcard) {
 void CascadeRunner::GenerateEvent(double mom) {
     // Generate a point based on the run mode
     Event event;
+
+    bool coulomb_blocked = false;
+    double mom_shift = 0.;
+    // Coulomb barrier for positively charged particles
+    if (achilles::ParticleInfo(m_pid).Charge() > 0) {
+        double incoming_mass = achilles::ParticleInfo(m_pid).Mass();
+        double T = sqrt(mom * mom + incoming_mass * incoming_mass) - incoming_mass;
+        //fmt::print("KE = {}, Coulomb Barrier = {}\n", T, m_nuc->CoulombBarrier());
+        if (T < m_nuc->CoulombBarrier()) {
+            double EG = 2 * incoming_mass * pow(M_PI * Constant::alpha * m_nuc->NProtons(),2);
+            double PG = exp(-sqrt(EG/T));
+            //fmt::print("EG = {}, KE = {}, PG = {}\n", EG, T, PG);
+            if (Random::Instance().Uniform(0.0,1.0) > PG) {
+                coulomb_blocked = true;
+                //fmt::print("Coulomb blocked!\n");
+            }
+        }
+        else {
+            mom_shift = sqrt(pow(m_nuc->CoulombBarrier() + incoming_mass,2) - pow(incoming_mass,2));
+        }
+    }
+    mom_shift = 0.;
+
     switch(m_mode) {
     case CascadeMode::CrossSection:
-        InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc);
+        InitCrossSection(event, m_pid, mom - mom_shift, m_params["radius"], m_nuc);
         break;
     case CascadeMode::Transparency:
         InitTransparency(event, m_pid, mom, m_nuc, static_cast<bool>(m_params["external"]));
+        coulomb_blocked = false;
         break;
     }
     // Set kicked indices
@@ -167,14 +192,17 @@ void CascadeRunner::GenerateEvent(double mom) {
             m_cascade.SetKicked(i);
         }
     }
+
+    
+
     // Scale event weight by momentum range
     event.Weight() *= (m_mom_range.second - m_mom_range.first);
 
     // Cascade
-    m_cascade.Evolve(event, m_nuc.get());
+    if (coulomb_blocked == false) m_cascade.Evolve(event, m_nuc.get());
 
     // Write the event to file if an interaction happened
-    if(event.History().size() > 0) {
+    if(event.History().size() > 0 && coulomb_blocked == false) {
         // Set status of the first interaction as the primary interaction
         event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
         // TODO: This is ugly, and the history should store references to the particles

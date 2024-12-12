@@ -189,6 +189,7 @@ class Cascade {
     void Escaped(Particles &);
     void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
+    double LiegePauliBlocking(const Particle &, Particles &) const noexcept;
     bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *, double);

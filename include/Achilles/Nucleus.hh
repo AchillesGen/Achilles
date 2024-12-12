@@ -176,6 +176,8 @@ class Nucleus {
 
     double FermiGasWeight(const Particle &) const;
 
+    double CoulombBarrier() const;
+
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
     const std::string ToString() const noexcept;

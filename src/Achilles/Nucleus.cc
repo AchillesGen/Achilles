@@ -201,6 +201,12 @@ double Nucleus::FermiMomentum(const double &position) const noexcept {
     double result{};
     switch(fermi_gas.type) {
     case FermiGasType::Wigner:
+        //if(position > wigner_d.MaxRadius() || position < wigner_d.MinRadius()) {
+            result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
+            break;
+        //}
+        //result = wigner_d.FermiMomentum(position);
+        break;
     case FermiGasType::Local:
         result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
         break;
@@ -228,4 +234,12 @@ double Nucleus::FermiGasWeight(const Particle &p) const {
     default:
         return 1.0;
     }
+}
+
+double Nucleus::CoulombBarrier() const {
+    //double r0 = 1.2; // fm
+    //double nuclear_radius = r0 * pow(nnucleons, 1. / 3.);
+    double Uc = 1.44 * nprotons / Radius();
+
+    return Uc;
 }

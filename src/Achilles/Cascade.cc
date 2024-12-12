@@ -613,6 +613,14 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     bool hit = true;
     for(const auto &part : particles_out) hit &= !PauliBlocking(part);
 
+    //double statistical_paulf = 1.;
+    //for(const auto &part : particles_out) statistical_paulf *= LiegePauliBlocking(part,particles);
+
+    //statistical_paulf gives the probabilty of a successful scattering
+    //throw against a random number
+    //bool hit = true;
+    //hit &= statistical_paulf > Random::Instance().Uniform(0.0, 1.0);
+
     if(hit) {
 
         //spdlog::info("fermigas weight = {}", m_nucleus->FermiGasWeight(particle2));
@@ -653,10 +661,52 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.ID() != PID::proton() && particle.ID() != PID::neutron()) return false;
+    if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
+
+double Cascade::LiegePauliBlocking(const Particle &particle1, Particles &particles) const noexcept {
+
+    double p_pauli = 200;
+    double r_pauli = 3.18;
+
+    double pvolume = 4. * M_PI * pow(p_pauli,3) / 3.;
+    double rvolume = 4. * M_PI * pow(r_pauli,3) / 3.;
+    double prefactor = 0.5 * pow(2. * M_PI * Constant::HBARC,3) / pvolume / rvolume;
+
+    if(!particle1.Info().IsNucleon()) return 1.0; //apply only to nucleons
+    //spdlog::info("Particle1: {}, r = {}, p = {}",particle1.ID(), particle1.Position().Magnitude(), particle1.Momentum().Vec3().Magnitude());
+
+    double f = prefactor;
+    double fermisphere_sum = 0.;
+
+    //Count identical particles inside the fermi sphere of particle 1. 
+    //Successful scattering probability is 1 - f
+    for(auto &part : particles) {
+        //spdlog::info("part: {}, r = {}, p = {}",part.ID(), part.Position().Magnitude(), part.Momentum().Vec3().Magnitude());
+
+        if (part.Status() != ParticleStatus::background) continue; //check background particles only
+        if (part.Position() == particle1.Position()) continue;
+        if (!particle1.SamePID(part)) continue; //check same isospin only
+
+
+        double r_distance_from_i = (particle1.Position() - part.Position()).Magnitude();
+        auto mom = ThreeVector(m_nucleus->GenerateMomentum(part.Position().Magnitude())); // Generate a random momentum for part
+        double p_distance_from_i = (particle1.Momentum().Vec3() - mom).Magnitude();
+        //spdlog::info("r distance from i = {}", r_distance_from_i);
+        //spdlog::info("p distance from i = {}", p_distance_from_i);
+
+        if((r_pauli - r_distance_from_i) > 0. && (p_pauli - p_distance_from_i) > 0.) fermisphere_sum += 1.;
+        //spdlog::info("Particle is inside fermi sphere!"); }
+
+    }
+    
+    f *= fermisphere_sum;
+    //spdlog::info("1 - f = {}", 1. - f);
+    return 1. - f;
+}
+
 
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
     if(m_medium != InMedium::NonRelativistic) return 1;
