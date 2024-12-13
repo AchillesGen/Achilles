@@ -40,13 +40,50 @@ void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, 
     FourVector momentum{sqrt(mom * mom + mass * mass), 0, 0, mom}; // Check this
     Particle testPart{pid, momentum, position, ParticleStatus::external_test};
 
+    bool coulomb_blocked = false;
+    double mom_shift = 0.;
+    // Coulomb barrier for positively charged particles
+    if (achilles::ParticleInfo(pid).Charge() != 0) {
+        double T = sqrt(mom * mom + mass * mass) - mass;
+        //fmt::print("KE = {}, Coulomb Barrier = {}\n", T, nuc->CoulombBarrier());
+        if (T < nuc->CoulombBarrier() && achilles::ParticleInfo(pid).Charge() > 0) {
+            double EG = 2 * mass * pow(M_PI * Constant::alpha * nuc->NProtons(),2);
+            double PG = exp(-sqrt(EG/T));
+            //fmt::print("EG = {}, KE = {}, PG = {}\n", EG, T, PG);
+            if (Random::Instance().Uniform(0.0,1.0) > PG) {
+                coulomb_blocked = true;
+                //fmt::print("Coulomb blocked!\n");
+            }
+        }
+        else {
+            mom_shift = achilles::ParticleInfo(pid).Charge()*sqrt(pow(nuc->CoulombBarrier() + mass,2) - pow(mass,2));
+        }
+    }
+    //mom_shift = 0.;
+
     // Make an event instead, initialize with a nucleus, which generates a configuration
     std::vector<FourVector> momdummy = {};
     event = Event(nuc, momdummy, 1.);
     event.Weight() = M_PI * radius * radius * 10 * 1e6; // radius in fm, result in nb
 
-    // Add the test particle
+    // Put in coulomb blocking here
+    // If blocked, set event weight to 0. and return
+    if (coulomb_blocked) {
+        event.Weight() = 0.0;
+        return;
+    }
+
+    // TODO think about momentum conservation
+    // if not blocked create vertex in event history with status Coulomb
+    Particle testPart2 = testPart;
+    testPart2.Momentum() = {sqrt(pow(mom - mom_shift,2) + mass * mass), 0, 0, mom - mom_shift};
+    testPart.Status() = ParticleStatus::beam;
+
+    event.History().AddVertex(testPart2.Position(), {testPart}, {testPart2}, EventHistory::StatusCode::coulomb);
+
+    // Add the test particles
     event.Hadrons().push_back(testPart);
+    event.Hadrons().push_back(testPart2);
 }
 
 void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
@@ -154,35 +191,12 @@ void CascadeRunner::GenerateEvent(double mom) {
     // Generate a point based on the run mode
     Event event;
 
-    bool coulomb_blocked = false;
-    double mom_shift = 0.;
-    // Coulomb barrier for positively charged particles
-    if (achilles::ParticleInfo(m_pid).Charge() > 0) {
-        double incoming_mass = achilles::ParticleInfo(m_pid).Mass();
-        double T = sqrt(mom * mom + incoming_mass * incoming_mass) - incoming_mass;
-        //fmt::print("KE = {}, Coulomb Barrier = {}\n", T, m_nuc->CoulombBarrier());
-        if (T < m_nuc->CoulombBarrier()) {
-            double EG = 2 * incoming_mass * pow(M_PI * Constant::alpha * m_nuc->NProtons(),2);
-            double PG = exp(-sqrt(EG/T));
-            //fmt::print("EG = {}, KE = {}, PG = {}\n", EG, T, PG);
-            if (Random::Instance().Uniform(0.0,1.0) > PG) {
-                coulomb_blocked = true;
-                //fmt::print("Coulomb blocked!\n");
-            }
-        }
-        else {
-            mom_shift = sqrt(pow(m_nuc->CoulombBarrier() + incoming_mass,2) - pow(incoming_mass,2));
-        }
-    }
-    mom_shift = 0.;
-
     switch(m_mode) {
     case CascadeMode::CrossSection:
-        InitCrossSection(event, m_pid, mom - mom_shift, m_params["radius"], m_nuc);
+        InitCrossSection(event, m_pid, mom, m_params["radius"], m_nuc);
         break;
     case CascadeMode::Transparency:
         InitTransparency(event, m_pid, mom, m_nuc, static_cast<bool>(m_params["external"]));
-        coulomb_blocked = false;
         break;
     }
     // Set kicked indices
@@ -193,18 +207,16 @@ void CascadeRunner::GenerateEvent(double mom) {
         }
     }
 
-    
-
     // Scale event weight by momentum range
     event.Weight() *= (m_mom_range.second - m_mom_range.first);
 
     // Cascade
-    if (coulomb_blocked == false) m_cascade.Evolve(event, m_nuc.get());
+    m_cascade.Evolve(event, m_nuc.get());
 
     // Write the event to file if an interaction happened
-    if(event.History().size() > 0 && coulomb_blocked == false) {
+    if( EventHistoryNode *node = event.History().FindFirstNode(EventHistoryNode::StatusCode::cascade); node) {
         // Set status of the first interaction as the primary interaction
-        event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
+        node->Status() = EventHistoryNode::StatusCode::primary;
         // TODO: This is ugly, and the history should store references to the particles
         // However, the first attempt to do this had issues when event.Hadrons() needed to
         // be resized
