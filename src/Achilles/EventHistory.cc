@@ -127,6 +127,15 @@ EventHistoryNode *EventHistory::FindNode(bool incoming, const Particle &part) co
     return nullptr;
 }
 
+EventHistoryNode *EventHistory::FindFirstNode(StatusCode status) const {
+
+    for(const auto &node : m_history) {
+        if (status == node->Status()) return node.get();
+    }
+
+    return nullptr;
+}
+
 void EventHistory::UpdateStatuses(const Particles &particles) {
     for(auto &part : particles) {
         compare_momentum comp(part);

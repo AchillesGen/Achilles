@@ -33,6 +33,7 @@ class EventHistoryNode {
         target = 3,
         decay = 4,
         shower = 5,
+        coulomb = 6,
     };
 
     EventHistoryNode(size_t idx, StatusCode status = StatusCode::cascade)
@@ -97,6 +98,8 @@ inline std::string ToString(EventHistoryNode::StatusCode code) {
         return "decay";
     case StatusCode::shower:
         return "shower";
+    case StatusCode::coulomb:
+        return "coulomb";
     }
     return "UNKOWN";
 }
@@ -134,6 +137,7 @@ class EventHistory {
     EventHistoryNode *Primary() const { return GetUniqueNode(StatusCode::primary); }
     EventHistoryNode *Beam() const { return GetUniqueNode(StatusCode::beam); }
     EventHistoryNode *Target() const { return GetUniqueNode(StatusCode::target); }
+    EventHistoryNode *FindFirstNode(StatusCode) const;
 
     // Transversal
     void WalkHistory(HistoryVisitor &) const;
