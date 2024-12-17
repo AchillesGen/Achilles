@@ -80,7 +80,7 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: build-${{ matrix.os }}-${{ matrix.gcc }}
+        name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: ${{ github.workspace }}/build
 
   test:
