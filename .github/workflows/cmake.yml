@@ -46,7 +46,7 @@ jobs:
         if (( "$os_ver" > 13)); then
           ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
         else
-          ln -fs /usr/local/bin/gfortran-14 /usr/local/gfortran
+          ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
         fi
 
     - name: Set up cache

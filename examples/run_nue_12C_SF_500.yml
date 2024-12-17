@@ -1,5 +1,5 @@
 Main:
-  NEvents: 100000
+  NEvents: 10
   HardCuts: false
   RunDecays: false
   Output:
