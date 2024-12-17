@@ -96,7 +96,7 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with:
-        name: build-${{ matrix.os }}-${{ matrix.compiler }}
+        name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: build
 
     - name: Test C++
@@ -130,7 +130,7 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with:
-        name: build-${{ matrix.os }}-${{ matrix.compiler }}
+        name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: build
     
     - name: Run cross section checks
