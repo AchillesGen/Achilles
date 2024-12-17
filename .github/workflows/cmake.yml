@@ -54,7 +54,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.config.os != 'macos-13' && matrix.config.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.config.cc }} cmake && pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.config.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.config.os == 'macos-13' || matrix.config.os == 'macos-14' }}
@@ -62,7 +62,7 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install cmake
+        brew install eigen
 
     - name: Set up cache
       id: cache-cpm
