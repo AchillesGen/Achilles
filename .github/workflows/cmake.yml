@@ -103,11 +103,15 @@ jobs:
       working-directory: ${{ github.workspace }}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ./test/achilles-testsuite
+      run: |
+        chmod +x test/achilles-testsuite
+        ./test/achilles-testsuite
 
     - name: Test Fotran
       working-directory: ${{ github.workspace }}/build
-      run: ./test/achilles-fortran-testsuite
+      run: |
+        chmod +x test/achilles-fortran-testsuite
+        ./test/achilles-fortran-testsuite
      
     - name: Code coverage
       if: ${{ matrix.coverage }}
@@ -136,6 +140,7 @@ jobs:
     - name: Run cross section checks
       working-directory: ${{ github.workspace }}/build
       run: |
+          chmod +x bin/achilles
           for file in examples/*.yml; do
             ./bin/achilles $file
           done
