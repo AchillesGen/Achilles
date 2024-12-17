@@ -49,7 +49,7 @@ env:
 jobs:
   build:
     strategy:
-      matrix: ${{ fromJson(env.MATRIX_STRATEGY }}
+      matrix: ${{ fromJson(env.MATRIX_STRATEGY) }}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
