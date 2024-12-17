@@ -40,7 +40,14 @@ jobs:
         brew update
         brew install hdf5
         brew install eigen
-        brew install ${{ matrix.fort }}
+        brew install --force gcc
+        os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
+        # TODO: remove hardcoded gfortran major version
+        if (( "$os_ver" > 13)); then
+          ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
+        else
+          ln -fs /usr/local/bin/gfortran-14 /usr/local/gfortran
+        fi
 
     - name: Set up cache
       id: cache-cpm

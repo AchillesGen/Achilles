@@ -1,9 +1,10 @@
-name: Matrix CI
+name: CMake Build/Test/Check
 
 on: [push, pull_request]
 
 jobs:
   ci:
+    name: Job
     uses: ./.github/workflows/cmake.yml
     with:
       matrix: >
