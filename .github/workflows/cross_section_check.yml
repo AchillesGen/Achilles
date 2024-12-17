@@ -1,0 +1,34 @@
+name: Cross Section Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+      - dev
+  workflow_run:
+    workflows: ["CMake Build Matrix"]
+    types:
+      - completed
+
+jobs:
+  cross_section_checks:
+    # if: github.event.pull_request.draft == false && github.event.workflow_run.conclusion == 'success'
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: build-artifacts
+
+      - name: Run cross section checks
+        working-directory: ${{ github.workspace }}/build
+        run: |
+          for file in examples/*.yml; do
+            ./bin/achilles $file
+          done

@@ -112,3 +112,11 @@ jobs:
       #     lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info
       #     lcov --list coverage.info
       #     bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+
+    # Upload artifacts to be used in other workflows
+    - name: Upload build artifacts
+      if: ${{ matrix.config.os == 'ubuntu-latest' && matrix.config.cxx == 'g++' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-artifacts
+        path: ${{ github.workspace }}/build
