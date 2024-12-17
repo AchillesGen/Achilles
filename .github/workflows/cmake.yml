@@ -116,7 +116,7 @@ jobs:
     # Upload artifacts to be used in other workflows
     - name: Upload build artifacts
       if: ${{ matrix.config.os == 'ubuntu-latest' && matrix.config.cxx == 'g++' }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: ${{ github.workspace }}/build
