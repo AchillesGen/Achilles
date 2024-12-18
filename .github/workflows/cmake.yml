@@ -99,6 +99,18 @@ jobs:
         name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: build
 
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.cc }} cmake && pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      run: |
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        brew update
+        brew install hdf5
+        brew install eigen
+
     - name: Test C++
       working-directory: ${{ github.workspace }}/build
       # Execute tests defined by the CMake configuration.  
@@ -136,6 +148,18 @@ jobs:
       with:
         name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: build
+
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.cc }} cmake && pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      run: |
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        brew update
+        brew install hdf5
+        brew install eigen
     
     - name: Run cross section checks
       working-directory: ${{ github.workspace }}/build
