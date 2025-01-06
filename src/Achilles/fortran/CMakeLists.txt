@@ -2,6 +2,7 @@ enable_language(Fortran)
 
 add_library(fortran_interface SHARED
     utilities.f90
+    system_mod.f90
     map_mod.f90
     vectors_mod.f90
     particle_mod.f90
@@ -35,6 +36,7 @@ add_library(fortran_interface SHARED
     #                                           PUBLIC physics)
     # 
     # add_library(fortran_interface SHARED
+    FSystem.cc
     FConstants.cc
     FMap.cc
     FVectors.cc

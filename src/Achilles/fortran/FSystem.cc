@@ -11,5 +11,4 @@ char *FindFile(char *cfilename, char *chead) {
     strcpy(cresult, result.c_str());
     return cresult;
 }
-
 }
