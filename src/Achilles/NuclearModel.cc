@@ -184,8 +184,8 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
 }
 
 YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
-    std::string filename = Filesystem::FindFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>(),
-                                                "NuclearModel");
+    std::string filename = Filesystem::FindFile(
+        config["NuclearModel"]["ModelParamsFile"].as<std::string>(), "NuclearModel");
     return YAML::LoadFile(filename);
 }
 
