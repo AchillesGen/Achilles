@@ -205,3 +205,9 @@ install(DIRECTORY
     ${CMAKE_BINARY_DIR}/flux
     DESTINATION share/Achilles
 )
+
+# Install examples into the install directory
+install(DIRECTORY
+    ${CMAKE_BINARY_DIR}/examples
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
+)

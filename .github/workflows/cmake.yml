@@ -71,10 +71,13 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
           -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}} \
-          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }}
+          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
+
+    - name: Install
+      run: cmake --install ${{ github.workspace }}/build
 
     # Upload artifacts to be used in other workflows
     - name: Upload build artifacts
@@ -82,6 +85,13 @@ jobs:
       with:
         name: build-${{ matrix.os }}-${{ matrix.cc }}
         path: ${{ github.workspace }}/build
+
+    # Upload artifacts to be used in other workflows
+    - name: Upload install artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: install-${{ matrix.os }}-${{ matrix.cc }}
+        path: ${{ github.workspace }}/install
 
   test:
     needs: build
@@ -146,8 +156,8 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with:
-        name: build-${{ matrix.os }}-${{ matrix.cc }}
-        path: build
+        name: install-${{ matrix.os }}-${{ matrix.cc }}
+        path: install
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
@@ -162,9 +172,10 @@ jobs:
         brew install eigen
     
     - name: Run cross section checks
-      working-directory: ${{ github.workspace }}/build
+      working-directory: ${{ github.workspace }}/install
       run: |
           chmod +x bin/achilles
           for file in examples/*.yml; do
+            echo "Running example: $file"
             ./bin/achilles $file
           done

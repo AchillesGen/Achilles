@@ -44,8 +44,8 @@ NuclearModels:
   - NuclearModel:
       Model: QESpectral
       FormFactorFile: "FormFactors.yml"
-      SpectralP: data/pke12_tot.data
-      SpectralN: data/pke12_tot.data
+      SpectralP: data/Spectral_Functions/pke12p_tot.data
+      SpectralN: data/Spectral_Functions/pke12n_tot.data
       Ward: None
 
 Nuclei:
