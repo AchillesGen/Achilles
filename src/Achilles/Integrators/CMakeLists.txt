@@ -8,3 +8,5 @@ add_library(AchillesIntegrator SHARED
 )
 target_link_libraries(AchillesIntegrator PRIVATE project_warnings
                                          PUBLIC utilities)
+list(APPEND achilles_targets AchillesIntegrator)
+set(achilles_targets ${achilles_targets} PARENT_SCOPE)

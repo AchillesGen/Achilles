@@ -162,7 +162,7 @@ list(APPEND achilles_targets event_gen)
 add_executable(achilles main.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
-list(APPEND achilles_targets achilles)
+list(APPEND achilles_targets achilles plugin_manager)
 
 # TODO: Change the name of the option to be more clear
 if(ACHILLES_ENABLE_CASCADE_TEST)

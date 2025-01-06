@@ -135,7 +135,7 @@ configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include
 file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/flux DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/data/default/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ACHILLES_SOURCE_DIR}/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${ACHILLES_SOURCE_DIR}/data/default/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -197,6 +197,14 @@ install(
         ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
         ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+)
+
+# Install default run card and form factors card
+install(
+    FILES
+        ${CMAKE_BINARY_DIR}/data/default/run.yml
+        ${CMAKE_BINARY_DIR}/data/default/FormFactors.yml
+    DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
 
 # Install the data files to be found
