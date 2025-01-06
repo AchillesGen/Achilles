@@ -41,7 +41,7 @@ class Density {
 
 class DensityConfiguration : public Density {
   public:
-    DensityConfiguration(const std::string &);
+    DensityConfiguration(std::string);
     std::vector<Particle> GetConfiguration() override;
 
   private:
