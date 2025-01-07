@@ -24,8 +24,8 @@ contains
         character(len=*), intent(in) :: file, head
         character(len=:), allocatable :: find_file
 
-        cfile = f2cstring(file)
-        chead = f2cstring(head)
+        cfile = f2cstring(trim(file))
+        chead = f2cstring(trim(head))
         find_file = c2fstring(find_file_c(cfile, chead))
         call free(cfile)
         call free(chead)
