@@ -11,9 +11,9 @@
 // this needs to go first as it enables dependency flags in the below headers
 #include "NuHepMC/HepMC3Features.hxx"
 
+#include "NuHepMC/UnitsUtils.hxx"
 #include "NuHepMC/WriterUtils.hxx"
 #include "NuHepMC/make_writer.hxx"
-#include "NuHepMC/UnitsUtils.hxx"
 
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenParticle.h"
@@ -123,7 +123,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // TODO: Update to using newer NuHepMC version
     const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
-    const std::string tgtscale = "PerTarget"; 
+    const std::string tgtscale = "PerTarget";
     NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
 
     // Write out the number of requested events
