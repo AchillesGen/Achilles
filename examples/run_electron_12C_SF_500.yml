@@ -37,11 +37,9 @@ Cascade:
   Probability: Cylinder
 
 HardCuts:
-  - Type: Q2Cut
+  - Type: AngleTheta
     PIDs: 11
-    min: 100000
-    BeamId: 11
-    Beam: 500
+    range: [10, 90]
 
 Options: !include "data/default/OptionDefaults.yml"
 
