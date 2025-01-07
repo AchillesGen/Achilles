@@ -13,6 +13,7 @@
 
 #include "NuHepMC/WriterUtils.hxx"
 #include "NuHepMC/make_writer.hxx"
+#include "NuHepMC/UnitsUtils.hxx"
 
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenParticle.h"
@@ -22,6 +23,7 @@
 
 using achilles::NuHepMCWriter;
 using namespace HepMC3;
+namespace NuUnits = NuHepMC::CrossSection::Units;
 
 namespace NuHepMC {
 namespace VertexStatus {
@@ -119,7 +121,10 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     NuHepMC::GC1::SetConventions(run,
                                  {"G.C.2", "G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
 
-    NuHepMC::GC4::SetCrossSectionUnits(run, "pb", "PerTargetAtom");
+    // TODO: Update to using newer NuHepMC version
+    const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
+    const std::string tgtscale = "PerTarget"; 
+    NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
 
     // Write out the number of requested events
     // TODO: Read this from run card
