@@ -71,7 +71,6 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
           -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache                               \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}}  \
-          -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG                                             \
           -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
 
     - name: Build
@@ -79,16 +78,6 @@ jobs:
 
     - name: Install
       run: cmake --install ${{ github.workspace }}/build
-
-    - name: Debug MacOS
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
-      run: |
-          otool -l install/bin/* | grep -A4 RPATH
-          otool -L install/bin/*
-          ls -la install/lib
-          pwd
-          echo $PATH
-      
 
     # Upload artifacts to be used in other workflows
     - name: Upload build artifacts

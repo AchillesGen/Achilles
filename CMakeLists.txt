@@ -16,7 +16,6 @@ set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Set RPATH for the install location
-message(STATUS "Platform detection: APPLE=${APPLE}, UNIX=${UNIX}")
 LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
 IF("${isSystemDir}" STREQUAL "-1")
   if(APPLE)
@@ -148,13 +147,6 @@ file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_
 
 # Copy over example folder
 file(COPY ${ACHILLES_SOURCE_DIR}/examples DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
-# # Setup RPATH to ensure the right libraries are used
-# file(RELATIVE_PATH relative_rpath
-#     ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-#     ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-# )
-# set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relative_rpath})
 
 # Unzip if GZIP not turned on
 if(NOT ACHILLES_ENABLE_GZIP)
