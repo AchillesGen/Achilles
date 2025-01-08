@@ -149,12 +149,12 @@ file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_
 # Copy over example folder
 file(COPY ${ACHILLES_SOURCE_DIR}/examples DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
-# Setup RPATH to ensure the right libraries are used
-file(RELATIVE_PATH relative_rpath
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
-)
-set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relative_rpath})
+# # Setup RPATH to ensure the right libraries are used
+# file(RELATIVE_PATH relative_rpath
+#     ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
+#     ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+# )
+# set(CMAKE_INSTALL_RPATH $ORIGIN $ORIGIN/${relative_rpath})
 
 # Unzip if GZIP not turned on
 if(NOT ACHILLES_ENABLE_GZIP)
