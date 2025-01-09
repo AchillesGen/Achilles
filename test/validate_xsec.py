@@ -78,8 +78,8 @@ def main():
     parser.add_argument('logfile', help='Path to the log file')
     parser.add_argument('name', type=str,
                         help='Name of the example ran')
-    parser.add_argument('--threshold', type=float, default=2.0,
-                        help='Significance threshold in sigma (default: 2.0)')
+    parser.add_argument('--threshold', type=float, default=3.0,
+                        help='Significance threshold in sigma (default: 3.0)')
 
     # Parse arguments
     args = parser.parse_args()
