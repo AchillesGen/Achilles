@@ -20,7 +20,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(inputs.matrix) }}
 
-    name: Build on ${{ matrix.name }}
+    name: Build and Install - ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -98,7 +98,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(inputs.matrix) }}
 
-    name: Test ${{ matrix.name }}
+    name: Test - ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -148,7 +148,7 @@ jobs:
     strategy:
       matrix: ${{ fromJson(inputs.matrix) }}
 
-    name: Test ${{ matrix.name }}
+    name: Cross Section Validation - ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -183,5 +183,6 @@ jobs:
             ./bin/achilles $file
             name=$(basename "$file")
             name="${filename%.*}"
+            echo $name
             python ${{ github.workspace }}/test/validate_xsec.py achilles.log $name
           done
