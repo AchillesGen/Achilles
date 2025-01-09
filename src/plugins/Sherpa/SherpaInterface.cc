@@ -1,4 +1,4 @@
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #include "AMEGIC++/Main/Process_Base.H"
 #include "ATOOLS/Org/CXXFLAGS.H"
 #include "ATOOLS/Org/CXXFLAGS_PACKAGES.H"
@@ -25,8 +25,8 @@
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"
 #include "SHERPA/Single_Events/Event_Handler.H"
-#include "plugins/Sherpa/AchillesReader.hh"
-#include "plugins/Sherpa/Channels.hh"
+#include "Plugins/Sherpa/AchillesReader.hh"
+#include "Plugins/Sherpa/Channels.hh"
 #include <bitset>
 
 using namespace SHERPA;

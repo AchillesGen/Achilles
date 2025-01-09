@@ -1,4 +1,4 @@
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef GZIP
 #include "gzstream/gzstream.h"
 #endif

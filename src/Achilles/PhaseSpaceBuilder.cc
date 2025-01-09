@@ -5,7 +5,7 @@
 #include "Achilles/HadronicMapper.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/Channels.hh"
+#include "Plugins/Sherpa/Channels.hh"
 #endif
 
 using achilles::PSBuilder;

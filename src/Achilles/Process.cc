@@ -14,7 +14,7 @@
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #else
 // Create dummy class
 namespace achilles {

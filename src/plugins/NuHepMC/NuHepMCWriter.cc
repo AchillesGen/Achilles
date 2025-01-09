@@ -1,4 +1,4 @@
-#include "plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
