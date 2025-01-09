@@ -12,10 +12,10 @@
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "git.h"
-#include "plugins/Manager/PluginManager.hh"
+#include "Plugins/Manager/PluginManager.hh"
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/Channels.hh"
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/Channels.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #endif
 
 #include "docopt.h"
@@ -41,7 +41,7 @@ static const std::string USAGE =
 
     Options:
       -v[v]                                 Increase verbosity level.
-      -l[l]                                 Increase log verbosity 
+      -l[l]                                 Increase log verbosity
                                             (Note: Log verbosity is never lower than total level)
       -h --help                             Show this screen.
       --version                             Show version.
