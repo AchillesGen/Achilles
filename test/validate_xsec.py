@@ -35,14 +35,15 @@ def extract_xsec(filename: str) -> Optional[Tuple[float, float]]:
             content = f.read()
 
         # Find the line containing "Total xsec:"
-        pattern = r"Total xsec:\s+(\d+\.?\d*)\s+\+/-\s+(\d+\.?\d*)"
+        number_re = r"([-+]?\d*\.?\d+([eE][-+]?\d+)?)"
+        pattern = rf"Total xsec:\s+{number_re}\s+\+/-\s+{number_re}"
         match = re.search(pattern, content)
 
         if not match:
             print("Error: Could not find cross section values in log file")
             return None
 
-        return float(match.group(1)), float(match.group(2))
+        return float(match.group(1)), float(match.group(3))
 
     except FileNotFoundError:
         print(f"Error: File {filename} not found")
@@ -96,8 +97,8 @@ def main():
                                      expected_value, expected_error)
 
     # Print results
-    print(f"\nMeasured Cross Section: {measured_value:.6f} ± {measured_error:.6f}")
-    print(f"Expected Cross Section: {expected_value:.6f} ± {expected_error:.6f}")
+    print(f"\nMeasured Cross Section: {measured_value:.6e} ± {measured_error:.6e}")
+    print(f"Expected Cross Section: {expected_value:.6e} ± {expected_error:.6e}")
     print(f"Statistical Significance: {n_sigma:.3f} sigma")
 
     # Evaluate compatibility
