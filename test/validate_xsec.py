@@ -89,14 +89,15 @@ def main():
         sys.exit(1)
 
     measured_value, measured_error = result
+    expected_value, expected_error = EXPECTED[args.name]
 
     # Calculate significance
     n_sigma = calculate_significance(measured_value, measured_error,
-                                     args.expected_value, args.expected_error)
+                                     expected_value, expected_error)
 
     # Print results
     print(f"\nMeasured Cross Section: {measured_value:.6f} ± {measured_error:.6f}")
-    print(f"Expected Cross Section: {args.expected_value:.6f} ± {args.expected_error:.6f}")
+    print(f"Expected Cross Section: {expected_value:.6f} ± {expected_error:.6f}")
     print(f"Statistical Significance: {n_sigma:.3f} sigma")
 
     # Evaluate compatibility
