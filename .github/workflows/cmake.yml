@@ -182,8 +182,6 @@ jobs:
             echo "Running example: $file"
             ./bin/achilles $file
             name=$(basename "$file")
-            echo $name
-            name="${filename%.*}"
-            echo $name
+            name="${name%.*}"
             python ${{ github.workspace }}/test/validate_xsec.py achilles.log $name
           done
