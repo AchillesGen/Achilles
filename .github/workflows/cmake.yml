@@ -31,7 +31,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.cc }} cmake && pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
@@ -39,7 +39,6 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install eigen
         brew install --force gcc
         os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
         # TODO: remove hardcoded gfortran major version
@@ -111,7 +110,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.cc }} cmake && pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
@@ -119,7 +118,6 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install eigen
 
     - name: Test C++
       working-directory: ${{ github.workspace }}/build
@@ -164,7 +162,7 @@ jobs:
 
     - name: Install dependencies (Ubuntu)
       if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
-      run: sudo apt update && sudo apt install -y libhdf5-dev lcov libeigen3-dev ${{ matrix.cc }} cmake && pip install codecov
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
       if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
@@ -172,7 +170,6 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install eigen
     
     - name: Run cross section checks
       working-directory: ${{ github.workspace }}/install
