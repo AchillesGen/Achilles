@@ -1,5 +1,5 @@
 vector: Kelly
-axial: AxialDipole
+axial: AxialZExpansion
 coherent: Helm
 resonancevector: ResonanceVectorDummy 
 resonanceaxial: ResonanceAxialDummy 
@@ -105,3 +105,4 @@ MesonExchangeAxial:
   ca5norm: 1.2
 
 Hyperon:
+  dummy: 0.

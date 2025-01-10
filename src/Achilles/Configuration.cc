@@ -3,6 +3,7 @@
 #include "Achilles/Configuration.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/System.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -15,7 +16,8 @@
 #include <fstream>
 #endif
 
-achilles::DensityConfiguration::DensityConfiguration(const std::string &filename) {
+achilles::DensityConfiguration::DensityConfiguration(std::string filename) {
+    filename = Filesystem::FindFile(filename, "Configuration");
     spdlog::debug("Loading density configurations from {}", filename);
     // Load configuration
 #ifdef GZIP

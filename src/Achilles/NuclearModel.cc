@@ -1,4 +1,5 @@
 #include "Achilles/Settings.hh"
+#include "Achilles/System.hh"
 #include <stdexcept>
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
@@ -183,7 +184,9 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
 }
 
 YAML::Node NuclearModel::LoadModelParams(const YAML::Node &config) {
-    return YAML::LoadFile(config["NuclearModel"]["ModelParamsFile"].as<std::string>());
+    std::string filename = Filesystem::FindFile(
+        config["NuclearModel"]["ModelParamsFile"].as<std::string>(), "NuclearModel");
+    return YAML::LoadFile(filename);
 }
 
 NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
