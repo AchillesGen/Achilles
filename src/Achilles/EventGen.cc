@@ -13,7 +13,7 @@
 #include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #else
 namespace achilles {
 class SherpaInterface {};
