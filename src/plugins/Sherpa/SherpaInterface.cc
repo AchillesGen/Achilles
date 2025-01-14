@@ -21,12 +21,12 @@
 #include "MODEL/Main/Running_AlphaS.H"
 #include "MODEL/Main/Single_Vertex.H"
 #include "PHASIC++/Main/Process_Integrator.H"
+#include "Plugins/Sherpa/AchillesReader.hh"
+#include "Plugins/Sherpa/Channels.hh"
 #include "SHERPA/Initialization/Initialization_Handler.H"
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"
 #include "SHERPA/Single_Events/Event_Handler.H"
-#include "Plugins/Sherpa/AchillesReader.hh"
-#include "Plugins/Sherpa/Channels.hh"
 #include <bitset>
 
 using namespace SHERPA;

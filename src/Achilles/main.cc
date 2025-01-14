@@ -11,8 +11,8 @@
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
-#include "git.h"
 #include "Plugins/Manager/PluginManager.hh"
+#include "git.h"
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/Channels.hh"
 #include "Plugins/Sherpa/SherpaInterface.hh"
