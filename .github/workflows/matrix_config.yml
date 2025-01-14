@@ -1,0 +1,46 @@
+name: CMake Build/Test/Check
+
+on: [push, pull_request]
+
+jobs:
+  ci:
+    name: Job
+    uses: ./.github/workflows/cmake.yml
+    with:
+      matrix: >
+          {
+            "include": [
+              {
+                "name": "Ubuntu GCC",
+                "os": "ubuntu-latest",
+                "cc": "gcc",
+                "cxx": "g++",
+                "fort": "gfortran",
+                "coverage": true
+              },
+              {
+                "name": "Ubuntu Clang",
+                "os": "ubuntu-latest", 
+                "cc": "clang",
+                "cxx": "clang++",
+                "fort": "gfortran",
+                "coverage": false
+              },
+              {
+                "name": "macOS 13 Clang",
+                "os": "macos-13",
+                "cc": "clang",
+                "cxx": "clang++",
+                "fort": "gfortran",
+                "coverage": false
+              },
+              {
+                "name": "macOS 14 Clang",
+                "os": "macos-14",
+                "cc": "clang",
+                "cxx": "clang++",
+                "fort": "gfortran",
+                "coverage": false
+              }
+            ]
+          } 

@@ -30,6 +30,7 @@ module dirac_matrices_intf
 contains
 
 subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in)
+    use libsystem
     implicit none
     integer*4 :: i,j
     real*8 :: xmd_in,xmn_in,xmpi_in,xmrho_in
@@ -79,7 +80,7 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fp
 
     ! Read in delta potential and
     ! set up 1D interpolation
-    open(10, file='data/rho_0p5.dat')
+    open(10, file=find_file('data/rho_0p5.dat', "Interference Model"))
     read(10,*) np_del
     allocate(pdel(np_del),pot_del(np_del))
     do i=1,np_del

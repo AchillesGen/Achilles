@@ -13,6 +13,7 @@ CPMAddPackage(
         "SPDLOG_COMPILED_LIB ON"
         "SPDLOG_FMT_EXTERNAL ON"
         "SPDLOG_BUILD_SHARED ON"
+        "SPDLOG_INSTALL ON"
 )
 add_library(spdlog::spdlog ALIAS spdlog)
 
@@ -26,7 +27,7 @@ add_library(docopt::docopt ALIAS docopt)
 CPMAddPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
-    GIT_TAG master
+    GIT_TAG 0.8.0
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
@@ -41,9 +42,9 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMFindPackage(
+CPMAddPackage(
   NAME NuHepMC_CPPUtils
-  GIT_TAG 7e36692
+  GIT_TAG v1-RC6
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
   OPTIONS "NuHepMC_CPPUtils_BUILTIN_HEPMC3 ON"
           "NuHepMC_CPPUtils_PYTHON_ENABLED OFF"

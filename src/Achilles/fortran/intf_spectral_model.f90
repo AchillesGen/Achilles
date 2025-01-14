@@ -26,12 +26,14 @@ contains
 
     function intf_spec_init(self, filename, params)
         use libutilities
+        use libsystem
         use dirac_matrices_intf
         use libmap
 
         class(intf_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        character(len=:), allocatable :: filepath
         type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
@@ -39,7 +41,8 @@ contains
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
 
-        open(unit=read_unit, file=trim(filename), iostat=ios)
+        filepath = find_file(filename, "Interference Model")
+        open(unit=read_unit, file=trim(filepath), iostat=ios)
         if( ios /= 0 ) then
             intf_spec_init = .false.
             return

@@ -26,6 +26,7 @@ std::vector<std::string> achilles::Filesystem::GetPluginPaths() {
 }
 
 std::string achilles::Filesystem::FindFile(const std::string &filename, const std::string &head) {
+    spdlog::trace("{}: Loading file {}", head, filename);
     auto dirs = AchillesPath();
 
     for(const auto &path : dirs) {
