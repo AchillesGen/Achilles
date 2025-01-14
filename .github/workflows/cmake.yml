@@ -54,7 +54,6 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install eigen
         brew install --force gcc
         os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
         # TODO: remove hardcoded gfortran major version
