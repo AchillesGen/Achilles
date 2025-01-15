@@ -31,6 +31,10 @@ template <> struct convert<std::shared_ptr<achilles::FluxType>> {
             return true;
         } else if(node["Type"].as<std::string>() == "PDFBeam") {
             rhs = std::make_shared<achilles::PDFBeam>(node);
+            return true;
+        } else if(node["Type"].as<std::string>() == "FlatFlux") {
+            rhs = std::make_shared<achilles::FlatFlux>(node);
+            return true;
         }
 
         return false;
