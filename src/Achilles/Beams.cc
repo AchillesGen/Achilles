@@ -10,9 +10,9 @@
 #include "TH1D.h"
 #endif
 
+using achilles::FlatFlux;
 using achilles::PDFBeam;
 using achilles::Spectrum;
-using achilles::FlatFlux;
 
 Spectrum::Spectrum(const YAML::Node &node) {
     spdlog::debug("Loading spectrum flux");
@@ -316,7 +316,7 @@ FlatFlux::FlatFlux(const YAML::Node &node) {
 achilles::FourVector FlatFlux::Flux(const std::vector<double> &ran, double min_energy) const {
     min_energy = std::max(min_energy, m_min_energy);
     double delta_energy = m_max_energy - min_energy;
-    double energy = ran[0]*delta_energy + min_energy;
+    double energy = ran[0] * delta_energy + min_energy;
     return {energy, 0, 0, energy};
 }
 
