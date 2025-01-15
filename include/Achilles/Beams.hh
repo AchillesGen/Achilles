@@ -107,6 +107,21 @@ class PDFBeam : public FluxType {
     std::unique_ptr<PDFBase> p_pdf;
 };
 
+class FlatFlux : public FluxType {
+  public:
+    FlatFlux(const YAML::Node &);
+    int NVariables() const override { return 1; }
+    FourVector Flux(const std::vector<double> &, double) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    std::string Type() const override { return "FlatFlux"; }
+    double MinEnergy() const override { return m_min_energy; }
+    double MaxEnergy() const override { return m_max_energy; }
+    double EvaluateFlux(const FourVector &) const override { return 1; }
+
+  private:
+    double m_min_energy, m_max_energy;
+};
+
 class Beam {
   public:
     using BeamMap = std::map<achilles::PID, std::shared_ptr<FluxType>>;
