@@ -32,33 +32,6 @@ inline void SignalHandler(int signal) {
 }
 
 inline void CreateLogger(int level, int log_level, int flush_time) {
-#include <csignal>
-
-inline void SignalHandler(int signal) {
-    std::string signal_str;
-    switch(signal) {
-    case SIGTERM:
-        signal_str = "SIGTERM";
-        break;
-    case SIGSEGV:
-        signal_str = "SIGSEGV";
-        break;
-    case SIGINT:
-        signal_str = "SIGINT";
-        break;
-    case SIGABRT:
-        signal_str = "SIGABRT";
-        break;
-    default:
-        signal_str = "Unknown";
-    }
-    spdlog::error("Achilles has recieved a {} signal", signal_str);
-    spdlog::error("Achilles attempting to exit gracefully!");
-    spdlog::get("achilles")->flush();
-    exit(-1);
-}
-
-inline void CreateLogger(int level, int flush_time) {
     auto slevel = static_cast<spdlog::level::level_enum>(level);
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(slevel);

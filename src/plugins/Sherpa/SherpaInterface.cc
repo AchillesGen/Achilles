@@ -42,12 +42,6 @@ SherpaInterface::~SherpaInterface() {
     if(m_pmap.find(nlo_type::lo) != m_pmap.end()) delete m_pmap[nlo_type::lo];
 }
 
-void SherpaInterface::addParameter(std::vector<char *> &argv, const std::string &val) const {
-    spdlog::info("ShowerMEsSherpa::init: Setting parameter '{}'", val);
-    argv.push_back(new char[val.length() + 1]);
-    strcpy(argv.back(), val.c_str());
-}
-
 int SherpaInterface::SherpaVerbosity(int loglevel) const {
     switch(loglevel) {
     case 0 /*trace*/:
@@ -66,63 +60,67 @@ int SherpaInterface::SherpaVerbosity(int loglevel) const {
     return 0;
 }
 
-bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
+bool SherpaInterface::Initialize(YAML::Node &sherpa_settings) {
     // TODO: Update the initialization to match Sherpa 3.0
-    std::vector<char *> argv;
-    addParameter(argv, "Sherpa");
-    addParameter(argv, "EVENTS=1");
-    addParameter(argv, "INIT_ONLY=6");
-    int level(SherpaVerbosity(spdlog::get("achilles")->level()));
-    addParameter(argv, "OUTPUT=" + std::to_string(level));
-    // Set beams and PDFs.
-    addParameter(argv, "BEAM_1=11");
-    addParameter(argv, "BEAM_ENERGY_1=100");
-    addParameter(argv, "BEAM_2=2212");
-    addParameter(argv, "BEAM_ENERGY_2=100");
-    // addParameter(argv, "PDF_SET=None");
-    // addParameter(argv, "PDF_LIBRARY=None");
-    addParameter(argv, "BEAM_RESCATTERING=None");
-    addParameter(argv, "BEAMMODE=Fixed_Target");
-    addParameter(argv, "ME_GENERATORS=Comix");
-    // addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
-    addParameter(argv, "LEPTONIC_CURRENT_MODE=1");
-    addParameter(argv, "ALPHAQED_DEFAULT_SCALE=0");
-    addParameter(argv, "1/ALPHAQED(MZ)=137");
-    // addParameter(argv,"ACTIVE[23]=0");
-    addParameter(argv, "ACTIVE[25]=0");
-    // addParameter(argv,"ACTIVE[9000005]=0");
-    // addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
-    addParameter(
-        argv, "PARTICLE_DATA: {2112: {Priority: 99}, 2212: {Priority: 99}, 9000005: {Active: 0}}");
-    // TODO: Make this something that is passed in
-    // addParameter(argv, "PARTICLE_DATA: {1000060120: {Priority: 99}}");
-    addParameter(argv, "MASSIVE[11]=1");
-    addParameter(argv, "MASSIVE[13]=1");
-    addParameter(argv, "MASSIVE[15]=1");
-    addParameter(argv, "STABLE[15]=0");
-    addParameter(argv, "HARD_SPIN_CORRELATIONS=1");
-    addParameter(argv, "SOFT_SPIN_CORRELATIONS=1");
-    addParameter(argv, "SHOWER_GENERATOR=CSS");
-    // TODO: Figure out how to set this to work with Sherpa3.0
-    addParameter(argv, "FRAGMENTATION=None");
-    addParameter(argv, "HARD_DECAYS:ENABLED:True");
-    addParameter(argv, "ME_QED:ENABLED:OFF");
 
-    addParameter(argv, "BEAM_REMNANTS=False");
-    addParameter(argv, "EVENT_GENERATION_MODE=W");
-    addParameter(argv, "EVENT_INPUT=Achilles");
-    addParameter(argv, "CSS_FS_PT2MIN=0.001");
-    addParameter(argv, "CSS_IS_PT2MIN=0.001");
-    addParameter(argv, "CSS_ENHANCE=S{a}{e+}{e-} 0");
-    addParameter(argv, "CSS_ENHANCE=S{a}{e-}{e+} 0");
-    addParameter(argv, "NLO_SUBTRACTION_SCHEME=2");
-    addParameter(argv, "HDH_SET_WIDTHS=1");
-    addParameter(argv, "HARD_DECAYS=1");
+    spdlog::trace("Initializing Sherpa");
+    // Sherpa run in Achilles interface mode
+    sherpa_settings["EVENTS"] = 1;
+    sherpa_settings["INIT_ONLY"] = 6;
+    int level(SherpaVerbosity(spdlog::get("achilles")->level()));
+    sherpa_settings["OUTPUT"] = level;
+    sherpa_settings["EVENT_GENERATION_MODE"] = "W";
+    sherpa_settings["EVENT_INPUT"] = "Achilles";
+
+    // Set beams and PDFs.
+    // TODO: move beam information into Achilles side
+    sherpa_settings["BEAMS"].push_back(11);
+    sherpa_settings["BEAMS"].push_back(2212);
+    sherpa_settings["BEAM_ENERGIES"].push_back(100);
+    sherpa_settings["BEAM_ENERGIES"].push_back(100);
+    sherpa_settings["BEAM_RESCATTERING"] = "None";
+    sherpa_settings["BEAMMODE"] = "Fixed_Target";
+    sherpa_settings["ME_GENERATORS"] = "Comix";
+    sherpa_settings["LEPTONIC_CURRENT_MODE"] = 1;
+    sherpa_settings["ALPHAQED_DEFAULT_SCALE"] = 0;
+    sherpa_settings["1/ALPHAQED(MZ)"] = 137;
+    sherpa_settings["ACTIVE[25]"] = 0;
+
+    // TODO: Automate the particle data stuff or make it easier
+    sherpa_settings["PARTICLE_DATA"][2112]["Priority"] = 99;
+    sherpa_settings["PARTICLE_DATA"][2212]["Priority"] = 99;
+    sherpa_settings["PARTICLE_DATA"][9000005]["Active"] = 0;
+    sherpa_settings["PARTICLE_DATA"][11]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][13]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][15]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][15]["Stable"] = 0;
+    sherpa_settings["HARD_SPIN_CORRELATIONS"] = 1;
+    sherpa_settings["SOFT_SPIN_CORRELATIONS"] = 1;
+    sherpa_settings["SHOWER_GENERATOR"] = "CSS";
+
+    // TODO: Figure out how to set this to work with Sherpa3.0
+    sherpa_settings["FRAGMENTATION"] = "None";
+    sherpa_settings["HARD_DECAYS"]["ENABLED"] = "True";
+    sherpa_settings["ME_QED"]["ENABLED"] = "OFF";
+    sherpa_settings["BEAM_REMNANTS"] = "False";
+
+    sherpa_settings["CSS_FS_PT2MIN"] = 0.001;
+    sherpa_settings["CSS_IS_PT2MIN"] = 0.001;
+    sherpa_settings["CSS_ENHANCE"] = "S{a}{e+}{e-} 0";
+    sherpa_settings["CSS_ENHANCE"] = "S{a}{e-}{e+} 0";
+    sherpa_settings["NLO_SUBTRACTION_SCHEME"] = 2;
     // add additional commandline parameters
-    for(const auto &arg : args) addParameter(argv, arg);
+    // for(const auto &arg : args) addParameter(argv, arg);
+
+    spdlog::trace("Converting from YAML to stream");
+    std::stringstream stream_sherpa_settings;
+    stream_sherpa_settings << YAML::Dump(sherpa_settings);
     // Initialise Sherpa and return.
-    p_sherpa = new SHERPA::Sherpa(argv.size(), &argv[0]);
+    spdlog::trace("Initializing Sherpa object");
+    p_sherpa = new SHERPA::Sherpa(stream_sherpa_settings);
+    spdlog::trace("Initializing the Sherpa run");
     p_sherpa->InitializeTheRun();
+    spdlog::trace("Initializing the Sherpa event handler");
     p_sherpa->InitializeTheEventHandler();
     spdlog::info("Sherpa: Initialization finished");
     auto pbeam = rpa->gen.PBeam(1);
@@ -465,8 +463,9 @@ void achilles::SherpaInterface::RegisterParticles() const {
         static constexpr double to_MeV = 1000;
         const auto mass = particle->m_mass * to_MeV;
         const auto width = particle->m_width * to_MeV;
+        // TODO: Handle isospin
         auto entry = std::make_shared<ParticleInfoEntry>(
-            pid, mass, width, particle->m_icharge, particle->m_strong, particle->m_spin,
+            pid, mass, width, particle->m_icharge, particle->m_strong, 0, particle->m_spin,
             particle->m_stable, particle->m_majorana, particle->m_massive, particle->m_hadron,
             particle->m_idname, particle->m_antiname);
         achilles::ParticleInfo::Database()[pid] = entry;

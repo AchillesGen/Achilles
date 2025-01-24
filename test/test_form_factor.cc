@@ -8,7 +8,7 @@
 
 #include "yaml-cpp/yaml.h"
 
-using achilles::operator""_GeV;
+using asign - conversion::operator""_GeV;
 
 class DummyFF : public achilles::FormFactorImpl, achilles::RegistrableFormFactor<DummyFF> {
   public:

@@ -51,7 +51,6 @@ class SherpaInterface {
     SHERPA::Sherpa *p_sherpa{};
     achilles::Achilles_Reader *reader;
 
-    void addParameter(std::vector<char *> &argv, const std::string &val) const;
     int SherpaVerbosity(int loglevel) const;
     static FourVector ToAchilles(const ATOOLS::Vec4D &);
     static Particle ToAchilles(ATOOLS::Particle *);
@@ -72,7 +71,7 @@ class SherpaInterface {
     SherpaInterface() = default;
     MOCK ~SherpaInterface();
 
-    bool Initialize(const std::vector<std::string> &args);
+    bool Initialize(YAML::Node &);
     bool InitializeProcess(const ProcessInfo &info);
 
     std::vector<std::unique_ptr<PHASIC::Channels>>

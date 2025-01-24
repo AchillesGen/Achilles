@@ -3,7 +3,10 @@
 
 #include "Achilles/ParticleInfo.hh"
 #include "fmt/format.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     Values results;

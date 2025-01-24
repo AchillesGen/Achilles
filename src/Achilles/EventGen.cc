@@ -35,7 +35,7 @@ class SherpaInterface {};
 #include "fmt/std.h"
 #include "yaml-cpp/yaml.h"
 
-achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs)
+achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string>)
     : config{configFile} {
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
@@ -70,19 +70,17 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto backend = config.GetAs<std::string>("Backend/Name");
     if(backend.find("Sherpa") != std::string::npos || backend.find("BSM") != std::string::npos) {
 #ifdef ACHILLES_SHERPA_INTERFACE
+        spdlog::debug("Setting up Sherpa settings");
         p_sherpa = new achilles::SherpaInterface();
+        auto sherpa_node = config["SherpaOptions"];
         std::string model_name = "SMnu";
-        if(config.Exists("SherpaOptions/Model"))
-            model_name = config.GetAs<std::string>("SherpaOptions/Model");
-        auto param_card = config.GetAs<std::string>("SherpaOptions/ParamCard");
-        int qed = 0;
-        if(config.Exists("SherpaOptions/QEDShower"))
-            if(config.GetAs<bool>("SherpaOptions/QEDShower")) qed = 1;
-        shargs.push_back(fmt::format("ME_QED={}", qed));
-        if(model_name == "SM") model_name = "SMnu";
-        shargs.push_back("MODEL=" + model_name);
-        shargs.push_back("UFO_PARAM_CARD=" + param_card);
-        p_sherpa->Initialize(shargs);
+        if(sherpa_node["MODEL"]) {
+            if(sherpa_node["MODEL"].as<std::string>() == "SM") sherpa_node["MODEL"] = model_name;
+        } else {
+            sherpa_node["MODEL"] = model_name;
+        }
+        auto param_card = sherpa_node["UFO_PARAM_CARD"].as<std::string>();
+        p_sherpa->Initialize(sherpa_node);
 #else
         shargs.clear();
         throw std::runtime_error("Achilles has not been compiled with Sherpa support!");

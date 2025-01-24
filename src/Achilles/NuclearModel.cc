@@ -549,15 +549,15 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    // auto free_energy = sqrt(pIn.P2() + Constant::mN2);
+    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     auto omega = qVec.E();
-    // qVec.E() = qVec.E() + pIn.E() - free_energy;
+    qVec.E() = qVec.E() + pIn.E() - free_energy;
 
     Currents results;
 
     // Setup spinors
-    // pIn.E() = free_energy;
+    pIn.E() = free_energy;
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pOut);
     ubar[1] = UBarSpinor(1, pOut);

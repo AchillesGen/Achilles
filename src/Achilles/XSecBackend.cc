@@ -182,12 +182,12 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     }
 
     if(multiplicity == 2) {
-        Channel<FourVector> channel0 = BuildChannel<TwoBodyMapper>(
-            m_model.get(), 2, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 =
+            BuildChannel<TwoBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
-        Channel<FourVector> channel0 = BuildChannel<ThreeBodyMapper>(
-            m_model.get(), 3, 2, process_info.m_spectator.size(), beam, masses, nuc_id);
+        Channel<FourVector> channel0 =
+            BuildChannel<ThreeBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
 }
@@ -304,10 +304,8 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel = achilles::BuildGenChannel(
-            m_model.get(), process_info.m_leptonic.second.size() + 1,
-            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel =
+            achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
@@ -377,10 +375,8 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel = achilles::BuildGenChannel(
-            m_model.get(), process_info.m_leptonic.second.size() + 1,
-            process_info.m_hadronic.first.size() + process_info.m_hadronic.second.size(),
-            process_info.m_spectator.size(), beam, std::move(chan), masses, nuc_id);
+        Channel<FourVector> channel =
+            achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
     }
