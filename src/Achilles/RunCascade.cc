@@ -3,6 +3,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/EventWriter.hh"
+#include "Achilles/Histogram.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
@@ -58,11 +59,25 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
     event = Event(nuc, momdummy, 1.);
     event.Weight() = 1.0 / 1000.0; // Only care about percentage, so remove factor of nb_to_pb
 
-    // Randomly select a particle from the nucleus
-    size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
-
     if(!external) {
-        auto kicked_particle = &(event.Hadrons()[idx]);
+        // Want to select a random nucleon with PID == pid
+        auto protons = event.Protons(ParticleStatus::background);
+        auto neutrons = event.Neutrons(ParticleStatus::background);
+        Particle *kicked_particle = nullptr;
+
+        if(pid == PID::proton()) {
+            kicked_particle = &(Random::Instance().Sample(1, protons))[0].get();
+        }
+
+        if(pid == PID::neutron()) {
+            kicked_particle = &(Random::Instance().Sample(1, neutrons))[0].get();
+        }
+
+        if(kicked_particle == nullptr) {
+            throw std::runtime_error("Achilles: For transparency with internal particle, must "
+                                     "select particle that exists in ground state of the nucleus");
+        }
+
         auto mass = kicked_particle->Info().Mass();
         FourVector kick{sqrt(mom * mom + mass * mass), mom * sintheta * cos(phi),
                         mom * sintheta * sin(phi), mom * costheta};
@@ -70,6 +85,8 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
         kicked_particle->Status() = ParticleStatus::internal_test;
         kicked_particle->SetMomentum(kick);
     } else {
+        // Randomly select a particle from the nucleus
+        size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
         ThreeVector position = event.Hadrons()[idx].Position();
 
         // Rotate to some other spot on the sphere so that it is not always on top of another
@@ -125,6 +142,8 @@ CascadeRunner::CascadeRunner(const std::string &runcard) {
     bool zipped = true;
     if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
     spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
+    m_output_name = output["Name"].as<std::string>();
+    m_output_name.erase(m_output_name.length() - 6);
     if(output["Format"].as<std::string>() == "Achilles") {
         m_writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
     } else if(output["Format"].as<std::string>() == "HepMC3") {
@@ -149,7 +168,7 @@ CascadeRunner::CascadeRunner(const std::string &runcard) {
     m_writer->WriteHeader(runcard, process_groups);
 }
 
-void CascadeRunner::GenerateEvent(double mom) {
+void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hits) {
     // Generate a point based on the run mode
     Event event;
     switch(m_mode) {
@@ -172,7 +191,6 @@ void CascadeRunner::GenerateEvent(double mom) {
 
     // Cascade
     m_cascade.Evolve(event, m_nuc.get());
-
     // Write the event to file if an interaction happened
     if(event.History().size() > 0) {
         // Set status of the first interaction as the primary interaction
@@ -181,8 +199,10 @@ void CascadeRunner::GenerateEvent(double mom) {
         // However, the first attempt to do this had issues when event.Hadrons() needed to
         // be resized
         event.History().UpdateStatuses(event.Hadrons());
+        hits.Fill(mom, event.Weight());
         generated_events++;
     } else {
+        no_hits.Fill(mom, event.Weight());
         event.Weight() = 0.0;
     }
     m_writer->Write(event);
@@ -193,6 +213,9 @@ void achilles::CascadeTest::CascadeRunner::run() {
     fmt::print("  Generating {} events in range [{}, {}] MeV\n", requested_events,
                m_mom_range.first, m_mom_range.second);
 
+    Histogram h_hits(50, m_mom_range.first, m_mom_range.second, "hits");
+    Histogram h_nohits(50, m_mom_range.first, m_mom_range.second, "no hits");
+
     // Generate events
     while(NeedsEvents()) {
         static constexpr size_t statusUpdate = 100;
@@ -200,7 +223,12 @@ void achilles::CascadeTest::CascadeRunner::run() {
             fmt::print("Generated {} / {} events\r", generated_events, requested_events);
         }
         auto current_mom = Random::Instance().Uniform(m_mom_range.first, m_mom_range.second);
-        GenerateEvent(current_mom);
+        GenerateEvent(current_mom, h_hits, h_nohits);
+    }
+
+    if(m_mode == CascadeMode::Transparency) {
+        h_hits.Save(m_output_name + "_hits");
+        h_nohits.Save(m_output_name + "_nohits");
     }
 }
 
