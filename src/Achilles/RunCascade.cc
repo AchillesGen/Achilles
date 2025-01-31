@@ -60,21 +60,22 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
     event.Weight() = 1.0 / 1000.0; // Only care about percentage, so remove factor of nb_to_pb
 
     if(!external) {
-        //Want to select a random nucleon with PID == pid
+        // Want to select a random nucleon with PID == pid
         auto protons = event.Protons(ParticleStatus::background);
         auto neutrons = event.Neutrons(ParticleStatus::background);
         Particle *kicked_particle = nullptr;
 
-        if (pid == PID::proton()) {
+        if(pid == PID::proton()) {
             kicked_particle = &(Random::Instance().Sample(1, protons))[0].get();
         }
 
-        if (pid == PID::neutron()) {
+        if(pid == PID::neutron()) {
             kicked_particle = &(Random::Instance().Sample(1, neutrons))[0].get();
         }
 
-        if (kicked_particle == nullptr) {
-            throw std::runtime_error("Achilles: For transparency with internal particle, must select particle that exists in ground state of the nucleus");
+        if(kicked_particle == nullptr) {
+            throw std::runtime_error("Achilles: For transparency with internal particle, must "
+                                     "select particle that exists in ground state of the nucleus");
         }
 
         auto mass = kicked_particle->Info().Mass();
@@ -84,7 +85,6 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
         kicked_particle->Status() = ParticleStatus::internal_test;
         kicked_particle->SetMomentum(kick);
     } else {
-
         // Randomly select a particle from the nucleus
         size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
         ThreeVector position = event.Hadrons()[idx].Position();
@@ -199,12 +199,11 @@ void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hit
         // However, the first attempt to do this had issues when event.Hadrons() needed to
         // be resized
         event.History().UpdateStatuses(event.Hadrons());
-        hits.Fill(mom,event.Weight());
+        hits.Fill(mom, event.Weight());
         generated_events++;
     } else {
-        no_hits.Fill(mom,event.Weight());
+        no_hits.Fill(mom, event.Weight());
         event.Weight() = 0.0;
-        
     }
     m_writer->Write(event);
 }
@@ -228,8 +227,8 @@ void achilles::CascadeTest::CascadeRunner::run() {
     }
 
     if(m_mode == CascadeMode::Transparency) {
-        h_hits.Save(m_output_name+"_hits");
-        h_nohits.Save(m_output_name+"_nohits");
+        h_hits.Save(m_output_name + "_hits");
+        h_nohits.Save(m_output_name + "_nohits");
     }
 }
 
