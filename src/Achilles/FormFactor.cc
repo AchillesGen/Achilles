@@ -66,7 +66,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDipole::Construct(achil
 void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.FA = -gan1 / pow(1.0 + Q2 / MA / MA, 2);
     result.FAs = -gans / pow(1.0 + Q2 / MA / MA, 2);
-    result.FAP = 2.0 * Constant::mN2 / (Q2 + pow(ParticleInfo(211).Mass(), 2)) * result.FA;
+    result.FAP = 2.0 * Constant::mN2 / (Q2*1_GeV*1_GeV + pow(ParticleInfo(211).Mass(), 2)) * result.FA;
 }
 
 // Axial Z-Expansion Form Factor
