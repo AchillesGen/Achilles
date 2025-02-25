@@ -25,8 +25,10 @@ subroutine dirac_matrices_in(xmn_in)
     
     real*8 :: xmn_in
     xmn=xmn_in
-    if (.not. allocated(up1)) allocate(up1(nspin_in,4),upp1(nspin_f,4), &
-            &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4))
+    if (.not. allocated(up1)) allocate(up1(nspin_in,4))
+    if (.not. allocated(upp1)) allocate(upp1(nspin_f,4))
+    if (.not. allocated(ubarp1)) allocate(ubarp1(nspin_in,4))
+    if (.not. allocated(ubarpp1)) allocate(ubarpp1(nspin_f,4)) 
     sig(:,:,:)=czero
     id(:,:)=czero
     id(1,1)=cone;id(2,2)=cone
