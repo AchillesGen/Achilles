@@ -19,7 +19,7 @@ using namespace achilles;
 
 const std::map<std::size_t, std::string> Nucleus::ZToName = {
     {0, "N"}, {1, "H"},   {2, "He"},  {3, "Li"},  {6, "C"},
-    {8, "O"},   {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
+    {8, "O"}, {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
 };
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,

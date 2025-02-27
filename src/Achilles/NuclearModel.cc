@@ -526,7 +526,8 @@ std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
 }
 
 std::string Coherent::PhaseSpace(PID nuc_id) const {
-    if(nuc_id == PID::hydrogen() || nuc_id == PID::free_neutron()) throw achilles::InvalidChannel("Hydrogen or free neutron nucleus");
+    if(nuc_id == PID::hydrogen() || nuc_id == PID::free_neutron())
+        throw achilles::InvalidChannel("Hydrogen or free neutron nucleus");
     if(nuc_id == nucleus_pid) return PSName();
     throw achilles::InvalidChannel(
         fmt::format("Nucleus don't match: Model {}, Phasespace {}", nucleus_pid, nuc_id));
@@ -641,9 +642,11 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
 }
 
 std::string QESpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron())  return PSName(); 
-    if(nuc_id == PID::hydrogen()) is_hydrogen = true;
-    else is_free_neutron = true;
+    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
+    if(nuc_id == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
     return Coherent::Name();
 }
 
@@ -769,8 +772,10 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
 }
 
 std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron())  return PSName(); 
-    if(nuc_id == PID::hydrogen()) is_hydrogen = true;
-    else is_free_neutron = true;
+    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
+    if(nuc_id == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
     return Coherent::Name();
 }
