@@ -18,7 +18,7 @@
 using namespace achilles;
 
 const std::map<std::size_t, std::string> Nucleus::ZToName = {
-    {0, "mfp"}, {1, "H"},   {2, "He"},  {3, "Li"},  {6, "C"},
+    {0, "N"}, {1, "H"},   {2, "He"},  {3, "Li"},  {6, "C"},
     {8, "O"},   {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
 };
 
@@ -122,14 +122,18 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     int ID = IDBase + ZBase * static_cast<int>(Z) + ABase * static_cast<int>(A);
     m_pid = PID{ID};
 
-    // Set flag to handle special case of hydrogen
+    // Set flag to handle special case of hydrogen or free neutron
     if(Z == 1 && A == 1) is_hydrogen = true;
+    if(Z == 0 && A == 1) is_free_neutron = true;
 }
 
 Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
     if(is_hydrogen) {
         return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
+    }
+    if(is_free_neutron) {
+        return {Particle{PID::neutron(), {ParticleInfo(PID::neutron()).Mass(), 0, 0, 0}}};
     }
 
     // Get a configuration from the density function

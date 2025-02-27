@@ -18,8 +18,10 @@ Particles:
     - Particle: [202212,  1440,      350,  3, 0, 1, 1, 1, 0, true, true, N(1440)+, N(1440)+b]
 
     # Nuclei
+    - Particle: [1000000010,  939.565, 0.0, 0, 0, 0, 0, 1, 0, true, true, freeneutron, antifreeneutron]
     - Particle: [1000010010,  938.27, 0.0, 0, 0, 0, 0, 1, 0, true, true, hydrogen, antihydrogen]
     - Particle: [1000060120,   11188, 0.0, 0, 0, 0, 0, 1, 0, true, true, carbon, anticarbon]
+    - Particle: [1000080160, 14899.3, 0.0, 0, 0, 0, 0, 1, 0, true, true, oxygen, antioxygen]
     - Particle: [1000180400, 37215.8, 0.0, 0, 0, 0, 0, 1, 0, true, true, argon, antiargon]
 
     # Mesons
