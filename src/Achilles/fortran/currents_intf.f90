@@ -46,10 +46,14 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fp
     lpi=lpi_in
     lpind=lpind_in
 
-    allocate(up1(nspin_in,4),upp1(nspin_f,4), &
-            &   ubarp1(nspin_in,4),ubarpp1(nspin_f,4), &
-            &   up2(nspin_in,4),upp2(nspin_f,4), &
-            &   ubarp2(nspin_in,4),ubarpp2(nspin_f,4))
+    if (.not. allocated(up1)) allocate(up1(nspin_in,4))
+    if (.not. allocated(upp1)) allocate(upp1(nspin_f,4))
+    if (.not. allocated(ubarp1)) allocate(ubarp1(nspin_in,4))
+    if (.not. allocated(ubarpp1)) allocate(ubarpp1(nspin_f,4)) 
+    if (.not. allocated(up2)) allocate(up2(nspin_in,4))
+    if (.not. allocated(upp2)) allocate(upp2(nspin_f,4))
+    if (.not. allocated(ubarp2)) allocate(ubarp2(nspin_in,4))
+    if (.not. allocated(ubarpp2)) allocate(ubarpp2(nspin_f,4))
 
     sig(:,:,:)=czero
     id(:,:)=czero
@@ -80,7 +84,7 @@ subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fp
 
     ! Read in delta potential and
     ! set up 1D interpolation
-    open(10, file=find_file('data/rho_0p5.dat', "Interference Model"))
+    open(10, file=trim(find_file('data/rho_0p5.dat', "Interference Model")))
     read(10,*) np_del
     allocate(pdel(np_del),pot_del(np_del))
     do i=1,np_del
