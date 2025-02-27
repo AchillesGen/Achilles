@@ -325,7 +325,8 @@ template <> struct convert<std::vector<std::shared_ptr<achilles::Nucleus>>> {
             auto nucleus =
                 std::make_shared<achilles::Nucleus>(nucleus_node.as<achilles::Nucleus>());
 
-            if(nucleus->ID() != achilles::PID::hydrogen() && nucleus->ID() != achilles::PID::free_neutron()) {
+            if(nucleus->ID() != achilles::PID::hydrogen() &&
+               nucleus->ID() != achilles::PID::free_neutron()) {
                 // Set potential for the nucleus
                 auto potential_name = nucleus_node["Potential"]["Name"].as<std::string>();
                 auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
