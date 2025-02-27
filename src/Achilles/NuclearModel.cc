@@ -911,8 +911,10 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
 }
 
 std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron())  return PSName(); 
-    if(nuc_id == PID::hydrogen()) is_hydrogen = true;
-    else is_free_neutron = true;
+    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
+    if(nuc_id == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
     return Coherent::Name();
 }
