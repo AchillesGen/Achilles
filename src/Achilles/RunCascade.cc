@@ -136,6 +136,7 @@ CascadeRunner::CascadeRunner(const std::string &runcard) {
 
     // Setting radius for hydrogen here
     if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
+    if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
 
     // Setup output
     auto output = config["Output"];

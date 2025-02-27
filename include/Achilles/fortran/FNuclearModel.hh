@@ -56,6 +56,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
 
   private:
     mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
     const WardGauge m_ward;
     size_t m_model;
     std::map<std::string, double> param_map;
