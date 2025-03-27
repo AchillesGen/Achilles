@@ -2,6 +2,7 @@ module intf_spectral_model
     use iso_c_binding
     use nuclear_model
     use libspectral_function
+    use liblogging
     implicit none
     private
     public :: intf_spec, build_intf_spec
@@ -40,22 +41,40 @@ contains
         logical :: intf_spec_init
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
+        character(len=256) :: error_message
 
         filepath = find_file(filename, "Interference Model")
-        open(unit=read_unit, file=trim(filepath), iostat=ios)
+        call logger%debug("Interference Model: Loading param file "//trim(filepath))
+        open(unit=read_unit, file=trim(filepath), iostat=ios, iomsg=error_message, status='old')
         if( ios /= 0 ) then
             intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
             return
         endif
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_p_MF = spectral_function(trim_string)
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_n_MF = spectral_function(trim_string)
         intf_spec_init = .true.
 

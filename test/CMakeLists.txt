@@ -77,6 +77,7 @@ add_executable(achilles-fortran-testsuite
     test_spectral_interface.f90
     test_fortran_map.f90
     test_fortran_interference.f90
+    test_fortran_utils.f90
 )
 message(STATUS ${CMAKE_Fortran_MODULE_DIRECTORY})
 target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
