@@ -398,13 +398,18 @@ void ProcessGroup::Optimize() {
         for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
         b_calc_weights = false;
 
+        std::ofstream outFile("Results.txt");
+
         // Store max weight and weight vector
         m_process_weights.resize(m_processes.size());
         for(size_t i = 0; i < m_processes.size(); ++i) {
             m_process_weights[i] = m_processes[i].MaxWeight();
             m_maxweight += m_process_weights[i];
             spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+            outFile << m_processes[i].TotalCrossSection() << "\n";
         }
+
+        outFile.close();
     } else {
         for(size_t i = 0; i < m_processes.size(); ++i) {
             spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());

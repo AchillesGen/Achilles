@@ -260,6 +260,7 @@ class Nucleus {
     FourVector m_recoil{};
     std::shared_ptr<Potential> potential;
     bool is_hydrogen{false};
+    bool is_free_neutron{false};
 };
 
 } // namespace achilles
@@ -295,6 +296,13 @@ template <> struct convert<achilles::Nucleus> {
             return true;
         }
 
+        // Special case for free neutron
+        if(name == "1N") {
+            spdlog::info("Nucleus: creating free neutron nucleus.");
+            nuc.Initialize(0, 1);
+            return true;
+        }
+
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
@@ -317,7 +325,8 @@ template <> struct convert<std::vector<std::shared_ptr<achilles::Nucleus>>> {
             auto nucleus =
                 std::make_shared<achilles::Nucleus>(nucleus_node.as<achilles::Nucleus>());
 
-            if(nucleus->ID() != achilles::PID::hydrogen()) {
+            if(nucleus->ID() != achilles::PID::hydrogen() &&
+               nucleus->ID() != achilles::PID::free_neutron()) {
                 // Set potential for the nucleus
                 auto potential_name = nucleus_node["Potential"]["Name"].as<std::string>();
                 auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
