@@ -30,7 +30,8 @@ QESpectralMapper::QESpectralMapper(const ProcessInfo &info, size_t idx)
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
                                      const std::vector<double> &rans) {
     // Generate inital nucleon state
-    double radical = pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+    double radical =
+        pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
     if(radical < 0) radical = 0;
     double pmin = point[0].E() - sqrt(radical);
     double pmax = point[0].E() + sqrt(radical);
@@ -78,7 +79,8 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
                                         std::vector<double> &rans) {
-    double radical = pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+    double radical =
+        pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
     if(radical < 0) radical = 0;
     double pmin = point[0].E() - sqrt(radical);
     double pmax = point[0].E() + sqrt(radical);
