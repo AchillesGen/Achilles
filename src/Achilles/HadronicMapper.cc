@@ -30,17 +30,17 @@ QESpectralMapper::QESpectralMapper(const ProcessInfo &info, size_t idx)
 void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
                                      const std::vector<double> &rans) {
     // Generate inital nucleon state
-    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
-                                      Constant::mN2 - Smin());
-    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
-                                      Constant::mN2 - Smin());
+    double radical = pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+    if(radical < 0) radical = 0;
+    double pmin = point[0].E() - sqrt(radical);
+    double pmax = point[0].E() + sqrt(radical);
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     const double mom = dp * rans[0] + pmin;
     double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
                       (2 * point[0].E() * mom);
-    cosT_max = cosT_max > 1 ? 1 : cosT_max;
+    cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     const double cosT = (cosT_max + 1) * rans[1] - 1;
     const double sinT = sqrt(1 - cosT * cosT);
     const double phi = dPhi * rans[2];
@@ -78,17 +78,17 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
                                         std::vector<double> &rans) {
-    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
-                                      Constant::mN2 - Smin());
-    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
-                                      Constant::mN2 - Smin());
+    double radical = pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+    if(radical < 0) radical = 0;
+    double pmin = point[0].E() - sqrt(radical);
+    double pmax = point[0].E() + sqrt(radical);
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     rans[0] = (point[HadronIdx()].P() - pmin) / dp;
     double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[1].P2() - Smin()) /
                       (2 * point[0].E() * point[1].P());
-    cosT_max = cosT_max > 1 ? 1 : cosT_max;
+    cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     double dCos = (cosT_max + 1);
     rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
     rans[2] = point[HadronIdx()].Phi() / dPhi;
