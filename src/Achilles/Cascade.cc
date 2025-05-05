@@ -773,6 +773,8 @@ bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
     if(m_medium != InMedium::NonRelativistic) return 1;
 
+    if(!particle1.Info().IsNucleon() || !particle2.Info().IsNucleon()) return 1;
+
     auto p1 = particle1.Momentum();
     auto p2 = particle2.Momentum();
     double mass = particle1.Info().Mass();
