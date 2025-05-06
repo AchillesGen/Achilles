@@ -400,11 +400,12 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
             return 77 / (plab + 1.5);
         } else if(sqrts < 10) {
             // Fit between plab = 6 GeV and sqrts = 10 GeV
-            return 481.795 - 298.236/(sqrts*sqrts) - 172.885*sqrts + 5.04276*sqrts*sqrts 
-                - 0.113744*pow(sqrts, 3) + 0.0011898*pow(sqrts, 4) - 132.601*log(sqrts*sqrts) + 69.1034*pow(log(sqrts*sqrts), 2);
+            return 481.795 - 298.236 / (sqrts * sqrts) - 172.885 * sqrts + 5.04276 * sqrts * sqrts -
+                   0.113744 * pow(sqrts, 3) + 0.0011898 * pow(sqrts, 4) -
+                   132.601 * log(sqrts * sqrts) + 69.1034 * pow(log(sqrts * sqrts), 2);
         } else {
             // Use fit from TOTEM (https://arxiv.org/pdf/1712.06153)
-            return 11.84 - 1.617 * log(sqrts*sqrts) + 0.1359 * pow(log(sqrts*sqrts), 2);
+            return 11.84 - 1.617 * log(sqrts * sqrts) + 0.1359 * pow(log(sqrts * sqrts), 2);
         }
     } else {
         if(plab < 0.525) {
@@ -417,11 +418,12 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
             return 77 / (plab + 1.5);
         } else if(sqrts < 10) {
             // Fit between plab = 6 GeV and sqrts = 10 GeV
-            return 481.795 - 298.236/(sqrts*sqrts) - 172.885*sqrts + 5.04276*sqrts*sqrts 
-                - 0.113744*pow(sqrts, 3) + 0.0011898*pow(sqrts, 4) - 132.601*log(sqrts*sqrts) + 69.1034*pow(log(sqrts*sqrts), 2);
+            return 481.795 - 298.236 / (sqrts * sqrts) - 172.885 * sqrts + 5.04276 * sqrts * sqrts -
+                   0.113744 * pow(sqrts, 3) + 0.0011898 * pow(sqrts, 4) -
+                   132.601 * log(sqrts * sqrts) + 69.1034 * pow(log(sqrts * sqrts), 2);
         } else {
             // Use fit from TOTEM (https://arxiv.org/pdf/1712.06153)
-            return 11.84 - 1.617 * log(sqrts*sqrts) + 0.1359 * pow(log(sqrts*sqrts), 2);
+            return 11.84 - 1.617 * log(sqrts * sqrts) + 0.1359 * pow(log(sqrts * sqrts), 2);
         }
     }
 }
@@ -440,8 +442,7 @@ double DeltaInteraction::SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) 
         (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
     const double mpi =
         (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
-    return integrator.Integrate(mn+mpi, sqrts - mn, 1e-6, 1e-4) * isofactor /
-           (pcm / 1_GeV);
+    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4) * isofactor / (pcm / 1_GeV);
 }
 
 double DeltaInteraction::SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, PID nucleon,
@@ -741,7 +742,7 @@ double DeltaInteraction::SigmaNDelta2NDelta(const Particle &p1, const Particle &
         (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
     const double mpi =
         (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
-    return integrator.Integrate(mn+mpi, sqrts - mn, 1e-6, 1e-4);
+    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4);
 }
 
 double DeltaInteraction::DSigmaND2ND(double sqrts, double mn1, double mn2, double mu1, double mu2,
