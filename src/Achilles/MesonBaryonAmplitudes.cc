@@ -1,11 +1,14 @@
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 
 #include "Achilles/Legendre.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/f_polynomial.hh"
+
+using achilles::ParticleInfo;
+using achilles::PID;
 
 double PartialWaveAmpW::PMax(double w) const {
     return 1 / (2 * w) *
@@ -14,6 +17,9 @@ double PartialWaveAmpW::PMax(double w) const {
 }
 
 MBAmplitudes::MBAmplitudes() {
+    // Set the thresholds using Achilles ParticleInfo
+    SetThresholds();
+
     for(int ii = 0; ii < 4; ii++) {
         for(int iff = 0; iff < 4; iff++) { readANL(ii, iff); }
     }
@@ -25,6 +31,24 @@ MBAmplitudes::MBAmplitudes() {
     SetOpenCChannels();
     SetCrossSectionsW();
     SetH_G_coeffs();
+}
+
+void MBAmplitudes::SetThresholds() {
+    // Channel 1: piN
+    thresholds[0] = std::max(ParticleInfo(PID::pionp()).Mass() +
+                    ParticleInfo(PID::neutron()).Mass(), thresholds[0]);
+
+    // Channel 2: etaN
+    thresholds[1] = std::max(ParticleInfo(PID::eta()).Mass() +
+                    ParticleInfo(PID::neutron()).Mass(), thresholds[1]);
+
+    // Channel 3: K Lambda
+    thresholds[2] = std::max(ParticleInfo(PID::kaon0()).Mass() +
+                    ParticleInfo(PID::lambda0()).Mass(), thresholds[2]);
+
+    // Channel 4: K Sigma
+    thresholds[3] = std::max(ParticleInfo(PID::kaon0()).Mass() +
+                    ParticleInfo(PID::sigmam()).Mass(), thresholds[3]);
 }
 
 void MBAmplitudes::readANL(int i_i, int i_f) {
@@ -127,7 +151,7 @@ bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
     return false;
 }
 
-void MBAmplitudes::printPWA(int iMB, int fMB, int L, int iJ, int iI) {
+void MBAmplitudes::printPWA(size_t iMB, size_t fMB, int L, int iJ, int iI) {
     std::cout << " PWA for " << MBchannels[iMB] << " - > " << MBchannels[fMB] << std::endl;
     int twoJ = 2 * L - 1 + iJ * 2;
     std::cout << " L , twoJ, twoI " << L << "  " << twoJ << "  " << 2. * iI + 1 << std::endl;
@@ -187,7 +211,7 @@ void MBAmplitudes::initIso() {
     }
 }
 
-double MBAmplitudes::CSTotal(double W, int ichan, int twoIm, int twoIb) {
+double MBAmplitudes::CSTotal(double W, size_t ichan, int twoIm, int twoIb) {
     double CGs[2] = {0., 0.};
     CGs[0] = GetCG(ichan, 1, twoIm, twoIb);
     CGs[1] = GetCG(ichan, 3, twoIm, twoIb);
@@ -227,9 +251,9 @@ double MBAmplitudes::CSTotal(double W, int ichan, int twoIm, int twoIb) {
 }
 
 void MBAmplitudes::initCChannels() {
-    int iCChan = 0;
+    size_t iCChan = 0;
 
-    for(int iMB = 0; iMB < nMBchan; iMB += 1) {
+    for(size_t iMB = 0; iMB < nMBchan; iMB += 1) {
         int twoI_m = twoIm_MBchannels[iMB];
         int twoI_b = twoIb_MBchannels[iMB];
         for(int twoI3_m = -twoI_m; twoI3_m <= twoI_m; twoI3_m += 2) {
@@ -295,10 +319,10 @@ void MBAmplitudes::PIDlist() {
     Baryon_PID_Cchan[15] = 3222;
 }
 
-int MBAmplitudes::iCChannel(int MBchan, int twoI3m, int twoI3b) {
+int MBAmplitudes::iCChannel(size_t MBchan, int twoI3m, int twoI3b) {
     // Return the index of the physical charge channel based on the charge states
     int ic0 = 0;
-    for(int iMB = 0; iMB < MBchan; iMB++) {
+    for(size_t iMB = 0; iMB < MBchan; iMB++) {
         ic0 += (twoIm_MBchannels[iMB] + 1) * (twoIb_MBchannels[iMB] + 1);
     }
 
@@ -311,7 +335,7 @@ int MBAmplitudes::iCChannel(int MBchan, int twoI3m, int twoI3b) {
     return ic0 + im * Nb + ib; // index of the charge channel
 }
 
-void MBAmplitudes::Iso_Cchan(int iCChan, int &iMBchan, int &twoI3m, int &twoI3b) {
+void MBAmplitudes::Iso_Cchan(size_t iCChan, size_t &iMBchan, int &twoI3m, int &twoI3b) {
     iMBchan = MBchan_Cchan[iCChan];
     twoI3m = twoI3m_Cchan[iCChan];
     twoI3b = twoI3b_Cchan[iCChan];
@@ -341,17 +365,17 @@ void MBAmplitudes::Iso_Cchan(int iCChan, int &iMBchan, int &twoI3m, int &twoI3b)
 // }
 
 void MBAmplitudes::SetOpenCChannels() {
-    for(int iCChan = 0; iCChan < nCchan; iCChan++) {
-        int iMB_i = MBchan_Cchan[iCChan];
+    for(size_t iCChan = 0; iCChan < nCchan; iCChan++) {
+        size_t iMB_i = MBchan_Cchan[iCChan];
         int twoI3m_i = twoI3m_Cchan[iCChan];
         int twoI3b_i = twoI3b_Cchan[iCChan];
         int twoI3_i = twoI3m_i + twoI3b_i;
         double CG1_i = GetCG(iMB_i, 1, twoI3m_i, twoI3b_i);
         double CG3_i = GetCG(iMB_i, 3, twoI3m_i, twoI3b_i);
 
-        int Nopen = 0;
-        for(int i_f = 0; i_f < nCchan; i_f++) {
-            int iMB_f = MBchan_Cchan[i_f];
+        size_t Nopen = 0;
+        for(size_t i_f = 0; i_f < nCchan; i_f++) {
+            size_t iMB_f = MBchan_Cchan[i_f];
             int twoI3m_f = twoI3m_Cchan[i_f];
             int twoI3b_f = twoI3b_Cchan[i_f];
             if(twoI3_i != twoI3m_f + twoI3b_f) { continue; }
@@ -372,23 +396,23 @@ void MBAmplitudes::SetOpenCChannels() {
 }
 
 void MBAmplitudes::SetCrossSectionsW() {
-    for(int ichan_i = 0; ichan_i < nCchan; ichan_i++) {
-        int nOpenFS = NOpenCChannels[ichan_i];
-        for(int iFS = 0; iFS < nOpenFS; iFS++) {
-            int ichan_f = OpenCChannels[ichan_i][iFS];
+    for(size_t ichan_i = 0; ichan_i < nCchan; ichan_i++) {
+        size_t nOpenFS = NOpenCChannels[ichan_i];
+        for(size_t iFS = 0; iFS < nOpenFS; iFS++) {
+            size_t ichan_f = OpenCChannels[ichan_i][iFS];
             CalcCrossSectionW_grid(ichan_i, ichan_f, CrossSectionsW[ichan_i][ichan_f]);
         }
     }
 }
 
-void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS) {
-    int iMB_i = MBchan_Cchan[iIS];
+void MBAmplitudes::CalcCrossSectionW_grid(size_t iIS, size_t iFS, double *CS) {
+    size_t iMB_i = MBchan_Cchan[iIS];
     int twoI3m_i = twoI3m_Cchan[iIS];
     int twoI3b_i = twoI3b_Cchan[iIS];
     double CG1_i = GetCG(iMB_i, 1, twoI3m_i, twoI3b_i);
     double CG3_i = GetCG(iMB_i, 3, twoI3m_i, twoI3b_i);
 
-    int iMB_f = MBchan_Cchan[iFS];
+    size_t iMB_f = MBchan_Cchan[iFS];
     int twoI3m_f = twoI3m_Cchan[iFS];
     int twoI3b_f = twoI3b_Cchan[iFS];
     double CG1 = GetCG(iMB_f, 1, twoI3m_f, twoI3b_f) * CG1_i;
@@ -441,7 +465,7 @@ void MBAmplitudes::CalcCrossSectionW_grid(int iIS, int iFS, double *CS) {
     }
 }
 
-double MBAmplitudes::GetCSW(int i_i, int i_f, double W) const {
+double MBAmplitudes::GetCSW(size_t i_i, size_t i_f, double W) const {
     // Simple lineair interpolation on a fixed grid
     int twoI3_i = twoI3m_Cchan[i_i];
     twoI3_i += twoI3b_Cchan[i_i];
@@ -451,8 +475,8 @@ double MBAmplitudes::GetCSW(int i_i, int i_f, double W) const {
 
     if(twoI3_i != twoI3_f) { return 0.; }
 
-    int iMB_i = MBchan_Cchan[i_i];
-    int iMB_f = MBchan_Cchan[i_f];
+    size_t iMB_i = MBchan_Cchan[i_i];
+    size_t iMB_f = MBchan_Cchan[i_f];
 
     if(W < thresholds[iMB_i] || W < thresholds[iMB_f]) { return 0.; }
 
@@ -471,13 +495,13 @@ double MBAmplitudes::GetCSW(int i_i, int i_f, double W) const {
     return CS_W;
 }
 
-std::vector<std::pair<double, int>> MBAmplitudes::GetAllCSW(int ichan, double W) const {
-    std::vector<std::pair<double, int>> CS_fchan;
+std::vector<std::pair<double, size_t>> MBAmplitudes::GetAllCSW(size_t ichan, double W) const {
+    std::vector<std::pair<double, size_t>> CS_fchan;
     if(ichan >= maxchannels) { return CS_fchan; } // return empty }
-    int Nfchan = NOpenCChannels[ichan];
+    size_t Nfchan = NOpenCChannels[ichan];
 
-    for(int ifchan = 0; ifchan < Nfchan; ifchan++) {
-        int fchan = OpenCChannels[ichan][ifchan];
+    for(size_t ifchan = 0; ifchan < Nfchan; ifchan++) {
+        size_t fchan = OpenCChannels[ichan][ifchan];
         double CS = GetCSW(ichan, fchan, W);
         CS_fchan.push_back({CS, fchan});
     }
@@ -485,9 +509,9 @@ std::vector<std::pair<double, int>> MBAmplitudes::GetAllCSW(int ichan, double W)
     return CS_fchan;
 }
 
-void MBAmplitudes::printCSW(int i_i, int i_f) {
-    int iMB_i = MBchan_Cchan[i_i];
-    int iMB_f = MBchan_Cchan[i_f];
+void MBAmplitudes::printCSW(size_t i_i, size_t i_f) {
+    size_t iMB_i = MBchan_Cchan[i_i];
+    size_t iMB_f = MBchan_Cchan[i_f];
 
     int nW = num_W[iMB_i][iMB_f];
 
@@ -512,9 +536,9 @@ void MBAmplitudes::SetH_G_coeffs() {
     }
 }
 
-f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, int i_i, int i_f) const {
-    int iMB_i = MBchan_Cchan[i_i];
-    int iMB_f = MBchan_Cchan[i_f];
+f_Polynomial MBAmplitudes::Get_CSpoly_W(double W, size_t i_i, size_t i_f) const {
+    size_t iMB_i = MBchan_Cchan[i_i];
+    size_t iMB_f = MBchan_Cchan[i_f];
 
     //	if (W < thresholds[iMB_i] || W < thresholds[iMB_f]){ return 0.;} //error handle later
 
