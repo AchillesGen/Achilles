@@ -29,7 +29,7 @@ TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
     std::ofstream file("delta.txt");
     file << fmt::format("sqrts,dsigmadm,sigmapp,sigmapd\n");
 
-    double expected = 0.2456636303;
+    double expected = 0.1946713104;
     auto result = delta.TestDeltaDSigmaDOmegaDM(-0.81, 2.041, 1.093, achilles::PID::delta0());
     CHECK_THAT(result, Catch::Matchers::WithinAbs(expected, 1e-6));
 
@@ -39,7 +39,7 @@ TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
                             delta.TestDeltaDSigma(1, sqrts, 1.232));
     }
 
-    auto mass_vec = achilles::Linspace(0.0, 4.0, 301);
+    auto mass_vec = achilles::Linspace(0.01, 4.0, 301);
     std::ofstream file2("delta_mass.txt");
     file2 << fmt::format("mass,dsigmadm\n");
 

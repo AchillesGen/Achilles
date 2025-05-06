@@ -438,10 +438,10 @@ double DeltaInteraction::SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) 
     else
         isofactor = 1.0 / 3.0;
 
-    const double mn =
-        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
-    const double mpi =
-        (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+    // TODO: Figure out a better way to handle this,
+    // we always choose the heavier particles to ensure that it is always kinematically allowed
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
     return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4) * isofactor / (pcm / 1_GeV);
 }
 
@@ -467,8 +467,8 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
        res == PID::deltam()) {
         // TODO: Figure out a better way to handle this,
         // we always choose the heavier particles to ensure that it is always kinematically allowed
-        const double mn = ParticleInfo(PID::neutron()).Mass();
-        const double mpi = ParticleInfo(PID::pionp()).Mass();
+        const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+        const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
         double smin = pow(mn + mpi, 2);
         double smax = pow(sqrts - ParticleInfo(other).Mass(), 2);
 
@@ -602,8 +602,8 @@ double DeltaInteraction::DSigmaDM(bool iresonance, double sqrts, double mdelta,
                                   PID delta_id) const {
     // TODO: Figure out a better way to handle this,
     // we always choose the heavier particles to ensure that it is always kinematically allowed
-    const double mn = ParticleInfo(PID::neutron()).Mass();
-    const double mpi = ParticleInfo(PID::pionp()).Mass();
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
     if(sqrts < 2 * mn + mpi || sqrts < mdelta + mn) return 0;
 
     double pin2 = sqrts * sqrts / 4 - mn * mn;
@@ -622,6 +622,11 @@ double DeltaInteraction::DSigmaDM(bool iresonance, double sqrts, double mdelta,
         double width = GetEffectiveWidth(delta_id, mdelta, mn, mpi, 1);
         prop = 1 / M_PI * mdelta * width /
                (pow(mdelta * mdelta - mdel * mdel, 2) + pow(mdelta * width, 2));
+    }
+
+    // Avoid numerical issues when far from resonance peak
+    if(!iresonance && prop < 1e-10) {
+        return 0;
     }
 
     // Integrate over Omega (does not depend on phi)
