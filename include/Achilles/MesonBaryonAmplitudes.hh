@@ -106,8 +106,9 @@ class MBAmplitudes {
     static constexpr size_t maxMBchan = 4;
     size_t nMBchan = 0;
     std::array<std::string, maxMBchan> MBchannels = {"piN", "eta N", "K Lambda", "K Sigma"};
-    std::array<double, maxMBchan> thresholds = {1080., 1490., 1615., 1690.}; // Minima in the datafiles
-    std::array<double, maxMBchan> Mass_m = {138.5, 548.0, 495., 495.};       // Masses in ANL code
+    std::array<double, maxMBchan> thresholds = {1080., 1490., 1615.,
+                                                1690.};                // Minima in the datafiles
+    std::array<double, maxMBchan> Mass_m = {138.5, 548.0, 495., 495.}; // Masses in ANL code
     std::array<double, maxMBchan> Mass_b = {938.5, 938.5, 1115.7, 1193.0};
 
     std::array<int, maxMBchan> twoIm_MBchannels = {2, 0, 1, 1};
