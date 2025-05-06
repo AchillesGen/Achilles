@@ -22,6 +22,8 @@
 
 #include <dlfcn.h>
 #include <filesystem>
+#include <chrono>
+#include <ctime>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
@@ -53,10 +55,44 @@ static const std::string USAGE =
       --display-nuc-models                  Display the available nuclear interaction models
 )";
 
+using namespace std;
+using namespace chrono;
+
+/** Returns the time, in number of seconds since midnight, Jan 1, 1970 */
+time_t currentTime() {
+	return system_clock::to_time_t(system_clock::now());
+}
+
+/** Puts a potentially-large number of seconds into a more human-readable form */
+string formatTime(time_t seconds) {
+	if(seconds<60)
+		return to_string(seconds)+" seconds";
+	double timeValue=seconds;
+	timeValue/=60;
+	if(timeValue<60)
+		return to_string(timeValue)+" minutes";
+	timeValue/=60;
+	if(timeValue<24)
+		return to_string(timeValue)+" hours";
+	timeValue/=24;
+	return to_string(timeValue)+" days";
+}
+
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
-    achilles::EventGen generator(runcard, shargs);
-    generator.Initialize();
-    generator.GenerateEvents();
+	time_t startTime=currentTime();
+	string log="Start Time: ";
+	log+=ctime(&startTime);
+	spdlog::info(log);
+
+	achilles::EventGen generator(runcard, shargs);
+	generator.Initialize();
+	generator.GenerateEvents();
+
+	time_t endTime=currentTime();
+	log="End Time: ";
+	log+=ctime(&endTime);
+	spdlog::info(log);
+	spdlog::info("Process Duration: "+formatTime(endTime-startTime));
 }
 
 int main(int argc, char *argv[]) {
