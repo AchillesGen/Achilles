@@ -35,20 +35,20 @@ MBAmplitudes::MBAmplitudes() {
 
 void MBAmplitudes::SetThresholds() {
     // Channel 1: piN
-    thresholds[0] = std::max(ParticleInfo(PID::pionp()).Mass() +
-                    ParticleInfo(PID::neutron()).Mass(), thresholds[0]);
+    thresholds[0] = std::max(
+        ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::neutron()).Mass(), thresholds[0]);
 
     // Channel 2: etaN
-    thresholds[1] = std::max(ParticleInfo(PID::eta()).Mass() +
-                    ParticleInfo(PID::neutron()).Mass(), thresholds[1]);
+    thresholds[1] = std::max(ParticleInfo(PID::eta()).Mass() + ParticleInfo(PID::neutron()).Mass(),
+                             thresholds[1]);
 
     // Channel 3: K Lambda
-    thresholds[2] = std::max(ParticleInfo(PID::kaon0()).Mass() +
-                    ParticleInfo(PID::lambda0()).Mass(), thresholds[2]);
+    thresholds[2] = std::max(
+        ParticleInfo(PID::kaon0()).Mass() + ParticleInfo(PID::lambda0()).Mass(), thresholds[2]);
 
     // Channel 4: K Sigma
-    thresholds[3] = std::max(ParticleInfo(PID::kaon0()).Mass() +
-                    ParticleInfo(PID::sigmam()).Mass(), thresholds[3]);
+    thresholds[3] = std::max(ParticleInfo(PID::kaon0()).Mass() + ParticleInfo(PID::sigmam()).Mass(),
+                             thresholds[3]);
 }
 
 void MBAmplitudes::readANL(int i_i, int i_f) {
