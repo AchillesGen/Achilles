@@ -625,9 +625,7 @@ double DeltaInteraction::DSigmaDM(bool iresonance, double sqrts, double mdelta,
     }
 
     // Avoid numerical issues when far from resonance peak
-    if(!iresonance && prop < 1e-10) {
-        return 0;
-    }
+    if(!iresonance && prop < 1e-10) { return 0; }
 
     // Integrate over Omega (does not depend on phi)
     auto dsigmadomega = [&](double cost) {
