@@ -63,19 +63,22 @@ time_t currentTime() {
 	return system_clock::to_time_t(system_clock::now());
 }
 
-/** Puts a potentially-large number of seconds into a more human-readable form */
-string formatTime(time_t seconds) {
-	if(seconds<60)
-		return to_string(seconds)+" seconds";
-	double timeValue=seconds;
-	timeValue/=60;
-	if(timeValue<60)
-		return to_string(timeValue)+" minutes";
-	timeValue/=60;
-	if(timeValue<24)
-		return to_string(timeValue)+" hours";
-	timeValue/=24;
-	return to_string(timeValue)+" days";
+/** Puts a potentially-large number of seconds into a more human-readable form
+ *  There might've been a library for this but I coded it myself anyway -Hayden */
+ string formatTime(time_t seconds) {
+	string output=to_string(seconds%60)+"s";
+	seconds/=60;
+	if(seconds==0)
+		return output;
+	output=to_string(seconds%60)+"m "+output;
+	seconds/=60;
+	if(seconds==0)
+		return output;
+	output=to_string(seconds%24)+"h "+output;
+	seconds/=24;
+	if(seconds==0)
+		return output;
+	return to_string(seconds)+"d "+output;
 }
 
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
