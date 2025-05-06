@@ -26,9 +26,7 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
 
     InteractionResults results;
     // return empty interaction list, no initial channel matches
-    if(ichan == std::numeric_limits<size_t>::max()) {
-        return results;
-    }
+    if(ichan == std::numeric_limits<size_t>::max()) { return results; }
 
     double W = (particle1.Momentum() + particle2.Momentum()).M();
 

@@ -52,9 +52,7 @@ class MBAmplitudes {
 
     size_t GetCchannel(int pidm, int pidb) const {
         for(size_t i = 0; i < nCchan; i++) {
-            if((pidm == Meson_PID_Cchan[i]) && (pidb == Baryon_PID_Cchan[i])) {
-                return i;
-            }
+            if((pidm == Meson_PID_Cchan[i]) && (pidb == Baryon_PID_Cchan[i])) { return i; }
         }
         return std::numeric_limits<size_t>::max();
     }
