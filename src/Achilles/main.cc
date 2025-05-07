@@ -58,11 +58,6 @@ static const std::string USAGE =
 using namespace std;
 using namespace chrono;
 
-/** Returns the time, in number of seconds since midnight, Jan 1, 1970 */
-time_t currentTime() {
-	return system_clock::to_time_t(system_clock::now());
-}
-
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
 string formatTime(time_t seconds) {
@@ -81,20 +76,22 @@ string formatTime(time_t seconds) {
 	return to_string(seconds)+"d "+output;
 }
 
+/**  */
+time_t logTime(string message) {
+	time_t time=system_clock::to_time_t(system_clock::now());
+	message+=ctime(&time);
+	spdlog::info(message);
+	return time;
+}
+
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
-	time_t startTime=currentTime();
-	string log="Start Time: ";
-	log+=ctime(&startTime);
-	spdlog::info(log);
+	time_t startTime=logTime("Start Time: ");
 
 	achilles::EventGen generator(runcard, shargs);
 	generator.Initialize();
 	generator.GenerateEvents();
 
-	time_t endTime=currentTime();
-	log="End Time: ";
-	log+=ctime(&endTime);
-	spdlog::info(log);
+	time_t endTime=logTime("End Time: ");
 	spdlog::info("Process Duration: "+formatTime(endTime-startTime));
 }
 
@@ -157,9 +154,13 @@ int main(int argc, char *argv[]) {
     }
 
     std::string runcard = "run.yml";
-    if(args["<input>"].isString())
+    if(args["<input>"].isString()) {
         runcard = args["<input>"].asString();
-    else {
+		if(!fs.exists(runcard)) {
+			spdlog::error("Achilles: Could not find \""+runcard+"\".");
+			return 1;
+		}
+	} else {
         // Ensure file exists, otherwise copy template file to current location
         if(!fs::exists(runcard)) {
             spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
@@ -178,9 +179,12 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
+	bool success=false;
     try {
         GenerateEvents(runcard, shargs);
+		success=true;
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
+	spdlog::info("Event Run Concluded - "+(success?"Success!":"Failed."));
 
     return 0;
 }
