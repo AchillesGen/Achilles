@@ -213,18 +213,22 @@ void achilles::EventGen::Initialize() {
 }
 
 void achilles::EventGen::GenerateEvents() {
-    outputEvents = true;
-    runCascade = cascade != nullptr;
+	outputEvents = true;
+	runCascade = cascade != nullptr;
 
-    const auto nevents = config["Main/NEvents"].as<size_t>();
-    size_t accepted = 0;
-    while(accepted < nevents) {
-        static constexpr size_t statusUpdate = 1000;
-        if(accepted % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", accepted, nevents);
-        }
-        if(GenerateSingleEvent()) accepted++;
-    }
+	const auto nevents = config["Main/NEvents"].as<size_t>();
+	size_t accepted = 0;
+	size_t statusUpdate = nevents/100; //Print N for every 1% progress
+	size_t lastUpdate=0; //Prevents the same # of events from being logged more than once (would happen when events were rejected)
+	if(statusUpdate<1000)
+		statusUpdate=1000; //Should print less often for small # of events
+	while(accepted < nevents) {
+		if(accepted % statusUpdate == 0 && accepted>lastUpdate) {
+			fmt::print("Generated {} / {} events\r", accepted, nevents);
+			lastUpdate=accepted;
+		}
+		if(GenerateSingleEvent()) accepted++;
+	}
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {

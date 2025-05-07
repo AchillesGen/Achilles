@@ -65,7 +65,7 @@ time_t currentTime() {
 
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
- string formatTime(time_t seconds) {
+string formatTime(time_t seconds) {
 	string output=to_string(seconds%60)+"s";
 	seconds/=60;
 	if(seconds==0)
