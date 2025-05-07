@@ -5,13 +5,13 @@
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
-#include "Achilles/Exception.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -280,8 +280,7 @@ bool achilles::EventGen::GenerateSingleEvent() {
                 event = tmp_event;
                 spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
                 break;
-            }
-            catch(const AchillesCascadeError &e) {
+            } catch(const AchillesCascadeError &e) {
                 // Handle rare (~1:1e7) failures from threshold mismatches.
                 spdlog::trace("Skipping AchillesCascadeError");
                 continue;

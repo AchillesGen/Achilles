@@ -7,13 +7,13 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
-#include "Achilles/Exception.hh"
 
 using namespace achilles;
 
@@ -762,9 +762,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         // TODO: What do we use for the position? (How about average positions?)
         // TODO: How to best include the absorp_partner
         auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
-        spdlog::info("Adding vertex with 'cascade'")
-        event.History().AddVertex(average_position, initial_part, final_part,
-                                  EventHistory::StatusCode::cascade);
+        spdlog::info("Adding vertex with 'cascade'") event.History().AddVertex(
+            average_position, initial_part, final_part, EventHistory::StatusCode::cascade);
     }
 }
 

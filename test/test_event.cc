@@ -85,10 +85,12 @@ TEST_CASE("Test Event Copy Constructor", "[Event]") {
 
     SECTION("Ensure original and copied events are independent") {
         // Modify the original event and ensure it does not affect the copied event
-        event.Momentum()[0] = {0, 0, 0, 0};  // Modify first momentum of the original event
+        event.Momentum()[0] = {0, 0, 0, 0}; // Modify first momentum of the original event
 
-        CHECK(event.Momentum()[0] != copied_event.Momentum()[0]);  // The copied event should remain unchanged
-        CHECK(event.Momentum()[1] == copied_event.Momentum()[1]);  // Other parts should remain the same
+        CHECK(event.Momentum()[0] !=
+              copied_event.Momentum()[0]); // The copied event should remain unchanged
+        CHECK(event.Momentum()[1] ==
+              copied_event.Momentum()[1]); // Other parts should remain the same
     }
 }
 
@@ -119,9 +121,11 @@ TEST_CASE("Test Event Assignment Operator", "[Event]") {
 
     SECTION("Ensure original and assigned events are independent") {
         // Modify the original event and ensure it does not affect the assigned event
-        event.Momentum()[0] = {0, 0, 0, 0};  // Modify first momentum of the original event
+        event.Momentum()[0] = {0, 0, 0, 0}; // Modify first momentum of the original event
 
-        CHECK(event.Momentum()[0] != assigned_event.Momentum()[0]);  // The assigned event should remain unchanged
-        CHECK(event.Momentum()[1] == assigned_event.Momentum()[1]);  // Other parts should remain the same
+        CHECK(event.Momentum()[0] !=
+              assigned_event.Momentum()[0]); // The assigned event should remain unchanged
+        CHECK(event.Momentum()[1] ==
+              assigned_event.Momentum()[1]); // Other parts should remain the same
     }
 }
