@@ -211,6 +211,9 @@ void Cascade::Validate(Event &event) {
         auto &particle = event.Hadrons()[idx];
         if(particle.Status() == ParticleStatus::propagating) {
             for(auto p : event.Hadrons()) spdlog::error("{}", p);
+            achilles::PrintVisitor visitor;
+            event.History().WalkHistory(visitor);
+            spdlog::error("Event history: {}", visitor.data);
             throw std::runtime_error("Cascade has failed. Insufficient max steps.");
         }
         if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {

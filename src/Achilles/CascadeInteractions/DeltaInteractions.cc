@@ -470,31 +470,31 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
         const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
         const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
         double smin = pow(mn + mpi, 2);
-        double smax = pow(sqrts - ParticleInfo(other).Mass(), 2);
+        double smax = pow(sqrts - ParticleInfo(other).Mass() / 1_GeV, 2);
 
         // Parameters for generating according to BW (should be most efficient)
-        double m2 = pow(ParticleInfo(res).Mass(), 2);
-        double mw = ParticleInfo(res).Mass() * ParticleInfo(res).Width();
+        double m2 = pow(ParticleInfo(res).Mass() / 1_GeV, 2);
+        double mw = ParticleInfo(res).Mass() / 1_GeV * ParticleInfo(res).Width() / 1_GeV;
         double ymax = atan((smin - m2) / mw);
         double ymin = atan((smax - m2) / mw);
 
         bool is_nd_nd = p1.Info().IsResonance();
         double max_val = 0;
-        double md = sqrt(m2) / 1_GeV;
+        double md = sqrt(m2);
         if(is_nd_nd) {
             auto func = [&](double mass) {
-                double spectral = SpectralDelta(res, mass / 1_GeV);
+                double spectral = SpectralDelta(res, mass);
                 auto val = -DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                         ParticleInfo(other).Mass() / 1_GeV,
-                                        p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+                                        p1.Momentum().M() / 1_GeV, mass, spectral);
                 return val;
             };
             Brent brent(func);
             double m_max = brent.Minimize(sqrt(smin), sqrt(smax));
-            double spectral = SpectralDelta(res, m_max / 1_GeV);
+            double spectral = SpectralDelta(res, m_max);
             max_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                   ParticleInfo(other).Mass() / 1_GeV, p1.Momentum().M() / 1_GeV,
-                                  m_max / 1_GeV, spectral);
+                                  m_max, spectral);
         } else {
             max_val = DSigmaDM(0, sqrts / 1_GeV, md, res);
         }
@@ -504,15 +504,19 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
             double mass = sqrt(s);
             double func_val = 0;
             if(is_nd_nd) {
-                double spectral = SpectralDelta(res, mass / 1_GeV);
+                double spectral = SpectralDelta(res, mass);
                 func_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                        ParticleInfo(other).Mass() / 1_GeV,
-                                       p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+                                       p1.Momentum().M() / 1_GeV, mass, spectral);
             } else {
-                func_val = DSigmaDM(0, sqrts / 1_GeV, mass / 1_GeV, res);
+                func_val = DSigmaDM(0, sqrts / 1_GeV, mass, res);
             }
             spdlog::debug("func_val = {}, max_val = {}", func_val, max_val);
-            if(func_val / max_val > ran.Uniform(0.0, 1.0)) return mass;
+            if(func_val / max_val > ran.Uniform(0.0, 1.0)) {
+                spdlog::trace("min_mass = {}, max_mass = {}, mass = {}, mn = {}, mpi = {}", sqrt(smin),
+                              sqrt(smax), mass, mn, mpi);
+                return mass * 1_GeV;
+            }
         }
     } else {
         throw std::runtime_error("DeltaInteraction: Only delta resonances implemented for now!");
@@ -741,10 +745,10 @@ double DeltaInteraction::SigmaNDelta2NDelta(const Particle &p1, const Particle &
     };
 
     Integrator::DoubleExponential integrator(dsigmadm);
-    const double mn =
-        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
-    const double mpi =
-        (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+    // TODO: Figure out a better way to handle this,
+    // we always choose the heavier particles to ensure that it is always kinematically allowed
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
     return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4);
 }
 
