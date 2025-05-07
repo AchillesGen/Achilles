@@ -11,9 +11,10 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
+#include "Achilles/Exception.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #else
 namespace achilles {
 class SherpaInterface {};
@@ -25,11 +26,11 @@ class SherpaInterface {};
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#include "plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "fmt/std.h"
@@ -268,11 +269,25 @@ bool achilles::EventGen::GenerateSingleEvent() {
                               EventHistory::StatusCode::primary);
 
     // TODO: Determine if cascade or Sherpa Decays go first
-    // Cascade the nucleus
+    // Cascade the nucleus, with possible re-runs in case of rare errors
+    size_t ntrials = 10;
     if(runCascade) {
         spdlog::debug("Runnning cascade");
-        cascade->Evolve(event, group.GetNucleus());
-
+        for(size_t itrial = 1; itrial <= ntrials; itrial++) {
+            try {
+                auto tmp_event = event;
+                cascade->Evolve(tmp_event, group.GetNucleus());
+                event = tmp_event;
+                spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
+                break;
+            }
+            catch(const AchillesCascadeError &e) {
+                // Handle rare (~1:1e7) failures from threshold mismatches.
+                spdlog::trace("Skipping AchillesCascadeError");
+                continue;
+            }
+            throw AchillesCascadeError("Cascade trials limit reached.");
+        }
 #ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons (Post Cascade):");
         size_t idx = 0;

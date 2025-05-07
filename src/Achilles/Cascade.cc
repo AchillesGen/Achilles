@@ -13,6 +13,7 @@
 #include "Achilles/Potential.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
+#include "Achilles/Exception.hh"
 
 using namespace achilles;
 
@@ -214,7 +215,7 @@ void Cascade::Validate(Event &event) {
             achilles::PrintVisitor visitor;
             event.History().WalkHistory(visitor);
             spdlog::error("Event history: {}", visitor.data);
-            throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+            throw AchillesCascadeError("Cascade has failed. Insufficient max steps.");
         }
         if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {
             static constexpr size_t nwarns = 10;
@@ -761,6 +762,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         // TODO: What do we use for the position? (How about average positions?)
         // TODO: How to best include the absorp_partner
         auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
+        spdlog::info("Adding vertex with 'cascade'")
         event.History().AddVertex(average_position, initial_part, final_part,
                                   EventHistory::StatusCode::cascade);
     }
@@ -924,8 +926,9 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     std::vector<Particle> final;
     for(auto &out : particles_out) {
         if(std::isnan(out.Momentum()[0])) {
-            spdlog::error("Nan momenutm in decay");
+            spdlog::error("Nan momentum in decay");
             spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
+            throw AchillesCascadeError("Nan momentum in decay");
         }
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());
