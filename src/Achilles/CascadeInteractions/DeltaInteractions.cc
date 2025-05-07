@@ -513,8 +513,8 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
             }
             spdlog::debug("func_val = {}, max_val = {}", func_val, max_val);
             if(func_val / max_val > ran.Uniform(0.0, 1.0)) {
-                spdlog::trace("min_mass = {}, max_mass = {}, mass = {}, mn = {}, mpi = {}", sqrt(smin),
-                              sqrt(smax), mass, mn, mpi);
+                spdlog::trace("min_mass = {}, max_mass = {}, mass = {}, mn = {}, mpi = {}",
+                              sqrt(smin), sqrt(smax), mass, mn, mpi);
                 return mass * 1_GeV;
             }
         }

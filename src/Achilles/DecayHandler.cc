@@ -42,15 +42,14 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
     size_t tmp = 0;
     for(const auto &mode : m_decays.at(part.ID())) {
         if(mode.out_ids.size() == 2) {
-            spdlog::trace("Checking decay {} ({}) -> {} ({}) + {} ({})",
-                         part.ID(), sqrt(m2), mode.out_ids[0], ParticleInfo(mode.out_ids[0]).Mass(),
-                         mode.out_ids[1], ParticleInfo(mode.out_ids[1]).Mass());
+            spdlog::trace("Checking decay {} ({}) -> {} ({}) + {} ({})", part.ID(), sqrt(m2),
+                          mode.out_ids[0], ParticleInfo(mode.out_ids[0]).Mass(), mode.out_ids[1],
+                          ParticleInfo(mode.out_ids[1]).Mass());
             auto mass1 = ParticleInfo(mode.out_ids[0]).Mass();
             auto mass2 = ParticleInfo(mode.out_ids[1]).Mass();
             if(mass1 + mass2 > sqrt(m2)) {
-                spdlog::debug("Removing decay {} ({}) -> {} ({}) + {} ({})",
-                              part.ID(), sqrt(m2), mode.out_ids[0], mass1,
-                              mode.out_ids[1], mass2);
+                spdlog::debug("Removing decay {} ({}) -> {} ({}) + {} ({})", part.ID(), sqrt(m2),
+                              mode.out_ids[0], mass1, mode.out_ids[1], mass2);
                 ratios[tmp] = 0;
             }
         }
