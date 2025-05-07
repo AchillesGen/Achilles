@@ -229,6 +229,7 @@ void achilles::EventGen::GenerateEvents() {
 		}
 		if(GenerateSingleEvent()) accepted++;
 	}
+	fmt::print("Generated {} / {} events\r", accepted, nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
