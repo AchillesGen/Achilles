@@ -15,21 +15,6 @@
 using achilles::HepMC3Writer;
 using namespace HepMC3;
 
-std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename,
-                                                             bool zipped) {
-    std::shared_ptr<std::ostream> output = nullptr;
-#ifdef GZIP
-    if(zipped) {
-        std::string zipname = filename;
-        if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        output = std::make_shared<ogzstream>(zipname.c_str());
-    } else
-#endif
-        output = std::make_shared<std::ofstream>(filename);
-
-    return output;
-}
-
 void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<ProcessGroup> &) {
     // Setup generator information
     spdlog::trace("Writing Header");

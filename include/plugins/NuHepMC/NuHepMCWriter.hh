@@ -16,14 +16,14 @@ class ProcessGroup;
 
 class NuHepMCWriter : public EventWriter {
   public:
-    NuHepMCWriter(const std::string &filename, bool zipped = true);
+  	NuHepMCWriter(const string& filename, bool zip=true):
+		file{EventWriter::InitializeStream(filename,zip)}, outfilename{filename} {}
     ~NuHepMCWriter() override = default;
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
     void Write(const Event &) override;
 
   private:
-    static std::shared_ptr<std::ostream> InitializeStream(const std::string &, bool);
     std::shared_ptr<HepMC3::Writer> file;
     std::string outfilename;
     achilles::StatsData results;

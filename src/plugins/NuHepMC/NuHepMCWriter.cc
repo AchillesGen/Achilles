@@ -46,8 +46,6 @@ static constexpr int Cascade = 29;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
-NuHepMCWriter::NuHepMCWriter(const std::string &filename, bool zipped) : outfilename(filename) {}
-
 void NuHepMCWriter::WriteHeader(const std::string &filename,
                                 const std::vector<ProcessGroup> &groups) {
     // Setup generator information

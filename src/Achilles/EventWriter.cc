@@ -4,16 +4,18 @@
 #include "Achilles/Version.hh"
 #include "fmt/format.h"
 
-achilles::AchillesWriter::AchillesWriter(const std::string &filename, bool zip)
-    : toFile{true}, zipped{zip} {
+using namespace std;
+
+
+std::shared_ptr<std::ostream> EventWriter::InitializeStream(const std::string &filename,bool zip) {
 #ifdef GZIP
-    if(zipped) {
+    if(zip) {
         std::string zipname = filename;
         if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        m_out = new ogzstream(zipname.c_str());
-    } else
+        return std::make_shared<ogzstream>(zipname.c_str());
+    }
 #endif
-        m_out = new std::ofstream(filename);
+    return std::make_shared<std::ofstream>(filename);
 }
 
 void achilles::AchillesWriter::WriteHeader(const std::string &filename,

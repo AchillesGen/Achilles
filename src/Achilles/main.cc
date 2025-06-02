@@ -58,6 +58,14 @@ static const std::string USAGE =
 using namespace std;
 using namespace chrono;
 
+/** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
+time_t logTime(string message) {
+	time_t time=system_clock::to_time_t(system_clock::now());
+	message+=ctime(&time);
+	spdlog::info(message);
+	return time;
+}
+
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
 string formatTime(time_t seconds) {
@@ -74,14 +82,6 @@ string formatTime(time_t seconds) {
 	if(seconds==0)
 		return output;
 	return to_string(seconds)+"d "+output;
-}
-
-/**  */
-time_t logTime(string message) {
-	time_t time=system_clock::to_time_t(system_clock::now());
-	message+=ctime(&time);
-	spdlog::info(message);
-	return time;
 }
 
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {

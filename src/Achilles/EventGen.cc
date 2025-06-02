@@ -40,6 +40,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
+	
+	/** If runcard specifies Main/LogFile, output all subsequent logs to this file.
+	*   Continue outputting to std::cout either way. */
+	//if(config.Exists("Main/LogFile")) { (change logger) }
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
@@ -56,12 +60,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config.GetAs<bool>("Cascade/Run"));
-    if(config.GetAs<bool>("Cascade/Run")) {
-        cascade = std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"));
-    } else {
-        cascade = nullptr;
-    }
+	runCascade=config.GetAs<bool>("Cascade/Run");
+	spdlog::debug("Cascade mode: {}", runCascade);
+	cascade=runCascade?(std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))):nullptr;
 
     // Initialize decays
     runDecays = config.GetAs<bool>("Main/RunDecays");
@@ -143,8 +144,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     }
 
     // Setup outputs
-    bool zipped = true;
-    if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
+    bool zipped=config.Exists("Main/Output/Zipped")?config.GetAs<bool>("Main/Output/Zipped"):true;
     auto format = config.GetAs<std::string>("Main/Output/Format");
     auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);
@@ -214,7 +214,6 @@ void achilles::EventGen::Initialize() {
 
 void achilles::EventGen::GenerateEvents() {
 	outputEvents = true;
-	runCascade = cascade != nullptr;
 
 	const auto nevents = config["Main/NEvents"].as<size_t>();
 	size_t accepted = 0;
