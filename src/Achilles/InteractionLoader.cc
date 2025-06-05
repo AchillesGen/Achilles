@@ -3,8 +3,8 @@
 
 #include "Achilles/Interactions.hh"
 
-#include "plugins/InteractionLoader.hh"
-#include "plugins/System.hh"
+#include "Plugins/InteractionLoader.hh"
+#include "Plugins/System.hh"
 
 #include <dlfcn.h>
 
