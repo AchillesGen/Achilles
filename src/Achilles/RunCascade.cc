@@ -234,6 +234,7 @@ void achilles::CascadeTest::CascadeRunner::run() {
 }
 
 void achilles::CascadeTest::RunCascade(const std::string &runcard) {
+    // TODO: Use settings class to allow included files
     auto config = YAML::LoadFile(runcard);
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
