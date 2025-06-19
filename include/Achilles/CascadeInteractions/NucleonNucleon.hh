@@ -44,8 +44,8 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
     std::pair<double, double> TestNNElastic(double sqrts) const;
 
   private:
-    Mode mode;
-    ResonanceMode resonance_mode;
+    Mode mode = NucleonNucleon::Mode::GiBUU;
+    ResonanceMode resonance_mode = NucleonNucleon::ResonanceMode::Resonance;
     double NNElastic(double, PID, PID) const;
     const std::map<std::pair<PID, PID>, std::vector<PID>> outgoing;
     std::vector<std::pair<PID, PID>> AllowedResonanceStates(const Particle &particle1,
@@ -70,7 +70,10 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
 namespace YAML {
 template <> struct convert<achilles::NucleonNucleon::Mode> {
     static bool decode(const Node &node, achilles::NucleonNucleon::Mode &mode) {
-        if(node.as<std::string>() == "GiBUU") mode = achilles::NucleonNucleon::Mode::GiBUU;
+        if(node.as<std::string>() == "GiBUU")
+            mode = achilles::NucleonNucleon::Mode::GiBUU;
+        else
+            return false;
         return true;
     }
 };
@@ -81,6 +84,8 @@ template <> struct convert<achilles::NucleonNucleon::ResonanceMode> {
             mode = achilles::NucleonNucleon::ResonanceMode::Decay;
         else if(node.as<std::string>() == "Resonance")
             mode = achilles::NucleonNucleon::ResonanceMode::Resonance;
+        else
+            return false;
         return true;
     }
 };
