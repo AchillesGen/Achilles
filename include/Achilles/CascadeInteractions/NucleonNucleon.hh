@@ -16,7 +16,7 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
     friend struct YAML::convert<NucleonNucleon::Mode>;
     enum class ResonanceMode {
         Decay = 1,
-        Resonance = 2,
+        Propagate = 2,
     };
     friend struct YAML::convert<NucleonNucleon::ResonanceMode>;
 
@@ -45,7 +45,7 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
 
   private:
     Mode mode = NucleonNucleon::Mode::GiBUU;
-    ResonanceMode resonance_mode = NucleonNucleon::ResonanceMode::Resonance;
+    ResonanceMode resonance_mode = NucleonNucleon::ResonanceMode::Propagate;
     double NNElastic(double, PID, PID) const;
     const std::map<std::pair<PID, PID>, std::vector<PID>> outgoing;
     std::vector<std::pair<PID, PID>> AllowedResonanceStates(const Particle &particle1,
@@ -82,8 +82,8 @@ template <> struct convert<achilles::NucleonNucleon::ResonanceMode> {
     static bool decode(const Node &node, achilles::NucleonNucleon::ResonanceMode &mode) {
         if(node.as<std::string>() == "Decay")
             mode = achilles::NucleonNucleon::ResonanceMode::Decay;
-        else if(node.as<std::string>() == "Resonance")
-            mode = achilles::NucleonNucleon::ResonanceMode::Resonance;
+        else if(node.as<std::string>() == "Propagate")
+            mode = achilles::NucleonNucleon::ResonanceMode::Propagate;
         else
             return false;
         return true;
