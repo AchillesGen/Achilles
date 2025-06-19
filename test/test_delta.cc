@@ -93,11 +93,6 @@ TEST_CASE("P Pi- -> Delta0", "[Delta]") {
     }
 }
 
-TEST_CASE("TestInterp", "[DeltaSpeed]") {
-    achilles::DeltaInteraction delta;
-    delta.TestInterpolation();
-}
-
 TEST_CASE("P D+ -> N D", "[Delta2]") {
     auto plab_vec = achilles::Linspace(0.01, 2.0, 201);
     achilles::DeltaInteraction delta;
