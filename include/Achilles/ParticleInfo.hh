@@ -18,6 +18,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
