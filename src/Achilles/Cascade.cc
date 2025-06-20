@@ -909,8 +909,9 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     std::vector<Particle> final;
     for(auto &out : particles_out) {
         if(std::isnan(out.Momentum()[0])) {
-            spdlog::error("Nan momenutm in decay");
+            spdlog::error("Nan momentum in decay");
             spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
+            throw AchillesCascadeError("Nan momentum in decay");
         }
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());
