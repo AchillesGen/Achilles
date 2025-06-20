@@ -47,9 +47,9 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto pXsecCommon = PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum,
                                    sqrts, total_density);
 
-    auto vnuc = nucleon.Momentum().Vec3()/nucleon.E();
-    auto vpi = pion.Momentum().Vec3()/pion.E();
-    auto vrel = (vpi-vnuc).Magnitude();
+    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E();
+    auto vpi = pion.Momentum().Vec3() / pion.E();
+    auto vrel = (vpi - vnuc).Magnitude();
 
     // constant factor for p-wave absorption cross section
     static const double pAbsorptionFactor = 4.0 / 9.0;
@@ -62,7 +62,6 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
 
     // constant factor for s-wave absorption cross section
     static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
-
 
     // absorption s-wave cross section (see sec. 3.3)
     const double sXsecAbsorption = sAbsorptionFactor / pion.E() * total_density *
@@ -178,7 +177,7 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
                                      const double sqrts, const double density) const {
     // Compute delta prop sq
     auto pionKE = pionE - pion_mass;
-    //auto pion_momentum = sqrt(pionE * pionE - pion_mass * pion_mass);
+    // auto pion_momentum = sqrt(pionE * pionE - pion_mass * pion_mass);
     auto reduced_halfwidth = ReducedHalfWidth(nucE, pionE, pion_mass, cms_mom, fermimom, sqrts);
     // real and imaginary part of delta denominator (see eq. 2.23)
     const double re_delta = sqrts - Constant::mdelta;
@@ -189,8 +188,8 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
     // Compute delta proopagator squared
     auto delta_propagator2 = 1.0 / (re_delta * re_delta + im_delta * im_delta);
 
-    auto pXsecCommon = fNormFactor * CouplingFactor(pion_mass) * delta_propagator2 *
-                       pow(cms_mom, 2) / pionE;
+    auto pXsecCommon =
+        fNormFactor * CouplingFactor(pion_mass) * delta_propagator2 * pow(cms_mom, 2) / pionE;
 
     return pXsecCommon;
 }
