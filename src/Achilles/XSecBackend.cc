@@ -6,14 +6,14 @@
 #include "Achilles/Process.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wconversion"
 #include "METOOLS/Main/Spin_Structure.H"
-#include "plugins/Sherpa/FormFactors.hh"
+#include "Plugins/Sherpa/FormFactors.hh"
 #pragma GCC diagnostic pop
 #endif
 

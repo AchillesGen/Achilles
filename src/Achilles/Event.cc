@@ -22,7 +22,7 @@ Event::Event(const Event &other) {
     m_process_id = other.m_process_id;
 }
 
-Event Event::operator=(const Event &other) {
+Event &Event::operator=(const Event &other) {
     if(this == &other) return *this;
     m_nuc = other.m_nuc;
     m_remnant = other.m_remnant;

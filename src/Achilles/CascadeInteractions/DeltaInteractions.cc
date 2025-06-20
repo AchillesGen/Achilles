@@ -345,10 +345,10 @@ double DeltaInteraction::GetEffectiveWidth(PID id, double mass, double mass1, do
 
 double DeltaInteraction::TestDeltaDSigmaDOmegaDM(double cost, double sqrts, double mdelta,
                                                  PID delta_id) {
-    const double mn =
-        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
-    const double mpi =
-        (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+    // NOTE: We just assume the maximum possible mass final state.
+    //       This will underestimate the cross section, but it should be small enough for now.
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
     if(sqrts < 2 * mn + mpi || sqrts < mdelta + mn) return 0;
 
     double pin2 = sqrts * sqrts / 4 - mn * mn;
@@ -398,8 +398,14 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
             return 1250 / (plab + 50) - 4 * pow(plab - 1.3, 2);
         } else if(plab < 6) {
             return 77 / (plab + 1.5);
+        } else if(sqrts < 10) {
+            // Fit between plab = 6 GeV and sqrts = 10 GeV
+            return 481.795 - 298.236 / (sqrts * sqrts) - 172.885 * sqrts + 5.04276 * sqrts * sqrts -
+                   0.113744 * pow(sqrts, 3) + 0.0011898 * pow(sqrts, 4) -
+                   132.601 * log(sqrts * sqrts) + 69.1034 * pow(log(sqrts * sqrts), 2);
         } else {
-            throw std::domain_error("DeltaInteraction: NNElastic energy out of valid region");
+            // Use fit from TOTEM (https://arxiv.org/pdf/1712.06153)
+            return 11.84 - 1.617 * log(sqrts * sqrts) + 0.1359 * pow(log(sqrts * sqrts), 2);
         }
     } else {
         if(plab < 0.525) {
@@ -410,8 +416,14 @@ double DeltaInteraction::NNElastic(double sqrts, PID id1, PID id2) const {
             return 31 / sqrt(plab);
         } else if(plab < 6) {
             return 77 / (plab + 1.5);
+        } else if(sqrts < 10) {
+            // Fit between plab = 6 GeV and sqrts = 10 GeV
+            return 481.795 - 298.236 / (sqrts * sqrts) - 172.885 * sqrts + 5.04276 * sqrts * sqrts -
+                   0.113744 * pow(sqrts, 3) + 0.0011898 * pow(sqrts, 4) -
+                   132.601 * log(sqrts * sqrts) + 69.1034 * pow(log(sqrts * sqrts), 2);
         } else {
-            throw std::domain_error("DeltaInteraction: NNElastic energy out of valid region");
+            // Use fit from TOTEM (https://arxiv.org/pdf/1712.06153)
+            return 11.84 - 1.617 * log(sqrts * sqrts) + 0.1359 * pow(log(sqrts * sqrts), 2);
         }
     }
 }
@@ -426,8 +438,11 @@ double DeltaInteraction::SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) 
     else
         isofactor = 1.0 / 3.0;
 
-    return integrator.Integrate(0.938 + 0.138, sqrts - 0.938, 1e-6, 1e-4) * isofactor /
-           (pcm / 1_GeV);
+    // TODO: Figure out a better way to handle this,
+    // we always choose the heavier particles to ensure that it is always kinematically allowed
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
+    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4) * isofactor / (pcm / 1_GeV);
 }
 
 double DeltaInteraction::SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, PID nucleon,
@@ -452,34 +467,34 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
        res == PID::deltam()) {
         // TODO: Figure out a better way to handle this,
         // we always choose the heavier particles to ensure that it is always kinematically allowed
-        const double mn = ParticleInfo(PID::neutron()).Mass();
-        const double mpi = ParticleInfo(PID::pionp()).Mass();
+        const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+        const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
         double smin = pow(mn + mpi, 2);
-        double smax = pow(sqrts - ParticleInfo(other).Mass(), 2);
+        double smax = pow(sqrts - ParticleInfo(other).Mass() / 1_GeV, 2);
 
         // Parameters for generating according to BW (should be most efficient)
-        double m2 = pow(ParticleInfo(res).Mass(), 2);
-        double mw = ParticleInfo(res).Mass() * ParticleInfo(res).Width();
+        double m2 = pow(ParticleInfo(res).Mass() / 1_GeV, 2);
+        double mw = ParticleInfo(res).Mass() / 1_GeV * ParticleInfo(res).Width() / 1_GeV;
         double ymax = atan((smin - m2) / mw);
         double ymin = atan((smax - m2) / mw);
 
         bool is_nd_nd = p1.Info().IsResonance();
         double max_val = 0;
-        double md = sqrt(m2) / 1_GeV;
+        double md = sqrt(m2);
         if(is_nd_nd) {
             auto func = [&](double mass) {
-                double spectral = SpectralDelta(res, mass / 1_GeV);
+                double spectral = SpectralDelta(res, mass);
                 auto val = -DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                         ParticleInfo(other).Mass() / 1_GeV,
-                                        p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+                                        p1.Momentum().M() / 1_GeV, mass, spectral);
                 return val;
             };
             Brent brent(func);
             double m_max = brent.Minimize(sqrt(smin), sqrt(smax));
-            double spectral = SpectralDelta(res, m_max / 1_GeV);
+            double spectral = SpectralDelta(res, m_max);
             max_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                   ParticleInfo(other).Mass() / 1_GeV, p1.Momentum().M() / 1_GeV,
-                                  m_max / 1_GeV, spectral);
+                                  m_max, spectral);
         } else {
             max_val = DSigmaDM(0, sqrts / 1_GeV, md, res);
         }
@@ -489,15 +504,19 @@ double DeltaInteraction::GenerateMass(const Particle &p1, const Particle &p2, PI
             double mass = sqrt(s);
             double func_val = 0;
             if(is_nd_nd) {
-                double spectral = SpectralDelta(res, mass / 1_GeV);
+                double spectral = SpectralDelta(res, mass);
                 func_val = DSigmaND2ND(sqrts / 1_GeV, p2.Momentum().M() / 1_GeV,
                                        ParticleInfo(other).Mass() / 1_GeV,
-                                       p1.Momentum().M() / 1_GeV, mass / 1_GeV, spectral);
+                                       p1.Momentum().M() / 1_GeV, mass, spectral);
             } else {
-                func_val = DSigmaDM(0, sqrts / 1_GeV, mass / 1_GeV, res);
+                func_val = DSigmaDM(0, sqrts / 1_GeV, mass, res);
             }
             spdlog::debug("func_val = {}, max_val = {}", func_val, max_val);
-            if(func_val / max_val > ran.Uniform(0.0, 1.0)) return mass;
+            if(func_val / max_val > ran.Uniform(0.0, 1.0)) {
+                spdlog::trace("min_mass = {}, max_mass = {}, mass = {}, mn = {}, mpi = {}",
+                              sqrt(smin), sqrt(smax), mass, mn, mpi);
+                return mass * 1_GeV;
+            }
         }
     } else {
         throw std::runtime_error("DeltaInteraction: Only delta resonances implemented for now!");
@@ -585,10 +604,10 @@ void DeltaInteraction::TestInterpolation() const {
 
 double DeltaInteraction::DSigmaDM(bool iresonance, double sqrts, double mdelta,
                                   PID delta_id) const {
-    const double mn =
-        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
-    const double mpi =
-        (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+    // TODO: Figure out a better way to handle this,
+    // we always choose the heavier particles to ensure that it is always kinematically allowed
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
     if(sqrts < 2 * mn + mpi || sqrts < mdelta + mn) return 0;
 
     double pin2 = sqrts * sqrts / 4 - mn * mn;
@@ -608,6 +627,9 @@ double DeltaInteraction::DSigmaDM(bool iresonance, double sqrts, double mdelta,
         prop = 1 / M_PI * mdelta * width /
                (pow(mdelta * mdelta - mdel * mdel, 2) + pow(mdelta * width, 2));
     }
+
+    // Avoid numerical issues when far from resonance peak
+    if(!iresonance && prop < 1e-10) { return 0; }
 
     // Integrate over Omega (does not depend on phi)
     auto dsigmadomega = [&](double cost) {
@@ -723,7 +745,11 @@ double DeltaInteraction::SigmaNDelta2NDelta(const Particle &p1, const Particle &
     };
 
     Integrator::DoubleExponential integrator(dsigmadm);
-    return integrator.Integrate(0.938 + 0.138, sqrts - mn2, 1e-6, 1e-4);
+    // TODO: Figure out a better way to handle this,
+    // we always choose the heavier particles to ensure that it is always kinematically allowed
+    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
+    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
+    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4);
 }
 
 double DeltaInteraction::DSigmaND2ND(double sqrts, double mn1, double mn2, double mu1, double mu2,

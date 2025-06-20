@@ -7,6 +7,7 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -211,7 +212,10 @@ void Cascade::Validate(Event &event) {
         auto &particle = event.Hadrons()[idx];
         if(particle.Status() == ParticleStatus::propagating) {
             for(auto p : event.Hadrons()) spdlog::error("{}", p);
-            throw std::runtime_error("Cascade has failed. Insufficient max steps.");
+            achilles::PrintVisitor visitor;
+            event.History().WalkHistory(visitor);
+            spdlog::error("Event history: {}", visitor.data);
+            throw AchillesCascadeError("Cascade has failed. Insufficient max steps.");
         }
         if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {
             static constexpr size_t nwarns = 10;
@@ -921,8 +925,9 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     std::vector<Particle> final;
     for(auto &out : particles_out) {
         if(std::isnan(out.Momentum()[0])) {
-            spdlog::error("Nan momenutm in decay");
+            spdlog::error("Nan momentum in decay");
             spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
+            throw AchillesCascadeError("Nan momentum in decay");
         }
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());

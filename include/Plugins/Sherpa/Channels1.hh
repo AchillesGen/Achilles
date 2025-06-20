@@ -4,7 +4,7 @@
 // Channel_Generator_UniV
 #include "Achilles/Factory.hh"
 #include "PHASIC++/Channels/Channel_Elements.H"
-#include "plugins/Sherpa/Channels.hh"
+#include "Plugins/Sherpa/Channels.hh"
 
 using namespace PHASIC;
 using namespace ATOOLS;

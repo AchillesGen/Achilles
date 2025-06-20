@@ -1,6 +1,6 @@
-#include "plugins/Sherpa/Channels1.hh"
+#include "Plugins/Sherpa/Channels1.hh"
 #include "ATOOLS/Phys/Flavour.H"
-#include "plugins/Sherpa/PrintVec.hh"
+#include "Plugins/Sherpa/PrintVec.hh"
 
 using namespace PHASIC;
 using namespace ATOOLS;
