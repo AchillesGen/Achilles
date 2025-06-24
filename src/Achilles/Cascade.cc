@@ -707,8 +707,6 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         }
     }
 
-
-
     // If there are pions in in the initial state
     // and no mesons in the final state
     /*if(pionIS && baryonFS) {
