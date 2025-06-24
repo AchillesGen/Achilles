@@ -72,6 +72,30 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     return pXsecAbsorption + sXsecAbsorption;
 }
 
+double OsetCrossSection::SChannelAbsCrossSection(Event &event, size_t part1, size_t part2) const {
+    // Get pion and nucleus information
+    const auto &pion = event.Hadrons()[part1];
+    const auto &nucleon = event.Hadrons()[part2];
+    auto proton_density = event.CurrentNucleus()->ProtonRho(nucleon.Position().Magnitude());
+    auto neutron_density = event.CurrentNucleus()->NeutronRho(nucleon.Position().Magnitude());
+    auto total_density = proton_density + neutron_density;
+
+    // ----- ABSORPTION ----- //
+    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E();
+    auto vpi = pion.Momentum().Vec3() / pion.E();
+    auto vrel = (vpi - vnuc).Magnitude();
+
+    // constant factor for s-wave absorption cross section
+    static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
+
+    // absorption s-wave cross section (see sec. 3.3)
+    const double sXsecAbsorption = sAbsorptionFactor / pion.E() * total_density *
+                                   (1.0 + pion.E() / 2.0 / Constant::mN) /
+                                   pow(pion.Mass() / Constant::HBARC, 4.0) / vrel;
+
+    return sXsecAbsorption;
+}
+
 std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &event, size_t part1,
                                                                        size_t part2) const {
     // Get pion and nucleus information

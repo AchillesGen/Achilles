@@ -10,6 +10,7 @@ namespace achilles {
 
 class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInteraction> {
   private:
+    using absorption_states = std::vector<std::pair<size_t, std::vector<PID>>>;
     enum class Mode {
         GiBUU = 1,
     };
@@ -56,6 +57,19 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     // NDelta to NDelta
     double SigmaNDelta2NDelta(const Particle &, const Particle &, PID, PID) const;
     double GetIso(int, int, int, int) const;
+
+    // S-channel absorption cross section
+    absorption_states AllowedAbsorption(Event &, size_t, size_t) const;
+    struct AbsorptionStates {
+        PID absorption_partner;
+        std::vector<PID> outgoing;
+    };
+    using AbsorptionModes = std::map<std::pair<PID, PID>, std::vector<AbsorptionStates>>;
+    static const AbsorptionModes absorption_modes;
+    mutable std::vector<Particle> absorption_partners;
+    std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
+    std::vector<Particle> HandleAbsorption(const Particle &particle1, const Particle &particle2,
+                                           const std::vector<PID> &out_pids, Random &ran) const;
 
     // Functions to cache integrals to speed up code
     double sqrts_min = 1800 / 1_GeV, sqrts_max = 6000 / 1_GeV;
