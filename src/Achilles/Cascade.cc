@@ -699,10 +699,12 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     // Did we start with pions
     // if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
-    for(const auto &part : particles_out) {
-        hit &= !PauliBlocking(part);
-        // Are there any mesons in the final state?
-        // if(!part.Info().IsBaryon()) baryonFS = false;
+    if(m_nucleus->ID() != PID::hydrogen() && m_nucleus->ID() != PID::free_neutron()) {
+        for(const auto &part : particles_out) {
+            hit &= !PauliBlocking(part);
+            // Are there any mesons in the final state?
+            // if(!part.Info().IsBaryon()) baryonFS = false;
+        }
     }
 
     // If there are pions in in the initial state
