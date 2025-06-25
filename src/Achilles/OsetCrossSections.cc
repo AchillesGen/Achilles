@@ -16,7 +16,7 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto proton_density = event.CurrentNucleus()->ProtonRho(nucleon.Position().Magnitude());
     auto neutron_density = event.CurrentNucleus()->NeutronRho(nucleon.Position().Magnitude());
     auto total_density = proton_density + neutron_density;
-    auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude());
+    auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude(),nucleon.ID());
     // spdlog::debug("Density = {}, PionE = {}, fermimom = {}", density, pion.E(), fermi_momentum);
 
     auto pion_kinetic_energy = pion.E() - pion.Mass();
@@ -102,7 +102,7 @@ std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &ev
     const auto &pion = event.Hadrons()[part1];
     const auto &nucleon = event.Hadrons()[part2];
     auto density = event.CurrentNucleus()->Rho(nucleon.Position().Magnitude());
-    auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude());
+    auto fermi_momentum = event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude(),nucleon.ID());
     auto pion_momentum = pion.Momentum().P();
 
     double protfrac = static_cast<double>(event.CurrentNucleus()->NNeutrons() -
