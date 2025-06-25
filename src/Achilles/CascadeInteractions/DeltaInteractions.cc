@@ -1,8 +1,9 @@
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
-#include "Achilles/CascadeInteractions/ResonanceHelper.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ClebschGordan.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Nucleus.hh"
@@ -92,6 +93,8 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     spdlog::debug("exponential suppression = {}", suppression);
     // NOTE: Particle 2 is always a nucleon in the cascade algorithm
     if(particle1.Info().IsResonance()) {
+
+        
         // NDelta -> NN
         double xsec = suppression * SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(),
                                                    particle1.Momentum().M());
