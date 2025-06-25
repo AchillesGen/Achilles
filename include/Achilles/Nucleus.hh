@@ -174,7 +174,7 @@ class Nucleus {
 
     /// Return the Fermi momentum according to a given FG model
     ///@param position: The radius to calculate the density
-    double FermiMomentum(const double &) const noexcept;
+    double FermiMomentum(const double &, const PID &) const;
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
@@ -187,9 +187,9 @@ class Nucleus {
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-    const std::array<double, 3> GenerateMomentum(const double &) noexcept;
+    const std::array<double, 3> GenerateMomentum(const double &, const PID &) noexcept;
 
-    double SampleMagnitudeMomentum(const double &position) noexcept;
+    double SampleMagnitudeMomentum(const double &position, const PID &) noexcept;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
