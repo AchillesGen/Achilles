@@ -1,4 +1,5 @@
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
+#include "Achilles/CascadeInteractions/ResonanceHelper.hh"
 #include "Achilles/ClebschGordan.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
@@ -248,6 +249,11 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     }
 
     // S-wave absorption via Oset
+    if(particle1.Info().IsPion() && out_ids.size() == 2) {
+        return HandleAbsorption(particle1, particle2, out_ids, ran);
+    }
+
+    // S-channel absorption via Oset
     if(particle1.Info().IsPion() && out_ids.size() == 2) {
         return HandleAbsorption(particle1, particle2, out_ids, ran);
     }
