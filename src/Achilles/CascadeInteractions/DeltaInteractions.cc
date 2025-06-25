@@ -1,8 +1,9 @@
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
-#include "Achilles/CascadeInteractions/ResonanceHelper.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ClebschGordan.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/OsetCrossSections.hh"
@@ -75,11 +76,18 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     double p1CM = particle1.Momentum().Boost(-boostCM).P();
 
+    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) + event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
+    auto suppression = exp(-1.5*rho/Constant::rho0);
+
+    spdlog::debug("rho = {}", rho);
+    spdlog::debug("exponential suppression = {}", suppression);
     // NOTE: Particle 2 is always a nucleon in the cascade algorithm
     if(particle1.Info().IsResonance()) {
+
+        
         // NDelta -> NN
         double xsec =
-            SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(), particle1.Momentum().M());
+            suppression * SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(), particle1.Momentum().M());
         spdlog::debug("NDelta -> NN: sigma = {}", xsec);
         // TODO: Clean up this logic
         if(particle1.ID() == PID::deltapp() && particle2.ID() == PID::neutron()) {
