@@ -1,4 +1,4 @@
-#include "Achilles/CascadeInteractions/ResonanceHelper.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Distributions.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
