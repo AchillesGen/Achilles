@@ -86,6 +86,20 @@ achilles::crefParticles Event::Neutrons(ParticleStatus status) const {
     return FilterParticles(m_hadrons, func);
 }
 
+achilles::crefParticles Event::Pions(ParticleStatus status) const {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) {
+            return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0());
+        };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0()) &&
+               p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
 achilles::refParticles Event::Protons(ParticleStatus status) {
     if(status == ParticleStatus::any) {
         auto func = [](const Particle &p) { return p.ID() == PID::proton(); };
@@ -104,6 +118,20 @@ achilles::refParticles Event::Neutrons(ParticleStatus status) {
     }
     auto func = [status](const Particle &p) {
         return p.ID() == PID::neutron() && p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+achilles::refParticles Event::Pions(ParticleStatus status) {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) {
+            return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0());
+        };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0()) &&
+               p.Status() == status;
     };
     return FilterParticles(m_hadrons, func);
 }

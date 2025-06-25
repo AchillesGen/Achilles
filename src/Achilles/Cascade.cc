@@ -699,10 +699,12 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     // Did we start with pions
     // if(particle1.Info().IsPion() || particle2.Info().IsPion()) pionIS = true;
 
-    for(const auto &part : particles_out) {
-        hit &= !PauliBlocking(part);
-        // Are there any mesons in the final state?
-        // if(!part.Info().IsBaryon()) baryonFS = false;
+    if(m_nucleus->ID() != PID::hydrogen() && m_nucleus->ID() != PID::free_neutron()) {
+        for(const auto &part : particles_out) {
+            hit &= !PauliBlocking(part);
+            // Are there any mesons in the final state?
+            // if(!part.Info().IsBaryon()) baryonFS = false;
+        }
     }
 
     // If there are pions in in the initial state
@@ -769,7 +771,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(particle.Info().IsPion() || particle.Info().IsDelta()) return false;
+    if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
@@ -789,118 +791,6 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
     double position3 = (pos_p1 + pos_p2).Magnitude();
     return m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1, position2,
                                                                position3);
-}
-
-bool Cascade::Absorption(Event &event, Particle &particle1, Particle &particle2) noexcept {
-    // Check if absorption is possible
-    // NOTE: Particle1 is always a propagating particle
-    // NOTE: Particle2 is always a background particle
-    if(!particle1.Info().IsPion() || !particle2.Info().IsNucleon()) return false;
-
-    Particles &particles = event.Hadrons();
-
-    Particle initial_pion;
-    Particle incoming_nucleon1;
-    Particle final_nucleon1;
-    Particle final_nucleon2;
-
-    int initial_charge = 0;
-    int final_charge = 0;
-
-    // Look for a previous pi-N Elastic or CE scattering
-    auto node = event.History().FindNodeOut(particle1);
-    if(node == nullptr || !node->IsCascade() || node->ParticlesOut().size() != 2) return false;
-
-    bool CE = false;
-    bool elastic = false;
-
-    bool init_pion = false;
-    bool init_nuc = false;
-    bool out_nuc = false;
-    // These are in initial particles of the previous pi-N scattering
-    for(auto &in_part : node->ParticlesIn()) {
-        if(in_part.Info().IsNucleon()) {
-            // Found initial nucleon1
-            incoming_nucleon1 = in_part;
-            init_nuc = true;
-        } else if(in_part.Info().IsPion()) {
-            // Found initial pion
-            initial_pion = in_part;
-            init_pion = true;
-        }
-    }
-
-    // These are the final particles of the previous pi-N scattering
-    // This pion is the intermediate
-    // This nucleon is the final nucleon1
-    for(auto &out_part : node->ParticlesOut()) {
-        if(out_part.Info().IsNucleon()) {
-            // Found final nucleon 1
-            final_nucleon1 = out_part;
-            out_nuc = true;
-            if(final_nucleon1.ID() == incoming_nucleon1.ID())
-                elastic = true;
-            else
-                CE = true;
-        }
-    }
-
-    // Makes sure that the we had pi-N -> pi-N
-    if(!(init_pion && init_nuc && out_nuc)) return false;
-
-    auto abs_prob = 1.0;
-    if(Random::Instance().Uniform(0.0, 1.0) > abs_prob) return false;
-
-    if(CE) {
-        // We charge exchanged the 1st interaction
-        final_nucleon2 = particle2;
-    }
-
-    if(elastic) {
-        // We need to charge exchange the 2nd interaction
-        if(particle2.ID() == PID::proton())
-            final_nucleon2 = Particle{PID::neutron(), particle2.Momentum(), particle2.Position()};
-        if(particle2.ID() == PID::neutron())
-            final_nucleon2 = Particle{PID::proton(), particle2.Momentum(), particle2.Position()};
-    }
-
-    // Add up initial and final charges
-    initial_charge = initial_pion.Info().IntCharge() + incoming_nucleon1.Info().IntCharge() +
-                     particle2.Info().IntCharge();
-    final_charge = final_nucleon1.Info().IntCharge() + final_nucleon2.Info().IntCharge();
-
-    if(initial_charge != final_charge) return false;
-
-    // Let's absorb the pion!
-    // First let's get the momentum of the incoming pion for the current interaction
-    auto combined_momentum = particle1.Momentum().Vec3() + particle2.Momentum().Vec3();
-
-    // Now let's reset the past node and fill it with our initial system positions
-    auto new_average_position =
-        (initial_pion.Position() + incoming_nucleon1.Position() + final_nucleon2.Position()) / 3.0;
-
-    final_nucleon2.Momentum() = {
-        combined_momentum, sqrt(pow(final_nucleon2.Mass(), 2) + combined_momentum.Magnitude2())};
-
-    final_nucleon2.Status() = ParticleStatus::propagating;
-
-    // TODO : Do we need pauli blocking for absorption?
-    // Check for Pauli Blocking
-    // if(!PauliBlocking(final_nucleon2) || !PauliBlocking(final_nucleon1)) return false;
-
-    particles.push_back(final_nucleon2);
-    node->ResetParticles();
-    node->SetPosition(new_average_position);
-    node->AddIncoming(initial_pion);
-    node->AddIncoming(incoming_nucleon1);
-    node->AddIncoming(particle2);
-    node->AddOutgoing(final_nucleon1);
-    node->AddOutgoing(particles.back());
-
-    particle1.Status() = ParticleStatus::interacted;
-    particle2.Status() = ParticleStatus::interacted;
-
-    return true;
 }
 
 bool Cascade::Decay(Event &event, size_t idx) const {
