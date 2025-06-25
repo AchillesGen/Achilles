@@ -141,7 +141,7 @@ Particles Nucleus::GenerateConfig() {
 
     for(Particle &particle : particles) {
         // Set momentum for each nucleon
-        auto mom3 = GenerateMomentum(particle.Position().Magnitude(),particle.ID());
+        auto mom3 = GenerateMomentum(particle.Position().Magnitude(), particle.ID());
         double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom * mom;
         particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
@@ -152,9 +152,10 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum(const double &position, const PID &pid) noexcept {
+const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
+                                                      const PID &pid) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = SampleMagnitudeMomentum(position,pid);
+    momentum[0] = SampleMagnitudeMomentum(position, pid);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
@@ -163,7 +164,7 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position, co
 
 double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) noexcept {
     // NOTE: To sample on a sphere, need to take a cube-root.
-    double kf = FermiMomentum(position,pid);
+    double kf = FermiMomentum(position, pid);
     if(fermi_gas.correlated) {
         if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
             return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
@@ -210,13 +211,15 @@ const std::string Nucleus::ToString() const noexcept {
 
 double Nucleus::FermiMomentum(const double &position, const PID &nuc_pid) const {
     double rho = 0.;
-    if (nuc_pid == PID::proton()) rho = ProtonRho(position);
-    else if (nuc_pid == PID::neutron()) rho = NeutronRho(position);
+    if(nuc_pid == PID::proton())
+        rho = ProtonRho(position);
+    else if(nuc_pid == PID::neutron())
+        rho = NeutronRho(position);
     else {
         throw std::runtime_error(fmt::format("Fermi Momentum for: {} does not exist.", nuc_pid));
     }
 
-    //double rho = Rho(position);
+    // double rho = Rho(position);
     double result{};
     switch(fermi_gas.type) {
     case FermiGasType::Local:

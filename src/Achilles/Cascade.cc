@@ -12,9 +12,9 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
-#include "Achilles/ResonanceHelper.hh"
 
 using namespace achilles;
 
@@ -774,7 +774,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position,particle.ID());
+    return particle.Momentum().Vec3().Magnitude() <
+           m_nucleus->FermiMomentum(position, particle.ID());
 }
 
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
@@ -799,16 +800,18 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     double lifetime = Constant::HBARC / part.Info().Width();
     double decay_prob = exp(-timeStep / lifetime);
     if(part.Info().IsDelta()) {
-
         const double mn =
-        (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
+            (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
         const double mpi =
-        (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+            (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
 
-        auto running_width = resonance::GetEffectiveWidth(part.Info().ID(), part.Momentum().M()/1_GeV, mpi, mn, 1) * 1_GeV;
+        auto running_width = resonance::GetEffectiveWidth(part.Info().ID(),
+                                                          part.Momentum().M() / 1_GeV, mpi, mn, 1) *
+                             1_GeV;
         auto running_lifetime = Constant::HBARC / running_width;
-        
-        spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}",part.Momentum().M(), part.Info().Mass(),part.Info().Width());
+
+        spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}", part.Momentum().M(),
+                      part.Info().Mass(), part.Info().Width());
         spdlog::debug("Running width = {}", running_width);
         spdlog::debug("Running decay prob = {}", exp(-timeStep / running_lifetime));
         spdlog::debug("Fixed decay prob = {}", exp(-timeStep / lifetime));
