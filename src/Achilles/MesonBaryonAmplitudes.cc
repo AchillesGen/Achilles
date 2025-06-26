@@ -114,8 +114,8 @@ bool MBAmplitudes::readANLDeltaBlock(std::ifstream &input_file) {
 
     if(piDelta_pwa.find(PartialWave{L, J, I, spin}) == piDelta_pwa.end()) {
         piDelta_pwa[PartialWave{L, J, I, spin}] = {};
-        //std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S
-        //          << std::endl;
+        std::cout << "Reading ANL partial wave " << pwa << " L = " << L << " S = " << S
+                  << std::endl;
     }
 
     // Read the W value
