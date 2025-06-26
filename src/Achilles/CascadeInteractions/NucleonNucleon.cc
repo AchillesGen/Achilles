@@ -18,7 +18,6 @@ NucleonNucleon::NucleonNucleon() {
 NucleonNucleon::NucleonNucleon(const YAML::Node &node) : NucleonNucleon() {
     mode = node["Mode"].as<NucleonNucleon::Mode>();
     resonance_mode = node["ResonanceMode"].as<NucleonNucleon::ResonanceMode>();
-    exp_sup = node["ExpSup"].as<double>();
 }
 
 std::vector<std::pair<PID, PID>> NucleonNucleon::InitialStates() const {
@@ -67,9 +66,8 @@ InteractionResults NucleonNucleon::CrossSection(Event &event, size_t part1, size
     // TODO: Extend to other resonances
     // Delta component
     // Compute density of nucleons
-    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude())
-         + event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
-    auto suppression = exp(-exp_sup * rho / Constant::rho0);
+    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) + event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
+    auto suppression = exp(-1.5*rho/Constant::rho0);
     auto allowed_resonances = AllowedResonanceStates(particle1, particle2);
     for(const auto &[res_id, nucleon_id] : allowed_resonances) {
         double res_xsec = suppression * SigmaNN2NDeltaInterp(sqrts, p1CM, res_id);

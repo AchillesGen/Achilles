@@ -49,7 +49,6 @@ DeltaInteraction::DeltaInteraction()
 
 DeltaInteraction::DeltaInteraction(const YAML::Node &node) : DeltaInteraction() {
     node["Mode"].as<DeltaInteraction::Mode>();
-    exp_sup = node["ExpSup"].as<double>();
 }
 
 DeltaInteraction::~DeltaInteraction() {}
@@ -78,17 +77,17 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     double p1CM = particle1.Momentum().Boost(-boostCM).P();
 
     auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) + event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
-    auto suppression = exp(-exp_sup * rho / Constant::rho0);
+    auto suppression = exp(-1.5*rho/Constant::rho0);
 
     spdlog::debug("rho = {}", rho);
     spdlog::debug("exponential suppression = {}", suppression);
     // NOTE: Particle 2 is always a nucleon in the cascade algorithm
     if(particle1.Info().IsResonance()) {
 
+        
         // NDelta -> NN
         double xsec =
             suppression * SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(), particle1.Momentum().M());
-
         spdlog::debug("NDelta -> NN: sigma = {}", xsec);
         // TODO: Clean up this logic
         if(particle1.ID() == PID::deltapp() && particle2.ID() == PID::neutron()) {

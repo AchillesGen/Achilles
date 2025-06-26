@@ -70,7 +70,6 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
     std::vector<Particle> HandleAbsorption(const Particle &particle1, const Particle &particle2,
                                            const std::vector<PID> &out_pids, Random &ran) const;
-    double exp_sup = 0.;
 
     // Functions to cache integrals to speed up code
     double sqrts_min = 1800 / 1_GeV, sqrts_max = 6000 / 1_GeV;
