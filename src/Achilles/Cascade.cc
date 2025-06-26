@@ -773,7 +773,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position,particle.ID());
+    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
 }
 
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
