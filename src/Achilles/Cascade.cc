@@ -12,6 +12,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -773,7 +774,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
+    return particle.Momentum().Vec3().Magnitude() <
+           m_nucleus->FermiMomentum(position, particle.ID());
 }
 
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
@@ -795,11 +797,35 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 
 bool Cascade::Decay(Event &event, size_t idx) const {
     auto part = event.Hadrons()[idx];
-    double lifetime = Constant::HBARC / part.Info().Width();
-    double decay_prob = exp(-timeStep / lifetime);
+    auto beta = part.Beta().Magnitude();
+    auto gamma = 1. / sqrt(1. - beta * beta);
+    double lifetime = gamma * Constant::HBARC / part.Info().Width();
+    double survival_prob = exp(-timeStep / lifetime);
+
+    if(part.Info().IsDelta()) {
+        const double mn =
+            (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
+        const double mpi =
+            (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+
+        auto running_width = resonance::GetEffectiveWidth(part.Info().ID(),
+                                                          part.Momentum().M() / 1_GeV, mpi, mn, 1) *
+                             1_GeV;
+        auto running_lifetime = gamma * Constant::HBARC / running_width;
+
+        spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}", part.Momentum().M(),
+                      part.Info().Mass(), part.Info().Width());
+        spdlog::debug("Running width = {}", running_width);
+        spdlog::debug("Running survival prob = {}", exp(-timeStep / running_lifetime));
+        spdlog::debug("Fixed survival prob = {}", exp(-timeStep / lifetime));
+
+        survival_prob = exp(-timeStep / running_lifetime);
+    }
+
     // Should we attempt a decay in this time step
-    spdlog::trace("decay prob = {}, {}, {}", decay_prob, timeStep, lifetime);
-    if(Random::Instance().Uniform(0.0, 1.0) < decay_prob) return false;
+    spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
+                  lifetime);
+    if(Random::Instance().Uniform(0.0, 1.0) < survival_prob) return false;
 
     // Look up in decay handler
     auto particles_out = m_decays.Decay(part);
