@@ -798,10 +798,10 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 bool Cascade::Decay(Event &event, size_t idx) const {
     auto part = event.Hadrons()[idx];
     auto beta = part.Beta().Magnitude();
-    auto gamma = 1. / sqrt( 1. - beta * beta);
+    auto gamma = 1. / sqrt(1. - beta * beta);
     double lifetime = gamma * Constant::HBARC / part.Info().Width();
     double survival_prob = exp(-timeStep / lifetime);
-    
+
     if(part.Info().IsDelta()) {
         const double mn =
             (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
@@ -821,9 +821,10 @@ bool Cascade::Decay(Event &event, size_t idx) const {
 
         survival_prob = exp(-timeStep / running_lifetime);
     }
-    
+
     // Should we attempt a decay in this time step
-    spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep, lifetime);
+    spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
+                  lifetime);
     if(Random::Instance().Uniform(0.0, 1.0) < survival_prob) return false;
 
     // Look up in decay handler
