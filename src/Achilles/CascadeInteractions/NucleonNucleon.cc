@@ -1,11 +1,11 @@
 #include "Achilles/CascadeInteractions/NucleonNucleon.hh"
-#include "Achilles/Constants.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
-#include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
-#include "Achilles/ResonanceHelper.hh"
+#include "Achilles/Nucleus.hh"
+#include "Achilles/Constants.hh"
 
 using namespace achilles;
 
@@ -67,8 +67,8 @@ InteractionResults NucleonNucleon::CrossSection(Event &event, size_t part1, size
     // TODO: Extend to other resonances
     // Delta component
     // Compute density of nucleons
-    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) +
-               event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
+    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude())
+         + event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
     auto suppression = exp(-exp_sup * rho / Constant::rho0);
     auto allowed_resonances = AllowedResonanceStates(particle1, particle2);
     for(const auto &[res_id, nucleon_id] : allowed_resonances) {
