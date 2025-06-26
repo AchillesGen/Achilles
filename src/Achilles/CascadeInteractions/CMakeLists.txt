@@ -8,7 +8,6 @@ add_library(AchillesCascadeInteractions SHARED
     PionInteractions.cc
     DeltaInteractions.cc
     NucleonNucleon.cc
-    ResonanceHelper.cc
 )
 target_link_libraries(AchillesCascadeInteractions PRIVATE project_options project_warnings
                                                   PUBLIC physics AchillesIntegrator)

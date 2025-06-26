@@ -50,6 +50,7 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
     const std::map<std::pair<PID, PID>, std::vector<PID>> outgoing;
     std::vector<std::pair<PID, PID>> AllowedResonanceStates(const Particle &particle1,
                                                             const Particle &particle2) const;
+    double exp_sup = 0.;
 
     // Functions to cache integrals to speed up code
     double sqrts_min = 1800 / 1_GeV, sqrts_max = 6000 / 1_GeV;

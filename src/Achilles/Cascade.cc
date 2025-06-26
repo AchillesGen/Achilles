@@ -12,6 +12,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -802,7 +803,8 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(!particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
-    return particle.Momentum().Vec3().Magnitude() < m_nucleus->FermiMomentum(position);
+    return particle.Momentum().Vec3().Magnitude() <
+           m_nucleus->FermiMomentum(position, particle.ID());
 }
 
 double Cascade::InMediumCorrection(const Particle &particle1, const Particle &particle2) const {
@@ -890,8 +892,9 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     double lifetime = Constant::HBARC / part.Info().Width();
     double decay_prob = exp(-timeStep / lifetime);
     // Should we attempt a decay in this time step
-    spdlog::trace("decay prob = {}, {}, {}", decay_prob, timeStep, lifetime);
-    if(Random::Instance().Uniform(0.0, 1.0) < decay_prob) return false;
+    spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
+                  lifetime);
+    if(Random::Instance().Uniform(0.0, 1.0) < survival_prob) return false;
 
     // Look up in decay handler
     auto particles_out = m_decays.Decay(part);
