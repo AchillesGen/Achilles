@@ -61,7 +61,7 @@ void RunPropagation(std::shared_ptr<achilles::Potential> potential,
 
     fmt::print("Potential propagation running with r0={}\n", r0);
     fmt::print("  Generating {} events per momentum point\n", nevents);
-    // fmt::print("  Fermi momentum = {}\n", nucleus->FermiMomentum(r0));
+    fmt::print("  Fermi momentum = {}\n", nucleus->FermiMomentum(r0));
     fmt::print("  Minimum binding momentum = {}\n", mom);
     std::string filename = fmt::format("{}.dat", config["SaveAs"].as<std::string>());
     std::ofstream out(filename);
