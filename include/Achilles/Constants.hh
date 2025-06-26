@@ -57,9 +57,6 @@ const double ee = sqrt(4 * M_PI * alpha);
 const double cw = sqrt(cos2w);
 const double sw = sqrt(sin2w);
 
-//Nuclear physics constants
-static constexpr double rho0 = 0.17; //fm^-3
-
 } // namespace Constant
 
 } // namespace achilles
