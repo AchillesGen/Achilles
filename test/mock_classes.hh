@@ -17,7 +17,7 @@
 #include "Achilles/Unweighter.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
 #pragma GCC diagnostic ignored "-Wsign-conversion"

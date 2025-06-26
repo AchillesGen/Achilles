@@ -30,7 +30,7 @@ class Event {
     Event() = default;
     Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
     Event(const Event &);
-    Event operator=(const Event &);
+    Event &operator=(const Event &);
     MOCK ~Event() = default;
 
     void Finalize();
@@ -58,6 +58,8 @@ class Event {
 
     crefParticles Protons(ParticleStatus = ParticleStatus::any) const;
     refParticles Protons(ParticleStatus = ParticleStatus::any);
+    crefParticles Pions(ParticleStatus = ParticleStatus::any) const;
+    refParticles Pions(ParticleStatus = ParticleStatus::any);
     crefParticles Neutrons(ParticleStatus = ParticleStatus::any) const;
     refParticles Neutrons(ParticleStatus = ParticleStatus::any);
 
