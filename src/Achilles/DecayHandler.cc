@@ -1,5 +1,6 @@
 #include "Achilles/DecayHandler.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
 
 #include "spdlog/spdlog.h"
@@ -64,8 +65,40 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
         outgoing = TwoBodyDecay(m2, mode.out_ids, mode.angular_mom);
     else { throw std::runtime_error("Three body and above decays are not implemented yet"); }
 
+    // Rotate to have z-axis along the decaying particle's momentum direction
+    if(!part.Mothers().empty()) {
+        spdlog::debug("Mother[0]: {}, Momentum: {}", part.Mothers()[0].ID(),
+                      part.Mothers()[0].Momentum());
+        auto mom0 = part.Mothers()[0].Momentum().Boost(-boost);
+        spdlog::debug("Boosted Mom[0]: {}", mom0);
+        Poincare zax(mom0, FourVector{1.0, 0.0, 0.0, 1.0});
+        for(auto &particle : outgoing) {
+            spdlog::debug("Before Rotation: {}, Momentum: {}", particle.ID(), particle.Momentum());
+            zax.RotateBack(particle.Momentum());
+            spdlog::debug("After Rotation: {}, Momentum: {} ({})", particle.ID(),
+                          particle.Momentum(), particle.Momentum().P());
+        }
+    } else if(part.Info().IsDelta()) {
+        throw std::runtime_error(
+            "Cannot rotate outgoing particles for Delta decays without mothers. "
+            "This is likely a bug in the code.");
+    }
+
+    static double total_mom = 0;
+    static size_t count = 0;
     // Boost back to lab frame
-    for(auto &particle : outgoing) { particle.Momentum() = particle.Momentum().Boost(boost); }
+    for(auto &particle : outgoing) {
+        particle.Momentum() = particle.Momentum().Boost(boost);
+        spdlog::debug("After Boost: {}, {} ({})", particle.ID(), particle.Momentum(),
+                      particle.Momentum().P());
+        if(particle.Info().IsPion()) {
+            total_mom += particle.Momentum().P();
+            count++;
+            if(count % 1000 == 0) {
+                spdlog::info("Average pion momentum: {}", total_mom / static_cast<double>(count));
+            }
+        }
+    }
     return outgoing;
 }
 
@@ -90,7 +123,7 @@ double DecayHandler::BranchingRatio(PID res, std::vector<PID> out) const {
 }
 
 std::vector<achilles::Particle>
-DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t) const {
+DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t angular_mom) const {
     // TODO: Add in angular momentum (i.e. learn more about how Sherpa handles this)
     double sqrts = sqrt(mass2);
 
@@ -105,7 +138,16 @@ DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t) c
     std::vector<double> rans(2);
     Random::Instance().Generate(rans);
 
-    double cost = 2 * rans[0] - 1;
+    double cost;
+
+    if(angular_mom == 2) {
+        double term = cbrt(9 - 18 * rans[0] +
+                           2 * sqrt(3.0) * sqrt(7.0 - 27 * rans[0] + 27 * rans[0] * rans[0]));
+        cost = 1.0 / (cbrt(3.0) * term) - term / cbrt(9);
+    } else {
+        cost = 2 * rans[0] - 1;
+    }
+
     double sint = sqrt(1 - cost * cost);
     double phi = 2 * M_PI * rans[1];
 
