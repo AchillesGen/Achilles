@@ -243,6 +243,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
         auto resonance = Particle{out_ids[0], mom, position, ParticleStatus::propagating};
         resonance.AddMother(particle1);
+        resonance.AddMother(particle2);
         return {resonance};
     }
 
@@ -312,17 +313,8 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         spdlog::error("pbOut = {}", pbOut);
     }
 
-    // Set mother of Delta particles
-    auto part_a = Particle{out_ids[0], paOut, particle1.Position()};
-    auto part_b = Particle{out_ids[1], pbOut, particle2.Position()};
-    if(particle1.Info().IsResonance()) {
-        if(part_a.Info().IsResonance()) {
-            part_a.AddMother(particle1.Mothers()[0]);
-        } else {
-            part_b.AddMother(particle1.Mothers()[0]);
-        }
-    }
-    return {part_a, part_b};
+    return {Particle{out_ids[0], paOut, particle1.Position()},
+            Particle{out_ids[1], pbOut, particle2.Position()}};
 }
 
 std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particle1,

@@ -35,6 +35,7 @@ class MBAmplitudes {
   public:
     MBAmplitudes();
     MBAmplitudes(const MBAmplitudes &) = default;
+    MBAmplitudes &operator=(const MBAmplitudes &) = default;
 
     void readANL(int, int);
     void readANLDelta();
