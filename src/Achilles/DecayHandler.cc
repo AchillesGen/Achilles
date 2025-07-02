@@ -67,13 +67,13 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
         throw std::runtime_error("Three body and above decays are not implemented yet");
     }
 
-    // Rotate to have z-axis along the mother particle's momentum direction
     if(!part.Mothers().empty()) {
+        // Rotate to have z-axis along the mother particle's momentum direction
         auto mom0 = part.Mothers()[0].Momentum().Boost(-boost);
         Poincare zax(mom0, FourVector{1.0, 0.0, 0.0, 1.0});
         for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
-        // Rotate to have z-axis along the decaying particle's momentum direction
     } else {
+        // Rotate to have z-axis along the decaying particle's momentum direction
         Poincare zax(part.Momentum(), FourVector{1.0, 0.0, 0.0, 1.0});
         for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
     }
