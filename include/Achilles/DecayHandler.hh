@@ -3,7 +3,6 @@
 
 #include "Achilles/ParticleInfo.hh"
 
-#include <fstream>
 #include <map>
 #include <string>
 #include <vector>
@@ -30,9 +29,6 @@ class DecayHandler {
     std::vector<double> BranchingRatios(const Particle &) const;
     std::vector<Particle> TwoBodyDecay(double m2, const std::vector<PID> &, size_t) const;
     std::map<PID, std::vector<DecayMode>> m_decays;
-
-    // TEST: angular distribution
-    static std::ofstream m_angular_dist_file;
 };
 
 } // namespace achilles
