@@ -252,7 +252,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         return HandleAbsorption(particle1, particle2, out_ids, ran);
     }
 
-    // S-channel absorption via Oset
+    // S-wave absorption via Oset
     if(particle1.Info().IsPion() && out_ids.size() == 2) {
         return HandleAbsorption(particle1, particle2, out_ids, ran);
     }
