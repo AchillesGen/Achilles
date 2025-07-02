@@ -50,6 +50,12 @@ DeltaInteraction::DeltaInteraction()
 DeltaInteraction::DeltaInteraction(const YAML::Node &node) : DeltaInteraction() {
     node["Mode"].as<DeltaInteraction::Mode>();
     exp_sup = node["ExpSup"].as<double>();
+    if(node["SWaveAbsorption"]) {
+        swave_enabled = node["SWaveAbsorption"].as<bool>();
+    } else {
+        spdlog::warn("DeltaInteraction: S-wave absorption not set, defaulting to true");
+        swave_enabled = true;
+    }
 }
 
 DeltaInteraction::~DeltaInteraction() {}
@@ -116,8 +122,8 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
                     particle1.Info().IntCharge() / 3, particle2.Info().IntCharge() / 3,
                     ParticleInfo(nuc_id).IntCharge() / 3, ParticleInfo(delta_id).IntCharge() / 3);
                 if(iso == 0) continue;
-                spdlog::debug("{}, {} -> {}, {}: sigma = {}", particle1.ID(), particle2.ID(),
-                              delta_id, nuc_id, xsec * iso);
+                spdlog::debug("Delta({}), N({}) -> Delta({}), N({}): sigma = {}", particle1.ID(),
+                              particle2.ID(), delta_id, nuc_id, xsec * iso);
                 results.push_back({{delta_id, nuc_id}, xsec * iso / 2});
                 results.push_back({{nuc_id, delta_id}, xsec * iso / 2});
             }
@@ -133,13 +139,18 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
         results.push_back({{delta_id}, xsec});
         spdlog::debug("NPi -> Delta: sigma = {}", xsec);
 
-        // s-channel absorption
-        if(auto states = AllowedAbsorption(event, part1, part2); states.size() > 0) {
+        // TEST:
+        // double xsec_npi2n = SigmaNPi2N(particle1, particle2, PID::neutron());
+        // spdlog::debug("NPi -> N*: sigma = {}", xsec_npi2n);
+
+        // s-wave absorption
+        if(auto states = AllowedAbsorption(event, part1, part2);
+           states.size() > 0 && swave_enabled) {
             OsetCrossSection Oset;
-            auto abs_xsec = Oset.SChannelAbsCrossSection(event, part1, part2);
+            auto oset_abs_xsec = Oset.SChannelAbsCrossSection(event, part1, part2);
             // Nuclear Physics A568 (1994) 855-872 Table 1
-            auto opposite_isospin_xsec = (5. / 6.) * abs_xsec;
-            auto same_isospin_xsec = (1. / 6.) * abs_xsec;
+            auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
+            auto same_isospin_xsec = (1. / 6.) * oset_abs_xsec;
 
             auto same_isospin_counter = 0;
             auto opp_isospin_counter = 0;
@@ -160,15 +171,17 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
                 size_t abs_partner_idx = state.first;
                 if(abs_partner_idx == SIZE_MAX) continue;
 
+                double abs_xsec = 0;
                 if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
-                    results.push_back({state.second, same_isospin_xsec / same_isospin_counter});
+                    abs_xsec = same_isospin_xsec / same_isospin_counter;
                 } else {
-                    results.push_back({state.second, opposite_isospin_xsec / opp_isospin_counter});
+                    abs_xsec = opposite_isospin_xsec / opp_isospin_counter;
                 }
+                results.push_back({state.second, abs_xsec});
                 spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}",
                               event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(),
                               event.Hadrons()[abs_partner_idx].ID(), state.second[0],
-                              state.second[1], opposite_isospin_xsec / opp_isospin_counter);
+                              state.second[1], abs_xsec);
             }
         }
     } else {
@@ -228,10 +241,13 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         auto mom = particle1.Momentum() + particle2.Momentum();
         auto position = ran.Uniform(0.0, 1.0) < 0.5 ? particle1.Position() : particle2.Position();
         if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
-        return {Particle{out_ids[0], mom, position, ParticleStatus::propagating}};
+        auto resonance = Particle{out_ids[0], mom, position, ParticleStatus::propagating};
+        resonance.AddMother(particle1);
+        resonance.AddMother(particle2);
+        return {resonance};
     }
 
-    // S-channel absorption via Oset
+    // S-wave absorption via Oset
     if(particle1.Info().IsPion() && out_ids.size() == 2) {
         return HandleAbsorption(particle1, particle2, out_ids, ran);
     }
@@ -323,6 +339,7 @@ std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particl
     // Boost to center of mass
     ThreeVector boostCM =
         (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
+    spdlog::debug("Absorption initial states:");
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
     spdlog::debug("{}: {}", particle2.ID(), particle2.Momentum());
     spdlog::debug("{}: {}", absorption_partner.ID(), absorption_partner.Momentum());
@@ -407,6 +424,38 @@ double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, 
            (pow(pow(res_mass, 2) - pow(res_info.Mass() / 1_GeV, 2), 2) +
             gamma_tot * gamma_tot * pow(res_info.Mass() / 1_GeV, 2)) *
            Constant::HBARC2 / 1_GeV / 1_GeV;
+}
+
+double DeltaInteraction::SigmaNPi2N(const Particle &p1, const Particle &p2, PID res) const {
+    ParticleInfo res_info{res};
+    SpinState i1{p1.Info().IsoSpin(), p1.Info().IsoSpinZ()};
+    SpinState i2{p2.Info().IsoSpin(), p2.Info().IsoSpinZ()};
+    SpinState i3{res_info.IsoSpin(), static_cast<double>(i1.zaxis + i2.zaxis) / 2};
+
+    spdlog::trace("I({}) = {}, I({}) = {}, I({}) = {}", p1.ID(), i1.total / 2, p2.ID(),
+                  i2.total / 2, res, i3.total / 2);
+
+    spdlog::trace("Iz({}) = {}, Iz({}) = {}, Iz({}) = {}", p1.ID(), i1.zaxis / 2, p2.ID(),
+                  i2.zaxis / 2, res, i3.zaxis / 2);
+
+    double iso_factor = pow(ClebschGordan(i1, i2, i3), 2);
+    spdlog::trace("iso = {}", iso_factor);
+    if(iso_factor < 1e-8) return 0;
+
+    double spin_factor = static_cast<double>(res_info.NSpins()) /
+                         static_cast<double>(p1.Info().NSpins()) /
+                         static_cast<double>(p2.Info().NSpins());
+
+    double res_mass = (p1.Momentum() + p2.Momentum()).M() / 1_GeV;
+    double pcm2 = resonance::Pcm2(pow(res_mass, 2), pow(p1.Info().Mass() / 1_GeV, 2),
+                                  pow(p2.Info().Mass() / 1_GeV, 2));
+
+    spdlog::trace("pcm2 = {}", pcm2);
+    if(pcm2 <= 0) return 0;
+
+    return iso_factor * spin_factor * 4 * M_PI / pcm2 * pow(res_mass, 2) /
+           pow(pow(res_mass, 2) - pow(res_info.Mass() / 1_GeV, 2), 2) * Constant::HBARC2 / 1_GeV /
+           1_GeV;
 }
 
 // Testing functions

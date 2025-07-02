@@ -1,5 +1,6 @@
 #include "Achilles/DecayHandler.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
 
 #include "spdlog/spdlog.h"
@@ -60,12 +61,28 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
     spdlog::trace("Decaying to mode: {}", mode);
 
     std::vector<Particle> outgoing;
-    if(mode.out_ids.size() == 2)
+    if(mode.out_ids.size() == 2) {
         outgoing = TwoBodyDecay(m2, mode.out_ids, mode.angular_mom);
-    else { throw std::runtime_error("Three body and above decays are not implemented yet"); }
+    } else {
+        throw std::runtime_error("Three body and above decays are not implemented yet");
+    }
 
-    // Boost back to lab frame
-    for(auto &particle : outgoing) { particle.Momentum() = particle.Momentum().Boost(boost); }
+    if(!part.Mothers().empty()) {
+        // Rotate to have z-axis along the mother particle's momentum direction
+        auto mom0 = part.Mothers()[0].Momentum().Boost(-boost);
+        Poincare zax(mom0, FourVector{1.0, 0.0, 0.0, 1.0});
+        for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
+    } else {
+        // Rotate to have z-axis along the decaying particle's momentum direction
+        Poincare zax(part.Momentum(), FourVector{1.0, 0.0, 0.0, 1.0});
+        for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
+    }
+
+    // Boost back to lab frame and set positions
+    for(auto &particle : outgoing) {
+        particle.Momentum() = particle.Momentum().Boost(boost);
+        particle.Position() = part.Position();
+    }
     return outgoing;
 }
 
@@ -90,7 +107,7 @@ double DecayHandler::BranchingRatio(PID res, std::vector<PID> out) const {
 }
 
 std::vector<achilles::Particle>
-DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t) const {
+DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t angular_mom) const {
     // TODO: Add in angular momentum (i.e. learn more about how Sherpa handles this)
     double sqrts = sqrt(mass2);
 
@@ -105,7 +122,15 @@ DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t) c
     std::vector<double> rans(2);
     Random::Instance().Generate(rans);
 
-    double cost = 2 * rans[0] - 1;
+    double cost;
+    if(angular_mom == 2) {
+        double term = cbrt(9 - 18 * rans[0] +
+                           2 * sqrt(3.0) * sqrt(7.0 - 27 * rans[0] + 27 * rans[0] * rans[0]));
+        cost = 1.0 / (cbrt(3.0) * term) - term / cbrt(9);
+    } else {
+        cost = 2 * rans[0] - 1;
+    }
+
     double sint = sqrt(1 - cost * cost);
     double phi = 2 * M_PI * rans[1];
 

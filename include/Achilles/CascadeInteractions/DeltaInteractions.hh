@@ -51,14 +51,16 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     // NDelta to NN
     double SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, PID nucleon, double mass) const;
 
-    // Npi to Delta
+    // Npi to X
     double SigmaNPi2Delta(const Particle &, const Particle &, PID) const;
+    double SigmaNPi2N(const Particle &, const Particle &, PID) const;
 
     // NDelta to NDelta
     double SigmaNDelta2NDelta(const Particle &, const Particle &, PID, PID) const;
     double GetIso(int, int, int, int) const;
 
-    // S-channel absorption cross section
+    // S-wave absorption cross section
+    bool swave_enabled = true;
     absorption_states AllowedAbsorption(Event &, size_t, size_t) const;
     struct AbsorptionStates {
         PID absorption_partner;
