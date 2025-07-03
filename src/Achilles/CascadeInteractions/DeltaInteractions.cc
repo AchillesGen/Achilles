@@ -239,7 +239,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
                                                          Random &ran) const {
     if(out_ids.size() == 1) {
         auto mom = particle1.Momentum() + particle2.Momentum();
-        auto position = ran.Uniform(0.0, 1.0) < 0.5 ? particle1.Position() : particle2.Position();
+        auto position = particle2.Position();
         if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
         auto resonance = Particle{out_ids[0], mom, position, ParticleStatus::propagating};
         resonance.AddMother(particle1);
