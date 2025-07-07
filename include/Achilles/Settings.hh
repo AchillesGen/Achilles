@@ -20,6 +20,11 @@ class SettingsError : public std::runtime_error {
     SettingsError(const std::string &what) : std::runtime_error(what) {}
 };
 
+class ValidtionError : public std::runtime_error {
+  public:
+    ValidtionError(const std::string &what) : std::runtime_error(what) {}
+};
+
 template <bool is_const> class YAMLVisitor {
   public:
     using value_type = YAML::Node;
@@ -51,9 +56,33 @@ template <bool is_const> class YAMLVisitor {
 using MutableYAMLVisitor = YAMLVisitor<false>;
 using ConstYAMLVisitor = YAMLVisitor<true>;
 
+class Settings;
+
+class SettingsValidator {
+  public:
+    struct Rule {
+        std::string name;
+        std::string type;
+        std::string description;
+        std::string error_message;
+        std::map<std::string, YAML::Node> options;
+
+        Rule() = default;
+        Rule(const std::string &_type, const YAML::Node &_options,
+             const std::string &_description, const std::string &_error_message);
+    };
+
+    bool LoadRules(const std::string &filename);
+    bool Validate(const Settings &settings) const;
+    void AddRule(const Rule &rule) { m_rules.push_back(rule); }
+
+  private:
+    std::vector<Rule> m_rules;
+};
+
 class Settings {
   public:
-    Settings(const std::string &filename);
+    Settings(const std::string &filename, const std::string &rules="data/Rules.yml");
     Settings(const YAML::Node &node);
     static Settings &MainSettings() { return main_settings; }
     static void LoadMainSettings(const std::string &filename) {
@@ -83,6 +112,9 @@ class Settings {
     static YAML::Node seek(std::vector<std::string> &keys, YAML::Node start);
 
     YAML::Node m_settings;
+    SettingsValidator m_validator;
+
+    // Deprecated: Use SettingsValidator instead
     static constexpr std::array<std::string_view, 9> m_required_options = {
         "Main/NEvents", "Main/Output/Format",  "Main/Output/Name",
         "Processes",    "NuclearModels",       "Nuclei",
