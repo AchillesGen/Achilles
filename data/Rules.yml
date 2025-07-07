@@ -1,0 +1,15 @@
+Rules:
+  - Type: RequiredFields
+    Description: The fields that must be present in the run card.
+    ErrorMessage: "The following fields are required: {}"
+    Fields:
+      - "Main/NEvents"
+      - "Main/Output/Format"
+      - "Main/Output/Name"
+      - "Processes"
+      - "NuclearModels"
+      - "Nuclei"
+      - "Cascade/Run"
+      - "Options/Unweighting"
+      - "Options/Initialize"
+
