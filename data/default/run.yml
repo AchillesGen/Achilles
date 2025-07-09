@@ -23,80 +23,20 @@ Beams:
 
 Cascade:
   Run: False
-  Interactions:
-    - Name: GeantInteraction
-      Options:
-        GeantData: data/GeantData.hdf5
-    - Name: PionInteraction
-      Options: 
-        HardScatter: 
-          Name: MesonBaryonInteraction
-          Options:
-        Absorption:
-          Name: PionAbsorptionOneStep
-          Options:
-    - Name: ConstantInteraction
-      Options:
-        InitialStates:
-          - Incoming: [3112, 2112]
-            Outgoing: 
-              - Outgoing: [3112, 2112]
-                CrossSection: 0
-          - Incoming: [3112, 2212]
-            Outgoing: 
-              - Outgoing: [3212, 2112]
-                CrossSection: 0
-          - Incoming: [321, 2212]
-            Outgoing: 
-              - Outgoing: [321, 2212]
-                CrossSection: 0
-          - Incoming: [321, 2112]
-            Outgoing: 
-              - Outgoing: [321, 2112]
-                CrossSection: 0
-          - Incoming: [3122, 2212]
-            Outgoing: 
-              - Outgoing: [3122, 2212]
-                CrossSection: 0
-          - Incoming: [3122, 2112]
-            Outgoing: 
-              - Outgoing: [3122, 2112]
-                CrossSection: 0
-          - Incoming: [3212, 2212]
-            Outgoing: 
-              - Outgoing: [3212, 2212]
-                CrossSection: 0
-          - Incoming: [3212, 2112]
-            Outgoing: 
-              - Outgoing: [3212, 2112]
-                CrossSection: 0
-          - Incoming: [3222, 2112]
-            Outgoing: 
-              - Outgoing: [3222, 2112]
-                CrossSection: 0
-          - Incoming: [3222, 2212]
-            Outgoing: 
-              - Outgoing: [3222, 2212]
-                CrossSection: 0
-          - Incoming: [311, 2112]
-            Outgoing: 
-              - Outgoing: [311, 2112]
-                CrossSection: 0
-          - Incoming: [311, 2212]
-            Outgoing: 
-              - Outgoing: [311, 2212]
-                CrossSection: 0
+  Interactions: !include "data/default/VirtResInteractions.yml"
   Step: 0.04
-  Probability: Gaussian
+  Probability: Cylinder
   InMedium: None
   PotentialProp: False
   Algorithm: Base
 
 NuclearModels:
-  - NuclearModel: !include "data/default/QEOptions.yml"
-  - NuclearModel: !include "data/default/IntfOptionsF.yml"
-  #- NuclearModel: !include "data/default/RESOptionsF.yml"
-  #- NuclearModel: !include "data/default/HyperonOptions.yml"
+- NuclearModel: 
+   Model: FortranModel
+   Name: QE_Spectral_Func
+   ConfigFile: data/info_C12_pke.data 
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
 
 Nuclei:
   - Nucleus: !include "data/default/12C.yml"

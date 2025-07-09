@@ -23,19 +23,20 @@ Beams:
 
 Cascade:
   Run: False
-  Interaction:
-    Name: GeantInteractions
-    GeantData: data/GeantData.hdf5
+  Interactions: !include "data/default/VirtResInteractions.yml"
   Step: 0.04
   Probability: Cylinder
   InMedium: None
   PotentialProp: False
+  Algorithm: Base
 
 NuclearModels:
-  - NuclearModel: !include "data/default/QEOptions.yml"
-  #- NuclearModel: !include "data/default/IntfOptionsF.yml"
-  #- NuclearModel: !include "data/default/RESOptionsF.yml"
-  #- NuclearModel: !include "data/default/HyperonOptions.yml"
+- NuclearModel: 
+   Model: FortranModel
+   Name: QE_Spectral_Func
+   ConfigFile: data/info_C12_pke.data 
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
 
 Nuclei:
   - Nucleus: !include "data/default/12C.yml"
