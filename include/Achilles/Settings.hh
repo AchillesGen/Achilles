@@ -64,8 +64,8 @@ class SettingsValidator {
         std::map<std::string, YAML::Node> options;
 
         Rule() = default;
-        Rule(const std::string &_type, const YAML::Node &_options,
-             const std::string &_description, const std::string &_error_message);
+        Rule(const std::string &_type, const YAML::Node &_options, const std::string &_description,
+             const std::string &_error_message);
     };
 
     bool LoadRules(const std::string &filename);
@@ -85,7 +85,7 @@ class SettingsValidator {
 
 class Settings {
   public:
-    Settings(const std::string &filename, const std::string &rules="data/Rules.yml");
+    Settings(const std::string &filename, const std::string &rules = "data/Rules.yml");
     Settings(const YAML::Node &node);
     static Settings &MainSettings() { return main_settings; }
     static void LoadMainSettings(const std::string &filename) {
@@ -114,9 +114,7 @@ class Settings {
     static std::string FormatPath(const std::vector<PathElement> &path) {
         std::string formatted_path;
         for(const auto &element : path) {
-            if(!formatted_path.empty()) {
-                formatted_path += "/";
-            }
+            if(!formatted_path.empty()) { formatted_path += "/"; }
             if(std::holds_alternative<std::string>(element)) {
                 formatted_path += std::get<std::string>(element);
             } else if(std::holds_alternative<size_t>(element)) {
@@ -131,7 +129,8 @@ class Settings {
   private:
     static YAML::Node IncludeFile(const std::string &filename);
     std::vector<PathElement> ParsePath(const std::string_view &) const;
-    static std::vector<YAML::Node> seek(std::vector<PathElement> &keys, YAML::Node start, size_t index=0);
+    static std::vector<YAML::Node> seek(std::vector<PathElement> &keys, YAML::Node start,
+                                        size_t index = 0);
 
     YAML::Node m_settings;
     SettingsValidator m_validator;
