@@ -181,7 +181,17 @@ bool SettingsValidator::ValidateRangeConstraintList(const Settings &settings,
                                                     const Rule &rule) const {
     const auto list_path = rule.options.at("List").as<std::string>();
     const auto param_path = rule.options.at("Parameter").as<std::string>();
-    YAML::Node list_node = settings[list_path];
+    YAML::Node list_node;
+    try{
+        list_node = settings[list_path];
+    } catch(const SettingsError &e) {
+        if(rule.options.at("Optional").as<bool>()) {
+            spdlog::debug("Settings: List {} is optional and does not exist", list_path);
+            return true; // Optional list, no validation needed
+        } else {
+            throw e;
+        }
+    }
     if(!list_node || !list_node.IsSequence()) {
         return true;
     }
