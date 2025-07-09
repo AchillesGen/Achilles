@@ -1,6 +1,5 @@
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Cascade.hh"
-#include "Achilles/Settings.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/EventWriter.hh"
@@ -8,6 +7,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Settings.hh"
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
@@ -108,8 +108,7 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
     }
 }
 
-CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data/hA_Rules.yml"} {
-    
+CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard, "data/hA_Rules.yml"} {
     // Read momentum range to run over
     m_mom_range = setting.GetAs<std::pair<double, double>>("KickMomentum");
     if(m_mom_range.first < 0.0) {
@@ -130,12 +129,12 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data
     requested_events = setting.GetAs<size_t>("NEvents");
 
     // Initialize nucleus
-    m_nuc = std::make_shared<Nucleus>(setting.GetAs<Nucleus>("Nucleus")); 
+    m_nuc = std::make_shared<Nucleus>(setting.GetAs<Nucleus>("Nucleus"));
     auto potential_name = setting.GetAs<std::string>("Nucleus/Potential/Name");
     auto potential = achilles::PotentialFactory::Initialize(potential_name, m_nuc,
                                                             setting["Nucleus"]["Potential"]);
     m_nuc->SetPotential(std::move(potential));
-    
+
     // Setting radius for hydrogen here
     if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
     if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }

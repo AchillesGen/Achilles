@@ -94,14 +94,14 @@ bool SettingsValidator::ValidateRequiredFields(const Settings &settings, const R
 
 bool SettingsValidator::ValidateConditionalInteractionOption(const Settings &settings,
                                                              const Rule &rule) const {
-
     const auto cascade_settings = settings["Cascade"];
-    
-    if(!cascade_settings["Mode"].IsDefined() || (settings.Exists("Cascade/Run") && settings.GetAs<bool>("Cascade/Run") == false)) {
+
+    if(!cascade_settings["Mode"].IsDefined() ||
+       (settings.Exists("Cascade/Run") && settings.GetAs<bool>("Cascade/Run") == false)) {
         spdlog::debug("Cascade is not running, skipping ConsistentInteractions validation");
         return true; // No interactions to validate if Cascade is not running
     }
-    
+
     const auto &interactions = settings["Cascade/Interactions"];
 
     const auto &condition = rule.options.at("Condition");
