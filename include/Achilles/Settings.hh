@@ -93,8 +93,6 @@ class Settings {
     }
     void Print() const;
 
-    void SetRequirements(bool requirements) {m_requirements = requirements;}
-
     template <typename type> type GetAs(const std::string_view &key) const {
         try {
             return (*this)[key].as<type>();

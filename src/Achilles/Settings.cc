@@ -94,10 +94,14 @@ bool SettingsValidator::ValidateRequiredFields(const Settings &settings, const R
 
 bool SettingsValidator::ValidateConditionalInteractionOption(const Settings &settings,
                                                              const Rule &rule) const {
-    if(settings.GetAs<bool>("Cascade/Run") == false) {
+
+    const auto cascade_settings = settings["Cascade"];
+    
+    if(!cascade_settings["Mode"].IsDefined() || (settings.Exists("Cascade/Run") && settings.GetAs<bool>("Cascade/Run") == false)) {
         spdlog::debug("Cascade is not running, skipping ConsistentInteractions validation");
         return true; // No interactions to validate if Cascade is not running
     }
+    
     const auto &interactions = settings["Cascade/Interactions"];
 
     const auto &condition = rule.options.at("Condition");
@@ -298,11 +302,6 @@ Settings::Settings(const std::string &filename, const std::string &rules) {
     spdlog::trace("Settings loaded, validating...");
     if(!m_validator.Validate(*this)) { throw SettingsError("Settings: Validation failed"); }
     // CheckRequired();
-}
-
-Settings::Settings(const std::string &filename, bool requirements) {
-    m_settings = IncludeFile(filename);
-    m_requirements = requirements;
 }
 
 Settings::Settings(const YAML::Node &node) {

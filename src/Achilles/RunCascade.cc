@@ -108,9 +108,8 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
     }
 }
 
-CascadeRunner::CascadeRunner(const std::string &runcard) {
-    Settings setting(runcard, false);
-
+CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data/hA_Rules.yml"} {
+    
     auto config = YAML::LoadFile(runcard);
     // Read momentum range to run over
     m_mom_range = config["KickMomentum"].as<std::pair<double, double>>();

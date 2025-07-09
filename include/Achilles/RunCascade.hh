@@ -76,6 +76,8 @@ class CascadeRunner {
 
     std::shared_ptr<Nucleus> m_nuc;
     std::unique_ptr<EventWriter> m_writer{nullptr};
+
+    Settings setting;
 };
 
 } // namespace achilles::CascadeTest
