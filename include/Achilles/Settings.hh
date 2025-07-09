@@ -21,11 +21,6 @@ class SettingsError : public std::runtime_error {
     SettingsError(const std::string &what) : std::runtime_error(what) {}
 };
 
-class ValidtionError : public std::runtime_error {
-  public:
-    ValidtionError(const std::string &what) : std::runtime_error(what) {}
-};
-
 template <bool is_const> class YAMLVisitor {
   public:
     using value_type = YAML::Node;
