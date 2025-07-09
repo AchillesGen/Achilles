@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
+#include <variant>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -77,6 +78,13 @@ class SettingsValidator {
     void AddRule(const Rule &rule) { m_rules.push_back(rule); }
 
   private:
+    bool ValidateRequiredFields(const Settings &settings, const Rule &rule) const;
+    bool ValidateConditionalInteractionOption(const Settings &settings, const Rule &rule) const;
+    bool ValidateRangeConstraint(const Settings &settings, const Rule &rule) const;
+    bool ValidateRangeConstraintList(const Settings &settings, const Rule &rule) const;
+    bool ValidateRangeConstraintScalar(const Settings &settings, const Rule &rule) const;
+    bool ValidateRange(double, const Rule &rule, const std::string &path) const;
+
     std::vector<Rule> m_rules;
 };
 
@@ -105,21 +113,35 @@ class Settings {
     YAML::Node operator[](const std::string_view &key);
     bool Exists(const std::string_view &key) const;
 
+    struct WildcardTag {};
+    using PathElement = std::variant<std::string, size_t, WildcardTag>;
+
+    static std::string FormatPath(const std::vector<PathElement> &path) {
+        std::string formatted_path;
+        for(const auto &element : path) {
+            if(!formatted_path.empty()) {
+                formatted_path += "/";
+            }
+            if(std::holds_alternative<std::string>(element)) {
+                formatted_path += std::get<std::string>(element);
+            } else if(std::holds_alternative<size_t>(element)) {
+                formatted_path += std::to_string(std::get<size_t>(element));
+            } else {
+                formatted_path += "*";
+            }
+        }
+        return formatted_path;
+    };
+
   private:
     static YAML::Node IncludeFile(const std::string &filename);
-    void CheckRequired() const;
-    std::vector<std::string> ParsePath(const std::string_view &) const;
-    static YAML::Node seek(std::vector<std::string> &keys, YAML::Node start);
+    std::vector<PathElement> ParsePath(const std::string_view &) const;
+    static std::vector<YAML::Node> seek(std::vector<PathElement> &keys, YAML::Node start, size_t index=0);
 
     YAML::Node m_settings;
     SettingsValidator m_validator;
-
-    // Deprecated: Use SettingsValidator instead
-    static constexpr std::array<std::string_view, 9> m_required_options = {
-        "Main/NEvents", "Main/Output/Format",  "Main/Output/Name",
-        "Processes",    "NuclearModels",       "Nuclei",
-        "Cascade/Run",  "Options/Unweighting", "Options/Initialize"};
     static Settings main_settings;
+    friend class SettingsValidator;
 };
 
 } // namespace achilles
