@@ -110,9 +110,8 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
 
 CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data/hA_Rules.yml"} {
     
-    auto config = YAML::LoadFile(runcard);
     // Read momentum range to run over
-    m_mom_range = config["KickMomentum"].as<std::pair<double, double>>();
+    m_mom_range = setting.GetAs<std::pair<double, double>>("KickMomentum");
     if(m_mom_range.first < 0.0) {
         throw std::runtime_error("Achilles: Momentum range must be positive");
     }
@@ -121,14 +120,14 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data
     }
 
     // Initialize cascade
-    m_mode = config["Cascade"]["Mode"].as<CascadeMode>();
-    spdlog::debug("Cascade mode: {}", config["Cascade"]["Mode"].as<std::string>());
+    m_mode = setting.GetAs<CascadeMode>("Cascade/Mode");
+    spdlog::debug("Cascade mode: {}", ToString(m_mode));
 
     m_cascade = std::make_unique<Cascade>(setting.GetAs<Cascade>("Cascade"));
 
-    m_params = config["Cascade"]["Params"].as<std::map<std::string, double>>();
-    m_pid = config["PID"].as<PID>();
-    requested_events = config["NEvents"].as<size_t>();
+    m_params = setting.GetAs<std::map<std::string, double>>("Cascade/Params");
+    m_pid = setting.GetAs<PID>("PID");
+    requested_events = setting.GetAs<size_t>("NEvents");
 
     // Initialize nucleus
     m_nuc = std::make_shared<Nucleus>(setting.GetAs<Nucleus>("Nucleus")); 
@@ -142,17 +141,19 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard,"data
     if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
 
     // Setup output
-    auto output = config["Output"];
-    bool zipped = true;
-    if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
+    auto output = setting["Output"];
+    bool zipped = output["Zipped"] ? output["Zipped"].as<bool>() : true;
+
     spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
     m_output_name = output["Name"].as<std::string>();
     m_output_name.erase(m_output_name.length() - 6);
-    if(output["Format"].as<std::string>() == "Achilles") {
+    const std::string format = output["Format"].as<std::string>();
+
+    if(format == "Achilles") {
         m_writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
-    } else if(output["Format"].as<std::string>() == "HepMC3") {
+    } else if(format == "HepMC3") {
         m_writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
-    } else if(output["Format"].as<std::string>() == "NuHepMC") {
+    } else if(format == "NuHepMC") {
         m_writer = std::make_unique<NuHepMCWriter>(output["Name"].as<std::string>(), zipped);
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}",
