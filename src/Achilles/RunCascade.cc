@@ -1,5 +1,6 @@
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Cascade.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/EventWriter.hh"
@@ -108,6 +109,8 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
 }
 
 CascadeRunner::CascadeRunner(const std::string &runcard) {
+    Settings setting(runcard, false);
+
     auto config = YAML::LoadFile(runcard);
     // Read momentum range to run over
     m_mom_range = config["KickMomentum"].as<std::pair<double, double>>();
@@ -121,19 +124,20 @@ CascadeRunner::CascadeRunner(const std::string &runcard) {
     // Initialize cascade
     m_mode = config["Cascade"]["Mode"].as<CascadeMode>();
     spdlog::debug("Cascade mode: {}", config["Cascade"]["Mode"].as<std::string>());
-    m_cascade = config["Cascade"].as<Cascade>();
+
+    m_cascade = std::make_unique<Cascade>(setting.GetAs<Cascade>("Cascade"));
+
     m_params = config["Cascade"]["Params"].as<std::map<std::string, double>>();
     m_pid = config["PID"].as<PID>();
     requested_events = config["NEvents"].as<size_t>();
 
     // Initialize nucleus
-    m_nuc = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
-
-    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
+    m_nuc = std::make_shared<Nucleus>(setting.GetAs<Nucleus>("Nucleus")); 
+    auto potential_name = setting.GetAs<std::string>("Nucleus/Potential/Name");
     auto potential = achilles::PotentialFactory::Initialize(potential_name, m_nuc,
-                                                            config["Nucleus"]["Potential"]);
+                                                            setting["Nucleus"]["Potential"]);
     m_nuc->SetPotential(std::move(potential));
-
+    
     // Setting radius for hydrogen here
     if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
     if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
@@ -184,14 +188,14 @@ void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hit
     for(size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(event.Hadrons()[i].Status() == ParticleStatus::external_test ||
            event.Hadrons()[i].Status() == ParticleStatus::internal_test) {
-            m_cascade.SetKicked(i);
+            m_cascade->SetKicked(i);
         }
     }
     // Scale event weight by momentum range
     event.Weight() *= (m_mom_range.second - m_mom_range.first);
 
     // Cascade
-    m_cascade.Evolve(event, m_nuc.get());
+    m_cascade->Evolve(event, m_nuc.get());
     // Write the event to file if an interaction happened
     if(event.History().size() > 0) {
         // Set status of the first interaction as the primary interaction

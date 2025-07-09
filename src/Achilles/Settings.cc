@@ -300,6 +300,11 @@ Settings::Settings(const std::string &filename, const std::string &rules) {
     // CheckRequired();
 }
 
+Settings::Settings(const std::string &filename, bool requirements) {
+    m_settings = IncludeFile(filename);
+    m_requirements = requirements;
+}
+
 Settings::Settings(const YAML::Node &node) {
     m_settings = node;
 }

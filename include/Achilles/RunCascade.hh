@@ -3,6 +3,7 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
+#include "Achilles/Settings.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <string>
@@ -70,7 +71,7 @@ class CascadeRunner {
     PID m_pid;
 
     CascadeMode m_mode;
-    Cascade m_cascade;
+    std::shared_ptr<Cascade> m_cascade;
     std::pair<double, double> m_mom_range;
 
     std::shared_ptr<Nucleus> m_nuc;
