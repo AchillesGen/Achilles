@@ -216,8 +216,8 @@ void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) c
 
 // Klein-Nystrand (KN) Form Factor 2007.03658
 achilles::KNFormFactor::KNFormFactor(const YAML::Node &config) {
-    r0 = config["r0"].as<double>();
-    ak = config["ak"].as<double>();
+    r0 = config["r0"].as<double>(); // default = 3.427 fm
+    ak = config["ak"].as<double>(); // default = 0.7 fm
     auto A = config["A"].as<double>();
     RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
 }
