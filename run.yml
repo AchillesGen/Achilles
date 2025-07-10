@@ -32,8 +32,13 @@ Cascade:
 
 NuclearModels:
 - NuclearModel: 
+   Model: QESpectral
+   ConfigFile: data/info_C12_pke.data 
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
+- NuclearModel: 
    Model: FortranModel
-   Name: QE_Spectral_Func
+   Name: RES_Spectral_Func
    ConfigFile: data/info_C12_pke.data 
    FormFactorFile: "FormFactors.yml"
    Ward: None
