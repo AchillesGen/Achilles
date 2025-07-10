@@ -365,7 +365,8 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     MultiChannelParams multichannel_params;
     if(config.Exists("Options/Initialize/Parameters"))
         multichannel_params = config.GetAs<MultiChannelParams>("Options/Initialize/Parameters");
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params, display_unit);
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params,
+                                display_unit);
     if(config.Exists("Options/Initialize/Accuracy"))
         m_integrator.Parameters().rtol = config.GetAs<double>("Options/Initialize/Accuracy");
 

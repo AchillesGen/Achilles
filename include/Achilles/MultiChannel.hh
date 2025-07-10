@@ -39,49 +39,56 @@ void LoadState(std::istream &is, MultiChannelParams &params);
 void SaveState(std::ostream &os, const MultiChannelSummary &summary);
 void LoadState(std::istream &is, MultiChannelSummary &summary);
 
-enum class UnitsEnum {
-    mub,
-    nb,
-    pb,
-    em38cm2,
-    LAST
-};
+enum class UnitsEnum { mub, nb, pb, em38cm2, LAST };
 
 inline std::string ToString(UnitsEnum unit) {
     switch(unit) {
-        case UnitsEnum::mub: return "mub";
-        case UnitsEnum::nb: return "nb";
-        case UnitsEnum::pb: return "pb";
-        case UnitsEnum::em38cm2: return "e-38cm2";
-        default: return "nb";
+    case UnitsEnum::mub:
+        return "mub";
+    case UnitsEnum::nb:
+        return "nb";
+    case UnitsEnum::pb:
+        return "pb";
+    case UnitsEnum::em38cm2:
+        return "e-38cm2";
+    default:
+        return "nb";
     }
 }
 
 inline double UnitScale(UnitsEnum unit) {
     switch(unit) {
-        case UnitsEnum::mub: return 1e-3;         
-        case UnitsEnum::nb: return 1;          
-        case UnitsEnum::pb: return 1e3;          
-        case UnitsEnum::em38cm2: return 1e5;   
-        default: return 1.0;
+    case UnitsEnum::mub:
+        return 1e-3;
+    case UnitsEnum::nb:
+        return 1;
+    case UnitsEnum::pb:
+        return 1e3;
+    case UnitsEnum::em38cm2:
+        return 1e5;
+    default:
+        return 1.0;
     }
 }
 
 inline UnitsEnum ToUnitEnum(std::string unit) {
-    if (unit == "mub") return UnitsEnum::mub;
-    else if (unit == "nb") return UnitsEnum::nb;
-    else if (unit == "pb") return UnitsEnum::pb;
-    else if (unit == "e-38cm2") return UnitsEnum::em38cm2;
+    if(unit == "mub")
+        return UnitsEnum::mub;
+    else if(unit == "nb")
+        return UnitsEnum::nb;
+    else if(unit == "pb")
+        return UnitsEnum::pb;
+    else if(unit == "e-38cm2")
+        return UnitsEnum::em38cm2;
     else {
         spdlog::warn("Unit {} not recognized. Available display units include:", unit);
-        for (int i = 0; i < static_cast<int>(UnitsEnum::LAST); ++i) {
+        for(int i = 0; i < static_cast<int>(UnitsEnum::LAST); ++i) {
             UnitsEnum unit_avail = static_cast<UnitsEnum>(i);
-            spdlog::warn("{}",ToString(unit_avail));
+            spdlog::warn("{}", ToString(unit_avail));
         }
         spdlog::warn("Defaulting back to nb");
         return UnitsEnum::nb;
     }
-
 }
 
 class MultiChannel {

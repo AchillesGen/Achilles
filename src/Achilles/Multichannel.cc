@@ -51,7 +51,8 @@ void achilles::LoadState(std::istream &is, MultiChannelSummary &summary) {
     }
 }
 
-achilles::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_, UnitsEnum unit)
+achilles::MultiChannel::MultiChannel(size_t dims, size_t nchannels, MultiChannelParams params_,
+                                     UnitsEnum unit)
     : ndims{std::move(dims)}, params{std::move(params_)}, m_units(unit) {
     for(size_t i = 0; i < nchannels; ++i) {
         channel_weights.push_back(1.0 / static_cast<double>(nchannels));
@@ -111,9 +112,9 @@ achilles::MultiChannelSummary achilles::MultiChannel::Summary() {
     std::string unit = ToString(m_units);
 
     std::cout << "Final integral = "
-              << fmt::format("{:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)", summary.Result().Mean() * scale,
-                             summary.Result().Error() * scale, unit, 
-                             summary.Result().Error() / summary.Result().Mean() * 100)
+              << fmt::format("{:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)",
+                             summary.Result().Mean() * scale, summary.Result().Error() * scale,
+                             unit, summary.Result().Error() / summary.Result().Mean() * 100)
               << std::endl;
     std::cout << "Channel weights:\n";
     for(size_t i = 0; i < best_weights.size(); ++i) {
@@ -137,12 +138,13 @@ void achilles::MultiChannel::PrintIteration() const {
     }
 
     double scale = UnitScale(m_units);
-    std::string unit = ToString(m_units); 
+    std::string unit = ToString(m_units);
 
     spdlog::info(
         "{:3d}   {:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)    {:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)",
-        summary.results.size(), values[0] * scale , values[1] * scale, unit, values[1] / values[0] * 100, values[2] * scale,
-        values[3] * scale, unit, values[3] / values[2] * 100);
+        summary.results.size(), values[0] * scale, values[1] * scale, unit,
+        values[1] / values[0] * 100, values[2] * scale, values[3] * scale, unit,
+        values[3] / values[2] * 100);
 }
 
 void achilles::MultiChannel::SaveState(std::ostream &os) const {
