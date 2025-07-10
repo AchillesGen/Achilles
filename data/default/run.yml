@@ -25,7 +25,7 @@ Cascade:
   Run: False
   Interactions: !include "data/default/VirtResInteractions.yml"
   Step: 0.04
-  Probability: Gaussian
+  Probability: Cylinder
   InMedium: None
   PotentialProp: False
   Algorithm: Base
