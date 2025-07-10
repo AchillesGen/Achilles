@@ -132,7 +132,7 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard, "dat
     m_nuc = std::make_shared<Nucleus>(setting.GetAs<Nucleus>("Nucleus"));
     auto potential_name = setting.GetAs<std::string>("Nucleus/Potential/Name");
     auto potential = achilles::PotentialFactory::Initialize(potential_name, m_nuc,
-                                                            setting["Nucleus"]["Potential"]);
+                                                            setting["Nucleus/Potential"]);
     m_nuc->SetPotential(std::move(potential));
 
     // Setting radius for hydrogen here

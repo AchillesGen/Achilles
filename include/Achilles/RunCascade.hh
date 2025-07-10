@@ -71,7 +71,7 @@ class CascadeRunner {
     PID m_pid;
 
     CascadeMode m_mode;
-    std::shared_ptr<Cascade> m_cascade;
+    std::unique_ptr<Cascade> m_cascade;
     std::pair<double, double> m_mom_range;
 
     std::shared_ptr<Nucleus> m_nuc;
