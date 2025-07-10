@@ -214,6 +214,26 @@ void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) c
                   (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
 }
 
+// Klein-Nystrand (KN) Form Factor 2007.03658
+achilles::KNFormFactor::KNFormFactor(const YAML::Node &config) {
+    r0 = config["r0"].as<double>();
+    ak = config["ak"].as<double>();
+    auto A = config["A"].as<double>();
+    RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::KNFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<KNFormFactor>(type);
+    return std::make_unique<KNFormFactor>(node);
+}
+
+void achilles::KNFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    double kappa = sqrt(Q2) / Constant::HBARC;
+    result.Fcoh = 3 / (1 + kappa * kappa * ak * ak) *
+                  (sin(kappa * RA) - kappa * RA * cos(kappa * RA)) / pow(kappa * RA, 3);
+}
+
 // Lovato Form Factor
 achilles::LovatoFormFactor::LovatoFormFactor(const YAML::Node &config) {
     b = config["b"].as<double>();
