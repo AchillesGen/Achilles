@@ -357,10 +357,15 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
         m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
+    UnitsEnum display_unit = UnitsEnum::nb;
+    if(config.Exists("Main/DisplayUnit")) {
+        display_unit = ToUnitEnum(config.GetAs<std::string>("Main/DisplayUnit"));
+    }
+
     MultiChannelParams multichannel_params;
     if(config.Exists("Options/Initialize/Parameters"))
         multichannel_params = config.GetAs<MultiChannelParams>("Options/Initialize/Parameters");
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params);
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params, display_unit);
     if(config.Exists("Options/Initialize/Accuracy"))
         m_integrator.Parameters().rtol = config.GetAs<double>("Options/Initialize/Accuracy");
 
