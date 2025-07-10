@@ -3,15 +3,13 @@ Rules:
     Description: The fields that must be present in the run card.
     ErrorMessage: "The following fields are required: {}"
     Fields:
-      - "Main/NEvents"
-      - "Main/Output/Format"
-      - "Main/Output/Name"
-      - "Processes"
-      - "NuclearModels"
-      - "Nuclei"
-      - "Cascade/Run"
-      - "Options/Unweighting"
-      - "Options/Initialize"
+      - "NEvents"
+      - "Output/Format"
+      - "Output/Name"
+      - "Nucleus"
+      - "KickMomentum"
+      - "PID"
+      - "Cascade/Mode"
 
   - Type: ConditionalInteractionOption
     Description: Specific interactions require NucleonNucleon to have ResonanceMode set to Propagate.
@@ -40,7 +38,7 @@ Rules:
   - Type: RangeConstraint
     Description: The number of events must be greater than 0.
     ErrorMessage: "The number of events must be greater than 0."
-    Path: Main/NEvents
+    Path: NEvents
     Optional: False
     Min: 1
 
