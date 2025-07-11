@@ -234,8 +234,7 @@ achilles::KNFormFactor::Construct(achilles::FFType type, const YAML::Node &node)
 
 void achilles::KNFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
     double kappa = sqrt(Q2) / Constant::HBARC;
-    result.Fcoh = 3 / (1 + kappa * kappa * ak * ak) *
-                  (sin(kappa * RA) - kappa * RA * cos(kappa * RA)) / pow(kappa * RA, 3);
+    result.Fcoh = 3 / (1 + kappa * kappa * ak * ak) * std::sph_bessel(1, kappa * RA) / (kappa * RA);
 }
 
 // Lovato Form Factor
