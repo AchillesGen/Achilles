@@ -214,12 +214,16 @@ void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) c
                   (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
 }
 
-// Klein-Nystrand (KN) Form Factor 2007.03658
+// Klein-Nystrand (KN) Form Factor 2007.03658 (Eq. 26)
 achilles::KNFormFactor::KNFormFactor(const YAML::Node &config) {
     r0 = config["r0"].as<double>(); // default = 3.427 fm
     ak = config["ak"].as<double>(); // default = 0.7 fm
-    auto A = config["A"].as<double>();
-    RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
+    if(config["Adapted"] && config["Adapted"].as<bool>()) {
+        RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
+    } else {
+        auto A = config["A"].as<double>();
+        RA = 1.2 * std::cbrt(A); // default = 1.2 * A^(1/3) fm
+    }
 }
 
 std::unique_ptr<achilles::FormFactorImpl>
