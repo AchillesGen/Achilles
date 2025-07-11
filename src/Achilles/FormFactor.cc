@@ -5,6 +5,31 @@
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
 
+namespace achilles {
+double sph_bessel(unsigned int l, double x) {
+#ifdef ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS
+    // Use the C++ standard library's special functions if available
+    return std::sph_bessel(l, x);
+#else
+    if(l == 0) {
+        if(x == 0) {
+            return 1.0; // Handle the singularity at x = 0
+        }
+        return sin(x) / x; // Spherical Bessel function of order 0
+    } else if(l == 1) {
+        if(x == 0) {
+            return 0.0; // Handle the singularity at x = 0
+        }
+        return (sin(x) - x * cos(x)) / (x * x); // Spherical Bessel function of order 1
+    } else {
+        throw std::invalid_argument(
+            fmt::format("Unsupported spherical Bessel function order: {}", l));
+    }
+#endif
+}
+
+} // namespace achilles
+
 achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     Values results;
     if(vector) vector->Evaluate(Q2, results);
@@ -212,6 +237,29 @@ void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) c
     double kappa = sqrt(Q2) / Constant::HBARC;
     result.Fcoh = 3 * exp(-kappa * kappa * s * s / 2) *
                   (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
+}
+
+// Klein-Nystrand (KN) Form Factor 2007.03658 (Eq. 26)
+achilles::KNFormFactor::KNFormFactor(const YAML::Node &config) {
+    r0 = config["r0"].as<double>(); // default = 3.427 fm
+    ak = config["ak"].as<double>(); // default = 0.7 fm
+    if(config["Adapted"] && config["Adapted"].as<bool>()) {
+        RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
+    } else {
+        auto A = config["A"].as<double>();
+        RA = 1.2 * std::cbrt(A); // default = 1.2 * A^(1/3) fm
+    }
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::KNFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<KNFormFactor>(type);
+    return std::make_unique<KNFormFactor>(node);
+}
+
+void achilles::KNFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    double kappa = sqrt(Q2) / Constant::HBARC;
+    result.Fcoh = 3 / (1 + kappa * kappa * ak * ak) * sph_bessel(1, kappa * RA) / (kappa * RA);
 }
 
 // Lovato Form Factor

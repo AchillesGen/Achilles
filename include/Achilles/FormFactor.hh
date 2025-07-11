@@ -425,6 +425,20 @@ class HelmFormFactor : public FormFactorImpl, RegistrableFormFactor<HelmFormFact
     double s, r;
 };
 
+class KNFormFactor : public FormFactorImpl, RegistrableFormFactor<KNFormFactor> {
+  public:
+    KNFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "KN"; }
+    static FFType Type() { return FFType::coherent; }
+
+  private:
+    double r0, ak, RA;
+};
+
 class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoFormFactor> {
   public:
     LovatoFormFactor(const YAML::Node &);
