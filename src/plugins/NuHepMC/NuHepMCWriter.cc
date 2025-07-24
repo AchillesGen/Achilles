@@ -118,12 +118,11 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // Signal conventions
     // TODO: Make flags to turn on / off different conventions
-    NuHepMC::GC1::SetConventions(run,
-                                 {"G.C.2", "G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
+    NuHepMC::GC1::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
 
     // TODO: Update to using newer NuHepMC version
     const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
-    const std::string tgtscale = "PerTarget";
+    const std::string tgtscale = "PerAtom";
     NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
 
     // Write out the number of requested events

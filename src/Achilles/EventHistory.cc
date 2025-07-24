@@ -141,7 +141,8 @@ void EventHistory::UpdateStatuses(const Particles &particles) {
         node = FindNodeIn(part);
         if(node) {
             for(auto &incoming : node->ParticlesIn()) {
-                if(comp(incoming)) incoming.Status() = part.Status();
+                if(comp(incoming) && incoming.Status() != ParticleStatus::target)
+                    incoming.Status() = part.Status();
             }
         }
     }
