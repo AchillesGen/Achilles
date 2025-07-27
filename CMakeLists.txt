@@ -53,6 +53,19 @@ enable_sanitizers(project_options)
 include(CMake/StaticAnalyzers.cmake)
 include(CMake/ProgramOptions.cmake)
 
+# Test if C++ compiler supports math special functions
+include(CheckCXXSourceCompiles)
+
+check_cxx_source_compiles("
+#include <cmath>
+int main() {
+    std::sph_bessel(1, 0.0);
+    return 0;
+}" ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
+if(ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
+  target_compile_definitions(project_options INTERFACE ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
+endif()
+
 option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
 
 # Allow build to be made even if not a git repo

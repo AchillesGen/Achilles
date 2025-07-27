@@ -17,7 +17,7 @@
 #pragma GCC diagnostic pop
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -72,6 +72,9 @@ class PID {
     static constexpr PID pion0() { return PID{111}; }
     static constexpr PID pionp() { return PID{211}; }
     static constexpr PID eta() { return PID{221}; }
+    static constexpr PID kaon0() { return PID{311}; }
+    static constexpr PID kaonp() { return PID{321}; }
+    static constexpr PID Kaonm() { return PID{-321}; }
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }

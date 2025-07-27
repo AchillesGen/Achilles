@@ -1,4 +1,4 @@
-#include "plugins/Sherpa/FormFactors.hh"
+#include "Plugins/Sherpa/FormFactors.hh"
 
 #include "ATOOLS/Org/Message.H"
 #include "METOOLS/Explicit/Current.H"

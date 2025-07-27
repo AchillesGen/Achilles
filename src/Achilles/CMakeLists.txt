@@ -90,6 +90,7 @@ add_library(physics SHARED
     EventHistory.cc
     MesonBaryonAmplitudes.cc
     OsetCrossSections.cc
+    ResonanceHelper.cc
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)
@@ -105,7 +106,7 @@ if(ACHILLES_ENABLE_ROOT)
     endif()
 endif()
 target_link_libraries(physics PRIVATE project_warnings
-                      PUBLIC utilities cuts HighFive)
+                      PUBLIC utilities cuts HighFive AchillesIntegrator)
 list(APPEND achilles_targets physics)
 
 add_subdirectory(CascadeInteractions)

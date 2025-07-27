@@ -100,6 +100,7 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
     auto same_isospin_counter = 0;
     auto opp_isospin_counter = 0;
 
+    absorption_partners.clear();
     for(const auto &state : m_states) {
         size_t abs_partner_idx = state.first;
         // spdlog::debug("abs idx = {}", abs_partner_idx);

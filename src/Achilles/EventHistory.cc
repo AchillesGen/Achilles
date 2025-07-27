@@ -14,7 +14,9 @@ EventHistory::EventHistory(const EventHistory &other) {
 }
 
 EventHistory &EventHistory::operator=(const EventHistory &other) {
+    if(this == &other) return *this;
     cur_idx = other.cur_idx;
+    m_history.clear();
     m_history.reserve(other.m_history.size());
     for(const auto &elm : other.m_history) {
         m_history.push_back(std::make_unique<EventHistoryNode>(*elm));
@@ -139,7 +141,8 @@ void EventHistory::UpdateStatuses(const Particles &particles) {
         node = FindNodeIn(part);
         if(node) {
             for(auto &incoming : node->ParticlesIn()) {
-                if(comp(incoming)) incoming.Status() = part.Status();
+                if(comp(incoming) && incoming.Status() != ParticleStatus::target)
+                    incoming.Status() = part.Status();
             }
         }
     }

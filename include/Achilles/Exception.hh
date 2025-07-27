@@ -11,4 +11,9 @@ class AchillesLoadError : public std::runtime_error {
         : std::runtime_error("Achilles: Could not load " + filename) {}
 };
 
+class AchillesCascadeError : public std::runtime_error {
+  public:
+    AchillesCascadeError(const std::string &msg) : std::runtime_error(msg) {}
+};
+
 } // namespace achilles

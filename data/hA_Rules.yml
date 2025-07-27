@@ -1,0 +1,61 @@
+Rules:
+  - Type: RequiredFields
+    Description: The fields that must be present in the run card.
+    ErrorMessage: "The following fields are required: {}"
+    Fields:
+      - "NEvents"
+      - "Output/Format"
+      - "Output/Name"
+      - "Nucleus"
+      - "KickMomentum"
+      - "PID"
+      - "Cascade/Mode"
+
+  - Type: ConditionalInteractionOption
+    Description: Specific interactions require NucleonNucleon to have ResonanceMode set to Propagate.
+    ErrorMessage: The interaction model {} requires NucleonNucleon to have ResonanceMode set to Propagate.
+    Condition:
+      Interactions:
+        - DeltaInteraction
+    Target:
+      Name: NucleonNucleon
+      RequiredOptions:
+        ResonanceMode: Propagate
+
+  - Type: ConditionalInteractionOption
+    Description: Specific interactions require NucleonNucleon to have ResonanceMode set to Propagate.
+    ErrorMessage: The interaction model {} requires NucleonNucleon to have ResonanceMode set to Propagate.
+    Condition:
+      Interactions:
+        - PionInteraction
+        - MesonBaryonInteraction
+        - PionAbsorptionOneStep
+    Target:
+      Name: NucleonNucleon
+      RequiredOptions:
+        ResonanceMode: Decay
+
+  - Type: RangeConstraint
+    Description: The number of events must be greater than 0.
+    ErrorMessage: "The number of events must be greater than 0."
+    Path: NEvents
+    Optional: False
+    Min: 1
+
+  - Type: RangeConstraint
+    Description: The cascade step size must be greater than 0.
+    ErrorMessage: "The cascade step size must be greater than 0."
+    Path: Cascade/Step
+    Optional: False
+    Min: 1e-8
+
+  - Type: RangeConstraint
+    Description: Ensure the exponential suppression is between 0.0 and 2.0.
+    ErrorMessage: "The exponential suppression must be between 0.0 and 2.0."
+    List: Cascade/Interactions
+    Match:
+      Name: [NucleonNucleon, DeltaInteraction]
+    Parameter: Options/ExpSup
+    Optional: True
+    Min: 0.0
+    Max: 2.0
