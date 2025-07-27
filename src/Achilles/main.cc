@@ -55,11 +55,10 @@ static const std::string USAGE =
       --display-nuc-models                  Display the available nuclear interaction models
 )";
 
-using namespace std;
 using namespace chrono;
 
 /** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
-time_t logTime(string message) {
+time_t logTime(std::string message) {
 	time_t time=system_clock::to_time_t(system_clock::now());
 	message+=ctime(&time);
 	spdlog::info(message);
@@ -69,7 +68,7 @@ time_t logTime(string message) {
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
 string formatTime(time_t seconds) {
-	string output=to_string(seconds%60)+"s";
+	std::string output=to_string(seconds%60)+"s";
 	seconds/=60;
 	if(seconds==0)
 		return output;
