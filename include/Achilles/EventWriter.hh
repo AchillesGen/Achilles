@@ -14,8 +14,6 @@
 #pragma GCC diagnostic pop
 #endif
 
-using namespace std;
-
 namespace achilles {
 
 class Event;
@@ -32,12 +30,13 @@ class EventWriter {
     virtual void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) = 0;
     virtual void Write(const Event &) = 0;
   protected:
-	std::shared_ptr<std::ostream> InitializeStream(string&,bool);
+    std::ostream InitializeStream(const std::string&,bool);
+    std::shared_ptr<std::ostream> InitializeStreamShared(const std::string&,bool);
 };
 
 class AchillesWriter : public EventWriter {
   public:
-    AchillesWriter(const string& filename, bool zip=true):
+    AchillesWriter(const std::string& filename, bool zip=true):
 		m_out{EventWriter::InitializeStream(filename,zip)}, toFile{true}, zipped{zip} {}
     AchillesWriter(std::ostream *out) : m_out{out} {}
     AchillesWriter(const AchillesWriter &) = default;
@@ -64,9 +63,9 @@ class AchillesWriter : public EventWriter {
     void Write(const Event &) override;
 
   private:
-	ostream* m_out;
-	bool toFile{false};
-	bool zipped{true};
+    std::ostream* m_out;
+    bool toFile{false};
+    bool zipped{true};
     size_t nEvents{0};
 };
 
