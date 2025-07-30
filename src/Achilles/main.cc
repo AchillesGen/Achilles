@@ -32,7 +32,7 @@ namespace fs = std::filesystem;
 static const std::string USAGE =
     R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...] [--logfile=<logfile_name>]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-b] [--logfile=<logfile_name>] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -44,11 +44,12 @@ static const std::string USAGE =
     Options:
       -v[v]                                 Increase verbosity level.
       -l[l]                                 Increase log verbosity
-                                            (Note: Log verbosity is never lower than total level)
+                                              (Note: Log verbosity is never lower than total level)
+      -b                                    Batch Mode (makes output more log-friendly)
       -h --help                             Show this screen.
       --version                             Show version.
-      -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
       --logfile=<logfile_name>              Change the logging output destination
+      -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
       --display-cuts                        Display the available cuts
       --display-ps                          Display the available phase spaces
       --display-ff                          Display the available form factors
@@ -57,7 +58,7 @@ static const std::string USAGE =
 )";
 
 /** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
-time_t logTime(std::string message) {
+static time_t logTime(std::string message) {
     time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     message += ctime(&time);
     spdlog::info(message);
@@ -66,7 +67,7 @@ time_t logTime(std::string message) {
 
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
-std::string formatTime(time_t seconds) {
+static std::string formatTime(time_t seconds) {
     std::string output = std::to_string(seconds % 60) + "s";
     seconds /= 60;
     if(seconds == 0) return output;
@@ -79,10 +80,10 @@ std::string formatTime(time_t seconds) {
     return std::to_string(seconds) + "d " + output;
 }
 
-void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
+void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs, bool batchMode) {
     achilles::EventGen generator(runcard, shargs);
     generator.Initialize();
-    generator.GenerateEvents();
+    generator.GenerateEvents(batchMode);
 }
 
 int main(int argc, char *argv[]) {
@@ -107,8 +108,10 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
 
-    std::string logFilePath = "achilles.log";
-    if(args["--logfile"].isString()) logFilePath = args["--logfile"].asString();
+    bool batchMode=args["-b"].asBool();
+
+    std::string logFilePath="achilles.log";
+    if(args["--logfile"].isString()) logFilePath=args["--logfile"].asString();
 
     CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
@@ -177,7 +180,7 @@ int main(int argc, char *argv[]) {
 
     std::string success = "Failed.";
     try {
-        GenerateEvents(runcard, shargs);
+        GenerateEvents(runcard, shargs, batchMode);
         success = "Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
     spdlog::info("Event Run Concluded - " + success);

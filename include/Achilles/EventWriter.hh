@@ -31,7 +31,7 @@ class EventWriter {
     virtual void Write(const Event &) = 0;
 
   protected:
-    std::ostream *InitializeStream(const std::string &, bool);
+    static std::ostream *InitializeStream(const std::string &, bool);
 };
 
 class AchillesWriter : public EventWriter {

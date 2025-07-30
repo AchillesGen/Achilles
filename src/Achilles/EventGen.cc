@@ -214,24 +214,33 @@ void achilles::EventGen::Initialize() {
     spdlog::info("Finished optimization");
 }
 
-void achilles::EventGen::GenerateEvents() {
+void achilles::EventGen::GenerateEvents(bool batchMode) {
     outputEvents = true;
 
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
     size_t statusUpdate = 1;
     size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
-                           // (would happen when events were rejected)
-    fmt::print("Generated 0 / {} events\r", nevents);
+                            // (would happen when events were rejected)
+                            
+    auto spdlog_info=[](size_t acc,size_t nEv) {
+        spdlog::info("Generated {} / {} events",acc,nEv);
+    };
+    auto fmt_print=[](size_t acc,size_t nEv) {
+        fmt::print("Generated {} / {} events\r",acc,nEv);
+    };
+    auto printFormat=batchMode?spdlog_info:fmt_print;
+
+    printFormat(0,nevents);
     while(accepted < nevents) {
         if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
-            fmt::print("Generated {} / {} events\r", accepted, nevents);
+            printFormat(accepted,nevents);
             lastUpdate = accepted;
             if(accepted >= 10 * statusUpdate) statusUpdate *= 10;
         }
         if(GenerateSingleEvent()) accepted++;
     }
-    fmt::print("Generated {} / {} events\r", accepted, nevents);
+    printFormat(accepted,nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
