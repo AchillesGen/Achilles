@@ -4,7 +4,7 @@
 #include "Achilles/Version.hh"
 #include "fmt/format.h"
 
-std::ostream* achilles::EventWriter::InitializeStream(const std::string& filename,bool zip) {
+std::ostream *achilles::EventWriter::InitializeStream(const std::string &filename, bool zip) {
 #ifdef GZIP
     if(zip) {
         std::string zipname = filename;

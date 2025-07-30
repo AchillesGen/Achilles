@@ -107,8 +107,8 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
 
-    std::string logFilePath="achilles.log";
-    if(args["--logfile"].isString()) logFilePath=args["--logfile"].asString();
+    std::string logFilePath = "achilles.log";
+    if(args["--logfile"].isString()) logFilePath = args["--logfile"].asString();
 
     CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
         success = "Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
     spdlog::info("Event Run Concluded - " + success);
-    spdlog::info("Records of this run can be found in \""+logFilePath+"\"");
+    spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
 
     time_t endTime = logTime("End Time: ");
     spdlog::info("Run Duration: " + formatTime(endTime - startTime));
