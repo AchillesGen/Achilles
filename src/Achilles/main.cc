@@ -32,7 +32,7 @@ namespace fs = std::filesystem;
 static const std::string USAGE =
     R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...] [--logfile=<logfile_name>]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -48,6 +48,7 @@ static const std::string USAGE =
       -h --help                             Show this screen.
       --version                             Show version.
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
+      --logfile=<logfile_name>              Change the logging output destination
       --display-cuts                        Display the available cuts
       --display-ps                          Display the available phase spaces
       --display-ff                          Display the available form factors
@@ -105,7 +106,11 @@ int main(int argc, char *argv[]) {
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
-    CreateLogger(verbosity, log_verbosity, 1);
+
+    std::string logFilePath="achilles.log";
+    if(args["--logfile"].isString()) logFilePath=args["--logfile"].asString();
+
+    CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
     achilles::Plugin::Manager plugin_manager;
 
@@ -176,9 +181,10 @@ int main(int argc, char *argv[]) {
         success = "Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
     spdlog::info("Event Run Concluded - " + success);
+    spdlog::info("Records of this run can be found in \""+logFilePath+"\"");
 
     time_t endTime = logTime("End Time: ");
-    spdlog::info("Process Duration: " + formatTime(endTime - startTime));
+    spdlog::info("Run Duration: " + formatTime(endTime - startTime));
 
     return 0;
 }

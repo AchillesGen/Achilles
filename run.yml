@@ -8,7 +8,6 @@ Main:
       Format: NuHepMC
       Name: achilles.hepmc
       Zipped: True
-  LogFile: achilles.log
 
 SherpaOptions: !include "data/default/SherpaOptions.yml"
 

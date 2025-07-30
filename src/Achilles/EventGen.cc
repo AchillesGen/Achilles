@@ -219,14 +219,15 @@ void achilles::EventGen::GenerateEvents() {
 
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
-    size_t statusUpdate = nevents / 100; // Print N for every 1% progress
-    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once (would
-                           // happen when events were rejected)
-    if(statusUpdate < 1000) statusUpdate = 1000; // Should print less often for small # of events
+    size_t statusUpdate = 1;
+    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
+                            // (would happen when events were rejected)
+    fmt::print("Generated 0 / {} events\r", nevents);
     while(accepted < nevents) {
         if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
             fmt::print("Generated {} / {} events\r", accepted, nevents);
             lastUpdate = accepted;
+            if(accepted >= 10*statusUpdate) statusUpdate*=10;
         }
         if(GenerateSingleEvent()) accepted++;
     }
