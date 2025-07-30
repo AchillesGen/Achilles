@@ -221,26 +221,26 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
     size_t accepted = 0;
     size_t statusUpdate = 1;
     size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
-                            // (would happen when events were rejected)
-                            
-    auto spdlog_info=[](size_t acc,size_t nEv) {
-        spdlog::info("Generated {} / {} events",acc,nEv);
-    };
-    auto fmt_print=[](size_t acc,size_t nEv) {
-        fmt::print("Generated {} / {} events\r",acc,nEv);
-    };
-    auto printFormat=batchMode?spdlog_info:fmt_print;
+                           // (would happen when events were rejected)
 
-    printFormat(0,nevents);
+    auto spdlog_info = [](size_t acc, size_t nEv) {
+        spdlog::info("Generated {} / {} events", acc, nEv);
+    };
+    auto fmt_print = [](size_t acc, size_t nEv) {
+        fmt::print("Generated {} / {} events\r", acc, nEv);
+    };
+    auto printFormat = batchMode ? spdlog_info : fmt_print;
+
+    printFormat(0, nevents);
     while(accepted < nevents) {
         if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
-            printFormat(accepted,nevents);
+            printFormat(accepted, nevents);
             lastUpdate = accepted;
             if(accepted >= 10 * statusUpdate) statusUpdate *= 10;
         }
         if(GenerateSingleEvent()) accepted++;
     }
-    printFormat(accepted,nevents);
+    printFormat(accepted, nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {

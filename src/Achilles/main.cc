@@ -80,7 +80,8 @@ static std::string formatTime(time_t seconds) {
     return std::to_string(seconds) + "d " + output;
 }
 
-void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs, bool batchMode) {
+void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs,
+                    bool batchMode) {
     achilles::EventGen generator(runcard, shargs);
     generator.Initialize();
     generator.GenerateEvents(batchMode);
@@ -108,10 +109,10 @@ int main(int argc, char *argv[]) {
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
 
-    bool batchMode=args["-b"].asBool();
+    bool batchMode = args["-b"].asBool();
 
-    std::string logFilePath="achilles.log";
-    if(args["--logfile"].isString()) logFilePath=args["--logfile"].asString();
+    std::string logFilePath = "achilles.log";
+    if(args["--logfile"].isString()) logFilePath = args["--logfile"].asString();
 
     CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
