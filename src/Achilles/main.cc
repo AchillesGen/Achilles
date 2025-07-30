@@ -55,11 +55,9 @@ static const std::string USAGE =
       --display-nuc-models                  Display the available nuclear interaction models
 )";
 
-using namespace chrono;
-
 /** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
 time_t logTime(std::string message) {
-	time_t time=system_clock::to_time_t(system_clock::now());
+	time_t time=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 	message+=ctime(&time);
 	spdlog::info(message);
 	return time;
@@ -67,31 +65,26 @@ time_t logTime(std::string message) {
 
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
-string formatTime(time_t seconds) {
-	std::string output=to_string(seconds%60)+"s";
+std::string formatTime(time_t seconds) {
+	std::string output=std::to_string(seconds%60)+"s";
 	seconds/=60;
 	if(seconds==0)
 		return output;
-	output=to_string(seconds%60)+"m "+output;
+	output=std::to_string(seconds%60)+"m "+output;
 	seconds/=60;
 	if(seconds==0)
 		return output;
-	output=to_string(seconds%24)+"h "+output;
+	output=std::to_string(seconds%24)+"h "+output;
 	seconds/=24;
 	if(seconds==0)
 		return output;
-	return to_string(seconds)+"d "+output;
+	return std::to_string(seconds)+"d "+output;
 }
 
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
-	time_t startTime=logTime("Start Time: ");
-
 	achilles::EventGen generator(runcard, shargs);
 	generator.Initialize();
 	generator.GenerateEvents();
-
-	time_t endTime=logTime("End Time: ");
-	spdlog::info("Process Duration: "+formatTime(endTime-startTime));
 }
 
 int main(int argc, char *argv[]) {
@@ -155,7 +148,7 @@ int main(int argc, char *argv[]) {
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) {
         runcard = args["<input>"].asString();
-		if(!fs.exists(runcard)) {
+		if(!fs::exists(runcard)) {
 			spdlog::error("Achilles: Could not find \""+runcard+"\".");
 			return 1;
 		}
@@ -172,18 +165,23 @@ int main(int argc, char *argv[]) {
                          fs::current_path());
             }
             return 1;
-        }
+        } 
     }
 
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
-	bool success=false;
+	time_t startTime=logTime("Start Time: ");
+
+	std::string success="Failed.";
     try {
         GenerateEvents(runcard, shargs);
-		success=true;
+		success="Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
-	spdlog::info("Event Run Concluded - "+(success?"Success!":"Failed."));
+	spdlog::info("Event Run Concluded - "+success);
+
+	time_t endTime=logTime("End Time: ");
+	spdlog::info("Process Duration: "+formatTime(endTime-startTime));
 
     return 0;
 }

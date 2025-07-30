@@ -30,8 +30,7 @@ class EventWriter {
     virtual void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) = 0;
     virtual void Write(const Event &) = 0;
   protected:
-    std::ostream InitializeStream(const std::string&,bool);
-    std::shared_ptr<std::ostream> InitializeStreamShared(const std::string&,bool);
+    std::ostream* InitializeStream(const std::string&,bool);
 };
 
 class AchillesWriter : public EventWriter {

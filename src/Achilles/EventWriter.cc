@@ -4,26 +4,15 @@
 #include "Achilles/Version.hh"
 #include "fmt/format.h"
 
-std::ostream* EventWriter::InitializeStream(const std::string& filename,bool zip) {
+std::ostream* achilles::EventWriter::InitializeStream(const std::string& filename,bool zip) {
 #ifdef GZIP
     if(zip) {
         std::string zipname = filename;
         if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        return &ogzstream(zipname.c_str());
+        return new ogzstream(zipname.c_str());
     }
 #endif
-    return &std::ofstream(filename);
-}
-
-std::shared_ptr<std::ostream> EventWriter::InitializeStreamShared(const std::string& filename,bool zip) {
-#ifdef GZIP
-    if(zip) {
-        std::string zipname = filename;
-        if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        return std::make_shared<ogzstream>(zipname.c_str());
-    }
-#endif
-    return std::make_shared<std::ofstream>(filename);
+    return new std::ofstream(filename);
 }
 
 void achilles::AchillesWriter::WriteHeader(const std::string &filename,

@@ -18,9 +18,9 @@ namespace achilles {
 
 class HepMC3Writer : public EventWriter {
   public:
-    HepMC3Writer(const std::string& filename, bool zipped = true) {
-        file=HepMC3::WriterAscii(EventWriter::InitializeStreamShared(filename, zipped));
-    }
+    HepMC3Writer(const std::string& filename, bool zipped = true):
+      file{HepMC3::WriterAscii(*EventWriter::InitializeStream(filename, zipped))}
+      {}
     ~HepMC3Writer() override = default;
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;

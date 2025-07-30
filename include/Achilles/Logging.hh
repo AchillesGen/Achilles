@@ -31,7 +31,7 @@ inline void SignalHandler(int signal) {
     exit(-1);
 }
 
-inline void CreateLogger(int level, int log_level, int flush_time, string destination="achilles.log") {
+inline void CreateLogger(int level, int log_level, int flush_time, std::string destination="achilles.log") {
     auto slevel = static_cast<spdlog::level::level_enum>(level);
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(slevel);
