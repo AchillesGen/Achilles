@@ -16,8 +16,7 @@ class ProcessGroup;
 
 class NuHepMCWriter : public EventWriter {
   public:
-  	NuHepMCWriter(const string& filename, bool):
-		  outfilename{filename} {}
+    NuHepMCWriter(const string &filename, bool) : outfilename{filename} {}
     NuHepMCWriter(const std::string &filename, bool zipped = true);
     ~NuHepMCWriter() override = default;
 

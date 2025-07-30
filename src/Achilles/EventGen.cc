@@ -41,10 +41,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
-	
-	/** If runcard specifies Main/LogFile, output all subsequent logs to this file.
-	*   Continue outputting to std::cout either way. */
-	//if(config.Exists("Main/LogFile")) { (change logger) }
+
+    /** If runcard specifies Main/LogFile, output all subsequent logs to this file.
+     *   Continue outputting to std::cout either way. */
+    // if(config.Exists("Main/LogFile")) { (change logger) }
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
@@ -61,9 +61,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
-	runCascade=config.GetAs<bool>("Cascade/Run");
-	spdlog::debug("Cascade mode: {}", runCascade);
-	cascade=runCascade?(std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))):nullptr;
+    runCascade = config.GetAs<bool>("Cascade/Run");
+    spdlog::debug("Cascade mode: {}", runCascade);
+    cascade = runCascade ? (std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))) : nullptr;
 
     // Initialize decays
     runDecays = config.GetAs<bool>("Main/RunDecays");
@@ -145,7 +145,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     }
 
     // Setup outputs
-    bool zipped=config.Exists("Main/Output/Zipped")?config.GetAs<bool>("Main/Output/Zipped"):true;
+    bool zipped =
+        config.Exists("Main/Output/Zipped") ? config.GetAs<bool>("Main/Output/Zipped") : true;
     auto format = config.GetAs<std::string>("Main/Output/Format");
     auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);
@@ -214,22 +215,22 @@ void achilles::EventGen::Initialize() {
 }
 
 void achilles::EventGen::GenerateEvents() {
-	outputEvents = true;
+    outputEvents = true;
 
-	const auto nevents = config["Main/NEvents"].as<size_t>();
-	size_t accepted = 0;
-	size_t statusUpdate = nevents/100; //Print N for every 1% progress
-	size_t lastUpdate=0; //Prevents the same # of events from being logged more than once (would happen when events were rejected)
-	if(statusUpdate<1000)
-		statusUpdate=1000; //Should print less often for small # of events
-	while(accepted < nevents) {
-		if(accepted % statusUpdate == 0 && accepted>lastUpdate) {
-			fmt::print("Generated {} / {} events\r", accepted, nevents);
-			lastUpdate=accepted;
-		}
-		if(GenerateSingleEvent()) accepted++;
-	}
-	fmt::print("Generated {} / {} events\r", accepted, nevents);
+    const auto nevents = config["Main/NEvents"].as<size_t>();
+    size_t accepted = 0;
+    size_t statusUpdate = nevents / 100; // Print N for every 1% progress
+    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once (would
+                           // happen when events were rejected)
+    if(statusUpdate < 1000) statusUpdate = 1000; // Should print less often for small # of events
+    while(accepted < nevents) {
+        if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
+            fmt::print("Generated {} / {} events\r", accepted, nevents);
+            lastUpdate = accepted;
+        }
+        if(GenerateSingleEvent()) accepted++;
+    }
+    fmt::print("Generated {} / {} events\r", accepted, nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {

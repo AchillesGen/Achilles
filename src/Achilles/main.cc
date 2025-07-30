@@ -20,10 +20,10 @@
 
 #include "docopt.h"
 
-#include <dlfcn.h>
-#include <filesystem>
 #include <chrono>
 #include <ctime>
+#include <dlfcn.h>
+#include <filesystem>
 
 using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
@@ -57,34 +57,31 @@ static const std::string USAGE =
 
 /** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
 time_t logTime(std::string message) {
-	time_t time=std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-	message+=ctime(&time);
-	spdlog::info(message);
-	return time;
+    time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    message += ctime(&time);
+    spdlog::info(message);
+    return time;
 }
 
 /** Puts a potentially-large number of seconds into a more human-readable form
  *  There might've been a library for this but I coded it myself anyway -Hayden */
 std::string formatTime(time_t seconds) {
-	std::string output=std::to_string(seconds%60)+"s";
-	seconds/=60;
-	if(seconds==0)
-		return output;
-	output=std::to_string(seconds%60)+"m "+output;
-	seconds/=60;
-	if(seconds==0)
-		return output;
-	output=std::to_string(seconds%24)+"h "+output;
-	seconds/=24;
-	if(seconds==0)
-		return output;
-	return std::to_string(seconds)+"d "+output;
+    std::string output = std::to_string(seconds % 60) + "s";
+    seconds /= 60;
+    if(seconds == 0) return output;
+    output = std::to_string(seconds % 60) + "m " + output;
+    seconds /= 60;
+    if(seconds == 0) return output;
+    output = std::to_string(seconds % 24) + "h " + output;
+    seconds /= 24;
+    if(seconds == 0) return output;
+    return std::to_string(seconds) + "d " + output;
 }
 
 void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
-	achilles::EventGen generator(runcard, shargs);
-	generator.Initialize();
-	generator.GenerateEvents();
+    achilles::EventGen generator(runcard, shargs);
+    generator.Initialize();
+    generator.GenerateEvents();
 }
 
 int main(int argc, char *argv[]) {
@@ -148,11 +145,11 @@ int main(int argc, char *argv[]) {
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) {
         runcard = args["<input>"].asString();
-		if(!fs::exists(runcard)) {
-			spdlog::error("Achilles: Could not find \""+runcard+"\".");
-			return 1;
-		}
-	} else {
+        if(!fs::exists(runcard)) {
+            spdlog::error("Achilles: Could not find \"" + runcard + "\".");
+            return 1;
+        }
+    } else {
         // Ensure file exists, otherwise copy template file to current location
         if(!fs::exists(runcard)) {
             spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
@@ -165,23 +162,23 @@ int main(int argc, char *argv[]) {
                          fs::current_path());
             }
             return 1;
-        } 
+        }
     }
 
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
-	time_t startTime=logTime("Start Time: ");
+    time_t startTime = logTime("Start Time: ");
 
-	std::string success="Failed.";
+    std::string success = "Failed.";
     try {
         GenerateEvents(runcard, shargs);
-		success="Success!";
+        success = "Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
-	spdlog::info("Event Run Concluded - "+success);
+    spdlog::info("Event Run Concluded - " + success);
 
-	time_t endTime=logTime("End Time: ");
-	spdlog::info("Process Duration: "+formatTime(endTime-startTime));
+    time_t endTime = logTime("End Time: ");
+    spdlog::info("Process Duration: " + formatTime(endTime - startTime));
 
     return 0;
 }
