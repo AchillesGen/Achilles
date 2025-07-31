@@ -42,6 +42,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // working in SHERPA.
     runDecays = false;
 
+    /** If runcard specifies Main/LogFile, output all subsequent logs to this file.
+     *   Continue outputting to std::cout either way. */
+    // if(config.Exists("Main/LogFile")) { (change logger) }
+
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -57,12 +61,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config.GetAs<bool>("Cascade/Run"));
-    if(config.GetAs<bool>("Cascade/Run")) {
-        cascade = std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"));
-    } else {
-        cascade = nullptr;
-    }
+    runCascade = config.GetAs<bool>("Cascade/Run");
+    spdlog::debug("Cascade mode: {}", runCascade);
+    cascade = runCascade ? (std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))) : nullptr;
 
     // Initialize decays
     runDecays = config.GetAs<bool>("Main/RunDecays");
@@ -144,8 +145,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     }
 
     // Setup outputs
-    bool zipped = true;
-    if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
+    bool zipped =
+        config.Exists("Main/Output/Zipped") ? config.GetAs<bool>("Main/Output/Zipped") : true;
     auto format = config.GetAs<std::string>("Main/Output/Format");
     auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);
@@ -213,19 +214,33 @@ void achilles::EventGen::Initialize() {
     spdlog::info("Finished optimization");
 }
 
-void achilles::EventGen::GenerateEvents() {
+void achilles::EventGen::GenerateEvents(bool batchMode) {
     outputEvents = true;
-    runCascade = cascade != nullptr;
 
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
+    size_t statusUpdate = 1;
+    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
+                           // (would happen when events were rejected)
+
+    auto spdlog_info = [](size_t acc, size_t nEv) {
+        spdlog::info("Generated {} / {} events", acc, nEv);
+    };
+    auto fmt_print = [](size_t acc, size_t nEv) {
+        fmt::print("Generated {} / {} events\r", acc, nEv);
+    };
+    auto printFormat = batchMode ? spdlog_info : fmt_print;
+
+    printFormat(0, nevents);
     while(accepted < nevents) {
-        static constexpr size_t statusUpdate = 1000;
-        if(accepted % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", accepted, nevents);
+        if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
+            printFormat(accepted, nevents);
+            lastUpdate = accepted;
+            if(accepted >= 10 * statusUpdate) statusUpdate *= 10;
         }
         if(GenerateSingleEvent()) accepted++;
     }
+    printFormat(accepted, nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
