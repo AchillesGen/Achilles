@@ -22,6 +22,7 @@ using achilles::Coherent;
 using achilles::HyperonSpectral;
 using achilles::NuclearModel;
 using achilles::QESpectral;
+using achilles::DeepInelastic;
 using Type = achilles::FormFactorInfo::Type;
 
 NuclearModel::NuclearModel(const YAML::Node &config,
@@ -779,4 +780,47 @@ std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
     else
         is_free_neutron = true;
     return Coherent::Name();
+}
+
+std::string DeepInelastic::PhaseSpace(PID) const {
+    return PSName();
+}
+
+achilles::NuclearModel::Currents DeepInelastic::CalcCurrents(const std::vector<Particle> &had_in,
+                                                        const std::vector<Particle> &had_out,
+                                                        const std::vector<Particle> &,
+                                                        const FourVector &qVec,
+                                                        const FFInfoMap &ff) const {
+    auto pIn = had_in[0].Momentum();
+    auto pOut = had_out[0].Momentum();
+    auto ffVals = EvalFormFactor(-qVec.M2());
+
+    // Calculate coherent contributions
+    Currents results;
+    for(const auto &formFactor : ff) {
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::trace("fcoh = {}", ffVal[Type::FCoh]);
+
+        Current current;
+        VCurrent subcur;
+        for(size_t i = 0; i < subcur.size(); ++i) {
+            subcur[i] = (pIn[i] + pOut[i]) * ffVal[Type::FCoh];
+        }
+        current.push_back(subcur);
+        results[formFactor.first] = current;
+        spdlog::trace("HadronicCurrent[{}] = [{}, {}, {}, {}]", formFactor.first, subcur[0],
+                      subcur[1], subcur[2], subcur[3]);
+    }
+
+    return results;
+}
+
+double DeepInelastic::InitialStateWeight(const std::vector<Particle>&,
+                                      const std::vector<Particle>&, size_t,
+                                      size_t) const {
+    return 1;
+}
+
+std::unique_ptr<NuclearModel> DeepInelastic::Construct(const YAML::Node&) {
+    return std::make_unique<DeepInelastic>();
 }

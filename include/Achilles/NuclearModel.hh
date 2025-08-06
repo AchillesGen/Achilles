@@ -239,6 +239,29 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     mutable bool is_free_neutron{false};
 };
 
+class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic> {
+  public:
+	DeepInelastic()
+		{ spdlog::info("DIS Constructor Called"); }
+
+    NuclearMode Mode() const override { return NuclearMode::DeepInelastic; }
+    size_t NSpins() const override { return 0; } //TODO
+    std::string GetName() const override { return DeepInelastic::Name(); }
+    std::string InspireHEP() const override { return ""; }
+    std::string PSName() const override { return "DeepInelastic"; } //TODO find out what this means
+
+    std::string PhaseSpace(PID) const override;
+    Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
+                          const std::vector<Particle> &, const FourVector &,
+                          const FFInfoMap &) const override;
+    double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
+                              size_t) const override;
+
+    // Required factory methods
+    static std::unique_ptr<NuclearModel> Construct(const YAML::Node&);
+    static std::string Name() { return "DeepInelastic"; }
+};
+
 } // namespace achilles
 
 #endif
