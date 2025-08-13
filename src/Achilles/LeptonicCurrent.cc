@@ -94,13 +94,18 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         const std::complex<double> coupl1 = (ee * i / (4 * sin2w * cw)) * (0.5 - 2 * sin2w);
         const std::complex<double> coupl2 = (ee * i / (4 * sw * cw));
         const std::complex<double> coupl3 = ee * i / (cw * sw * 2);
-        results[{PID::proton(), pid}] = {
-            {FormFactorInfo::Type::F1p, coupl1},    {FormFactorInfo::Type::F1n, -coupl2},
-            {FormFactorInfo::Type::F2p, coupl1},    {FormFactorInfo::Type::F2n, -coupl2},
-            {FormFactorInfo::Type::FA, coupl2},     {FormFactorInfo::Type::FResV, coupl3},
-            {FormFactorInfo::Type::FResA, coupl3},  {FormFactorInfo::Type::FPiEM, (1 - 2*sin2w)*coupl3},
-            {FormFactorInfo::Type::FMecV3, (1 - 2*sin2w)*coupl3}, {FormFactorInfo::Type::FMecV4, (1 - 2*sin2w)*coupl3},
-            {FormFactorInfo::Type::FMecV5, (1 - 2*sin2w)*coupl3}, {FormFactorInfo::Type::FMecA5, coupl3}};
+        results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
+                                         {FormFactorInfo::Type::F1n, -coupl2},
+                                         {FormFactorInfo::Type::F2p, coupl1},
+                                         {FormFactorInfo::Type::F2n, -coupl2},
+                                         {FormFactorInfo::Type::FA, coupl2},
+                                         {FormFactorInfo::Type::FResV, coupl3},
+                                         {FormFactorInfo::Type::FResA, coupl3},
+                                         {FormFactorInfo::Type::FPiEM, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV3, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV4, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV5, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecA5, coupl3}};
         results[{PID::neutron(), pid}] = {
             {FormFactorInfo::Type::F1n, coupl1},    {FormFactorInfo::Type::F1p, -coupl2},
             {FormFactorInfo::Type::F2n, coupl1},    {FormFactorInfo::Type::F2p, -coupl2},
