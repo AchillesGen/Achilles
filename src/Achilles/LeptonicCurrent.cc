@@ -98,9 +98,9 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
             {FormFactorInfo::Type::F1p, coupl1},    {FormFactorInfo::Type::F1n, -coupl2},
             {FormFactorInfo::Type::F2p, coupl1},    {FormFactorInfo::Type::F2n, -coupl2},
             {FormFactorInfo::Type::FA, coupl2},     {FormFactorInfo::Type::FResV, coupl3},
-            {FormFactorInfo::Type::FResA, coupl3},  {FormFactorInfo::Type::FPiEM, coupl3},
-            {FormFactorInfo::Type::FMecV3, coupl3}, {FormFactorInfo::Type::FMecV4, coupl3},
-            {FormFactorInfo::Type::FMecV5, coupl3}, {FormFactorInfo::Type::FMecA5, coupl3}};
+            {FormFactorInfo::Type::FResA, coupl3},  {FormFactorInfo::Type::FPiEM, (1 - 2*sin2w)*coupl3},
+            {FormFactorInfo::Type::FMecV3, (1 - 2*sin2w)*coupl3}, {FormFactorInfo::Type::FMecV4, (1 - 2*sin2w)*coupl3},
+            {FormFactorInfo::Type::FMecV5, (1 - 2*sin2w)*coupl3}, {FormFactorInfo::Type::FMecA5, coupl3}};
         results[{PID::neutron(), pid}] = {
             {FormFactorInfo::Type::F1n, coupl1},    {FormFactorInfo::Type::F1p, -coupl2},
             {FormFactorInfo::Type::F2n, coupl1},    {FormFactorInfo::Type::F2p, -coupl2},
