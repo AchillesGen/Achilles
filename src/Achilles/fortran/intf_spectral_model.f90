@@ -146,7 +146,14 @@ contains
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
-        logical :: has_axial
+        logical :: has_axial, NC
+
+        NC = .false.
+
+        !NC vs. CC
+        if(ff%lookup("FMecA5").ne.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
+            NC = .true.
+        endif
 
         ! Differentiate EM from CC & NC
         if(ff%lookup("FMecA5").eq.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
@@ -164,7 +171,7 @@ contains
         ffa(1)=ff%lookup("FA")
         ffa(2)=ff%lookup("FAP")
 
-        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial,NC)
         call define_spinors()
 
         J_mu = (0.0d0,0.0d0)

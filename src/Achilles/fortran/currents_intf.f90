@@ -27,6 +27,7 @@ module dirac_matrices_intf
     real*8, private, save :: xmd,xmn,xmpi,xmrho,w
     type(interp1d), private, save:: interp
     real*8, private, allocatable :: pdel(:),pot_del(:)
+    logical, private, save :: NC
 contains
 
 subroutine dirac_matrices_in(xmd_in,xmn_in,xmpi_in,xmrho_in,fpind_in,fstar_in,fpinn2_in,ga_in,lpi_in,lpind_in)
@@ -170,12 +171,14 @@ subroutine define_spinors()
     return
 end subroutine
 
-subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in)
+subroutine current_init(p1_in,p2_in,pp1_in,pp2_in,q_in,nuc1_pid_in,nuc1_pid_out,nuc2_pid_in,has_axial_in,NC_in)
     implicit none
     integer*4 :: i
     integer*8 :: nuc1_pid_in,nuc1_pid_out,nuc2_pid_in
     real*8 ::  p1_in(4),p2_in(4),pp1_in(4),pp2_in(4),q_in(4)
-    logical :: has_axial_in
+    logical :: has_axial_in,NC_in
+
+    NC = NC_in
 
     ! 1 if (anti)neutrinos 0 else
     if(has_axial_in .eqv. .false.) then
@@ -580,7 +583,7 @@ subroutine twobody_del_curr_matrix_el(J_mu)
     enddo
    enddo 
 
-   if(ax.eq.0) then
+   if(ax.eq.0.OR.NC.eqv..true.) then
     cta = IDeltaA_EM(t1,t2,t1p,t2)
     ctb = IDeltaB_EM(t1,t2,t1p,t2)
     ctc = IDeltaC_EM(t1,t2,t1p,t2)
@@ -635,7 +638,7 @@ subroutine twobody_del_curr_matrix_el(J_mu)
         enddo
        enddo
 
-       if(ax.eq.0) then
+       if(ax.eq.0.OR.NC.eqv..true.) then
         cta = IDeltaA_EM(t1,t2,t2,t1p)
         ctb = IDeltaB_EM(t1,t2,t2,t1p)
         ctc = IDeltaC_EM(t1,t2,t2,t1p)
@@ -709,7 +712,7 @@ subroutine twobody_pi_curr_matrix_el(J_mu)
         enddo
        enddo
 
-       if(ax.eq.0) then
+       if(ax.eq.0.OR.NC.eqv..true.) then
            ctf = Ivz(t1,t2,t1p,t2) 
            cts = Ivz(t1,t2,t1p,t2) 
            ctp = Ivz(t1,t2,t1p,t2)
@@ -757,7 +760,7 @@ subroutine twobody_pi_curr_matrix_el(J_mu)
        enddo
 
 
-       if(ax.eq.0) then
+       if(ax.eq.0.OR.NC.eqv..true.) then
            ctf = Ivz(t1,t2,t2,t1p) 
            cts = Ivz(t1,t2,t2,t1p) 
            ctp = Ivz(t1,t2,t2,t1p)
