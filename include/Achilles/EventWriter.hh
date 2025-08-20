@@ -46,14 +46,11 @@ class AchillesWriter : public EventWriter {
     ~AchillesWriter() override {
         if(toFile) {
 #ifdef GZIP
-            if(zipped) {
+            if(zipped)
                 dynamic_cast<ogzstream *>(m_out)->close();
-            } else {
-                dynamic_cast<std::ofstream *>(m_out)->close();
-            }
-#else
-            dynamic_cast<std::ofstream *>(m_out)->close();
+            else
 #endif
+                dynamic_cast<std::ofstream *>(m_out)->close();
             delete m_out;
         }
         m_out = nullptr;

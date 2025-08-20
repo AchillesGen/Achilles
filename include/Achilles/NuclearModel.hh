@@ -241,14 +241,13 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
 
 class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic> {
   public:
-	DeepInelastic()
-		{ spdlog::info("DIS Constructor Called"); }
+	DeepInelastic(const YAML::Node&,const YAML::Node&,FormFactorBuilder&);
 
     NuclearMode Mode() const override { return NuclearMode::DeepInelastic; }
-    size_t NSpins() const override { return 0; } //TODO
+    size_t NSpins() const override { return 4; }
     std::string GetName() const override { return DeepInelastic::Name(); }
     std::string InspireHEP() const override { return ""; }
-    std::string PSName() const override { return "DeepInelastic"; } //TODO find out what this means
+    std::string PSName() const override { return "OneBodySpectral"; } //TODO find out what this means
 
     std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
@@ -260,6 +259,16 @@ class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node&);
     static std::string Name() { return "DeepInelastic"; }
+
+  private:
+    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                            const FourVector &, const FormFactorMap &) const;
+
+    const WardGauge m_ward;
+    SpectralFunction spectral_proton, spectral_neutron;
+    // TODO: This is a code smell. Should figure out a better solution
+    mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
 };
 
 } // namespace achilles

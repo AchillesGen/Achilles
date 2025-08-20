@@ -244,87 +244,87 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
-    // Select the process group and generate an event
-    auto &group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
-    auto &&event = group.GenerateEvent();
-    event.Weight() *= m_max_weight;
-    if(event.Weight() == 0) {
-        writer->Write(event);
-        return false;
-    }
-    if(spdlog::get_level() == spdlog::level::trace) event.Display();
+	// Select the process group and generate an event
+	ProcessGroup& group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
+	auto &&event = group.GenerateEvent();
+	event.Weight() *= m_max_weight;
+	if(event.Weight() == 0) {
+	    writer->Write(event);
+	    return false;
+	}
+	if(spdlog::get_level() == spdlog::level::trace) event.Display();
 
-    auto init_nuc = group.GetNucleus()->InitParticle();
-    std::vector<Particle> init_parts;
-    for(const auto &nucleon : event.Hadrons()) {
-        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
-    }
-    // TODO: Handle multiple positions from MEC
-    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
-                              EventHistory::StatusCode::target);
-    // Setup beam in history
-    auto init_lep = event.Leptons()[0];
-    auto init_beam = init_lep;
-    init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
-    event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
+	auto init_nuc = group.GetNucleus()->InitParticle();
+	std::vector<Particle> init_parts;
+	for(const auto &nucleon : event.Hadrons()) {
+	    if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
+	}
+	// TODO: Handle multiple positions from MEC
+	event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
+	                          EventHistory::StatusCode::target);
+	// Setup beam in history
+	auto init_lep = event.Leptons()[0];
+	auto init_beam = init_lep;
+	init_beam.Status() = ParticleStatus::beam;
+	const double max_energy = beam->MaxEnergy();
+	init_beam.Momentum() = {max_energy, 0, 0, max_energy};
+	event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
-    // TODO: Figure out how to best handle tracking this with the cascade and decays
-    std::vector<Particle> primary_out, propagating;
-    for(const auto &part : event.Particles()) {
-        if(part.IsFinal()) primary_out.push_back(part);
-        if(part.IsPropagating()) {
-            primary_out.push_back(part);
-            propagating.push_back(part);
-        }
-    }
-    init_parts.push_back(init_lep);
-    event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
-                              EventHistory::StatusCode::primary);
+	// TODO: Figure out how to best handle tracking this with the cascade and decays
+	std::vector<Particle> primary_out, propagating;
+	for(const auto &part : event.Particles()) {
+	    if(part.IsFinal()) primary_out.push_back(part);
+	    if(part.IsPropagating()) {
+	        primary_out.push_back(part);
+	        propagating.push_back(part);
+	    }
+	}
+	init_parts.push_back(init_lep);
+	event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
+	                          EventHistory::StatusCode::primary);
 
-    // TODO: Determine if cascade or Sherpa Decays go first
-    // Cascade the nucleus, with possible re-runs in case of rare errors
-    size_t ntrials = 10;
-    if(runCascade) {
-        spdlog::debug("Runnning cascade");
-        for(size_t itrial = 1; itrial <= ntrials; itrial++) {
-            try {
-                auto tmp_event = event;
-                cascade->Evolve(tmp_event, group.GetNucleus());
-                event = tmp_event;
-                spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
-                break;
-            } catch(const AchillesCascadeError &e) {
-                // Handle rare (~1:1e7) failures from threshold mismatches.
-                spdlog::trace("Skipping AchillesCascadeError");
-                continue;
-            }
-            throw AchillesCascadeError("Cascade trials limit reached.");
-        }
-#ifdef ACHILLES_EVENT_DETAILS
-        spdlog::trace("Hadrons (Post Cascade):");
-        size_t idx = 0;
-        for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
-#endif
-    } else {
-        for(auto &nucleon : event.Hadrons()) {
-            if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::final_state;
-            }
-        }
-    }
+	// TODO: Determine if cascade or Sherpa Decays go first
+	// Cascade the nucleus, with possible re-runs in case of rare errors
+	size_t ntrials = 10;
+	if(runCascade) {
+	    spdlog::debug("Runnning cascade");
+	    for(size_t itrial = 1; itrial <= ntrials; itrial++) {
+	        try {
+	            auto tmp_event = event;
+	            cascade->Evolve(tmp_event, group.GetNucleus());
+	            event = tmp_event;
+	            spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
+	            break;
+	        } catch(const AchillesCascadeError &e) {
+	            // Handle rare (~1:1e7) failures from threshold mismatches.
+	            spdlog::trace("Skipping AchillesCascadeError");
+	            continue;
+	        }
+	        throw AchillesCascadeError("Cascade trials limit reached.");
+	    }
+	#ifdef ACHILLES_EVENT_DETAILS
+	    spdlog::trace("Hadrons (Post Cascade):");
+	    size_t idx = 0;
+	    for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+	#endif
+	} else {
+	    for(auto &nucleon : event.Hadrons()) {
+	        if(nucleon.Status() == ParticleStatus::propagating) {
+	            nucleon.Status() = ParticleStatus::final_state;
+	        }
+	    }
+	}
 
-    // Update particle statuses in history to account for after the cascade
-    event.History().UpdateStatuses(event.Hadrons());
+	// Update particle statuses in history to account for after the cascade
+	event.History().UpdateStatuses(event.Hadrons());
 
-#ifdef ACHILLES_SHERPA_INTERFACE
-    // Running Sherpa interface if requested
-    if(runDecays) { p_sherpa->GenerateEvent(event); }
-#endif
+	#ifdef ACHILLES_SHERPA_INTERFACE
+	// Running Sherpa interface if requested
+	if(runDecays) { p_sherpa->GenerateEvent(event); }
+	#endif
 
-    writer->Write(event);
-    return true;
+	writer->Write(event);
+	return true;
 }
 
 bool achilles::EventGen::MakeCuts(Event &event) {

@@ -230,11 +230,11 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
 
 // TODO: Rewrite to match process grouping
 std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo &info) const {
-    // Check for charge conservation
+    // Check for charge conservation; "charge" denotes the CHANGE in charge on the lepton
     const auto charge = info.LeptonicCharge();
-    spdlog::debug("Charge = {}", charge);
+    spdlog::debug("Change in Lepton Charge = {}", charge);
     std::vector<ProcessInfo> results;
-    auto local = info;
+    ProcessInfo local = info;
 
     switch(Mode()) {
     case NuclearMode::None:
@@ -245,8 +245,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::Quasielastic:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -270,8 +270,7 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
     case NuclearMode::Resonance:
         if(std::abs(charge) > 1)
             throw std::runtime_error(
-                fmt::format("{}}: Requires |charge| < 2, but found |charge| {}", ToString(Mode()),
-                            std::abs(charge)));
+                fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -305,8 +304,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::MesonExchangeCurrent:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format("{}: Requires |charge| < 2, but found |charge| {}",
-                                                 ToString(Mode()), std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -343,8 +342,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         return results;
     case NuclearMode::Interference_QE_MEC:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Interference: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -383,8 +382,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::Hyperon:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Hyperon: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -403,9 +402,71 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
         return results;
 
+	case NuclearMode::DeepInelastic:
+		if(std::abs(charge) > 1)
+			throw std::runtime_error(
+  				fmt::format("{}: Requires |charge| < 2, but found charge {}", ToString(Mode()),charge));
+
+		switch(charge) {
+		case -1: // Final state has less charge than initial
+			// Lepton interacts w/ single d-type, converts it to u-type
+
+			// neutron -> u d (u-type)
+			local.m_hadronic = {{PID::neutron()}, {PID::up(),PID::down(),PID::up()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::neutron()}, {PID::up(),PID::down(),PID::charm()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::neutron()}, {PID::up(),PID::down(),PID::top()}};
+			results.push_back(local);
+
+			//proton -> u u (u-type)
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::up(),PID::up()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::up(),PID::charm()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::up(),PID::top()}};
+			results.push_back(local);
+
+			//TODO - Add processes from lowest-order quark sea scattering
+
+			break;
+
+		case 0: // Same charge in inital and final
+
+			// At tree-level, no quark flavor-changing can occur
+			local.m_hadronic = {{PID::neutron()}, {PID::up(),PID::down(),PID::down()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::up(),PID::down()}};
+			results.push_back(local);
+
+			break;
+			
+		case 1: // Final state has more charge than initial
+			// Lepton interacts w/ single u-type, converts it to d-type
+
+			// proton -> u d (d-type)
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::down(),PID::down()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::down(),PID::strange()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::proton()}, {PID::up(),PID::down(),PID::bottom()}};
+			results.push_back(local);
+
+			//neutron -> d d (d-type)
+			local.m_hadronic = {{PID::neutron()}, {PID::down(),PID::down(),PID::down()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::neutron()}, {PID::down(),PID::down(),PID::strange()}};
+			results.push_back(local);
+			local.m_hadronic = {{PID::neutron()}, {PID::down(),PID::down(),PID::bottom()}};
+			results.push_back(local);
+
+			break;
+		}
+
+        return results;
+
     // TODO: Implement remaining cases
     case NuclearMode::ShallowInelastic:
-    case NuclearMode::DeepInelastic:
         throw std::runtime_error(fmt::format(
             "NuclearModel: Allowed states for {} not implemented yet", ToString(Mode())));
     }
@@ -424,11 +485,11 @@ size_t NuclearModel::NSpins() const {
     case NuclearMode::Interference_QE_MEC:
     case NuclearMode::Resonance:
     case NuclearMode::Hyperon:
+    case NuclearMode::DeepInelastic:
         return 4;
     case NuclearMode::MesonExchangeCurrent:
         return 16;
     case NuclearMode::ShallowInelastic:
-    case NuclearMode::DeepInelastic:
         throw std::runtime_error(
             fmt::format("NuclearModel: NSpins for {} not implemented yet", ToString(Mode())));
     }
@@ -782,45 +843,124 @@ std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
     return Coherent::Name();
 }
 
-std::string DeepInelastic::PhaseSpace(PID) const {
-    return PSName();
+
+
+DeepInelastic::DeepInelastic(const YAML::Node& config, const YAML::Node& form_factor,
+		FormFactorBuilder& builder = FormFactorBuilder::Instance()):
+			NuclearModel(form_factor, builder),
+			m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())},
+			spectral_proton{config["NuclearModel"]["SpectralP"].as<std::string>()},
+			spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {
+	spdlog::trace("DIS Nuclear Model instantiated.");
+}
+
+std::string DeepInelastic::PhaseSpace(PID nuc_id) const {
+    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
+    if(nuc_id == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
+    return Coherent::Name();
 }
 
 achilles::NuclearModel::Currents DeepInelastic::CalcCurrents(const std::vector<Particle> &had_in,
                                                         const std::vector<Particle> &had_out,
                                                         const std::vector<Particle> &,
-                                                        const FourVector &qVec,
+                                                        const FourVector &q,
                                                         const FFInfoMap &ff) const {
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
+
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
-    auto ffVals = EvalFormFactor(-qVec.M2());
+    auto qVec = q;
+    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
+    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
+    auto omega = qVec.E();
+    qVec.E() = qVec.E() + pIn.E() - free_energy;
 
-    // Calculate coherent contributions
     Currents results;
+
+    // Setup spinors
+    pIn.E() = free_energy;
+    std::array<Spinor, 2> ubar, u;
+    ubar[0] = UBarSpinor(-1, pOut);
+    ubar[1] = UBarSpinor(1, pOut);
+    u[0] = USpinor(-1, -pIn);
+    u[1] = USpinor(1, -pIn);
+
+    // Calculate nucleon contributions
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        spdlog::trace("fcoh = {}", ffVal[Type::FCoh]);
-
-        Current current;
-        VCurrent subcur;
-        for(size_t i = 0; i < subcur.size(); ++i) {
-            subcur[i] = (pIn[i] + pOut[i]) * ffVal[Type::FCoh];
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
+                      ffVal[Type::FA]);
+        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        for(auto &subcur : current) {
+            // Correct the Ward identity
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, q, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, q, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, q);
+                break;
+            }
         }
-        current.push_back(subcur);
         results[formFactor.first] = current;
-        spdlog::trace("HadronicCurrent[{}] = [{}, {}, {}, {}]", formFactor.first, subcur[0],
-                      subcur[1], subcur[2], subcur[3]);
     }
-
     return results;
 }
 
-double DeepInelastic::InitialStateWeight(const std::vector<Particle>&,
-                                      const std::vector<Particle>&, size_t,
-                                      size_t) const {
-    return 1;
+double DeepInelastic::InitialStateWeight(const std::vector<Particle> &nucleons,
+                                      const std::vector<Particle> &, size_t nprotons,
+                                      size_t nneutrons) const {
+    if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
+    if(is_free_neutron) return nucleons[0].ID() == PID::neutron() ? 1 : 0;
+    const double removal_energy = Constant::mN - nucleons[0].E();
+    return nucleons[0].ID() == PID::proton()
+               ? static_cast<double>(nprotons) *
+                     spectral_proton(nucleons[0].Momentum().P(), removal_energy)
+               : static_cast<double>(nneutrons) *
+                     spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
 }
 
-std::unique_ptr<NuclearModel> DeepInelastic::Construct(const YAML::Node&) {
-    return std::make_unique<DeepInelastic>();
+std::unique_ptr<NuclearModel> DeepInelastic::Construct(const YAML::Node& config) { 
+	spdlog::trace("Constructing DIS Nuclear Model");
+	YAML::Node form_factor = LoadFormFactor(config);
+	return std::make_unique<DeepInelastic>(config,form_factor);
+}
+
+NuclearModel::Current DeepInelastic::HadronicCurrent(const std::array<Spinor, 2> &ubar,
+                                                  const std::array<Spinor, 2> &u,
+                                                  const FourVector &qVec,
+                                                  const FormFactorMap &ffVal) const {
+    Current result;
+    std::array<SpinMatrix, 4> gamma{};
+    for(size_t mu = 0; mu < 4; ++mu) {
+        gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
+        double sign = 1;
+        for(size_t nu = 0; nu < 4; ++nu) {
+            gamma[mu] +=
+                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
+                                              sign * qVec[nu] / (2 * Constant::mN));
+            sign = -1;
+        }
+    }
+
+    for(size_t i = 0; i < 2; ++i) {
+        for(size_t j = 0; j < 2; ++j) {
+            VCurrent subcur;
+            for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
+            result.push_back(subcur);
+        }
+    }
+    return result;
 }
