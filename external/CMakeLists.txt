@@ -47,7 +47,7 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMAddPackage(
+CPMFindPackage(
   NAME NuHepMC_CPPUtils
   GIT_TAG v1-RC10
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
