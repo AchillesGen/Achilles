@@ -1,9 +1,9 @@
-#include "Achilles/Settings.hh"
-#include "Achilles/System.hh"
-#include <stdexcept>
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
+#include "Achilles/Settings.hh"
+#include "Achilles/System.hh"
+#include <stdexcept>
 
 #include "Achilles/Exception.hh"
 #include "Achilles/Exceptions.hh"
