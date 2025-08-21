@@ -354,12 +354,20 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 1;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
+    // Convert the units of the matrix element from GeV^{-x} to MeV^{-x}
+    amps2 /= pow(1_GeV, 2 * (static_cast<int>(p.size()) - 4));
     spdlog::trace("|M|^2 = {}", amps2);
     if(std::isnan(amps2)) amps2 = 0;
 
     Particle lepton_in;
     std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
     process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
+    if(std::abs((hadron_out[0].Momentum() + hadron_out[1].Momentum()).M() - 1232) < 100) {
+        spdlog::debug("Hit Delta resonance");
+    }
+    if(std::abs((hadron_out[0].Momentum() + hadron_out[1].Momentum()).M()) > 1500) {
+        spdlog::debug("Large mass");
+    }
     auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();

@@ -124,6 +124,7 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
+    spdlog::trace("Extracting momentum from event");
     const auto &momentum = event.Momentum();
     if(m_info.m_mom_map.size() == 0) {
         static constexpr size_t lepton_in_end_idx = 1;
@@ -181,6 +182,13 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
         for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
             spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
         }
+#ifdef ACHILLES_EVENT_DETAILS
+        spdlog::debug("Initial state: {}", lep_in);
+        spdlog::debug("Hadronic initial state: {}", fmt::join(had_in, ", "));
+        spdlog::debug("Hadronic final state: {}", fmt::join(had_out, ", "));
+        spdlog::debug("Leptonic final state: {}", fmt::join(lep_out, ", "));
+        spdlog::debug("Spectators: {}", fmt::join(spect, ", "));
+#endif
     } else {
         lep_in = Particle(m_info.m_mom_map[1], momentum[0]);
         had_in.emplace_back(m_info.m_mom_map[0], momentum[1]);

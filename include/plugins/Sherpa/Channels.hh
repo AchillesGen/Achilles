@@ -59,7 +59,7 @@ class GenChannel : public Channels,
     }
 
     std::string ToString() {
-        auto lid = static_cast<size_t>((1 << m_n) - 2);
+        auto lid = (1u << m_n) - m_rid;
         auto result = PrintPoint(m_nodes.get(), lid, 0);
         return result.substr(0, result.size() - 1);
     }

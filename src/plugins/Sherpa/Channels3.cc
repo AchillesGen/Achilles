@@ -16,7 +16,7 @@ double GenChannel::SCut(size_t id) {
     if(id & 3) { id = (1 << m_n) - 1 - id; }
     double result = 0;
     for(size_t i = 0; i < m_n; ++i) {
-        if(achilles::SetBit(id, i)) { result += sqrt(m_s[i]); }
+        if(achilles::BitIsSet(id, i)) { result += sqrt(m_s[i]); }
     }
     return result * result;
 }
@@ -29,7 +29,7 @@ void GenChannel::FillMomenta(ChannelNode *node) {
     size_t aid = (1 << m_n) - 1 - node->m_idx;
     m_p[node->m_idx] = Vec4D{};
     for(size_t i = 0; i < m_n; ++i) {
-        if(achilles::SetBit(node->m_idx, i)) { m_p[node->m_idx] += m_p[(1 << i)]; }
+        if(achilles::BitIsSet(node->m_idx, i)) { m_p[node->m_idx] += m_p[(1 << i)]; }
     }
     if(!achilles::IsPower2(node->m_left->m_idx)) FillMomenta(node->m_left.get());
     if(!achilles::IsPower2(node->m_right->m_idx)) FillMomenta(node->m_right.get());
@@ -41,6 +41,8 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
     size_t aid = cur->m_idx;
     size_t bid = cur->m_left->m_idx;
     size_t cid = cur->m_right->m_idx;
+    spdlog::trace("aid = {} ({}), bid = {} ({}), cid = {} ({})", aid, cur->m_pid, bid,
+                  cur->m_left->m_pid, cid, cur->m_right->m_pid);
     if(bid == lid)
         std::swap(aid, bid);
     else if(cid == lid)
@@ -49,6 +51,8 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
         std::swap(bid, cid);
         std::swap(cur->m_left, cur->m_right);
     }
+    spdlog::trace("aid = {} ({}), bid = {} ({}), cid = {} ({})", aid, cur->m_pid, bid,
+                  cur->m_left->m_pid, cid, cur->m_right->m_pid);
     if(cid == m_rid) {
         if(!achilles::IsPower2(bid)) {
             result += PrintSPoint(cur->m_left.get(), bid);
@@ -60,6 +64,10 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
     result += fmt::format("TChannel({} ({}), {} ({}), {} ({})),", aid, cur->m_pid, bid,
                           cur->m_left->m_pid, cid, cur->m_right->m_pid);
     result += PrintPoint(cur->m_right.get(), cid, depth + 1);
+    if(!achilles::IsPower2(bid)) {
+        result += PrintSPoint(cur->m_left.get(), bid);
+        return result;
+    }
     return result;
 }
 
@@ -111,6 +119,10 @@ void GenChannel::BuildPoint(ChannelNode *cur, size_t lid, const std::vector<doub
     }
     TChannelMomenta(cur, aid, bid, cid, rans);
     BuildPoint(cur->m_right.get(), cid, rans, depth + 1);
+    if(!achilles::IsPower2(bid)) {
+        BuildSPoint(cur->m_left.get(), bid, rans);
+        return;
+    }
 }
 
 void GenChannel::BuildSPoint(ChannelNode *node, size_t id, const std::vector<double> &rans) {
@@ -147,6 +159,7 @@ double GenChannel::BuildWeight(ChannelNode *cur, size_t lid, std::vector<double>
     }
     wgt *= TChannelWeight(cur, aid, bid, cid, rans);
     wgt *= BuildWeight(cur->m_right.get(), cid, rans, depth + 1);
+    if(!achilles::IsPower2(bid)) { wgt *= BuildSWeight(cur->m_left.get(), bid, rans); }
     return wgt;
 }
 
@@ -168,7 +181,8 @@ double GenChannel::PropMomenta(ChannelNode *node, size_t id, double smin, double
     if(flav.Mass() == 0) {
         return CE.MasslessPropMomenta(m_salpha, smin, smax, ran);
     } else {
-        return CE.MassivePropMomenta(flav.Mass(), flav.Width(), smin, smax, ran);
+        double width = std::max(flav.Width(), 1e-6);
+        return CE.MassivePropMomenta(flav.Mass(), width, smin, smax, ran);
     }
 }
 
@@ -184,10 +198,10 @@ double GenChannel::PropWeight(ChannelNode *node, size_t id, double smin, double 
     if(flav.Mass() == 0) {
         wgt = CE.MasslessPropWeight(m_salpha, smin, smax, s, ran);
     } else {
-        wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), smin, smax, s, ran);
-        // spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}",
-        // wgt,
-        //              flav.Mass(), flav.Width(), smin, smax, s);
+        double width = std::max(flav.Width(), 1e-6);
+        wgt = CE.MassivePropWeight(flav.Mass(), width, smin, smax, s, ran);
+        spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}", wgt,
+                      flav.Mass(), width, smin, smax, s);
     }
 
     return wgt;

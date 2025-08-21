@@ -192,7 +192,6 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
         exit(-1);
     }
     proc->SetupEventReader("Achilles");
-    proc->Get<COMIX::Single_Process>()->Tests();
     Selector_Key skey;
     proc->SetSelector(skey);
     proc->InitPSHandler(1., "", "");
@@ -208,6 +207,7 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
     proc->SetScale(Scale_Setter_Arguments(MODEL::s_model, "VAR{100}{100}", "Alpha_QCD 1"));
     // TODO: Why does the next line segfault
     // proc->SetKFactor(KFactor_Setter_Arguments("NO"));
+    // TODO: This gives large deviation because one gauge isn't implemented
     msg_Info() << "SherpaInterface::getProcess: Performing tests ";
     if(proc->Get<COMIX::Process_Base>()) proc->Get<COMIX::Process_Base>()->Tests();
     msg_Info() << " done." << std::endl;
@@ -286,13 +286,14 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
         node->m_idx = 1 << i;
         channelComponents[(1 << i)].push_back(node);
         s.push_back(sqr(Flavour((kf_code)(flavs[i])).Mass(false)));
+        spdlog::trace("idx = {}, pid = {}", node->m_idx, int(flavs[i]));
     }
 
     for(unsigned int nset = 2; nset < flavs.size(); ++nset) {
         unsigned int cur = (1 << nset) - 1;
         // Combine all currents
         while(cur < (1 << (flavs.size()))) {
-            auto set = SetBits(cur, flavs.size());
+            auto set = BitsAreSet(cur, flavs.size());
             for(unsigned int iset = 1; iset < nset; ++iset) {
                 unsigned int idx = (1 << iset) - 1;
                 while(idx < (1 << (nset - 1))) {
@@ -301,7 +302,9 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
                         subCur1 += set[i] * ((idx >> i) & 1);
                     auto subCur2 = cur ^ subCur1;
                     // Skip over initial nucleon
-                    if(SetBit(subCur1, 0) || SetBit(subCur2, 0)) break;
+                    if(BitIsSet(subCur1, 0) || BitIsSet(subCur2, 0)) break;
+                    spdlog::trace("cur1 = {}, cur2 = {}, combinable = {}", subCur1, subCur2,
+                                  singleProcess->Combinable(subCur1, subCur2));
                     if(singleProcess->Combinable(subCur1, subCur2)) {
                         // Create new channel component
                         for(const auto &subChan1 : channelComponents[subCur1]) {
