@@ -49,6 +49,27 @@ class QESpectralMapper
     // static constexpr double dE = 400;
 };
 
+class D2SpectralMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, D2SpectralMapper, const ProcessInfo &, size_t> {
+  public:
+    D2SpectralMapper(const ProcessInfo &info, size_t idx);
+    static std::string Name() { return "DeuteronSpectral"; }
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<QESpectralMapper>(info, idx);
+    }
+
+    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
+    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    size_t NDims() const override { return 3; }
+
+  private:
+    // static constexpr double dCos = 2;
+    static constexpr double dPhi = 2 * M_PI;
+    // static constexpr double dp = 800;
+    // static constexpr double dE = 400;
+};
+
 class CoherentMapper
     : public HadronicBeamMapper,
       Registrable<HadronicBeamMapper, CoherentMapper, const ProcessInfo &, size_t> {
