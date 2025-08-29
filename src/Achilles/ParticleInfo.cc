@@ -1,4 +1,5 @@
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/System.hh"
 
 #include <iostream>
 #include <memory>
@@ -21,8 +22,15 @@ using achilles::PID;
 //     }
 // }
 
+bool PID::valid_nucleus() const {
+    long int L = id / 10000000 - 100;
+    long int Z = (id % 10000000) / 10000;
+    long int A = (id % 10000) / 10;
+    return L + Z < A;
+}
+
 void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
-    YAML::Node particleYAML = YAML::LoadFile(datafile);
+    YAML::Node particleYAML = YAML::LoadFile(Filesystem::FindFile(datafile, "ParticleInfo"));
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
         auto entry =
@@ -34,19 +42,18 @@ void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
 }
 
 void achilles::ParticleInfo::PrintDatabase() {
-    fmt::print("{:>10s} {:<20s} {:<20s} {:^10s}    {:^10s}\n", "PID", "Name", "Anti-name",
-               "Mass (MeV)", "Width (MeV)");
+    fmt::print("{:>10s} {:<20s} {:<20s} {:^6s} {:^10s}    {:^10s}\n", "PID", "Name", "Anti-name",
+               "Stable", "Mass (MeV)", "Width (MeV)");
     for(const auto &part : particleDB) { std::cout << *(part.second) << "\n"; }
 }
 
-ParticleInfoEntry::ParticleInfoEntry(const achilles::PID &id_, const double &mass_,
-                                     const double &width_, const int &icharge_, const int &strong_,
-                                     const int &spin_, const int &stable_, const int &majorana_,
-                                     const bool &massive_, const bool &hadron_, std::string idname_,
-                                     std::string antiname_)
+ParticleInfoEntry::ParticleInfoEntry(PID id_, double mass_, double width_, int icharge_,
+                                     int strong_, int isospin_, int spin_, int stable_,
+                                     int majorana_, bool massive_, bool hadron_,
+                                     std::string idname_, std::string antiname_)
     : id(id_), mass(mass_), hmass(mass_), width(width_), icharge(icharge_), strong(strong_),
-      spin(spin_), stable(stable_), majorana(majorana_), massive(massive_), hadron(hadron_),
-      idname(std::move(idname_)), antiname(std::move(antiname_)) {}
+      isospin(isospin_), spin(spin_), stable(stable_), majorana(majorana_), massive(massive_),
+      hadron(hadron_), idname(std::move(idname_)), antiname(std::move(antiname_)) {}
 
 std::ostream &operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
     os << entry.ToString();
@@ -55,6 +62,19 @@ std::ostream &operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
 
 ParticleInfo::ParticleDB ParticleInfo::particleDB;
 std::map<std::string, achilles::PID> ParticleInfo::nameToPID;
+
+bool ParticleInfo::IsNucleon() const noexcept {
+    return info->id == PID::proton() || info->id == PID::neutron();
+}
+
+bool ParticleInfo::IsDelta() const noexcept {
+    return info->id == PID::deltapp() || info->id == PID::deltap() || info->id == PID::delta0() ||
+           info->id == PID::deltam();
+}
+
+bool ParticleInfo::IsPion() const noexcept {
+    return info->id == PID::pionp() || info->id == PID::pion0() || info->id == -PID::pionp();
+}
 
 bool ParticleInfo::IsBaryon() const noexcept {
     if(IntID() % 10000 < 1000) return false;
@@ -76,6 +96,15 @@ bool ParticleInfo::IsCHadron() const noexcept {
     if((IntID() - 100 * IntID() / 100) / 10 == 4) return true;
     if((IntID() - 1000 * IntID() / 1000) / 100 == 4) return true;
     if((IntID() - 10000 * IntID() / 10000) / 1000 == 4) return true;
+    return false;
+}
+
+bool ParticleInfo::IsSHadron() const noexcept {
+    if(IntID() < 100) return false;
+    if(IntID() - 100 * IntID() / 100 < 10) return false;
+    if((IntID() - 100 * IntID() / 100) / 10 == 3) return true;
+    if((IntID() - 1000 * IntID() / 1000) / 100 == 3) return true;
+    if((IntID() - 10000 * IntID() / 10000) / 1000 == 3) return true;
     return false;
 }
 

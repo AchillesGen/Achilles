@@ -1,18 +1,19 @@
 CPMAddPackage(
     NAME fmt
-    GIT_TAG 10.1.1
+    GIT_TAG 11.0.0
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME spdlog
-    GIT_TAG "v1.12.0"
+    GIT_TAG "v1.14.1"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS
         "SPDLOG_COMPILED_LIB ON"
         "SPDLOG_FMT_EXTERNAL ON"
         "SPDLOG_BUILD_SHARED ON"
+        "SPDLOG_INSTALL ON"
 )
 add_library(spdlog::spdlog ALIAS spdlog)
 
@@ -43,10 +44,11 @@ add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
   NAME NuHepMC_CPPUtils
-  GIT_TAG achilles_test
+  GIT_TAG v1-RC10
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
-  OPTIONS "BUILTIN_HEPMC3 ON"
-          "HEPMC3_ENABLE_PYTHON OFF"
+  OPTIONS "NuHepMC_CPPUtils_BUILTIN_HEPMC3 ON"
+          "NuHepMC_CPPUtils_PYTHON_ENABLED OFF"
+          "NuHepMC_CPPUtils_PROTOBUF_INTERFACE OFF"
 )
 
 CPMAddPackage(
@@ -84,7 +86,7 @@ if(ACHILLES_ENABLE_TESTING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 44 
+        VERSION 47
     )
 
     # Fortran Unit Tests

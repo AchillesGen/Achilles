@@ -8,7 +8,7 @@
 #include "spdlog/spdlog.h"
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -48,7 +48,6 @@ template <typename T> class Mapper {
         spdlog::trace("  Rans:");
         for(const auto &r : rans) spdlog::trace("    - {}: {}", idx++, r);
     }
-    virtual YAML::Node ToYAML() const = 0;
 
   protected:
     double Smin() const {

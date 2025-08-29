@@ -2,10 +2,10 @@
 #include <cmath>
 #include <limits>
 
-#include "nuchic/Integrators/GaussKronrod.hh"
+#include "Achilles/Integrators/GaussKronrod.hh"
 #include "spdlog/spdlog.h"
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
 const std::vector<double> GaussKronrod::KronrodWgts = {
     0.022935322010529, 0.063092092629979, 0.104790010322250, 0.140653259715525,

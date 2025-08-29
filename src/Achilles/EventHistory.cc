@@ -14,7 +14,9 @@ EventHistory::EventHistory(const EventHistory &other) {
 }
 
 EventHistory &EventHistory::operator=(const EventHistory &other) {
+    if(this == &other) return *this;
     cur_idx = other.cur_idx;
+    m_history.clear();
     m_history.reserve(other.m_history.size());
     for(const auto &elm : other.m_history) {
         m_history.push_back(std::make_unique<EventHistoryNode>(*elm));
@@ -22,29 +24,31 @@ EventHistory &EventHistory::operator=(const EventHistory &other) {
     return *this;
 }
 
-void EventHistory::AddVertex(ThreeVector position, const std::vector<Particle> &in,
-                             const std::vector<Particle> &out, StatusCode status) {
+void EventHistory::AddVertex(ThreeVector position, const Particles &in, const Particles &out,
+                             StatusCode status) {
     m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, status));
-    for(const auto &part : in) { m_history.back()->AddIncoming(part); }
-    for(const auto &part : out) { m_history.back()->AddOutgoing(part); }
+    for(auto &part : in) { AddParticleIn(m_history.size() - 1, part); }
+    for(auto &part : out) { AddParticleOut(m_history.size() - 1, part); }
 }
 
 void EventHistory::AddParticleIn(size_t idx, const Particle &part) {
     m_history[idx]->AddIncoming(part);
+    UpdatePrevNode(part);
 }
 
 void EventHistory::AddParticleOut(size_t idx, const Particle &part) {
     m_history[idx]->AddOutgoing(part);
+    UpdatePrevNode(part);
 }
 
 void EventHistory::InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,
-                                    const Particle &out_org, const std::vector<Particle> &other) {
+                                    const Particle &out_org, const Particles &other) {
     // Create shower node
     m_history.push_back(
         std::make_unique<EventHistoryNode>(cur_idx++, position, StatusCode::shower));
     m_history.back()->AddIncoming(in);
     m_history.back()->AddOutgoing(out_org);
-    for(const auto &part : other) m_history.back()->AddOutgoing(part);
+    for(auto &part : other) m_history.back()->AddOutgoing(part);
 
     // Insert in where original particle is located
     auto node_in = FindNodeIn(org);
@@ -123,6 +127,34 @@ EventHistoryNode *EventHistory::FindNode(bool incoming, const Particle &part) co
         }
     }
     return nullptr;
+}
+
+void EventHistory::UpdateStatuses(const Particles &particles) {
+    for(auto &part : particles) {
+        compare_momentum comp(part);
+        auto node = FindNodeOut(part);
+        if(node) {
+            for(auto &outgoing : node->ParticlesOut()) {
+                if(comp(outgoing)) outgoing.Status() = part.Status();
+            }
+        }
+        node = FindNodeIn(part);
+        if(node) {
+            for(auto &incoming : node->ParticlesIn()) {
+                if(comp(incoming) && incoming.Status() != ParticleStatus::target)
+                    incoming.Status() = part.Status();
+            }
+        }
+    }
+}
+
+void EventHistory::UpdatePrevNode(const Particle &part) {
+    compare_momentum comp(part);
+    auto node = FindNodeOut(part);
+    if(!node) return;
+    for(auto &outgoing : node->ParticlesOut()) {
+        if(comp(outgoing)) { outgoing = part; }
+    }
 }
 
 void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {

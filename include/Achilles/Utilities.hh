@@ -46,8 +46,8 @@ inline unsigned int Log2(unsigned int val) {
 }
 
 template <class ContainerT>
-void tokenize(const std::string &str, ContainerT &tokens, const std::string &delimiters = " \n\t",
-              bool trimEmpty = true) {
+void tokenize(const std::string_view &str, ContainerT &tokens,
+              const std::string_view &delimiters = " \n\t", bool trimEmpty = true) {
     std::string::size_type lastPos = 0, length = str.length();
 
     using value_type = typename ContainerT::value_type;
@@ -64,6 +64,8 @@ void tokenize(const std::string &str, ContainerT &tokens, const std::string &del
         lastPos = pos + 1;
     }
 }
+
+double ParseFraction(const std::string &);
 
 constexpr int LeviCivita(const int i, const int j, const int k, const int l) {
     return (i == j || i == k || i == l || j == k || j == l || k == l)
@@ -277,6 +279,10 @@ inline double Li2(double x) {
     double den = q[0] + q[1] * x + (q[2] + q[2] * x) * x2 + (q[4] + q[5] * x + q[6] * x2) * x4;
     return result + sign * x * num / den;
 }
+
+// TODO: Figure out a better place for these functions (maybe with an improved Settings class?)
+size_t LevenshteinDistance(const std::string_view &src, const std::string_view &tgt);
+std::string_view GetSuggestion(const std::vector<std::string> &opts, const std::string &query);
 
 } // namespace achilles
 

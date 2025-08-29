@@ -1,36 +1,16 @@
-#include "plugins/Sherpa/Channels3.hh"
+#ifdef ACHILLES_EVENT_DETAILS
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#endif
+
+#include "Plugins/Sherpa/Channels3.hh"
 #include "ATOOLS/Phys/Flavour.H"
 #include "Achilles/Utilities.hh"
 #include "COMIX/Main/Single_Process.H"
-#include "plugins/Sherpa/PrintVec.hh"
+#include "Plugins/Sherpa/PrintVec.hh"
 #include <cmath>
 
 using namespace PHASIC;
 using namespace ATOOLS;
-
-template <> struct fmt::formatter<ATOOLS::Vec4<double>> {
-    char presentation = 'e';
-    constexpr auto parse(format_parse_context &ctx) -> decltype(ctx.begin()) {
-        // Parse the presentation format and store it in the formatter:
-        auto it = ctx.begin(), end = ctx.end();
-        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-        // Check if reached the end of the range:
-        if(it != end && *it != '}') throw format_error("Invalid format");
-
-        // Return an iterator past the end of the parsed range:
-        return it;
-    }
-
-    template <typename FormatContext>
-    auto format(const ATOOLS::Vec4<double> &p, FormatContext &ctx) -> decltype(ctx.out()) {
-        // ctx.out() is an output iterator to write to
-        return format_to(ctx.out(),
-                         presentation == 'f' ? "Vec4({:.8f}, {:.8f}, {:.8f}, {:.8f})"
-                                             : "Vec4({:.8e}, {:.8e}, {:.8e}, {:.8e})",
-                         p[0], p[1], p[2], p[3]);
-    }
-};
 
 double GenChannel::SCut(size_t id) {
     if(id & 3) { id = (1 << m_n) - 1 - id; }
@@ -102,7 +82,9 @@ void GenChannel::GeneratePoint(std::vector<ATOOLS::Vec4D> &p, const std::vector<
     m_p[lid] = p[0];
     BuildPoint(m_nodes.get(), lid, rans, 0);
     for(size_t i = 2; i < m_n; ++i) { p[i] = m_p[1 << i]; }
-    // Mapper::Print(__PRETTY_FUNCTION__, p, rans);
+#ifdef ACHILLES_EVENT_DETAILS
+    Mapper::Print(__PRETTY_FUNCTION__, p, rans);
+#endif
 }
 
 void GenChannel::BuildPoint(ChannelNode *cur, size_t lid, const std::vector<double> &rans,
@@ -195,19 +177,14 @@ double GenChannel::PropWeight(ChannelNode *node, size_t id, double smin, double 
     auto foundNode = LocateNode(node, id);
     if(!foundNode) {
         double wgt = CE.ThresholdWeight(m_salpha, 0.01, smin, smax, s, ran);
-        // spdlog::trace("ThresholdWeight = {}", wgt);
         return wgt;
     }
     auto flav = Flavour((kf_code)(foundNode->m_pid));
     double wgt = 1.0;
     if(flav.Mass() == 0) {
         wgt = CE.MasslessPropWeight(m_salpha, smin, smax, s, ran);
-        // spdlog::trace("MasslessPropWeight = {}", wgt);
     } else {
         wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), 1, smin, smax, s, ran);
-        // spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}",
-        // wgt,
-        //              flav.Mass(), flav.Width(), smin, smax, s);
     }
 
     return wgt;
@@ -233,15 +210,15 @@ void GenChannel::TChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
                        m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
-    spdlog::trace("{}", name);
-    spdlog::trace("  m_p[{}] = {}, m = {}", aid, m_p[aid], m_p[aid].Mass());
-    spdlog::trace("  m_p[{}] = {}, m = {}", m_rid, m_p[m_rid], m_p[m_rid].Mass());
-    spdlog::trace("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
-    spdlog::trace("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
-    spdlog::trace("  se = {}, sp = {}", se, sp);
-    // spdlog::trace("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2],
-    //              m_s[3]);
-    spdlog::trace("  iran = {}", iran);
+    SPDLOG_TRACE("{}", name);
+    SPDLOG_TRACE("  m_p[{}] = {}, m = {}", aid, m_p[aid], m_p[aid].Mass());
+    SPDLOG_TRACE("  m_p[{}] = {}, m = {}", m_rid, m_p[m_rid], m_p[m_rid].Mass());
+    SPDLOG_TRACE("  m_p[{}] = {}, m = {}", bid, m_p[bid], m_p[bid].Mass());
+    SPDLOG_TRACE("  m_p[{}] = {}, m = {}", pid, m_p[pid], m_p[pid].Mass());
+    SPDLOG_TRACE("  se = {}, sp = {}", se, sp);
+    SPDLOG_TRACE("  m[0]^2 = {}, m[1]^2 = {}, m[2]^2 = {}, m[3]^2 = {}", m_s[0], m_s[1], m_s[2],
+                 m_s[3]);
+    SPDLOG_TRACE("  iran = {}", iran);
 }
 
 double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, size_t cid,
@@ -254,30 +231,30 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     double rtsmax = (m_p[aid] + m_p[m_rid]).Mass();
     const std::string name = "TChannelWeight(" + std::to_string(aid) + ", " + std::to_string(bid) +
                              ", " + std::to_string(cid) + ", " + std::to_string(pid) + ")";
+    SPDLOG_TRACE("{}", name);
     if(!achilles::IsPower2(bid)) {
         double smin = se, smax = sqr(rtsmax - sqrt(sp));
         wgt *= PropWeight(node, bid, smin, smax, se = m_p[bid].Abs2(), rans[iran++]);
-        // spdlog::trace("  smin = {}, smax = {}", smin, smax);
+        SPDLOG_TRACE("  smin = {}, smax = {}", smin, smax);
     }
     if(!achilles::IsPower2(pid)) {
         double smin = sp, smax = sqr(rtsmax - sqrt(se));
         wgt *= PropWeight(node, pid, smin, smax, sp = m_p[pid].Abs2(), rans[iran++]);
-        // spdlog::trace("  smin = {}, smax = {}", smin, smax);
+        SPDLOG_TRACE("  smin = {}, smax = {}", smin, smax);
     }
     double mass = ATOOLS::Flavour((kf_code)(LocateNode(node, pid + m_rid)->m_pid)).Mass();
     wgt *= CE.TChannelWeight(m_p[aid], m_p[m_rid], m_p[bid], m_p[pid], mass, m_alpha, m_ctmax,
                              m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
-    spdlog::trace("{}", name);
-    spdlog::trace("  m_p[{}] = {}", aid, m_p[aid]);
-    spdlog::trace("  m_p[{}] = {}", m_rid, m_p[m_rid]);
-    spdlog::trace("  m_p[{}] = {}", bid, m_p[bid]);
-    spdlog::trace("  m_p[{}] = {}", pid, m_p[pid]);
-    // spdlog::trace("  mass = {}", mass);
-    spdlog::trace("  se = {}, sp = {}", se, sp);
-    spdlog::trace("  iran = {}", iran);
-    spdlog::trace("  wgt = {}", wgt);
+    SPDLOG_TRACE("  m_p[{}] = {}", aid, m_p[aid]);
+    SPDLOG_TRACE("  m_p[{}] = {}", m_rid, m_p[m_rid]);
+    SPDLOG_TRACE("  m_p[{}] = {}", bid, m_p[bid]);
+    SPDLOG_TRACE("  m_p[{}] = {}", pid, m_p[pid]);
+    SPDLOG_TRACE("  mass = {}", mass);
+    SPDLOG_TRACE("  se = {}, sp = {}", se, sp);
+    SPDLOG_TRACE("  iran = {}", iran);
+    SPDLOG_TRACE("  wgt = {}", wgt);
     return wgt;
 }
 
@@ -289,12 +266,12 @@ void GenChannel::SChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
     double rts = m_p[cid].Mass(), sl = SCut(lid), sr = SCut(rid);
     if(!achilles::IsPower2(lid)) {
         double smin = sl, smax = sqr(rts - sqrt(sr));
-        // spdlog::trace("smin = {}, smax = {}, rts = {}, sr = {}", smin, smax, rts, sr);
+        SPDLOG_TRACE("smin = {}, smax = {}, rts = {}, sr = {}", smin, smax, rts, sr);
         sl = PropMomenta(node, lid, smin, smax, rans[iran++]);
     }
     if(!achilles::IsPower2(rid)) {
         double smin = sr, smax = sqr(rts - sqrt(sl));
-        // spdlog::trace("smin = {}, smax = {}, rts = {}, sl = {}", smin, smax, rts, sl);
+        SPDLOG_TRACE("smin = {}, smax = {}, rts = {}, sl = {}", smin, smax, rts, sl);
         sr = PropMomenta(node, rid, smin, smax, rans[iran++]);
     }
     CE.Isotropic2Momenta(m_p[cid], sl, sr, m_p[lid], m_p[rid], rans[iran], rans[iran + 1], m_ctmin,
@@ -302,14 +279,14 @@ void GenChannel::SChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
     iran += 2;
     m_p[(1 << m_n) - 1 - aid] = m_p[aid];
     m_p[(1 << m_n) - 1 - bid] = m_p[bid];
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", cid, node->m_pid, m_p[cid], m_p[cid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", lid, node->m_left->m_pid, m_p[lid],
-    //               m_p[lid].Mass());
-    // spdlog::trace("  m_p[{}] ({}) = {}, m = {}", rid, node->m_right->m_pid, m_p[rid],
-    //               m_p[rid].Mass());
-    // spdlog::trace("  sl = {}, sr = {}", sl, sr);
-    // spdlog::trace("  iran = {}", iran);
+    SPDLOG_TRACE("{}", name);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", cid, node->m_pid, m_p[cid], m_p[cid].Mass());
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", lid, node->m_left->m_pid, m_p[lid],
+                 m_p[lid].Mass());
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}, m = {}", rid, node->m_right->m_pid, m_p[rid],
+                 m_p[rid].Mass());
+    SPDLOG_TRACE("  sl = {}, sr = {}", sl, sr);
+    SPDLOG_TRACE("  iran = {}", iran);
 }
 
 double GenChannel::SChannelWeight(ChannelNode *node, size_t aid, size_t bid, size_t cid,
@@ -329,13 +306,13 @@ double GenChannel::SChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     iran += 2;
     const std::string name = "SChannelWeight(" + std::to_string(cid) + ", " + std::to_string(aid) +
                              ", " + std::to_string(bid) + ")";
-    // spdlog::trace("{}", name);
-    // spdlog::trace("  m_p[{}] ({}) = {}", cid, node->m_pid, m_p[cid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", lid, node->m_left->m_pid, m_p[lid]);
-    // spdlog::trace("  m_p[{}] ({}) = {}", rid, node->m_right->m_pid, m_p[rid]);
-    // spdlog::trace("  sl = {}, sr = {}", sl, sr);
-    // spdlog::trace("  iran = {}", iran);
-    // spdlog::trace("  wgt = {}", wgt);
+    SPDLOG_TRACE("{}", name);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", cid, node->m_pid, m_p[cid]);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", lid, node->m_left->m_pid, m_p[lid]);
+    SPDLOG_TRACE("  m_p[{}] ({}) = {}", rid, node->m_right->m_pid, m_p[rid]);
+    SPDLOG_TRACE("  sl = {}, sr = {}", sl, sr);
+    SPDLOG_TRACE("  iran = {}", iran);
+    SPDLOG_TRACE("  wgt = {}", wgt);
     return wgt;
 }
 

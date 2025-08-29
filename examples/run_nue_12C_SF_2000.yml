@@ -1,0 +1,71 @@
+Main:
+  NEvents: 10
+  HardCuts: false
+  RunDecays: false
+  Output:
+      Format: NuHepMC
+      Name: achilles_nue_12C_SF_2000.hepmc
+      Zipped: True
+
+SherpaOptions:
+  Model: SMnu
+  ParamCard: parameters.dat
+
+Processes:
+  - Leptons: [12, [11]]
+
+Initialize:
+  Seed: 12345678
+  Accuracy: 5e-3
+Unweighting:
+  Name: Percentile
+  percentile: 99
+
+Beams:
+  - Beam:
+      PID: 12
+      Beam Params:
+        Type: Monochromatic
+        Energy: 2000
+
+Cascade:
+  Run: False
+  Interaction:
+    Name: GeantInteractions
+    GeantData: data/GeantData.hdf5
+  Step: 0.04
+  Probability: Cylinder
+
+HardCuts:
+
+Options: !include "data/default/OptionDefaults.yml"
+
+NuclearModels:
+  - NuclearModel:
+      Model: QESpectral
+      FormFactorFile: "FormFactors.yml"
+      SpectralP: data/Spectral_Functions/pke12p_tot.data
+      SpectralN: data/Spectral_Functions/pke12n_tot.data
+      Ward: None
+
+Nuclei:
+  - Nucleus:
+      Name: 12C
+      Binding: 8.6
+      Fermi Momentum: 225
+      Density:
+        ProtonFile: data/densities/c12.prova.txt
+        NeutronFile: data/densities/c12.prova.txt
+        FilePotential: data/realOP_12C_EDAI.dat
+        Function: configuration
+        Configs: data/configurations/QMC_configs.out.gz
+      FermiGas: 
+        Type: Local
+      Potential: 
+        Name: Schroedinger
+        r0: 0.16
+        Mode: 3
+
+Backend:
+  Name: Default
+  Options: []

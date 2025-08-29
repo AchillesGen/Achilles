@@ -12,6 +12,7 @@ struct MultiChannelSummary {
     StatsData sum_results;
 
     StatsData Result() const { return sum_results; }
+    StatsData LastResult() const { return results.back(); }
 };
 
 struct MultiChannelParams {
@@ -19,19 +20,81 @@ struct MultiChannelParams {
     double rtol{rtol_default};
     size_t nrefine{nrefine_default};
     double beta{beta_default}, min_alpha{min_alpha_default};
+    double rescale_factor{rescale_factor_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr size_t ncalls_default{10000}, nint_default{7};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
-    static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr size_t nparams = 7;
+    static constexpr double beta_default{1.00}, min_alpha_default{1e-5};
+    static constexpr double rescale_factor_default{1.44};
+    static constexpr size_t nparams = 8;
 };
+
+bool operator==(const MultiChannelParams &lhs, const MultiChannelParams &rhs);
+bool operator==(const MultiChannelSummary &lhs, const MultiChannelSummary &rhs);
+
+void SaveState(std::ostream &os, const MultiChannelParams &params);
+void LoadState(std::istream &is, MultiChannelParams &params);
+void SaveState(std::ostream &os, const MultiChannelSummary &summary);
+void LoadState(std::istream &is, MultiChannelSummary &summary);
+
+enum class UnitsEnum { mub, nb, pb, em38cm2, LAST };
+
+inline std::string ToString(UnitsEnum unit) {
+    switch(unit) {
+    case UnitsEnum::mub:
+        return "mub";
+    case UnitsEnum::nb:
+        return "nb";
+    case UnitsEnum::pb:
+        return "pb";
+    case UnitsEnum::em38cm2:
+        return "e-38cm2";
+    default:
+        return "nb";
+    }
+}
+
+inline double UnitScale(UnitsEnum unit) {
+    switch(unit) {
+    case UnitsEnum::mub:
+        return 1e-3;
+    case UnitsEnum::nb:
+        return 1;
+    case UnitsEnum::pb:
+        return 1e3;
+    case UnitsEnum::em38cm2:
+        return 1e5;
+    default:
+        return 1.0;
+    }
+}
+
+inline UnitsEnum ToUnitEnum(std::string unit) {
+    if(unit == "mub")
+        return UnitsEnum::mub;
+    else if(unit == "nb")
+        return UnitsEnum::nb;
+    else if(unit == "pb")
+        return UnitsEnum::pb;
+    else if(unit == "e-38cm2")
+        return UnitsEnum::em38cm2;
+    else {
+        spdlog::warn("Unit {} not recognized. Available display units include:", unit);
+        for(int i = 0; i < static_cast<int>(UnitsEnum::LAST); ++i) {
+            UnitsEnum unit_avail = static_cast<UnitsEnum>(i);
+            spdlog::warn("{}", ToString(unit_avail));
+        }
+        spdlog::warn("Defaulting back to nb");
+        return UnitsEnum::nb;
+    }
+}
 
 class MultiChannel {
   public:
     MultiChannel() = default;
-    MultiChannel(size_t, size_t, MultiChannelParams);
+    MultiChannel(size_t, size_t, MultiChannelParams, UnitsEnum unit = UnitsEnum::nb);
 
     // Utilities
     size_t Dimensions() const { return ndims; }
@@ -46,7 +109,16 @@ class MultiChannel {
     template <typename T> double GenerateWeight(Integrand<T> &, const std::vector<T> &);
 
     // Getting results
+    bool HasResults() const { return summary.results.size() != 0; }
+    void UpdateSummary(bool update) { update_summary = update; }
     MultiChannelSummary Summary();
+    StatsData LastResult() const { return summary.LastResult(); }
+    bool NeedsOptimization(double) const;
+
+    // Cache Results
+    void SaveState(std::ostream &) const;
+    void LoadState(std::istream &);
+    bool operator==(const MultiChannel &) const;
 
     // YAML interface
     friend YAML::convert<achilles::MultiChannel>;
@@ -56,19 +128,22 @@ class MultiChannel {
     void TrainChannels();
     template <typename T> void RefineChannels(Integrand<T> &func) {
         params.iteration = 0;
-        params.ncalls *= 2;
+        params.ncalls =
+            static_cast<size_t>(static_cast<double>(params.ncalls) * params.rescale_factor);
         for(auto &channel : func.Channels()) {
-            if(channel.integrator.Grid().Bins() < 200) channel.integrator.Refine();
+            if(channel.integrator.Grid().Bins() < 100) channel.integrator.Refine();
         }
     }
     void PrintIteration() const;
     void MaxDifference(const std::vector<double> &);
 
+    bool update_summary{true};
     size_t ndims{};
     MultiChannelParams params{};
     std::vector<double> channel_weights, best_weights;
     double min_diff{lim::infinity()};
     MultiChannelSummary summary;
+    UnitsEnum m_units = UnitsEnum::nb;
 };
 
 template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func) {
@@ -106,8 +181,10 @@ template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func
     Adapt(train_data);
     func.Train();
     MaxDifference(train_data);
-    summary.results.push_back(results);
-    summary.sum_results += results;
+    if(update_summary) {
+        summary.results.push_back(results);
+        summary.sum_results += results;
+    }
 }
 
 template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
@@ -134,9 +211,9 @@ double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vec
 
 template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func) {
     double rel_err = lim::max();
-    while((rel_err > params.rtol) || summary.results.size() < params.niterations) {
+    while(NeedsOptimization(rel_err)) {
         (*this)(func);
-        StatsData current = summary.sum_results;
+        StatsData current = summary.results.back();
         rel_err = current.Error() / std::abs(current.Mean());
 
         PrintIteration();
@@ -194,20 +271,20 @@ template <> struct convert<achilles::MultiChannelParams> {
         node["beta"] = rhs.beta;
         node["min_alpha"] = rhs.min_alpha;
         node["iteration"] = rhs.iteration;
+        node["rescale_factor"] = rhs.rescale_factor;
 
         return node;
     }
 
     static bool decode(const Node &node, achilles::MultiChannelParams &rhs) {
-        if(node.size() != rhs.nparams) return false;
-
-        rhs.ncalls = node["NCalls"].as<size_t>();
-        rhs.niterations = node["NIterations"].as<size_t>();
-        rhs.rtol = node["rtol"].as<double>();
-        rhs.nrefine = node["nrefine"].as<size_t>();
-        rhs.beta = node["beta"].as<double>();
-        rhs.min_alpha = node["min_alpha"].as<double>();
-        rhs.iteration = node["iteration"].as<size_t>();
+        if(node["NCalls"]) rhs.ncalls = node["NCalls"].as<size_t>();
+        if(node["NIterations"]) rhs.niterations = node["NIterations"].as<size_t>();
+        if(node["rtol"]) rhs.rtol = node["rtol"].as<double>();
+        if(node["nrefine"]) rhs.nrefine = node["nrefine"].as<size_t>();
+        if(node["beta"]) rhs.beta = node["beta"].as<double>();
+        if(node["min_alpha"]) rhs.min_alpha = node["min_alpha"].as<double>();
+        if(node["iteration"]) rhs.iteration = node["iteration"].as<size_t>();
+        if(node["rescale_factor"]) rhs.rescale_factor = node["rescale_factor"].as<double>();
 
         return true;
     }

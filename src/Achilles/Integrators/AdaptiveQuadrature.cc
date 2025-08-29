@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <numeric>
 
-#include "nuchic/Integrators/AdaptiveQuadrature.hh"
-#include "nuchic/Integrators/QuadratureIntegrator.hh"
+#include "Achilles/Integrators/AdaptiveQuadrature.hh"
+#include "Achilles/Integrators/QuadratureIntegrator.hh"
 #include "spdlog/spdlog.h"
 
-using namespace nuchic::Integrator;
+using namespace achilles::Integrator;
 
 AdaptiveQuadrature::AdaptiveQuadrature(std::unique_ptr<QuadratureIntegrator> integrator,
                                        const size_t &maxSteps, bool cache)

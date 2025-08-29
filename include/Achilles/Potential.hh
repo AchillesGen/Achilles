@@ -10,7 +10,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/References.hh"
+#include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Utilities.hh"
 
 #pragma GCC diagnostic push
@@ -56,9 +56,8 @@ class Potential {
     static std::string Name() { return "Potential"; }
 
     virtual ~Potential() = default;
-    virtual std::string GetReference() const = 0;
     // TODO: Figure out if it should be Nucleus or not passed in
-    virtual PotentialVals operator()(const double &, const double &) const = 0;
+    virtual PotentialVals operator()(double, double) const = 0;
 
     PotentialVals derivative_p(double p, double r, double h = step) const {
         auto fp = [&](double x) { return this->operator()(x, r); };
@@ -159,10 +158,9 @@ using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus> &, const YA
     public:
         SquareWellPotential(std::shared_ptr<Nucleus> nucleus) : m_nucleus{std::move(nucleus)} {}
 
-        PotentialVals operator()(const double&, const double &r) const override;
+        PotentialVals operator()(double, double r) const override;
         static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus>&, const YAML::Node&);
         static std::string Name() { return "SquareWellPotential"; }
-        std::string GetReference() const override { return ""; }
 
     private:
         std::shared_ptr<Nucleus> m_nucleus;
@@ -172,19 +170,9 @@ using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus> &, const YA
 class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential> {
   public:
     WiringaPotential(std::shared_ptr<Nucleus> nucleus, const double &rho0 = 0.16)
-        : m_nucleus{std::move(nucleus)}, m_rho0{rho0}, m_ref{"article", "PhysRevC.38.2967"} {
-        m_ref.AddField("title", "{Single-particle potential in dense nuclear matter}");
-        m_ref.AddField("author", "{Wiringa, R. B.}");
-        m_ref.AddField("journal", "{Phys. Rev. C}");
-        m_ref.AddField("volume", "{38}");
-        m_ref.AddField("issue", "{6}");
-        m_ref.AddField("pages", "{2967--2970}");
-        m_ref.AddField("numpages", "{0}");
-        m_ref.AddField("year", "{1998}");
-        m_ref.AddField("month", "{Dec}");
-        m_ref.AddField("publisher", "{American Physical Society}");
-        m_ref.AddField("doi", "{10.1103/PhysRevC.38.2967}");
-        m_ref.AddField("url", "{https://link.aps.org/doi/10.1103/PhysRevC.38.2967");
+        : m_nucleus{std::move(nucleus)}, m_rho0{rho0} {
+        Reference ref{ReferenceType::inspire, "Wiringa:1988jt", "Non-relativistic potential"};
+        ReferenceHandler::Handle().AddReference(ref);
     }
 
     static std::string Name() { return "Wiringa"; }
@@ -195,33 +183,20 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
         return Constant::mN + p * p / (2 * Constant::mN) + vals.rvector;
     }
 
-    std::string GetReference() const override { return m_ref.GetReference(); }
     double Rho0() const { return m_rho0; }
 
-    PotentialVals operator()(const double &plab, const double &radius) const override;
+    PotentialVals operator()(double plab, double radius) const override;
 
   private:
     std::shared_ptr<Nucleus> m_nucleus;
     double m_rho0;
-    Reference m_ref;
 };
 
 class CooperPotential : public Potential, RegistrablePotential<CooperPotential> {
   public:
-    CooperPotential(std::shared_ptr<Nucleus> nucleus)
-        : m_nucleus{std::move(nucleus)}, m_ref{"article", "PhysRevC.80.034605"} {
-        m_ref.AddField("title", "{Global Dirac optical potential from helium to lead}");
-        m_ref.AddField("author", "{Cooper, E. D. and Hama, S. and Clark, B. C.}");
-        m_ref.AddField("journal", "{Phys. Rev. C}");
-        m_ref.AddField("volume", "{80}");
-        m_ref.AddField("issue", "{3}");
-        m_ref.AddField("pages", "{034605}");
-        m_ref.AddField("numpages", "{5}");
-        m_ref.AddField("year", "{2009}");
-        m_ref.AddField("month", "{Sep}");
-        m_ref.AddField("publisher", "{American Physical Society}");
-        m_ref.AddField("doi", "{10.1103/PhysRevC.80.034605}");
-        m_ref.AddField("url", "{https://link.aps.org/doi/10.1103/PhysRevC.80.034605}");
+    CooperPotential(std::shared_ptr<Nucleus> nucleus) : m_nucleus{std::move(nucleus)} {
+        Reference ref{ReferenceType::inspire, "Cooper:2009zza", "Relativistic optical potential"};
+        ReferenceHandler::Handle().AddReference(ref);
 
         for(size_t i = 0; i < 8; ++i) {
             for(size_t j = 0; j < 8; ++j) {
@@ -235,10 +210,9 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
     static std::string Name() { return "Cooper"; }
     static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus> &, const YAML::Node &);
 
-    std::string GetReference() const override { return m_ref.GetReference(); }
     bool IsRelativistic() const override { return true; }
 
-    PotentialVals operator()(const double &plab, const double &radius) const override {
+    PotentialVals operator()(double plab, double radius) const override {
         return evaluate(plab, radius);
     }
 
@@ -248,7 +222,6 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
     std::shared_ptr<Nucleus> m_nucleus;
 
   private:
-    Reference m_ref;
     std::array<double, 22 * 8> data{};
 
     double Data(size_t i, size_t j) const { return data[8 * (i - 1) + j - 1]; }
@@ -313,7 +286,7 @@ class SchroedingerPotential : public CooperPotential, RegistrablePotential<Schro
     static std::string Name() { return "Schroedinger"; }
     static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus> &, const YAML::Node &);
 
-    PotentialVals operator()(const double &plab, const double &radius) const override;
+    PotentialVals operator()(double plab, double radius) const override;
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);

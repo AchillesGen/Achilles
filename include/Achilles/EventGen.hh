@@ -7,6 +7,7 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Vegas.hh"
 
@@ -32,13 +33,12 @@ class EventGen {
   public:
     EventGen(const std::string &, std::vector<std::string>);
     void Initialize();
-    void GenerateEvents();
+    void GenerateEvents(bool);
 
   private:
     bool GenerateSingleEvent();
 
     bool runCascade{false}, outputEvents{false}, doHardCuts{false};
-    [[maybe_unused]] bool doEventCuts{false};
     bool runDecays{false};
     bool doRotate{false};
     bool MakeCuts(Event &);
@@ -53,7 +53,7 @@ class EventGen {
     // CutCollection event_cuts{};
     MultiChannel integrator;
     Integrand<FourVector> integrand;
-    YAML::Node config;
+    Settings config;
     std::vector<double> m_group_weights{};
     double m_max_weight{};
 

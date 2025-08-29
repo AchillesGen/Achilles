@@ -1,8 +1,34 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Constants.hh"
 
+#include "Achilles/ParticleInfo.hh"
 #include "fmt/format.h"
 #include "yaml-cpp/yaml.h"
+
+namespace achilles {
+double sph_bessel(unsigned int l, double x) {
+#ifdef ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS
+    // Use the C++ standard library's special functions if available
+    return std::sph_bessel(l, x);
+#else
+    if(l == 0) {
+        if(x == 0) {
+            return 1.0; // Handle the singularity at x = 0
+        }
+        return sin(x) / x; // Spherical Bessel function of order 0
+    } else if(l == 1) {
+        if(x == 0) {
+            return 0.0; // Handle the singularity at x = 0
+        }
+        return (sin(x) - x * cos(x)) / (x * x); // Spherical Bessel function of order 1
+    } else {
+        throw std::invalid_argument(
+            fmt::format("Unsupported spherical Bessel function order: {}", l));
+    }
+#endif
+}
+
+} // namespace achilles
 
 achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     Values results;
@@ -13,6 +39,7 @@ achilles::FormFactor::Values achilles::FormFactor::operator()(double Q2) const {
     if(resonanceaxial) resonanceaxial->Evaluate(Q2, results);
     if(mecvector) mecvector->Evaluate(Q2, results);
     if(mecaxial) mecaxial->Evaluate(Q2, results);
+    if(hyperon) hyperon->Evaluate(Q2, results);
     return results;
 }
 
@@ -63,6 +90,8 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::AxialDipole::Construct(achil
 void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.FA = -gan1 / pow(1.0 + Q2 / MA / MA, 2);
     result.FAs = -gans / pow(1.0 + Q2 / MA / MA, 2);
+    result.FAP =
+        2.0 * Constant::mN2 / (Q2 * 1_GeV * 1_GeV + pow(ParticleInfo(211).Mass(), 2)) * result.FA;
 }
 
 // Axial Z-Expansion Form Factor
@@ -92,6 +121,9 @@ void achilles::AxialZExpansion::Evaluate(double Q2, FormFactor::Values &result) 
     result.FA = ZExpand(cc_params, z);
     // Strange-quark axial form factor
     result.FAs = ZExpand(strange_params, z);
+    // Pseudo-axial form factor
+    result.FAP =
+        2.0 * Constant::mN2 / (Q2 * 1_GeV * 1_GeV + pow(ParticleInfo(211).Mass(), 2)) * result.FA;
 }
 
 // Kelly Form Factor
@@ -207,6 +239,29 @@ void achilles::HelmFormFactor::Evaluate(double Q2, FormFactor::Values &result) c
                   (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
 }
 
+// Klein-Nystrand (KN) Form Factor 2007.03658 (Eq. 26)
+achilles::KNFormFactor::KNFormFactor(const YAML::Node &config) {
+    r0 = config["r0"].as<double>(); // default = 3.427 fm
+    ak = config["ak"].as<double>(); // default = 0.7 fm
+    if(config["Adapted"] && config["Adapted"].as<bool>()) {
+        RA = sqrt(5 * r0 * r0 / 3 - 10 * ak * ak);
+    } else {
+        auto A = config["A"].as<double>();
+        RA = 1.2 * std::cbrt(A); // default = 1.2 * A^(1/3) fm
+    }
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::KNFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<KNFormFactor>(type);
+    return std::make_unique<KNFormFactor>(node);
+}
+
+void achilles::KNFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    double kappa = sqrt(Q2) / Constant::HBARC;
+    result.Fcoh = 3 / (1 + kappa * kappa * ak * ak) * sph_bessel(1, kappa * RA) / (kappa * RA);
+}
+
 // Lovato Form Factor
 achilles::LovatoFormFactor::LovatoFormFactor(const YAML::Node &config) {
     b = config["b"].as<double>();
@@ -276,12 +331,11 @@ achilles::MECVectorFormFactor::Construct(achilles::FFType type, const YAML::Node
     return std::make_unique<MECVectorFormFactor>(node);
 }
 
-void achilles::MECVectorFormFactor::Evaluate(double Q2,
-                                                        FormFactor::Values &result) const {
+void achilles::MECVectorFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
     spdlog::trace("MECVectorFormFactor: Q2 = {}", Q2);
-    result.FmecV3 = cv3norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
-    result.FmecV4 = cv4norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/4./MvSq)*sqrt(3./2.);
-    result.FmecV5 = cv5norm/pow(1. + Q2/MvSq, 2)/(1. + Q2/0.776/MvSq)*sqrt(3./2.);
+    result.FmecV3 = cv3norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 4. / MvSq) * sqrt(3. / 2.);
+    result.FmecV4 = cv4norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 4. / MvSq) * sqrt(3. / 2.);
+    result.FmecV5 = cv5norm / pow(1. + Q2 / MvSq, 2) / (1. + Q2 / 0.776 / MvSq) * sqrt(3. / 2.);
     result.Fpiem = result.Gep - result.Gen;
 }
 
@@ -297,8 +351,38 @@ achilles::MECAxialFormFactor::Construct(achilles::FFType type, const YAML::Node 
     return std::make_unique<MECAxialFormFactor>(node);
 }
 
-void achilles::MECAxialFormFactor::Evaluate(double Q2,
-                                                        FormFactor::Values &result) const {
+void achilles::MECAxialFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
     spdlog::trace("MECAxialFormFactor: Q2 = {}", Q2);
-    result.FmecA5 = ca5norm/pow(1. + Q2/MaDeltaSq,2)/(1. + Q2/3./MaDeltaSq)*sqrt(3./2.);
+    result.FmecA5 =
+        ca5norm / pow(1. + Q2 / MaDeltaSq, 2) / (1. + Q2 / 3. / MaDeltaSq) * sqrt(3. / 2.);
+}
+
+// Hyperon form factors
+achilles::HyperonFormFactor::HyperonFormFactor(const YAML::Node &config) {
+    dummy = config["dummy"].as<double>();
+}
+
+std::unique_ptr<achilles::FormFactorImpl>
+achilles::HyperonFormFactor::Construct(achilles::FFType type, const YAML::Node &node) {
+    Validate<HyperonFormFactor>(type);
+    return std::make_unique<HyperonFormFactor>(node);
+}
+
+void achilles::HyperonFormFactor::Evaluate(double Q2, FormFactor::Values &result) const {
+    spdlog::trace("HyperonFormFactor: Q2 = {}", Q2);
+
+    double x = 0.73;
+    double lambda_ratio = Constant::mlambda / (Constant::mlambda + Constant::mn);
+    double sigmam_ratio = Constant::msigmam / (Constant::msigmam + Constant::mn);
+    double sigma0_ratio = Constant::msigma0 / (Constant::msigma0 + Constant::mn);
+
+    result.F1lam = -sqrt(3. / 2.) * result.F1p;
+    result.F2lam = -sqrt(3. / 2.) * lambda_ratio * result.F2p;
+    result.FAlam = -sqrt(3. / 2.) * ((1. + 2. * x) / 3.) * result.FA;
+    result.F1sigm = -(result.F1p + 2 * result.F1n);
+    result.F2sigm = -sigmam_ratio * (result.F2p + 2. * result.F2n);
+    result.FAsigm = (1. - 2. * x) * result.FA;
+    result.F1sig0 = -(1. / sqrt(2.)) * (result.F1p + 2. * result.F1n);
+    result.F2sig0 = -sigma0_ratio * (1. / sqrt(2.)) * (result.F2p + 2. * result.F2n);
+    result.FAsig0 = (1. - 2. * x) * result.FA / sqrt(2.);
 }

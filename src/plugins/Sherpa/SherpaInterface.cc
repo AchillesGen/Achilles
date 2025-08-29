@@ -1,4 +1,4 @@
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #include "AMEGIC++/Main/Process_Base.H"
 #include "ATOOLS/Org/CXXFLAGS.H"
 #include "ATOOLS/Org/CXXFLAGS_PACKAGES.H"
@@ -21,12 +21,12 @@
 #include "MODEL/Main/Running_AlphaS.H"
 #include "MODEL/Main/Single_Vertex.H"
 #include "PHASIC++/Main/Process_Integrator.H"
+#include "Plugins/Sherpa/AchillesReader.hh"
+#include "Plugins/Sherpa/Channels.hh"
 #include "SHERPA/Initialization/Initialization_Handler.H"
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"
 #include "SHERPA/Single_Events/Event_Handler.H"
-#include "plugins/Sherpa/AchillesReader.hh"
-#include "plugins/Sherpa/Channels.hh"
 #include <bitset>
 
 using namespace SHERPA;
@@ -112,6 +112,8 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     addParameter(argv, "CSS_ENHANCE=S{a}{e+}{e-} 0");
     addParameter(argv, "CSS_ENHANCE=S{a}{e-}{e+} 0");
     addParameter(argv, "NLO_SUBTRACTION_SCHEME=2");
+    addParameter(argv, "HDH_SET_WIDTHS=1");
+    addParameter(argv, "HARD_DECAYS=1");
     // add additional commandline parameters
     for(const auto &arg : args) addParameter(argv, arg);
     // Initialise Sherpa and return.
@@ -129,17 +131,14 @@ bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
     return true;
 }
 
-ATOOLS::Cluster_Amplitude *SherpaInterface::ConstructAmplitude(const std::vector<long> &_fl,
-                                                               const std::vector<std::array<double, 4>> &p) const {
+ATOOLS::Cluster_Amplitude *
+SherpaInterface::ConstructAmplitude(const std::vector<long> &_fl,
+                                    const std::vector<std::array<double, 4>> &p) const {
     std::vector<Vec4D> cp(_fl.size());
     if(p.size() == 0) {
-        for(size_t i(0); i < _fl.size(); ++i) {
-            cp[i] = Vec4D();
-        }
+        for(size_t i(0); i < _fl.size(); ++i) { cp[i] = Vec4D(); }
     } else {
-        for(size_t i(0); i < _fl.size(); ++i) {
-            cp[i] = {p[i][0], p[i][1], p[i][2], p[i][3]};
-        }
+        for(size_t i(0); i < _fl.size(); ++i) { cp[i] = {p[i][0], p[i][1], p[i][2], p[i][3]}; }
     }
     Cluster_Amplitude *ampl(Cluster_Amplitude::New());
     ampl->CreateLeg(-cp[1], Flavour((long int)(_fl[1])).Bar(), ColorID(0, 0));
@@ -329,7 +328,7 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
         channel->InitializeChannel(cur);
         auto encoding = std::hash<std::string>{}(channel->ToString());
         if(encoded_channels.find(encoding) != encoded_channels.end()) continue;
-        spdlog::info("{}", channel->ToString());
+        spdlog::debug("{}", channel->ToString());
         encoded_channels.insert(encoding);
         channels.push_back(std::move(channel));
     }

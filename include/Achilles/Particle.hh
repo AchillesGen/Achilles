@@ -5,6 +5,8 @@
 #include <utility>
 #include <vector>
 
+#include "fmt/core.h"
+#include "fmt/format.h"
 #include "spdlog/fmt/ostr.h"
 
 #include "Achilles/FourVector.hh"
@@ -13,21 +15,27 @@
 
 namespace achilles {
 
-// TODO: Reorganize to match NuHepMC3 standard
+// The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
-    internal_test = -3,
-    external_test = -2,
-    propagating = -1,
-    background = 0,
-    initial_state = 1,
-    final_state = 2,
-    escaped = 3,
-    captured = 4,
-    decayed = 5,
-    beam = 6,
-    target = 7,
-    spectator = 8,
+    any = 0,
+    final_state = 1,
+    decayed = 2,
+    initial_state = 3,
+    beam = 4,
+    target = 11,
+    internal_test = 22,
+    external_test = 23,
+    propagating = 24,
+    background = 25,
+    captured = 26,
+    residue = 27,
+    spectator = 28,
+    interacted = 29,
+    absorption_partner = 99,
 };
+inline auto format_as(achilles::ParticleStatus s) {
+    return fmt::underlying(s);
+}
 
 /// The Particle class provides a container to handle information about the particle.
 /// The information includes the particle identification (PID), the momentum of the particle,
@@ -78,30 +86,31 @@ class Particle {
     ///@param status: The status code of the particle (default = 0)
     ///@param mothers: The mother particles of the particle (default = Empty)
     ///@param daughters: The daughter particles of the particle (default = Empty)
-    Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
-             ThreeVector pos = ThreeVector(),
-             const ParticleStatus &_status = static_cast<ParticleStatus>(0),
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
+                      ThreeVector pos = ThreeVector(),
+                      const ParticleStatus &_status = ParticleStatus::background,
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
           mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
         formationZone = 0;
     }
 
-    Particle(const long int &pid, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), const int &_status = 0,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
+                      ThreeVector pos = ThreeVector(), const int &_status = 0,
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(mom), position(std::move(pos)),
           status(static_cast<ParticleStatus>(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
         formationZone = 0;
     }
 
-    Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
-             ThreeVector pos = ThreeVector(), ParticleStatus _status = ParticleStatus::background,
-             std::vector<int> _mothers = std::vector<int>(),
-             std::vector<int> _daughters = std::vector<int>()) noexcept
+    explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
+                      ThreeVector pos = ThreeVector(),
+                      ParticleStatus _status = ParticleStatus::background,
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
           status(std::move(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
@@ -134,19 +143,19 @@ class Particle {
 
     /// Set the mother particles of the given particle
     ///@param std::vector<int>: A vector containing information about the mother particles
-    void SetMothers(const std::vector<int> &_mothers) noexcept { mothers = _mothers; }
+    void SetMothers(const std::vector<Particle> &_mothers) noexcept { mothers = _mothers; }
 
     /// Set the daughter particles of the given particle
     ///@param std::vector<int>: A vector containing information about the daughter particles
-    void SetDaughters(const std::vector<int> &_daughters) noexcept { daughters = _daughters; }
+    void SetDaughters(const std::vector<Particle> &_daughters) noexcept { daughters = _daughters; }
 
     /// Add a new mother particle to an existing particle
     ///@param idx: The index of the mother particle to be set
-    void AddMother(const int &idx) noexcept { mothers.push_back(idx); }
+    void AddMother(const Particle &part) noexcept { mothers.push_back(part); }
 
     /// Add a new daughter particle to an existing particle
     ///@param idx: The index of the daughter particle to be set
-    void AddDaughter(const int &idx) noexcept { daughters.push_back(idx); }
+    void AddDaughter(const Particle &part) noexcept { daughters.push_back(part); }
 
     /// Set the formation zone of the particle. The formation zone is a time in which
     /// the particle is not allowed to interact. The formation zone is discussed in detail in:
@@ -202,12 +211,12 @@ class Particle {
     ParticleStatus &Status() noexcept { return status; }
 
     /// Return a vector of the mother particle indices
-    ///@return std::vector<int>: A vector of indices referring to the mother particle
-    const std::vector<int> &Mothers() const noexcept { return mothers; }
+    ///@return std::vector<Particle>: A vector of Particles referring to the mothers
+    const std::vector<Particle> &Mothers() const noexcept { return mothers; }
 
     /// Return a vector of the daughter particle indices
-    ///@return std::vector<int>: A vector of indices referring to the daughter particle
-    const std::vector<int> &Daughters() const noexcept { return daughters; }
+    ///@return std::vector<Particle>: A vector of Particles referring to the daughters
+    const std::vector<Particle> &Daughters() const noexcept { return daughters; }
 
     /// Return the current time remaining in the formation zone
     ///@return double: Time left in formation zone
@@ -248,17 +257,22 @@ class Particle {
 
     /// Check to see if the particle is a propagating particle in the nucleus
     ///@return bool: True if a propagating particle, False otherwise
-    bool IsPropagating() const noexcept { return status == ParticleStatus::propagating; }
-
-    /// Check to see if the particle is a final state particle
-    ///@return bool: True if a final state particle, False otherwise
-    bool IsFinal() const noexcept {
-        return (status == ParticleStatus::escaped) || (status == ParticleStatus::final_state);
+    bool IsPropagating() const noexcept {
+        return status == ParticleStatus::propagating || status == ParticleStatus::external_test ||
+               status == ParticleStatus::internal_test;
     }
 
     /// Check to see if the particle is a final state particle
     ///@return bool: True if a final state particle, False otherwise
+    bool IsFinal() const noexcept { return status == ParticleStatus::final_state; }
+
+    /// Check to see if the particle is a final state particle
+    ///@return bool: True if a final state particle, False otherwise
     bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
+
+    /// Check to see if the particle should be written out
+    ///@return bool: True if the particle should be written out, False otherwise
+    bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
 
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
@@ -319,22 +333,44 @@ class Particle {
     FourVector momentum;
     ThreeVector position;
     ParticleStatus status;
-    std::vector<int> mothers, daughters;
+    std::vector<Particle> mothers, daughters;
     double formationZone;
     double distanceTraveled = 0.0;
 };
+
+/// Find the time to closest approach between two particles
+/// @param p1: The first particle
+/// @param p2: The second particle
+/// @return double: The time to closest approach between the two particles
+double ClosestApproach(const Particle &, const Particle &);
+
+// Comparisons for std::reference_wrapper<Particle> with Particle
+bool operator==(const std::reference_wrapper<Particle> &, const Particle &);
+bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
 
 } // namespace achilles
 
 namespace fmt {
 
 template <> struct formatter<achilles::Particle> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::Particle &particle, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
+                         particle.Momentum(), particle.Position());
+    }
+};
+
+template <> struct formatter<std::reference_wrapper<achilles::Particle>> {
     template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
 
     template <typename FormatContext>
-    auto format(const achilles::Particle &particle, FormatContext &ctx) const {
-        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
-                         particle.Momentum(), particle.Position());
+    auto format(const std::reference_wrapper<achilles::Particle> &particle,
+                FormatContext &ctx) const {
+        return format_to(ctx.out(), "{}", particle.get());
     }
 };
 
@@ -356,8 +392,6 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "initial_state({})", static_cast<int>(status));
         case achilles::ParticleStatus::final_state:
             return format_to(ctx.out(), "final_state({})", static_cast<int>(status));
-        case achilles::ParticleStatus::escaped:
-            return format_to(ctx.out(), "escaped({})", static_cast<int>(status));
         case achilles::ParticleStatus::captured:
             return format_to(ctx.out(), "captured({})", static_cast<int>(status));
         case achilles::ParticleStatus::decayed:
@@ -366,6 +400,10 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "beam({})", static_cast<int>(status));
         case achilles::ParticleStatus::target:
             return format_to(ctx.out(), "target({})", static_cast<int>(status));
+        case achilles::ParticleStatus::spectator:
+            return format_to(ctx.out(), "spectator({})", static_cast<int>(status));
+        case achilles::ParticleStatus::interacted:
+            return format_to(ctx.out(), "cascade({})", static_cast<int>(status));
         default:
             return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
                              static_cast<int>(status));

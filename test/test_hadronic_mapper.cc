@@ -1,14 +1,21 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "catch2/catch.hpp"
+#pragma GCC diagnostic pop
 
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/HadronicMapper.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/ProcessInfo.hh"
 
 TEST_CASE("HadronicMapper", "[PhaseSpace]") {
+    achilles::ProcessInfo info({achilles::PID::electron(), {achilles::PID::electron()}});
+
     SECTION("Forward Map") {
         SECTION("Coherent") {
-            auto mapper = achilles::CoherentMapper::Construct(0);
+            info.m_hadronic = {{achilles::PID::carbon()}, {achilles::PID::carbon()}};
+            auto mapper = achilles::CoherentMapper::Construct(info, 0);
             std::vector<achilles::FourVector> mom(1);
             std::vector<double> ran(mapper->NDims());
             mapper->GeneratePoint(mom, ran);
@@ -18,7 +25,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             CHECK(ran == ran2);
         }
         SECTION("QESpectral") {
-            auto mapper = achilles::QESpectralMapper::Construct(1);
+            info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+            auto mapper = achilles::QESpectralMapper::Construct(info, 1);
             std::vector<achilles::FourVector> mom = {{1000, 0, 0, 1000}, {}};
             std::vector<double> ran = {0.5, 0.5, 0.5, 0.5};
             mapper->SetMasses({0, 0, 0, 0});
@@ -32,7 +40,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
 
     SECTION("Reverse Map") {
         SECTION("Coherent") {
-            auto mapper = achilles::CoherentMapper::Construct(0);
+            info.m_hadronic = {{achilles::PID::carbon()}, {achilles::PID::carbon()}};
+            auto mapper = achilles::CoherentMapper::Construct(info, 0);
             std::vector<achilles::FourVector> mom = {
                 {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0}};
             std::vector<double> ran(mapper->NDims());
@@ -42,7 +51,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             CHECK(mom == mom2);
         }
         SECTION("QESpectral") {
-            auto mapper = achilles::QESpectralMapper::Construct(1);
+            info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+            auto mapper = achilles::QESpectralMapper::Construct(info, 1);
             std::vector<achilles::FourVector> mom = {
                 {1000, 0, 0, 1000},
                 {achilles::Constant::mN - 20, 400 * sin(M_PI / 4) * cos(M_PI / 6),

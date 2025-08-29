@@ -27,6 +27,7 @@ struct FormFactorInfo {
         F2p,
         F2n,
         FA,
+        FAP,
         FCoh,
         FResV,
         FResA,
@@ -34,7 +35,16 @@ struct FormFactorInfo {
         FMecV3,
         FMecV4,
         FMecV5,
-        FMecA5
+        FMecA5,
+        F1Lam,
+        F2Lam,
+        FALam,
+        F1Sigm,
+        F2Sigm,
+        FASigm,
+        F1Sig0,
+        F2Sig0,
+        FASig0
     };
 
     Type form_factor;
@@ -44,6 +54,9 @@ struct FormFactorInfo {
         return form_factor == other.form_factor && coupling == other.coupling;
     }
 };
+inline auto format_as(achilles::FormFactorInfo::Type t) {
+    return fmt::underlying(t);
+}
 
 inline std::string ToString(FormFactorInfo::Type type) {
     switch(type) {
@@ -61,6 +74,8 @@ inline std::string ToString(FormFactorInfo::Type type) {
         return "F2n";
     case FormFactorInfo::Type::FA:
         return "FA";
+    case FormFactorInfo::Type::FAP:
+        return "FAP";
     case FormFactorInfo::Type::FCoh:
         return "FCoh";
     case FormFactorInfo::Type::FResV:
@@ -77,6 +92,24 @@ inline std::string ToString(FormFactorInfo::Type type) {
         return "FMecV5";
     case FormFactorInfo::Type::FMecA5:
         return "FMecA5";
+    case FormFactorInfo::Type::F1Lam:
+        return "F1Lam";
+    case FormFactorInfo::Type::F2Lam:
+        return "F2Lam";
+    case FormFactorInfo::Type::FALam:
+        return "FALam";
+    case FormFactorInfo::Type::F1Sigm:
+        return "F1Sigm";
+    case FormFactorInfo::Type::F2Sigm:
+        return "F2Sigm";
+    case FormFactorInfo::Type::FASigm:
+        return "FASigm";
+    case FormFactorInfo::Type::F1Sig0:
+        return "F1Sig0";
+    case FormFactorInfo::Type::F2Sig0:
+        return "F2Sig0";
+    case FormFactorInfo::Type::FASig0:
+        return "FASig0";
     }
     return "Unknown";
 }
@@ -86,10 +119,13 @@ class FormFactor {
     struct Values {
         double Gep{}, Gen{}, Gmp{}, Gmn{};
         double F1p{}, F2p{}, F1n{}, F2n{};
-        double FA{}, FAs{};
+        double FA{}, FAs{}, FAP{};
         double Fcoh{};
         double FresV{}, FresA{};
         double Fpiem{}, FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};
+        double F1lam{}, F2lam{}, FAlam{};
+        double F1sigm{}, F2sigm{}, FAsigm{};
+        double F1sig0{}, F2sig0{}, FAsig0{};
     };
 
     FormFactor() = default;
@@ -107,9 +143,19 @@ class FormFactor {
     std::shared_ptr<FormFactorImpl> resonanceaxial = nullptr;
     std::shared_ptr<FormFactorImpl> mecvector = nullptr;
     std::shared_ptr<FormFactorImpl> mecaxial = nullptr;
+    std::shared_ptr<FormFactorImpl> hyperon = nullptr;
 };
 
-enum class FFType { vector, axial, coherent, resonancevector, resonanceaxial, mecvector, mecaxial };
+enum class FFType {
+    vector,
+    axial,
+    coherent,
+    resonancevector,
+    resonanceaxial,
+    mecvector,
+    mecaxial,
+    hyperon
+};
 
 inline std::string FFTypeToString(FFType type) {
     std::string result;
@@ -135,6 +181,9 @@ inline std::string FFTypeToString(FFType type) {
     case FFType::mecaxial:
         result = "mecaxial";
         break;
+    case FFType::hyperon:
+        result = "hyperon";
+        break;
     }
     return result;
 }
@@ -159,6 +208,7 @@ class FormFactorBuilder {
     MOCK FormFactorBuilder &ResonanceAxial(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &MesonExchangeVector(const std::string &, const YAML::Node &);
     MOCK FormFactorBuilder &MesonExchangeAxial(const std::string &, const YAML::Node &);
+    MOCK FormFactorBuilder &Hyperon(const std::string &, const YAML::Node &);
 
     MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
 
@@ -375,6 +425,20 @@ class HelmFormFactor : public FormFactorImpl, RegistrableFormFactor<HelmFormFact
     double s, r;
 };
 
+class KNFormFactor : public FormFactorImpl, RegistrableFormFactor<KNFormFactor> {
+  public:
+    KNFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "KN"; }
+    static FFType Type() { return FFType::coherent; }
+
+  private:
+    double r0, ak, RA;
+};
+
 class LovatoFormFactor : public FormFactorImpl, RegistrableFormFactor<LovatoFormFactor> {
   public:
     LovatoFormFactor(const YAML::Node &);
@@ -420,8 +484,7 @@ class ResonanceDummyAxialFormFactor : public FormFactorImpl,
     double resA;
 };
 
-class MECVectorFormFactor : public FormFactorImpl,
-                                       RegistrableFormFactor<MECVectorFormFactor> {
+class MECVectorFormFactor : public FormFactorImpl, RegistrableFormFactor<MECVectorFormFactor> {
   public:
     MECVectorFormFactor(const YAML::Node &);
     void Evaluate(double, FormFactor::Values &) const override;
@@ -435,8 +498,7 @@ class MECVectorFormFactor : public FormFactorImpl,
     double MvSq, cv3norm, cv4norm, cv5norm;
 };
 
-class MECAxialFormFactor : public FormFactorImpl,
-                                      RegistrableFormFactor<MECAxialFormFactor> {
+class MECAxialFormFactor : public FormFactorImpl, RegistrableFormFactor<MECAxialFormFactor> {
   public:
     MECAxialFormFactor(const YAML::Node &);
     void Evaluate(double, FormFactor::Values &) const override;
@@ -448,6 +510,20 @@ class MECAxialFormFactor : public FormFactorImpl,
 
   private:
     double MaDeltaSq, ca5norm;
+};
+
+class HyperonFormFactor : public FormFactorImpl, RegistrableFormFactor<HyperonFormFactor> {
+  public:
+    HyperonFormFactor(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "Hyperon"; }
+    static FFType Type() { return FFType::hyperon; }
+
+  private:
+    double dummy;
 };
 
 } // namespace achilles

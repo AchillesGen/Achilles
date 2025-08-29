@@ -7,11 +7,11 @@
 using namespace achilles;
 
 void Particle::SetFormationZone(const FourVector &p1, const FourVector &p2) noexcept {
-    formationZone = p1.E() / std::abs(Constant::mN * Constant::mN - p1 * p2);
+    formationZone = p1.E() / std::abs(Constant::mN * Constant::mN - p1 * p2) * Constant::HBARC;
 }
 
 void Particle::Propagate(const double &time) noexcept {
-    const double dist = momentum.P() / momentum.E() * time * Constant::HBARC;
+    const double dist = momentum.P() / momentum.E() * time;
 
     const double theta = momentum.Theta();
     const double phi = momentum.Phi();
@@ -22,6 +22,7 @@ void Particle::Propagate(const double &time) noexcept {
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
+    if(formationZone > 0) formationZone -= time;
     position += propDist;
 }
 
@@ -39,7 +40,7 @@ void Particle::SpacePropagate(const double &dist) noexcept {
 }
 
 void Particle::BackPropagate(const double &time) noexcept {
-    const double dist = momentum.P() / momentum.E() * time * Constant::HBARC;
+    const double dist = momentum.P() / momentum.E() * time;
 
     const double theta = momentum.Theta();
     const double phi = momentum.Phi();
@@ -49,6 +50,8 @@ void Particle::BackPropagate(const double &time) noexcept {
     const double propDistZ = dist * std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
+    if(status == ParticleStatus::internal_test) distanceTraveled -= propDist.Magnitude();
+    if(formationZone != 0) formationZone += time;
     position -= propDist;
 }
 
@@ -91,6 +94,20 @@ std::istream &operator>>(std::istream &is, Particle &particle) {
     if(head == "Particle(" && sep1 == ", " && sep2 == ", " && sep3 == "," && tail == ")")
         particle = Particle(pid, momentum, position, status);
     return is;
+}
+
+double ClosestApproach(const Particle &particle1, const Particle &particle2) {
+    auto position = particle2.Position() - particle1.Position();
+    auto velocity = particle1.Beta();
+    return position.Dot(velocity) / velocity.Magnitude2();
+}
+
+bool operator==(const std::reference_wrapper<Particle> &lhs, const Particle &rhs) {
+    return lhs.get() == rhs;
+}
+
+bool operator==(const Particle &lhs, const std::reference_wrapper<Particle> &rhs) {
+    return lhs == rhs.get();
 }
 
 } // namespace achilles

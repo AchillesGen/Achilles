@@ -2,6 +2,7 @@ enable_language(Fortran)
 
 add_library(fortran_interface SHARED
     utilities.f90
+    system_mod.f90
     map_mod.f90
     vectors_mod.f90
     particle_mod.f90
@@ -11,7 +12,7 @@ add_library(fortran_interface SHARED
     interpolation_mod.f90
     # hardscattering_mod.f90
     event_mod.f90
-    nucleus_mod.f90
+    # nucleus_mod.f90
     nuclear_model.f90
     nuclear_model_factory.f90
     nuclear_model_interface.f90
@@ -35,17 +36,19 @@ add_library(fortran_interface SHARED
     #                                           PUBLIC physics)
     # 
     # add_library(fortran_interface SHARED
+    FSystem.cc
     FConstants.cc
     FMap.cc
     FVectors.cc
     FParticle.cc
     FParticleInfo.cc
     FLogging.cc
-    FInteractions.cc
+    # TODO: This is broken for now. Requires defining interface to Random number handler
+    # FInteractions.cc
     FInterpolation.cc
     # FHardScattering.cc
     FEvent.cc 
-    FNucleus.cc
+    # FNucleus.cc
     FProcessInfo.cc
     FNuclearModel.cc
     FSpectralFunction.cc

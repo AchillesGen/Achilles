@@ -1,12 +1,12 @@
+#include "Achilles/Settings.hh"
 #include "catch2/catch.hpp"
 
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/XSecBackend.hh"
-#include "Approx.hh"
 #include "mock_classes.hh"
-#include "trompeloeil.hpp"
 
+using achilles::Particle;
 using achilles::RegistrableBackend;
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
@@ -54,9 +54,10 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         YAML::Node config = YAML::Load(R"config(
         Processes:
             - Leptons: [11, [11]]
-        Unweighting:
-            Name: Percentile
-            percentile: 99
+        Options:
+            Unweighting:
+                Name: Percentile
+                percentile: 99
         )config");
 
         MockNuclearModel model;
@@ -73,7 +74,8 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         REQUIRE_CALL(model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
         REQUIRE_CALL(model, Mode()).TIMES(2).RETURN(achilles::NuclearMode::Quasielastic);
         REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Resonance);
-        auto groups = achilles::ProcessGroup::ConstructGroups(config, &model, beam, nucleus);
+        auto groups = achilles::ProcessGroup::ConstructGroups(achilles::Settings(config), &model,
+                                                              beam, nucleus);
         CHECK(groups.size() == 2);
         CHECK(groups.at(4).Processes().size() == 2);
         CHECK(groups.at(5).Processes().size() == 1);
@@ -98,7 +100,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         Options: 
     )backend");
 
-    MockSherpaInterface sherpa;
+    // MockSherpaInterface sherpa;
     auto backend = std::make_unique<MockBackend>();
     auto model = std::make_unique<MockNuclearModel>();
     trompeloeil::sequence seq;
@@ -106,7 +108,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         .TIMES(1)
         .IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, AddNuclearModel(trompeloeil::ne(nullptr))).TIMES(1).IN_SEQUENCE(seq);
-    REQUIRE_CALL(*backend, SetSherpa(&sherpa)).TIMES(1).IN_SEQUENCE(seq);
+    REQUIRE_CALL(*backend, SetSherpa(nullptr)).TIMES(1).IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, Validate()).TIMES(1).IN_SEQUENCE(seq).RETURN(true);
     REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(1).IN_SEQUENCE(seq);
 
@@ -121,7 +123,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
 
         SECTION("Optimize") {
             group.CrossSection(event, std::optional<size_t>());
@@ -144,12 +146,12 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
     constexpr double ps_wgt = 1;
     constexpr double flux = 1;
 
-    std::vector<achilles::Particle> nucleons = {{achilles::PID::proton()},
-                                                {achilles::PID::neutron()}};
+    std::vector<achilles::Particle> nucleons = {Particle{achilles::PID::proton()},
+                                                Particle{achilles::PID::neutron()}};
     auto beam = std::make_shared<MockBeam>();
     auto nucleus = std::make_shared<MockNucleus>();
-    REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1);
-    REQUIRE_CALL(*nucleus, Nucleons()).TIMES(AT_LEAST(1)).LR_RETURN(nucleons);
+    REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);
+
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
@@ -159,7 +161,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             Options: 
         )backend");
 
-    MockSherpaInterface sherpa;
+    // MockSherpaInterface sherpa;
     auto backend = std::make_unique<MockBackend>();
     auto model = std::make_unique<MockNuclearModel>();
     trompeloeil::sequence seq;
@@ -167,7 +169,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         .TIMES(1)
         .IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, AddNuclearModel(trompeloeil::ne(nullptr))).TIMES(1).IN_SEQUENCE(seq);
-    REQUIRE_CALL(*backend, SetSherpa(&sherpa)).TIMES(1).IN_SEQUENCE(seq);
+    REQUIRE_CALL(*backend, SetSherpa(nullptr)).TIMES(1).IN_SEQUENCE(seq);
     REQUIRE_CALL(*backend, Validate()).TIMES(1).IN_SEQUENCE(seq).RETURN(true);
     REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(1).IN_SEQUENCE(seq);
 
@@ -186,16 +188,13 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
         CHECK(event.Weight() == expected_weight);
     }
 
     SECTION("Generate") {
         auto optimize = false;
-        REQUIRE_CALL(*nucleus, ProtonsIDs()).TIMES(1).RETURN(std::vector<size_t>{0});
-        REQUIRE_CALL(*nucleus, NeutronsIDs()).TIMES(1).RETURN(std::vector<size_t>{1});
-        REQUIRE_CALL(*nucleus, Nucleons()).TIMES(3).LR_RETURN(std::ref(nucleons));
         REQUIRE_CALL(*beam, EvaluateFlux(achilles::PID::electron(), momentum[0]))
             .TIMES(1)
             .LR_RETURN(flux);
@@ -213,7 +212,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
-        group.SetupBackend(backend_node, std::move(model), &sherpa);
+        group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
         CHECK(event.Weight() == expected_weight);
     }

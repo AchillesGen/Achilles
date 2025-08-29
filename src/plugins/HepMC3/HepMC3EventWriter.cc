@@ -1,4 +1,4 @@
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef GZIP
 #include "gzstream/gzstream.h"
 #endif
@@ -14,21 +14,6 @@
 
 using achilles::HepMC3Writer;
 using namespace HepMC3;
-
-std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename,
-                                                             bool zipped) {
-    std::shared_ptr<std::ostream> output = nullptr;
-#ifdef GZIP
-    if(zipped) {
-        std::string zipname = filename;
-        if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        output = std::make_shared<ogzstream>(zipname.c_str());
-    } else
-#endif
-        output = std::make_shared<std::ofstream>(filename);
-
-    return output;
-}
 
 void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<ProcessGroup> &) {
     // Setup generator information
@@ -46,34 +31,10 @@ void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<Pr
     spdlog::trace("Finished writing Header");
 }
 
-int ToHepMC3(achilles::ParticleStatus status) {
-    switch(status) {
-    case achilles::ParticleStatus::internal_test:
-    case achilles::ParticleStatus::external_test:
-    case achilles::ParticleStatus::propagating:
-    case achilles::ParticleStatus::background:
-    case achilles::ParticleStatus::captured:
-        return 11;
-    case achilles::ParticleStatus::initial_state:
-        return 3;
-    case achilles::ParticleStatus::final_state:
-    case achilles::ParticleStatus::escaped:
-        return 1;
-    case achilles::ParticleStatus::decayed:
-        return 2;
-    case achilles::ParticleStatus::beam:
-    case achilles::ParticleStatus::target:
-        return 4;
-    case achilles::ParticleStatus::spectator:
-        return 5;
-    }
-    return -1;
-}
-
 GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
     HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
     return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()),
-                                         ToHepMC3(particle.Status()));
+                                         static_cast<int>(particle.Status()));
 }
 
 struct HepMC3Visitor : achilles::HistoryVisitor {
@@ -124,7 +85,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
 };
 
 void HepMC3Writer::Write(const achilles::Event &event) {
-    spdlog::debug("Writing out event");
+    spdlog::trace("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
 

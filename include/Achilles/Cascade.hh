@@ -2,19 +2,19 @@
 #define CASCADE_HH
 
 #include <array>
-#include <memory>
+#include <queue>
 #include <vector>
 
+#include "Achilles/DecayHandler.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
-#include "Achilles/Interpolation.hh"
-#include "Achilles/Random.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
-#include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
 namespace achilles {
@@ -22,6 +22,7 @@ namespace achilles {
 class Nucleus;
 class Particle;
 class Event;
+class PID;
 
 using Particles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
@@ -36,9 +37,43 @@ class Cascade {
   public:
     // Probability Enums
     enum ProbabilityType { Gaussian, Pion, Cylinder };
+    std::string ToString(const ProbabilityType &type) {
+        switch(type) {
+        case Gaussian:
+            return "Gaussian";
+        case Pion:
+            return "Pion";
+        case Cylinder:
+            return "Cylinder";
+        }
+        return "Unknown";
+    }
 
     // In-Medium Effects Enums
     enum InMedium { None, NonRelativistic, Relativistic };
+    std::string ToString(const InMedium &type) {
+        switch(type) {
+        case None:
+            return "None";
+        case NonRelativistic:
+            return "NonRelativistic";
+        case Relativistic:
+            return "Relativistic";
+        }
+        return "Unknown";
+    }
+
+    // Algorithms Enums
+    enum Algorithm { Base, MFP };
+    std::string ToString(const Algorithm &type) {
+        switch(type) {
+        case Base:
+            return "Base";
+        case MFP:
+            return "MFP";
+        }
+        return "Unknown";
+    }
 
     /// @name Constructor and Destructor
     ///@{
@@ -49,8 +84,8 @@ class Cascade {
     ///@param dist: The maximum distance step to take when propagating
     /// TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
     Cascade() = default;
-    Cascade(std::unique_ptr<Interactions>, const ProbabilityType &, const InMedium &,
-            bool potential_prob = false, const double &dist = 0.03);
+    Cascade(InteractionHandler, const ProbabilityType &, Algorithm, const InMedium &,
+            bool potential_prob = false, double dist = 0.03);
     Cascade(Cascade &&) = default;
     Cascade &operator=(Cascade &&) = default;
 
@@ -61,9 +96,10 @@ class Cascade {
     /// @name Getters
     ///@{
 
+    // TODO: Convert to InteractionHandler
     /// Get the name of the interaction model used
     ///@return std::string: Name of the interaction model
-    std::string InteractionModel() const { return m_interactions->Name(); }
+    // std::string InteractionModel() const { return m_interactions->Name(); }
 
     /// Get the probability model used
     ///@return std::string: Name of the probability model
@@ -104,76 +140,92 @@ class Cascade {
     ///@param particles: The list of particles inside the nucleus
     ///@param energyTransfer: The energy transfered to the nucleon during the kick
     ///@param sigma: An array representing the cross-section for different kicked nucleons
-    void Kick(std::shared_ptr<Nucleus>, const FourVector &, const std::array<double, 2> &);
+    void Kick(Event &, const FourVector &, const std::array<double, 2> &);
 
     /// Reset the cascade internal variables for the next cascade
     void Reset();
 
     /// Helper function to make a specific nucleon as the kicked nucleon
     ///@param idx: The index of the particle that has been kicked
-    void SetKicked(const std::size_t &idx) { kickedIdxs.push_back(idx); }
-
-    /// Simulate the cascade until all particles either escape, are recaptured, or are in
-    /// the background.
-    ///@param nucleus: The nucleus to evolve
-    ///@param maxSteps: The maximum steps to take in the cascade
-    void Evolve(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void SetKicked(const std::size_t &idx) { kickedIdxs.insert(idx); }
 
     /// Simulate the cascade on an event until all particles either escape,
     /// are recaptured, or are in the background.
     ///@param event: The event to run the cascade evolution on
+    ///@param nucleus: The nucleus to use during evolution
     ///@param maxSteps: The maximum steps to take in the cascade
-    void Evolve(achilles::Event *, const std::size_t &maxSteps = cMaxSteps);
+    void Evolve(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
     /// traveled by the kicked particle before it interacts.
     ///@param nucleus: The nucleus to evolve according to the mean free path calculation
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void MeanFreePath(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void MeanFreePath(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate the cascade until all particles either escape, are recaptured, or are in
     /// the background. This is done according to the NuWro algorithm.
     ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void NuWro(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
     /// traveled by the kicked particle before it interacts.
     ///@param nucleus: The nucleus to evolve according to the mean free path calculation
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void MeanFreePath_NuWro(std::shared_ptr<Nucleus>, const std::size_t &maxSteps = cMaxSteps);
+    void MeanFreePath_NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
     ///@}
   private:
     // Functions
     std::size_t GetInter(Particles &, const Particle &, double &stepDistance);
     void AdaptiveStep(const Particles &, const double &) noexcept;
-    bool BetweenPlanes(const ThreeVector &, const ThreeVector &,
-                       const ThreeVector &) const noexcept;
+    bool BetweenPlanes(const ThreeVector &, const ThreeVector &, const ThreeVector &,
+                       double) const noexcept;
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
-    const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) const noexcept;
-    double GetXSec(const Particle &, const Particle &) const;
-    std::size_t Interacted(const Particles &, const Particle &,
-                           const InteractionDistances &) noexcept;
+    const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
+    double GetXSec(Event &, size_t, size_t) const;
+    std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
     void Escaped(Particles &);
-    bool FinalizeMomentum(Particle &, Particle &) noexcept;
+    void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
+    bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
-    void Propagate(size_t, Particle *, double);
-    void UpdateIntegrator(size_t, Particle *);
+    void Propagate(size_t, Particle *);
+    void PropagateSpace(size_t, Particle *, double);
+    std::set<size_t> InitializeIntegrator(Event &);
+    void UpdateKicked(Particles &, std::set<size_t> &);
+    void Validate(Event &);
+    size_t BaseAlgorithm(size_t, Event &);
+    size_t MFPAlgorithm(size_t, Event &);
+    double InMediumCorrection(const Particle &, const Particle &) const;
+    void PropagateAll(Particles &, double) const;
+    bool HasInteraction(Event &, size_t, size_t) const;
+    bool Decay(Event &, size_t) const;
 
     // Variables
-    std::vector<std::size_t> kickedIdxs;
-    double distance{}, timeStep{};
-    std::unique_ptr<Interactions> m_interactions;
+    std::set<std::size_t> kickedIdxs;
+    double distance{}, timeStep{}, currentTime{};
+    InteractionHandler m_interactions{};
+    // TODO: Allow user to define externally which file to use
+    DecayHandler m_decays{"data/decays.yml"};
     std::function<double(double, double)> probability;
-    std::shared_ptr<Nucleus> localNucleus;
+    std::function<size_t(Cascade *, size_t, Event &)> algorithm;
+    Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
     std::map<size_t, SymplecticIntegrator> integrators;
     std::string m_probability_name;
+
+    struct queue_entry {
+        double time;
+        std::pair<size_t, size_t> idxs;
+        bool operator>(const queue_entry &rhs) const { return time > rhs.time; }
+    };
+
+    std::priority_queue<queue_entry, std::vector<queue_entry>, std::greater<queue_entry>>
+        m_time_steps;
 };
 
 } // namespace achilles
@@ -181,13 +233,14 @@ class Cascade {
 namespace YAML {
 template <> struct convert<achilles::Cascade> {
     static bool decode(const Node &node, achilles::Cascade &cascade) {
-        auto interaction = achilles::InteractionFactory::Create(node["Interaction"]);
+        auto handler = node["Interactions"].as<achilles::InteractionHandler>();
         auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
         auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
         auto potentialProp = node["PotentialProp"].as<bool>();
         auto distance = node["Step"].as<double>();
-        cascade = achilles::Cascade(std::move(interaction), probType, mediumType, potentialProp,
-                                    distance);
+        auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
+        cascade = achilles::Cascade(std::move(handler), probType, algorithm, mediumType,
+                                    potentialProp, distance);
         return true;
     }
 };
@@ -214,6 +267,18 @@ template <> struct convert<achilles::Cascade::InMedium> {
             type = achilles::Cascade::InMedium::NonRelativistic;
         else if(node.as<std::string>() == "Relativistic")
             type = achilles::Cascade::InMedium::Relativistic;
+        else
+            return false;
+        return true;
+    }
+};
+
+template <> struct convert<achilles::Cascade::Algorithm> {
+    static bool decode(const Node &node, achilles::Cascade::Algorithm &type) {
+        if(node.as<std::string>() == "Base")
+            type = achilles::Cascade::Algorithm::Base;
+        else if(node.as<std::string>() == "MFP")
+            type = achilles::Cascade::Algorithm::MFP;
         else
             return false;
         return true;

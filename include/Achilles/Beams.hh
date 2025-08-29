@@ -2,6 +2,7 @@
 #define BEAMS_HH
 
 #include "Achilles/Achilles.hh"
+#include "Achilles/Hashable.hh"
 #include "Achilles/Histogram.hh"
 #include <memory>
 #include <set>
@@ -49,15 +50,6 @@ class Monochromatic : public FluxType {
     double m_energy;
 };
 
-// TODO: Figure out how to handle spectrums
-// How to handle this correctly?
-// 1. Generate the energy according to some distribution
-// 2. A. Multiply maximum energy by a fraction to get neutrino energy
-//    B. Calculate the probability for this energy
-// The first requires being able to appropriately sample from the distribution
-// (i.e. having a form for the inverse of the CDF). The second would take advantage
-// of the importance sampling of Vegas. Furthermore, the second would make it easier to
-// combine beams of different initial state particles in a straightforward manner
 class Spectrum : public FluxType {
   public:
     enum class Type {
@@ -115,6 +107,21 @@ class PDFBeam : public FluxType {
     std::unique_ptr<PDFBase> p_pdf;
 };
 
+class FlatFlux : public FluxType {
+  public:
+    FlatFlux(const YAML::Node &);
+    int NVariables() const override { return 1; }
+    FourVector Flux(const std::vector<double> &, double) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    std::string Type() const override { return "FlatFlux"; }
+    double MinEnergy() const override { return m_min_energy; }
+    double MaxEnergy() const override { return m_max_energy; }
+    double EvaluateFlux(const FourVector &) const override { return 1; }
+
+  private:
+    double m_min_energy, m_max_energy;
+};
+
 class Beam {
   public:
     using BeamMap = std::map<achilles::PID, std::shared_ptr<FluxType>>;
@@ -148,6 +155,7 @@ class Beam {
     std::shared_ptr<FluxType> operator[](const PID pid) const { return m_beams.at(pid); }
 
     friend YAML::convert<Beam>;
+    friend std::hash<Beam>;
 
   private:
     int n_vars;
@@ -156,5 +164,25 @@ class Beam {
 };
 
 } // namespace achilles
+
+template <> struct std::hash<achilles::FluxType> {
+    std::size_t operator()(const achilles::FluxType &b) const {
+        size_t seed = 0;
+        achilles::utils::hash_combine(seed, b.Type(), b.MinEnergy(), b.MaxEnergy());
+        return seed;
+    }
+};
+
+template <> struct std::hash<achilles::Beam> {
+    std::size_t operator()(const achilles::Beam &b) const {
+        std::size_t seed = 0;
+        for(const auto &beam : b.m_beams) {
+            seed ^= std::hash<int>{}(beam.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+            seed ^= std::hash<achilles::FluxType>{}(*(beam.second.get())) + 0x9e3779b9 +
+                    (seed << 6) + (seed >> 2);
+        }
+        return seed;
+    }
+};
 
 #endif

@@ -2,6 +2,7 @@ module intf_spectral_model
     use iso_c_binding
     use nuclear_model
     use libspectral_function
+    use liblogging
     implicit none
     private
     public :: intf_spec, build_intf_spec
@@ -17,6 +18,7 @@ module intf_spectral_model
             procedure :: mode => intf_spec_mode
             procedure :: init_wgt => intf_spec_init_wgt
             procedure :: cleanup => intf_spec_cleanup
+            procedure, nopass :: inspirehep => intf_inspirehep
     end type
 
     integer :: compute_1body = 1
@@ -25,33 +27,54 @@ contains
 
     function intf_spec_init(self, filename, params)
         use libutilities
+        use libsystem
         use dirac_matrices_intf
         use libmap
 
         class(intf_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        character(len=:), allocatable :: filepath
         type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: intf_spec_init
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
+        character(len=256) :: error_message
 
-        open(unit=read_unit, file=trim(filename), iostat=ios)
+        filepath = find_file(filename, "Interference Model")
+        call logger%debug("Interference Model: Loading param file "//trim(filepath))
+        open(unit=read_unit, file=trim(filepath), iostat=ios, iomsg=error_message, status='old')
         if( ios /= 0 ) then
             intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
             return
         endif
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_p_MF = spectral_function(trim_string)
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_n_MF = spectral_function(trim_string)
         intf_spec_init = .true.
 
@@ -79,6 +102,11 @@ contains
     function intf_spec_name() !...name of the model
         character(len=:), allocatable :: intf_spec_name
         intf_spec_name = "Intf_Spectral_Func"
+    end function
+
+    function intf_inspirehep() !...reference for the model
+        character(len=:), allocatable :: intf_inspirehep
+        intf_inspirehep = "Lovato:2023khk" ! TODO: Add inspirehep information
     end function
 
     function intf_spec_ps(self) !...how to generate the nucler model phase space: HadronicMapper.hh
@@ -114,12 +142,18 @@ contains
         integer*4 :: err 
         integer(c_size_t) :: i,j     
         double precision, dimension(4) :: p1_4,pp1_4,p2_4,pp2_4,q4
-        double precision :: Q2
         complex(c_double_complex), dimension(2) :: ffa
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
-        logical :: has_axial
+        logical :: has_axial, NC
+
+        NC = .false.
+
+        !NC vs. CC
+        if(ff%lookup("FMecA5").ne.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
+            NC = .true.
+        endif
 
         ! Differentiate EM from CC & NC
         if(ff%lookup("FMecA5").eq.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
@@ -134,12 +168,10 @@ contains
         pp2_4=mom_spect(1)%to_array()
         q4=qvec%to_array()
 
-        Q2 = q4(2)**2 + q4(3)**2 + q4(4)**2 - q4(1)**2
-
         ffa(1)=ff%lookup("FA")
-        ffa(2)=ffa(1)*2.0*(constants%mqe**2)/(Q2 + constants%mpip**2)
+        ffa(2)=ff%lookup("FAP")
 
-        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial,NC)
         call define_spinors()
 
         J_mu = (0.0d0,0.0d0)

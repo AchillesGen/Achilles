@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Achilles/Cascade.hh"
+#include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
+#include "Achilles/Settings.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <string>
@@ -12,11 +14,18 @@ class Nucleus;
 
 enum class CascadeMode {
     CrossSection,
-    MeanFreePath,
     Transparency,
-    CrossSectionMFP,
-    TransparencyMFP,
 };
+
+inline std::string ToString(CascadeMode mode) {
+    switch(mode) {
+    case CascadeMode::CrossSection:
+        return "CrossSection";
+    case CascadeMode::Transparency:
+        return "Transparency";
+    }
+    return "Unknown";
+}
 
 } // namespace achilles
 
@@ -27,14 +36,8 @@ template <> struct convert<achilles::CascadeMode> {
         std::string name = node.as<std::string>();
         if(name == "CrossSection")
             mode = achilles::CascadeMode::CrossSection;
-        else if(name == "MeanFreePath")
-            mode = achilles::CascadeMode::MeanFreePath;
         else if(name == "Transparency")
             mode = achilles::CascadeMode::Transparency;
-        else if(name == "CrossSectionMFP")
-            mode = achilles::CascadeMode::CrossSectionMFP;
-        else if(name == "TransparencyMFP")
-            mode = achilles::CascadeMode::TransparencyMFP;
         else
             return false;
 
@@ -48,107 +51,33 @@ namespace achilles::CascadeTest {
 
 void RunCascade(const std::string &runcard);
 
-class RunMode {
-  public:
-    RunMode(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : m_nuc{nuc}, m_cascade{std::move(cascade)} {}
-    virtual ~RunMode() = default;
-    virtual void GenerateEvent(double) = 0;
-    virtual void PrintResults(std::ofstream &) const = 0;
-    virtual void Reset() = 0;
+void InitCrossSection(Event &, PID, double, double, std::shared_ptr<Nucleus>);
+void InitTransparency(Event &, PID, double, std::shared_ptr<Nucleus>, bool external = false);
 
-  protected:
+class CascadeRunner {
+  public:
+    CascadeRunner(const std::string &);
+    void run();
+
+  private:
+    void GenerateEvent(double, Histogram &, Histogram &);
+    bool NeedsEvents() const { return generated_events < requested_events; }
+    void Reset() { generated_events = 0; }
+
+    size_t requested_events{}, generated_events{};
+
+    std::map<std::string, double> m_params;
+    std::string m_output_name;
+    PID m_pid;
+
+    CascadeMode m_mode;
+    std::unique_ptr<Cascade> m_cascade;
+    std::pair<double, double> m_mom_range;
+
     std::shared_ptr<Nucleus> m_nuc;
-    Cascade m_cascade;
-};
+    std::unique_ptr<EventWriter> m_writer{nullptr};
 
-class CalcCrossSection : public RunMode {
-  public:
-    CalcCrossSection(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade, double radius = 10)
-        : RunMode(nuc, std::move(cascade)), m_radius{std::move(radius)}, m_pid{pid} {}
-    void GenerateEvent(double mom) override;
-    void PrintResults(std::ofstream &out) const override;
-    void Reset() override {
-        nevents = 0;
-        nhits = 0;
-    }
-
-  private:
-    double m_radius;
-    int m_pid;
-    double nhits{}, nevents{};
-};
-
-class CalcCrossSectionMFP : public RunMode {
-  public:
-    CalcCrossSectionMFP(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade, double radius = 10)
-        : RunMode(nuc, std::move(cascade)), m_radius{std::move(radius)}, m_pid{pid} {}
-    void GenerateEvent(double mom) override;
-    void PrintResults(std::ofstream &out) const override;
-    void Reset() override {
-        nevents = 0;
-        nhits = 0;
-    }
-
-  private:
-    double m_radius;
-    int m_pid;
-    double nhits{}, nevents{};
-};
-
-class CalcMeanFreePath : public RunMode {
-  public:
-    CalcMeanFreePath(int pid, std::shared_ptr<Nucleus> nuc, Cascade cascade);
-    void GenerateEvent(double kick_mom) override;
-    void PrintResults(std::ofstream &out) const override;
-
-    // TODO: Implement this!
-    void Reset() override {}
-
-  private:
-    int m_pid;
-    Histogram m_hist;
-};
-
-class CalcTransparency : public RunMode {
-  public:
-    CalcTransparency(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : RunMode(nuc, std::move(cascade)) {}
-
-    void GenerateEvent(double kick_mom) override;
-    void PrintResults(std::ofstream &out) const override;
-    void Reset() override {
-        nevents = 0;
-        ninteract = 0;
-        ncaptured = 0;
-    }
-
-  private:
-    double nevents{};
-    double ninteract{};
-    double distance{};
-    double ncaptured{};
-};
-
-class CalcTransparencyMFP : public RunMode {
-  public:
-    CalcTransparencyMFP(std::shared_ptr<Nucleus> nuc, Cascade cascade)
-        : RunMode(nuc, std::move(cascade)) {}
-
-    void GenerateEvent(double kick_mom) override;
-    void PrintResults(std::ofstream &out) const override;
-    void Reset() override {
-        nevents = 0;
-        ninteract = 0;
-        distance = 0;
-        ncaptured = 0;
-    }
-
-  private:
-    double nevents{};
-    double ninteract{};
-    double distance{};
-    double ncaptured{};
+    Settings setting;
 };
 
 } // namespace achilles::CascadeTest

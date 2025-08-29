@@ -46,6 +46,16 @@ class Random {
         std::sample(array.begin(), array.end(), std::back_inserter(result), n, m_rng->engine());
     }
 
+    template <typename T> std::vector<T> Sample(size_t n, const std::vector<T> &array) {
+        std::vector<T> result;
+        std::sample(array.begin(), array.end(), std::back_inserter(result), n, m_rng->engine());
+        return result;
+    }
+
+    // Cache functions
+    void SaveState(std::ostream &os) { os << m_rng->engine(); }
+    void LoadState(std::istream &is) { is >> m_rng->engine(); }
+
   private:
     Random() { m_rng = std::make_shared<randutils::mt19937_rng>(); }
     std::shared_ptr<randutils::mt19937_rng> m_rng;

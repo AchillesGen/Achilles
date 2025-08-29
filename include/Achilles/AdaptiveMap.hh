@@ -9,7 +9,7 @@
 #include <vector>
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -33,8 +33,9 @@ class AdaptiveMap {
     }
 
     // Serialization
-    bool Deserialize(std::istream &in);
-    bool Serialize(std::ostream &out) const;
+    void SaveState(std::ostream &out) const;
+    void LoadState(std::istream &in);
+    bool operator==(const AdaptiveMap &rhs) const;
 
     // Bin locations
     double lower_edge(size_t dim, size_t bin) const { return m_hist[dim * (m_bins + 1) + bin]; }

@@ -10,6 +10,7 @@
 #include "TH1D.h"
 #endif
 
+using achilles::FlatFlux;
 using achilles::PDFBeam;
 using achilles::Spectrum;
 
@@ -101,8 +102,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
         heights.insert(heights.begin(), heights[0]);
         for(size_t i = 1; i < edges.size(); ++i)
             bin_centers.push_back((edges[i] + edges[i - 1]) / 2);
-        bin_centers.push_back(edges[edges.size() - 1]);
-        heights.push_back(heights[heights.size() - 1]);
+        bin_centers.push_back(edges.back());
+        heights.push_back(heights.back());
 
         Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
         interp.SetPolyOrder(1);
@@ -110,6 +111,47 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_flux = [=](double x) { return interp(x); };
         m_min_energy = edges.front();
         m_max_energy = edges.back();
+        m_delta_energy = m_max_energy - m_min_energy;
+    } else if(node["HepData"]) {
+        spdlog::debug("Reading from HepData yaml file");
+        std::string filename = node["HepData"].as<std::string>();
+        YAML::Node root = YAML::LoadFile(filename);
+        std::vector<double> heights;
+        // TODO: Handle multiple fluxes??
+        for(const auto &value : root["dependent_variables"][0]["values"]) {
+            heights.push_back(value["value"].as<double>());
+        }
+
+        auto energy_units = root["independent_variables"][0]["header"]["units"].as<std::string>();
+        if(energy_units == "GeV") { m_energy_units = 1.0 / 1_GeV; }
+        size_t nbins = root["independent_variables"][0]["values"].size();
+        std::vector<double> bin_centers, low, high;
+        m_min_energy = root["independent_variables"][0]["values"][0]["low"].as<double>();
+        m_max_energy = root["independent_variables"][0]["values"][nbins - 1]["high"].as<double>();
+        for(const auto &bin : root["independent_variables"][0]["values"]) {
+            low.push_back(bin["low"].as<double>());
+            high.push_back(bin["high"].as<double>());
+            bin_centers.push_back((low.back() + high.back()) / 2);
+        }
+
+        // TODO: Implement check on units to use bin width or not
+        bool use_width = true;
+        for(size_t i = 0; i < heights.size(); ++i) {
+            double width = use_width ? high[i] - low[i] : 1;
+            m_flux_integral += width * heights[i];
+        }
+        spdlog::trace("Flux integral = {}", m_flux_integral);
+
+        // Create interpolation function
+        bin_centers.insert(bin_centers.begin(), m_min_energy);
+        heights.insert(heights.begin(), heights[0]);
+        bin_centers.push_back(m_max_energy);
+        heights.push_back(heights.back());
+
+        Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
+        interp.SetPolyOrder(1);
+
+        m_flux = [=](double x) { return interp(x); };
         m_delta_energy = m_max_energy - m_min_energy;
     } else if(node["ROOTHist"]) {
 #ifdef USE_ROOT
@@ -264,6 +306,26 @@ double PDFBeam::GenerateWeight(const FourVector &, std::vector<double> &, double
 double PDFBeam::EvaluateFlux(const FourVector &) const {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
     return {};
+}
+
+FlatFlux::FlatFlux(const YAML::Node &node) {
+    m_min_energy = node["MinEnergy"].as<double>();
+    m_max_energy = node["MaxEnergy"].as<double>();
+}
+
+achilles::FourVector FlatFlux::Flux(const std::vector<double> &ran, double min_energy) const {
+    min_energy = std::max(min_energy, m_min_energy);
+    double delta_energy = m_max_energy - min_energy;
+    double energy = ran[0] * delta_energy + min_energy;
+    return {energy, 0, 0, energy};
+}
+
+double FlatFlux::GenerateWeight(const FourVector &beam, std::vector<double> &ran,
+                                double min_energy) const {
+    min_energy = std::max(min_energy, m_min_energy);
+    double delta_energy = m_max_energy - min_energy;
+    ran[0] = (beam.E() - min_energy) / delta_energy;
+    return delta_energy;
 }
 
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {

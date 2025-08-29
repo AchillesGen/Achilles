@@ -1,6 +1,6 @@
-#include "nuchic/Integrators/BaseIntegrator.hh"
+#include "Achilles/Integrators/BaseIntegrator.hh"
 
-namespace nuchic {
+namespace achilles {
 namespace Integrator {
 
 class QuadratureIntegrator : public BaseIntegrator {
@@ -20,4 +20,4 @@ class QuadratureIntegrator : public BaseIntegrator {
 };
 
 } // namespace Integrator
-} // namespace nuchic
+} // namespace achilles

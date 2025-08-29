@@ -1,4 +1,4 @@
-#include "plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
@@ -8,6 +8,10 @@
 
 #include "gzstream/gzstream.h"
 
+// this needs to go first as it enables dependency flags in the below headers
+#include "NuHepMC/HepMC3Features.hxx"
+
+#include "NuHepMC/UnitsUtils.hxx"
 #include "NuHepMC/WriterUtils.hxx"
 #include "NuHepMC/make_writer.hxx"
 
@@ -19,6 +23,7 @@
 
 using achilles::NuHepMCWriter;
 using namespace HepMC3;
+namespace NuUnits = NuHepMC::CrossSection::Units;
 
 namespace NuHepMC {
 namespace VertexStatus {
@@ -37,10 +42,9 @@ static constexpr int Background = 25;
 static constexpr int Captured = 26;
 static constexpr int UndecayedResidue = 27;
 static constexpr int Spectator = 28;
+static constexpr int Cascade = 29;
 } // namespace ParticleStatus
 } // namespace NuHepMC
-
-NuHepMCWriter::NuHepMCWriter(const std::string &filename, bool zipped) : outfilename(filename) {}
 
 void NuHepMCWriter::WriteHeader(const std::string &filename,
                                 const std::vector<ProcessGroup> &groups) {
@@ -107,14 +111,17 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Background, {"Background", "Background"}},
                  {NuHepMC::ParticleStatus::Captured, {"Captured", "Captured"}},
                  {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
+                 {NuHepMC::ParticleStatus::Cascade, {"Cascade", "Cascade"}},
              });
 
     // Signal conventions
     // TODO: Make flags to turn on / off different conventions
-    NuHepMC::GC1::SetConventions(run,
-                                 {"G.C.2", "G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
+    NuHepMC::GC1::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
 
-    NuHepMC::GC4::SetCrossSectionUnits(run, "pb", "PerTargetAtom");
+    // TODO: Update to using newer NuHepMC version
+    const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
+    const std::string tgtscale = "PerAtom";
+    NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
 
     // Write out the number of requested events
     // TODO: Read this from run card
@@ -122,6 +129,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     NuHepMC::GC2::SetExposureNEvents(run, nevents);
 
     file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
+    if(!file->run_info()) { throw; }
     spdlog::trace("Finished writing Header");
 }
 
@@ -140,7 +148,6 @@ int ToNuHepMC(achilles::ParticleStatus status) {
     case achilles::ParticleStatus::initial_state:
         return NuHepMC::ParticleStatus::DecayedPhysical;
     case achilles::ParticleStatus::final_state:
-    case achilles::ParticleStatus::escaped:
         return NuHepMC::ParticleStatus::UndecayedPhysical;
     case achilles::ParticleStatus::decayed:
         return NuHepMC::ParticleStatus::DecayedPhysical;
@@ -150,6 +157,8 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Target;
     case achilles::ParticleStatus::spectator:
         return NuHepMC::ParticleStatus::Spectator;
+    case achilles::ParticleStatus::interacted:
+        return NuHepMC::ParticleStatus::Cascade;
     }
     return -1;
 }

@@ -1,7 +1,17 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/FourVector.hh"
 #include "spdlog/spdlog.h"
+#include <sstream>
 #include <stdexcept>
+
+double achilles::ParseFraction(const std::string &frac) {
+    int num = 0, den = 1;
+    char slash;
+    std::istringstream iss(frac);
+    iss >> num >> slash >> den;
+    if(den == 0) throw std::invalid_argument("Denominator cannot be zero");
+    return static_cast<double>(num) / den;
+}
 
 bool achilles::CheckMasses(const std::vector<achilles::FourVector> &mom,
                            const std::vector<double> &masses, double eps) {
@@ -206,4 +216,60 @@ double achilles::Brent::Minimize(const double &ax, const double &bx, const doubl
 
     spdlog::warn("Brent failed to converge to minimum: {}, {}", x, std::abs(x - xm));
     return x;
+}
+
+// Modified from: https://turnerj.com/blog/levenshtein-distance-part-1-what-is-it
+size_t achilles::LevenshteinDistance(const std::string_view &src, const std::string_view &tgt) {
+    if(src.size() == 0) return tgt.size();
+    if(tgt.size() == 0) return src.size();
+    if(src == tgt) return 0;
+
+    size_t start_idx = 0;
+    size_t src_end = src.size();
+    size_t tgt_end = tgt.size();
+
+    // Trim off common prefix and suffix
+    while(start_idx < src_end && start_idx < tgt_end && src[start_idx] == tgt[start_idx])
+        start_idx++;
+    while(start_idx < src_end && start_idx < tgt_end && src[src_end - 1] == tgt[tgt_end - 1]) {
+        src_end--;
+        tgt_end--;
+    }
+
+    auto source = src.substr(start_idx, src_end - start_idx);
+    auto target = tgt.substr(start_idx, tgt_end - start_idx);
+
+    std::vector<size_t> cost(target.size() + 1);
+
+    for(size_t i = 1; i <= target.size(); ++i) { cost[i] = i; }
+
+    for(size_t i = 1; i <= source.size(); ++i) {
+        size_t prev_diag = cost[0];
+        size_t prev_col = cost[0]++;
+        for(size_t j = 1; j <= target.size(); ++j) {
+            size_t ins_del = std::min(prev_col, cost[j]) + 1;
+            size_t edit = prev_diag + 5 * (source[i - 1] != target[j - 1]);
+
+            prev_col = std::min(ins_del, edit);
+            prev_diag = cost[j];
+            cost[j] = prev_col;
+        }
+    }
+
+    return cost[target.size()];
+}
+
+std::string_view achilles::GetSuggestion(const std::vector<std::string> &opts,
+                                         const std::string &query) {
+    size_t min_distance = SIZE_MAX, min_index = 0;
+    for(size_t i = 0; i < opts.size(); ++i) {
+        auto dist = LevenshteinDistance(query, opts[i]);
+        spdlog::trace("Distance between {} and {} is {}", query, opts[i], dist);
+        if(dist < min_distance) {
+            min_distance = dist;
+            min_index = i;
+        }
+    }
+
+    return opts[min_index];
 }

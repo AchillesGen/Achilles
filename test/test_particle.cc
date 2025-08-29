@@ -42,7 +42,7 @@ TEST_CASE("Properties", "[Particle]") {
         part.Status() = achilles::ParticleStatus::propagating;
         CHECK(part.IsPropagating());
 
-        part.Status() = achilles::ParticleStatus::escaped;
+        part.Status() = achilles::ParticleStatus::final_state;
         CHECK(part.IsFinal());
     }
 
@@ -56,7 +56,7 @@ TEST_CASE("Propagate", "[Particle]") {
     SECTION("Time propagation") {
         part.Propagate(1);
         CHECK_THAT(part.Position(), IsVectorApprox<achilles::ThreeVector>(
-                                        achilles::ThreeVector{achilles::Constant::HBARC / 10, 0, 0})
+                                        achilles::ThreeVector{part.Momentum().P() / part.E(), 0, 0})
                                         .margin(eps));
         part.BackPropagate(1);
         CHECK_THAT(
@@ -77,11 +77,22 @@ TEST_CASE("I/O", "[Particle]") {
     achilles::Particle part2;
 
     CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, "
-                             "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 0)");
+                             "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 25)");
 
     std::stringstream ss;
     ss << part;
     ss >> part2;
 
     CHECK(part == part2);
+}
+
+TEST_CASE("Closest Approach", "[Particle]") {
+    achilles::Particle part1(achilles::PID::proton(), {1, 0, 0, 1.0 / achilles::Constant::HBARC});
+    achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
+
+    auto time = achilles::ClosestApproach(part1, part2);
+    CHECK(time == Approx(achilles::Constant::HBARC));
+
+    part1.Propagate(time);
+    CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});
 }

@@ -11,7 +11,6 @@ namespace achilles {
 template <typename T> struct Channel {
     Vegas integrator;
     std::unique_ptr<Mapper<T>> mapping;
-    double weight{};
     std::vector<double> train_data;
     std::vector<double> rans;
 
@@ -42,6 +41,18 @@ template <typename T> class Integrand {
     Channel<T> &GetChannel(size_t idx) { return channels[idx]; }
     size_t NChannels() const { return channels.size(); }
     size_t NDims() const { return channels[0].NDims(); }
+
+    void SaveState(std::ostream &os) const {
+        os << channels.size() << " ";
+        for(const auto &channel : channels) { channel.integrator.SaveState(os); }
+    }
+    void LoadState(std::istream &is) {
+        size_t nchannels;
+        is >> nchannels;
+        if(nchannels != channels.size())
+            throw std::runtime_error("Integrand: Channel size mismatch");
+        for(auto &channel : channels) { channel.integrator.LoadState(is); }
+    }
 
     // Train integrator
     void InitializeTrain() {
@@ -95,38 +106,6 @@ template <typename T> class Integrand {
 } // namespace achilles
 
 namespace YAML {
-
-template <typename T> struct convert<achilles::Channel<T>> {
-    static Node encode(const achilles::Channel<T> &rhs) {
-        Node node;
-        node["Integrator"] = rhs.integrator;
-        node["Mapper"] = rhs.mapping->ToYAML();
-        return node;
-    }
-
-    // TODO: This is broken!
-    /*
-    static bool decode(const Node &node, achilles::Channel<T> &rhs) {
-        if(node.size() != 2) return false;
-        rhs.integrator = node["Integrator"].as<achilles::Vegas>();
-        // FIXME: Clean this up!
-        auto mapNode = node["Mapper"];
-        if(mapNode["Name"].as<std::string>() == "PSMapper") {
-            auto beam =
-    std::make_shared<achilles::Beam>(mapNode["BeamMapper"]["Beam"].as<achilles::Beam>());
-            if(mapNode["FSMapper"]["Name"].as<std::string>() == "SherpaMapper") {
-                auto channel_id = mapNode["FSMapper"]["Sherpa"]["Name"].as<std::string>();
-                auto masses = mapNode["FSMapper"]["Sherpa"]["Masses"].as<std::vector<double>>();
-                rhs.mapping = achilles::PSBuilder(mapNode["nlep"].as<size_t>(),
-    mapNode["nhad"].as<size_t>()) .Beam(beam, 1)
-                                               .Hadron(mapNode["HadronMapper"]["Name"].as<std::string>(),
-    masses) .SherpaFinalState(channel_id, masses).build();
-            }
-        }
-        return true;
-    }
-    */
-};
 
 template <typename T> struct convert<achilles::Integrand<T>> {
     static Node encode(const achilles::Integrand<T> &rhs) {

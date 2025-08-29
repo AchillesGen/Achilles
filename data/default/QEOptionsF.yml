@@ -1,0 +1,5 @@
+Model: FortranModel
+Name: QE_Spectral_Func
+ConfigFile: data/info_C12_pke.data 
+FormFactorFile: "FormFactors.yml"
+Ward: None

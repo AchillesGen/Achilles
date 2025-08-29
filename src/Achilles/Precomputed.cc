@@ -10,7 +10,7 @@
 #include "Achilles/Utilities.hh"
 
 #ifdef ACHILLES_ENABLE_HEPMC3
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #endif
 
 #include "spdlog/spdlog.h"

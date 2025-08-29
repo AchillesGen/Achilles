@@ -21,18 +21,9 @@ class PSMapper : public Mapper<FourVector> {
     void SetHadronBeam(Mapper_sptr<FourVector> _hbeam) { hbeam = _hbeam; }
     void SetFinalState(Mapper_ptr<FourVector> final) { main = std::move(final); }
 
-    YAML::Node ToYAML() const override {
-        YAML::Node node;
-        node["Name"] = "PSMapper";
-        node["nlep"] = nleptons;
-        node["nhad"] = nhadrons;
-        node["BeamMapper"] = lbeam->ToYAML();
-        node["HadronMapper"] = hbeam->ToYAML();
-        node["FSMapper"] = main->ToYAML();
-        return node;
-    }
     PSMapper(size_t _nleptons, size_t _nhadrons, size_t _nspectators)
-        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)}, nspectators{_nspectators} {}
+        : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
+          nspectators{_nspectators} {}
 
   private:
     size_t nleptons, nhadrons, nspectators;

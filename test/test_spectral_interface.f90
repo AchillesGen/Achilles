@@ -13,7 +13,7 @@ contains
         real(8) :: norm, val
 
         call test_case_create('Fortran Spectral function interface', test_suite)
-        call assert_true(test_spectral_init("data/pke12_tot.data"), suite=test_suite)
+        call assert_true(test_spectral_init("data/Spectral_Functions/pke12p_tot.data"), suite=test_suite)
         norm = test_spectral_normalization()
         call assert_approximate(norm, 5.999988260179247d0, eps=1d-8, suite=test_suite)
         val = test_spectral_call(10d0, 22.5d0)

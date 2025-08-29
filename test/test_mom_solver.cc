@@ -6,6 +6,7 @@
 #include "Achilles/MomSolver.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/ThreeVector.hh"
+#include "Approx.hh"
 
 #include "catch_utils.hh"
 #include "spdlog/spdlog.h"
@@ -21,7 +22,8 @@ TEST_CASE("CM Momentum Delta solver", "[DeltaFunctions]") {
 
     double sinTheta = sqrt(0.75);
     CHECK(p1 + p2 == p3 + p4);
-    CHECK(p3 == achilles::FourVector(p1.E(), 100 * sinTheta, 0, 100 * cosTheta));
+    CHECK_THAT(p3, FourVectorApprox(achilles::FourVector(p1.E(), 100 * sinTheta, 0, 100 * cosTheta))
+                       .margin(1e-8));
 }
 
 TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {
@@ -59,10 +61,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
         constexpr double rho0 = 0.16;
         REQUIRE_CALL(*nucleus, Rho(trompeloeil::gt(0))).LR_RETURN((rho0)).TIMES(AT_LEAST(4));
 
-        achilles::WiringaPotential potential(rho0);
+        achilles::WiringaPotential potential(nucleus, rho0);
 
-        auto potential1 = potential(nucleus.get(), p1.P(), r1);
-        auto potential2 = potential(nucleus.get(), p2.P(), r2);
+        auto potential1 = potential(p1.P(), r1);
+        auto potential2 = potential(p2.P(), r2);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1 + p2;
@@ -101,10 +103,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
         constexpr size_t AA = 12;
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(4));
 
-        achilles::CooperPotential potential;
+        achilles::CooperPotential potential(nucleus);
 
-        auto potential1 = potential(nucleus.get(), p1.P(), 1);
-        auto potential2 = potential(nucleus.get(), p2.P(), 1);
+        auto potential1 = potential(p1.P(), 1);
+        auto potential2 = potential(p2.P(), 1);
         p1.E() = sqrt(p1.P2() + pow(p1.M() + potential1.rscalar, 2)) + potential1.rvector;
         p2.E() = sqrt(p2.P2() + pow(p2.M() + potential2.rscalar, 2)) + potential2.rvector;
         auto q = p1 + p2;

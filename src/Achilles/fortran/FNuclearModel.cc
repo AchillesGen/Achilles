@@ -8,8 +8,7 @@ using achilles::NuclearModel;
 FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
                            FormFactorBuilder &builder = FormFactorBuilder::Instance())
     : NuclearModel(form_factor, builder),
-    m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())}
-    {
+      m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())} {
     // Setup fortran side
     auto modelname = config["NuclearModel"]["Name"].as<std::string>();
     size_t len_model = modelname.size();
@@ -24,7 +23,7 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
     }
 
     // Load model parameters from yml file
-    if (config["NuclearModel"]["ModelParamsFile"]) {
+    if(config["NuclearModel"]["ModelParamsFile"]) {
         auto Model_Params = LoadModelParams(config);
         for(const auto &params : Model_Params["Parameters"]) {
             param_map[params.first.as<std::string>()] = params.second.as<double>();
@@ -49,10 +48,10 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
                                                   const std::vector<Particle> &had_spect,
                                                   const FourVector &qVec,
                                                   const FFInfoMap &ff) const {
-
-    // Special case for hydrogen
+    // Special case for hydrogen and free neutron
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
-    
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
+
     NuclearModel::Currents result;
 
     // Create momentum variables to pass to fortran
@@ -93,8 +92,8 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
         std::map<std::string, std::complex<double>> ffmap;
         for(const auto &factor : formfactors) { ffmap[ToString(factor.first)] = factor.second; }
 
-        GetCurrents(m_model, pids_in.data(), pids_out.data(), pids_spect.data(), moms.data(), nin, nout, nspect, &qVec, &ffmap, cur,
-                    NSpins(), 4);
+        GetCurrents(m_model, pids_in.data(), pids_out.data(), pids_spect.data(), moms.data(), nin,
+                    nout, nspect, &qVec, &ffmap, cur, NSpins(), 4);
 
         // Convert from array to Current
         for(size_t j = 0; j < NSpins(); ++j) {
@@ -129,10 +128,11 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
 }
 
 // Returns weight from nuclear ground state (i.e. SF or FG)
-double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, const std::vector<Particle> &had_spect, size_t nproton,
+double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in,
+                                        const std::vector<Particle> &had_spect, size_t nproton,
                                         size_t nneutron) const {
-
     if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
+    if(is_free_neutron) return had_in[0].ID() == PID::neutron() ? 1 : 0;
 
     size_t nin = had_in.size();
     size_t nspect = had_spect.size();
@@ -149,7 +149,8 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in, con
         moms.push_back(part.Momentum());
     }
 
-    return GetInitialStateWeight(m_model, pids_in.data(), pids_spect.data(), moms.data(), nin, nspect, nproton, nneutron);
+    return GetInitialStateWeight(m_model, pids_in.data(), pids_spect.data(), moms.data(), nin,
+                                 nspect, nproton, nneutron);
 }
 
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
@@ -159,12 +160,10 @@ std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) 
 
 // Return name of initial state phase space needed
 std::string FortranModel::PhaseSpace(PID nuc_pid) const {
-    if(nuc_pid != PID::hydrogen()){
-        char *name = GetName_(m_model);
-        auto tmp = std::string(name);
-        delete name;
-        return tmp;
-    }
-    is_hydrogen = true;
+    if(nuc_pid != PID::hydrogen() && nuc_pid != PID::free_neutron()) { return PSName(); }
+    if(nuc_pid == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
     return "Coherent";
 }
