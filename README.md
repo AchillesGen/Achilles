@@ -228,6 +228,11 @@ Form factors for each of the above can be chosen by editing the `FormFactors.yml
 
 For additional details on the parameters for each form factor, see the [wiki](https://github.com/AchillesGen/Achilles/wiki/Form-Factors).
 
+#### Achilles Rules
+
+To facilitate the user experience, Achilles implements a set of rules which govern run card options. These can be found in `data/Rules.yml`. These rules cover required options in the run card, which if not found, throw a suggestive error notifying the user of the missing options. In addition, to prevent inconsistent physics models from being used together, certain rules are implemented that will additionally throw an error. An example of inconsistent physics modeling is using a propagating Delta baryon in nucleon-nucleon to nucleon-nucleon-pion interactions while also using the DCC model for pion-nucleon to pion-nucleon interactions. These rules can be changed, but we highly recommend users NOT edit these rules unless they know what they are doing. 
+
+
 ### Adding models to Achilles (via Sherpa)
 
 The Beyond the Standard Model handling within Achilles is handled via an interface to Sherpa and Comix.
