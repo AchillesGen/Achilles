@@ -8,15 +8,17 @@ Welcome to Achilles's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :numbered:
 
-   physics
-   numerics
+   src/introduction
+   src/getting-started
+   src/interfaces 
 
+Appendices
+----------
+.. toctree::
+   :maxdepth: 2
 
-Indices and tables
-==================
+   src/references
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

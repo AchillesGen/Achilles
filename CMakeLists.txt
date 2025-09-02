@@ -193,7 +193,8 @@ add_subdirectory(src)
 include(CMakePackageConfigHelpers)
 
 # Build documentation
-if(ACHILLES_ENABLE_DOCS)
+if(ACHILLES_BUILD_DOCS)
+    message(STATUS "Achilles: Building docs")
     add_subdirectory(docs)
 endif()
 
