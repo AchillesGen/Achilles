@@ -30,13 +30,13 @@ The Achilles code uses CMake as a means to provide a platform agnositic installa
 
 The default options for the building of Achilles requires HepMC3
 and Sherpa. The HepMC3 code provides a means to output events in the convention dictated by the [NuHepMC](https://github.com/NuHepMC/Spec) standard.
-The Sherpa interface allows for the simulation of beyond the Standard Model (BSM) processes. Details on obtaining
-these codes can be found in the next [section](#-optional-dependencies).
+Details on obtaining
+this code can be found in the next [section](#-optional-dependencies).
 
 To build Achilles with these default options can be done with:
 ```bash
 mkdir build && cd build
-cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/sherpa
+cmake .. 
 make -jN
 ```
 
@@ -63,6 +63,7 @@ To disable the requirement of HepMC3, add the option `-DENABLE_HEPMC3=OFF` to th
 
 #### Sherpa
 
+The Sherpa interface allows for the simulation of beyond the Standard Model (BSM) processes.
 The leptonic currents are calculated as described in [arxiv:2110.15319](https://arxiv.org/abs/2110.15319). This involves calculating
 temrs using the Berends-Giele recursion relations in arbitrary models. The calculation of these is
 implemented into the Comix matrix element generator within the Sherpa codebase.
@@ -71,7 +72,7 @@ The required version of Sherpa is in the process of being made public, but can b
 Achilles authors.
 Note that to enable UFO support from Sherpa, add the option `--enable-ufo' to the configure command.
 
-To disable the requirement of Sherpa, add the option `-DENABLE_BSM=OFF` to the cmake command.
+To enable building with Sherpa, add the option `-DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/sherpa` to the cmake command.
 
 ### CMake Options
 
@@ -81,7 +82,7 @@ A non-exhaustive list of useful CMake options includes:
 | ------                  | -------                                                                         |
 | `ACHILLES_ENABLE_TESTING`        | Build the Achilles test suite                                                   |
 | `ACHILLES_ENABLE_GZIP`           | Compile the code with the ability to directly compress event files              |
-| `ACHILLES_ENABLE_CASCADE_TEST`   | Build the executable to only run the cascade (pA cross section or transparency) |
+| `ACHILLES_ENABLE_CASCADE_TEST`   | Build the executable to only run the cascade (hadron-nucleus cross section or transparency) |
 | `ACHILLES_ENABLE_POTENTIAL_TEST` | Build executable to test different potentials                                   |
 | `CMAKE_BUILD_TYPE=Debug`         | Build the executable with debug symbols enabled                                |
 ## Running Achilles
@@ -134,39 +135,37 @@ in more details in the [wiki](https://github.com/AchillesGen/Achilles/wiki) and 
 
 #### Run card
 
-The run card consists of nine major sections describing how the generation is to be carried out.
+The run card consists of eight major sections describing how the generation is to be carried out.
 These sections are:
 1. The main event section
 2. The process section
-3. The initialization of the random number generator and precision of the integrator section
-4. The unweighting method to use
-5. The incoming beam
-6. Settings for the cascade
-7. Settings for the nuclear interaction model
-8. Settings for the nucleus
-9. Any cuts to apply during the generation of the events
+3. The options section 
+4. The incoming beam
+5. Settings for the cascade
+6. Settings for the nuclear interaction model
+7. Settings for the nucleus
+8. Any cuts to apply during the generation of the events
 
 Each of these sections are described below and in greater detail in the
 [wiki](https://github.com/AchillesGen/Achilles/wiki).
+
+Achilles also provides the option of loading each of these sections from a separate text file. A set of default options for each section is included in the `data/default` directory
 
 The _Main_ section contains options:
  - The number of events (`NEvents`)
  - If cuts should be applied at the generation level (`HardCuts`)
  - The output (`Output`), which contains sub-options:
-    - The event output format (`Format`, currently options are "HepMC3" and "Achilles")
+    - The event output format (`Format`, currently options are "HepMC3", "NuHepMC", and "Achilles")
     - The name of the output file (`Name`)
     - If the file should be written as a gzip file or not (`Zipped`)
 
-The _Process_ section contains information needed to generate the leptonic current for a given physics model.
+The _Processes_ section contains information needed to generate the leptonic current for a given physics model.
 This contains the options for:
- - The physics model (`Model`)
- - The output leptonic states as a list of particle IDs (`Final States`)
+ - The incoming and outgoing leptonic states as a list of particle IDs 
 
-The _Initialization_ section describes the initialization of the generator, and contains:
- - The random seed to use for event generation for reproducibility (`Seed`)
- - The accuracy for the warm-up run of the integrator to achieve before generating events (`Accuracy`)
-
-The _Unweighting_ section sets up the methodology for unweighting the events. This has one required setting
+The _Options_ section contains information on the random number generator, integrator precission, and unweighting methodt to be used in evnet generation. This contains the option for:
+ - Initialize which contains the random seed to use for event generation for reproducibility (`Seed`), and the accuracy for the warm-up run of the integrator to achieve before generating events (`Accuracy`) 
+ - Unweighting which sets up the methodology for unweighting the events.This has one required setting
 as the `Name` of the unweighting procedure. Each unweighting procedure has their own set of options
 described in detail in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Unweighting).
 
@@ -194,11 +193,11 @@ primary interaction is defined. The required options are:
  - Additional required options depend on the nuclear model used
    and can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nuclear-Models).
 
-The _Nucleus_ section defines the nucleus for interactions. Currently, only a single isotope and nucleus is
-supported to be run at a time. The required options are:
+The _Nucleus_ section defines the nucleus for interactions. The required options are:
  - The name of the nucleus given as the number of nucleons followed by the chemical symbol (_i.e._ "12C").
  - The Fermi momentum is needed.
- - The setup for the density and configuration.
+ - The Binding energy is needed.
+ - The setup for the densities and configuration.
    Details can be found in the [wiki](https://github.com/AchillesGen/Achilles/wiki/Nucleus).
  - The Fermi gas mode for the cascade. Current options are "Local" and "Global".
  - The nuclear potential to use.
@@ -213,16 +212,19 @@ The details of this section are laid out in the [wiki](https://github.com/Achill
 
 The form factor file contains the list of the form factors to use, and the parameters for the different
 parameterization. Currently, the form factors implemented are:
- - Vector:
+ - vector:
     - Dipole
     - Kelly
     - BBBA
     - ArringtonHill
- - Axial:
+ - axial:
     - Dipole
- - Coherent:
+    - ZExpansion
+ - coherent:
     - Helm
     - Lovato (Carbon only)
+ 
+Form factors for each of the above can be chosen by editing the `FormFactors.yml` file.
 
 For additional details on the parameters for each form factor, see the [wiki](https://github.com/AchillesGen/Achilles/wiki/Form-Factors).
 

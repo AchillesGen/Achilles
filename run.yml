@@ -1,15 +1,11 @@
 Main:
   NEvents: 50000
   HardCuts: true
-  EventCuts: false
-  DoRotate: false
   RunDecays: False
   Output:
       Format: NuHepMC
       Name: achilles.hepmc
       Zipped: True
-
-SherpaOptions: !include "data/default/SherpaOptions.yml"
 
 Processes:
   - Leptons: [11, [11]]
