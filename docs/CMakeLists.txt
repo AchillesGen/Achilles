@@ -34,10 +34,9 @@ set(SPHINX_SOURCE ${CMAKE_CURRENT_SOURCE_DIR})
 set(SPHINX_BUILD ${CMAKE_CURRENT_BINARY_DIR}/sphinx)
 set(SPHINX_INDEX_FILE ${SPHINX_BUILD}/index.html)
 
-set(ACHILLES_DOC_FILES 
-    ${CMAKE_CURRENT_SOURCE_DIR}/index.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/physics.rst
-    ${CMAKE_CURRENT_SOURCE_DIR}/numerics.rst)
+file(GLOB_RECURSE ACHILLES_DOC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.rst)
+list(APPEND ACHILLES_DOC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/index.rst ${CMAKE_CURRENT_SOURCE_DIR}/src/references.bib)
+
 
 # Only regenerate Sphinx when:
 # - Doxygen has rerun
