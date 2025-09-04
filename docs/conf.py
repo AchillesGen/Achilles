@@ -14,7 +14,7 @@ release = '0.3.0'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["breathe", "sphinxcontrib.bibtex"]
+extensions = ["breathe", "sphinxcontrib.bibtex", "sphinx_design"]
 
 bibtex_bibfiles = ["src/references.bib"]
 
