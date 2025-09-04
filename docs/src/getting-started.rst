@@ -59,33 +59,91 @@ To obtain this, the Achilles code needs to be installed with
    $ cmake --install build
 
 Then Achilles will be installed into the variable set by ``CMAKE_PREFIX_PATH``, which defaults to ``/usr/local/`` on UNIX machines.
+Achilles can then be launched anywhere as long as the executable can be found in your ``PATH``.
 
 
 .. _All Dependencies:
 
-----------------
-All Dependencies
-----------------
+============
+Dependencies
+============
+
+---------------------
+Required Dependencies
+---------------------
+
+
+---------------------
+Optional Dependencies
+---------------------
+
+^^^^^^
+Sherpa
+^^^^^^
 
 
 .. _Build Options:
 
--------------
+=============
 Build Options
--------------
+=============
 
+.. dropdown:: Achilles Options
+   :open:
 
-.. _Dockerized Achilles:
+    +------------------------------------+--------------------------------------------+----------+
+    |   Option                           |  Meaning                                   | Default  |
+    +====================================+============================================+==========+
+    | ``ACHILLES_ENABLE_TESTING``        | Build the Achilles test suite              | OFF      |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_ENABLE_CASCADE_TEST``   | Build the Achilles cascade executable      | OFF      |
+    |                                    | to run hadron-nucleus interactions         |          |
+    |                                    | or transparency checks                     |          |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_ENABLE_POTENTIAL_TEST`` | Build the Achilles potential               | OFF      |
+    |                                    | executable used to test different          |          |
+    |                                    | nuclear potentials in the cascade          |          |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_ENABLE_PRECOMPUTED``    | Build the Achilles interface               | OFF      |
+    |                                    | to pass in pre-computed events in          |          |
+    |                                    | order to cascade them using the            |          |
+    |                                    | Achilles cascade                           |          |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_ENABLE_SHERPA``         | Build the Sherpa interface to              | OFF      |
+    |                                    | Achilles. This requires an                 |          |
+    |                                    | installation of Sherpa. Provides           |          |
+    |                                    | the ability for tau decays and BSM.        |          |
+    |                                    | For details see                            |          |
+    |                                    | :ref:`Sherpa Interface <sherpa-interface>` |          |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_BUILD_DOCS``            | Build the Achilles manual. Requires        | OFF      |
+    |                                    | doxygen, sphinx, and ...                   |          |
+    +------------------------------------+--------------------------------------------+----------+
+    | ``ACHILLES_EVENT_DETAILS``         | Provides additional event details useful   | OFF      |
+    |                                    | for in-depth debugging.                    |          |
+    +------------------------------------+--------------------------------------------+----------+
 
-===================
-Dockerized Achilles
-===================
+.. dropdown:: CMake Options
 
+    +------------------------------------+--------------------------------------------+----------+
+    |   Option                           |  Meaning                                   | Default  |
+    +====================================+============================================+==========+
+    | ``CMAKE_BUILD_TYPE``               | Whether to build a Release, Debug,         | Release  |
+    |                                    | or RelWithDebInfo version of the code.     |          |
+    +------------------------------------+--------------------------------------------+----------+
 
 .. _Running:
 
 *******
 Running
 *******
+
+.. _Dockerized Achilles:
+
+*******************
+Dockerized Achilles
+*******************
+
+
 
 .. _Sherpa: https://sherpa-team.gitlab.io/
