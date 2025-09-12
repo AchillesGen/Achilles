@@ -1,0 +1,55 @@
+name: Build and Deploy site
+
+on:
+  push:
+    branches:
+      - main
+      - '**' # All branches
+  release:
+    types: [published]
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Install CMake and Doxygen
+        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+        working-directory: .
+
+      - name: Build documentation
+        run: |
+          cd build
+          cmake --build . --target achilles-docs
+        working-directory: .
+
+      - name: Mark timestamp for branch builds
+        if: github.event_name == 'push'
+        run: date -u +"%Y-%m-%dT%H:%M:%SZ" > build/docs/sphinx/.last_updated
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: build/sphinx
+          keep_files: true
+          destination_dir: |
+            ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}

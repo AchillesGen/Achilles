@@ -7,8 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Achilles'
-copyright = '2024, Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Noemi Rocco, Noah Steinberg'
-author = 'Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Noemi Rocco, Noah Steinberg'
+copyright = '2025, Achilles Collaboration'
+author = 'Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg'
 release = '0.3.0'
 
 # -- General configuration ---------------------------------------------------
