@@ -395,4 +395,20 @@ template <> struct formatter<achilles::ParticleStatus> {
 
 } // namespace fmt
 
+namespace fmt {
+
+template <> struct formatter<achilles::Particle> {
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        return ctx.begin();
+    }
+
+    auto format(const achilles::Particle &particle, format_context &ctx) const
+        -> format_context::iterator {
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
+                         particle.Momentum(), particle.Position());
+    }
+};
+
+} // namespace fmt
+
 #endif // end of include guard: PARTICLE_HH

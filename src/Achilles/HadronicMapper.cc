@@ -237,6 +237,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     spdlog::trace("  dCos: {}", dCos);
     spdlog::trace("  dPhi: {}", dPhi);
     spdlog::trace("  dE: {}", dE);
+#endif
 
     return wgt;
 }

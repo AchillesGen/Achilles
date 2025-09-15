@@ -327,6 +327,30 @@ class AxialZExpansion : public FormFactorImpl, RegistrableFormFactor<AxialZExpan
     }
 };
 
+class AxialZExpansion : public FormFactorImpl, RegistrableFormFactor<AxialZExpansion> {
+  public:
+    AxialZExpansion(const YAML::Node &);
+    void Evaluate(double, FormFactor::Values &) const override;
+
+    // Required factory methods
+    static std::unique_ptr<FormFactorImpl> Construct(FFType, const YAML::Node &);
+    static std::string Name() { return "AxialZExpansion"; }
+    static FFType Type() { return FFType::axial; }
+
+  private:
+    double tcut, t0;
+    std::vector<double> cc_params{}, strange_params{};
+    double ZExpand(std::vector<double> A, double z) const {
+        // Compute the z-expansion, \sum{i=0}^{i_max} a_i z^i
+        double result = 0;
+        for(size_t i = A.size() - 1; i > 0; --i) {
+            result += A[i];
+            result *= z;
+        }
+        return result + A[0];
+    }
+};
+
 class Kelly : public FormFactorImpl, RegistrableFormFactor<Kelly> {
   public:
     Kelly(const YAML::Node &);

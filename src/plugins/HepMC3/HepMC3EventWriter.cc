@@ -24,6 +24,7 @@ void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<Pr
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config = {std::string(filename), "1.0", std::string("Run card")};
     run->tools().push_back(config);
+    // run->set_weight_names({"Default", "PL", "PT"});
     run->set_weight_names({"Default"});
 
     file.set_run_info(run);
