@@ -207,13 +207,6 @@ bool FourVector::Approx(const FourVector &other, double eps) const noexcept {
     return true;
 }
 
-bool FourVector::Approx(const FourVector &other, double eps) const noexcept {
-    for(size_t i = 0; i < vec.size(); ++i) {
-        if(std::abs(vec[i] - other.vec[i]) > eps) return false;
-    }
-    return true;
-}
-
 std::string FourVector::ToString() const noexcept {
     return "FourVector(" + std::to_string(vec[0]) + ", " + std::to_string(vec[1]) + ", " +
            std::to_string(vec[2]) + ", " + std::to_string(vec[3]) + ")";

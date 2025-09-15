@@ -331,25 +331,6 @@ double FlatFlux::GenerateWeight(const FourVector &beam, std::vector<double> &ran
     return delta_energy;
 }
 
-PDFBeam::PDFBeam(const YAML::Node &) {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-}
-
-achilles::FourVector PDFBeam::Flux(const std::vector<double> &, double) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
-}
-
-double PDFBeam::GenerateWeight(const FourVector &, std::vector<double> &, double) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
-}
-
-double PDFBeam::EvaluateFlux(const FourVector &) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
-}
-
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
     n_vars = 0;
     for(const auto &beam : m_beams) {

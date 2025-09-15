@@ -176,6 +176,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
@@ -187,6 +188,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     spdlog::trace("  emax = {}", emax);
     spdlog::trace("  s = {}", (point[0] + point[1]).M2());
     spdlog::trace("  s_min = {}", Smin());
+#endif
 }
 
 double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
@@ -231,6 +233,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 
     double wgt =
         1.0 / point[1].P2() / dp / dCos / dPhi / dE / point.back().P2() / dp2 / dCos2 / dPhi;
+#ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);

@@ -29,18 +29,6 @@ using namespace achilles::SystemVariables;
 using namespace achilles::PathVariables;
 namespace fs = std::filesystem;
 
-void GitInformation() {
-    std::string msg;
-    if(git::IsPopulated()) {
-        spdlog::info("Achilles git information");
-        spdlog::info("    Commit: {}", git::CommitSHA1());
-        spdlog::info("    Branch: {}", git::Branch());
-        spdlog::info("    Local Changes: {}", git::AnyUncommittedChanges() ? "Yes" : "No");
-    } else {
-        spdlog::warn("This is not a git repository version of Achilles");
-    }
-}
-
 static const std::string USAGE =
     R"(
     Usage:
@@ -129,17 +117,6 @@ int main(int argc, char *argv[]) {
     CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
     achilles::Plugin::Manager plugin_manager;
-
-    // Install signal handlers
-    std::signal(SIGTERM, SignalHandler);
-    std::signal(SIGSEGV, SignalHandler);
-    std::signal(SIGINT, SignalHandler);
-    std::signal(SIGABRT, SignalHandler);
-
-    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
-    CreateLogger(verbosity, log_verbosity, 1);
-    GitInformation();
 
     if(args["--display-cuts"].asBool()) {
         achilles::CutFactory<achilles::OneParticleCut>::Display();

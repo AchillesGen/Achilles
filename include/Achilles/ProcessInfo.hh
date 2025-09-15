@@ -70,21 +70,6 @@ template <> struct formatter<achilles::ProcessInfo> {
 };
 } // namespace fmt
 
-namespace fmt {
-
-template <> struct formatter<achilles::Process_Info> {
-    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
-        return ctx.begin();
-    }
-
-    auto format(const achilles::Process_Info &info, format_context &ctx) const
-        -> format_context::iterator {
-        return format_to(ctx.out(), "Process_Info({}, PIDs = [{}], States = [{}])", info.m_model,
-                         fmt::join(info.m_ids.begin(), info.m_ids.end(), ", "), info.m_states);
-    }
-};
-} // namespace fmt
-
 namespace YAML {
 
 template <> struct convert<achilles::ProcessInfo> {
