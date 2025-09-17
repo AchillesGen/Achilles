@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake ..
+          cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         working-directory: .
 
       - name: Build documentation
