@@ -25,13 +25,13 @@ jobs:
         run: pip install -r docs/requirements.txt
 
       - name: Install CMake and Doxygen
-        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz libhdf5-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz libhdf5-dev gfortran
 
       - name: Configure CMake
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DACHILLES_BUILD_DOCS=ON
         working-directory: .
 
       - name: Build documentation
