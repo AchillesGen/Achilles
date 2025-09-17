@@ -70,7 +70,8 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
           -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache                               \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}}  \
-          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
