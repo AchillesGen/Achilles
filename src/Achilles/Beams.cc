@@ -63,11 +63,15 @@ Spectrum::Spectrum(const YAML::Node &node) {
         std::vector<std::string> tokens;
         std::vector<double> edges, heights;
         while(std::getline(hist, line)) {
+            spdlog::trace("Flux line: {}", line);
             tokens.clear();
 
             tokenize(line, tokens);
+            spdlog::trace("elo_token = {}", tokens[elo_token]);
             edges.push_back(std::stod(tokens[elo_token]));
+            spdlog::trace("Parsed edge");
             heights.push_back(std::stod(tokens[flux_token]));
+            spdlog::trace("Parsed flux");
         }
         edges.push_back(std::stod(tokens[ehi_token]));
 
@@ -78,6 +82,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
             m_energy_units = 1.0 / 1.0_GeV;
             use_width = true;
             break;
+        case flux_units::v_cm2_POT_100MeV:
         case flux_units::v_cm2_POT_125MeV:
         case flux_units::v_cm2_POT_50MeV:
             use_width = true;
@@ -225,6 +230,8 @@ void Spectrum::AchillesHeader(std::ifstream &hist) {
         m_units = flux_units::v_m2_POT_500MeV;
     } else if(tokens[1] == "v/cm^2/POT/125MeV") {
         m_units = flux_units::v_cm2_POT_125MeV;
+    } else if(tokens[1] == "v/cm^2/POT/100MeV") {
+        m_units = flux_units::v_cm2_POT_100MeV;
     } else {
         throw std::runtime_error("Beam::Spectrum: Invalid flux units");
     }

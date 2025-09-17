@@ -83,6 +83,7 @@ class Spectrum : public FluxType {
         v_cm2_POT_MeV,
         v_cm2_POT_50MeV,
         v_cm2_POT_125MeV,
+        v_cm2_POT_100MeV,
         cm2_50MeV,
     };
     std::function<double(double)> m_flux{};
