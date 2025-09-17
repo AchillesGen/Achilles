@@ -1,4 +1,4 @@
 breathe
-sphinx-rtd-theme
+sphinx-book-theme
 sphinxcontrib-bibtex
 sphinx-design
