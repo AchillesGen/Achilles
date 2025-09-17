@@ -25,7 +25,7 @@ jobs:
         run: pip install -r docs/requirements.txt
 
       - name: Install CMake and Doxygen
-        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz
+        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz libhdf5-dev
 
       - name: Configure CMake
         run: |
