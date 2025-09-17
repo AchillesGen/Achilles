@@ -8,62 +8,70 @@
 
 namespace achilles {
 
-template<typename Base, typename ...Args>
-class Factory {
-    using Constructor = std::function<std::unique_ptr<Base>(Args&&...)>;
+template <typename Base, typename... Args> class Factory {
+    using Constructor = std::function<std::unique_ptr<Base>(Args &&...)>;
 
-    static std::map<std::string, Constructor>& Registry() {
+    static std::map<std::string, Constructor> &Registry() {
         static std::map<std::string, Constructor> registry;
         return registry;
     }
 
-    public:
-        static std::unique_ptr<Base> Initialize(const std::string &name,
-                                                Args &&...args) {
-            auto constructor = Registry().at(name);
-            return constructor(std::forward<Args>(args)...);
-        }
+  public:
+    static std::unique_ptr<Base> Initialize(const std::string &name, Args &&...args) {
+        auto constructor = Registry().at(name);
+        return constructor(std::forward<Args>(args)...);
+    }
 
-        template<class Derived>
-        static void Register(const std::string &name) {
-            if(IsRegistered(name)) 
-                spdlog::error("{} is already registered!", name);
-            spdlog::debug("Registering {}", name);
-            Registry()[name] = Derived::Construct;
+    template <class Derived> static void Register(const std::string &name) {
+        if(IsRegistered(name)) {
+            spdlog::error("{} is already registered!", name);
+            return;
         }
+        spdlog::trace("Registering {}", name);
+        Registry()[name] = Derived::Construct;
+    }
 
-        static bool IsRegistered(const std::string &name) {
-            return Registry().find(name) != Registry().end();
-        }
+    static bool IsRegistered(const std::string &name) {
+        return Registry().find(name) != Registry().end();
+    }
 
-        static void Display() {
-            fmt::print("Registered {}:\n", Base::Name());
-            for(const auto &registered : Registry())
-                fmt::print("  - {}\n", registered.first);
-        }
+    static void Deregister(const std::string &name) {
+        if(!IsRegistered(name)) spdlog::error("{} is not registered!", name);
+        spdlog::trace("Deregistering {}", name);
+        Registry().erase(name);
+    }
+
+    static void Display() {
+        fmt::print("Registered {}:\n", Base::Name());
+        for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);
+    }
+
+    static std::vector<std::string> List() {
+        std::vector<std::string> results;
+        for(const auto &registered : Registry()) results.push_back(registered.first);
+        return results;
+    }
 };
 
-template<typename Base, typename Derived, typename ...Args>
-class Registrable {
-    protected:
-        Registrable() = default;
-        virtual ~Registrable() {
-            if(!m_registered)
-                spdlog::error("Error registering");
-        }
+template <typename Base, typename Derived, typename... Args> class Registrable {
+  protected:
+    Registrable() = default;
+    virtual ~Registrable() {
+        if(!m_registered) spdlog::error("Error registering");
+    }
 
-        static bool Register() {
-            Factory<Base, Args...>::template Register<Derived>(Derived::Name());
-            return true;
-        }
+    static bool Register() {
+        Factory<Base, Args...>::template Register<Derived>(Derived::Name());
+        return true;
+    }
 
-    private:
-        static const bool m_registered;
+  private:
+    static const bool m_registered;
 };
-template<typename Base, typename Derived, typename ...Args>
-const bool Registrable<Base, Derived, Args...>::m_registered = Registrable<Base, Derived, Args...>::Register();
+template <typename Base, typename Derived, typename... Args>
+const bool Registrable<Base, Derived, Args...>::m_registered =
+    Registrable<Base, Derived, Args...>::Register();
 
-
-}
+} // namespace achilles
 
 #endif

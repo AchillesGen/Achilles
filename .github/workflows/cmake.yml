@@ -1,94 +1,185 @@
 name: CMake Build Matrix
 
-on: [push, pull_request]
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        type: string
+        required: true
+        description: 'JSON string of matrix configurations'
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   CMAKE_VERSION: 3.21.1
   BUILD_TYPE: Release
   CCACHE_VERSION: 4.4
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm_modules
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(inputs.matrix) }}
 
-    # TODO: Get build matrix working
-    # name: ${{ matrix.config.name }}
-    # runs-on: ${{ matrix.config.os }}
-    # strategy:
-    #   matrix:
-    #     config:
-    #       - {
-    #           name: "Ubuntu Latest GCC", artifact: "Linux.tar.bz2",
-    #           os: ubuntu-latest,
-    #           cc: "gcc", cxx: "g++"
-    #         }
-    #       - {
-    #           name: "macOS Latest Clang", artifact: "macOS.tar.bz2",
-    #           os: macos-latest,
-    #           cc: "clang", cxx: "clang++"
-    #         }
+    name: Build and Install - ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-    - name: Install dependencies
-      run: sudo apt update && sudo apt install -y libhdf5-dev gfortran lcov && sudo pip install codecov
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      run: |
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        brew update
+        brew install hdf5
+        brew install --force gcc
+        os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
+        # TODO: remove hardcoded gfortran major version
+        if (( "$os_ver" > 13)); then
+          ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
+        else
+          ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
+        fi
 
     - name: Set up cache
       id: cache-cpm
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/cpm-cache
-        key: ${{ runner.os }}-cpm-${{ hashFiles('**/') }}
+        key: ${{ matrix.name }}-cpm-${{ hashFiles('**/') }}
         restore-keys: |
-          ${{ runner.os }}-cpm-
+          ${{ matrix.name }}-cpm-
 
-    - name: Download ccache 
-      id: ccache 
-      shell: cmake -P {0}
-      run: |
-        set(ccache_url "https://github.com/cristianadam/ccache/releases/download/v$ENV{CCACHE_VERSION}/${ { runner.os } }.tar.xz")
-        file(DOWNLOAD "${ccache_url}" ./ccache.tar.xz SHOW_PROGRESS)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E tar xvf ./ccache.tar.xz)
-
-    - name: Prepare ccache timestamp
-      id: ccache_cache_timestamp
-      shell: cmake -P {0}
-      run: |
-        string(TIMESTAMP current_date "%Y-%m-%d-%H;%M;%S" UTC)
-        message("::set-output name=timestamp::${current_date}")
-
-    - name: ccache cache files 
-      uses: actions/cache@v3
+    - name: ccache 
+      uses: hendrikmuhs/ccache-action@v1.2
       with:
-        path: .ccache
-        key: ${{ matrix.config.name }}-ccache-${{ steps.ccache_cache_timestamp.outputs.timestamp }}
+        create-symlink: True
+        key: ${{ matrix.name }}-ccache-${{ github.sha }}
         restore-keys: |
-          ${{ matrix.config.name }}-ccache-
+          ${{ matrix.name }}-ccache-
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DENABLE_TESTING=ON -DCOVERAGE=ON -DCPM_SOURCE_CACHE=~/cpm-cache -DENABLE_BSM=OFF -DENABLE_HEPMC3=OFF
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
+          -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache                               \
+          -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}}  \
+          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j4
+      run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
+    - name: Install
+      run: cmake --install ${{ github.workspace }}/build
+
+    # Upload artifacts to be used in other workflows
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.os }}-${{ matrix.cc }}
+        path: ${{ github.workspace }}/build
+
+    # Upload artifacts to be used in other workflows
+    - name: Upload install artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: install-${{ matrix.os }}-${{ matrix.cc }}
+        path: ${{ github.workspace }}/install
+
+  test:
+    needs: build
+    strategy:
+      matrix: ${{ fromJson(inputs.matrix) }}
+
+    name: Test - ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: build-${{ matrix.os }}-${{ matrix.cc }}
+        path: build
+
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      run: |
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        brew update
+        brew install hdf5
+
+    - name: Test C++
+      working-directory: ${{ github.workspace }}/build
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ./test/achilles-testsuite
+      run: |
+        chmod +x test/achilles-testsuite
+        ./test/achilles-testsuite
+
+    - name: Test Fotran
+      working-directory: ${{ github.workspace }}/build
+      run: |
+        chmod +x test/achilles-fortran-testsuite
+        ./test/achilles-fortran-testsuite
      
     - name: Code coverage
-      working-directory: ${{github.workspace}}
+      if: ${{ matrix.coverage }}
+      uses: codecov/codecov-action@v4
+      with:
+        files: ./build/coverage.xml
+        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+
+  cross_section_check:
+    needs: test
+    strategy:
+      matrix: ${{ fromJson(inputs.matrix) }}
+
+    name: Cross Section Validation - ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - uses: actions/download-artifact@v4
+      with:
+        name: install-${{ matrix.os }}-${{ matrix.cc }}
+        path: install
+
+    - name: Install dependencies (Ubuntu)
+      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
+
+    - name: Install dependencies (MacOS)
+      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
       run: |
-        lcov --directory . --capture --output-file coverage.info
-        lcov --remove coverage.info '/Library/*' '/usr/*' "${HOME}"'/.cache/*' '*/test/*' '*/external/*' '*/_deps/*' '*/gzstream/*' '*/SHERPA-MC/*' --output-file coverage.info
-        lcov --list coverage.info
-        bash <(curl -s https://codecov.io/bash) -f coverage.info || echo "Codecov did not collect coverage reports"
+        export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+        brew update
+        brew install hdf5
+    
+    - name: Run cross section checks
+      working-directory: ${{ github.workspace }}/install
+      run: |
+          chmod +x bin/achilles
+          for file in examples/*.yml; do
+            echo "Running example: $file"
+            ./bin/achilles $file
+            name=$(basename "$file")
+            name="${name%.*}"
+            python ${{ github.workspace }}/test/validate_xsec.py achilles.log $name
+          done

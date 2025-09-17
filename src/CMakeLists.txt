@@ -1,4 +1,4 @@
-if(ENABLE_GZIP)
+if(ACHILLES_ENABLE_GZIP)
 add_subdirectory(gzstream)
 endif()
 add_subdirectory(plugins)

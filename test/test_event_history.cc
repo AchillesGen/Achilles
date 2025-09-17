@@ -1,8 +1,8 @@
 #include "catch2/catch.hpp"
 #include "catch2/trompeloeil.hpp"
 
-#include "Achilles/EventHistory.hh"
 #include "Achilles/Constants.hh"
+#include "Achilles/EventHistory.hh"
 #include <string>
 
 class MockVisitor : public trompeloeil::mock_interface<achilles::HistoryVisitor> {
@@ -42,9 +42,9 @@ TEST_CASE("EventHistory", "[EventHistory]") {
 
         achilles::EventHistoryNode *node = history.Node(0);
         CHECK(node != nullptr);
-        CHECK(node -> IsCascade());
-        CHECK(node -> ParticlesIn().size() == 0);
-        CHECK(node -> ParticlesOut().size() == 0);
+        CHECK(node->IsCascade());
+        CHECK(node->ParticlesIn().size() == 0);
+        CHECK(node->ParticlesOut().size() == 0);
 
         CHECK(history.Node(1) == nullptr);
     }
@@ -60,11 +60,11 @@ TEST_CASE("EventHistory", "[EventHistory]") {
 
         auto *node = history.FindNodeIn(part1);
         CHECK(node != nullptr);
-        CHECK(node -> ParticlesIn()[0] == part1);
+        CHECK(node->ParticlesIn()[0] == part1);
 
         node = history.FindNodeOut(part2);
         CHECK(node != nullptr);
-        CHECK(node -> ParticlesOut()[0] == part2);
+        CHECK(node->ParticlesOut()[0] == part2);
 
         CHECK(history.FindNodeIn(part2) == nullptr);
         CHECK(history.FindNodeOut(part1) == nullptr);
@@ -72,22 +72,20 @@ TEST_CASE("EventHistory", "[EventHistory]") {
 
     achilles::Particle target(achilles::PID::carbon(),
                               {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0});
-    achilles::Particle nuc_in(achilles::PID::neutron(),
-                              {918.00661011686168, 23.585833577703873,
-                               85.332385429710143, 52.378992899809319});
-    achilles::Particle beam(achilles::PID::nu_muon(),
-                            {1e4, 0, 0, 1e4});
+    achilles::Particle nuc_in(achilles::PID::neutron(), {918.00661011686168, 23.585833577703873,
+                                                         85.332385429710143, 52.378992899809319});
+    achilles::Particle beam(achilles::PID::nu_muon(), {1e4, 0, 0, 1e4});
     achilles::Particle neutrino(achilles::PID::nu_muon(),
                                 {5.3983343748755351e3, 0, 0, 5.3983343748755351e3});
-    achilles::Particle nuc_out(achilles::PID::proton(),
-                               {9.6318094613481071e2, -1.8702102417549486e2,
-                                -4.7096228265225918e1, 1.0333739302250189e2});
-    achilles::Particle lepton(achilles::PID::muon(),
-                              {5.3531600388575862e3, 2.1060685775319874e2,
-                               1.3242861369493605e2, 5.3473759747528429e3});
+    achilles::Particle nuc_out(
+        achilles::PID::proton(),
+        {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
+    achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
+                                                      1.3242861369493605e2, 5.3473759747528429e3});
     // TODO: Figure out how to handle remnant
     // achilles::Particle remnant(achilles::PID(1000060110));
-    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
+    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -
+    // lepton.Momentum();
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
@@ -95,7 +93,8 @@ TEST_CASE("EventHistory", "[EventHistory]") {
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::primary);
+                      {nuc_in, neutrino}, {nuc_out, lepton},
+                      achilles::EventHistoryNode::StatusCode::primary);
 
     SECTION("Example Event") {
         CHECK(history.size() == 3);
@@ -104,7 +103,7 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK_THAT(children0, Catch::Matchers::Equals(children1));
 
         auto parents = history.Parents(2ul);
-        std::vector<achilles::EventHistoryNode*> expected_parents;
+        std::vector<achilles::EventHistoryNode *> expected_parents;
         expected_parents.push_back(history.Node(0));
         expected_parents.push_back(history.Node(1));
         CHECK_THAT(parents, Catch::Matchers::Equals(expected_parents));
@@ -112,7 +111,7 @@ TEST_CASE("EventHistory", "[EventHistory]") {
 
     SECTION("Insert Shower Vertex") {
         achilles::Particle neutrino2(achilles::PID::nu_muon(),
-                                    {5.6983343748755351e3, 0, 0, 5.6983343748755351e3});
+                                     {5.6983343748755351e3, 0, 0, 5.6983343748755351e3});
         auto mom = neutrino2.Momentum() - neutrino.Momentum();
         achilles::Particle zd(achilles::PID::Zboson(), mom);
         history.InsertShowerVert(neutrino.Position(), neutrino, neutrino, neutrino2, {zd});
@@ -129,7 +128,8 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK(history.Primary() == history.Node(2));
 
         history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                          {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::primary);
+                          {nuc_in, neutrino}, {nuc_out, lepton},
+                          achilles::EventHistoryNode::StatusCode::primary);
         CHECK_THROWS_WITH(history.Primary(), "EventHistory: Only one primary node is allowed!");
     }
 
@@ -137,7 +137,8 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK(history.Beam() == history.Node(1));
 
         history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                          {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::beam);
+                          {nuc_in, neutrino}, {nuc_out, lepton},
+                          achilles::EventHistoryNode::StatusCode::beam);
         CHECK_THROWS_WITH(history.Beam(), "EventHistory: Only one beam node is allowed!");
     }
 
@@ -145,7 +146,8 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK(history.Target() == history.Node(0));
 
         history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                          {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::target);
+                          {nuc_in, neutrino}, {nuc_out, lepton},
+                          achilles::EventHistoryNode::StatusCode::target);
         CHECK_THROWS_WITH(history.Target(), "EventHistory: Only one target node is allowed!");
     }
 
@@ -156,7 +158,7 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         CHECK_THAT(children0, Catch::Matchers::Equals(children1));
 
         auto parents = history.Parents(history.Node(2));
-        std::vector<achilles::EventHistoryNode*> expected_parents;
+        std::vector<achilles::EventHistoryNode *> expected_parents;
         expected_parents.push_back(history.Node(0));
         expected_parents.push_back(history.Node(1));
         CHECK_THAT(parents, Catch::Matchers::Equals(expected_parents));
@@ -166,22 +168,20 @@ TEST_CASE("EventHistory", "[EventHistory]") {
 TEST_CASE("EventHistory Visitor", "[EventHistory]") {
     achilles::Particle target(achilles::PID::carbon(),
                               {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0});
-    achilles::Particle nuc_in(achilles::PID::neutron(),
-                              {918.00661011686168, 23.585833577703873,
-                               85.332385429710143, 52.378992899809319});
-    achilles::Particle beam(achilles::PID::nu_muon(),
-                            {1e4, 0, 0, 1e4});
+    achilles::Particle nuc_in(achilles::PID::neutron(), {918.00661011686168, 23.585833577703873,
+                                                         85.332385429710143, 52.378992899809319});
+    achilles::Particle beam(achilles::PID::nu_muon(), {1e4, 0, 0, 1e4});
     achilles::Particle neutrino(achilles::PID::nu_muon(),
                                 {5.3983343748755351e3, 0, 0, 5.3983343748755351e3});
-    achilles::Particle nuc_out(achilles::PID::proton(),
-                               {9.6318094613481071e2, -1.8702102417549486e2,
-                                -4.7096228265225918e1, 1.0333739302250189e2});
-    achilles::Particle lepton(achilles::PID::muon(),
-                              {5.3531600388575862e3, 2.1060685775319874e2,
-                               1.3242861369493605e2, 5.3473759747528429e3});
+    achilles::Particle nuc_out(
+        achilles::PID::proton(),
+        {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
+    achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
+                                                      1.3242861369493605e2, 5.3473759747528429e3});
     // TODO: Figure out how to handle remnant
     // achilles::Particle remnant(achilles::PID(1000060110));
-    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
+    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -
+    // lepton.Momentum();
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
@@ -189,15 +189,20 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {nuc_in, neutrino}, {nuc_out, lepton}, achilles::EventHistoryNode::StatusCode::primary);
+                      {nuc_in, neutrino}, {nuc_out, lepton},
+                      achilles::EventHistoryNode::StatusCode::primary);
 
     SECTION("Expected output") {
         achilles::PrintVisitor visitor;
         history.WalkHistory(visitor);
 
-        std::string expected1 = R"exp(Node(primary, {Particle[2112, 24, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[14, 24, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2212, 24, FourVector(9.63180946e+02, -1.87021024e+02, -4.70962283e+01, 1.03337393e+02), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[13, 24, FourVector(5.35316004e+03, 2.10606858e+02, 1.32428614e+02, 5.34737597e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
-        std::string expected2 = R"exp(Node(target, {Particle[1000060120, 24, FourVector(1.11880000e+04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2112, 24, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
-        std::string expected3 = R"exp(Node(beam, {Particle[14, 24, FourVector(1.00000000e+04, 0.00000000e+00, 0.00000000e+00, 1.00000000e+04), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[14, 24, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
+        // TODO: Clean up by using fmt
+        std::string expected1 =
+            R"exp(Node(primary, {Particle[2112, 25, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[14, 25, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2212, 25, FourVector(9.63180946e+02, -1.87021024e+02, -4.70962283e+01, 1.03337393e+02), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[13, 25, FourVector(5.35316004e+03, 2.10606858e+02, 1.32428614e+02, 5.34737597e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
+        std::string expected2 =
+            R"exp(Node(target, {Particle[1000060120, 25, FourVector(1.11880000e+04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2112, 25, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
+        std::string expected3 =
+            R"exp(Node(beam, {Particle[14, 25, FourVector(1.00000000e+04, 0.00000000e+00, 0.00000000e+00, 1.00000000e+04), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[14, 25, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
 
         // Check for expected substrings, in case order of visiting changes in future
         CHECK_THAT(visitor.data, Catch::Matchers::Contains(expected1));
@@ -206,14 +211,121 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
     }
 
     SECTION("Mock Visitor") {
-
         MockVisitor visitor;
-        REQUIRE_CALL(visitor, visit(history.Node(0)))
-            .TIMES(1);
-        REQUIRE_CALL(visitor, visit(history.Node(1)))
-            .TIMES(1);
-        REQUIRE_CALL(visitor, visit(history.Node(2)))
-            .TIMES(1);
+        REQUIRE_CALL(visitor, visit(history.Node(0))).TIMES(1);
+        REQUIRE_CALL(visitor, visit(history.Node(1))).TIMES(1);
+        REQUIRE_CALL(visitor, visit(history.Node(2))).TIMES(1);
         history.WalkHistory(visitor);
+    }
+}
+
+TEST_CASE("EventHistory Copy", "[EventHistory]") {
+    // Create initial EventHistory with nodes
+    achilles::Particle target(achilles::PID::carbon(),
+                              {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0});
+    achilles::Particle nuc_in(achilles::PID::neutron(), {918.00661011686168, 23.585833577703873,
+                                                         85.332385429710143, 52.378992899809319});
+    achilles::Particle beam(achilles::PID::nu_muon(), {1e4, 0, 0, 1e4});
+    achilles::Particle neutrino(achilles::PID::nu_muon(),
+                                {5.3983343748755351e3, 0, 0, 5.3983343748755351e3});
+    achilles::Particle nuc_out(
+        achilles::PID::proton(),
+        {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
+    achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
+                                                      1.3242861369493605e2, 5.3473759747528429e3});
+
+    achilles::EventHistory history;
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
+    history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
+                      {nuc_in, neutrino}, {nuc_out, lepton},
+                      achilles::EventHistoryNode::StatusCode::primary);
+
+    SECTION("Copy Constructor") {
+        // Create a copy of the history
+        achilles::EventHistory copied_history = history;
+
+        // Check that the size is the same
+        CHECK(copied_history.size() == history.size());
+
+        // Check that the nodes are correctly copied
+        for(size_t i = 0; i < history.size(); ++i) {
+            auto *original_node = history.Node(i);
+            auto *copied_node = copied_history.Node(i);
+
+            CHECK(original_node !=
+                  copied_node); // Make sure it's a deep copy, not just the same pointer
+            CHECK(original_node->Status() ==
+                  copied_node->Status()); // Check node status is the same
+            CHECK(original_node->ParticlesIn() == copied_node->ParticlesIn()); // Check particles in
+            CHECK(original_node->ParticlesOut() ==
+                  copied_node->ParticlesOut()); // Check particles out
+        }
+    }
+
+    SECTION("Assignment Operator") {
+        // Use the assignment operator to copy the history
+        achilles::EventHistory copied_history;
+        copied_history = history;
+
+        // Check that the size is the same
+        CHECK(copied_history.size() == history.size());
+
+        // Check that the nodes are correctly copied
+        for(size_t i = 0; i < history.size(); ++i) {
+            auto *original_node = history.Node(i);
+            auto *copied_node = copied_history.Node(i);
+
+            CHECK(original_node !=
+                  copied_node); // Make sure it's a deep copy, not just the same pointer
+            CHECK(original_node->Status() ==
+                  copied_node->Status()); // Check node status is the same
+            CHECK(original_node->ParticlesIn() == copied_node->ParticlesIn()); // Check particles in
+            CHECK(original_node->ParticlesOut() ==
+                  copied_node->ParticlesOut()); // Check particles out
+        }
+    }
+
+    SECTION("Copying Does Not Affect Original") {
+        // Create a copy and modify the copy
+        achilles::EventHistory copied_history = history;
+
+        // Add a new vertex to the copied history (a change that doesn't affect the original)
+        achilles::Particle new_particle(
+            achilles::PID::proton(),
+            {achilles::ParticleInfo(achilles::PID::proton()).Mass(), 1, 1, 1});
+        copied_history.AddVertex({1.0, 1.0, 1.0}, {new_particle}, {},
+                                 achilles::EventHistoryNode::StatusCode::primary);
+
+        // Ensure that the copied history has the new vertex and the original does not
+        CHECK(copied_history.size() ==
+              history.size() + 1);  // The copied history should have one more vertex
+        CHECK(history.size() == 3); // Original history should remain unchanged
+
+        // Verify that the original history is unaffected by changes to the copy
+        auto *original_node = history.Node(0);
+        auto *copied_node = copied_history.Node(0);
+
+        // Check that original and copied nodes are still independent and haven't been altered
+        CHECK(original_node->Status() == copied_node->Status());
+    }
+
+    SECTION("Copy Constructor on Empty History") {
+        achilles::EventHistory empty_history;
+        achilles::EventHistory copied_empty_history = empty_history;
+
+        // Check that the size is the same
+        CHECK(copied_empty_history.size() == empty_history.size());
+    }
+
+    SECTION("Assignment Operator on Empty History") {
+        achilles::EventHistory empty_history;
+        achilles::EventHistory copied_empty_history;
+        copied_empty_history = empty_history;
+
+        // Check that the size is the same
+        CHECK(copied_empty_history.size() == empty_history.size());
     }
 }

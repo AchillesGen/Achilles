@@ -1,21 +1,20 @@
-#include "catch2/catch.hpp"
 #include "Achilles/Integrand.hh"
+#include "catch2/catch.hpp"
 
-double dummy_func(const std::vector<double>&, double) {
+double dummy_func(const std::vector<double> &, double) {
     return 1.0;
 }
 
 class DummyMapper : public achilles::Mapper<double> {
-    public:
-        void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
-            std::copy(rans.begin(), rans.end(), point.begin());
-        }
-        double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
-            std::copy(point.begin(), point.end(), rans.begin());
-            return 1.0;
-        }
-        size_t NDims() const override { return 1; }
-        YAML::Node ToYAML() const override { return YAML::Node(); }
+  public:
+    void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
+        std::copy(rans.begin(), rans.end(), point.begin());
+    }
+    double GenerateWeight(const std::vector<double> &point, std::vector<double> &rans) override {
+        std::copy(point.begin(), point.end(), rans.begin());
+        return 1.0;
+    }
+    size_t NDims() const override { return 1; }
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {

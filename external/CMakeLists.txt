@@ -1,51 +1,21 @@
-#pybind11
-# CPMAddPackage(
-#     NAME pybind11
-#     GITHUB_REPOSITORY pybind/pybind11
-#     GIT_TAG v2.4.3
-#     PATCH_COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/pybind11.patch"
-# )
-# add_library(pybind11::pybind11 ALIAS pybind11)
-
-CPMFindPackage(
+CPMAddPackage(
     NAME fmt
-    GIT_TAG 10.1.1
+    GIT_TAG 11.0.0
     GITHUB_REPOSITORY fmtlib/fmt
 )
 add_library(fmt::fmt ALIAS fmt)
 
-CPMFindPackage(
+CPMAddPackage(
     NAME spdlog
-    GIT_TAG "v1.12.0"
+    GIT_TAG "v1.14.1"
     GITHUB_REPOSITORY gabime/spdlog
     OPTIONS
         "SPDLOG_COMPILED_LIB ON"
         "SPDLOG_FMT_EXTERNAL ON"
         "SPDLOG_BUILD_SHARED ON"
+        "SPDLOG_INSTALL ON"
 )
 add_library(spdlog::spdlog ALIAS spdlog)
-
-if(AUTODIFF)
-CPMFindPackage(
-    NAME eigen3
-    GIT_TAG "3.4"
-    GIT_REPOSITORY "https://gitlab.com/libeigen/eigen"
-    OPTIONS
-        "BUILD_TESTING OFF"
-)
-
-CPMFindPackage(
-    NAME autodiff
-    GIT_TAG "v0.6.1"
-    GITHUB_REPOSITORY autodiff/autodiff
-    OPTIONS
-        "AUTODIFF_BUILD_TESTS OFF"
-        "AUTODIFF_BUILD_PYTHON OFF"
-        "AUTODIFF_BUILD_EXAMPLES OFF"
-        "AUTODIFF_BUILD_DOCS OFF"
-)
-add_library(autodiff::autodiff ALIAS autodiff)
-endif()
 
 CPMAddPackage(
     NAME docopt
@@ -56,7 +26,7 @@ add_library(docopt::docopt ALIAS docopt)
 
 CPMAddPackage(
     NAME yaml-cpp
-    GITHUB_REPOSITORY jxi24/yaml-cpp
+    GITHUB_REPOSITORY jbeder/yaml-cpp
     GIT_TAG master
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
@@ -73,22 +43,12 @@ CPMAddPackage(
 add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
-    NAME HepMC3
-    VERSION 3.2.6
-    GIT_REPOSITORY "https://gitlab.cern.ch/hepmc/HepMC3.git"
-    GIT_TAG 3.2.6
-    OPTIONS
-      "HEPMC3_CXX_STANDARD ${CMAKE_CXX_STANDARD}"
-      "HEPMC3_ENABLE_SEARCH OFF"
-      "HEPMC3_ENABLE_ROOTIO ${USE_ROOT}"
-      "HEPMC3_ENABLE_PROTOBUFIO OFF"
-      "HEPMC3_ENABLE_PYTHON OFF"
-      "HEPMC3_BUILD_DOCS OFF"
-      "HEPMC3_BUILD_EXAMPLES OFF"
-      "HEPMC3_INSTALL_EXAMPLES OFF"
-      "HEPMC3_ENABLE_TEST OFF"
-      "HEPMC3_INSTALL_INTERFACES OFF"
-      "HEPMC3_BUILD_STATIC_LIBS OFF"
+  NAME NuHepMC_CPPUtils
+  GIT_TAG v1-RC10
+  GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
+  OPTIONS "NuHepMC_CPPUtils_BUILTIN_HEPMC3 ON"
+          "NuHepMC_CPPUtils_PYTHON_ENABLED OFF"
+          "NuHepMC_CPPUtils_PROTOBUF_INTERFACE OFF"
 )
 
 CPMAddPackage(
@@ -106,10 +66,12 @@ CPMAddPackage(
     Name CmakeGitVersion
     GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
     GIT_TAG master
+    OPTIONS
+        "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
 # Install testing framework
-if(ENABLE_TESTING OR ENABLE_FUZZING)
+if(ACHILLES_ENABLE_TESTING)
     # Catch2
     CPMAddPackage(
         NAME catch2
@@ -124,7 +86,7 @@ if(ENABLE_TESTING OR ENABLE_FUZZING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 44 
+        VERSION 47
     )
 
     # Fortran Unit Tests

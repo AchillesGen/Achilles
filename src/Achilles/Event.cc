@@ -1,128 +1,142 @@
 #include "Achilles/Event.hh"
+#include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Beams.hh"
-#include "Achilles/NuclearModel.hh"
 
 using achilles::Event;
 
-Event::Event(std::shared_ptr<Nucleus> nuc,
-             std::vector<FourVector> mom, double vwgt)
-        : m_nuc{std::move(nuc)}, m_mom{std::move(mom)}, m_vWgt{std::move(vwgt)} {
-    m_nuc -> GenerateConfig();
-    m_me.resize(m_nuc -> NNucleons());
+Event::Event(std::shared_ptr<Nucleus> nuc, std::vector<FourVector> mom, double vwgt)
+    : m_nuc{nuc}, m_mom{std::move(mom)}, m_wgt{std::move(vwgt)} {
+    m_hadrons = nuc->GenerateConfig();
 }
 
-// bool Event::ValidateEvent(size_t imatrix) const {
-//     spdlog::trace("Number of momentums = {}", m_mom.size());
-//     spdlog::trace("Number of states = {}", m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size());
-//     return m_mom.size() == m_me[imatrix].inital_state.size() + m_me[imatrix].final_state.size();
-// }
-
-// TODO: Make this cleaner and handle multiple nucleons in initial state
-void Event::InitializeLeptons(const Process_Info &process) {
-    // Setup leptons
-    bool initial_state = true;
-    for(const auto &elm : process.m_mom_map) {
-        if(ParticleInfo(elm.second).IsLepton() || ParticleInfo(elm.second).IsVector()) {
-            m_leptons.emplace_back(ParticleInfo(elm.second), m_mom[elm.first]);
-            if(initial_state) {
-                m_leptons.back().Status() = ParticleStatus::initial_state;
-                initial_state = false;
-            } else {
-                m_leptons.back().Status() = ParticleStatus::final_state;
-            }
-        }
-    }
+Event::Event(const Event &other) {
+    m_nuc = other.m_nuc;
+    m_remnant = other.m_remnant;
+    m_mom = other.m_mom;
+    m_wgt = other.m_wgt;
+    m_leptons = other.m_leptons;
+    m_hadrons = other.m_hadrons;
+    m_history = other.m_history;
+    flux = other.flux;
+    m_process_id = other.m_process_id;
 }
 
-void Event::InitializeHadrons(const Process_Info &process) {
-    // Coherent scattering is handled inside the coherent class
-    if(ParticleInfo(process.m_states.begin()->first[0]).IsNucleus())
-        return;
-
-    // Get all hadronic momenta
-    std::vector<FourVector> mom;
-    for(const auto &elm : process.m_mom_map) {
-        if(ParticleInfo(elm.second).IsHadron()) {
-            mom.push_back(m_mom[elm.first]);
-        }
-    }
-
-    // TODO: Update to handle multiple initial and final state particles
-    // Initial state setup
-    size_t idx = SelectNucleon();
-    Particle &initial = m_nuc -> Nucleons()[idx];
-    initial.Momentum() = mom.front();
-    initial.Status() = ParticleStatus::initial_state;
-
-    // Final state setup
-    Particle final(process.m_states.at({initial.ID()})[0], mom.back(),
-                   initial.Position(), ParticleStatus::propagating);
-    m_nuc -> Nucleons().push_back(final);
+Event &Event::operator=(const Event &other) {
+    if(this == &other) return *this;
+    m_nuc = other.m_nuc;
+    m_remnant = other.m_remnant;
+    m_mom = other.m_mom;
+    m_wgt = other.m_wgt;
+    m_leptons = other.m_leptons;
+    m_hadrons = other.m_hadrons;
+    m_history = other.m_history;
+    flux = other.flux;
+    m_process_id = other.m_process_id;
+    return *this;
 }
 
 void Event::Finalize() {
     size_t nA = 0, nZ = 0;
-    for(auto it = m_nuc -> Nucleons().begin(); it != m_nuc -> Nucleons().end(); ) {
-        if(it -> Status() == ParticleStatus::background) {
-            if(it -> ID() == PID::proton()) nZ++;
-            nA++;
-            it = m_nuc -> Nucleons().erase(it);
-        } else {
-            ++it;
-        }
+    for(const auto &part : m_hadrons) {
+        if(part.IsExternal()) continue;
+        if(part.ID() == PID::proton()) nZ++;
+        nA++;
     }
 
     m_remnant = NuclearRemnant(nA, nZ);
 }
 
+void Event::Display() const {
+    spdlog::trace("Leptons:");
+    size_t idx = 0;
+    for(const auto &particle : Leptons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    spdlog::trace("Hadrons:");
+    idx = 0;
+    for(const auto &particle : Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    spdlog::trace("Weight: {}", Weight());
+}
+
 achilles::vParticles Event::Particles() const {
     vParticles result;
-    result.insert(result.end(), Hadrons().begin(), Hadrons().end());
+    result.insert(result.end(), m_hadrons.begin(), m_hadrons.end());
     result.insert(result.end(), m_leptons.begin(), m_leptons.end());
     return result;
 }
 
-const achilles::vParticles& Event::Hadrons() const {
-    return m_nuc -> Nucleons();
-}
-
-achilles::vParticles& Event::Hadrons() {
-    return m_nuc -> Nucleons();
-}
-
-void Event::CalcWeight() {
-    // if(!ValidateEvent(0))
-    //     throw std::runtime_error("Phase space and Matrix element have different number of particles");
-    m_wgt = m_vWgt*m_meWgt;
-}
-
-bool Event::TotalCrossSection() {
-    m_meWgt = std::accumulate(m_me.begin(), m_me.end(), 0.0, std::plus<>());
-    spdlog::trace("Total xsec = {}", m_meWgt);
-    return m_meWgt > 0 ? true : false;
-}
-
-size_t Event::SelectNucleon() const {
-    std::vector<double> probs = EventProbs();
-    double rand = Random::Instance().Uniform(0.0, 1.0);
-    return static_cast<size_t>(std::distance(probs.begin(),
-                               std::lower_bound(probs.begin(), probs.end(), rand)))-1;
-}
-
-std::vector<double> Event::EventProbs() const {
-    std::vector<double> probs;
-    probs.push_back(0.0);
-    double cumulative = 0.0;
-    for(const auto & m : m_me) {
-        cumulative += m;
-        probs.emplace_back(cumulative / m_meWgt);
+achilles::crefParticles Event::Protons(ParticleStatus status) const {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) { return p.ID() == PID::proton(); };
+        return FilterParticles(m_hadrons, func);
     }
-    return probs;
+    auto func = [status](const Particle &p) {
+        return p.ID() == PID::proton() && p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
 }
 
-void Event::Rotate(const std::array<double,9>& rot_mat) {
-    for (auto& particle: m_nuc -> Nucleons()){ particle.Rotate(rot_mat); }
-    for (auto& particle: m_leptons){ particle.Rotate(rot_mat); }
+achilles::crefParticles Event::Neutrons(ParticleStatus status) const {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) { return p.ID() == PID::neutron(); };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return p.ID() == PID::neutron() && p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+achilles::crefParticles Event::Pions(ParticleStatus status) const {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) {
+            return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0());
+        };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0()) &&
+               p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+achilles::refParticles Event::Protons(ParticleStatus status) {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) { return p.ID() == PID::proton(); };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return p.ID() == PID::proton() && p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+achilles::refParticles Event::Neutrons(ParticleStatus status) {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) { return p.ID() == PID::neutron(); };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return p.ID() == PID::neutron() && p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+achilles::refParticles Event::Pions(ParticleStatus status) {
+    if(status == ParticleStatus::any) {
+        auto func = [](const Particle &p) {
+            return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0());
+        };
+        return FilterParticles(m_hadrons, func);
+    }
+    auto func = [status](const Particle &p) {
+        return (p.ID() == PID::pionp() || p.ID() == -PID::pionp() || p.ID() == PID::pion0()) &&
+               p.Status() == status;
+    };
+    return FilterParticles(m_hadrons, func);
+}
+
+void Event::Rotate(const std::array<double, 9> &rot_mat) {
+    for(auto &particle : m_hadrons) { particle.Rotate(rot_mat); }
+    for(auto &particle : m_leptons) { particle.Rotate(rot_mat); }
 }

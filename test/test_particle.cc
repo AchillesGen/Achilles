@@ -21,8 +21,7 @@ TEST_CASE("Formation Zone", "[Particle]") {
 }
 
 TEST_CASE("Properties", "[Particle]") {
-    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0},
-                            {0, 1, 0}};
+    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}, {0, 1, 0}};
 
     SECTION("Momentum") {
         CHECK(part.Momentum() == achilles::FourVector{energy, 100, 0, 0});
@@ -47,9 +46,7 @@ TEST_CASE("Properties", "[Particle]") {
         CHECK(part.IsFinal());
     }
 
-    SECTION("History") {
-         
-    }
+    SECTION("History") {}
 }
 
 TEST_CASE("Propagate", "[Particle]") {
@@ -58,17 +55,20 @@ TEST_CASE("Propagate", "[Particle]") {
 
     SECTION("Time propagation") {
         part.Propagate(1);
-        CHECK_THAT(part.Position(),
-                   IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{achilles::Constant::HBARC/10, 0, 0}).margin(eps));
+        CHECK_THAT(part.Position(), IsVectorApprox<achilles::ThreeVector>(
+                                        achilles::ThreeVector{part.Momentum().P() / part.E(), 0, 0})
+                                        .margin(eps));
         part.BackPropagate(1);
-        CHECK_THAT(part.Position(),
-                   IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{0, 0, 0}).margin(eps));
+        CHECK_THAT(
+            part.Position(),
+            IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{0, 0, 0}).margin(eps));
     }
 
     SECTION("Space propagation") {
         part.SpacePropagate(1);
-        CHECK_THAT(part.Position(),
-                   IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{1, 0, 0}).margin(eps));
+        CHECK_THAT(
+            part.Position(),
+            IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{1, 0, 0}).margin(eps));
     }
 }
 
@@ -76,11 +76,23 @@ TEST_CASE("I/O", "[Particle]") {
     achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}};
     achilles::Particle part2;
 
-    CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, 0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 24)");
+    CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, "
+                             "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 25)");
 
     std::stringstream ss;
     ss << part;
     ss >> part2;
 
     CHECK(part == part2);
+}
+
+TEST_CASE("Closest Approach", "[Particle]") {
+    achilles::Particle part1(achilles::PID::proton(), {1, 0, 0, 1.0 / achilles::Constant::HBARC});
+    achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
+
+    auto time = achilles::ClosestApproach(part1, part2);
+    CHECK(time == Approx(achilles::Constant::HBARC));
+
+    part1.Propagate(time);
+    CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});
 }

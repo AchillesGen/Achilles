@@ -3,7 +3,6 @@
 #include "Achilles/Utilities.hh"
 
 TEST_CASE("Bit operations", "[Utilities]") {
-
     SECTION("NextPermutation") {
         unsigned int inp = 0b100;
         auto perm1 = achilles::NextPermutation(inp);
@@ -14,9 +13,9 @@ TEST_CASE("Bit operations", "[Utilities]") {
 
     SECTION("SetBit") {
         unsigned int inp = 0b100;
-        CHECK(achilles::SetBit(inp, 0) == false);    
-        CHECK(achilles::SetBit(inp, 1) == false);    
-        CHECK(achilles::SetBit(inp, 2) == true);    
+        CHECK(achilles::SetBit(inp, 0) == false);
+        CHECK(achilles::SetBit(inp, 1) == false);
+        CHECK(achilles::SetBit(inp, 2) == true);
     }
 
     SECTION("SetBits") {
@@ -30,13 +29,11 @@ TEST_CASE("Bit operations", "[Utilities]") {
     SECTION("IsPower2") {
         unsigned int inp = 0b100;
         CHECK(achilles::IsPower2(inp) == true);
-        CHECK(achilles::IsPower2(inp+1) == false);
+        CHECK(achilles::IsPower2(inp + 1) == false);
     }
 
     SECTION("Log2") {
-        for(unsigned int i = 0; i < 16; ++i) {
-            CHECK(achilles::Log2(1u << i) == i);
-        }
+        for(unsigned int i = 0; i < 16; ++i) { CHECK(achilles::Log2(1u << i) == i); }
     }
 }
 
@@ -60,9 +57,7 @@ TEST_CASE("Coordiante Transforms", "[Utilities]") {
 }
 
 TEST_CASE("Brent", "[Utilities]") {
-    auto func = [](const double &x) -> double {
-        return (x+1)*(x-2);
-    };
+    auto func = [](const double &x) -> double { return (x + 1) * (x - 2); };
 
     SECTION("Find Roots") {
         achilles::Brent brent(func);
@@ -89,5 +84,19 @@ TEST_CASE("GridSpace Generation", "[Utilities]") {
         auto points = achilles::Linspace(0, 10, 11);
         std::vector<double> points2{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
         CHECK(points == points2);
+    }
+}
+
+TEST_CASE("Suggested option", "[Utilities]") {
+    std::vector<std::string> opts = {"Quasielastic", "Resonance", "MesonExchangeCurrent",
+                                     "DeepInelasticScattering", "ShallowInelasticScattering"};
+
+    std::vector<std::string> queries = {"Quasilatics", "esonces", "MesonExchCurr", "DeepInelScat",
+                                        "ShalInelScattering"};
+
+    size_t i = 0;
+    for(const auto &query : queries) {
+        auto result = achilles::GetSuggestion(opts, query);
+        CHECK(result == opts[i++]);
     }
 }

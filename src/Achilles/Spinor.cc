@@ -1,12 +1,11 @@
 #include "Achilles/Spinor.hh"
 #include "Achilles/Utilities.hh"
 
-using achilles::Spinor;
 using achilles::SpinMatrix;
+using achilles::Spinor;
 
 Spinor::Spinor(bool type, bool bar, const int &hel, const FourVector &mom, int ms)
-        : m_type{type}, m_bar{bar}, m_hel{hel} {
-
+    : m_type{type}, m_bar{bar}, m_hel{hel} {
     bool mode = m_type ^ (m_hel < 0);
     if(std::abs(mom.Px()) == 0.0 && std::abs(mom.Py()) == 0.0 && std::abs(mom.Pz()) == 0) {
         Complex rte(sqrt(Complex(mom.E())));
@@ -19,34 +18,34 @@ Spinor::Spinor(bool type, bool bar, const int &hel, const FourVector &mom, int m
         }
         double sgn = m_type ? 1.0 : -1.0;
         size_t r = mode ? 0 : 2;
-        m_u[0+r] = sgn*m_u[2-r];
-        m_u[1+r] = sgn*m_u[3-r];
+        m_u[0 + r] = sgn * m_u[2 - r];
+        m_u[1 + r] = sgn * m_u[3 - r];
         if(m_bar) {
             m_bar = false;
-            *this=Bar();
+            *this = Bar();
         }
     } else {
         FourVector ph(mom.E() < 0.0 ? -mom.P() : mom.P(), mom.Px(), mom.Py(), mom.Pz());
         if(mode) { // u+(p,m) or v-(p,m)
-            WeylSpinor sh(true,ph);
+            WeylSpinor sh(true, ph);
             m_u[2] = sh.U1();
             m_u[3] = sh.U2();
         } else { // u-(p,m) or v+(p,m)
-            WeylSpinor sh(false,ph);
-            if(mom.E() < 0.0) sh=-sh;
+            WeylSpinor sh(false, ph);
+            if(mom.E() < 0.0) sh = -sh;
             m_u[0] = sh.U2();
             m_u[1] = -sh.U1();
         }
         double m2 = mom.M2();
         if(!IsZero(m2, tol)) {
             double sgn = m_type ^ (ms < 0) ? 1.0 : -1.0;
-            double omp = sqrt((mom.E() + ph.E())/(2*ph.E()));
-            double omm = sqrt((mom.E() - ph.E())/(2*ph.E()));
+            double omp = sqrt((mom.E() + ph.E()) / (2 * ph.E()));
+            double omm = sqrt((mom.E() - ph.E()) / (2 * ph.E()));
             size_t r = mode ? 0 : 2;
-            m_u[0+r] = sgn*omm*m_u[2-r];
-            m_u[1+r] = sgn*omm*m_u[3-r];
-            m_u[2-r] *= omp;
-            m_u[3-r] *= omp;
+            m_u[0 + r] = sgn * omm * m_u[2 - r];
+            m_u[1 + r] = sgn * omm * m_u[3 - r];
+            m_u[2 - r] *= omp;
+            m_u[3 - r] *= omp;
         }
         if(m_bar) {
             m_bar = false;
@@ -57,33 +56,34 @@ Spinor::Spinor(bool type, bool bar, const int &hel, const FourVector &mom, int m
 
 Spinor Spinor::Bar() const {
     return Spinor(m_type, !m_bar, m_hel,
-                  {std::conj(m_u[2]), std::conj(m_u[3]),
-                   std::conj(m_u[0]), std::conj(m_u[1])});
+                  {std::conj(m_u[2]), std::conj(m_u[3]), std::conj(m_u[0]), std::conj(m_u[1])});
 }
 
 SpinMatrix Spinor::outer(const Spinor &other) const {
     if(m_bar) throw std::runtime_error("LHS spinor should not be barred");
     if(!other.m_bar) throw std::runtime_error("RHS spinor should be barred");
     if(m_type != other.m_type) throw std::runtime_error("Both spinors should be u or v");
-    
+
     SpinMatrix s;
 
     if(m_hel != other.m_hel) return s;
 
     for(size_t i = 0; i < 4; ++i) {
-        for(size_t j = 0; j < 4; ++j) {
-            s[4*i + j] = m_u[i]*other[j];
-        }
+        for(size_t j = 0; j < 4; ++j) { s[4 * i + j] = m_u[i] * other[j]; }
     }
-    
+
     return s;
 }
 
-SpinMatrix SpinMatrix::PL() { return (Identity() - Gamma_5())/2.0; }
-SpinMatrix SpinMatrix::PR() { return (Identity() + Gamma_5())/2.0; }
+SpinMatrix SpinMatrix::PL() {
+    return (Identity() - Gamma_5()) / 2.0;
+}
+SpinMatrix SpinMatrix::PR() {
+    return (Identity() + Gamma_5()) / 2.0;
+}
 
 SpinMatrix SpinMatrix::Slashed(const FourVector &mom) {
-    return mom.E()*Gamma_0() - mom.Px()*Gamma_1() - mom.Py()*Gamma_2() - mom.Pz()*Gamma_3();
+    return mom.E() * Gamma_0() - mom.Px() * Gamma_1() - mom.Py() * Gamma_2() - mom.Pz() * Gamma_3();
 }
 
 SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {
@@ -95,34 +95,37 @@ SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {
     }
     static constexpr std::complex<double> li(0, 1);
     if(mu == 0) {
-        if(nu == 1) return sign*SpinMatrix({0, -li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, li, 0});
-        else if(nu == 2) return sign*SpinMatrix({0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0});
-        else return sign*SpinMatrix({-li, 0, 0, 0, 0, li, 0, 0, 0, 0, li, 0, 0, 0, 0, -li});
+        if(nu == 1)
+            return sign * SpinMatrix({0, -li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, li, 0});
+        else if(nu == 2)
+            return sign * SpinMatrix({0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0});
+        else
+            return sign * SpinMatrix({-li, 0, 0, 0, 0, li, 0, 0, 0, 0, li, 0, 0, 0, 0, -li});
     } else if(mu == 1) {
-        if(nu == 2) return sign*SpinMatrix({1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1});
-        else return sign*SpinMatrix({0, li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, -li, 0});
+        if(nu == 2)
+            return sign * SpinMatrix({1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1});
+        else
+            return sign * SpinMatrix({0, li, 0, 0, -li, 0, 0, 0, 0, 0, 0, li, 0, 0, -li, 0});
     } else {
-        return sign*SpinMatrix({0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0});
+        return sign * SpinMatrix({0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0});
     }
 }
 
 Spinor achilles::operator*(const Spinor &lhs, const SpinMatrix &rhs) {
-    Spinor s(lhs.Type(), lhs.Barred(), lhs.Helicity(), std::array<std::complex<double>, 4>{0, 0, 0, 0});
+    Spinor s(lhs.Type(), lhs.Barred(), lhs.Helicity(),
+             std::array<std::complex<double>, 4>{0, 0, 0, 0});
     for(size_t i = 0; i < 4; ++i) {
-        for(size_t j = 0; j < 4; ++j) {
-            s[j] += lhs[i]*rhs[4*i+j];
-        }
+        for(size_t j = 0; j < 4; ++j) { s[j] += lhs[i] * rhs[4 * i + j]; }
     }
 
     return s;
 }
 
 Spinor achilles::operator*(const SpinMatrix &lhs, const Spinor &rhs) {
-    Spinor s(rhs.Type(), rhs.Barred(), rhs.Helicity(), std::array<std::complex<double>, 4>{0, 0, 0, 0});
+    Spinor s(rhs.Type(), rhs.Barred(), rhs.Helicity(),
+             std::array<std::complex<double>, 4>{0, 0, 0, 0});
     for(size_t i = 0; i < 4; ++i) {
-        for(size_t j = 0; j < 4; ++j) {
-            s[i] += lhs[4*i+j]*rhs[j];
-        }
+        for(size_t j = 0; j < 4; ++j) { s[i] += lhs[4 * i + j] * rhs[j]; }
     }
 
     return s;

@@ -1,16 +1,15 @@
 #ifndef EVENT_HH
 #define EVENT_HH
 
-#include <map>
+#include <algorithm>
 #include <memory>
 #include <utility>
 #include <vector>
 
 #include "Achilles/Achilles.hh"
-#include "Achilles/HardScatteringEnum.hh"
+#include "Achilles/EventHistory.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/ProcessInfo.hh"
-#include "Achilles/EventHistory.hh"
 
 namespace achilles {
 
@@ -21,93 +20,85 @@ class Nucleus;
 class Beam;
 class NuclearModel;
 
-struct InitialState {
-    std::shared_ptr<Beam> beam;
-    std::shared_ptr<Nucleus> nucleus;
-};
-
 using vParticles = std::vector<Particle>;
 using vMomentum = std::vector<FourVector>;
+using refParticles = std::vector<std::reference_wrapper<Particle>>;
+using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 
 class Event {
-    struct MatrixElementStruct {
-        std::vector<PID> inital_state;
-        std::vector<PID> final_state;
-        double weight{};
-    };
+  public:
+    Event() = default;
+    Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
+    Event(const Event &);
+    Event &operator=(const Event &);
+    MOCK ~Event() = default;
 
-    using MatrixElementVec = std::vector<MatrixElementStruct>;
+    void Finalize();
 
-    public:
-        Event(double vWgt = 0) : m_vWgt{vWgt} {}
-        Event(std::shared_ptr<Nucleus>, 
-              std::vector<FourVector>, double);
-        MOCK ~Event() = default;
+    MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
 
-        void SetHardScatteringType(HardScatteringType type) { m_type = type; }
-        MOCK void InitializeLeptons(const Process_Info&);
-        MOCK void InitializeHadrons(const Process_Info&);
-        void Finalize();
+    MOCK const vMomentum &Momentum() const { return m_mom; }
+    MOCK vMomentum &Momentum() { return m_mom; }
 
-        MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
+    MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
+    MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
 
-        MOCK const vMomentum &Momentum() const { return m_mom; }
-        MOCK vMomentum &Momentum() { return m_mom; }
+    const double &Flux() const { return flux; }
+    double &Flux() { return flux; }
 
-        MOCK const EventHistory &History() const { return m_history; }
-        EventHistory &History() { return m_history; }
+    MOCK vParticles Particles() const;
+    MOCK const vParticles &Hadrons() const { return m_hadrons; }
+    MOCK vParticles &Hadrons() { return m_hadrons; }
+    MOCK const vParticles &Leptons() const { return m_leptons; }
+    MOCK vParticles &Leptons() { return m_leptons; }
+    MOCK const double &Weight() const { return m_wgt; }
+    MOCK double &Weight() { return m_wgt; }
+    void Rotate(const std::array<double, 9> &);
+    void Display() const;
 
-        const double &MatrixElementWgt(size_t i) const { return m_me[i]; }
-        double &MatrixElementWgt(size_t i) { return m_me[i]; }
+    crefParticles Protons(ParticleStatus = ParticleStatus::any) const;
+    refParticles Protons(ParticleStatus = ParticleStatus::any);
+    crefParticles Pions(ParticleStatus = ParticleStatus::any) const;
+    refParticles Pions(ParticleStatus = ParticleStatus::any);
+    crefParticles Neutrons(ParticleStatus = ParticleStatus::any) const;
+    refParticles Neutrons(ParticleStatus = ParticleStatus::any);
 
-        const std::vector<double> &MatrixElementWgts() const { return m_me; }
-        std::vector<double> &MatrixElementWgts() { return m_me; }
+    MOCK const EventHistory &History() const { return m_history; }
+    EventHistory &History() { return m_history; }
 
-        bool TotalCrossSection();
-        size_t SelectNucleon() const;
+    bool operator==(const Event &other) const {
+        return m_nuc == other.m_nuc && m_remnant == other.m_remnant && m_mom == other.m_mom &&
+               m_leptons == other.m_leptons;
+    }
 
-        MOCK const std::shared_ptr<Nucleus> CurrentNucleus() const { return m_nuc; }
-        MOCK std::shared_ptr<Nucleus> CurrentNucleus() { return m_nuc; }
+    int &ProcessId() { return m_process_id; }
+    const int &ProcessId() const { return m_process_id; }
 
-        const double& Flux() const { return flux; }
-        double& Flux() { return flux; }
+  private:
+    // Helper functions
+    template <class UnaryPred>
+    crefParticles FilterParticles(const vParticles &particles, UnaryPred pred) const {
+        crefParticles result;
+        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+        return result;
+    }
+    template <class UnaryPred> refParticles FilterParticles(vParticles &particles, UnaryPred pred) {
+        refParticles result;
+        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+        return result;
+    }
 
-        MOCK vParticles Particles() const;
-        MOCK const vParticles& Hadrons() const;
-        MOCK vParticles& Hadrons();
-        MOCK const vParticles& Leptons() const { return m_leptons; }
-        MOCK vParticles& Leptons() { return m_leptons; }
-        void CalcWeight();
-        MOCK const double& Weight() const { return m_wgt; }
-        MOCK double& Weight() { return m_wgt; }
-        void SetMEWeight(double wgt) { m_meWgt = wgt; }
-        void Rotate(const std::array<double,9>&);
-
-        bool operator==(const Event &other) const {
-            return m_type == other.m_type && m_nuc == other.m_nuc
-                && m_remnant == other.m_remnant && m_mom == other.m_mom
-                && m_me == other.m_me && m_vWgt == other.m_meWgt
-                && m_leptons == other.m_leptons;
-        }
-
-    private:
-        static bool MatrixCompare(const MatrixElementStruct&, double);
-        static double AddEvents(double, const MatrixElementStruct&);
-        std::vector<double> EventProbs() const;
-
-        // bool ValidateEvent(size_t) const;
-
-        HardScatteringType m_type{HardScatteringType::None};
-        std::shared_ptr<Nucleus> m_nuc;
-        NuclearRemnant m_remnant{};
-        vMomentum m_mom{};
-        std::vector<double> m_me;
-        double m_vWgt{}, m_meWgt{}, m_wgt{-1};
-        vParticles m_leptons{};
-        EventHistory m_history{};
-        double flux;
+    // Variables
+    std::shared_ptr<Nucleus> m_nuc;
+    NuclearRemnant m_remnant{};
+    vMomentum m_mom{};
+    double m_wgt{};
+    vParticles m_leptons{}, m_hadrons{};
+    EventHistory m_history{};
+    double flux{};
+    int m_process_id{};
 };
 
-}
+} // namespace achilles
 
 #endif

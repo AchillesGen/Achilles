@@ -80,7 +80,7 @@ contains
         implicit none
         class(onebody_calc) :: this
         type(fourvector), intent(in) :: qvec, pin, pout
-        double precision, dimension(4) :: q, p4, pp4
+        double precision, dimension(4) :: q, p4, pp4, k1, kp1
         double precision :: xp, w, wt, qm2, e
 
         q = qvec%to_array()
@@ -90,10 +90,12 @@ contains
         e = p4(1)
         w = q(1)
         p4(1) = sqrt(xp**2+constants%mqe**2)
+        k1 = qvec%to_array()
+        kp1 = qvec%to_array()
         !wt = w-abs(e)+constants%mqe-p4(1)
         !q(1) = wt
 
-        call current_init(p4, pp4, q)
+        call current_init(p4, pp4, q, k1, kp1, w)
         call define_spinors()
     end subroutine
 

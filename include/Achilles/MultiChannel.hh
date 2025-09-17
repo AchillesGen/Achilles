@@ -1,8 +1,8 @@
 #ifndef MULTICHANNEL_HH
 #define MULTICHANNEL_HH
 
-#include "Achilles/Vegas.hh"
 #include "Achilles/Integrand.hh"
+#include "Achilles/Vegas.hh"
 
 namespace achilles {
 
@@ -12,6 +12,7 @@ struct MultiChannelSummary {
     StatsData sum_results;
 
     StatsData Result() const { return sum_results; }
+    StatsData LastResult() const { return results.back(); }
 };
 
 struct MultiChannelParams {
@@ -19,62 +20,133 @@ struct MultiChannelParams {
     double rtol{rtol_default};
     size_t nrefine{nrefine_default};
     double beta{beta_default}, min_alpha{min_alpha_default};
+    double rescale_factor{rescale_factor_default};
     size_t iteration{};
 
-    static constexpr size_t ncalls_default{1000}, nint_default{10};
+    static constexpr size_t ncalls_default{10000}, nint_default{7};
     static constexpr double rtol_default{1e-2};
     static constexpr size_t nrefine_default{1};
-    static constexpr double beta_default{0.25}, min_alpha_default{1e-5};
-    static constexpr size_t nparams = 7;
+    static constexpr double beta_default{1.00}, min_alpha_default{1e-5};
+    static constexpr double rescale_factor_default{1.44};
+    static constexpr size_t nparams = 8;
 };
+
+bool operator==(const MultiChannelParams &lhs, const MultiChannelParams &rhs);
+bool operator==(const MultiChannelSummary &lhs, const MultiChannelSummary &rhs);
+
+void SaveState(std::ostream &os, const MultiChannelParams &params);
+void LoadState(std::istream &is, MultiChannelParams &params);
+void SaveState(std::ostream &os, const MultiChannelSummary &summary);
+void LoadState(std::istream &is, MultiChannelSummary &summary);
+
+enum class UnitsEnum { mub, nb, pb, em38cm2, LAST };
+
+inline std::string ToString(UnitsEnum unit) {
+    switch(unit) {
+    case UnitsEnum::mub:
+        return "mub";
+    case UnitsEnum::nb:
+        return "nb";
+    case UnitsEnum::pb:
+        return "pb";
+    case UnitsEnum::em38cm2:
+        return "e-38cm2";
+    default:
+        return "nb";
+    }
+}
+
+inline double UnitScale(UnitsEnum unit) {
+    switch(unit) {
+    case UnitsEnum::mub:
+        return 1e-3;
+    case UnitsEnum::nb:
+        return 1;
+    case UnitsEnum::pb:
+        return 1e3;
+    case UnitsEnum::em38cm2:
+        return 1e5;
+    default:
+        return 1.0;
+    }
+}
+
+inline UnitsEnum ToUnitEnum(std::string unit) {
+    if(unit == "mub")
+        return UnitsEnum::mub;
+    else if(unit == "nb")
+        return UnitsEnum::nb;
+    else if(unit == "pb")
+        return UnitsEnum::pb;
+    else if(unit == "e-38cm2")
+        return UnitsEnum::em38cm2;
+    else {
+        spdlog::warn("Unit {} not recognized. Available display units include:", unit);
+        for(int i = 0; i < static_cast<int>(UnitsEnum::LAST); ++i) {
+            UnitsEnum unit_avail = static_cast<UnitsEnum>(i);
+            spdlog::warn("{}", ToString(unit_avail));
+        }
+        spdlog::warn("Defaulting back to nb");
+        return UnitsEnum::nb;
+    }
+}
 
 class MultiChannel {
-    public:
-        MultiChannel() = default;
-        MultiChannel(size_t, size_t, MultiChannelParams);
+  public:
+    MultiChannel() = default;
+    MultiChannel(size_t, size_t, MultiChannelParams, UnitsEnum unit = UnitsEnum::nb);
 
-        // Utilities
-        size_t Dimensions() const { return ndims; }
-        size_t NChannels() const { return channel_weights.size(); }
-        MultiChannelParams Parameters() const { return params; }
-        MultiChannelParams &Parameters() { return params; }
+    // Utilities
+    size_t Dimensions() const { return ndims; }
+    size_t NChannels() const { return channel_weights.size(); }
+    MultiChannelParams Parameters() const { return params; }
+    MultiChannelParams &Parameters() { return params; }
 
-        // Optimization and event generation
-        template<typename T>
-        void operator()(Integrand<T>&);
-        template<typename T>
-        void Optimize(Integrand<T>&);
+    // Optimization and event generation
+    template <typename T> void operator()(Integrand<T> &);
+    template <typename T> void Optimize(Integrand<T> &);
+    template <typename T> std::vector<T> GeneratePoint(Integrand<T> &);
+    template <typename T> double GenerateWeight(Integrand<T> &, const std::vector<T> &);
 
-        // Getting results
-        MultiChannelSummary Summary();
+    // Getting results
+    bool HasResults() const { return summary.results.size() != 0; }
+    void UpdateSummary(bool update) { update_summary = update; }
+    MultiChannelSummary Summary();
+    StatsData LastResult() const { return summary.LastResult(); }
+    bool NeedsOptimization(double) const;
 
-        // YAML interface
-        friend YAML::convert<achilles::MultiChannel>;
+    // Cache Results
+    void SaveState(std::ostream &) const;
+    void LoadState(std::istream &);
+    bool operator==(const MultiChannel &) const;
 
-    private:
-        void Adapt(const std::vector<double>&);
-        void TrainChannels();
-        template<typename T>
-        void RefineChannels(Integrand<T> &func) {
-            params.iteration = 0;
-            params.ncalls *= 2;
-            for(auto &channel : func.Channels()) {
-                if(channel.integrator.Grid().Bins() < 200)
-                    channel.integrator.Refine();
-            }
+    // YAML interface
+    friend YAML::convert<achilles::MultiChannel>;
+
+  private:
+    void Adapt(const std::vector<double> &);
+    void TrainChannels();
+    template <typename T> void RefineChannels(Integrand<T> &func) {
+        params.iteration = 0;
+        params.ncalls =
+            static_cast<size_t>(static_cast<double>(params.ncalls) * params.rescale_factor);
+        for(auto &channel : func.Channels()) {
+            if(channel.integrator.Grid().Bins() < 100) channel.integrator.Refine();
         }
-        void PrintIteration() const;
-        void MaxDifference(const std::vector<double>&);
+    }
+    void PrintIteration() const;
+    void MaxDifference(const std::vector<double> &);
 
-        size_t ndims{};
-        MultiChannelParams params{};
-        std::vector<double> channel_weights, best_weights;
-        double min_diff{lim::infinity()};
-        MultiChannelSummary summary;
+    bool update_summary{true};
+    size_t ndims{};
+    MultiChannelParams params{};
+    std::vector<double> channel_weights, best_weights;
+    double min_diff{lim::infinity()};
+    MultiChannelSummary summary;
+    UnitsEnum m_units = UnitsEnum::nb;
 };
 
-template<typename T>
-void achilles::MultiChannel::operator()(Integrand<T> &func) {
+template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func) {
     size_t nchannels = channel_weights.size();
     std::vector<double> rans(ndims);
     std::vector<T> point(ndims);
@@ -89,7 +161,7 @@ void achilles::MultiChannel::operator()(Integrand<T> &func) {
         Random::Instance().Generate(rans);
 
         // Select a channel
-        size_t ichannel = Random::Instance().SelectIndex(channel_weights); 
+        size_t ichannel = Random::Instance().SelectIndex(channel_weights);
 
         // Map the point based on the channel
         func.GeneratePoint(ichannel, rans, point);
@@ -102,25 +174,46 @@ void achilles::MultiChannel::operator()(Integrand<T> &func) {
         results += val;
 
         if(val2 != 0) {
-            for(size_t j = 0; j < nchannels; ++j) {
-                train_data[j] += densities[j] * val2 * wgt;
-            }
+            for(size_t j = 0; j < nchannels; ++j) { train_data[j] += densities[j] * val2 * wgt; }
         }
     }
 
     Adapt(train_data);
     func.Train();
     MaxDifference(train_data);
-    summary.results.push_back(results);
-    summary.sum_results += results;
+    if(update_summary) {
+        summary.results.push_back(results);
+        summary.sum_results += results;
+    }
 }
 
-template<typename T>
-void achilles::MultiChannel::Optimize(Integrand<T> &func) {
+template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
+    std::vector<double> rans(ndims);
+    std::vector<T> point(ndims);
+
+    // Generate needed random numbers
+    Random::Instance().Generate(rans);
+
+    // Select a channel
+    size_t ichannel = Random::Instance().SelectIndex(channel_weights);
+
+    // Map the point based on the channel
+    func.GeneratePoint(ichannel, rans, point);
+    return point;
+}
+
+template <typename T>
+double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vector<T> &point) {
+    size_t nchannels = channel_weights.size();
+    std::vector<double> densities(nchannels);
+    return func.GenerateWeight(channel_weights, point, densities);
+}
+
+template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func) {
     double rel_err = lim::max();
-    while((rel_err > params.rtol) || summary.results.size() < params.niterations) {
+    while(NeedsOptimization(rel_err)) {
         (*this)(func);
-        StatsData current = summary.sum_results;
+        StatsData current = summary.results.back();
         rel_err = current.Error() / std::abs(current.Mean());
 
         PrintIteration();
@@ -128,21 +221,18 @@ void achilles::MultiChannel::Optimize(Integrand<T> &func) {
     }
 }
 
-}
+} // namespace achilles
 
 namespace YAML {
 
-template<>
-struct convert<achilles::MultiChannelSummary> {
+template <> struct convert<achilles::MultiChannelSummary> {
     static Node encode(const achilles::MultiChannelSummary &rhs) {
         Node node;
         node["NEntries"] = rhs.results.size();
-        for(const auto &entry : rhs.results)
-            node["Entries"].push_back(entry);
+        for(const auto &entry : rhs.results) node["Entries"].push_back(entry);
 
         node["NChannels"] = rhs.best_weights.size();
-        for(const auto &weight : rhs.best_weights)
-            node["ChannelWeights"].push_back(weight);
+        for(const auto &weight : rhs.best_weights) node["ChannelWeights"].push_back(weight);
 
         return node;
     }
@@ -170,8 +260,7 @@ struct convert<achilles::MultiChannelSummary> {
     }
 };
 
-template<>
-struct convert<achilles::MultiChannelParams> {
+template <> struct convert<achilles::MultiChannelParams> {
     static Node encode(const achilles::MultiChannelParams &rhs) {
         Node node;
 
@@ -182,27 +271,26 @@ struct convert<achilles::MultiChannelParams> {
         node["beta"] = rhs.beta;
         node["min_alpha"] = rhs.min_alpha;
         node["iteration"] = rhs.iteration;
+        node["rescale_factor"] = rhs.rescale_factor;
 
         return node;
     }
 
     static bool decode(const Node &node, achilles::MultiChannelParams &rhs) {
-        if(node.size() != rhs.nparams) return false;
-
-        rhs.ncalls = node["NCalls"].as<size_t>();
-        rhs.niterations = node["NIterations"].as<size_t>();
-        rhs.rtol = node["rtol"].as<double>();
-        rhs.nrefine = node["nrefine"].as<size_t>();
-        rhs.beta = node["beta"].as<double>();
-        rhs.min_alpha = node["min_alpha"].as<double>();
-        rhs.iteration = node["iteration"].as<size_t>();
+        if(node["NCalls"]) rhs.ncalls = node["NCalls"].as<size_t>();
+        if(node["NIterations"]) rhs.niterations = node["NIterations"].as<size_t>();
+        if(node["rtol"]) rhs.rtol = node["rtol"].as<double>();
+        if(node["nrefine"]) rhs.nrefine = node["nrefine"].as<size_t>();
+        if(node["beta"]) rhs.beta = node["beta"].as<double>();
+        if(node["min_alpha"]) rhs.min_alpha = node["min_alpha"].as<double>();
+        if(node["iteration"]) rhs.iteration = node["iteration"].as<size_t>();
+        if(node["rescale_factor"]) rhs.rescale_factor = node["rescale_factor"].as<double>();
 
         return true;
     }
 };
 
-template<>
-struct convert<achilles::MultiChannel> {
+template <> struct convert<achilles::MultiChannel> {
     static Node encode(const achilles::MultiChannel &rhs) {
         Node node;
         node["NDims"] = rhs.ndims;
@@ -213,20 +301,20 @@ struct convert<achilles::MultiChannel> {
     }
 
     static bool decode(const Node &node, achilles::MultiChannel &rhs) {
-        if(node.size() != 4) return false; 
+        if(node.size() != 4) return false;
 
         rhs.ndims = node["NDims"].as<size_t>();
         rhs.summary = node["Summary"].as<achilles::MultiChannelSummary>();
         rhs.params = node["Parameters"].as<achilles::MultiChannelParams>();
 
         auto nchannels = node["NChannels"].as<size_t>();
-        if(rhs.summary.best_weights.size() != nchannels) return false; 
+        if(rhs.summary.best_weights.size() != nchannels) return false;
         rhs.channel_weights = rhs.summary.best_weights;
         rhs.best_weights = rhs.summary.best_weights;
         return true;
     }
 };
 
-}
+} // namespace YAML
 
 #endif

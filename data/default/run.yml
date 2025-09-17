@@ -1,43 +1,60 @@
 Main:
-  NEvents: 100000
+  NEvents: 50000
   HardCuts: true
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
   Output:
-      Format: HepMC3
-      Name: electron_1300_37.hepmc
+      Format: NuHepMC
+      Name: achilles.hepmc
       Zipped: True
 
-Process:
-  Model: DarkNeutrinoPortal_Dirac_UFO
-  Final States: [11]
-  ParamCard: parameters.dat
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [11, [11]]
 
 Beams:
   - Beam:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1300
+        Energy: 1108
 
 Cascade:
   Run: False
-  Interaction:
-    Name: GeantInteractions
-    GeantData: data/GeantData.hdf5
+  Interactions: !include "data/default/VirtResInteractions.yml"
   Step: 0.04
   Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
 
-NuclearModel:
-  Model: QESpectral
-  FormFactorFile: "FormFactors.yml"
-  SpectralP: data/pke12_tot.data
-  SpectralN: data/pke12_tot.data
-  Ward: False
+NuclearModels:
+- NuclearModel: 
+   Model: QESpectral
+   ConfigFile: data/info_C12_pke.data 
+   SpectralP: data/Spectral_Functions/pke12p_tot.data 
+   SpectralN: data/Spectral_Functions/pke12n_tot.data
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
+- NuclearModel: 
+   Model: FortranModel
+   Name: RES_Spectral_Func
+   ConfigFile: data/info_C12_pke.data 
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
 
-Nucleus: !include "data/default/12C.yml"
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
 
 HardCuts:
   - Type: AngleTheta
     PIDs: 11
-    range: [35, 39]
+    range: [36.5, 38.5]
 
 Options: !include "data/default/OptionDefaults.yml"
+
+Backend:
+  Name: Default
+  Options: []

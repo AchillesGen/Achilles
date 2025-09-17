@@ -12,4 +12,5 @@ void ConstantsModule(py::module &m) {
     mconstant.attr("mp") = py::float_(Constant::mp);
     mconstant.attr("mn") = py::float_(Constant::mn);
     mconstant.attr("mN") = py::float_(Constant::mN);
+    mconstant.attr("pi") = py::float_(M_PI);
 }

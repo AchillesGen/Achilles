@@ -1,0 +1,19 @@
+Name: 40Ar
+Binding: 8.6
+Fermi Momentum: 250
+Density:
+  ProtonFile: data/densities/rho_Ar_p.txt
+  NeutronFile: data/densities/rho_Ar_n.txt
+  FilePotential: data/realOP_12C_EDAI.dat
+  Function: configuration
+  Configs: data/configurations/AR40_configs_RMF_achilles.out.gz
+FermiGas:
+  Type: Local
+  Correlated: False
+  SRCfraction: 0.2
+  LambdaSRC: 2.75
+  Params: []
+Potential: 
+  Name: Schroedinger
+  r0: 0.16
+  Mode: 3

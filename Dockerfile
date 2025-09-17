@@ -1,12 +1,12 @@
-FROM alpine as build
+FROM alpine AS build
 
-RUN apk update && apk add g++ gcc musl-dev cmake hdf5-dev make git gfortran && ls /usr/lib/
+RUN apk update && apk add g++ gcc musl-dev cmake hdf5-dev make git gfortran python3 && ls /usr/lib/
 
 COPY . /achilles_src
 
-RUN cmake -S achilles_src -B achilles -DENABLE_BSM=OFF && cmake --build ../achilles -j
+RUN cmake -S achilles_src -B achilles -DCMAKE_POLICY_VERSION_MINIMUM=3.5 && cmake --build ../achilles -j
 
-FROM alpine as main
+FROM alpine AS main
 
 RUN apk update && apk add --no-cache hdf5-dev
 COPY --from=build /achilles /achilles

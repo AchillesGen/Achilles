@@ -1,0 +1,6 @@
+Model: QESpectral
+ConfigFile: data/info_C12_pke.data 
+FormFactorFile: "FormFactors.yml"
+SpectralP: data/Spectral_Functions/pke12p_tot.data
+SpectralN: data/Spectral_Functions/pke12n_tot.data
+Ward: None

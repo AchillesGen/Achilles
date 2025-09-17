@@ -7,7 +7,9 @@ module libutilities
     public :: constants, c2fstring, f2cstring, malloc, free
 
     type constants_type
-        double precision :: c, hbarc, hbarc2, mp, mn, mqe
+        double precision :: c, hbarc, hbarc2, pi, mp, mn
+        double precision ::  mqe, mpi0, mpip, meta, mdelta, mrho
+
     end type constants_type
 
     interface
@@ -60,18 +62,21 @@ contains
         character(len=1,kind=c_char), pointer :: cptr(:)
         integer :: i, length
 
-        length = len(fstr)
+        length = len_trim(fstr)
         if(length <= 0) then
             cstr = c_null_ptr
         else
             cstr = malloc(length+1)
-            if(c_associated(cstr)) then
-                call c_f_pointer(cstr, cptr, [length+1])
-                forall(i=1:length)
-                    cptr(i) = fstr(i:i)
-                end forall
-                cptr(length+1) = c_null_char
+            if(.not. c_associated(cstr)) then
+                print*, "[error] FortranUtils: Memory allocation failed in f2cstring"
+                cstr = c_null_ptr
+                return
             endif
+            call c_f_pointer(cstr, cptr, [length+1])
+            do i = 1, length
+                cptr(i) = fstr(i:i)
+            enddo
+            cptr(length+1) = c_null_char
         endif
     end function f2cstring
 

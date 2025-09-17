@@ -8,18 +8,13 @@
 
 namespace achilles {
 
-enum class RunMode {
-    FullPhaseSpace,
-    FixedAngle,
-    FixedAngleEnergy
-};
+enum class RunMode { FullPhaseSpace, FixedAngle, FixedAngleEnergy };
 
 }
 
 namespace YAML {
 
-template<>
-struct convert<achilles::RunMode> {
+template <> struct convert<achilles::RunMode> {
     static bool decode(const Node &node, achilles::RunMode &rhs) {
         if(node.as<std::string>() == "FullPhaseSpace") {
             rhs = achilles::RunMode::FullPhaseSpace;
@@ -36,6 +31,6 @@ struct convert<achilles::RunMode> {
     }
 };
 
-}
+} // namespace YAML
 
 #endif

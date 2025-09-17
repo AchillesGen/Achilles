@@ -4,10 +4,10 @@
 #include "Achilles/Particle.hh"
 
 TEST_CASE("DensityConfiguration", "[Configuration]") {
-    achilles::DensityConfiguration config("data/configurations/QMC_configs.out.gz"); 
+    achilles::DensityConfiguration config("data/configurations/QMC_configs.out.gz");
     auto particles = config.GetConfiguration();
     CHECK(particles.size() == 12);
-    size_t nproton=0, nneutron=0;
+    size_t nproton = 0, nneutron = 0;
     for(const auto &particle : particles) {
         if(particle.ID() == achilles::PID::proton()) nproton++;
         if(particle.ID() == achilles::PID::neutron()) nneutron++;
