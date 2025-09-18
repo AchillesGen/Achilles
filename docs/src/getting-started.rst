@@ -142,6 +142,56 @@ Build Options
 Running
 *******
 
+The main Achilles executable for lepton-nucleus interactions can be run by
+launching the ``achilles`` executable, which can either be found in the
+``bin`` directory of the build directory, or in the ``bin`` directory of the install directory.
+Launching the code with no command line arguments, attempts to find a run card file named ``run.yml`` that
+specifies the setup for the desired run. For a detailed description on the run card can be found
+:ref:`here <Run Card>`.
+
+If you wish to run with a different run card, then Achilles can be launched as
+
+.. code-block:: shell-session
+   $ ./achilles <run_card>
+
+In which the ``<run_card>`` is the desired `YAML <https://yaml.org/>`_ configuration file to be used.
+
+.. note:: Alternate Run Modes
+   To run Achilles in other run mode configurations please see :ref:`Alternate Run Modes`.
+
+.. dropdown:: Runtime Options
+   :open:
+
+    +--------------------------+--------------------------------+
+    |   Option                 | Meaning                        |
+    +==========================+================================+
+    | ``-h --help``            | Show list of options           | 
+    +--------------------------+--------------------------------+
+    | ``--version``            | Show the version of Achilles   | 
+    +--------------------------+--------------------------------+
+    | ``-v`` / ``-vv``         | Increase verbosity level       | 
+    +--------------------------+--------------------------------+
+    | ``-l`` / ``-ll``         | Increase log verbosity level   |
+    +--------------------------+--------------------------------+
+    | ``--logfile``            | File to write log info to.     |
+    |                          | Defaults to ``achilles.log``   |
+    +--------------------------+--------------------------------+
+    | ``-s --sherpa``          | Option to pass to Sherpa       |
+    +--------------------------+--------------------------------+
+    | ``--display-cuts``       | List available cut options     |
+    +--------------------------+--------------------------------+
+    | ``--display-ps``         | List available phase spaces    |
+    +--------------------------+--------------------------------+
+    | ``--display-ff``         | List available form factors    |
+    +--------------------------+--------------------------------+
+    | ``--display-int-models`` | List available cascade models  |
+    |                          | for cross section evaluations  |
+    +--------------------------+--------------------------------+
+    | ``--display-nuc-models`` | List available nuclear models  |
+    +--------------------------+--------------------------------+
+
+
+
 .. _Dockerized Achilles:
 
 *******************
