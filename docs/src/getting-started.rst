@@ -156,7 +156,7 @@ If you wish to run with a different run card, then Achilles can be launched as
 
 In which the ``<run_card>`` is the desired `YAML <https://yaml.org/>`_ configuration file to be used.
 
-.. note:: Alternate Run Modes
+.. note::
    To run Achilles in other run mode configurations please see :ref:`Alternate Run Modes`.
 
 .. dropdown:: Runtime Options
@@ -198,6 +198,46 @@ In which the ``<run_card>`` is the desired `YAML <https://yaml.org/>`_ configura
 Dockerized Achilles
 *******************
 
+`Docker <https://www.docker.com/>`_ provides a means to run pre-built environments in a containerized
+way, similar to virtual machines. We provide a basic version of Achilles built with minimum features.
+This enables users to try out Achilles without having to personally build and install the executable,
+helping to overcome any system-specific issues.
+
+.. note::
+   Docker has a security vulnerability that makes it difficult to run safely on shared computing resources.
+   For this reason, many high-performace computing (HPC) clusters support the use of
+   `Apptainer <https://apptainer.org/>`_ instead. Our images have been built for Docker, but should be
+   convertable to an Apptainer image.
+
+========================
+Obtaining a Docker image
+========================
+
+Docker images are automatically built by the GitHub CI. A given version of the code can be obtained by running:
+
+.. code-block:: shell-session
+
+   $ docker pull ghcr.io/achillesgen/achilles:vX.Y.Z
+
+where `X.Y.Z` is the version of Achilles you wish to obtain. You can also obtain the most up-to-date version
+from the `main` branch by running:
+
+.. code-block:: shell-session
+
+   $ docker pull ghcr.io/achillesgen/achilles:main
+
+Both of the above commands will download and store the Docker image on your system. You are able to obtain
+multiple versions of the image. Therefore, for the rest of this documentation, we will denote the image
+without the tag, but you can add the tag to the specific version in each command.
+
+=====================
+Running the Container
+=====================
+
+
+=========================================
+Handling files between host and container
+=========================================
 
 
 .. _Sherpa: https://sherpa-team.gitlab.io/
