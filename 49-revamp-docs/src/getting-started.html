@@ -327,7 +327,12 @@ document.write(`
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running">2.3. Running</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dockerized-achilles">2.4. Dockerized Achilles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dockerized-achilles">2.4. Dockerized Achilles</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obtaining-a-docker-image">2.4.1. Obtaining a Docker image</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-container">2.4.2. Running the Container</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#handling-files-between-host-and-container">2.4.3. Handling files between host and container</a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -361,7 +366,13 @@ document.write(`
 </ul>
 </li>
 <li><p><a class="reference internal" href="#running" id="id18">Running</a></p></li>
-<li><p><a class="reference internal" href="#dockerized-achilles" id="id19">Dockerized Achilles</a></p></li>
+<li><p><a class="reference internal" href="#dockerized-achilles" id="id19">Dockerized Achilles</a></p>
+<ul>
+<li><p><a class="reference internal" href="#obtaining-a-docker-image" id="id20">Obtaining a Docker image</a></p></li>
+<li><p><a class="reference internal" href="#running-the-container" id="id21">Running the Container</a></p></li>
+<li><p><a class="reference internal" href="#handling-files-between-host-and-container" id="id22">Handling files between host and container</a></p></li>
+</ul>
+</li>
 </ul>
 </nav>
 <section id="obtaining-the-code">
@@ -511,8 +522,7 @@ specifies the setup for the desired run. For a detailed description on the run c
 <p>In which the <code class="docutils literal notranslate"><span class="pre">&lt;run_card&gt;</span></code> is the desired <a class="reference external" href="https://yaml.org/">YAML</a> configuration file to be used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Alternate Run Modes
-To run Achilles in other run mode configurations please see <span class="xref std std-ref">Alternate Run Modes</span>.</p>
+<p>To run Achilles in other run mode configurations please see <span class="xref std std-ref">Alternate Run Modes</span>.</p>
 </div>
 <details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3" open="open">
 <summary class="sd-summary-title sd-card-header">
@@ -568,6 +578,38 @@ for cross section evaluations</p></td>
 </details></section>
 <section id="dockerized-achilles">
 <span id="id8"></span><h2><a class="toc-backref" href="#id19" role="doc-backlink"><span class="section-number">2.4. </span>Dockerized Achilles</a><a class="headerlink" href="#dockerized-achilles" title="Link to this heading">#</a></h2>
+<p><a class="reference external" href="https://www.docker.com/">Docker</a> provides a means to run pre-built environments in a containerized
+way, similar to virtual machines. We provide a basic version of Achilles built with minimum features.
+This enables users to try out Achilles without having to personally build and install the executable,
+helping to overcome any system-specific issues.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Docker has a security vulnerability that makes it difficult to run safely on shared computing resources.
+For this reason, many high-performace computing (HPC) clusters support the use of
+<a class="reference external" href="https://apptainer.org/">Apptainer</a> instead. Our images have been built for Docker, but should be
+convertable to an Apptainer image.</p>
+</div>
+<section id="obtaining-a-docker-image">
+<h3><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">2.4.1. </span>Obtaining a Docker image</a><a class="headerlink" href="#obtaining-a-docker-image" title="Link to this heading">#</a></h3>
+<p>Docker images are automatically built by the GitHub CI. A given version of the code can be obtained by running:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/achillesgen/achilles:vX.Y.Z
+</pre></div>
+</div>
+<p>where <cite>X.Y.Z</cite> is the version of Achilles you wish to obtain. You can also obtain the most up-to-date version
+from the <cite>main</cite> branch by running:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/achillesgen/achilles:main
+</pre></div>
+</div>
+<p>Both of the above commands will download and store the Docker image on your system. You are able to obtain
+multiple versions of the image. Therefore, for the rest of this documentation, we will denote the image
+without the tag, but you can add the tag to the specific version in each command.</p>
+</section>
+<section id="running-the-container">
+<h3><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">2.4.2. </span>Running the Container</a><a class="headerlink" href="#running-the-container" title="Link to this heading">#</a></h3>
+</section>
+<section id="handling-files-between-host-and-container">
+<h3><a class="toc-backref" href="#id22" role="doc-backlink"><span class="section-number">2.4.3. </span>Handling files between host and container</a><a class="headerlink" href="#handling-files-between-host-and-container" title="Link to this heading">#</a></h3>
+</section>
 </section>
 </section>
 
@@ -631,7 +673,12 @@ for cross section evaluations</p></td>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#running">2.3. Running</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dockerized-achilles">2.4. Dockerized Achilles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dockerized-achilles">2.4. Dockerized Achilles</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#obtaining-a-docker-image">2.4.1. Obtaining a Docker image</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-container">2.4.2. Running the Container</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#handling-files-between-host-and-container">2.4.3. Handling files between host and container</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
