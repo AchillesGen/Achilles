@@ -54,9 +54,7 @@ double FormFactorInterface::FF() {
         static NAME s_initializer;                                                               \
                                                                                                  \
       protected:                                                                                 \
-        void PrintInfo(std::ostream &str, const size_t width) const {                            \
-            str << #NAME;                                                                        \
-        }                                                                                        \
+        void PrintInfo(std::ostream &str, const size_t width) const { str << #NAME; }            \
         Object_Type *operator()(const Parameter_Type &args) const {                              \
             return new FormFactorInterface(args, #NAME);                                         \
         }                                                                                        \

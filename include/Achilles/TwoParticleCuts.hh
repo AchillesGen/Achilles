@@ -18,9 +18,7 @@ class TwoParticleCut : public CutBase<double> {
     class CutName##Cut : public TwoParticleCut, RegistrableCut<TwoParticleCut, CutName##Cut> { \
       public:                                                                                  \
         CutName##Cut(const YAML::Node &node) : TwoParticleCut(node) {}                         \
-        static std::string Name() {                                                            \
-            return #CutName;                                                                   \
-        }                                                                                      \
+        static std::string Name() { return #CutName; }                                         \
         static std::unique_ptr<TwoParticleCut> Construct(const YAML::Node &node) {             \
             return std::make_unique<CutName##Cut>(node);                                       \
         }                                                                                      \
