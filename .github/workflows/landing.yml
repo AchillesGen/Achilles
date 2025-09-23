@@ -17,7 +17,7 @@ jobs:
           python-version: '3.x'
 
       - name: Install Python dependencies
-        run: pip install -r docs/requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Build landing page
         run: sphinx-build -b html . _build/html
