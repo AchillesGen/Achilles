@@ -59,7 +59,7 @@ jobs:
       - name: Update versions.json
         run: |
           cd gh-pages
-          ls -d */ | cut -f1 -d'/' | grep -v 'latest' \
+          ls -d */ | cut -f1 -d'/' | grep -vE '^(latest|_)' \
             | jq -R . | jq -s . > versions.json
 
       - name: Deploy docs
