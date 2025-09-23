@@ -54,7 +54,7 @@ jobs:
         run: |
           BRANCH=${GITHUB_REF_NAME}
           mkdir -p gh-pages/$BRANCH
-          rsync -a --delete build/sphinx/ gh-pages/$BRANCH/
+          rsync -a --delete build/docs/sphinx/ gh-pages/$BRANCH/
 
       - name: Update versions.json
         run: |
