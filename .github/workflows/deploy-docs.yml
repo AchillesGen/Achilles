@@ -44,12 +44,27 @@ jobs:
         if: github.event_name == 'push'
         run: date -u +"%Y-%m-%dT%H:%M:%SZ" > build/docs/sphinx/.last_updated
 
-      - name: Deploy to GitHub Pages
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy docs
+        run: |
+          BRANCH=${GITHUB_REF_NAME}
+          mkdir -p gh-pages/$BRANCH
+          rsync -a --delete build/sphinx/ gh-pages/$BRANCH/
+
+      - name: Update versions.json
+        run: |
+          cd gh-pages
+          ls -d */ | cut -f1 -d'/' | grep -v 'latest' \
+            | jq -R . | jq -s . > versions.json
+
+      - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages
           publish_branch: gh-pages
-          publish_dir: build/docs/sphinx
-          keep_files: true
-          destination_dir: |
-            ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
