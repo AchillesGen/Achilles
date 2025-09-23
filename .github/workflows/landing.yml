@@ -1,0 +1,31 @@
+name: Build Landing Page
+
+on:
+  push:
+    branches:
+      - landing_page
+
+jobs:
+  landing:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Build landing page
+        run: sphinx-build -b html . _build/html
+
+      - name: Deploy landing page to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/html
+          publish_branch: gh-pages
+
