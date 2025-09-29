@@ -39,14 +39,11 @@ jobs:
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install --force gcc
-        os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
-        # TODO: remove hardcoded gfortran major version
-        if (( "$os_ver" > 13)); then
-          ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
-        else
-          ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
-        fi
+
+    - name: Setup fortran
+      uses: fortran-lang/setup-fortran@v1
+      with:
+        compiler: gcc
 
     - name: Set up cache
       id: cache-cpm
