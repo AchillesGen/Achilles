@@ -84,7 +84,6 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         auto param_card = sherpa_node["UFO_PARAM_CARD"].as<std::string>();
         p_sherpa->Initialize(sherpa_node);
 #else
-        shargs.clear();
         throw std::runtime_error("Achilles has not been compiled with Sherpa support!");
 #endif
     } else
