@@ -30,11 +30,11 @@ jobs:
         python-version: '3.12'
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
@@ -110,11 +110,11 @@ jobs:
         path: build
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
@@ -162,11 +162,11 @@ jobs:
         path: install
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
