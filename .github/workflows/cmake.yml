@@ -57,7 +57,6 @@ jobs:
     - name: ccache 
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        create-symlink: True
         key: ${{ matrix.name }}-ccache-${{ github.sha }}
         restore-keys: |
           ${{ matrix.name }}-ccache-
@@ -68,7 +67,7 @@ jobs:
           -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache                               \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}}  \
           -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
-          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
