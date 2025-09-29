@@ -11,16 +11,16 @@ TEST_CASE("Bit operations", "[Utilities]") {
         CHECK(perm2 == 0b10000);
     }
 
-    SECTION("SetBit") {
+    SECTION("BitIsSet") {
         unsigned int inp = 0b100;
-        CHECK(achilles::SetBit(inp, 0) == false);
-        CHECK(achilles::SetBit(inp, 1) == false);
-        CHECK(achilles::SetBit(inp, 2) == true);
+        CHECK(achilles::BitIsSet(inp, 0) == false);
+        CHECK(achilles::BitIsSet(inp, 1) == false);
+        CHECK(achilles::BitIsSet(inp, 2) == true);
     }
 
-    SECTION("SetBits") {
+    SECTION("BitsAreSet") {
         unsigned int inp = 0b1010;
-        auto result = achilles::SetBits(inp, 4);
+        auto result = achilles::BitsAreSet(inp, 4);
         CHECK(result.size() == 2);
         CHECK(result[0] == 2);
         CHECK(result[1] == 8);

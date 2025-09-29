@@ -2,6 +2,7 @@ module intf_spectral_model
     use iso_c_binding
     use nuclear_model
     use libspectral_function
+    use liblogging
     implicit none
     private
     public :: intf_spec, build_intf_spec
@@ -40,22 +41,40 @@ contains
         logical :: intf_spec_init
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
+        character(len=256) :: error_message
 
         filepath = find_file(filename, "Interference Model")
-        open(unit=read_unit, file=trim(filepath), iostat=ios)
+        call logger%debug("Interference Model: Loading param file "//trim(filepath))
+        open(unit=read_unit, file=trim(filepath), iostat=ios, iomsg=error_message, status='old')
         if( ios /= 0 ) then
             intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
             return
         endif
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_p_MF = spectral_function(trim_string)
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            intf_spec_init = .false.
+            call logger%error("Interference Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
+        call logger%debug("Interference Model: Using proton spectral function file "//trim_string)
         spectral_n_MF = spectral_function(trim_string)
         intf_spec_init = .true.
 
@@ -127,7 +146,14 @@ contains
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_dir, J_mu_del_dir
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_pi_exc, J_mu_del_exc
         complex(c_double_complex), dimension(2,2, nlorentz) :: J_mu_1b, J_mu
-        logical :: has_axial
+        logical :: has_axial, NC
+
+        NC = .false.
+
+        !NC vs. CC
+        if(ff%lookup("FMecA5").ne.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
+            NC = .true.
+        endif
 
         ! Differentiate EM from CC & NC
         if(ff%lookup("FMecA5").eq.(0.0d0,0.0d0) .and. pids_in(1).eq.pids_out(1)) then
@@ -145,7 +171,7 @@ contains
         ffa(1)=ff%lookup("FA")
         ffa(2)=ff%lookup("FAP")
 
-        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial)
+        call current_init(p1_4,p2_4,pp1_4,pp2_4,q4,pids_in(1),pids_out(1),pids_spect(1),has_axial,NC)
         call define_spinors()
 
         J_mu = (0.0d0,0.0d0)

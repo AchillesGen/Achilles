@@ -2,11 +2,11 @@
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif
 
-#include "plugins/Sherpa/Channels3.hh"
+#include "Plugins/Sherpa/Channels3.hh"
 #include "ATOOLS/Phys/Flavour.H"
 #include "Achilles/Utilities.hh"
 #include "COMIX/Main/Single_Process.H"
-#include "plugins/Sherpa/PrintVec.hh"
+#include "Plugins/Sherpa/PrintVec.hh"
 #include <cmath>
 
 using namespace PHASIC;

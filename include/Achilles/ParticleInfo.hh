@@ -16,12 +16,12 @@
 #include "fmt/ranges.h"
 #pragma GCC diagnostic pop
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
-
-#include "fmt/ranges.h"
 
 namespace achilles {
 class ParticleInfoEntry;
@@ -74,6 +74,9 @@ class PID {
     static constexpr PID pion0() { return PID{111}; }
     static constexpr PID pionp() { return PID{211}; }
     static constexpr PID eta() { return PID{221}; }
+    static constexpr PID kaon0() { return PID{311}; }
+    static constexpr PID kaonp() { return PID{321}; }
+    static constexpr PID Kaonm() { return PID{-321}; }
     // Baryons
     static constexpr PID proton() { return PID{2212}; }
     static constexpr PID neutron() { return PID{2112}; }
@@ -91,6 +94,7 @@ class PID {
     // Common Elements
     static constexpr PID dummyNucleus() { return PID{1000000000}; }
     static constexpr PID hydrogen() { return PID{1000010010}; }
+    static constexpr PID free_neutron() { return PID{1000000010}; }
     static constexpr PID carbon() { return PID{1000060120}; }
     static constexpr PID argon() { return PID{1000180400}; }
 
@@ -372,7 +376,7 @@ template <> struct formatter<std::vector<achilles::PID>> {
 
     template <typename FormatContext>
     auto format(const std::vector<achilles::PID> &pids, FormatContext &ctx) {
-        return format_to(ctx.out(), "[{}]", join(pids, ", "));
+        return format_to(ctx.out(), "[{}]", join(pids.begin(), pids.end(), ", "));
     }
 };
 

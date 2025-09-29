@@ -1,4 +1,4 @@
-#include "plugins/Manager/PluginManager.hh"
+#include "Plugins/Manager/PluginManager.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/Version.hh"

@@ -19,7 +19,7 @@ Catch::Generators::GeneratorWrapper<std::string> randomNucleus(size_t length) {
             new RandomNucleusGenerator(length)));
 }
 
-const std::string dFile = "data/c12.prova.txt";
+const std::string dFile = "data/densities/c12.prova.txt";
 
 TEST_CASE("Nucleus construction", "[Nucleus]") {
     auto fermiGas =

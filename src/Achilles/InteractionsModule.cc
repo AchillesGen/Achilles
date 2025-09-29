@@ -3,7 +3,7 @@
 #include "Achilles/PyBindings.hh"
 #include "Achilles/ThreeVector.hh"
 
-#include "plugins/InteractionLoader.hh"
+#include "Plugins/InteractionLoader.hh"
 
 namespace py = pybind11;
 using namespace achilles;

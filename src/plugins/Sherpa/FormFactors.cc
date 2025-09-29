@@ -1,7 +1,7 @@
-#include "plugins/Sherpa/FormFactors.hh"
+#include "Plugins/Sherpa/FormFactors.hh"
+#include "Achilles/Constants.hh"
 
 #include "ATOOLS/Org/Message.H"
-#include "Achilles/Constants.hh"
 #include "METOOLS/Explicit/Current.H"
 #include "METOOLS/Explicit/Vertex.H"
 #include "MODEL/Main/Model_Base.H"

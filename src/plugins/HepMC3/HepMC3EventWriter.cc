@@ -1,4 +1,4 @@
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef GZIP
 #include "gzstream/gzstream.h"
 #endif
@@ -15,21 +15,6 @@
 using achilles::HepMC3Writer;
 using namespace HepMC3;
 
-std::shared_ptr<std::ostream> HepMC3Writer::InitializeStream(const std::string &filename,
-                                                             bool zipped) {
-    std::shared_ptr<std::ostream> output = nullptr;
-#ifdef GZIP
-    if(zipped) {
-        std::string zipname = filename;
-        if(filename.substr(filename.size() - 3) != ".gz") zipname += std::string(".gz");
-        output = std::make_shared<ogzstream>(zipname.c_str());
-    } else
-#endif
-        output = std::make_shared<std::ofstream>(filename);
-
-    return output;
-}
-
 void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<ProcessGroup> &) {
     // Setup generator information
     spdlog::trace("Writing Header");
@@ -39,6 +24,7 @@ void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<Pr
     run->tools().push_back(generator);
     struct GenRunInfo::ToolInfo config = {std::string(filename), "1.0", std::string("Run card")};
     run->tools().push_back(config);
+    // run->set_weight_names({"Default", "PL", "PT"});
     run->set_weight_names({"Default"});
 
     file.set_run_info(run);

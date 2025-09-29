@@ -31,13 +31,14 @@ inline void SignalHandler(int signal) {
     exit(-1);
 }
 
-inline void CreateLogger(int level, int log_level, int flush_time) {
+inline void CreateLogger(int level, int log_level, int flush_time,
+                         std::string destination = "achilles.log") {
     auto slevel = static_cast<spdlog::level::level_enum>(level);
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(slevel);
 
     auto slog_level = static_cast<spdlog::level::level_enum>(log_level);
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("achilles.log", true);
+    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(destination, true);
     file_sink->set_level(slog_level);
 
     spdlog::sinks_init_list sink_list = {file_sink, console_sink};

@@ -5,6 +5,7 @@
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
@@ -13,7 +14,7 @@
 #include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #else
 namespace achilles {
 class SherpaInterface {};
@@ -25,11 +26,11 @@ class SherpaInterface {};
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
-#include "plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#include "plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "fmt/std.h"
@@ -40,6 +41,10 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
+
+    /** If runcard specifies Main/LogFile, output all subsequent logs to this file.
+     *   Continue outputting to std::cout either way. */
+    // if(config.Exists("Main/LogFile")) { (change logger) }
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
@@ -56,12 +61,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters
-    spdlog::debug("Cascade mode: {}", config.GetAs<bool>("Cascade/Run"));
-    if(config.GetAs<bool>("Cascade/Run")) {
-        cascade = std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"));
-    } else {
-        cascade = nullptr;
-    }
+    runCascade = config.GetAs<bool>("Cascade/Run");
+    spdlog::debug("Cascade mode: {}", runCascade);
+    cascade = runCascade ? (std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))) : nullptr;
 
     // Initialize decays
     runDecays = config.GetAs<bool>("Main/RunDecays");
@@ -141,8 +143,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     }
 
     // Setup outputs
-    bool zipped = true;
-    if(config.Exists("Main/Output/Zipped")) zipped = config.GetAs<bool>("Main/Output/Zipped");
+    bool zipped =
+        config.Exists("Main/Output/Zipped") ? config.GetAs<bool>("Main/Output/Zipped") : true;
     auto format = config.GetAs<std::string>("Main/Output/Format");
     auto name = config.GetAs<std::string>("Main/Output/Name");
     spdlog::trace("Outputing as {} format", format);
@@ -210,19 +212,33 @@ void achilles::EventGen::Initialize() {
     spdlog::info("Finished optimization");
 }
 
-void achilles::EventGen::GenerateEvents() {
+void achilles::EventGen::GenerateEvents(bool batchMode) {
     outputEvents = true;
-    runCascade = cascade != nullptr;
 
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
+    size_t statusUpdate = 1;
+    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
+                           // (would happen when events were rejected)
+
+    auto spdlog_info = [](size_t acc, size_t nEv) {
+        spdlog::info("Generated {} / {} events", acc, nEv);
+    };
+    auto fmt_print = [](size_t acc, size_t nEv) {
+        fmt::print("Generated {} / {} events\r", acc, nEv);
+    };
+    auto printFormat = batchMode ? spdlog_info : fmt_print;
+
+    printFormat(0, nevents);
     while(accepted < nevents) {
-        static constexpr size_t statusUpdate = 1000;
-        if(accepted % statusUpdate == 0) {
-            fmt::print("Generated {} / {} events\r", accepted, nevents);
+        if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
+            printFormat(accepted, nevents);
+            lastUpdate = accepted;
+            if(accepted >= 10 * statusUpdate) statusUpdate *= 10;
         }
         if(GenerateSingleEvent()) accepted++;
     }
+    printFormat(accepted, nevents);
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
@@ -266,11 +282,24 @@ bool achilles::EventGen::GenerateSingleEvent() {
                               EventHistory::StatusCode::primary);
 
     // TODO: Determine if cascade or Sherpa Decays go first
-    // Cascade the nucleus
+    // Cascade the nucleus, with possible re-runs in case of rare errors
+    size_t ntrials = 10;
     if(runCascade) {
         spdlog::debug("Runnning cascade");
-        cascade->Evolve(event, group.GetNucleus());
-
+        for(size_t itrial = 1; itrial <= ntrials; itrial++) {
+            try {
+                auto tmp_event = event;
+                cascade->Evolve(tmp_event, group.GetNucleus());
+                event = tmp_event;
+                spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
+                break;
+            } catch(const AchillesCascadeError &e) {
+                // Handle rare (~1:1e7) failures from threshold mismatches.
+                spdlog::trace("Skipping AchillesCascadeError");
+                continue;
+            }
+            throw AchillesCascadeError("Cascade trials limit reached.");
+        }
 #ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons (Post Cascade):");
         size_t idx = 0;
