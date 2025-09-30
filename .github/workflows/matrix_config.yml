@@ -34,13 +34,17 @@ jobs:
                 "fort": "/usr/local/bin/gfortran",
                 "coverage": false
               },
-              {
-                "name": "macOS 15 Intel",
-                "os": "macos-15-intel",
-                "cc": "clang",
-                "cxx": "clang++",
-                "fort": "/usr/local/bin/gfortran",
-                "coverage": false
-              }
             ]
           } 
+
+
+
+# TODO: Figure out how to get gfortran working with macos-15-intel
+# {
+#   "name": "macOS 15 Intel",
+#   "os": "macos-15-intel",
+#   "cc": "clang",
+#   "cxx": "clang++",
+#   "fort": "/usr/local/bin/gfortran",
+#   "coverage": false
+# }
