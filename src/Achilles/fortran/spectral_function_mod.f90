@@ -32,6 +32,7 @@ contains
 
         cfilename = f2cstring(filename)
         create_spectral%ptr = create_spectral_function_c(cfilename)
+        call free(cfilename)
     end function
 
     subroutine delete_spectral(self)

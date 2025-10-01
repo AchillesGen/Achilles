@@ -21,6 +21,7 @@ module libvectors
         procedure :: get => get4
         procedure :: print => print4
         procedure :: to_array => array4
+        procedure :: delete => delete_fourvector
     end type fourvector
 
     ! This will act as constructor
@@ -42,6 +43,7 @@ module libvectors
         procedure :: get => get3
         procedure :: print => print3
         procedure :: copy => new3
+        procedure :: delete => delete_threevector
     end type threevector
 
     ! This will act as constructor
@@ -90,8 +92,11 @@ contains ! Implementation of functions
 
     subroutine delete_fourvector(this)
         implicit none
-        type(fourvector) :: this
-        call delete_fourvector_c(this%ptr)
+        class(fourvector) :: this
+        if(c_associated(this%ptr)) then
+            call delete_fourvector_c(this%ptr)
+            this%ptr = c_null_ptr
+        end if
     end subroutine
 
     function get_ptr4(this)
@@ -222,8 +227,11 @@ contains ! Implementation of functions
 
     subroutine delete_threevector(this)
         implicit none
-        type(threevector) :: this
-        call delete_threevector_c(this%ptr)
+        class(threevector) :: this
+        if(c_associated(this%ptr)) then
+            call delete_threevector_c(this%ptr)
+            this%ptr = c_null_ptr
+        end if
     end subroutine
 
     function get_ptr3(this)
