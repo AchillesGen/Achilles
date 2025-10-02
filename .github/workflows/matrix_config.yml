@@ -27,14 +27,6 @@ jobs:
                 "coverage": false
               },
               {
-                "name": "macOS 13 Clang",
-                "os": "macos-13",
-                "cc": "clang",
-                "cxx": "clang++",
-                "fort": "gfortran",
-                "coverage": false
-              },
-              {
                 "name": "macOS 14 Clang",
                 "os": "macos-14",
                 "cc": "clang",
