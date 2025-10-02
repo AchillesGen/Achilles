@@ -112,13 +112,13 @@ module libmap
             complex(kind=c_double_complex), intent(in), value :: val
         end subroutine ccmap_insert
 
-        function ccmap_lookup(dict, key) result(val) bind(C, name="cmap_lookup")
+        subroutine ccmap_lookup(dict, key, val) bind(C, name="cmap_lookup")
             use iso_c_binding
             implicit none
             type(c_ptr), value :: dict
             type(c_ptr), intent(in), value :: key
-            complex(kind=c_double_complex), pointer :: val
-        end function ccmap_lookup
+            complex(kind=c_double_complex), intent(out) :: val
+        end subroutine ccmap_lookup
 
         function ccmap_contains(dict, key) result(val) bind(C, name="cmap_contains")
             use iso_c_binding
@@ -184,6 +184,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         call cmap_insert(this%dict, ckey, val)
+        call free(ckey)
     end subroutine map_insert
 
     function map_lookup(this, key) result(val)
@@ -196,6 +197,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         val = cmap_lookup(this%dict, ckey)
+        call free(ckey)
     end function map_lookup
 
     function map_contains(this, key) result(val)
@@ -208,6 +210,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         val = cmap_contains(this%dict, ckey)
+        call free(ckey)
     end function map_contains
 
     function map_empty(this) result(val)
@@ -226,6 +229,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         call cmap_erase(this%dict, ckey)
+        call free(ckey)
     end subroutine map_erase
 
     subroutine map_clear(this)
@@ -265,6 +269,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         call ccmap_insert(this%dict, ckey, val)
+        call free(ckey)
     end subroutine complex_map_insert
 
     function complex_map_lookup(this, key) result(val)
@@ -276,7 +281,8 @@ contains
         type(c_ptr) :: ckey
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
-        val = ccmap_lookup(this%dict, ckey)
+        call ccmap_lookup(this%dict, ckey, val)
+        call free(ckey)
     end function complex_map_lookup
 
     function complex_map_contains(this, key) result(val)
@@ -289,6 +295,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         val = ccmap_contains(this%dict, ckey)
+        call free(ckey)
     end function complex_map_contains
 
     function complex_map_empty(this) result(val)
@@ -306,6 +313,7 @@ contains
         trim_key = trim(key) 
         ckey = f2cstring(trim_key)
         call ccmap_erase(this%dict, ckey)
+        call free(ckey)
     end subroutine complex_map_erase
 
     subroutine complex_map_clear(this)

@@ -42,19 +42,6 @@ void map_delete(std::map<std::string, double> *map) {
     delete map;
 }
 
-struct complex {
-    double real;
-    double imag;
-
-#ifdef __cplusplus
-    complex() : real(0.0), imag(0.0) {}
-    complex(double r) : real(r), imag(0.0) {}
-    complex(double r, double i) : real(r), imag(i) {}
-    complex(std::complex<double> c) : real(c.real()), imag(c.imag()) {}
-    operator std::complex<double>() const { return std::complex<double>(real, imag); }
-#endif
-};
-
 void cmap_init(std::map<std::string, std::complex<double>> *&map) {
     map = new std::map<std::string, std::complex<double>>();
 }
@@ -64,13 +51,14 @@ void cmap_insert(std::map<std::string, std::complex<double>> *map, const char *k
     map->insert({std::string(key), value});
 }
 
-complex *cmap_lookup(std::map<std::string, std::complex<double>> *map, const char *key) {
+void cmap_lookup(std::map<std::string, std::complex<double>> *map, const char *key,
+                 std::complex<double> *outval) {
     std::string skey(key);
-    if(map->find(skey) == map->end()) {
-        complex *c = new complex();
-        return c;
+    auto it = map->find(skey);
+    if(it == map->end()) {
+        *outval = std::complex<double>();
     } else {
-        return new complex((*map)[skey]);
+        *outval = it->second;
     }
 }
 

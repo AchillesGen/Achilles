@@ -226,6 +226,18 @@ contains
               cur(i+2*(j-1),:)=J_mu(j,i,:)
             enddo   
         enddo
+
+     ! Clean up memory
+     call qvec%delete()
+     do i=1,nin
+        call mom_in(i)%delete()
+     enddo
+     do i=1,nout
+        call mom_out(i)%delete()
+     enddo
+     do i=1,nspect
+        call mom_spect(i)%delete()
+     enddo
      return
     end subroutine
 
@@ -241,6 +253,7 @@ contains
         integer(c_long), dimension(nspect), intent(in) :: pids_spect
         integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         double precision, dimension(4) :: p1_4,p2_4
+        integer(c_size_t) :: i
         real(c_double) :: wgt, pmom,pspec_mom,E, hole_wgt, spect_wgt
 
         p1_4=mom_in(1)%to_array()
@@ -264,6 +277,13 @@ contains
 
         wgt = hole_wgt * spect_wgt
 
+        ! Clean up memory
+        do i=1,nin
+           call mom_in(i)%delete()
+        enddo
+        do i=1,nspect
+           call mom_spect(i)%delete()
+        enddo
     end function intf_spec_init_wgt
 
 

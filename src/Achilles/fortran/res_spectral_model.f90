@@ -147,6 +147,18 @@ contains
               cur(i+2*(j-1),:)= coupling*J_mu(j,i,:)
             enddo   
         enddo
+
+     ! Clean up memory
+     call qvec%delete()
+     do i=1,nin
+        call mom_in(i)%delete()
+     enddo
+     do i=1,nout
+        call mom_out(i)%delete()
+     enddo
+     do i=1,nspect
+        call mom_spect(i)%delete()
+     enddo
      return
     end subroutine
 
@@ -162,6 +174,7 @@ contains
         integer(c_long), dimension(nspect), intent(in) :: pids_spect
         integer(c_size_t), intent(in), value :: nin, nspect, nproton, nneutron
         double precision, dimension(4) :: p4
+        integer(c_size_t) :: i
         real(c_double) :: wgt, pmom, E
 
         p4=mom_in(1)%to_array()
@@ -173,5 +186,13 @@ contains
         else
             wgt=nneutron*spectral_n%call(pmom,E)
         endif
+
+        ! Clean up memory
+        do i=1,nin
+           call mom_in(i)%delete()
+        enddo
+        do i=1,nspect
+           call mom_spect(i)%delete()
+        enddo
     end function res_spec_init_wgt
 end module res_spectral_model
