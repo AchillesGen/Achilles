@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>4. Interfaces &#8212; Achilles 0.3.0 documentation</title>
+    <title>3. Run Card Structure &#8212; Achilles 0.3.0 documentation</title>
   
   
   
@@ -43,12 +43,12 @@
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'src/interfaces';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/run-card';</script>
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="References" href="references.html" />
-    <link rel="prev" title="3. Run Card Structure" href="run-card.html" />
+    <link rel="next" title="4. Interfaces" href="interfaces.html" />
+    <link rel="prev" title="2. Getting Started" href="getting-started.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -161,8 +161,8 @@
         <ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">2. Getting Started</a></li>
-<li class="toctree-l1"><a class="reference internal" href="run-card.html">3. Run Card Structure</a></li>
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">4. Interfaces</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interfaces.html">4. Interfaces</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
@@ -220,7 +220,7 @@
       
       
       
-      <li><a href="../_sources/src/interfaces.rst" target="_blank"
+      <li><a href="../_sources/src/run-card.rst" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -304,7 +304,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Interfaces</h1>
+    <h1>Run Card Structure</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -314,8 +314,16 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.1. Main Settings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.2. Processes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.3. Beams</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.4. Cascade</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.5. NuclearModels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.6. Nuclei</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.7. HardCuts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.8. Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.9. Backend</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.10. Sherpa Options</a></li>
 </ul>
             </nav>
         </div>
@@ -327,19 +335,94 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="interfaces">
-<h1><span class="section-number">4. </span>Interfaces<a class="headerlink" href="#interfaces" title="Link to this heading">#</a></h1>
+  <section id="run-card-structure">
+<span id="id1"></span><h1><span class="section-number">3. </span>Run Card Structure<a class="headerlink" href="#run-card-structure" title="Link to this heading">#</a></h1>
+<p>An Achilles setup is steered by a various set of options. These options enable the user to run Achilles
+in a various ways to study the different physics choices in the code.</p>
+<p>The options have to be specified in a run card which by default is named <code class="docutils literal notranslate"><span class="pre">run.yml</span></code> residing in the current
+working directory. If you want to use a different run card, it can be passed into the Achilles executable
+as the first positional argument (<code class="docutils literal notranslate"><span class="pre">achilles</span> <span class="pre">&lt;input_file&gt;</span></code>).</p>
+<p>All of the configurations options are written in the <a class="reference external" href="https://yaml.org/">YAML</a> format. The different
+sections in the run card are described below, along with the currently available options, and references
+to the physics where appropriate.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Achilles is still in beta development, and the options are subject to change before the v1.0 release
+of Achilles.</p>
+</div>
 <nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#fortran-interface" id="id3">Fortran Interface</a></p></li>
-<li><p><a class="reference internal" href="#sherpa-interface" id="id4">Sherpa Interface</a></p></li>
+<li><p><a class="reference internal" href="#main-settings" id="id2">Main Settings</a></p></li>
+<li><p><a class="reference internal" href="#processes" id="id3">Processes</a></p></li>
+<li><p><a class="reference internal" href="#beams" id="id4">Beams</a></p></li>
+<li><p><a class="reference internal" href="#cascade" id="id5">Cascade</a></p></li>
+<li><p><a class="reference internal" href="#nuclearmodels" id="id6">NuclearModels</a></p></li>
+<li><p><a class="reference internal" href="#nuclei" id="id7">Nuclei</a></p></li>
+<li><p><a class="reference internal" href="#hardcuts" id="id8">HardCuts</a></p></li>
+<li><p><a class="reference internal" href="#options" id="id9">Options</a></p></li>
+<li><p><a class="reference internal" href="#backend" id="id10">Backend</a></p></li>
+<li><p><a class="reference internal" href="#sherpa-options" id="id11">Sherpa Options</a></p></li>
 </ul>
 </nav>
-<section id="fortran-interface">
-<span id="id1"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">4.1. </span>Fortran Interface</a><a class="headerlink" href="#fortran-interface" title="Link to this heading">#</a></h2>
+<section id="main-settings">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">3.1. </span>Main Settings</a><a class="headerlink" href="#main-settings" title="Link to this heading">#</a></h2>
+<p>The first section in the run card is the <code class="docutils literal notranslate"><span class="pre">Main</span></code> section. This section contains information about the basic options for running Achilles. These include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">NEvents</span></code> (integer): Number of unweighted events to generate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">HardCuts</span></code> (boolean): Flag to turn on / off cuts at the hard scattering level</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EventCuts</span></code> (boolean): <span class="yellow">[deprecated]</span> Handles cuts to be applied after all simulation steps</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RunDecays</span></code> (boolean): Decay particles that are unstable longer than the typical cascade time scale,
+such as tau leptons</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">Output</span></code> (YAML Node): Parameters determining how events are written out to file</dt><dd><ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">Format</span></code> (string): Format of file to be written out. Current supported options are:
+<code class="docutils literal notranslate"><span class="pre">NuHepMC</span></code>, <code class="docutils literal notranslate"><span class="pre">HepMC</span></code> (<span class="yellow">[deprecated]</span>), and <code class="docutils literal notranslate"><span class="pre">Achilles</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Name</span></code> (string): File path from the current working directory to write the events out to</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Zipped</span></code> (boolean): Flag to determine if the output should be written compressed using the
+gzip library or not.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>Additional discussion on these parameters can be found at:</p>
 </section>
-<section id="sherpa-interface">
-<span id="id2"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">4.2. </span>Sherpa Interface</a><a class="headerlink" href="#sherpa-interface" title="Link to this heading">#</a></h2>
+<section id="processes">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
+<p>The processes section is where the set of incoming and outgoing leptons are listed.
+Each line in this section denotes a process to calculate. Achilles will combine this information
+with the list of nuclear models to consider listed in <a class="reference internal" href="#nuclearmodels">NuclearModels</a>.</p>
+<p>An example setup for running both neutral current and charged current is given below:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Processes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">]]</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">13</span><span class="p p-Indicator">]]</span>
+</pre></div>
+</div>
+<p>The above code block can be broken down as follows.</p>
+</section>
+<section id="beams">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Beams</a><a class="headerlink" href="#beams" title="Link to this heading">#</a></h2>
+</section>
+<section id="cascade">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">3.4. </span>Cascade</a><a class="headerlink" href="#cascade" title="Link to this heading">#</a></h2>
+</section>
+<section id="nuclearmodels">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">3.5. </span>NuclearModels</a><a class="headerlink" href="#nuclearmodels" title="Link to this heading">#</a></h2>
+</section>
+<section id="nuclei">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">3.6. </span>Nuclei</a><a class="headerlink" href="#nuclei" title="Link to this heading">#</a></h2>
+</section>
+<section id="hardcuts">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">3.7. </span>HardCuts</a><a class="headerlink" href="#hardcuts" title="Link to this heading">#</a></h2>
+</section>
+<section id="options">
+<h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">3.8. </span>Options</a><a class="headerlink" href="#options" title="Link to this heading">#</a></h2>
+</section>
+<section id="backend">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">3.9. </span>Backend</a><a class="headerlink" href="#backend" title="Link to this heading">#</a></h2>
+</section>
+<section id="sherpa-options">
+<h2><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">3.10. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
 </section>
 </section>
 
@@ -355,20 +438,20 @@ document.write(`
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="run-card.html"
+       href="getting-started.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title"><span class="section-number">3. </span>Run Card Structure</p>
+        <p class="prev-next-title"><span class="section-number">2. </span>Getting Started</p>
       </div>
     </a>
     <a class="right-next"
-       href="references.html"
+       href="interfaces.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">References</p>
+        <p class="prev-next-title"><span class="section-number">4. </span>Interfaces</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -388,8 +471,16 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.1. Main Settings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.2. Processes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.3. Beams</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.4. Cascade</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.5. NuclearModels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.6. Nuclei</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.7. HardCuts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.8. Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.9. Backend</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.10. Sherpa Options</a></li>
 </ul>
   </nav></div>
 

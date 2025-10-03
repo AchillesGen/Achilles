@@ -12,6 +12,7 @@ Welcome to Achilles's documentation!
 
    src/introduction
    src/getting-started
+   src/run-card
    src/interfaces 
 
 Appendices

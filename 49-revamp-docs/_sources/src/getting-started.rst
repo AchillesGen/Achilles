@@ -24,7 +24,7 @@ Installation
 .. _Building Achilles:
 
 =================
-Buidling Achilles
+Building Achilles
 =================
 
 In this section, all the details for building the Achilles code is provided.
