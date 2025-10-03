@@ -20,6 +20,9 @@ bibtex_bibfiles = ["src/references.bib"]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+rst_prolog = """
+.. include:: <s5defs.rst>
+"""
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -43,6 +46,7 @@ html_theme_options = {
         "image_dark": '../assets/logo.svg',
     }
 }
+html_css_files = ['css/s5defs-roles.css']
 
 # -- Breathe configuration ---------------------------------------------------
 breathe_default_project = "Achilles"
