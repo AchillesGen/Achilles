@@ -15,7 +15,6 @@ CPMAddPackage(
         "SPDLOG_BUILD_SHARED ON"
         "SPDLOG_INSTALL ON"
 )
-add_library(spdlog::spdlog ALIAS spdlog)
 
 CPMAddPackage(
     NAME docopt

@@ -10,7 +10,7 @@
 #include <vector>
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -32,7 +32,7 @@ struct ProcessInfo {
     size_t Multiplicity() const;
     std::vector<double> Masses() const;
     std::vector<long> Ids() const;
-    std::map<size_t, long> m_mom_map;
+    std::vector<long> m_mom_map;
     int LeptonicCharge() const;
 
     bool operator==(const ProcessInfo &other) const {

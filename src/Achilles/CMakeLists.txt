@@ -67,7 +67,7 @@ add_library(mappers SHARED
 target_link_libraries(mappers PRIVATE project_warnings
                               PUBLIC utilities)
 if(ACHILLES_ENABLE_SHERPA)
-    list(APPEND achilles_targets sherpa)
+    list(APPEND achilles_targets sherpa SherpaAchillesInput)
     target_compile_definitions(mappers PUBLIC ACHILLES_SHERPA_INTERFACE)
     target_link_libraries(mappers PUBLIC sherpa)
 endif()

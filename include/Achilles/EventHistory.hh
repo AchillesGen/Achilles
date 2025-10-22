@@ -5,6 +5,7 @@
 
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "fmt/ranges.h"
 
 namespace achilles {
 

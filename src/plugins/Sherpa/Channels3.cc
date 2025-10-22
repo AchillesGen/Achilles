@@ -16,7 +16,7 @@ double GenChannel::SCut(size_t id) {
     if(id & 3) { id = (1 << m_n) - 1 - id; }
     double result = 0;
     for(size_t i = 0; i < m_n; ++i) {
-        if(achilles::SetBit(id, i)) { result += sqrt(m_s[i]); }
+        if(achilles::BitIsSet(id, i)) { result += sqrt(m_s[i]); }
     }
     return result * result;
 }
@@ -29,7 +29,7 @@ void GenChannel::FillMomenta(ChannelNode *node) {
     size_t aid = (1 << m_n) - 1 - node->m_idx;
     m_p[node->m_idx] = Vec4D{};
     for(size_t i = 0; i < m_n; ++i) {
-        if(achilles::SetBit(node->m_idx, i)) { m_p[node->m_idx] += m_p[(1 << i)]; }
+        if(achilles::BitIsSet(node->m_idx, i)) { m_p[node->m_idx] += m_p[(1 << i)]; }
     }
     if(!achilles::IsPower2(node->m_left->m_idx)) FillMomenta(node->m_left.get());
     if(!achilles::IsPower2(node->m_right->m_idx)) FillMomenta(node->m_right.get());
@@ -41,6 +41,8 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
     size_t aid = cur->m_idx;
     size_t bid = cur->m_left->m_idx;
     size_t cid = cur->m_right->m_idx;
+    spdlog::trace("aid = {} ({}), bid = {} ({}), cid = {} ({})", aid, cur->m_pid, bid,
+                  cur->m_left->m_pid, cid, cur->m_right->m_pid);
     if(bid == lid)
         std::swap(aid, bid);
     else if(cid == lid)
@@ -49,6 +51,8 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
         std::swap(bid, cid);
         std::swap(cur->m_left, cur->m_right);
     }
+    spdlog::trace("aid = {} ({}), bid = {} ({}), cid = {} ({})", aid, cur->m_pid, bid,
+                  cur->m_left->m_pid, cid, cur->m_right->m_pid);
     if(cid == m_rid) {
         if(!achilles::IsPower2(bid)) {
             result += PrintSPoint(cur->m_left.get(), bid);
@@ -60,6 +64,10 @@ std::string GenChannel::PrintPoint(ChannelNode *cur, size_t lid, size_t depth) c
     result += fmt::format("TChannel({} ({}), {} ({}), {} ({})),", aid, cur->m_pid, bid,
                           cur->m_left->m_pid, cid, cur->m_right->m_pid);
     result += PrintPoint(cur->m_right.get(), cid, depth + 1);
+    if(!achilles::IsPower2(bid)) {
+        result += PrintSPoint(cur->m_left.get(), bid);
+        return result;
+    }
     return result;
 }
 
@@ -111,6 +119,10 @@ void GenChannel::BuildPoint(ChannelNode *cur, size_t lid, const std::vector<doub
     }
     TChannelMomenta(cur, aid, bid, cid, rans);
     BuildPoint(cur->m_right.get(), cid, rans, depth + 1);
+    if(!achilles::IsPower2(bid)) {
+        BuildSPoint(cur->m_left.get(), bid, rans);
+        return;
+    }
 }
 
 void GenChannel::BuildSPoint(ChannelNode *node, size_t id, const std::vector<double> &rans) {
@@ -147,6 +159,7 @@ double GenChannel::BuildWeight(ChannelNode *cur, size_t lid, std::vector<double>
     }
     wgt *= TChannelWeight(cur, aid, bid, cid, rans);
     wgt *= BuildWeight(cur->m_right.get(), cid, rans, depth + 1);
+    if(!achilles::IsPower2(bid)) { wgt *= BuildSWeight(cur->m_left.get(), bid, rans); }
     return wgt;
 }
 
@@ -168,7 +181,8 @@ double GenChannel::PropMomenta(ChannelNode *node, size_t id, double smin, double
     if(flav.Mass() == 0) {
         return CE.MasslessPropMomenta(m_salpha, smin, smax, ran);
     } else {
-        return CE.MassivePropMomenta(flav.Mass(), flav.Width(), 1, smin, smax, ran);
+        double width = std::max(flav.Width(), 1e-6);
+        return CE.MassivePropMomenta(flav.Mass(), width, smin, smax, ran);
     }
 }
 
@@ -184,7 +198,10 @@ double GenChannel::PropWeight(ChannelNode *node, size_t id, double smin, double 
     if(flav.Mass() == 0) {
         wgt = CE.MasslessPropWeight(m_salpha, smin, smax, s, ran);
     } else {
-        wgt = CE.MassivePropWeight(flav.Mass(), flav.Width(), 1, smin, smax, s, ran);
+        double width = std::max(flav.Width(), 1e-6);
+        wgt = CE.MassivePropWeight(flav.Mass(), width, smin, smax, s, ran);
+        spdlog::trace("MassivePropWeight = {}, m = {}, g = {}, smin = {}, smax = {}, s = {}", wgt,
+                      flav.Mass(), width, smin, smax, s);
     }
 
     return wgt;
@@ -207,7 +224,7 @@ void GenChannel::TChannelMomenta(ChannelNode *node, size_t aid, size_t bid, size
     }
     double mass = ATOOLS::Flavour((kf_code)(LocateNode(node, pid + m_rid)->m_pid)).Mass();
     CE.TChannelMomenta(m_p[aid], m_p[m_rid], m_p[bid], m_p[pid], se, sp, mass, m_alpha, m_ctmax,
-                       m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
+                       m_ctmin, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
     SPDLOG_TRACE("{}", name);
@@ -244,7 +261,7 @@ double GenChannel::TChannelWeight(ChannelNode *node, size_t aid, size_t bid, siz
     }
     double mass = ATOOLS::Flavour((kf_code)(LocateNode(node, pid + m_rid)->m_pid)).Mass();
     wgt *= CE.TChannelWeight(m_p[aid], m_p[m_rid], m_p[bid], m_p[pid], mass, m_alpha, m_ctmax,
-                             m_ctmin, m_amct, 0, rans[iran], rans[iran + 1]);
+                             m_ctmin, rans[iran], rans[iran + 1]);
     iran += 2;
     m_p[cid] = m_p[aid] - m_p[bid];
     SPDLOG_TRACE("  m_p[{}] = {}", aid, m_p[aid]);
@@ -336,8 +353,8 @@ void Channels3::GenerateNuclearPoint(std::vector<Vec4D> &p, const std::vector<do
     double s234_min = pow(sqrt(s3) + sqrt(s4) + sqrt(s2), 2);
     double s234 = CE.MasslessPropMomenta(0.5, s234_min, s234_max, ran[5]);
     Vec4D p234;
-    CE.TChannelMomenta(p[0], p[1], p[5], p234, s5, s234, 0., m_alpha, m_ctmax, m_ctmin, m_amct, 0,
-                       ran[6], ran[7]);
+    CE.TChannelMomenta(p[0], p[1], p[5], p234, s5, s234, 0., m_alpha, m_ctmax, m_ctmin, ran[6],
+                       ran[7]);
 }
 
 double Channels3::GenerateNuclearWeight(const std::vector<Vec4D> &p,
@@ -349,7 +366,7 @@ double Channels3::GenerateNuclearWeight(const std::vector<Vec4D> &p,
     wt *=
         CE.MasslessPropWeight(0.5, s234_min, s234_max, dabs((p[2] + p[3] + p[4]).Abs2()), rans[5]);
     wt *= CE.TChannelWeight(p[0], p[1], p[5], p[2] + p[3] + p[4], 0., m_alpha, m_ctmax, m_ctmin,
-                            m_amct, 0, rans[6], rans[7]);
+                            rans[6], rans[7]);
 
     return wt;
 }
@@ -389,7 +406,7 @@ void C3_1::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Flavour fl34 = Flavour((kf_code)(23));
     Vec4D p34;
-    double s34 = CE.MassivePropMomenta(fl34.Mass(), fl34.Width(), 1, s34_min, s34_max, ran[0]);
+    double s34 = CE.MassivePropMomenta(fl34.Mass(), fl34.Width(), s34_min, s34_max, ran[0]);
     CE.Isotropic2Momenta(p[0] + p[1] - p[5], s2, s34, p[2], p34, ran[1], ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
@@ -402,7 +419,7 @@ double C3_1::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     // double s34_min = cuts->GetscutAmegic(std::string("34"));
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Flavour fl34 = Flavour((kf_code)(23));
-    wt *= CE.MassivePropWeight(fl34.Mass(), fl34.Width(), 1, s34_min, s34_max,
+    wt *= CE.MassivePropWeight(fl34.Mass(), fl34.Width(), s34_min, s34_max,
                                dabs((p[3] + p[4]).Abs2()), rans[0]);
     wt *= CE.Isotropic2Weight(p[2], p[3] + p[4], rans[1], rans[2], -1, 1);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
@@ -419,10 +436,10 @@ void C3_2::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Vec4D p34;
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
-    CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, 0., m_alpha, m_ctmax, m_ctmin, m_amct,
-                       0, ran[1], ran[2]);
-    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., m_amct,
-                       0, ran[3], ran[4]);
+    CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
+                       ran[2]);
+    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., ran[3],
+                       ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
@@ -434,9 +451,9 @@ double C3_2::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     wt *= CE.MasslessPropWeight(m_salpha, s34_min, s34_max, dabs((p[3] + p[4]).Abs2()), rans[0]);
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[2], p[3] + p[4], 0., m_alpha, m_ctmax, m_ctmin,
-                            m_amct, 0, rans[1], rans[2]);
-    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., m_amct, 0,
-                            rans[3], rans[4]);
+                            rans[1], rans[2]);
+    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., rans[3],
+                            rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
@@ -452,9 +469,9 @@ void C3_3::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
     double tmass201 = Flavour((kf_code)(23)).Mass();
     CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, tmass201, m_alpha, m_ctmax, m_ctmin,
-                       m_amct, 0, ran[1], ran[2]);
-    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., m_amct,
-                       0, ran[3], ran[4]);
+                       ran[1], ran[2]);
+    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., ran[3],
+                       ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
@@ -467,9 +484,9 @@ double C3_3::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.MasslessPropWeight(m_salpha, s34_min, s34_max, dabs((p[3] + p[4]).Abs2()), rans[0]);
     double tmass201 = Flavour((kf_code)(23)).Mass();
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[2], p[3] + p[4], tmass201, m_alpha, m_ctmax,
-                            m_ctmin, m_amct, 0, rans[1], rans[2]);
-    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., m_amct, 0,
-                            rans[3], rans[4]);
+                            m_ctmin, rans[1], rans[2]);
+    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., rans[3],
+                            rans[4]);
     if(wt != 0.) wt = 1. / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
@@ -483,10 +500,10 @@ void C3_4::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Vec4D p34;
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
-    CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, 0., m_alpha, m_ctmax, m_ctmin, m_amct,
-                       0, ran[1], ran[2]);
-    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., m_amct,
-                       0, ran[3], ran[4]);
+    CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
+                       ran[2]);
+    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., ran[3],
+                       ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
@@ -498,9 +515,9 @@ double C3_4::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     wt *= CE.MasslessPropWeight(m_salpha, s34_min, s34_max, dabs((p[3] + p[4]).Abs2()), rans[0]);
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[2], p[3] + p[4], 0., m_alpha, m_ctmax, m_ctmin,
-                            m_amct, 0, rans[1], rans[2]);
-    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., m_amct, 0,
-                            rans[3], rans[4]);
+                            rans[1], rans[2]);
+    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., rans[3],
+                            rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
@@ -516,9 +533,9 @@ void C3_5::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
     double tmass201 = Flavour((kf_code)(23)).Mass();
     CE.TChannelMomenta(p[0] - p[5], p[1], p[2], p34, s2, s34, tmass201, m_alpha, m_ctmax, m_ctmin,
-                       m_amct, 0, ran[1], ran[2]);
-    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., m_amct,
-                       0, ran[3], ran[4]);
+                       ran[1], ran[2]);
+    CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., ran[3],
+                       ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
@@ -531,9 +548,9 @@ double C3_5::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.MasslessPropWeight(m_salpha, s34_min, s34_max, dabs((p[3] + p[4]).Abs2()), rans[0]);
     double tmass201 = Flavour((kf_code)(23)).Mass();
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[2], p[3] + p[4], tmass201, m_alpha, m_ctmax,
-                            m_ctmin, m_amct, 0, rans[1], rans[2]);
-    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., m_amct, 0,
-                            rans[3], rans[4]);
+                            m_ctmin, rans[1], rans[2]);
+    wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., rans[3],
+                            rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
@@ -547,8 +564,8 @@ void C3_6::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Vec4D p34;
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
-    CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, m_amct,
-                       0, ran[1], ran[2]);
+    CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
+                       ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
@@ -561,7 +578,7 @@ double C3_6::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     wt *= CE.MasslessPropWeight(m_salpha, s34_min, s34_max, dabs((p[3] + p[4]).Abs2()), rans[0]);
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[3] + p[4], p[2], 0., m_alpha, m_ctmax, m_ctmin,
-                            m_amct, 0, rans[1], rans[2]);
+                            rans[1], rans[2]);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
@@ -576,9 +593,9 @@ void C3_7::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Flavour fl34 = Flavour((kf_code)(23));
     Vec4D p34;
-    double s34 = CE.MassivePropMomenta(fl34.Mass(), fl34.Width(), 1, s34_min, s34_max, ran[0]);
-    CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, m_amct,
-                       0, ran[1], ran[2]);
+    double s34 = CE.MassivePropMomenta(fl34.Mass(), fl34.Width(), s34_min, s34_max, ran[0]);
+    CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
+                       ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
 }
@@ -590,10 +607,10 @@ double C3_7::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     // double s34_min = cuts->GetscutAmegic(std::string("34"));
     double s34_min = std::max(pow(sqrt(s3) + sqrt(s4), 2), 1E-8);
     Flavour fl34 = Flavour((kf_code)(23));
-    wt *= CE.MassivePropWeight(fl34.Mass(), fl34.Width(), 1, s34_min, s34_max,
+    wt *= CE.MassivePropWeight(fl34.Mass(), fl34.Width(), s34_min, s34_max,
                                dabs((p[3] + p[4]).Abs2()), rans[0]);
     wt *= CE.TChannelWeight(p[0] - p[5], p[1], p[3] + p[4], p[2], 0., m_alpha, m_ctmax, m_ctmin,
-                            m_amct, 0, rans[1], rans[2]);
+                            rans[1], rans[2]);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
     // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);

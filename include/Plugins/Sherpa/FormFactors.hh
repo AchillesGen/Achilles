@@ -10,13 +10,13 @@ namespace achilles {
 
 class FormFactorInterface : public METOOLS::Form_Factor {
   private:
-    static std::unique_ptr<FormFactor> p_ff;
+    static std::shared_ptr<FormFactor> p_ff;
     std::string m_id;
     int m_mode;
 
   public:
     FormFactorInterface(const METOOLS::Vertex_Key &key, const std::string &id);
-    double FF();
+    double FF(double) const override;
     static void SetFormFactor(std::unique_ptr<FormFactor> ff) { p_ff = std::move(ff); }
 }; // end of class FormFactorInterface
 

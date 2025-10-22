@@ -6,6 +6,7 @@
 #include "ATOOLS/Org/MyStrStream.H"
 #include "ATOOLS/Org/My_File.H"
 #include "ATOOLS/Org/Run_Parameter.H"
+#include "ATOOLS/Phys/KF_Table.H"
 #include "Achilles/Current.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/FormFactor.hh"
@@ -27,26 +28,18 @@
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"
 #include "SHERPA/Single_Events/Event_Handler.H"
+#include <METOOLS/Explicit/Vertex_Key.H>
 #include <bitset>
-
-using namespace SHERPA;
-using namespace PHASIC;
-using namespace ATOOLS;
-using namespace achilles;
 
 PHASIC::NLOTypeStringProcessMap_Map m_pmap;
 PHASIC::Process_Vector m_procs;
+
+using achilles::SherpaInterface;
 
 SherpaInterface::~SherpaInterface() {
     if(p_sherpa) delete p_sherpa;
     for(size_t i(0); i < m_procs.size(); ++i) delete m_procs[i];
     if(m_pmap.find(nlo_type::lo) != m_pmap.end()) delete m_pmap[nlo_type::lo];
-}
-
-void SherpaInterface::addParameter(std::vector<char *> &argv, const std::string &val) const {
-    spdlog::info("ShowerMEsSherpa::init: Setting parameter '{}'", val);
-    argv.push_back(new char[val.length() + 1]);
-    strcpy(argv.back(), val.c_str());
 }
 
 int SherpaInterface::SherpaVerbosity(int loglevel) const {
@@ -67,58 +60,69 @@ int SherpaInterface::SherpaVerbosity(int loglevel) const {
     return 0;
 }
 
-bool SherpaInterface::Initialize(const std::vector<std::string> &args) {
-    p_sherpa = new Sherpa(1);
-    std::vector<char *> argv;
-    addParameter(argv, "Sherpa");
-    addParameter(argv, "EVENTS=1");
-    addParameter(argv, "INIT_ONLY=6");
+bool SherpaInterface::Initialize(YAML::Node &sherpa_settings) {
+    // TODO: Update the initialization to match Sherpa 3.0
+
+    spdlog::trace("Initializing Sherpa");
+    // Sherpa run in Achilles interface mode
+    sherpa_settings["EVENTS"] = 1;
+    sherpa_settings["INIT_ONLY"] = 6;
     int level(SherpaVerbosity(spdlog::get("achilles")->level()));
-    addParameter(argv, "OUTPUT=" + std::to_string(level));
+    sherpa_settings["OUTPUT"] = level;
+    sherpa_settings["EVENT_GENERATION_MODE"] = "W";
+    sherpa_settings["EVENT_INPUT"] = "Achilles";
+
     // Set beams and PDFs.
-    // addParameter(argv,"BEAM_1=11");
-    addParameter(argv, "BEAM_1=2212");
-    // addParameter(argv,"BEAM_ENERGY_1=100");
-    addParameter(argv, "BEAM_ENERGY_1=100");
-    // addParameter(argv,"PDF_SET=None");
-    // addParameter(argv,"PDF_LIBRARY=None");
-    addParameter(argv, "ME_SIGNAL_GENERATOR=Comix");
-    // addParameter(argv,"MODEL=DarkNeutrinoPortal_Dirac_UFO");
-    addParameter(argv, "LEPTONIC_CURRENT_MODE=1");
-    addParameter(argv, "ALPHAQED_DEFAULT_SCALE=0");
-    addParameter(argv, "1/ALPHAQED(MZ)=137");
-    // addParameter(argv,"ACTIVE[23]=0");
-    addParameter(argv, "ACTIVE[25]=0");
-    // addParameter(argv,"ACTIVE[9000005]=0");
-    // addParameter(argv,"UFO_PARAM_CARD=parameters.dat");
-    addParameter(argv, "PRIORITY[2112]=99");
-    addParameter(argv, "PRIORITY[2212]=99");
-    // TODO: Make this something that is passed in
-    addParameter(argv, "PRIORITY[1000060120]=99");
-    addParameter(argv, "MASSIVE[11]=1");
-    addParameter(argv, "MASSIVE[13]=1");
-    addParameter(argv, "MASSIVE[15]=1");
-    addParameter(argv, "STABLE[15]=0");
-    addParameter(argv, "HARD_SPIN_CORRELATIONS=1");
-    addParameter(argv, "SOFT_SPIN_CORRELATIONS=1");
-    addParameter(argv, "SHOWER_GENERATOR=CSS");
-    addParameter(argv, "FRAGMENTATION=Ahadic");
-    addParameter(argv, "DECAYS=Hadrons");
-    addParameter(argv, "BEAM_REMNANTS=0");
-    addParameter(argv, "EVENT_GENERATION_MODE=W");
-    // addParameter(argv,"ME_QED=Off");
-    addParameter(argv, "CSS_FS_PT2MIN=0.001");
-    addParameter(argv, "CSS_IS_PT2MIN=0.001");
-    addParameter(argv, "CSS_ENHANCE=S{a}{e+}{e-} 0");
-    addParameter(argv, "CSS_ENHANCE=S{a}{e-}{e+} 0");
-    addParameter(argv, "NLO_SUBTRACTION_SCHEME=2");
-    addParameter(argv, "HDH_SET_WIDTHS=1");
-    addParameter(argv, "HARD_DECAYS=1");
+    // TODO: move beam information into Achilles side
+    sherpa_settings["BEAMS"].push_back(11);
+    sherpa_settings["BEAMS"].push_back(2212);
+    sherpa_settings["BEAM_ENERGIES"].push_back(100);
+    sherpa_settings["BEAM_ENERGIES"].push_back(100);
+    sherpa_settings["BEAM_RESCATTERING"] = "None";
+    sherpa_settings["BEAMMODE"] = "Fixed_Target";
+    sherpa_settings["ME_GENERATORS"] = "Comix";
+    sherpa_settings["LEPTONIC_CURRENT_MODE"] = 1;
+    sherpa_settings["ALPHAQED_DEFAULT_SCALE"] = 0;
+    sherpa_settings["1/ALPHAQED(MZ)"] = 137;
+    sherpa_settings["ACTIVE[25]"] = 0;
+
+    // TODO: Automate the particle data stuff or make it easier
+    sherpa_settings["PARTICLE_DATA"][2112]["Priority"] = 99;
+    sherpa_settings["PARTICLE_DATA"][2212]["Priority"] = 99;
+    sherpa_settings["PARTICLE_DATA"][9000005]["Active"] = 0;
+    sherpa_settings["PARTICLE_DATA"][11]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][13]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][15]["Massive"] = 1;
+    sherpa_settings["PARTICLE_DATA"][15]["Stable"] = 0;
+    sherpa_settings["HARD_SPIN_CORRELATIONS"] = 1;
+    sherpa_settings["SOFT_SPIN_CORRELATIONS"] = 1;
+    sherpa_settings["SHOWER_GENERATOR"] = "CSS";
+
+    // TODO: Figure out how to set this to work with Sherpa3.0
+    sherpa_settings["FRAGMENTATION"] = "None";
+    sherpa_settings["HARD_DECAYS"]["ENABLED"] = "True";
+    sherpa_settings["ME_QED"]["ENABLED"] = "OFF";
+    sherpa_settings["BEAM_REMNANTS"] = "False";
+
+    sherpa_settings["CSS_FS_PT2MIN"] = 0.001;
+    sherpa_settings["CSS_IS_PT2MIN"] = 0.001;
+    sherpa_settings["CSS_ENHANCE"] = "S{a}{e+}{e-} 0";
+    sherpa_settings["CSS_ENHANCE"] = "S{a}{e-}{e+} 0";
+    sherpa_settings["NLO_SUBTRACTION_SCHEME"] = 2;
     // add additional commandline parameters
-    for(const auto &arg : args) addParameter(argv, arg);
+    // for(const auto &arg : args) addParameter(argv, arg);
+
+    spdlog::trace("Converting from YAML to stream");
+    std::stringstream stream_sherpa_settings;
+    stream_sherpa_settings << YAML::Dump(sherpa_settings);
     // Initialise Sherpa and return.
-    p_sherpa->InitializeTheRun(argv.size(), &argv[0]);
+    spdlog::trace("Initializing Sherpa object");
+    p_sherpa = new SHERPA::Sherpa(stream_sherpa_settings);
+    spdlog::trace("Initializing the Sherpa run");
+    p_sherpa->InitializeTheRun();
+    spdlog::trace("Initializing the Sherpa event handler");
     p_sherpa->InitializeTheEventHandler();
+    spdlog::info("Sherpa: Initialization finished");
     auto pbeam = rpa->gen.PBeam(1);
     rpa->gen.SetPBeam(1, Vec4D({pbeam[0], 0, 0, -pbeam[3]}));
     m_pmap[nlo_type::lo] = new StringProcess_Map();
@@ -184,13 +188,11 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
                 pi, false);
         if(!proc) return nullptr;
     } catch(const ATOOLS::Exception &error) {
-        std::cout << error.Info() << std::endl;
+        std::cout << error << std::endl;
         exit(-1);
     }
     proc->SetupEventReader("Achilles");
-    // TODO: Figure out why the Tests cause a segfault
-    proc->Get<COMIX::Single_Process>()->Tests();
-    Selector_Key skey(NULL, new Data_Reader(), true);
+    Selector_Key skey;
     proc->SetSelector(skey);
     proc->InitPSHandler(1., "", "");
     proc->CalculateTotalXSec("", false);
@@ -201,11 +203,12 @@ Process_Base *SherpaInterface::getProcess(Cluster_Amplitude *const ampl) {
         return nullptr;
     }
     m_procs.push_back(proc);
-    proc->SetSelector(Selector_Key(nullptr, new Data_Reader(), true));
+    proc->SetSelector(Selector_Key());
     proc->SetScale(Scale_Setter_Arguments(MODEL::s_model, "VAR{100}{100}", "Alpha_QCD 1"));
-    proc->SetKFactor(KFactor_Setter_Arguments("NO"));
+    // TODO: Why does the next line segfault
+    // proc->SetKFactor(KFactor_Setter_Arguments("NO"));
+    // TODO: This gives large deviation because one gauge isn't implemented
     msg_Info() << "SherpaInterface::getProcess: Performing tests ";
-    // TODO: Figure out why the Tests cause a segfault
     if(proc->Get<COMIX::Process_Base>()) proc->Get<COMIX::Process_Base>()->Tests();
     msg_Info() << " done." << std::endl;
     proc->FillProcessMap(&m_pmap);
@@ -219,7 +222,7 @@ bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
     int nqcd(0), nIn(0), cmin(std::numeric_limits<int>::max()), cmax(0);
     Cluster_Amplitude *ampl = ConstructAmplitude(info.Ids());
     // TODO: Need to fix this later
-    // Process_Base::SortFlavours(ampl);
+    Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     if(pm->find(name) == pm->end()) getProcess(ampl);
@@ -230,30 +233,41 @@ bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
     return true;
 }
 
-std::map<size_t, long> SherpaInterface::MomentumMap(const std::vector<long> &_fl) const {
-    Cluster_Amplitude *ampl = ConstructAmplitude(_fl);
-    // Process_Base::SortFlavours(ampl);
+std::vector<long> SherpaInterface::MomentumMap(const std::vector<long> &_fl) const {
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for(size_t i(0); i < _fl.size(); ++i) {
+        Flavour fl(Flavour((long int)(_fl[i])));
+        ampl->CreateLeg({}, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
-    spdlog::info("Looking for process");
     if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);
     Process_Base *proc(pm->find(name)->second);
     auto *singleProcess = proc->Get<COMIX::Single_Process>();
-    std::map<size_t, long> mom_map;
-    size_t idx = 0;
-    for(const auto &flav : singleProcess->Flavours()) mom_map[idx++] = flav;
-    // TODO: Make more robust, right now we just swap the incoming hadron and incoming lepton
-    auto tmp = mom_map[0];
-    mom_map[0] = mom_map[1];
-    mom_map[1] = tmp;
+    std::vector<long> mom_map;
+    for(const auto &flav : singleProcess->Flavours()) {
+        spdlog::debug("Mapping momentum idx {} to flavor {}", mom_map.size(), flav.IDName());
+        mom_map.push_back(flav);
+    }
 
     return mom_map;
 }
 
 std::vector<std::unique_ptr<PHASIC::Channels>>
 SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
-    Cluster_Amplitude *ampl = ConstructAmplitude(_fl);
-    // Process_Base::SortFlavours(ampl);
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for(size_t i(0); i < _fl.size(); ++i) {
+        Flavour fl(Flavour((long int)(_fl[i])));
+        ampl->CreateLeg({}, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size() - 2);
+    Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     spdlog::info("Looking for process");
@@ -272,13 +286,14 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
         node->m_idx = 1 << i;
         channelComponents[(1 << i)].push_back(node);
         s.push_back(sqr(Flavour((kf_code)(flavs[i])).Mass(false)));
+        spdlog::trace("idx = {}, pid = {}", node->m_idx, int(flavs[i]));
     }
 
     for(unsigned int nset = 2; nset < flavs.size(); ++nset) {
         unsigned int cur = (1 << nset) - 1;
         // Combine all currents
         while(cur < (1 << (flavs.size()))) {
-            auto set = SetBits(cur, flavs.size());
+            auto set = BitsAreSet(cur, flavs.size());
             for(unsigned int iset = 1; iset < nset; ++iset) {
                 unsigned int idx = (1 << iset) - 1;
                 while(idx < (1 << (nset - 1))) {
@@ -287,7 +302,9 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
                         subCur1 += set[i] * ((idx >> i) & 1);
                     auto subCur2 = cur ^ subCur1;
                     // Skip over initial nucleon
-                    if(SetBit(subCur1, 0) || SetBit(subCur2, 0)) break;
+                    if(BitIsSet(subCur1, 0) || BitIsSet(subCur2, 0)) break;
+                    spdlog::trace("cur1 = {}, cur2 = {}, combinable = {}", subCur1, subCur2,
+                                  singleProcess->Combinable(subCur1, subCur2));
                     if(singleProcess->Combinable(subCur1, subCur2)) {
                         // Create new channel component
                         for(const auto &subChan1 : channelComponents[subCur1]) {
@@ -339,21 +356,38 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
 achilles::SherpaInterface::LeptonCurrents
 SherpaInterface::CalcCurrent(const std::vector<long> &_fl,
                              const std::vector<std::array<double, 4>> &p, const double &mu2) {
-    auto *ampl = ConstructAmplitude(_fl, p);
+    Cluster_Amplitude *ampl(Cluster_Amplitude::New());
+    for(size_t i(0); i < _fl.size(); ++i) {
+        Flavour fl(Flavour((long int)(_fl[i])));
+        ampl->CreateLeg({}, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
+        // Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
+        // Flavour fl(Flavour((long int)(_fl[i])));
+        // ampl->CreateLeg(i < 2 ? -cp : cp, i < 2 ? fl.Bar() : fl, ColorID(0, 0));
+    }
+    ampl->SetNIn(2);
+    ampl->SetOrderQCD(0);
+    ampl->SetOrderEW(ampl->Legs().size() - 2);
     ampl->SetMuQ2(mu2);
     ampl->SetMuF2(mu2);
     ampl->SetMuR2(mu2);
     ampl->SetLKF(1.);
-    // Process_Base::SortFlavours(ampl);
+    Process_Base::SortFlavours(ampl);
+    for(size_t i = 0; i < ampl->Legs().size(); ++i) {
+        Vec4D cp(p[i][0], p[i][1], p[i][2], p[i][3]);
+        ampl->Legs()[i]->SetMom(i < 2 ? -cp : cp);
+    }
+    ATOOLS::Spinor<double>::SetGauge(0);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     if(pm->find(name) == pm->end()) throw std::runtime_error("Process not found: " + name);
     Process_Base *proc = pm->find(name)->second;
     auto reader = dynamic_cast<Achilles_Reader *>(proc->EventReader());
     reader->SetAmpl(ampl);
-    // return differntial xs for now
-    double res(proc->Differential(*ampl, 1 | 2 | 4));
-    p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
+    // return only nominal differntial xs for now
+    double res(
+        proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight());
+    // TODO: Update to Sherpa 3.0
+    // p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
 
     singleProcess = proc->Get<COMIX::Single_Process>();
     std::map<int, std::vector<VCurrent>> results;
@@ -371,7 +405,7 @@ double SherpaInterface::CalcDifferential(const std::vector<long> &_fl,
     ampl->SetMuF2(mu2);
     ampl->SetMuR2(mu2);
     ampl->SetLKF(1.);
-    // Process_Base::SortFlavours(ampl);
+    Process_Base::SortFlavours(ampl);
     ATOOLS::Spinor<double>::SetGauge(0);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
@@ -379,35 +413,42 @@ double SherpaInterface::CalcDifferential(const std::vector<long> &_fl,
     Process_Base *proc = pm->find(name)->second;
     auto reader = dynamic_cast<Achilles_Reader *>(proc->EventReader());
     reader->SetAmpl(ampl);
-    // return differntial xs for now
-    return proc->Differential(*ampl, 1 | 2 | 4);
+    // return only nominal differntial xs for now
+    return proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight();
 }
 
-void achilles::SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {
+void SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {
     std::vector<std::vector<Complex>> cols;
     singleProcess->FillAmplitudes(amps, cols);
 }
 
-std::vector<FormFactorInfo> achilles::SherpaInterface::FormFactors(int hpid, int vpid) const {
+std::vector<achilles::FormFactorInfo> SherpaInterface::FormFactors(int _hpid, int _vpid) const {
+    auto hpid = static_cast<ATOOLS::Flavour>(_hpid);
+    auto vpid = static_cast<ATOOLS::Flavour>(_vpid);
     const std::vector<MODEL::Single_Vertex> &vertices(MODEL::s_model->OriginalVertices());
     std::vector<FormFactorInfo> form_factors;
-    for(const auto &vertex : vertices) {
-        if(std::find(vertex.in.begin(), vertex.in.end(), -hpid) != vertex.in.end() &&
+    // TODO: Ask Stefan if there is a better way and how to do correctly
+    for(auto vertex : vertices) {
+        if(std::find(vertex.in.begin(), vertex.in.end(), hpid.Bar()) != vertex.in.end() &&
            std::find(vertex.in.begin(), vertex.in.end(), vpid) != vertex.in.end()) {
-            for(size_t i = 0; i < vertex.FormFactor.size(); ++i) {
-                std::string ff = vertex.FormFactor[i];
-                spdlog::trace("For vertex {},{}: found form factor: {}", hpid, vpid, ff);
+            for(size_t i = 0; i < vertex.Lorentz.size(); ++i) {
+                Vertex_Key *key = Vertex_Key::New({}, NULL, MODEL::s_model, &vertex);
+                std::string ff = LC_Getter::GetObject("D" + vertex.Lorentz[i], *key)->FormFactor();
+                delete key;
+                spdlog::trace("For vertex {},{}: found form factor: {}", _hpid, _vpid, ff);
                 std::complex<double> coupling = vertex.Coupling(i);
                 FormFactorInfo::Type type;
                 if(ff == "F1p")
                     type = FormFactorInfo::Type::F1p;
                 else if(ff == "F1n")
                     type = FormFactorInfo::Type::F1n;
-                else if(ff == "F2p")
+                else if(ff == "F2p") {
                     type = FormFactorInfo::Type::F2p;
-                else if(ff == "F2n")
+                    coupling *= std::complex<double>(0, 1);
+                } else if(ff == "F2n") {
                     type = FormFactorInfo::Type::F2n;
-                else if(ff == "FA")
+                    coupling *= std::complex<double>(0, 1);
+                } else if(ff == "FA")
                     type = FormFactorInfo::Type::FA;
                 else if(ff == "FCoh")
                     type = FormFactorInfo::Type::FCoh;
@@ -425,8 +466,9 @@ void achilles::SherpaInterface::RegisterParticles() const {
         static constexpr double to_MeV = 1000;
         const auto mass = particle->m_mass * to_MeV;
         const auto width = particle->m_width * to_MeV;
+        // TODO: Handle isospin
         auto entry = std::make_shared<ParticleInfoEntry>(
-            pid, mass, width, particle->m_icharge, particle->m_strong, particle->m_spin,
+            pid, mass, width, particle->m_icharge, particle->m_strong, 0, particle->m_spin,
             particle->m_stable, particle->m_majorana, particle->m_massive, particle->m_hadron,
             particle->m_idname, particle->m_antiname);
         achilles::ParticleInfo::Database()[pid] = entry;

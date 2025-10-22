@@ -7,7 +7,10 @@
 #include "Achilles/Utilities.hh"
 
 #include "spdlog/spdlog.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
 #include <chrono>
 #include <fstream>

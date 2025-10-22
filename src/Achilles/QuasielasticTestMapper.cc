@@ -76,7 +76,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom,
     mom[0] = FourVector(tmp, Constant::mN - Ep);
     mom[2] = FourVector(tmp2, Epp);
 
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
+    // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
 double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom,

@@ -16,6 +16,8 @@
 #include "fmt/ranges.h"
 #pragma GCC diagnostic pop
 
+#include "fmt/core.h"
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"

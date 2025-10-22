@@ -108,6 +108,7 @@ class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaI
     IMPLEMENT_MOCK3(CalcDifferential);
     IMPLEMENT_MOCK1(FillAmplitudes);
     IMPLEMENT_CONST_MOCK2(FormFactors);
+    IMPLEMENT_MOCK1(FillAmplitudes);
 };
 */
 

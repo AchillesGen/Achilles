@@ -124,47 +124,83 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
-    static constexpr size_t lepton_in_end_idx = 1;
-    const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
-    const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
-    const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
+    spdlog::trace("Extracting momentum from event");
     const auto &momentum = event.Momentum();
+    if(m_info.m_mom_map.size() == 0) {
+        static constexpr size_t lepton_in_end_idx = 1;
+        const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
+        const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
+        const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
 
-    spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx,
-                  had_out_end_idx, momentum.size());
-    spdlog::trace("{}", m_info);
+        spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx,
+                      had_out_end_idx, momentum.size());
+        spdlog::trace("{}", m_info);
 
-    lep_in = momentum[0];
-    had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
-                                     momentum.begin() + static_cast<int>(hadron_end_idx));
-    lep_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(hadron_end_idx),
-                                      momentum.begin() + static_cast<int>(lepton_end_idx));
-    had_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(lepton_end_idx),
-                                      momentum.begin() + static_cast<int>(had_out_end_idx));
-    spect = std::vector<FourVector>(momentum.begin() + static_cast<int>(had_out_end_idx),
-                                    momentum.end());
+        lep_in = momentum[0];
+        had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
+                                         momentum.begin() + static_cast<int>(hadron_end_idx));
+        lep_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(hadron_end_idx),
+                                          momentum.begin() + static_cast<int>(lepton_end_idx));
+        had_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(lepton_end_idx),
+                                          momentum.begin() + static_cast<int>(had_out_end_idx));
+        spect = std::vector<FourVector>(momentum.begin() + static_cast<int>(had_out_end_idx),
+                                        momentum.end());
+    } else {
+        lep_in = momentum[0];
+        had_in.push_back(momentum[1]);
+        for(size_t i = 2; i < m_info.m_mom_map.size(); ++i) {
+            PID pid(m_info.m_mom_map[i]);
+            bool is_lepton = ParticleInfo(pid).IsLepton();
+            if(is_lepton)
+                lep_out.push_back(momentum[i]);
+            else
+                had_out.push_back(momentum[i]);
+        }
+    }
 }
 
 void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector<Particle> &had_in,
                                std::vector<Particle> &lep_out, std::vector<Particle> &had_out,
                                std::vector<Particle> &spect) const {
-    static constexpr size_t lepton_in_end_idx = 1;
-    const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
-    const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
-    const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
+    spdlog::trace("Extracting particles from event");
     const auto &momentum = event.Momentum();
-    lep_in = Particle(m_info.m_leptonic.first, momentum[0]);
-    for(size_t i = 0; i < m_info.m_hadronic.first.size(); ++i) {
-        had_in.emplace_back(m_info.m_hadronic.first[i], momentum[i + lepton_in_end_idx]);
-    }
-    for(size_t i = 0; i < m_info.m_leptonic.second.size(); ++i) {
-        lep_out.emplace_back(m_info.m_leptonic.second[i], momentum[i + hadron_end_idx]);
-    }
-    for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
-        had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
-    }
-    for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
-        spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
+    if(m_info.m_mom_map.size() == 0) {
+        static constexpr size_t lepton_in_end_idx = 1;
+        const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
+        const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
+        const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
+        lep_in = Particle(m_info.m_leptonic.first, momentum[0]);
+        for(size_t i = 0; i < m_info.m_hadronic.first.size(); ++i) {
+            had_in.emplace_back(m_info.m_hadronic.first[i], momentum[i + lepton_in_end_idx]);
+        }
+        for(size_t i = 0; i < m_info.m_leptonic.second.size(); ++i) {
+            lep_out.emplace_back(m_info.m_leptonic.second[i], momentum[i + hadron_end_idx]);
+        }
+        for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
+            had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
+        }
+        for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
+            spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
+        }
+#ifdef ACHILLES_EVENT_DETAILS
+        spdlog::debug("Initial state: {}", lep_in);
+        spdlog::debug("Hadronic initial state: {}", fmt::join(had_in, ", "));
+        spdlog::debug("Hadronic final state: {}", fmt::join(had_out, ", "));
+        spdlog::debug("Leptonic final state: {}", fmt::join(lep_out, ", "));
+        spdlog::debug("Spectators: {}", fmt::join(spect, ", "));
+#endif
+    } else {
+        lep_in = Particle(m_info.m_mom_map[1], momentum[0]);
+        had_in.emplace_back(m_info.m_mom_map[0], momentum[1]);
+        for(size_t i = 2; i < m_info.m_mom_map.size(); ++i) {
+            PID pid(m_info.m_mom_map[i]);
+            bool is_lepton = ParticleInfo(pid).IsLepton();
+            spdlog::trace("Extracting particle {}, with PID: {}", i, pid);
+            if(is_lepton)
+                lep_out.emplace_back(pid, momentum[i]);
+            else
+                had_out.emplace_back(pid, momentum[i]);
+        }
     }
 }
 
