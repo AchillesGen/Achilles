@@ -22,6 +22,15 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
 
     auto pion_kinetic_energy = pion.E() - pion.Mass();
     auto pion_momentum = pion.Momentum().P();
+    auto pion_energy = pion.E();
+
+
+    // Oset model defined for Tpi < 350 MeV
+    if(pion_kinetic_energy > 350.0) {
+        pion_kinetic_energy = 350.0;
+        pion_energy = pion_kinetic_energy + pion.Mass();
+        pion_momentum = sqrt(pion_energy*pion_energy - pion.Mass()*pion.Mass());
+    }
 
     // Actual nucleon kinematics included
     // auto delta_fourvector = pion.Momentum() + nucleon.Momentum();
@@ -30,7 +39,7 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
 
     // Let's consider an average nucleon
     double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum, 2);
-    double deltaE = pion.E() + sqrt(0.6 * pow(fermi_momentum, 2) + pow(Constant::mN, 2));
+    double deltaE = pion_energy + sqrt(0.6 * pow(fermi_momentum, 2) + pow(Constant::mN, 2));
     double s = deltaE * deltaE - deltamomsq;
     double sqrts = sqrt(s);
 
@@ -45,11 +54,11 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     double cms_mom = sqrt(cms_mom2);
 
     // ----- ABSORPTION ----- //
-    auto pXsecCommon = PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum,
+    auto pXsecCommon = PXSecCommon(nucleon.E(), pion_energy, pion.Mass(), cms_mom, fermi_momentum,
                                    sqrts, total_density);
 
     auto vnuc = nucleon.Momentum().Vec3() / nucleon.E();
-    auto vpi = pion.Momentum().Vec3() / pion.E();
+    auto vpi = pion.Momentum().Vec3() / pion_energy;
     auto vrel = (vpi - vnuc).Magnitude();
 
     // constant factor for p-wave absorption cross section
@@ -65,8 +74,8 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
 
     // absorption s-wave cross section (see sec. 3.3)
-    const double sXsecAbsorption = sAbsorptionFactor / pion.E() * total_density *
-                                   (1.0 + pion.E() / 2.0 / Constant::mN) /
+    const double sXsecAbsorption = sAbsorptionFactor / pion_energy * total_density *
+                                   (1.0 + pion_energy / 2.0 / Constant::mN) /
                                    pow(pion.Mass() / Constant::HBARC, 4.0) / vrel;
 
     // total absorption cross section coming from both s- and p-waves
