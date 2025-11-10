@@ -13,7 +13,7 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
 
     /// Initialize MesonBaryonInteraction class. This loads data from an input file
     MesonBaryonInteraction() = default;
-    MesonBaryonInteraction(const YAML::Node &){};
+    MesonBaryonInteraction(const YAML::Node &) {};
 
     /// Generate a object. This is used in the InteractionFactory.
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
