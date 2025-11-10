@@ -10,7 +10,7 @@ class ThreeVector;
 class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteraction> {
   public:
     NasaInteraction() = default;
-    NasaInteraction(const YAML::Node &){};
+    NasaInteraction(const YAML::Node &) {};
 
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
         return std::make_unique<NasaInteraction>(data);
