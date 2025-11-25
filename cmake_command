@@ -1,5 +1,0 @@
-
-cmake .. \
--DSHERPA_ROOT_DIR=$HOME/code_software/versions_sherpa/achilles_sherpa/build/local \
--DSHERPA-MC_DIR=$HOME/code_software/versions_sherpa/achilles_sherpa/build/local \
--DWARNINGS_AS_ERRORS=OFF 
