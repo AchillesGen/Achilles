@@ -2,6 +2,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Poincare.hh"
 #include "Achilles/Random.hh"
+#include <limits>
 
 using namespace achilles;
 
@@ -21,10 +22,11 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
 
     // Could encapsulate all the following in one function, but here we make use of achilles
     // utilities
-    int ichan = m_amps.GetCchannel(pidm, pidb);
+    size_t ichan = m_amps.GetCchannel(pidm, pidb);
 
     InteractionResults results;
-    if(ichan < 0) { return results; } // return empty, no initial channel matches
+    // return empty interaction list, no initial channel matches
+    if(ichan == std::numeric_limits<size_t>::max()) { return results; }
 
     double W = (particle1.Momentum() + particle2.Momentum()).M();
 
@@ -34,7 +36,7 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
     for(auto &CS_i : CS_fchan) {
         double CS = CS_i.first;
         if(CS > 0.) {
-            int fchan = CS_i.second;
+            size_t fchan = CS_i.second;
             int meson_out = m_amps.MesonPID_Cchan(fchan);
             int baryon_out = m_amps.BaryonPID_Cchan(fchan);
             results.push_back({{PID(meson_out), PID(baryon_out)}, CS});
@@ -47,9 +49,9 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
 std::vector<std::pair<PID, PID>> MesonBaryonInteraction::InitialStates() const {
     std::vector<std::pair<PID, PID>> states;
 
-    int nChan = m_amps.NChargeChannels();
+    size_t nChan = m_amps.NChargeChannels();
 
-    for(int i = 0; i < nChan; i++) {
+    for(size_t i = 0; i < nChan; i++) {
         int pidm = m_amps.MesonPID_Cchan(i);
         int pidb = m_amps.BaryonPID_Cchan(i);
         states.push_back({PID(pidm), PID(pidb)});
@@ -71,7 +73,7 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
         ipidm = particle1.ID();
     }
 
-    int ichan = m_amps.GetCchannel(ipidm, ipidb); // channel in
+    size_t ichan = m_amps.GetCchannel(ipidm, ipidb); // channel in
 
     int fpidm = int(out_pids[0]);
     int fpidb = int(out_pids[1]);
@@ -85,7 +87,7 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     }
 
     // Channel out
-    int fchan = m_amps.GetCchannel(fpidm, fpidb);
+    size_t fchan = m_amps.GetCchannel(fpidm, fpidb);
 
     double W = (particle1.Momentum() + particle2.Momentum()).M();
 

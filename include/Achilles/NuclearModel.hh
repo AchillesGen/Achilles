@@ -205,6 +205,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
     mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
 };
 
 class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpectral> {
@@ -235,6 +236,7 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
     mutable bool is_hydrogen{false};
+    mutable bool is_free_neutron{false};
 };
 
 } // namespace achilles

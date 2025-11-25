@@ -71,8 +71,8 @@ class Particle {
     explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
                       ThreeVector pos = ThreeVector(),
                       const ParticleStatus &_status = ParticleStatus::background,
-                      std::vector<int> _mothers = std::vector<int>(),
-                      std::vector<int> _daughters = std::vector<int>()) noexcept
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
           mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
         formationZone = 0;
@@ -80,8 +80,8 @@ class Particle {
 
     explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
                       ThreeVector pos = ThreeVector(), const int &_status = 0,
-                      std::vector<int> _mothers = std::vector<int>(),
-                      std::vector<int> _daughters = std::vector<int>()) noexcept
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(mom), position(std::move(pos)),
           status(static_cast<ParticleStatus>(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
@@ -91,8 +91,8 @@ class Particle {
     explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
                       ThreeVector pos = ThreeVector(),
                       ParticleStatus _status = ParticleStatus::background,
-                      std::vector<int> _mothers = std::vector<int>(),
-                      std::vector<int> _daughters = std::vector<int>()) noexcept
+                      std::vector<Particle> _mothers = std::vector<Particle>(),
+                      std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
           status(std::move(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
@@ -125,19 +125,19 @@ class Particle {
 
     /// Set the mother particles of the given particle
     ///@param std::vector<int>: A vector containing information about the mother particles
-    void SetMothers(const std::vector<int> &_mothers) noexcept { mothers = _mothers; }
+    void SetMothers(const std::vector<Particle> &_mothers) noexcept { mothers = _mothers; }
 
     /// Set the daughter particles of the given particle
     ///@param std::vector<int>: A vector containing information about the daughter particles
-    void SetDaughters(const std::vector<int> &_daughters) noexcept { daughters = _daughters; }
+    void SetDaughters(const std::vector<Particle> &_daughters) noexcept { daughters = _daughters; }
 
     /// Add a new mother particle to an existing particle
     ///@param idx: The index of the mother particle to be set
-    void AddMother(const int &idx) noexcept { mothers.push_back(idx); }
+    void AddMother(const Particle &part) noexcept { mothers.push_back(part); }
 
     /// Add a new daughter particle to an existing particle
     ///@param idx: The index of the daughter particle to be set
-    void AddDaughter(const int &idx) noexcept { daughters.push_back(idx); }
+    void AddDaughter(const Particle &part) noexcept { daughters.push_back(part); }
 
     /// Set the formation zone of the particle. The formation zone is a time in which
     /// the particle is not allowed to interact. The formation zone is discussed in detail in:
@@ -193,12 +193,12 @@ class Particle {
     ParticleStatus &Status() noexcept { return status; }
 
     /// Return a vector of the mother particle indices
-    ///@return std::vector<int>: A vector of indices referring to the mother particle
-    const std::vector<int> &Mothers() const noexcept { return mothers; }
+    ///@return std::vector<Particle>: A vector of Particles referring to the mothers
+    const std::vector<Particle> &Mothers() const noexcept { return mothers; }
 
     /// Return a vector of the daughter particle indices
-    ///@return std::vector<int>: A vector of indices referring to the daughter particle
-    const std::vector<int> &Daughters() const noexcept { return daughters; }
+    ///@return std::vector<Particle>: A vector of Particles referring to the daughters
+    const std::vector<Particle> &Daughters() const noexcept { return daughters; }
 
     /// Return the current time remaining in the formation zone
     ///@return double: Time left in formation zone
@@ -315,7 +315,7 @@ class Particle {
     FourVector momentum;
     ThreeVector position;
     ParticleStatus status;
-    std::vector<int> mothers, daughters;
+    std::vector<Particle> mothers, daughters;
     double formationZone;
     double distanceTraveled = 0.0;
 };

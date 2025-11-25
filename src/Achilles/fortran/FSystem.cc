@@ -9,6 +9,7 @@ char *FindFile(char *cfilename, char *chead) {
     std::string result = achilles::Filesystem::FindFile(filename, head);
     char *cresult = new char[result.size() + 1];
     std::copy(result.begin(), result.end(), cresult);
+    cresult[result.size()] = '\0';
     return cresult;
 }
 }

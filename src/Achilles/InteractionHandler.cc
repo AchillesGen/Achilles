@@ -82,6 +82,8 @@ InteractionResult InteractionHandler::SelectChannel(const std::vector<Interactio
     for(const auto &channel : channels) { total += channel.cross_section; }
 
     for(const auto &channel : channels) {
+        spdlog::debug("Channel: {}, cross_section = {}, total = {}, rand = {}",
+                      fmt::join(channel.particles, ", "), channel.cross_section, total, rand);
         rand -= channel.cross_section / total;
         if(rand <= 0.0) { return channel; }
     }

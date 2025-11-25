@@ -155,8 +155,8 @@ void AdaptiveMap::Split(achilles::AdaptiveMapSplit split) {
     }
 
     // Store the new histogram information
-    spdlog::trace("Old Hist: [{}]", fmt::join(m_hist, ", "));
-    spdlog::trace("New Hist: [{}]", fmt::join(hist, ", "));
+    spdlog::trace("Old Hist: [{}]", fmt::join(m_hist.begin(), m_hist.end(), ", "));
+    spdlog::trace("New Hist: [{}]", fmt::join(hist.begin(), hist.end(), ", "));
     m_bins = nsplit * m_bins;
     m_hist = hist;
 }

@@ -6,9 +6,12 @@
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Units.hh"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #include "yaml-cpp/yaml.h"
+#pragma GCC diagnostic pop
 
-using asign - conversion::operator""_GeV;
+using achilles::operator""_GeV;
 
 class DummyFF : public achilles::FormFactorImpl, achilles::RegistrableFormFactor<DummyFF> {
   public:

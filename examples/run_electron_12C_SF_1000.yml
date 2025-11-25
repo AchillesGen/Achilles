@@ -57,8 +57,8 @@ Nuclei:
       Binding: 8.6
       Fermi Momentum: 225
       Density:
-        ProtonFile: data/c12.prova.txt
-        NeutronFile: data/c12.prova.txt
+        ProtonFile: data/densities/c12.prova.txt
+        NeutronFile: data/densities/c12.prova.txt
         FilePotential: data/realOP_12C_EDAI.dat
         Function: configuration
         Configs: data/configurations/QMC_configs.out.gz

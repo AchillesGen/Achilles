@@ -4,7 +4,7 @@ RUN apk update && apk add g++ gcc musl-dev cmake hdf5-dev make git gfortran pyth
 
 COPY . /achilles_src
 
-RUN cmake -S achilles_src -B achilles && cmake --build ../achilles -j
+RUN cmake -S achilles_src -B achilles -DCMAKE_POLICY_VERSION_MINIMUM=3.5 && cmake --build ../achilles -j
 
 FROM alpine AS main
 

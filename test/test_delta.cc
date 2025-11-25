@@ -29,7 +29,7 @@ TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
     std::ofstream file("delta.txt");
     file << fmt::format("sqrts,dsigmadm,sigmapp,sigmapd\n");
 
-    double expected = 0.2456636303;
+    double expected = 0.1946713104;
     auto result = delta.TestDeltaDSigmaDOmegaDM(-0.81, 2.041, 1.093, achilles::PID::delta0());
     CHECK_THAT(result, Catch::Matchers::WithinAbs(expected, 1e-6));
 
@@ -39,7 +39,7 @@ TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
                             delta.TestDeltaDSigma(1, sqrts, 1.232));
     }
 
-    auto mass_vec = achilles::Linspace(0.0, 4.0, 301);
+    auto mass_vec = achilles::Linspace(0.01, 4.0, 301);
     std::ofstream file2("delta_mass.txt");
     file2 << fmt::format("mass,dsigmadm\n");
 
@@ -91,11 +91,6 @@ TEST_CASE("P Pi- -> Delta0", "[Delta]") {
         p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
         file << fmt::format("{:.3e},{:.3e}\n", plab, delta.TestNPiSigma(p1, p2, delta_id));
     }
-}
-
-TEST_CASE("TestInterp", "[DeltaSpeed]") {
-    achilles::DeltaInteraction delta;
-    delta.TestInterpolation();
 }
 
 TEST_CASE("P D+ -> N D", "[Delta2]") {

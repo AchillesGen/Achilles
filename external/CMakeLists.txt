@@ -1,5 +1,3 @@
-set(achilles_install "")
-
 CPMAddPackage(
     NAME fmt
     GIT_TAG 11.0.0
@@ -17,10 +15,6 @@ CPMAddPackage(
         "SPDLOG_BUILD_SHARED ON"
         "SPDLOG_INSTALL ON"
 )
-if(NOT TARGET spdlog::spdlog)
-add_library(spdlog::spdlog ALIAS spdlog)
-list(APPEND achilles_install spdlog)
-endif()
 
 CPMAddPackage(
     NAME docopt
@@ -32,7 +26,7 @@ add_library(docopt::docopt ALIAS docopt)
 CPMAddPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
-    GIT_TAG 0.8.0
+    GIT_TAG master
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
@@ -47,7 +41,7 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMFindPackage(
+CPMAddPackage(
   NAME NuHepMC_CPPUtils
   GIT_TAG v1-RC10
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"

@@ -40,7 +40,7 @@ double Get4(const Vec4 *self, const int idx) {
     return self->operator[](static_cast<size_t>(idx));
 }
 void Print4(const Vec4 *self) {
-    // fmt::print("{}\n", *self);
+    fmt::print("{}\n", *self);
 }
 
 // ThreeVector Constructor and Destructor

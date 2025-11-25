@@ -13,6 +13,7 @@ class OsetCrossSection {
     OsetCrossSection();
 
     double AbsCrossSection(Event &event, size_t part1, size_t part2) const;
+    double SChannelAbsCrossSection(Event &event, size_t part1, size_t part2) const;
     std::map<std::pair<PID, PID>, double> QECrossSection(Event &event, size_t part1,
                                                          size_t part2) const;
 

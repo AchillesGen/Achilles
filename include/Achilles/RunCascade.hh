@@ -3,6 +3,7 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
+#include "Achilles/Settings.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <string>
@@ -59,21 +60,24 @@ class CascadeRunner {
     void run();
 
   private:
-    void GenerateEvent(double);
+    void GenerateEvent(double, Histogram &, Histogram &);
     bool NeedsEvents() const { return generated_events < requested_events; }
     void Reset() { generated_events = 0; }
 
     size_t requested_events{}, generated_events{};
 
     std::map<std::string, double> m_params;
+    std::string m_output_name;
     PID m_pid;
 
     CascadeMode m_mode;
-    Cascade m_cascade;
+    std::unique_ptr<Cascade> m_cascade;
     std::pair<double, double> m_mom_range;
 
     std::shared_ptr<Nucleus> m_nuc;
     std::unique_ptr<EventWriter> m_writer{nullptr};
+
+    Settings setting;
 };
 
 } // namespace achilles::CascadeTest

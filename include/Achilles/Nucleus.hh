@@ -174,7 +174,7 @@ class Nucleus {
 
     /// Return the Fermi momentum according to a given FG model
     ///@param position: The radius to calculate the density
-    double FermiMomentum(const double &) const noexcept;
+    double FermiMomentum(const double &, const PID &) const;
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
@@ -187,9 +187,9 @@ class Nucleus {
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-    const std::array<double, 3> GenerateMomentum(const double &) noexcept;
+    const std::array<double, 3> GenerateMomentum(const double &, const PID &) noexcept;
 
-    double SampleMagnitudeMomentum(const double &position) noexcept;
+    double SampleMagnitudeMomentum(const double &position, const PID &) noexcept;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
@@ -260,6 +260,7 @@ class Nucleus {
     FourVector m_recoil{};
     std::shared_ptr<Potential> potential;
     bool is_hydrogen{false};
+    bool is_free_neutron{false};
 };
 
 } // namespace achilles
@@ -295,6 +296,13 @@ template <> struct convert<achilles::Nucleus> {
             return true;
         }
 
+        // Special case for free neutron
+        if(name == "1N") {
+            spdlog::info("Nucleus: creating free neutron nucleus.");
+            nuc.Initialize(0, 1);
+            return true;
+        }
+
         auto binding = node["Binding"].as<double>();
         auto kf = node["Fermi Momentum"].as<double>();
 
@@ -317,7 +325,8 @@ template <> struct convert<std::vector<std::shared_ptr<achilles::Nucleus>>> {
             auto nucleus =
                 std::make_shared<achilles::Nucleus>(nucleus_node.as<achilles::Nucleus>());
 
-            if(nucleus->ID() != achilles::PID::hydrogen()) {
+            if(nucleus->ID() != achilles::PID::hydrogen() &&
+               nucleus->ID() != achilles::PID::free_neutron()) {
                 // Set potential for the nucleus
                 auto potential_name = nucleus_node["Potential"]["Name"].as<std::string>();
                 auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,

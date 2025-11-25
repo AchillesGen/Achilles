@@ -94,13 +94,18 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
         const std::complex<double> coupl1 = (ee * i / (4 * sin2w * cw)) * (0.5 - 2 * sin2w);
         const std::complex<double> coupl2 = (ee * i / (4 * sw * cw));
         const std::complex<double> coupl3 = ee * i / (cw * sw * 2);
-        results[{PID::proton(), pid}] = {
-            {FormFactorInfo::Type::F1p, coupl1},    {FormFactorInfo::Type::F1n, -coupl2},
-            {FormFactorInfo::Type::F2p, coupl1},    {FormFactorInfo::Type::F2n, -coupl2},
-            {FormFactorInfo::Type::FA, coupl2},     {FormFactorInfo::Type::FResV, coupl3},
-            {FormFactorInfo::Type::FResA, coupl3},  {FormFactorInfo::Type::FPiEM, coupl3},
-            {FormFactorInfo::Type::FMecV3, coupl3}, {FormFactorInfo::Type::FMecV4, coupl3},
-            {FormFactorInfo::Type::FMecV5, coupl3}, {FormFactorInfo::Type::FMecA5, coupl3}};
+        results[{PID::proton(), pid}] = {{FormFactorInfo::Type::F1p, coupl1},
+                                         {FormFactorInfo::Type::F1n, -coupl2},
+                                         {FormFactorInfo::Type::F2p, coupl1},
+                                         {FormFactorInfo::Type::F2n, -coupl2},
+                                         {FormFactorInfo::Type::FA, coupl2},
+                                         {FormFactorInfo::Type::FResV, coupl3},
+                                         {FormFactorInfo::Type::FResA, coupl3},
+                                         {FormFactorInfo::Type::FPiEM, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV3, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV4, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecV5, (1 - 2 * sin2w) * coupl3},
+                                         {FormFactorInfo::Type::FMecA5, coupl3}};
         results[{PID::neutron(), pid}] = {
             {FormFactorInfo::Type::F1n, coupl1},    {FormFactorInfo::Type::F1p, -coupl2},
             {FormFactorInfo::Type::F2n, coupl1},    {FormFactorInfo::Type::F2p, -coupl2},
@@ -108,7 +113,10 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
             {FormFactorInfo::Type::FResA, coupl3},  {FormFactorInfo::Type::FPiEM, coupl3},
             {FormFactorInfo::Type::FMecV3, coupl3}, {FormFactorInfo::Type::FMecV4, coupl3},
             {FormFactorInfo::Type::FMecV5, coupl3}, {FormFactorInfo::Type::FMecA5, coupl3}};
-        results[{PID::carbon(), pid}] = {};
+        results[{PID::carbon(), pid}] = {
+            {FormFactorInfo::Type::FCoh, coupl3 * (6 * (0.5 - 2 * sin2w) - 3)}};
+        results[{PID::argon(), pid}] = {
+            {FormFactorInfo::Type::FCoh, coupl3 * (18 * (0.5 - 2 * sin2w) - 11)}};
     } else if(pid == 22) {
         const std::complex<double> coupl = i * ee;
         results[{PID::proton(), pid}] = {
@@ -122,6 +130,7 @@ achilles::FFDictionary LeptonicCurrent::GetFormFactor() {
             {FormFactorInfo::Type::FMecV3, coupl}, {FormFactorInfo::Type::FMecV4, coupl},
             {FormFactorInfo::Type::FMecV5, coupl}};
         results[{PID::carbon(), pid}] = {{FormFactorInfo::Type::FCoh, 6.0 * coupl}};
+        results[{PID::argon(), pid}] = {{FormFactorInfo::Type::FCoh, 18.0 * coupl}};
     } else {
         throw std::runtime_error("LeptonicCurrent: Invalid probe");
     }

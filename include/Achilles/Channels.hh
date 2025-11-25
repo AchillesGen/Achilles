@@ -11,8 +11,8 @@
 #include "Achilles/QuasielasticTestMapper.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/Channels1.hh"
-#include "plugins/Sherpa/Channels3.hh"
+#include "Plugins/Sherpa/Channels1.hh"
+#include "Plugins/Sherpa/Channels3.hh"
 #endif
 
 namespace achilles {

@@ -30,23 +30,20 @@ jobs:
         python-version: '3.12'
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
         brew install hdf5
-        brew install --force gcc
-        os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
-        # TODO: remove hardcoded gfortran major version
-        if (( "$os_ver" > 13)); then
-          ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
-        else
-          ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
-        fi
+
+    - name: Setup fortran
+      uses: fortran-lang/setup-fortran@v1
+      with:
+        compiler: gcc
 
     - name: Set up cache
       id: cache-cpm
@@ -60,7 +57,6 @@ jobs:
     - name: ccache 
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        create-symlink: True
         key: ${{ matrix.name }}-ccache-${{ github.sha }}
         restore-keys: |
           ${{ matrix.name }}-ccache-
@@ -70,7 +66,8 @@ jobs:
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DACHILLES_ENABLE_TESTING=ON  \
           -DACHILLES_COVERAGE=${{ matrix.coverage }} -DCPM_SOURCE_CACHE=~/cpm-cache                               \
           -DACHILLES_ENABLE_SHERPA=OFF -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_CXX_COMPILER=${{ matrix.cxx}}  \
-          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install
+          -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/install \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{ github.workspace }}/build --config ${{ env.BUILD_TYPE }} -j4
@@ -109,11 +106,11 @@ jobs:
         path: build
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update
@@ -161,11 +158,11 @@ jobs:
         path: install
 
     - name: Install dependencies (Ubuntu)
-      if: ${{ matrix.os != 'macos-13' && matrix.os != 'macos-14' }}
+      if: ${{ !contains(matrix.os, 'macos') }}
       run: sudo apt update && sudo apt install -y libhdf5-dev lcov ${{ matrix.cc }} cmake && pip install codecov
 
     - name: Install dependencies (MacOS)
-      if: ${{ matrix.os == 'macos-13' || matrix.os == 'macos-14' }}
+      if: ${{ contains(matrix.os, 'macos') }}
       run: |
         export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
         brew update

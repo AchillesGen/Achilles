@@ -56,10 +56,7 @@ add_executable(achilles-testsuite
     test_clebsch_gordan.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
-    PUBLIC physics mappers event_gen)
-if(ENABLE_BSM)
-    target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
-endif()
+    PUBLIC event_gen)
 
 set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
@@ -77,6 +74,7 @@ add_executable(achilles-fortran-testsuite
     test_spectral_interface.f90
     test_fortran_map.f90
     test_fortran_interference.f90
+    test_fortran_utils.f90
 )
 message(STATUS ${CMAKE_Fortran_MODULE_DIRECTORY})
 target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})

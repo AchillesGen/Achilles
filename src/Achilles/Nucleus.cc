@@ -18,8 +18,8 @@
 using namespace achilles;
 
 const std::map<std::size_t, std::string> Nucleus::ZToName = {
-    {0, "mfp"}, {1, "H"},   {2, "He"},  {3, "Li"},  {6, "C"},
-    {8, "O"},   {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
+    {0, "N"}, {1, "H"},   {2, "He"},  {3, "Li"},  {6, "C"},
+    {8, "O"}, {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
 };
 
 Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
@@ -122,8 +122,9 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     int ID = IDBase + ZBase * static_cast<int>(Z) + ABase * static_cast<int>(A);
     m_pid = PID{ID};
 
-    // Set flag to handle special case of hydrogen
+    // Set flag to handle special case of hydrogen or free neutron
     if(Z == 1 && A == 1) is_hydrogen = true;
+    if(Z == 0 && A == 1) is_free_neutron = true;
 }
 
 Particles Nucleus::GenerateConfig() {
@@ -131,13 +132,16 @@ Particles Nucleus::GenerateConfig() {
     if(is_hydrogen) {
         return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
     }
+    if(is_free_neutron) {
+        return {Particle{PID::neutron(), {ParticleInfo(PID::neutron()).Mass(), 0, 0, 0}}};
+    }
 
     // Get a configuration from the density function
     Particles particles = density->GetConfiguration();
 
     for(Particle &particle : particles) {
         // Set momentum for each nucleon
-        auto mom3 = GenerateMomentum(particle.Position().Magnitude());
+        auto mom3 = GenerateMomentum(particle.Position().Magnitude(), particle.ID());
         double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
         for(auto mom : mom3) energy2 += mom * mom;
         particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
@@ -148,18 +152,19 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum(const double &position) noexcept {
+const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
+                                                      const PID &pid) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = SampleMagnitudeMomentum(position);
+    momentum[0] = SampleMagnitudeMomentum(position, pid);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     return ToCartesian(momentum);
 }
 
-double Nucleus::SampleMagnitudeMomentum(const double &position) noexcept {
+double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) noexcept {
     // NOTE: To sample on a sphere, need to take a cube-root.
-    double kf = FermiMomentum(position);
+    double kf = FermiMomentum(position, pid);
     if(fermi_gas.correlated) {
         if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
             return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
@@ -204,8 +209,17 @@ const std::string Nucleus::ToString() const noexcept {
     return std::to_string(NNucleons()) + ZToName.at(NProtons());
 }
 
-double Nucleus::FermiMomentum(const double &position) const noexcept {
-    double rho = Rho(position);
+double Nucleus::FermiMomentum(const double &position, const PID &nuc_pid) const {
+    double rho = 0.;
+    if(nuc_pid == PID::proton())
+        rho = ProtonRho(position);
+    else if(nuc_pid == PID::neutron())
+        rho = NeutronRho(position);
+    else {
+        throw std::runtime_error(fmt::format("Fermi Momentum for: {} does not exist.", nuc_pid));
+    }
+
+    // double rho = Rho(position);
     double result{};
     switch(fermi_gas.type) {
     case FermiGasType::Local:

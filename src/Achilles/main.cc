@@ -11,15 +11,17 @@
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
+#include "Plugins/Manager/PluginManager.hh"
 #include "git.h"
-#include "plugins/Manager/PluginManager.hh"
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/Channels.hh"
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/Channels.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #endif
 
 #include "docopt.h"
 
+#include <chrono>
+#include <ctime>
 #include <dlfcn.h>
 #include <filesystem>
 
@@ -30,7 +32,7 @@ namespace fs = std::filesystem;
 static const std::string USAGE =
     R"(
     Usage:
-      achilles [<input>] [-v | -vv] [-l | -ll] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv] [-l | -ll] [-b] [--logfile=<logfile_name>] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -41,10 +43,12 @@ static const std::string USAGE =
 
     Options:
       -v[v]                                 Increase verbosity level.
-      -l[l]                                 Increase log verbosity 
-                                            (Note: Log verbosity is never lower than total level)
+      -l[l]                                 Increase log verbosity
+                                              (Note: Log verbosity is never lower than total level)
+      -b                                    Batch Mode (makes output more log-friendly)
       -h --help                             Show this screen.
       --version                             Show version.
+      --logfile=<logfile_name>              Change the logging output destination
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
       --display-cuts                        Display the available cuts
       --display-ps                          Display the available phase spaces
@@ -53,10 +57,34 @@ static const std::string USAGE =
       --display-nuc-models                  Display the available nuclear interaction models
 )";
 
-void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs) {
+/** Gets the current time, logs it, and returns it as a number of seconds since epoch. */
+static time_t logTime(std::string message) {
+    time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    message += ctime(&time);
+    spdlog::info(message);
+    return time;
+}
+
+/** Puts a potentially-large number of seconds into a more human-readable form
+ *  There might've been a library for this but I coded it myself anyway -Hayden */
+static std::string formatTime(time_t seconds) {
+    std::string output = std::to_string(seconds % 60) + "s";
+    seconds /= 60;
+    if(seconds == 0) return output;
+    output = std::to_string(seconds % 60) + "m " + output;
+    seconds /= 60;
+    if(seconds == 0) return output;
+    output = std::to_string(seconds % 24) + "h " + output;
+    seconds /= 24;
+    if(seconds == 0) return output;
+    return std::to_string(seconds) + "d " + output;
+}
+
+void GenerateEvents(const std::string &runcard, const std::vector<std::string> &shargs,
+                    bool batchMode) {
     achilles::EventGen generator(runcard, shargs);
     generator.Initialize();
-    generator.GenerateEvents();
+    generator.GenerateEvents(batchMode);
 }
 
 int main(int argc, char *argv[]) {
@@ -80,7 +108,13 @@ int main(int argc, char *argv[]) {
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
     auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
-    CreateLogger(verbosity, log_verbosity, 1);
+
+    bool batchMode = args["-b"].asBool();
+
+    std::string logFilePath = "achilles.log";
+    if(args["--logfile"].isString()) logFilePath = args["--logfile"].asString();
+
+    CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
     achilles::Plugin::Manager plugin_manager;
 
@@ -118,9 +152,13 @@ int main(int argc, char *argv[]) {
     }
 
     std::string runcard = "run.yml";
-    if(args["<input>"].isString())
+    if(args["<input>"].isString()) {
         runcard = args["<input>"].asString();
-    else {
+        if(!fs::exists(runcard)) {
+            spdlog::error("Achilles: Could not find \"" + runcard + "\".");
+            return 1;
+        }
+    } else {
         // Ensure file exists, otherwise copy template file to current location
         if(!fs::exists(runcard)) {
             spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
@@ -139,9 +177,18 @@ int main(int argc, char *argv[]) {
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
+    time_t startTime = logTime("Start Time: ");
+
+    std::string success = "Failed.";
     try {
-        GenerateEvents(runcard, shargs);
+        GenerateEvents(runcard, shargs, batchMode);
+        success = "Success!";
     } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
+    spdlog::info("Event Run Concluded - " + success);
+    spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
+
+    time_t endTime = logTime("End Time: ");
+    spdlog::info("Run Duration: " + formatTime(endTime - startTime));
 
     return 0;
 }

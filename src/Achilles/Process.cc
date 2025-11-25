@@ -14,7 +14,7 @@
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-#include "plugins/Sherpa/SherpaInterface.hh"
+#include "Plugins/Sherpa/SherpaInterface.hh"
 #else
 // Create dummy class
 namespace achilles {
@@ -393,10 +393,16 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
         m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
+    UnitsEnum display_unit = UnitsEnum::nb;
+    if(config.Exists("Main/DisplayUnit")) {
+        display_unit = ToUnitEnum(config.GetAs<std::string>("Main/DisplayUnit"));
+    }
+
     MultiChannelParams multichannel_params;
     if(config.Exists("Options/Initialize/Parameters"))
         multichannel_params = config.GetAs<MultiChannelParams>("Options/Initialize/Parameters");
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params);
+    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params,
+                                display_unit);
     if(config.Exists("Options/Initialize/Accuracy"))
         m_integrator.Parameters().rtol = config.GetAs<double>("Options/Initialize/Accuracy");
 
@@ -434,13 +440,18 @@ void ProcessGroup::Optimize() {
         for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
         b_calc_weights = false;
 
+        std::ofstream outFile("Results.txt");
+
         // Store max weight and weight vector
         m_process_weights.resize(m_processes.size());
         for(size_t i = 0; i < m_processes.size(); ++i) {
             m_process_weights[i] = m_processes[i].MaxWeight();
             m_maxweight += m_process_weights[i];
             spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+            outFile << m_processes[i].TotalCrossSection() << "\n";
         }
+
+        outFile.close();
     } else {
         for(size_t i = 0; i < m_processes.size(); ++i) {
             spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
@@ -466,10 +477,10 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     Event event = Event(m_nucleus, mom, ps_wgt);
 
     spdlog::debug("Event Phase Space:");
-    // size_t idx = 0;
-    // for(const auto &momentum : event.Momentum()) {
-    //     spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
-    // }
+    size_t idx = 0;
+    for(const auto &momentum : event.Momentum()) {
+        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
+    }
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     SetupLeptons(event, process_opt);

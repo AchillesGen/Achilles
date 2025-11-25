@@ -114,7 +114,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
    endif
 
    !W limits for DCC model
-   if(sqrt(piNinv).lt.1076.957d0.or.sqrt(piNinv).gt.1400.0d0) then
+   if(sqrt(piNinv).lt.1076.957d0.or.sqrt(piNinv).gt.2000.0d0) then
         J_mu(:,:,:) = (0.0d0,0.0d0)
         return
    endif

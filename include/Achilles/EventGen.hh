@@ -33,7 +33,7 @@ class EventGen {
   public:
     EventGen(const std::string &, std::vector<std::string>);
     void Initialize();
-    void GenerateEvents();
+    void GenerateEvents(bool);
 
   private:
     bool GenerateSingleEvent();
