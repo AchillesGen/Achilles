@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10)
 
 # Policy to address @foo@ variable expansion
 if(POLICY CMP0053)

@@ -156,8 +156,8 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         writer = std::make_unique<NuHepMCWriter>(name, zipped);
 #endif
     } else {
-        std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);
-        throw std::runtime_error(msg);
+        std::string error_msg = fmt::format("Achilles: Invalid output format requested {}", format);
+        throw std::runtime_error(error_msg);
     }
     writer->WriteHeader(configFile, process_groups);
 }
