@@ -5,6 +5,7 @@
 #include "spdlog/spdlog.h"
 
 using achilles::CoherentMapper;
+using achilles::D2SpectralMapper;
 using achilles::IntfSpectralMapper;
 using achilles::QESpectralMapper;
 
@@ -113,6 +114,77 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
 
     double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi / dE;
+#ifdef ACHILLES_EVENT_DETAILS
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    spdlog::trace("  Weight: {}", wgt);
+    spdlog::trace("  dp: {}", dp);
+    spdlog::trace("  dCos: {}", dCos);
+    spdlog::trace("  dPhi: {}", dPhi);
+    spdlog::trace("  dE: {}", dE);
+#endif
+
+    return wgt;
+}
+
+D2SpectralMapper::D2SpectralMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    SetMasses(info.Masses());
+}
+
+void D2SpectralMapper::GeneratePoint(std::vector<FourVector> &point,
+                                     const std::vector<double> &rans) {
+    // Generate inital nucleon state
+    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+                                      Constant::mN2 - Smin());
+    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+                                      Constant::mN2 - Smin());
+    pmin = pmin < 0 ? 0 : pmin;
+    pmax = pmax > 800 ? 800 : pmax;
+    double dp = pmax - pmin;
+    const double mom = dp * rans[0] + pmin;
+    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
+                      (2 * point[0].E() * mom);
+    cosT_max = cosT_max > 1 ? 1 : cosT_max;
+    const double cosT = (cosT_max + 1) * rans[1] - 1;
+    const double sinT = sqrt(1 - cosT * cosT);
+    const double phi = dPhi * rans[2];
+
+    // TODO: Define binding energy
+    double binding = 0;
+    const double energy = sqrt(mom * mom + Constant::mN2) - binding;
+    point[HadronIdx()] = {energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+#ifdef ACHILLES_EVENT_DETAILS
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    spdlog::trace("  point[0] = {}", point[0]);
+    spdlog::trace("  dp = {}", dp);
+    spdlog::trace("  cosT_max = {}", cosT_max);
+    spdlog::trace("  cosT = {}", cosT);
+    spdlog::trace("  mom = {}", mom);
+    spdlog::trace("  energy = {}", energy);
+    spdlog::trace("  emax = {}", emax);
+    spdlog::trace("  s = {}", (point[0] + point[1]).M2());
+    spdlog::trace("  s_min = {}", Smin());
+#endif
+}
+
+double D2SpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
+                                        std::vector<double> &rans) {
+    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+                                      Constant::mN2 - Smin());
+    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+                                      Constant::mN2 - Smin());
+    pmin = pmin < 0 ? 0 : pmin;
+    pmax = pmax > 800 ? 800 : pmax;
+    double dp = pmax - pmin;
+    rans[0] = (point[HadronIdx()].P() - pmin) / dp;
+    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[1].P2() - Smin()) /
+                      (2 * point[0].E() * point[1].P());
+    cosT_max = cosT_max > 1 ? 1 : cosT_max;
+    double dCos = (cosT_max + 1);
+    rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
+    rans[2] = point[HadronIdx()].Phi() / dPhi;
+
+    double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi;
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
