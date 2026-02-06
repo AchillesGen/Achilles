@@ -8,14 +8,14 @@
 inline void Splash() {
     fmt::print(R"splash(
 +=====================================================================+
-|                                                                     | 
+|                                                                     |
 |    .d8b.   .o88b. db   db d888888b db      db      d88888b .d8888.  |
 |   d8' `8b d8P  Y8 88   88   `88'   88      88      88'     88'  YP  |
 |   88ooo88 8P      88ooo88    88    88      88      88ooooo `8bo.    |
 |   88~~~88 8b      88~~~88    88    88      88      88~~~~~  `Y8b.   |
 |   88   88 Y8b  d8 88   88   .88.   88booo. 88booo. 88.     db  8D   |
 |   YP   YP  `Y88P' YP   YP Y888888P Y88888P Y88888P Y88888P `8888Y'  |
-|                                                                     | 
+|                                                                     |
 +---------------------------------------------------------------------+
 |                                                                     |
 |                 .d88888888888888888888888888b.                      |
@@ -50,8 +50,9 @@ inline void Splash() {
 +---------------------------------------------------------------------+
 |                                                                     |
 |    Version: {:56}|
-|    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,        | 
-|        Pedro A. Machado, Luke Pickering, Noemi Rocco                | 
+|    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,        |
+|        Pedro A. Machado, Luke Pickering, Noemi Rocco,               |
+|        Hayden Piwonka                                               |
 |                                                                     |
 |    Undergraduate Student Contributions:                             |
 |        Diego Lopez Gutierrez, Sherry Wang, Russell Farnsworth       |
