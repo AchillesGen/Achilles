@@ -1,5 +1,11 @@
 [build-system]
-requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
+requires = ["scikit-build-core>=0.5"]
+build-backend = "scikit_build_core.build"
 
-[tool.setuptools_scm]
-write_to = "src/nuchic/_version.py"
+[project]
+name = "Achilles"
+version = "0.3.0"
+
+[tool.scikit-build]
+cmake.args = ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
+cmake.source-dir = "."
