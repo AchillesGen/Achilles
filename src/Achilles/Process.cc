@@ -349,6 +349,7 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
     for(const auto &process_node : settings["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
         auto infos = model->AllowedStates(process_info);
+        spdlog::trace("Found possible states: {}", infos);
         const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
         for(auto &info : infos) {
             try {

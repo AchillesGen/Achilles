@@ -231,7 +231,7 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
 std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
-    spdlog::debug("Charge = {}", charge);
+    spdlog::debug("Charge = {}, ModelType = {}", charge, ToString(Mode()));
     std::vector<ProcessInfo> results;
     auto local = info;
 
@@ -597,7 +597,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
 
 std::unique_ptr<NuclearModel> QESpectral::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<HyperonSpectral>(config, form_factor);
+    return std::make_unique<QESpectral>(config, form_factor);
 }
 
 double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
