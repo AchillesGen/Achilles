@@ -1,7 +1,6 @@
 #ifndef PHASE_SPACE_BUILDER
 #define PHASE_SPACE_BUILDER
 
-#include "Achilles/Achilles.hh"
 #include "Achilles/PhaseSpaceMapper.hh"
 #include "Achilles/ProcessInfo.hh"
 
