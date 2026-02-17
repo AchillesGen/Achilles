@@ -11,8 +11,8 @@
 #endif
 
 namespace achilles {
-	inline void GenerateEvents(const std::string&, std::vector<std::string>&,
-			int, int, const std::string&, bool);
+inline void GenerateEvents(const std::string &, std::vector<std::string> &, int, int,
+                           const std::string &, bool);
 }
 
 #endif

@@ -63,7 +63,7 @@ inline void Splash() {
 }
 
 inline void GitInformation() {
-    //std::string msg;
+    // std::string msg;
     if(git::IsPopulated()) {
         spdlog::info("Achilles git information");
         spdlog::info("    Commit: {}", git::CommitSHA1());

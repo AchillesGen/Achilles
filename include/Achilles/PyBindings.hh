@@ -12,7 +12,7 @@ namespace py = pybind11;
 template <typename... Args> using overload_cast_ = py::detail::overload_cast_impl<Args...>;
 
 // Achilles
-void AchillesModule(py::module&);
+void AchillesModule(py::module &);
 
 // Utilities
 void LoggingModule(py::module &);

@@ -83,47 +83,47 @@ static std::string formatTime(time_t seconds) {
 }
 
 namespace achilles {
-inline void GenerateEvents(const std::string& runcard, std::vector<std::string>& shargs,
-			int verbosity, int log_verbosity, const std::string& logFilePath, bool batchMode) {
+inline void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs,
+                           int verbosity, int log_verbosity, const std::string &logFilePath,
+                           bool batchMode) {
+    CreateLogger(verbosity, log_verbosity, 1, logFilePath);
+    GitInformation();
 
-	CreateLogger(verbosity, log_verbosity, 1, logFilePath);
-	GitInformation();
-
-	if(!fs::exists(runcard)) {
-		if(runcard=="run.yml") {
-		    spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
-		                  "this location");
-		    if(!fs::exists(achilles::PathVariables::installData)) {
-		        fs::copy(achilles::PathVariables::buildData / fs::path("default/run.yml"),
-		                 fs::current_path());
-		    } else {
-		        fs::copy(achilles::PathVariables::installData / fs::path("default/run.yml"),
-		                 fs::current_path());
-		    }
-		} else
-			spdlog::error("Achilles: Could not find \"" + runcard + "\".");
-	    return;
-	}
+    if(!fs::exists(runcard)) {
+        if(runcard == "run.yml") {
+            spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
+                          "this location");
+            if(!fs::exists(achilles::PathVariables::installData)) {
+                fs::copy(achilles::PathVariables::buildData / fs::path("default/run.yml"),
+                         fs::current_path());
+            } else {
+                fs::copy(achilles::PathVariables::installData / fs::path("default/run.yml"),
+                         fs::current_path());
+            }
+        } else
+            spdlog::error("Achilles: Could not find \"" + runcard + "\".");
+        return;
+    }
 
     achilles::Plugin::Manager plugin_manager;
 
-	time_t startTime = logTime("Start Time: ");
+    time_t startTime = logTime("Start Time: ");
 
-	std::string success = "Failed.";
-	try {
-		achilles::EventGen generator(runcard, shargs);
-		generator.Initialize();
-		generator.GenerateEvents(batchMode);
-		success = "Success!";
-	} catch(const std::runtime_error &error) { spdlog::error(error.what()); }
+    std::string success = "Failed.";
+    try {
+        achilles::EventGen generator(runcard, shargs);
+        generator.Initialize();
+        generator.GenerateEvents(batchMode);
+        success = "Success!";
+    } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
 
-	spdlog::info("Event Run Concluded - " + success);
-	spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
+    spdlog::info("Event Run Concluded - " + success);
+    spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
 
-	time_t endTime = logTime("End Time: ");
-	spdlog::info("Run Duration: " + formatTime(endTime - startTime));
+    time_t endTime = logTime("End Time: ");
+    spdlog::info("Run Duration: " + formatTime(endTime - startTime));
 }
-}
+} // namespace achilles
 
 int main(int argc, char *argv[]) {
     Splash();
@@ -184,15 +184,14 @@ int main(int argc, char *argv[]) {
     }
 
     std::string runcard = "run.yml";
-    if(args["<input>"].isString())
-        runcard = args["<input>"].asString();
+    if(args["<input>"].isString()) runcard = args["<input>"].asString();
 
     std::vector<std::string> shargs;
     if(args["--sherpa"].isStringList()) shargs = args["--sherpa"].asStringList();
 
     bool batchMode = args["-b"].asBool();
 
-	achilles::GenerateEvents(runcard,shargs,verbosity,log_verbosity,logFilePath,batchMode);
+    achilles::GenerateEvents(runcard, shargs, verbosity, log_verbosity, logFilePath, batchMode);
 
     return 0;
 }
