@@ -50,6 +50,13 @@ void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs
                     int log_verbosity, const std::string &logFilePath, bool batchMode) {
     CreateLogger(verbosity, log_verbosity, 1, logFilePath);
     GitInformation();
+
+    // Install signal handlers
+    std::signal(SIGTERM, SignalHandler);
+    std::signal(SIGSEGV, SignalHandler);
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGABRT, SignalHandler);
+
     // Ensure reference handle is initialized
     achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
                                  "Main Achilles reference"};

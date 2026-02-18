@@ -9,7 +9,7 @@ PYBIND11_MODULE(_achilles, m) {
     m.attr("__version__") = py::cast(fmt::format("achilles {}", ACHILLES_VERSION));
     m.def("set_paths", &achilles::InitializePaths, "Initializes the search paths for Achilles.");
     m.def("generate_events", &achilles::GenerateEvents, "Runs the event generator.",
-          py::arg("runcard") = "run.yml", py::arg("shargs") = shargs, py::arg("verbosity") = 0,
+          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs, py::arg("verbosity") = 0,
           py::arg("log_verbosity") = 0, py::arg("logfile") = "achilles.log",
           py::arg("batch_mode") = false);
 

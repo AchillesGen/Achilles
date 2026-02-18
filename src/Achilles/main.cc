@@ -58,12 +58,6 @@ int main(int argc, char *argv[]) {
                        true,                                          // show help if requested
                        fmt::format("achilles {}", ACHILLES_VERSION)); // version string
 
-    // Install signal handlers
-    std::signal(SIGTERM, SignalHandler);
-    std::signal(SIGSEGV, SignalHandler);
-    std::signal(SIGINT, SignalHandler);
-    std::signal(SIGABRT, SignalHandler);
-
     int verbosity = static_cast<int>(2 - args["-v"].asLong());
     int log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
 
