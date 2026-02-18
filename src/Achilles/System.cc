@@ -13,15 +13,16 @@ std::vector<fs::path> achilles::Filesystem::AchillesPath() {
     std::vector<std::string> tmp;
     if(env) tokenize(std::string(env), tmp, ":");
     for(const auto &path : tmp) dirs.push_back(fs::path(path));
-    dirs.push_back(PathVariables::installShare);
+    dirs.push_back(PathVariables::Instance().RootPath());
     return dirs;
 }
 
 std::vector<std::string> achilles::Filesystem::GetPluginPaths() {
+    spdlog::info("Plugin: Getting search paths {}", achilles::PathVariables::Instance().LibsPath());
     std::vector<std::string> dirs;
     const char *env = std::getenv("ACHILLES_PLUGIN_PATH");
     if(env) achilles::tokenize(std::string(env), dirs, ":");
-    dirs.push_back(achilles::PathVariables::installLibs);
+    dirs.push_back(achilles::PathVariables::Instance().LibsPath());
     return dirs;
 }
 

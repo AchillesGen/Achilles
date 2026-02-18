@@ -70,6 +70,16 @@ CPMAddPackage(
         "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
+if(ACHILLES_ENABLE_PYTHON)
+find_package(python COMPONENTS Interpreter Development)
+CPMFindPackage(
+    NAME pybind11
+    VERSION 2.13.6
+    GITHUB_REPOSITORY pybind/pybind11
+    GIT_TAG "v2.13.6"
+)
+endif(ACHILLES_ENABLE_PYTHON)
+
 # Install testing framework
 if(ACHILLES_ENABLE_TESTING)
     # Catch2

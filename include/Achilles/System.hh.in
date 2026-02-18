@@ -45,19 +45,43 @@ namespace SystemVariables {
     const std::regex validPluginName(pluginRegex);
 }
 
-namespace PathVariables {
-    const fs::path buildPath = "@BUILDPATH@";
-    const fs::path installPath = "@INSTALLPATH@";
-    const fs::path buildLibs = buildPath / "lib";
-    const fs::path installLibs = installPath / "lib";
-    const fs::path buildData = buildPath / "data";
-    const fs::path buildFlux = buildPath / "flux";
-    const fs::path installShare = installPath / "share/Achilles";
-    const fs::path installFlux = installShare / "flux";
-    const fs::path installData = installShare / "data";
-    const fs::path installDefaults = installData / "default";
+class PathVariables {
+  public:
+    void InitializeStandalone() {
+        rootPath = "@INSTALLPATH@";
+        libsPath = rootPath / "lib";
+        sharePath = rootPath / "share/Achilles";
+        fluxPath = sharePath / "flux";
+        dataPath = sharePath / "data";
+        defaultsPath = dataPath / "default";
+    }
+
+    void InitializePython(fs::path root, fs::path libs, fs::path data, fs::path flux) {
+        rootPath = root;
+        libsPath = libs;
+        dataPath = data;
+        fluxPath = flux;
+    }
+
+    fs::path RootPath() const { return rootPath; }
+    fs::path DataPath() const { return dataPath; }
+    fs::path LibsPath() const { return libsPath; }
+    fs::path CachePath() const { return cacheDefault; }
+
+    static PathVariables &Instance() {
+        static PathVariables global_paths;
+        return global_paths;
+    }
+
+  private:
+    fs::path rootPath;
+    fs::path libsPath;
+    fs::path sharePath;
+    fs::path fluxPath;
+    fs::path dataPath;
+    fs::path defaultsPath;
     const fs::path cacheDefault = ".achilles/cache";
-}
+};
 
 namespace Filesystem {
 
@@ -96,7 +120,7 @@ class Cache {
     }
 
   private:
-    fs::path m_path{PathVariables::cacheDefault};
+    fs::path m_path{PathVariables::Instance().CachePath()};
 };
 
 enum class FileType {

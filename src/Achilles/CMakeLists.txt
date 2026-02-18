@@ -138,29 +138,18 @@ target_link_libraries(event_gen PRIVATE project_warnings
                                        AchillesCascadeInteractions) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
-                            # pybind11_add_module(_achilles MODULE
-                            #     # Main file
-                            #     PyBindings.cc
-                            #
-                            #     # Utilities
-                            #     LoggingModule.cc
-                            #     ConstantsModule.cc
-                            #     InterpolationModule.cc
-                            #
-                            #     # Physics objects
-                            #     VectorModule.cc
-                            #     ParticleModule.cc
-                            #     ParticleInfoModule.cc
-                            #     NucleusModule.cc
-                            #
-                            #     # Calculation modules
-                            #     InteractionsModule.cc
-                            #     CascadeModule.cc
-                            # )
-                            # target_link_libraries(_achilles PRIVATE project_warnings
-                            #                               PUBLIC spdlog::spdlog utilities physics)
+if(ACHILLES_ENABLE_PYTHON)
+    pybind11_add_module(_achilles MODULE
+        # Main file
+        PyBindings.cc
+        AchillesInit.cc
+    )
+target_link_libraries(_achilles PRIVATE project_warnings
+                                PUBLIC event_gen cmake_git_version_tracking plugin_manager dl)
+install(TARGETS _achilles DESTINATION Achilles)
+endif(ACHILLES_ENABLE_PYTHON)
 
-add_executable(achilles main.cc)
+add_executable(achilles main.cc AchillesInit.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles plugin_manager)

@@ -231,3 +231,10 @@ install(DIRECTORY
     ${CMAKE_BINARY_DIR}/examples
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+
+if(ACHILLES_ENABLE_PYTHON)
+install(DIRECTORY data
+        DESTINATION Achilles)
+install(DIRECTORY flux
+        DESTINATION Achilles)
+endif(ACHILLES_ENABLE_PYTHON)

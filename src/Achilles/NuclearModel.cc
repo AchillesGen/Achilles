@@ -178,8 +178,9 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     } catch(const AchillesLoadError &e) {
         spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as "
                      "FormFactorsDefault.yml",
-                     PathVariables::installDefaults / "FormFactors.yml");
-        fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+                     PathVariables::Instance().RootPath() / "FormFactors.yml");
+        fs::copy(PathVariables::Instance().RootPath() / "FormFactors.yml",
+                 "FormFactorsDefault.yml");
         return YAML::LoadFile("FormFactorsDefault.yml");
     }
 }

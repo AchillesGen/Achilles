@@ -8,11 +8,12 @@ option(ACHILLES_ENABLE_SHERPA "Enable the generation of events using Sherpa" OFF
 option(ACHILLES_ENABLE_ROOT "Enable reading of ROOT flux files" OFF)
 SET(ACHILLES_ENABLE_HEPMC3 TRUE)
 
-# BUild options
+# Build options
 option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" ON)
 option(ACHILLES_ENABLE_GZIP "Enable compression of event files" ON)
 option(ACHILLES_ENABLE_PCH "Enable Precompiled Headers" OFF)
 option(ACHILLES_ENABLE_TESTING "Enable Test Builds" OFF)
+option(ACHILLES_ENABLE_PYTHON "Enable python interface" OFF)
 
 # Achilles options for debugging
 option(ACHILLES_LOW_MEMORY "Reduce Achilles memory usage at cost of performance" OFF)
