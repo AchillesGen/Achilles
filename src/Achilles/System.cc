@@ -5,6 +5,11 @@
 
 using achilles::Filesystem::Cache;
 
+achilles::PathVariables &achilles::PathVariables::Instance() {
+    static PathVariables global_paths;
+    return global_paths;
+}
+
 // Function to load the search path for Achilles files
 std::vector<fs::path> achilles::Filesystem::AchillesPath() {
     std::vector<fs::path> dirs;

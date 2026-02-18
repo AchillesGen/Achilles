@@ -68,10 +68,7 @@ class PathVariables {
     fs::path LibsPath() const { return libsPath; }
     fs::path CachePath() const { return cacheDefault; }
 
-    static PathVariables &Instance() {
-        static PathVariables global_paths;
-        return global_paths;
-    }
+    static PathVariables &Instance();
 
   private:
     fs::path rootPath;
