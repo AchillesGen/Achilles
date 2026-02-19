@@ -20,10 +20,7 @@ struct Reference {
 
 class ReferenceHandler {
   public:
-    static ReferenceHandler &Handle() {
-        static ReferenceHandler handle;
-        return handle;
-    }
+    static ReferenceHandler &Handle();
     ~ReferenceHandler() { WriteReferences(); }
 
     void AddReference(Reference ref) { m_references[ref.id] = std::move(ref); }

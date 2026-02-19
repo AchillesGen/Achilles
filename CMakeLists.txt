@@ -237,4 +237,6 @@ install(DIRECTORY data
         DESTINATION Achilles)
 install(DIRECTORY flux
         DESTINATION Achilles)
+install(FILES FormFactors.yml
+        DESTINATION Achilles)
 endif(ACHILLES_ENABLE_PYTHON)
