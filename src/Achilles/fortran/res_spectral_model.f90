@@ -2,6 +2,7 @@ module res_spectral_model
     use iso_c_binding
     use nuclear_model
     use libspectral_function  
+    use liblogging
     implicit none
     private
     public :: res_spec, build_res_spec
@@ -25,31 +26,51 @@ contains
 
     function res_spec_init(self, filename, params)
         use libutilities
+        use libsystem
         use dirac_matrices_pi
         use libmap
         
         class(res_spec), intent(inout) :: self
         integer :: ios, i
         character(len=*), intent(in) :: filename
+        character(len=:), allocatable :: filepath
         type(map), intent(in) :: params
         character(len=200) :: string
         integer, parameter :: read_unit = 99
         logical :: res_spec_init
         character(len=:), allocatable :: trim_string 
         integer*8 :: length
+        character(len=256) :: error_message
 
-        open(unit=read_unit, file=trim(filename), iostat=ios)
+        call logger%debug("Initializing DCC Res")
+        filepath = find_file(filename, "DCC Resonance")
+        call logger%debug("DCC Resonance Model: Loading param file "//trim(filepath))
+        open(unit=read_unit, file=trim(filepath), iostat=ios, iomsg=error_message)
         if( ios /= 0 ) then
             res_spec_init = .false.
+            call logger%error("DCC Resonance Model: "//error_message)
+            close(read_unit)
             return
         endif
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            res_spec_init = .false.
+            call logger%error("DCC Resonance Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
         spectral_p = spectral_function(trim_string)
 
-        read(read_unit, '(A)', iostat=ios) string
+        read(read_unit, '(A)', iostat=ios, iomsg=error_message) string
+        if( ios /= 0 ) then
+            res_spec_init = .false.
+            call logger%error("DCC Resonance Model: "//error_message)
+            close(read_unit)
+            return
+        endif
         trim_string = trim(string)
         length=len(trim_string)
         spectral_n = spectral_function(trim_string)
