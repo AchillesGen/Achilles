@@ -2,6 +2,8 @@ from ._achilles import __version__, set_paths, generate_events
 from importlib.resources import files, as_file
 from pathlib import Path
 
+# Register the fortran models
+_achilles.register_fortran_models()
 
 with as_file(files("Achilles")) as root_dir:
     root_dir = Path(root_dir)

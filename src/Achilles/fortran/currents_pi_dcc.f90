@@ -39,6 +39,7 @@ subroutine current_init(p1_in,pp1_in,q_in,kpi_in)
 end subroutine
 
 subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
+   use libsystem
    implicit none     
    integer*4 :: i1,f1,i,j,ip
    integer*8 :: hid1,hid2,mesid1,DCC_mode,sumIDS
@@ -46,6 +47,7 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
    complex*16 :: zjmup(-1:1,-1:1,4)
    complex*16 :: J_mu(nspin_f,nspin_in,4)
    logical :: has_axial
+   character(len=:), allocatable :: filepath
 
    ! print*, mesid1, hid1, hid2
    if(hid1.eq.2212) then
@@ -119,7 +121,8 @@ subroutine hadr_curr_matrix_el(hid1,hid2,mesid1,has_axial,J_mu)
         return
    endif
 
-   call amplitude(q,pp1,kpi,DCC_mode,0,hid1,mesid1,1,zjmup(:,:,:))
+   filepath = find_file("data/dcc_EW.dat", "DCC Resonance")
+   call amplitude(q,pp1,kpi,DCC_mode,0,hid1,mesid1,1,zjmup(:,:,:),trim(filepath))
 
    J_mu(1,1,:)=zjmup(-1,-1,:)
    J_mu(1,2,:)=zjmup(-1,1,:)

@@ -1,6 +1,7 @@
 #include "Achilles/PyBindings.hh"
 #include "Achilles/AchillesInit.hh"
 #include "Achilles/Version.hh"
+#include "Achilles/fortran/FNuclearModel.hh"
 #include "fmt/core.h"
 
 PYBIND11_MODULE(_achilles, m) {
@@ -8,9 +9,18 @@ PYBIND11_MODULE(_achilles, m) {
     std::vector<std::string> shargs;
     m.attr("__version__") = py::cast(fmt::format("achilles {}", ACHILLES_VERSION));
     m.def("set_paths", &achilles::InitializePaths, "Initializes the search paths for Achilles.");
+    m.def("register_fortran_models", &achilles::FortranModel::RegisterModels,
+          "Register all the fortran models");
+    // verbosity levels:
+    // trace = 0
+    // debug = 1
+    // info = 2
+    // warn = 3
+    // error = 4
+    // TODO: Adjust to use an enum that is also mapped to python
     m.def("generate_events", &achilles::GenerateEvents, "Runs the event generator.",
-          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs, py::arg("verbosity") = 0,
-          py::arg("log_verbosity") = 0, py::arg("logfile") = "achilles.log",
+          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs, py::arg("verbosity") = 2,
+          py::arg("log_verbosity") = 2, py::arg("logfile") = "achilles.log",
           py::arg("batch_mode") = false);
 
     // TODO: This is an outdated interface. We should update or remove
