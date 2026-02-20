@@ -104,7 +104,7 @@ c
       dimension isp(-1:1),zcrnt(2,2,-1:2)
      &  ,zcrntx(2,2,-1:2),zsumx(2,2)
       common / eps_tpin / eps_tpin
-      character(len=256) filepath
+      character(len=*), intent(in) :: filepath
       data init /1/
       data ixi_cnv /1,2,5,6,3,4,7,8/
       data isp /2,0,1/
@@ -461,7 +461,7 @@ c
       common / zamp_pin_save / zamp_pin_save(maxmom,npar,maxlsj)
       common / eps_tpin / eps_tpin
       common / igmbs / tm_f,igmbs(npar),igmb_final_meson
-      character(len=256) filepath
+      character(len=*), intent(in) :: filepath
       dimension id1(4),id2(4),itizs(2),cgiso(-1:1,3)
      &  ,pmom_mid(maxmom)
       data id1 /1,2,3,7/

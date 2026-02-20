@@ -18,7 +18,7 @@ std::vector<fs::path> achilles::Filesystem::AchillesPath() {
     std::vector<std::string> tmp;
     if(env) tokenize(std::string(env), tmp, ":");
     for(const auto &path : tmp) dirs.push_back(fs::path(path));
-    dirs.push_back(PathVariables::Instance().RootPath());
+    dirs.push_back(PathVariables::Instance().SharePath());
     return dirs;
 }
 
