@@ -46,29 +46,29 @@ void InitializePaths(const fs::path &root, const fs::path &libs, const fs::path 
     achilles::PathVariables::Instance().InitializePython(root, libs, data, flux);
 }
 
-static bool initialized=false;
+static bool initialized = false;
 
 void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs, int verbosity,
-					int log_verbosity, const std::string &logFilePath, bool batchMode) {
-	if(!initialized) {
-		CreateLogger(verbosity, log_verbosity, 1, logFilePath);
-		GitInformation();
+                    int log_verbosity, const std::string &logFilePath, bool batchMode) {
+    if(!initialized) {
+        CreateLogger(verbosity, log_verbosity, 1, logFilePath);
+        GitInformation();
 
-		// Install signal handlers
-		std::signal(SIGTERM, SignalHandler);
-		std::signal(SIGSEGV, SignalHandler);
-		std::signal(SIGINT, SignalHandler);
-		std::signal(SIGABRT, SignalHandler);
+        // Install signal handlers
+        std::signal(SIGTERM, SignalHandler);
+        std::signal(SIGSEGV, SignalHandler);
+        std::signal(SIGINT, SignalHandler);
+        std::signal(SIGABRT, SignalHandler);
 
-		// Ensure reference handle is initialized
-		achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
-		                         "Main Achilles reference"};
-		achilles::ReferenceHandler &ref_handler = achilles::ReferenceHandler::Handle();
-		ref_handler.AddReference(main_ref);
+        // Ensure reference handle is initialized
+        achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
+                                     "Main Achilles reference"};
+        achilles::ReferenceHandler &ref_handler = achilles::ReferenceHandler::Handle();
+        ref_handler.AddReference(main_ref);
 
-		achilles::Plugin::Manager plugin_manager;
-		initialized=true;
-	}
+        achilles::Plugin::Manager plugin_manager;
+        initialized = true;
+    }
 
     if(!fs::exists(runcard)) {
         if(runcard == "run.yml") {
