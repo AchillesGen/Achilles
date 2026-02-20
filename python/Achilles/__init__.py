@@ -1,4 +1,4 @@
-from ._achilles import __version__, set_paths, generate_events
+from ._achilles import __version__, set_paths, initialize_logging, generate_events
 from importlib.resources import files, as_file
 from pathlib import Path
 
@@ -16,4 +16,4 @@ with as_file(files("Achilles")) as root_dir:
     
     set_paths(root_dir, libs_dir, data_dir, flux_dir)
 
-__all__ = ["__version__", "set_paths", "generate_events"]
+__all__ = ["__version__", "set_paths", "initialize_logging", "generate_events"]

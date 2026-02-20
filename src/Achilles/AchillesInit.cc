@@ -47,28 +47,41 @@ void InitializePaths(const fs::path &root, const fs::path &libs, const fs::path 
 }
 
 static bool initialized = false;
+static std::string logFilePath;
 
-void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs, int verbosity,
-                    int log_verbosity, const std::string &logFilePath, bool batchMode) {
-    if(!initialized) {
-        CreateLogger(verbosity, log_verbosity, 1, logFilePath);
-        GitInformation();
+void InitializeLogging(int verbosity,int log_verbosity, std::string logfile) {
 
-        // Install signal handlers
-        std::signal(SIGTERM, SignalHandler);
-        std::signal(SIGSEGV, SignalHandler);
-        std::signal(SIGINT, SignalHandler);
-        std::signal(SIGABRT, SignalHandler);
+	// If a python user calls initialize_logging() more than once, they should be warned
+	if(initialized) {
+		spdlog::warn("Logger has already been initialized, ignoring this call");
+		return;
+	}
 
-        // Ensure reference handle is initialized
-        achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
-                                     "Main Achilles reference"};
-        achilles::ReferenceHandler &ref_handler = achilles::ReferenceHandler::Handle();
-        ref_handler.AddReference(main_ref);
+	logFilePath=logfile;
+	CreateLogger(verbosity, log_verbosity, 1, logfile);
+	GitInformation();
 
-        achilles::Plugin::Manager plugin_manager;
-        initialized = true;
-    }
+	// Install signal handlers
+	std::signal(SIGTERM, SignalHandler);
+	std::signal(SIGSEGV, SignalHandler);
+	std::signal(SIGINT, SignalHandler);
+	std::signal(SIGABRT, SignalHandler);
+
+	// Ensure reference handle is initialized
+	achilles::Reference main_ref{achilles::ReferenceType::inspire, "Isaacson:2022cwh",
+	                             "Main Achilles reference"};
+	achilles::ReferenceHandler &ref_handler = achilles::ReferenceHandler::Handle();
+	ref_handler.AddReference(main_ref);
+
+	achilles::Plugin::Manager plugin_manager;
+	initialized = true;
+}
+
+void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs, bool batchMode) {
+
+	// Python users should be able to call "generate_events()" without needing to initialize_logging first.
+	if(!initialized)
+		InitializeLogging(2,2,"achilles.log");
 
     if(!fs::exists(runcard)) {
         if(runcard == "run.yml") {

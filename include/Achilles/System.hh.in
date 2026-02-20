@@ -58,6 +58,7 @@ class PathVariables {
 
     void InitializePython(fs::path root, fs::path libs, fs::path data, fs::path flux) {
         rootPath = root;
+		sharePath = root;
         libsPath = libs;
         dataPath = data;
         fluxPath = flux;
