@@ -105,7 +105,7 @@ int main(int argc, char *argv[]) {
 
     bool batchMode = args["-b"].asBool();
 
-	achilles::InitializeLogging(verbosity, log_verbosity, logFilePath);
+    achilles::InitializeLogging(verbosity, log_verbosity, logFilePath);
     achilles::GenerateEvents(runcard, shargs, batchMode);
 
     return 0;

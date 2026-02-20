@@ -11,8 +11,10 @@ PYBIND11_MODULE(_achilles, m) {
     m.def("set_paths", &achilles::InitializePaths, "Initializes the search paths for Achilles.");
     m.def("register_fortran_models", &achilles::FortranModel::RegisterModels,
           "Register all the fortran models");
-	m.def("initialize_logging", &achilles::InitializeLogging, "Sets logger settings. Can only be called once, before generating events.",
-		  py::arg("verbosity") = 2,py::arg("log_verbosity") = 2, py::arg("logfile") = "achilles.log");
+    m.def("initialize_logging", &achilles::InitializeLogging,
+          "Sets logger settings. Can only be called once, before generating events.",
+          py::arg("verbosity") = 2, py::arg("log_verbosity") = 2,
+          py::arg("logfile") = "achilles.log");
     // verbosity levels:
     // trace = 0
     // debug = 1
@@ -21,7 +23,8 @@ PYBIND11_MODULE(_achilles, m) {
     // error = 4
     // TODO: Adjust to use an enum that is also mapped to python
     m.def("generate_events", &achilles::GenerateEvents, "Runs the event generator.",
-          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs, py::arg("batch_mode") = false);
+          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs,
+          py::arg("batch_mode") = false);
 
     // TODO: This is an outdated interface. We should update or remove
     // // Utilities
