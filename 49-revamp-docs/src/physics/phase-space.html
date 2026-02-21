@@ -1,0 +1,603 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Phase-Space Sampling and Unweighting &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics/phase-space';</script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Nucleus Configuration" href="nucleus.html" />
+    <link rel="prev" title="Form Factors" href="form-factors.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.svg" class="logo__image only-dark" alt="Achilles 0.3.0 documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="form-factors.html">Form Factors</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/src/physics/phase-space.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Phase-Space Sampling and Unweighting</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hadronic-phase-space-generators">Hadronic phase-space generators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vegas-adaptive-integration">Vegas adaptive integration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multichannel-integration">MultiChannel integration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options-settings-and-their-effect">Options settings and their effect</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#unweighted-events-and-the-percentile-algorithm">Unweighted events and the Percentile algorithm</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="phase-space-sampling-and-unweighting">
+<span id="phase-space-unweighting"></span><h1>Phase-Space Sampling and Unweighting<a class="headerlink" href="#phase-space-sampling-and-unweighting" title="Link to this heading">#</a></h1>
+<p>Achilles uses adaptive Monte Carlo integration to evaluate the cross section and
+generate events. This section describes the integration machinery, the
+hadronic phase-space generators, and the unweighting algorithm.</p>
+<section id="hadronic-phase-space-generators">
+<h2>Hadronic phase-space generators<a class="headerlink" href="#hadronic-phase-space-generators" title="Link to this heading">#</a></h2>
+<p>Each nuclear model declares the name of the phase-space generator it requires
+via its <code class="docutils literal notranslate"><span class="pre">PSName()</span></code> method. The generator is responsible for mapping random
+numbers to hadronic initial-state four-momenta. The three built-in generators
+are:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 22.0%" />
+<col style="width: 10.0%" />
+<col style="width: 68.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Generator name</p></th>
+<th class="head"><p>Dimensions</p></th>
+<th class="head"><p>What it samples</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">OneBodySpectral</span></code></p></td>
+<td><p>4</p></td>
+<td><p>Used by <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code>, <code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code>, and the Fortran QE and RES
+models. Draws one nucleon from the spectral function: nucleon momentum
+magnitude <span class="math notranslate nohighlight">\(|\boldsymbol{p}|\)</span>, polar angle <span class="math notranslate nohighlight">\(\theta\)</span>, azimuthal
+angle <span class="math notranslate nohighlight">\(\phi\)</span>, and removal energy <span class="math notranslate nohighlight">\(E_r\)</span>. Kinematic limits are
+set dynamically from the beam energy and nucleon mass.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></p></td>
+<td><p>0</p></td>
+<td><p>Used by the <code class="docutils literal notranslate"><span class="pre">Coherent</span></code> model. The hadronic state is the nucleus at rest,
+so no random variables are needed.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">IntfSpectral</span></code></p></td>
+<td><p>7</p></td>
+<td><p>Used by the Fortran <code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code> model. Draws two nucleons: the
+active nucleon (3 variables: <span class="math notranslate nohighlight">\(|\boldsymbol{p}_1|\)</span>, <span class="math notranslate nohighlight">\(\theta_1\)</span>,
+<span class="math notranslate nohighlight">\(\phi_1\)</span>) plus its removal energy <span class="math notranslate nohighlight">\(E_{r,1}\)</span>, and the spectator
+nucleon (3 variables: <span class="math notranslate nohighlight">\(|\boldsymbol{p}_2|\)</span>, <span class="math notranslate nohighlight">\(\theta_2\)</span>,
+<span class="math notranslate nohighlight">\(\phi_2\)</span> sampled uniformly up to 400 MeV).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="vegas-adaptive-integration">
+<h2>Vegas adaptive integration<a class="headerlink" href="#vegas-adaptive-integration" title="Link to this heading">#</a></h2>
+<p>The innermost integration engine is <strong>Vegas</strong> <span id="id1">[]</span>, which
+adapts a multi-dimensional grid to importance-sample the integrand efficiently.</p>
+<p>The integration proceeds in iterations. After each iteration the grid boundaries
+are shifted to allocate more sampling density to bins that contributed the most
+variance. This is controlled by the adaptation parameter <code class="docutils literal notranslate"><span class="pre">alpha</span></code> (default 1.5;
+higher values produce more aggressive re-binning). The grid is periodically
+refined by halving bin widths and doubling the number of calls per iteration.</p>
+<p>Convergence is declared when both of the following are satisfied
+simultaneously:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\sigma_I}{|\bar{I}|} &lt; r_{\rm tol}
+\quad \text{and} \quad
+\sigma_I &lt; a_{\rm tol}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\bar{I}\)</span> is the current integral estimate, <span class="math notranslate nohighlight">\(\sigma_I\)</span> is its
+standard error, and <span class="math notranslate nohighlight">\(r_{\rm tol}\)</span>, <span class="math notranslate nohighlight">\(a_{\rm tol}\)</span> are the relative
+and absolute tolerances. The <code class="docutils literal notranslate"><span class="pre">Accuracy</span></code> run-card parameter sets
+<span class="math notranslate nohighlight">\(r_{\rm tol}\)</span> (and <span class="math notranslate nohighlight">\(a_{\rm tol}\)</span> to the same value).</p>
+</section>
+<section id="multichannel-integration">
+<h2>MultiChannel integration<a class="headerlink" href="#multichannel-integration" title="Link to this heading">#</a></h2>
+<p>Achilles uses <strong>MultiChannel</strong> integration on top of Vegas. Several importance-
+sampling channels (corresponding to different phase-space topologies or Feynman
+diagrams) run in parallel, each with its own Vegas grid. After each iteration the
+channel weights are updated: channels that explain more of the integrand’s
+variance receive larger weights, while channels with negligible contribution are
+suppressed (but never below a minimum floor <code class="docutils literal notranslate"><span class="pre">min_alpha</span> <span class="pre">=</span> <span class="pre">1e-5</span></code> to prevent
+permanent elimination).</p>
+<p>The combined estimator is:</p>
+<div class="math notranslate nohighlight">
+\[I = \sum_i \alpha_i \, I_i, \qquad \alpha_i \geq 0,\;\sum_i\alpha_i = 1\]</div>
+<p>where <span class="math notranslate nohighlight">\(\alpha_i\)</span> are the adaptive channel weights and <span class="math notranslate nohighlight">\(I_i\)</span> is the
+integral from channel <span class="math notranslate nohighlight">\(i\)</span>. The weights evolve automatically and do not
+require user input. The <code class="docutils literal notranslate"><span class="pre">Accuracy</span></code> parameter controls the termination of the
+multichannel optimisation phase via the same relative-tolerance criterion as
+Vegas.</p>
+</section>
+<section id="options-settings-and-their-effect">
+<h2>Options settings and their effect<a class="headerlink" href="#options-settings-and-their-effect" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Options</span></code> run-card section controls both the random seed and the integration
+accuracy. For details of the YAML syntax see the run-card documentation; the
+physics meaning of each setting is:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Setting</p></th>
+<th class="head"><p>Effect</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Initialize</span> <span class="pre">→</span> <span class="pre">Seed</span></code></p></td>
+<td><p>Seeds the global pseudo-random number generator before any integration
+or sampling begins. Using the same seed with the same run card exactly
+reproduces the sequence of random numbers and therefore the same sequence
+of accepted events (up to floating-point portability). Change the seed to
+generate statistically independent runs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Initialize</span> <span class="pre">→</span> <span class="pre">Accuracy</span></code></p></td>
+<td><p>Sets the relative (and absolute) tolerance <span class="math notranslate nohighlight">\(r_{\rm tol}\)</span> for the
+convergence test. Smaller values require more Vegas iterations and function
+evaluations before the integration is considered converged, but produce a
+more reliable estimate of the total cross section. Typical values:
+<code class="docutils literal notranslate"><span class="pre">1e-2</span></code> (fast, for exploratory runs), <code class="docutils literal notranslate"><span class="pre">1e-3</span></code> (production quality).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="unweighted-events-and-the-percentile-algorithm">
+<h2>Unweighted events and the Percentile algorithm<a class="headerlink" href="#unweighted-events-and-the-percentile-algorithm" title="Link to this heading">#</a></h2>
+<p>After the integration phase, Achilles generates <em>unweighted</em> events — events
+that each represent the same “amount” of physics and can be treated as equally
+likely. This is done by accept/reject on the event weight <span class="math notranslate nohighlight">\(w\)</span>:</p>
+<div class="math notranslate nohighlight">
+\[P(\text{accept}) = \frac{|w|}{w_{\rm max}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is a chosen maximum weight. Events with
+<span class="math notranslate nohighlight">\(|w| &gt; w_{\rm max}\)</span> are accepted with probability 1 but assigned a
+residual weight <span class="math notranslate nohighlight">\(|w|/w_{\rm max}\)</span> (they remain partially weighted).</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">Percentile</span></code> algorithm sets <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> to the <span class="math notranslate nohighlight">\(p\)</span>-th
+percentile of all event weights seen during integration:</p>
+<ul class="simple">
+<li><p><strong>High percentile</strong> (e.g. 99): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is large, so almost all
+events are accepted, but rare large-weight events may survive as partially
+weighted outliers.</p></li>
+<li><p><strong>Low percentile</strong> (e.g. 80): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is small, so more events
+are rejected outright, giving a more uniform sample at the cost of generation
+efficiency.</p></li>
+</ul>
+<p>The percentile is tracked exactly using an online algorithm as integration
+proceeds, so no second pass over the data is needed.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">percentile</span></code> run-card parameter (0–100) directly sets <span class="math notranslate nohighlight">\(p\)</span>.
+A value of <code class="docutils literal notranslate"><span class="pre">99</span></code> is recommended for most production runs: it discards the
+top 1 % of weights, which are typically integration-grid artefacts, while
+keeping 99 % of events fully unweighted.</p>
+<p>The unweighting efficiency (fraction of phase-space points that produce an
+accepted event) is printed in the Achilles log after event generation.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="form-factors.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Form Factors</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="nucleus.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Nucleus Configuration</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hadronic-phase-space-generators">Hadronic phase-space generators</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#vegas-adaptive-integration">Vegas adaptive integration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multichannel-integration">MultiChannel integration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options-settings-and-their-effect">Options settings and their effect</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#unweighted-events-and-the-percentile-algorithm">Unweighted events and the Percentile algorithm</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -43,11 +43,12 @@
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/interfaces';</script>
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="References" href="references.html" />
+    <link rel="next" title="Physics Guide" href="physics-guide.html" />
     <link rel="prev" title="3. Run Card Structure" href="run-card.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -158,11 +159,24 @@
  </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <ul class="current nav bd-sidenav">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">2. Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-card.html">3. Run Card Structure</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="physics/nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
@@ -314,7 +328,21 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-model-abstract-type">4.1.1. The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#currents-argument-list">4.1.1.1. <code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#init-wgt-argument-list">4.1.1.2. <code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-modelfactory-type">4.1.2. The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cfortran-bridge-nuclear-model-interface">4.1.3. C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-fortranmodel-c-class">4.1.4. The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ward-gauge-corrections">4.1.4.1. Ward Gauge Corrections</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementing-a-new-fortran-model">4.1.5. Implementing a New Fortran Model</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
 </ul>
             </nav>
@@ -331,15 +359,437 @@ document.write(`
 <h1><span class="section-number">4. </span>Interfaces<a class="headerlink" href="#interfaces" title="Link to this heading">#</a></h1>
 <nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#fortran-interface" id="id3">Fortran Interface</a></p></li>
-<li><p><a class="reference internal" href="#sherpa-interface" id="id4">Sherpa Interface</a></p></li>
+<li><p><a class="reference internal" href="#fortran-interface" id="id3">Fortran Interface</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-model-abstract-type" id="id4">The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a></p>
+<ul>
+<li><p><a class="reference internal" href="#currents-argument-list" id="id5"><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a></p></li>
+<li><p><a class="reference internal" href="#init-wgt-argument-list" id="id6"><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#the-modelfactory-type" id="id7">The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a></p></li>
+<li><p><a class="reference internal" href="#cfortran-bridge-nuclear-model-interface" id="id8">C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#the-fortranmodel-c-class" id="id9">The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a></p>
+<ul>
+<li><p><a class="reference internal" href="#ward-gauge-corrections" id="id10">Ward Gauge Corrections</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#implementing-a-new-fortran-model" id="id11">Implementing a New Fortran Model</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#sherpa-interface" id="id12">Sherpa Interface</a></p></li>
 </ul>
 </nav>
 <section id="fortran-interface">
 <span id="id1"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">4.1. </span>Fortran Interface</a><a class="headerlink" href="#fortran-interface" title="Link to this heading">#</a></h2>
+<p>Achilles provides a Fortran interface that allows nuclear models written in Fortran to be
+used directly within the C++ framework. The interface is structured in three layers:</p>
+<ol class="arabic simple">
+<li><p>An abstract Fortran base type (<code class="docutils literal notranslate"><span class="pre">model</span></code>) that a user implements.</p></li>
+<li><p>A Fortran factory (<code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code>) that manages registration and instantiation of models.</p></li>
+<li><p>A set of ISO C-bound procedures (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>) that bridge Fortran to the
+C++ <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> class.</p></li>
+</ol>
+<p>The overall flow when running a simulation is:</p>
+<ul class="simple">
+<li><p>At startup, <code class="docutils literal notranslate"><span class="pre">FortranModel::RegisterModels()</span></code> calls the Fortran <code class="docutils literal notranslate"><span class="pre">RegisterAll()</span></code> routine,
+which registers every available Fortran model with the factory.</p></li>
+<li><p>When the YAML run card requests a Fortran-backed nuclear model, <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> calls
+<code class="docutils literal notranslate"><span class="pre">CreateModel</span></code> to instantiate it and <code class="docutils literal notranslate"><span class="pre">InitModel</span></code> to configure it from the supplied
+configuration file and parameter map.</p></li>
+<li><p>During event generation <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> delegates the current calculation and initial-state
+weighting to the Fortran model via <code class="docutils literal notranslate"><span class="pre">GetCurrents</span></code> and <code class="docutils literal notranslate"><span class="pre">GetInitialStateWeight</span></code>.</p></li>
+</ul>
+<section id="the-model-abstract-type">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">4.1.1. </span>The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a><a class="headerlink" href="#the-model-abstract-type" title="Link to this heading">#</a></h3>
+<p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model.f90</span></code></p>
+<p>Every Fortran nuclear model must extend the abstract <code class="docutils literal notranslate"><span class="pre">model</span></code> type and implement all of
+its deferred procedures.</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">type</span><span class="p">,</span><span class="w"> </span><span class="k">abstract</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">model</span>
+<span class="w">    </span><span class="k">contains</span>
+<span class="k">        procedure</span><span class="p">(</span><span class="n">nm_init</span><span class="p">),</span><span class="w">     </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">init</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_cleanup</span><span class="p">),</span><span class="w">  </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">cleanup</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_mode</span><span class="p">),</span><span class="w">     </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">mode</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w">                                 </span><span class="kd">::</span><span class="w"> </span><span class="n">frame</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">nm_frame</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_name</span><span class="p">),</span><span class="w">     </span><span class="k">deferred</span><span class="p">,</span><span class="w"> </span><span class="k">nopass</span><span class="w">  </span><span class="kd">::</span><span class="w"> </span><span class="n">model_name</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_psname</span><span class="p">),</span><span class="w">   </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">ps_name</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_currents</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">currents</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_init_wgt</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="w">          </span><span class="kd">::</span><span class="w"> </span><span class="n">init_wgt</span>
+<span class="w">        </span><span class="k">procedure</span><span class="p">(</span><span class="n">nm_inspirehep</span><span class="p">),</span><span class="w"> </span><span class="k">deferred</span><span class="p">,</span><span class="w"> </span><span class="k">nopass</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">inspirehep</span>
+<span class="k">end type </span><span class="n">model</span>
+</pre></div>
+</div>
+<p>The table below describes each deferred procedure together with its signature and purpose.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 45.0%" />
+<col style="width: 35.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Procedure</p></th>
+<th class="head"><p>Signature</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">logical</span> <span class="pre">function</span> <span class="pre">init(self,</span> <span class="pre">filename,</span> <span class="pre">params)</span></code>
+where <code class="docutils literal notranslate"><span class="pre">filename</span></code> is a Fortran string and <code class="docutils literal notranslate"><span class="pre">params</span></code> is a <code class="docutils literal notranslate"><span class="pre">map</span></code> of
+<code class="docutils literal notranslate"><span class="pre">character</span></code>-keyed <code class="docutils literal notranslate"><span class="pre">real(c_double)</span></code> values.</p></td>
+<td><p>Load model-specific data from <code class="docutils literal notranslate"><span class="pre">filename</span></code> and apply any numeric parameters
+from <code class="docutils literal notranslate"><span class="pre">params</span></code>. Return <code class="docutils literal notranslate"><span class="pre">.true.</span></code> on success.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">cleanup</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">subroutine</span> <span class="pre">cleanup(self)</span></code></p></td>
+<td><p>Deallocate any resources allocated during <code class="docutils literal notranslate"><span class="pre">init</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">integer</span> <span class="pre">function</span> <span class="pre">mode(self)</span></code></p></td>
+<td><p>Return an integer identifying the nuclear interaction mode (e.g. quasi-elastic,
+resonance). The value must match the <code class="docutils literal notranslate"><span class="pre">NuclearMode</span></code> enum in the C++ layer.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">frame</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">integer</span> <span class="pre">function</span> <span class="pre">frame(self)</span></code></p></td>
+<td><p>Return an integer identifying the preferred reference frame. The default
+implementation returns <code class="docutils literal notranslate"><span class="pre">0</span></code> (lab frame). Override only when a different frame
+is required.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">character(len=:),</span> <span class="pre">allocatable</span> <span class="pre">function</span> <span class="pre">model_name()</span></code> (<code class="docutils literal notranslate"><span class="pre">nopass</span></code>)</p></td>
+<td><p>Return the unique string name used to identify this model in the run card and
+factory. Must match the name passed to <code class="docutils literal notranslate"><span class="pre">register_model</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ps_name</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">character(len=:),</span> <span class="pre">allocatable</span> <span class="pre">function</span> <span class="pre">ps_name(self)</span></code></p></td>
+<td><p>Return the name of the phase-space generator required by this model (e.g.
+<code class="docutils literal notranslate"><span class="pre">&quot;QESpectral&quot;</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">currents</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">subroutine</span> <span class="pre">currents(self,</span> <span class="pre">pids_in,</span> <span class="pre">mom_in,</span> <span class="pre">nin,</span> <span class="pre">pids_out,</span> <span class="pre">mom_out,</span> <span class="pre">nout,</span></code>
+<code class="docutils literal notranslate"><span class="pre">pids_spect,</span> <span class="pre">mom_spect,</span> <span class="pre">nspect,</span> <span class="pre">qvec,</span> <span class="pre">ff,</span> <span class="pre">cur,</span> <span class="pre">nspin,</span> <span class="pre">nlorentz)</span></code></p></td>
+<td><p>Compute the hadronic transition current. See <a class="reference internal" href="#currents-signature"><span class="std std-ref">currents Argument List</span></a> below for
+the full argument list.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">real(c_double)</span> <span class="pre">function</span> <span class="pre">init_wgt(self,</span> <span class="pre">pids_in,</span> <span class="pre">mom_in,</span> <span class="pre">nin,</span> <span class="pre">pids_spect,</span></code>
+<code class="docutils literal notranslate"><span class="pre">mom_spect,</span> <span class="pre">nspect,</span> <span class="pre">nproton,</span> <span class="pre">nneutron)</span></code></p></td>
+<td><p>Return the weight from the nuclear initial state (e.g. spectral function or Fermi
+gas distribution). See <a class="reference internal" href="#init-wgt-signature"><span class="std std-ref">init_wgt Argument List</span></a> below.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">inspirehep</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">character(len=:),</span> <span class="pre">allocatable</span> <span class="pre">function</span> <span class="pre">inspirehep()</span></code> (<code class="docutils literal notranslate"><span class="pre">nopass</span></code>)</p></td>
+<td><p>Return the InspireHEP record identifier (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;1234567&quot;</span></code>) for the paper
+describing this model. Used for citations in the output.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="currents-argument-list">
+<span id="currents-signature"></span><h4><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">4.1.1.1. </span><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a><a class="headerlink" href="#currents-argument-list" title="Link to this heading">#</a></h4>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">nm_currents</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="n">pids_in</span><span class="p">,</span><span class="w"> </span><span class="n">mom_in</span><span class="p">,</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">pids_out</span><span class="p">,</span><span class="w"> </span><span class="n">mom_out</span><span class="p">,</span><span class="w"> </span><span class="n">nout</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">pids_spect</span><span class="p">,</span><span class="w"> </span><span class="n">mom_spect</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                       </span><span class="n">qvec</span><span class="p">,</span><span class="w"> </span><span class="n">ff</span><span class="p">,</span><span class="w"> </span><span class="n">cur</span><span class="p">,</span><span class="w"> </span><span class="n">nspin</span><span class="p">,</span><span class="w"> </span><span class="n">nlorentz</span><span class="p">)</span>
+<span class="w">    </span><span class="k">class</span><span class="p">(</span><span class="n">model</span><span class="p">),</span><span class="w">         </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">self</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w">    </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="n">nout</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="n">nspin</span><span class="p">,</span><span class="w"> </span><span class="n">nlorentz</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_long</span><span class="p">),</span><span class="w">      </span><span class="k">dimension</span><span class="p">(</span><span class="n">nin</span><span class="p">),</span><span class="w">    </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pids_in</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_long</span><span class="p">),</span><span class="w">      </span><span class="k">dimension</span><span class="p">(</span><span class="n">nout</span><span class="p">),</span><span class="w">   </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pids_out</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_long</span><span class="p">),</span><span class="w">      </span><span class="k">dimension</span><span class="p">(</span><span class="n">nspect</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pids_spect</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">     </span><span class="k">dimension</span><span class="p">(</span><span class="n">nin</span><span class="p">),</span><span class="w">    </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mom_in</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">     </span><span class="k">dimension</span><span class="p">(</span><span class="n">nout</span><span class="p">),</span><span class="w">   </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mom_out</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">     </span><span class="k">dimension</span><span class="p">(</span><span class="n">nspect</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mom_spect</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">               </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">  </span><span class="kd">::</span><span class="w"> </span><span class="n">qvec</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">complex_map</span><span class="p">),</span><span class="w">              </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w">  </span><span class="kd">::</span><span class="w"> </span><span class="n">ff</span>
+<span class="w">    </span><span class="kt">complex</span><span class="p">(</span><span class="kt">c_double_complex</span><span class="p">),</span><span class="w"> </span><span class="k">dimension</span><span class="p">(</span><span class="n">nlorentz</span><span class="p">,</span><span class="w"> </span><span class="n">nspin</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cur</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ff</span></code> is a map from form-factor name strings to complex values, pre-evaluated at the
+momentum transfer <span class="math notranslate nohighlight">\(Q^2\)</span>. <code class="docutils literal notranslate"><span class="pre">cur</span></code> is filled column-by-column: <code class="docutils literal notranslate"><span class="pre">cur(mu,</span> <span class="pre">spin)</span></code> is
+the <span class="math notranslate nohighlight">\(\mu\)</span>-th Lorentz component for spin state <code class="docutils literal notranslate"><span class="pre">spin</span></code>.</p>
+</section>
+<section id="init-wgt-argument-list">
+<span id="init-wgt-signature"></span><h4><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">4.1.1.2. </span><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a><a class="headerlink" href="#init-wgt-argument-list" title="Link to this heading">#</a></h4>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">nm_init_wgt</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="n">pids_in</span><span class="p">,</span><span class="w"> </span><span class="n">mom_in</span><span class="p">,</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="n">pids_spect</span><span class="p">,</span><span class="w"> </span><span class="n">mom_spect</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
+<span class="w">                     </span><span class="n">nproton</span><span class="p">,</span><span class="w"> </span><span class="n">nneutron</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">wgt</span><span class="p">)</span>
+<span class="w">    </span><span class="k">class</span><span class="p">(</span><span class="n">model</span><span class="p">),</span><span class="w">       </span><span class="k">intent</span><span class="p">(</span><span class="n">inout</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">self</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w">  </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">),</span><span class="w"> </span><span class="k">value</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="n">nproton</span><span class="p">,</span><span class="w"> </span><span class="n">nneutron</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_long</span><span class="p">),</span><span class="w">    </span><span class="k">dimension</span><span class="p">(</span><span class="n">nin</span><span class="p">),</span><span class="w">    </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pids_in</span>
+<span class="w">    </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_long</span><span class="p">),</span><span class="w">    </span><span class="k">dimension</span><span class="p">(</span><span class="n">nspect</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">pids_spect</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">   </span><span class="k">dimension</span><span class="p">(</span><span class="n">nin</span><span class="p">),</span><span class="w">    </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mom_in</span>
+<span class="w">    </span><span class="k">type</span><span class="p">(</span><span class="n">fourvector</span><span class="p">),</span><span class="w">   </span><span class="k">dimension</span><span class="p">(</span><span class="n">nspect</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mom_spect</span>
+<span class="w">    </span><span class="kt">real</span><span class="p">(</span><span class="kt">c_double</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">wgt</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">nproton</span></code> and <code class="docutils literal notranslate"><span class="pre">nneutron</span></code> give the proton and neutron number of the target nucleus.
+The return value is the probability weight for the sampled initial-state configuration.</p>
+</section>
+</section>
+<section id="the-modelfactory-type">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">4.1.2. </span>The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a><a class="headerlink" href="#the-modelfactory-type" title="Link to this heading">#</a></h3>
+<p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model_factory.f90</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> maintains a list of named model constructors and creates model instances
+on demand.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 30.0%" />
+<col style="width: 70.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Procedure</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">init(self)</span></code></p></td>
+<td><p>Initialise the factory (nullify the internal model pointer).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">final(self)</span></code></p></td>
+<td><p>Deallocate and nullify the stored model pointer.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">register_model(self,</span> <span class="pre">name,</span> <span class="pre">construct)</span></code></p></td>
+<td><p>Register a new model. <code class="docutils literal notranslate"><span class="pre">name</span></code> is the unique string identifier (up to 20
+characters); <code class="docutils literal notranslate"><span class="pre">construct</span></code> is a <code class="docutils literal notranslate"><span class="pre">nopass</span></code> function pointer with signature
+<code class="docutils literal notranslate"><span class="pre">class(model),</span> <span class="pre">pointer</span> <span class="pre">function</span> <span class="pre">constructor()</span></code>. Halts if <code class="docutils literal notranslate"><span class="pre">name</span></code> is already
+registered.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">create_model(self,</span> <span class="pre">name)</span></code></p></td>
+<td><p>Return a pointer to a newly-created model matching <code class="docutils literal notranslate"><span class="pre">name</span></code>, or an unassociated
+pointer if no model with that name exists.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">print_models(self)</span></code></p></td>
+<td><p>Write the names of all registered models to standard output.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="cfortran-bridge-nuclear-model-interface">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">4.1.3. </span>C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a><a class="headerlink" href="#cfortran-bridge-nuclear-model-interface" title="Link to this heading">#</a></h3>
+<p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model_interface.f90</span></code></p>
+<p>This module exposes ISO C-bound procedures consumed by the C++ <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> class.
+Users typically do not call these directly, but must call <code class="docutils literal notranslate"><span class="pre">register_all</span></code> (via the C
+entry point <code class="docutils literal notranslate"><span class="pre">RegisterAll</span></code>) to make their models visible to Achilles.</p>
+<p>The module maintains a global <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> instance (<code class="docutils literal notranslate"><span class="pre">factory</span></code>) and a dynamic
+vector of live model instances (<code class="docutils literal notranslate"><span class="pre">models</span></code>). Each live model is identified by a
+1-based <code class="docutils literal notranslate"><span class="pre">size_t</span></code> index that is returned by <code class="docutils literal notranslate"><span class="pre">CreateModel</span></code> and passed to every
+subsequent call.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>C entry point</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RegisterAll()</span></code></p></td>
+<td><p>Register every built-in Fortran nuclear model with the factory and call
+<code class="docutils literal notranslate"><span class="pre">factory%init()</span></code>. Called once at program startup by
+<code class="docutils literal notranslate"><span class="pre">FortranModel::RegisterModels()</span></code>. To add a new model, add a
+<code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">factory%register_model(...)</span></code> line in this subroutine.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ListModels()</span></code></p></td>
+<td><p>Print the names of all registered models; used by
+<code class="docutils literal notranslate"><span class="pre">FortranModel::DisplayModels()</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CreateModel(name,</span> <span class="pre">idx)</span></code></p></td>
+<td><p>Create a model by name. Returns <code class="docutils literal notranslate"><span class="pre">.true.</span></code> and sets <code class="docutils literal notranslate"><span class="pre">idx</span></code> to the model’s
+index on success; returns <code class="docutils literal notranslate"><span class="pre">.false.</span></code> if the name is not registered.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">InitModel(name,</span> <span class="pre">params,</span> <span class="pre">idx)</span></code></p></td>
+<td><p>Initialise model <code class="docutils literal notranslate"><span class="pre">idx</span></code> by calling its <code class="docutils literal notranslate"><span class="pre">init</span></code> procedure with config file
+path <code class="docutils literal notranslate"><span class="pre">name</span></code> and parameter map <code class="docutils literal notranslate"><span class="pre">params</span></code>. Returns <code class="docutils literal notranslate"><span class="pre">.true.</span></code> on success.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CleanUpModel(idx)</span></code></p></td>
+<td><p>Deallocate and nullify model <code class="docutils literal notranslate"><span class="pre">idx</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CleanUpEvent(cur,</span> <span class="pre">size)</span></code></p></td>
+<td><p>Deallocate a dynamically-allocated current array of length <code class="docutils literal notranslate"><span class="pre">size</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">GetMode(idx)</span></code></p></td>
+<td><p>Return the nuclear interaction mode for model <code class="docutils literal notranslate"><span class="pre">idx</span></code> as a C <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GetFrame(idx)</span></code></p></td>
+<td><p>Return the preferred reference frame for model <code class="docutils literal notranslate"><span class="pre">idx</span></code> as a C <code class="docutils literal notranslate"><span class="pre">int</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModelName(idx)</span></code></p></td>
+<td><p>Return a heap-allocated C string containing the model name for model <code class="docutils literal notranslate"><span class="pre">idx</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModelPS(idx)</span></code></p></td>
+<td><p>Return a heap-allocated C string containing the phase-space generator name.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">GetCurrents(idx,</span> <span class="pre">...)</span></code></p></td>
+<td><p>Compute the hadronic currents for model <code class="docutils literal notranslate"><span class="pre">idx</span></code>. Momenta are passed as a flat
+C row-major array and converted to <code class="docutils literal notranslate"><span class="pre">fourvector</span></code> objects before dispatching to
+the model’s <code class="docutils literal notranslate"><span class="pre">currents</span></code> procedure. The output array <code class="docutils literal notranslate"><span class="pre">cur</span></code> has shape
+<code class="docutils literal notranslate"><span class="pre">(nlorentz,</span> <span class="pre">nspin)</span></code> in Fortran (column-major) which corresponds to
+<code class="docutils literal notranslate"><span class="pre">(nspin,</span> <span class="pre">nlorentz)</span></code> as seen by C++.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GetInitialStateWeight(idx,</span> <span class="pre">...)</span></code></p></td>
+<td><p>Return the initial-state weight from model <code class="docutils literal notranslate"><span class="pre">idx</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">GetInspireHEP(idx)</span></code></p></td>
+<td><p>Return a heap-allocated C string with the InspireHEP record identifier.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="the-fortranmodel-c-class">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">4.1.4. </span>The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a><a class="headerlink" href="#the-fortranmodel-c-class" title="Link to this heading">#</a></h3>
+<p><em>Declared in</em> <code class="docutils literal notranslate"><span class="pre">include/Achilles/fortran/FNuclearModel.hh</span></code>,
+<em>implemented in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/FNuclearModel.cc</span></code></p>
+<p><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> is a concrete subclass of <code class="docutils literal notranslate"><span class="pre">NuclearModel</span></code> that delegates all
+physics to a Fortran model via the C-bound procedures above. It is registered with the
+C++ nuclear model factory under the name <code class="docutils literal notranslate"><span class="pre">&quot;FortranModel&quot;</span></code>.</p>
+<p><strong>Constructor</strong></p>
+<p>The constructor reads two keys from the <code class="docutils literal notranslate"><span class="pre">NuclearModel</span></code> section of the YAML run card:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>The name of the Fortran model to instantiate (must match one of the names passed
+to <code class="docutils literal notranslate"><span class="pre">factory%register_model</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Ward</span></code></p></td>
+<td><p>The Ward–Takahashi identity correction to apply to the computed currents. Accepted
+values are <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">Coulomb</span></code>, <code class="docutils literal notranslate"><span class="pre">Weyl</span></code>, and <code class="docutils literal notranslate"><span class="pre">Landau</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code></p></td>
+<td><p>Path to the model configuration file passed verbatim to the Fortran <code class="docutils literal notranslate"><span class="pre">init</span></code>
+procedure.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ModelParamsFile</span></code> <em>(optional)</em></p></td>
+<td><p>Path to a YAML file whose <code class="docutils literal notranslate"><span class="pre">Parameters</span></code> mapping provides additional numeric
+parameters forwarded to the Fortran model.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Overridden virtual methods</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Behaviour</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Mode()</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">GetMode</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Frame()</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">GetFrame</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PhaseSpace(nuc_pid)</span></code></p></td>
+<td><p>Returns <code class="docutils literal notranslate"><span class="pre">&quot;Coherent&quot;</span></code> for hydrogen and free-neutron targets (setting internal
+flags used by <code class="docutils literal notranslate"><span class="pre">CalcCurrents</span></code>); otherwise delegates to Fortran <code class="docutils literal notranslate"><span class="pre">ModelPS</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CalcCurrents(...)</span></code></p></td>
+<td><p>Evaluates form factors, packs particle data into flat arrays, calls Fortran
+<code class="docutils literal notranslate"><span class="pre">GetCurrents</span></code>, and applies the requested Ward gauge correction.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">InitialStateWeight(...)</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">GetInitialStateWeight</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">GetName()</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">ModelName</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PSName()</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">ModelPS</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">InspireHEP()</span></code></p></td>
+<td><p>Delegates to Fortran <code class="docutils literal notranslate"><span class="pre">GetInspireHEP</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="ward-gauge-corrections">
+<h4><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">4.1.4.1. </span>Ward Gauge Corrections</a><a class="headerlink" href="#ward-gauge-corrections" title="Link to this heading">#</a></h4>
+<p>After computing the hadronic current the <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> can enforce a gauge condition
+on the Lorentz components. The choice is controlled by the <code class="docutils literal notranslate"><span class="pre">Ward</span></code> run-card key:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code> — no correction applied.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Coulomb</span></code> — set the longitudinal (time-like) component to satisfy current conservation
+in the Coulomb gauge.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Weyl</span></code> — apply the Weyl (temporal) gauge condition.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Landau</span></code> — project out the longitudinal part in the Landau gauge.</p></li>
+</ul>
+</section>
+</section>
+<section id="implementing-a-new-fortran-model">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">4.1.5. </span>Implementing a New Fortran Model</a><a class="headerlink" href="#implementing-a-new-fortran-model" title="Link to this heading">#</a></h3>
+<p>To add a new nuclear model written in Fortran, follow these steps:</p>
+<ol class="arabic">
+<li><p><strong>Create a Fortran module</strong> that <code class="docutils literal notranslate"><span class="pre">use</span></code>s <code class="docutils literal notranslate"><span class="pre">nuclear_model</span></code> and defines a concrete
+type that <code class="docutils literal notranslate"><span class="pre">extends(model)</span></code> and implements all deferred procedures described in
+<a class="reference internal" href="#fortran-interface"><span class="std std-ref">Fortran Interface</span></a>.</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">module </span><span class="n">my_model_mod</span>
+<span class="w">    </span><span class="k">use </span><span class="n">nuclear_model</span>
+<span class="w">    </span><span class="k">implicit none</span>
+
+<span class="k">    type</span><span class="p">,</span><span class="w"> </span><span class="k">extends</span><span class="p">(</span><span class="n">model</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">my_model</span>
+<span class="w">    </span><span class="k">contains</span>
+<span class="k">        procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">init</span><span class="w">       </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_init</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">cleanup</span><span class="w">    </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_cleanup</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">mode</span><span class="w">       </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_mode</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">model_name</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_name</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ps_name</span><span class="w">    </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_psname</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">currents</span><span class="w">   </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_currents</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">init_wgt</span><span class="w">   </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_init_wgt</span>
+<span class="w">        </span><span class="k">procedure</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">inspirehep</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">my_inspirehep</span>
+<span class="w">    </span><span class="k">end type </span><span class="n">my_model</span>
+
+<span class="k">contains</span>
+<span class="w">    </span><span class="c">! ... implementations ...</span>
+
+<span class="w">    </span><span class="k">function </span><span class="n">build_my_model</span><span class="p">()</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">ptr</span><span class="p">)</span>
+<span class="w">        </span><span class="k">class</span><span class="p">(</span><span class="n">model</span><span class="p">),</span><span class="w"> </span><span class="k">pointer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ptr</span>
+<span class="w">        </span><span class="k">allocate</span><span class="p">(</span><span class="n">my_model</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">ptr</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end function</span>
+
+<span class="k">end module </span><span class="n">my_model_mod</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Register the model</strong> in <code class="docutils literal notranslate"><span class="pre">nuclear_model_interface.f90</span></code>. Add a <code class="docutils literal notranslate"><span class="pre">use</span></code> for your
+new module and a <code class="docutils literal notranslate"><span class="pre">call</span> <span class="pre">factory%register_model(...)</span></code> line inside <code class="docutils literal notranslate"><span class="pre">register_all</span></code>:</p>
+<div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">use </span><span class="n">my_model_mod</span>
+<span class="c">! inside register_all():</span>
+<span class="k">call </span><span class="n">factory</span><span class="p">%</span><span class="n">register_model</span><span class="p">(</span><span class="s2">&quot;MyModel&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">build_my_model</span><span class="p">)</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Add the source file</strong> to the CMake build so it is compiled and linked.</p></li>
+<li><p><strong>Reference the model</strong> in the run card:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MyModel</span>
+<span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="w">  </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/path/to/config.dat</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
 </section>
 <section id="sherpa-interface">
-<span id="id2"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">4.2. </span>Sherpa Interface</a><a class="headerlink" href="#sherpa-interface" title="Link to this heading">#</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">4.2. </span>Sherpa Interface</a><a class="headerlink" href="#sherpa-interface" title="Link to this heading">#</a></h2>
 </section>
 </section>
 
@@ -364,11 +814,11 @@ document.write(`
       </div>
     </a>
     <a class="right-next"
-       href="references.html"
+       href="physics-guide.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">References</p>
+        <p class="prev-next-title">Physics Guide</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -388,7 +838,21 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortran-interface">4.1. Fortran Interface</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-model-abstract-type">4.1.1. The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#currents-argument-list">4.1.1.1. <code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#init-wgt-argument-list">4.1.1.2. <code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-modelfactory-type">4.1.2. The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#cfortran-bridge-nuclear-model-interface">4.1.3. C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-fortranmodel-c-class">4.1.4. The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ward-gauge-corrections">4.1.4.1. Ward Gauge Corrections</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementing-a-new-fortran-model">4.1.5. Implementing a New Fortran Model</a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
 </ul>
   </nav></div>

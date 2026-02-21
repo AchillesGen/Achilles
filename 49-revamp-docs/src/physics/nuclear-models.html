@@ -1,0 +1,715 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Nuclear Models &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics/nuclear-models';</script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Form Factors" href="form-factors.html" />
+    <link rel="prev" title="Event Generation Workflow" href="workflow.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.svg" class="logo__image only-dark" alt="Achilles 0.3.0 documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/src/physics/nuclear-models.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Nuclear Models</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#coherent"><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qespectral"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hyperonspectral"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortranmodel"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#qe-spectral-func-quasielastic-spectral-function"><code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code> — Quasielastic spectral function</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#res-spectral-func-resonance-spectral-function"><code class="docutils literal notranslate"><span class="pre">RES_Spectral_Func</span></code> — Resonance spectral function</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#intf-spectral-func-qemec-interference-spectral-function"><code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code> — QE–MEC interference spectral function</a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="nuclear-models">
+<span id="nuclear-models-physics"></span><h1>Nuclear Models<a class="headerlink" href="#nuclear-models" title="Link to this heading">#</a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#coherent" id="id3"><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></a></p></li>
+<li><p><a class="reference internal" href="#qespectral" id="id4"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></p></li>
+<li><p><a class="reference internal" href="#hyperonspectral" id="id5"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></p></li>
+<li><p><a class="reference internal" href="#fortranmodel" id="id6"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a></p>
+<ul>
+<li><p><a class="reference internal" href="#qe-spectral-func-quasielastic-spectral-function" id="id7"><code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code> — Quasielastic spectral function</a></p></li>
+<li><p><a class="reference internal" href="#res-spectral-func-resonance-spectral-function" id="id8"><code class="docutils literal notranslate"><span class="pre">RES_Spectral_Func</span></code> — Resonance spectral function</a></p></li>
+<li><p><a class="reference internal" href="#intf-spectral-func-qemec-interference-spectral-function" id="id9"><code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code> — QE–MEC interference spectral function</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="coherent">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></a><a class="headerlink" href="#coherent" title="Link to this heading">#</a></h2>
+<p>In coherent scattering the whole nucleus participates and the nucleus remains in
+its ground state. The hadronic current is proportional to the sum of initial and
+final nuclear four-momenta weighted by the nuclear form factor:</p>
+<div class="math notranslate nohighlight">
+\[J^\mu_{\rm coh} = \bigl(p_A^\mu + p_A^{\prime\,\mu}\bigr)\,F_{\rm coh}(Q^2)\]</div>
+<p>where <span class="math notranslate nohighlight">\(F_{\rm coh}(Q^2)\)</span> is the coherent (nuclear charge) form factor. Only
+the <code class="docutils literal notranslate"><span class="pre">coherent</span></code> entry in the form factor file is used. The initial-state weight is
+unity (the nucleus is always in its ground state).</p>
+</section>
+<section id="qespectral">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a><a class="headerlink" href="#qespectral" title="Link to this heading">#</a></h2>
+<p>Quasi-elastic scattering is treated in the impulse approximation: a single
+off-shell nucleon with three-momentum <span class="math notranslate nohighlight">\(\boldsymbol{p}\)</span> and removal energy
+<span class="math notranslate nohighlight">\(E_r = m_N - E\)</span> is struck by the virtual boson and ejected from the nucleus.</p>
+<p><strong>Initial-state sampling.</strong> The joint probability for finding a nucleon with
+momentum <span class="math notranslate nohighlight">\(|\boldsymbol{p}|\)</span> and removal energy <span class="math notranslate nohighlight">\(E_r\)</span> is given by the
+nucleon spectral function:</p>
+<div class="math notranslate nohighlight">
+\[w_{\rm IS} = N_{p/n}\,P(|\boldsymbol{p}|,\,E_r)\]</div>
+<p>where <span class="math notranslate nohighlight">\(N_{p/n}\)</span> is the number of protons or neutrons and <span class="math notranslate nohighlight">\(P\)</span> is read
+from <code class="docutils literal notranslate"><span class="pre">SpectralP</span></code> / <code class="docutils literal notranslate"><span class="pre">SpectralN</span></code>. The spectral function is stored as a tabulated
+2D array in momentum and removal energy and is interpolated at run time.</p>
+<p><strong>Hadronic current.</strong> The current uses the standard nucleon vertex with Dirac
+(<span class="math notranslate nohighlight">\(F_1\)</span>), Pauli (<span class="math notranslate nohighlight">\(F_2\)</span>), and axial (<span class="math notranslate nohighlight">\(F_A\)</span>, <span class="math notranslate nohighlight">\(F_{AP}\)</span>)
+form factors:</p>
+<div class="math notranslate nohighlight">
+\[J^\mu = \bar{u}(p^\prime)\Bigl[
+    F_1\,\gamma^\mu
+    + i\,\frac{F_2}{2m_N}\,\sigma^{\mu\nu}q_\nu
+    + F_A\,\gamma^\mu\gamma^5
+    + \frac{F_{AP}}{m_N}\,\gamma^5 q^\mu
+\Bigr]u(p)\]</div>
+<p>where <span class="math notranslate nohighlight">\(u(p)\)</span> and <span class="math notranslate nohighlight">\(\bar{u}(p^\prime)\)</span> are free Dirac spinors for the
+initial and final nucleons. The initial nucleon energy is set to the free on-shell
+value <span class="math notranslate nohighlight">\(E_{\rm free} = \sqrt{|\boldsymbol{p}|^2 + m_N^2}\)</span>, while the energy
+transfer is shifted by the off-shell correction
+<span class="math notranslate nohighlight">\(\omega \to \omega + E - E_{\rm free}\)</span>.</p>
+<p>All four spin-state combinations <span class="math notranslate nohighlight">\((s, s^\prime) \in \{-1,+1\}^2\)</span> are summed
+incoherently, giving 4 entries in the current array.</p>
+</section>
+<section id="hyperonspectral">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a><a class="headerlink" href="#hyperonspectral" title="Link to this heading">#</a></h2>
+<p>Hyperon production follows the same spectral-function formalism as <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code>
+for the initial state. The hadronic current uses separate Dirac, Pauli, and axial
+form factors for each hyperon channel (<span class="math notranslate nohighlight">\(\Lambda^0\)</span>, <span class="math notranslate nohighlight">\(\Sigma^0\)</span>,
+<span class="math notranslate nohighlight">\(\Sigma^-\)</span>), taken from the <code class="docutils literal notranslate"><span class="pre">hyperon</span></code> block of the form factor file.
+The outgoing baryon mass in the Pauli term is replaced by the hyperon mass.</p>
+</section>
+<section id="fortranmodel">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a><a class="headerlink" href="#fortranmodel" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> acts as a bridge between the C++ framework and a user-supplied
+Fortran nuclear model. The C++ class calls the Fortran routines described in
+<a class="reference internal" href="../interfaces.html#fortran-interface"><span class="std std-ref">Fortran Interface</span></a> to obtain the hadronic current and initial-state weight.
+The nuclear mode and phase-space generator are also determined by the Fortran model
+at runtime, so a <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> can implement any of the modes listed in
+<a class="reference internal" href="workflow.html#nuclear-modes"><span class="std std-ref">Nuclear Modes</span></a>.</p>
+<p>Three Fortran models ship with Achilles and are registered automatically at startup.
+They are summarised below. For all three the run-card <code class="docutils literal notranslate"><span class="pre">Model</span></code> key must be set to
+<code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> and the <code class="docutils literal notranslate"><span class="pre">Name</span></code> key must match the model’s registered name exactly.</p>
+<div class="pst-scrollable-table-container"><table class="table" id="id2">
+<caption><span class="caption-text">Built-in Fortran models at a glance</span><a class="headerlink" href="#id2" title="Link to this table">#</a></caption>
+<colgroup>
+<col style="width: 28.0%" />
+<col style="width: 22.0%" />
+<col style="width: 10.0%" />
+<col style="width: 10.0%" />
+<col style="width: 30.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Registered name (<code class="docutils literal notranslate"><span class="pre">Name</span></code>)</p></th>
+<th class="head"><p>Source file</p></th>
+<th class="head"><p>Mode</p></th>
+<th class="head"><p>Frame</p></th>
+<th class="head"><p>InspireHEP</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">qe_spectral_model.f90</span></code></p></td>
+<td><p>Quasielastic (2)</p></td>
+<td><p>Lab (0)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Rocco:2018mwt</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RES_Spectral_Func</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">res_spectral_model.f90</span></code></p></td>
+<td><p>Resonance (4)</p></td>
+<td><p>QZ (1)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Nakamura:2015rta</span></code>, <code class="docutils literal notranslate"><span class="pre">Rocco:2019gfb</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">intf_spectral_model.f90</span></code></p></td>
+<td><p>Interference QE–MEC (7)</p></td>
+<td><p>Lab (0)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Lovato:2023khk</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="qe-spectral-func-quasielastic-spectral-function">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code> — Quasielastic spectral function</a><a class="headerlink" href="#qe-spectral-func-quasielastic-spectral-function" title="Link to this heading">#</a></h3>
+<p>This is the Fortran implementation of the quasi-elastic spectral-function model,
+equivalent in physics to the C++ <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code> model. It samples a nucleon from
+the nuclear spectral function and computes the one-body hadronic current with
+Dirac, Pauli, and axial form factors.</p>
+<p><strong>Physics.</strong> The hadronic current is:</p>
+<div class="math notranslate nohighlight">
+\[J^\mu = \bar{u}(p^\prime)\Bigl[
+    F_1\,\gamma^\mu
+    + i\,\frac{F_2}{2m_N}\,\sigma^{\mu\nu}q_\nu
+    + F_A\,\gamma^\mu\gamma^5
+    + \frac{F_{AP}}{m_N}\,\gamma^5 q^\mu
+\Bigr]u(p)\]</div>
+<p>with the off-shell energy correction <span class="math notranslate nohighlight">\(\omega \to \omega + E - E_{\rm free}\)</span>
+applied to the energy transfer. Four spin combinations are summed (<code class="docutils literal notranslate"><span class="pre">nspin</span> <span class="pre">=</span> <span class="pre">4</span></code>).
+The initial-state weight is <span class="math notranslate nohighlight">\(w = N_{p/n}\,P(|\boldsymbol{p}|, E_r)\)</span>.</p>
+<p><strong>Form factors used:</strong> <code class="docutils literal notranslate"><span class="pre">F1</span></code>, <code class="docutils literal notranslate"><span class="pre">F2</span></code>, <code class="docutils literal notranslate"><span class="pre">FA</span></code>, <code class="docutils literal notranslate"><span class="pre">FAP</span></code> (from the <code class="docutils literal notranslate"><span class="pre">vector</span></code> and
+<code class="docutils literal notranslate"><span class="pre">axial</span></code> categories of the form factor file).</p>
+<p><strong>Configuration.</strong> The <code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code> is a plain-text file with two lines giving
+the paths to the proton and neutron spectral function data files:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>data/Spectral_Functions/pke12p_tot.data
+data/Spectral_Functions/pke12n_tot.data
+</pre></div>
+</div>
+<p>Pre-supplied config files: <code class="docutils literal notranslate"><span class="pre">data/info_C12_pke.data</span></code>, <code class="docutils literal notranslate"><span class="pre">data/info_O16_pke.data</span></code>,
+<code class="docutils literal notranslate"><span class="pre">data/info_Ar40_pke.data</span></code>.</p>
+<p><strong>Run-card example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QE_Spectral_Func</span>
+<span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FormFactors.yml</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+</section>
+<section id="res-spectral-func-resonance-spectral-function">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">RES_Spectral_Func</span></code> — Resonance spectral function</a><a class="headerlink" href="#res-spectral-func-resonance-spectral-function" title="Link to this heading">#</a></h3>
+<p>Single-pion production through baryon resonances (primarily the
+<span class="math notranslate nohighlight">\(\Delta(1232)\)</span>), combined with a spectral-function description of the
+nuclear initial state. All pion–nucleon channels consistent with charge
+conservation are included automatically.</p>
+<p><strong>Physics.</strong> The hadronic state has one incoming nucleon (with spectral-function
+weight) and one outgoing nucleon plus one pion. The current is computed in the
+frame where <span class="math notranslate nohighlight">\(\boldsymbol{q}\)</span> is aligned along the <span class="math notranslate nohighlight">\(z\)</span>-axis
+(<code class="docutils literal notranslate"><span class="pre">frame</span> <span class="pre">=</span> <span class="pre">QZ</span></code>), which simplifies the angular integration. The vector coupling
+is set by the <code class="docutils literal notranslate"><span class="pre">FResV</span></code> form factor; the axial coupling is set by <code class="docutils literal notranslate"><span class="pre">FResA</span></code>. The
+<code class="docutils literal notranslate"><span class="pre">has_axial</span></code> flag is <code class="docutils literal notranslate"><span class="pre">true</span></code> whenever <code class="docutils literal notranslate"><span class="pre">FResA</span></code> is non-zero, enabling axial
+contributions for weak interactions while switching them off for purely
+electromagnetic processes.</p>
+<p><strong>Form factors used:</strong> <code class="docutils literal notranslate"><span class="pre">FResV</span></code>, <code class="docutils literal notranslate"><span class="pre">FResA</span></code> (from the <code class="docutils literal notranslate"><span class="pre">resonancevector</span></code> and
+<code class="docutils literal notranslate"><span class="pre">resonanceaxial</span></code> categories).</p>
+<p><strong>Configuration.</strong> The <code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code> uses the same two-line format as
+<code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code>, supplying proton and neutron spectral function paths:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>data/Spectral_Functions/pke12p_tot.data
+data/Spectral_Functions/pke12n_tot.data
+</pre></div>
+</div>
+<p>The same pre-supplied config files (<code class="docutils literal notranslate"><span class="pre">data/info_C12_pke.data</span></code>, etc.) can be
+re-used. No <code class="docutils literal notranslate"><span class="pre">ModelParamsFile</span></code> is needed.</p>
+<p><strong>Run-card example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RES_Spectral_Func</span>
+<span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FormFactors.yml</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+</section>
+<section id="intf-spectral-func-qemec-interference-spectral-function">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink"><code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code> — QE–MEC interference spectral function</a><a class="headerlink" href="#intf-spectral-func-qemec-interference-spectral-function" title="Link to this heading">#</a></h3>
+<p>This model computes the <em>interference</em> between the one-body quasi-elastic
+amplitude and the two-body meson-exchange current (MEC) amplitude. It
+corresponds to nuclear mode <code class="docutils literal notranslate"><span class="pre">Interference_QE_MEC</span></code> (7) and requires its own
+phase-space generator (<code class="docutils literal notranslate"><span class="pre">IntfSpectral</span></code>), which samples both an active nucleon
+and a spectator nucleon from the nucleus.</p>
+<p><strong>Physics.</strong> The nuclear current is the cross-term between the one-body current
+<span class="math notranslate nohighlight">\(J^\mu_{1b}\)</span> (computed as in <code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code>) and the two-body MEC
+current <span class="math notranslate nohighlight">\(J^\mu_{2b}\)</span>. The two-body current receives contributions from
+both pion-exchange and <span class="math notranslate nohighlight">\(\Delta\)</span>-exchange diagrams, in direct and exchange
+topologies:</p>
+<div class="math notranslate nohighlight">
+\[J^\mu_{2b} = \frac{1}{2 E_{p_2}}\Bigl(
+    J^\mu_{\pi,{\rm dir}} + J^\mu_{\Delta,{\rm dir}}
+    + J^\mu_{\pi,{\rm exc}} + J^\mu_{\Delta,{\rm exc}}
+\Bigr)\]</div>
+<p>where <span class="math notranslate nohighlight">\(E_{p_2}\)</span> is the energy of the spectator nucleon.</p>
+<p>Because the QE and MEC amplitudes share the same hadronic phase-space point,
+the model alternates between returning the one-body current and the two-body
+current on successive calls (controlled by an internal flag <code class="docutils literal notranslate"><span class="pre">compute_1body</span></code>).
+This paired-call structure is handled transparently by the Achilles framework.</p>
+<p><strong>Initial-state weight.</strong> The weight is the product of two spectral-function
+factors — one for the active (hole) nucleon and one for the spectator:</p>
+<div class="math notranslate nohighlight">
+\[w = \mathcal{N}\,P(|\boldsymbol{p}_1|, E_{r,1}) \;\times\;
+    \mathcal{N}\,P(|\boldsymbol{p}_2|)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathcal{N}\)</span> is the spectral function normalisation and the
+spectator factor is obtained by integrating over removal energy.</p>
+<p><strong>Form factors used:</strong> <code class="docutils literal notranslate"><span class="pre">F1</span></code>, <code class="docutils literal notranslate"><span class="pre">F2</span></code>, <code class="docutils literal notranslate"><span class="pre">FA</span></code>, <code class="docutils literal notranslate"><span class="pre">FAP</span></code> (one-body part);
+<code class="docutils literal notranslate"><span class="pre">FMecV3</span></code>, <code class="docutils literal notranslate"><span class="pre">FMecV4</span></code>, <code class="docutils literal notranslate"><span class="pre">FMecV5</span></code>, <code class="docutils literal notranslate"><span class="pre">FMecA5</span></code>, <code class="docutils literal notranslate"><span class="pre">FPiEM</span></code> (two-body MEC part).</p>
+<p><strong>Configuration.</strong> The <code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code> lists the <em>mean-field</em> proton and neutron
+spectral function files (distinct from the total spectral functions used in the
+QE model):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>data/Spectral_Functions/pke12p_MF.data
+data/Spectral_Functions/pke12n_MF.data
+</pre></div>
+</div>
+<p>Pre-supplied config files: <code class="docutils literal notranslate"><span class="pre">data/info_intf_C12.data</span></code>, <code class="docutils literal notranslate"><span class="pre">data/info_intf_Ar40.data</span></code>.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">ModelParamsFile</span></code> is <strong>required</strong> for this model. It supplies the hadronic
+coupling constants and momentum cut-offs for the MEC vertex functions:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Parameters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">fpind</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">0.54</span><span class="w">      </span><span class="c1"># f_{pi N Delta} coupling</span>
+<span class="w">  </span><span class="nt">fstar</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">2.13</span><span class="w">      </span><span class="c1"># f* Delta coupling</span>
+<span class="w">  </span><span class="nt">fpinn2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.01789</span><span class="w">   </span><span class="c1"># f_{pi N N}^2 coupling</span>
+<span class="w">  </span><span class="nt">ga</span><span class="p">:</span><span class="w">     </span><span class="l l-Scalar l-Scalar-Plain">1.26</span><span class="w">      </span><span class="c1"># axial coupling g_A</span>
+<span class="w">  </span><span class="nt">lpi</span><span class="p">:</span><span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">1300.0</span><span class="w">    </span><span class="c1"># Lambda_pi cut-off (MeV)</span>
+<span class="w">  </span><span class="nt">lpind</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">1150.0</span><span class="w">    </span><span class="c1"># Lambda_{pi N Delta} cut-off (MeV)</span>
+</pre></div>
+</div>
+<p>The default parameter file <code class="docutils literal notranslate"><span class="pre">data/intf_params.yml</span></code> provides the values above,
+which were used in <span id="id1">[]</span>.</p>
+<p><strong>Run-card example:</strong></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Intf_Spectral_Func</span>
+<span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_intf_C12.data</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FormFactors.yml</span>
+<span class="w">      </span><span class="nt">ModelParamsFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/intf_params.yml</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="workflow.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Event Generation Workflow</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="form-factors.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Form Factors</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#coherent"><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#qespectral"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hyperonspectral"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fortranmodel"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#qe-spectral-func-quasielastic-spectral-function"><code class="docutils literal notranslate"><span class="pre">QE_Spectral_Func</span></code> — Quasielastic spectral function</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#res-spectral-func-resonance-spectral-function"><code class="docutils literal notranslate"><span class="pre">RES_Spectral_Func</span></code> — Resonance spectral function</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#intf-spectral-func-qemec-interference-spectral-function"><code class="docutils literal notranslate"><span class="pre">Intf_Spectral_Func</span></code> — QE–MEC interference spectral function</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,643 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Form Factors &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics/form-factors';</script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Phase-Space Sampling and Unweighting" href="phase-space.html" />
+    <link rel="prev" title="Nuclear Models" href="nuclear-models.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.svg" class="logo__image only-dark" alt="Achilles 0.3.0 documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/src/physics/form-factors.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Form Factors</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#categories-and-their-physical-role">Categories and their physical role</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-parametrisations">Available parametrisations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-a-parametrisation">Changing a parametrisation</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="form-factors">
+<span id="form-factors-physics"></span><h1>Form Factors<a class="headerlink" href="#form-factors" title="Link to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code> supplies one parametrisation for each of the eight form
+factor <em>categories</em>. All categories are evaluated at every phase-space point, and
+the appropriate subset is forwarded to the active nuclear model.</p>
+<section id="categories-and-their-physical-role">
+<h2>Categories and their physical role<a class="headerlink" href="#categories-and-their-physical-role" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 60.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Category key</p></th>
+<th class="head"><p>Computed quantities</p></th>
+<th class="head"><p>Physical role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{1p}\)</span>, <span class="math notranslate nohighlight">\(F_{1n}\)</span>, <span class="math notranslate nohighlight">\(F_{2p}\)</span>, <span class="math notranslate nohighlight">\(F_{2n}\)</span></p></td>
+<td><p>Nucleon electromagnetic (Dirac and Pauli) form factors. Linear combinations
+<span class="math notranslate nohighlight">\(F_1 = g_V^p F_{1p} + g_V^n F_{1n}\)</span> and similarly for <span class="math notranslate nohighlight">\(F_2\)</span>
+are formed using the process-specific electroweak couplings.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">axial</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_A\)</span>, <span class="math notranslate nohighlight">\(F_{AP}\)</span></p></td>
+<td><p>Nucleon axial-vector form factor <span class="math notranslate nohighlight">\(F_A(Q^2)\)</span> and the induced
+pseudoscalar <span class="math notranslate nohighlight">\(F_{AP}(Q^2)\)</span>. Determines the parity-violating part
+of the weak-current cross section.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">coherent</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{\rm coh}\)</span></p></td>
+<td><p>Nuclear charge (coherent) form factor entering coherent scattering.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">resonancevector</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{\rm resV}\)</span></p></td>
+<td><p>Vector transition form factor for baryon resonance (e.g. <span class="math notranslate nohighlight">\(\Delta\)</span>)
+excitation. Used by Fortran resonance models.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">resonanceaxial</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{\rm resA}\)</span></p></td>
+<td><p>Axial transition form factor for baryon resonance excitation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">mecvector</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{\rm mecV3}\)</span>, <span class="math notranslate nohighlight">\(F_{\rm mecV4}\)</span>, <span class="math notranslate nohighlight">\(F_{\rm mecV5}\)</span></p></td>
+<td><p>Meson-exchange current vector contact terms. Parametrised as contact
+interactions with vector-meson propagator suppression.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mecaxial</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{\rm mecA5}\)</span></p></td>
+<td><p>Meson-exchange current axial contact term involving the
+<span class="math notranslate nohighlight">\(\Delta\)</span>-resonance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hyperon</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(F_{1\Lambda}\)</span>, <span class="math notranslate nohighlight">\(F_{2\Lambda}\)</span>, <span class="math notranslate nohighlight">\(F_{A\Lambda}\)</span>,
+<span class="math notranslate nohighlight">\(F_{1\Sigma^-}\)</span>, <span class="math notranslate nohighlight">\(F_{2\Sigma^-}\)</span>, <span class="math notranslate nohighlight">\(F_{A\Sigma^-}\)</span>,
+<span class="math notranslate nohighlight">\(F_{1\Sigma^0}\)</span>, <span class="math notranslate nohighlight">\(F_{2\Sigma^0}\)</span>, <span class="math notranslate nohighlight">\(F_{A\Sigma^0}\)</span></p></td>
+<td><p>Nucleon-to-hyperon transition form factors for the three CC hyperon
+channels. Currently implemented as a placeholder (<code class="docutils literal notranslate"><span class="pre">Hyperon</span></code> dummy).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="available-parametrisations">
+<h2>Available parametrisations<a class="headerlink" href="#available-parametrisations" title="Link to this heading">#</a></h2>
+<p>The table below lists every built-in parametrisation, the category it belongs to,
+and a brief description.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 18.0%" />
+<col style="width: 57.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Name</p></th>
+<th class="head"><p>Category</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Kelly</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p>Rational parametrisation of the Sachs form factors
+<span class="math notranslate nohighlight">\(G_{Ep}\)</span>, <span class="math notranslate nohighlight">\(G_{En}\)</span>, <span class="math notranslate nohighlight">\(G_{Mp}\)</span>, <span class="math notranslate nohighlight">\(G_{Mn}\)</span> from
+Kelly (2004). Recommended for quasielastic cross sections.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BBBA</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p>Bradford–Budd–Bodek–Arrington parametrisation (2006) using rational
+polynomial fits to the Sachs form factors.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ArringtonHill</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(z\)</span>-expansion parametrisation of the Sachs form factors by
+Arrington and Hill (2006). Uses separate <span class="math notranslate nohighlight">\(z\)</span>-expansion series for
+each Sachs form factor with a shared conformal parameter.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VectorDipole</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p>Simple dipole approximation:
+<span class="math notranslate nohighlight">\(G_D(Q^2) = (1 + Q^2/\lambda^2)^{-2}\)</span>.
+Useful for quick estimates; less accurate at large <span class="math notranslate nohighlight">\(Q^2\)</span>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">VectorDummy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">vector</span></code></p></td>
+<td><p>Sets <span class="math notranslate nohighlight">\(F_{1p}=1\)</span>, all others zero. For debugging only.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AxialZExpansion</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">axial</span></code></p></td>
+<td><p><span class="math notranslate nohighlight">\(z\)</span>-expansion of the axial form factor <span class="math notranslate nohighlight">\(F_A(Q^2)\)</span> and the
+strange axial contribution <span class="math notranslate nohighlight">\(F_{As}(Q^2)\)</span>. The conformal variable
+<span class="math notranslate nohighlight">\(z\)</span> maps the physical region onto the unit disk. Recommended
+parametrisation for the axial form factor.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AxialDipole</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">axial</span></code></p></td>
+<td><p>Dipole approximation
+<span class="math notranslate nohighlight">\(F_A(Q^2) = g_A/(1+Q^2/M_A^2)^2\)</span>.
+The axial mass <span class="math notranslate nohighlight">\(M_A\)</span> and the axial coupling <span class="math notranslate nohighlight">\(g_A\)</span> are
+parameters.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">AxialDummy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">axial</span></code></p></td>
+<td><p>Sets <span class="math notranslate nohighlight">\(F_A = F_{As} = 0\)</span>. For debugging only.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Helm</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">coherent</span></code></p></td>
+<td><p>Helm model of the nuclear charge form factor:
+<span class="math notranslate nohighlight">\(F_{\rm coh}(Q^2) = 3 j_1(q R_0)/(q R_0)\,e^{-q^2 s^2/2}\)</span>.
+Suitable for medium and heavy nuclei. Parameters: skin thickness
+<span class="math notranslate nohighlight">\(s\)</span> and nuclear radius derived from mass number <span class="math notranslate nohighlight">\(A\)</span>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Lovato</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">coherent</span></code></p></td>
+<td><p><em>Ab initio</em> nuclear charge form factor from Lovato <em>et al.</em> for light
+nuclei (<span class="math notranslate nohighlight">\(^{12}{\rm C}\)</span>). Uses a polynomial expansion fit to
+quantum Monte Carlo results.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KN</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">coherent</span></code></p></td>
+<td><p>Klein–Nystrand parametrisation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ResonanceVectorDummy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">resonancevector</span></code></p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(F_{\rm resV} = {\tt resV}\)</span>. Placeholder until a full
+resonance form factor is implemented.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ResonanceAxialDummy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">resonanceaxial</span></code></p></td>
+<td><p>Constant <span class="math notranslate nohighlight">\(F_{\rm resA} = {\tt resA}\)</span>. Placeholder.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MesonExchangeVector</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mecvector</span></code></p></td>
+<td><p>Serot–Walecka meson-exchange current vector contact terms with
+vector-meson propagator suppression
+<span class="math notranslate nohighlight">\(\propto M_V^2/(M_V^2 + Q^2)\)</span>. Parameters: <span class="math notranslate nohighlight">\(M_V^2\)</span> and
+three normalisation constants.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MesonExchangeAxial</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">mecaxial</span></code></p></td>
+<td><p>MEC axial contact term mediated by the <span class="math notranslate nohighlight">\(\Delta\)</span> resonance.
+Parameters: <span class="math notranslate nohighlight">\(M_{\Delta A}^2\)</span> and the <span class="math notranslate nohighlight">\(C_5^A\)</span> normalisation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Hyperon</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">hyperon</span></code></p></td>
+<td><p>Placeholder implementation. Returns zeros for all hyperon form factors
+until a proper parametrisation is added.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="changing-a-parametrisation">
+<h2>Changing a parametrisation<a class="headerlink" href="#changing-a-parametrisation" title="Link to this heading">#</a></h2>
+<p>To swap, for example, the vector form factor from <code class="docutils literal notranslate"><span class="pre">Kelly</span></code> to <code class="docutils literal notranslate"><span class="pre">BBBA</span></code>, edit
+the <code class="docutils literal notranslate"><span class="pre">FormFactors.yml</span></code> file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Change this line</span>
+<span class="nt">vector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BBBA</span>
+
+<span class="c1"># And add (or update) the BBBA parameter block</span>
+<span class="nt">BBBA</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Mu Proton</span><span class="p">:</span><span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">2.79278</span>
+<span class="w">  </span><span class="nt">Mu Neutron</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1.91315</span>
+<span class="w">  </span><span class="nt">NumeratorEp Params</span><span class="p">:</span><span class="w">   </span><span class="p p-Indicator">[</span><span class="nv">1.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">-0.0578</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">DenominatorEp Params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">11.1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">13.6</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">33.0</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">0.0</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>All other categories remain unchanged. Form factor variations are a common source
+of theory uncertainty and should be explored when comparing to data.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="nuclear-models.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Nuclear Models</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="phase-space.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Phase-Space Sampling and Unweighting</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#categories-and-their-physical-role">Categories and their physical role</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#available-parametrisations">Available parametrisations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#changing-a-parametrisation">Changing a parametrisation</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

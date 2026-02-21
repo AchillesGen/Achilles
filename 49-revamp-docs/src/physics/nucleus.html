@@ -1,0 +1,560 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Nucleus Configuration &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics/nucleus';</script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Intranuclear Cascade Physics" href="cascade.html" />
+    <link rel="prev" title="Phase-Space Sampling and Unweighting" href="phase-space.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.svg" class="logo__image only-dark" alt="Achilles 0.3.0 documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/src/physics/nucleus.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Nucleus Configuration</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#binding-energy-and-fermi-momentum">Binding energy and Fermi momentum</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclear-density-and-configuration-files">Nuclear density and configuration files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fermi-gas-parameters">Fermi-gas parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclear-potential-models">Nuclear potential models</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="nucleus-configuration">
+<span id="nucleus-config-physics"></span><h1>Nucleus Configuration<a class="headerlink" href="#nucleus-configuration" title="Link to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">Nuclei</span></code> run-card section defines the nuclear target. This section
+explains the physical meaning of each field in a nucleus file.</p>
+<section id="binding-energy-and-fermi-momentum">
+<h2>Binding energy and Fermi momentum<a class="headerlink" href="#binding-energy-and-fermi-momentum" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Binding</span></code> is the average binding energy per nucleon in MeV. It is used as a
+global offset when computing removal energies in models that do not read a
+spectral function (e.g. a simple Fermi-gas approximation).</p>
+<p><code class="docutils literal notranslate"><span class="pre">Fermi</span> <span class="pre">Momentum</span></code> is the Fermi momentum <span class="math notranslate nohighlight">\(k_F\)</span> in MeV, used as the
+upper limit of the occupied momentum states for Pauli blocking during the
+cascade. For a local Fermi gas the effective <span class="math notranslate nohighlight">\(k_F\)</span> varies with position
+according to the local density; the <code class="docutils literal notranslate"><span class="pre">Fermi</span> <span class="pre">Momentum</span></code> value is used as a
+global (average) fallback.</p>
+</section>
+<section id="nuclear-density-and-configuration-files">
+<h2>Nuclear density and configuration files<a class="headerlink" href="#nuclear-density-and-configuration-files" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Density</span></code> sub-node provides the spatial description of the nucleus.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Function:</span> <span class="pre">configuration</span></code> activates the quantum Monte Carlo (QMC)
+configuration sampling mode. Instead of using a smooth analytic density, each
+event draws a snapshot of nucleon positions from a pre-generated library of
+nuclear ground-state configurations computed by QMC methods. This captures
+short-range correlations and clustering effects that a smooth density misses.</p>
+<p>The configurations are stored in a gzip-compressed text file given by the
+<code class="docutils literal notranslate"><span class="pre">Configs</span></code> key. Achilles reads one configuration per event (cycling through
+the file), so the number of distinct configurations sets an upper limit on
+the number of statistically independent initial nuclear states.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">ProtonFile</span></code> and <code class="docutils literal notranslate"><span class="pre">NeutronFile</span></code> keys provide tabulated radial density
+profiles <span class="math notranslate nohighlight">\(\rho_{p/n}(r)\)</span>, used both to evaluate the local nuclear density
+during the cascade and to draw the nuclear potential.</p>
+<p><code class="docutils literal notranslate"><span class="pre">FilePotential</span></code> provides the real part of an optical potential (used when
+<code class="docutils literal notranslate"><span class="pre">PotentialProp:</span> <span class="pre">true</span></code> in the cascade).</p>
+</section>
+<section id="fermi-gas-parameters">
+<h2>Fermi-gas parameters<a class="headerlink" href="#fermi-gas-parameters" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">FermiGas</span></code> sub-node controls corrections to the basic Fermi-gas picture
+that can optionally be applied within the cascade.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Type:</span> <span class="pre">Local</span></code> uses a local Fermi gas, where the Fermi momentum varies with
+the local nuclear density:</p>
+<div class="math notranslate nohighlight">
+\[k_F(\boldsymbol{r}) = \left(\frac{3\pi^2}{2}\,\rho(\boldsymbol{r})\right)^{1/3}\]</div>
+<p><code class="docutils literal notranslate"><span class="pre">Correlated</span></code> and the SRC parameters add short-range correlation (SRC)
+corrections to the nucleon momentum distribution. When <code class="docutils literal notranslate"><span class="pre">Correlated:</span> <span class="pre">true</span></code> a
+fraction <code class="docutils literal notranslate"><span class="pre">SRCfraction</span></code> of nucleons are assigned high-momentum tails extending
+beyond <span class="math notranslate nohighlight">\(k_F\)</span>, parametrised by an exponential with scale <code class="docutils literal notranslate"><span class="pre">LambdaSRC</span></code>
+(in GeV). This is important for nucleon momenta above ~300 MeV where the
+spectral function departs significantly from a simple Fermi gas. The default
+values <code class="docutils literal notranslate"><span class="pre">SRCfraction:</span> <span class="pre">0.2</span></code> and <code class="docutils literal notranslate"><span class="pre">LambdaSRC:</span> <span class="pre">2.75</span></code> are tuned to reproduce
+electron-scattering data.</p>
+</section>
+<section id="nuclear-potential-models">
+<h2>Nuclear potential models<a class="headerlink" href="#nuclear-potential-models" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Potential</span></code> sub-node selects the nuclear optical potential used for
+cascade propagation (when <code class="docutils literal notranslate"><span class="pre">PotentialProp:</span> <span class="pre">true</span></code>) and Pauli blocking.</p>
+<p><strong>``Wiringa``</strong></p>
+<p>A non-relativistic density-dependent potential <span id="id1">[]</span>. The
+central potential is:</p>
+<div class="math notranslate nohighlight">
+\[V(p_{\rm lab}, r) = \alpha(\rho) + \frac{\beta(\rho)}{1 + (p_{\rm lab}/\lambda(\rho))^2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\rho = \rho(r)/\rho_0\)</span> is the local density normalised to
+saturation density <span class="math notranslate nohighlight">\(\rho_0\)</span> (set by <code class="docutils literal notranslate"><span class="pre">r0</span></code>, default 0.16 fm<sup>-3</sup>),
+and the coefficients are:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\alpha(\rho) &amp;= 15.52\,\rho + 24.93\,\rho^2 \;\text{MeV} \\
+\beta(\rho)  &amp;= -116\,\rho \;\text{MeV} \\
+\lambda(\rho)&amp;= (3.29 - 0.373\,\rho)\,\hbar c\end{split}\]</div>
+<p>The Hamiltonian used for propagation is non-relativistic:
+<span class="math notranslate nohighlight">\(H = m_N + p^2/(2m_N) + V\)</span>.</p>
+<p><strong>``Cooper``</strong></p>
+<p>A relativistic optical potential <span id="id2">[]</span> in the relativistic
+impulse approximation. It provides separate real and imaginary parts for the
+vector and scalar self-energies (<span class="math notranslate nohighlight">\(\Sigma_V\)</span>, <span class="math notranslate nohighlight">\(\Sigma_S\)</span>) as
+polynomial functions of the local density and the projectile energy. This
+is the most comprehensive potential available and is recommended for heavy
+nuclei (<span class="math notranslate nohighlight">\(A \geq 12\)</span>).</p>
+<p><strong>``Schroedinger``</strong></p>
+<p>A Schrödinger-equivalent potential derived from the Cooper relativistic optical
+model by reducing the Dirac equation to a second-order Schrödinger form with
+Darwin correction terms. The <code class="docutils literal notranslate"><span class="pre">Mode</span></code> parameter selects the reduced-mass
+prescription used in the reduction:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 10.0%" />
+<col style="width: 90.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Mode</p></th>
+<th class="head"><p>Reduced-mass prescription</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>2</p></td>
+<td><p><span class="math notranslate nohighlight">\(\mu = E_{\rm cm,p}\,E_{\rm cm,t}/\sqrt{s}\)</span>  (kinematic)</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p><span class="math notranslate nohighlight">\(\mu = m_p\,m_t/(m_p+m_t)\)</span>  (standard non-relativistic)</p></td>
+</tr>
+<tr class="row-even"><td><p>4</p></td>
+<td><p><span class="math notranslate nohighlight">\(\mu = E_{\rm cm,p}\)</span>  (projectile energy only)</p></td>
+</tr>
+<tr class="row-odd"><td><p>5</p></td>
+<td><p><span class="math notranslate nohighlight">\(\mu = m_p\)</span>  (projectile mass only)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Mode 3 is recommended for cascade propagation of nucleons in medium-mass nuclei.
+The Hamiltonian is non-relativistic: <span class="math notranslate nohighlight">\(H = m_N + p^2/(2m_N) + V_{\rm central}\)</span>.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="phase-space.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Phase-Space Sampling and Unweighting</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="cascade.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Intranuclear Cascade Physics</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#binding-energy-and-fermi-momentum">Binding energy and Fermi momentum</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclear-density-and-configuration-files">Nuclear density and configuration files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fermi-gas-parameters">Fermi-gas parameters</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclear-potential-models">Nuclear potential models</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,594 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Intranuclear Cascade Physics &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics/cascade';</script>
+    <link rel="icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Ward Identity and Gauge Corrections" href="ward-identity.html" />
+    <link rel="prev" title="Nucleus Configuration" href="nucleus.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <script>document.write(`<img src="../../_static/logo.svg" class="logo__image only-dark" alt="Achilles 0.3.0 documentation - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../../_sources/src/physics/cascade.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Intranuclear Cascade Physics</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-based-propagation">Step-based propagation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-probability-models">Interaction probability models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#in-medium-corrections">In-medium corrections</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#potential-propagation">Potential propagation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-models">Interaction models</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="intranuclear-cascade-physics">
+<span id="cascade-physics"></span><h1>Intranuclear Cascade Physics<a class="headerlink" href="#intranuclear-cascade-physics" title="Link to this heading">#</a></h1>
+<p>After the hard interaction the struck nucleon — and any mesons or resonances
+produced — must traverse the nuclear medium before being detected. The
+intranuclear cascade (INC) models this propagation.</p>
+<section id="step-based-propagation">
+<h2>Step-based propagation<a class="headerlink" href="#step-based-propagation" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Base</span></code> algorithm advances each active particle through the nucleus in
+discrete steps of size <code class="docutils literal notranslate"><span class="pre">Step</span></code> (in fm). At each step the algorithm:</p>
+<ol class="arabic simple">
+<li><p>Computes the local nuclear density <span class="math notranslate nohighlight">\(\rho(\boldsymbol{r})\)</span> at the
+particle’s position.</p></li>
+<li><p>Calculates the total nucleon–nucleon (or pion–nucleon) cross section
+<span class="math notranslate nohighlight">\(\sigma\)</span> from the active interaction model.</p></li>
+<li><p>Evaluates an interaction probability <span class="math notranslate nohighlight">\(P_{\rm int}\)</span> from <span class="math notranslate nohighlight">\(\sigma\)</span>
+and <span class="math notranslate nohighlight">\(\rho\)</span> using the chosen <code class="docutils literal notranslate"><span class="pre">Probability</span></code> model.</p></li>
+<li><p>Draws a random number to decide whether an interaction occurs.</p></li>
+<li><p>If an interaction occurs, selects a target nucleon and applies the
+interaction model to determine the final state.</p></li>
+<li><p>Applies Pauli blocking: forbids scattering into momentum states below the
+local Fermi momentum.</p></li>
+</ol>
+<p>Particles that exit the nuclear volume escape; particles whose momentum falls
+below the Fermi momentum are recaptured by the residual nucleus.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">MFP</span></code> algorithm replaces the fixed-step loop with mean-free-path sampling:
+the path length to the next interaction is drawn from
+<span class="math notranslate nohighlight">\(\ell \sim \text{Exp}(\lambda_{\rm mfp}^{-1})\)</span> where
+<span class="math notranslate nohighlight">\(\lambda_{\rm mfp} = 1/(\rho\,\sigma)\)</span>. This is more efficient when the
+mean free path is large compared to the step size.</p>
+</section>
+<section id="interaction-probability-models">
+<h2>Interaction probability models<a class="headerlink" href="#interaction-probability-models" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Probability</span></code> setting controls how the geometric cross section is converted
+into an interaction probability at each step.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 15.0%" />
+<col style="width: 85.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Cylinder</span></code></p></td>
+<td><p>Each nucleon is modelled as a hard cylinder of cross-sectional area
+<span class="math notranslate nohighlight">\(\sigma\)</span>. An interaction occurs if the impact parameter between
+the propagating particle and a spectator falls within
+<span class="math notranslate nohighlight">\(b &lt; \sqrt{\sigma/\pi}\)</span>. This is the simplest and fastest model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Gaussian</span></code></p></td>
+<td><p>Each nucleon is modelled with a Gaussian spatial distribution of width
+related to <span class="math notranslate nohighlight">\(\sigma\)</span>. The interaction probability is the overlap
+integral of two Gaussians, smoothing the sharp cylinder edge.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Pion</span></code></p></td>
+<td><p>Modified probability model tuned for pion propagation, accounting for
+the pion’s extended spatial wavefunction.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="in-medium-corrections">
+<h2>In-medium corrections<a class="headerlink" href="#in-medium-corrections" title="Link to this heading">#</a></h2>
+<p>Nuclear matter modifies the effective NN cross section relative to its free-space
+value. The <code class="docutils literal notranslate"><span class="pre">InMedium</span></code> setting controls the level of approximation.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Setting</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Free-space cross sections are used throughout. No density or Fermi-momentum
+dependence. Fastest option; adequate when cascade effects are a small
+correction.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NonRelativistic</span></code></p></td>
+<td><p>The NN cross section is multiplied by a non-relativistic Pauli suppression
+factor that accounts for the fraction of final-state phase space blocked by
+the Fermi sea.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Relativistic</span></code></p></td>
+<td><p>Full relativistic in-medium modification including effective masses and
+mean-field potentials. Slowest but most accurate option for heavy nuclei.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="potential-propagation">
+<h2>Potential propagation<a class="headerlink" href="#potential-propagation" title="Link to this heading">#</a></h2>
+<p>When <code class="docutils literal notranslate"><span class="pre">PotentialProp:</span> <span class="pre">true</span></code>, particle trajectories are integrated with a
+symplectic (Hamiltonian-preserving) integrator in the nuclear optical potential.
+The potential bends particle paths and shifts their energy, allowing nucleons near
+threshold to be captured into bound states. This is most relevant for low-energy
+(sub-Fermi-momentum) nucleons. At higher energies the effect is small and
+<code class="docutils literal notranslate"><span class="pre">PotentialProp:</span> <span class="pre">false</span></code> is a good approximation.</p>
+</section>
+<section id="interaction-models">
+<h2>Interaction models<a class="headerlink" href="#interaction-models" title="Link to this heading">#</a></h2>
+<p><strong>NucleonNucleon</strong></p>
+<p>Handles elastic and inelastic NN scattering. The <code class="docutils literal notranslate"><span class="pre">GiBUU</span></code> parametrisation uses
+energy-dependent cross sections from the GiBUU transport model.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ResonanceMode</span></code> controls what happens when a <span class="math notranslate nohighlight">\(\Delta\)</span> resonance is
+produced in NN scattering:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Decay</span></code> — the <span class="math notranslate nohighlight">\(\Delta\)</span> decays to <span class="math notranslate nohighlight">\(N\pi\)</span> before the next cascade
+step. This is the simpler, faster option.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Propagate</span></code> — the <span class="math notranslate nohighlight">\(\Delta\)</span> is propagated as an explicit particle
+through the nucleus and interacts via the <code class="docutils literal notranslate"><span class="pre">DeltaInteraction</span></code> model before
+decaying. Use <code class="docutils literal notranslate"><span class="pre">Propagate</span></code> together with <code class="docutils literal notranslate"><span class="pre">DeltaInteraction</span></code> in the
+interactions list.</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">ExpSup</span></code> is an exponential suppression factor applied at short inter-nucleon
+distances to avoid unphysical hard scattering. Set to <code class="docutils literal notranslate"><span class="pre">0.0</span></code> to disable.</p>
+<p><strong>DeltaInteraction</strong></p>
+<p>Required when <code class="docutils literal notranslate"><span class="pre">NucleonNucleon</span> <span class="pre">→</span> <span class="pre">ResonanceMode:</span> <span class="pre">Propagate</span></code>. Models
+<span class="math notranslate nohighlight">\(\Delta N\)</span> scattering and <span class="math notranslate nohighlight">\(\Delta\)</span> propagation through nuclear matter.
+<code class="docutils literal notranslate"><span class="pre">SWaveAbsorption:</span> <span class="pre">true</span></code> enables s-wave <span class="math notranslate nohighlight">\(\Delta\)</span> absorption
+(<span class="math notranslate nohighlight">\(\Delta N \to NN\)</span>).</p>
+<p><strong>PionInteraction</strong></p>
+<p>Models pion rescattering and absorption. Has two sub-models:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">HardScatter</span></code> — quasi-elastic <span class="math notranslate nohighlight">\(\pi N \to \pi N\)</span> scattering via
+<code class="docutils literal notranslate"><span class="pre">MesonBaryonInteraction</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Absorption</span></code> — pion absorption on a nucleon pair
+(<span class="math notranslate nohighlight">\(\pi NN \to NN\)</span>) via <code class="docutils literal notranslate"><span class="pre">PionAbsorptionOneStep</span></code>.</p></li>
+</ul>
+<p><strong>ConstantInteraction</strong></p>
+<p>Assigns user-specified constant cross sections to any two-body channel not
+handled by the other models. This is used to give zero cross sections to photon
+and hyperon channels so that they propagate freely through the nucleus.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="nucleus.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Nucleus Configuration</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="ward-identity.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Ward Identity and Gauge Corrections</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#step-based-propagation">Step-based propagation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-probability-models">Interaction probability models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#in-medium-corrections">In-medium corrections</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#potential-propagation">Potential propagation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-models">Interaction models</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

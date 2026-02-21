@@ -43,6 +43,7 @@
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/run-card';</script>
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
@@ -158,11 +159,24 @@
  </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <ul class="current nav bd-sidenav">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">2. Getting Started</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">3. Run Card Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="physics/nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
@@ -314,16 +328,34 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.1. Main Settings</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.2. Processes</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.3. Beams</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.4. Cascade</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.5. NuclearModels</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.6. Nuclei</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.7. HardCuts</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.8. Options</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.9. Backend</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.10. Sherpa Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#including-external-files">3.1. Including External Files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.2. Main Settings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.3. Processes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.4. Beams</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#beam-params-types">3.4.1. <code class="docutils literal notranslate"><span class="pre">Beam</span> <span class="pre">Params</span></code> types</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.5. Cascade</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-models">3.5.1. Interaction Models</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.6. NuclearModels</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-fields">3.6.1. Common fields</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#qespectral">3.6.2. <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hyperonspectral">3.6.3. <code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fortranmodel">3.6.4. <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#formfactorfile-format">3.6.5. <code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code> format</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.7. Nuclei</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nucleus-fields">3.7.1. Nucleus fields</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.8. HardCuts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.9. Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.10. Backend</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.11. Sherpa Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#output-formats">3.12. Output Formats</a></li>
 </ul>
             </nav>
         </div>
@@ -352,20 +384,67 @@ of Achilles.</p>
 </div>
 <nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#main-settings" id="id2">Main Settings</a></p></li>
-<li><p><a class="reference internal" href="#processes" id="id3">Processes</a></p></li>
-<li><p><a class="reference internal" href="#beams" id="id4">Beams</a></p></li>
-<li><p><a class="reference internal" href="#cascade" id="id5">Cascade</a></p></li>
-<li><p><a class="reference internal" href="#nuclearmodels" id="id6">NuclearModels</a></p></li>
-<li><p><a class="reference internal" href="#nuclei" id="id7">Nuclei</a></p></li>
-<li><p><a class="reference internal" href="#hardcuts" id="id8">HardCuts</a></p></li>
-<li><p><a class="reference internal" href="#options" id="id9">Options</a></p></li>
-<li><p><a class="reference internal" href="#backend" id="id10">Backend</a></p></li>
-<li><p><a class="reference internal" href="#sherpa-options" id="id11">Sherpa Options</a></p></li>
+<li><p><a class="reference internal" href="#including-external-files" id="id2">Including External Files</a></p></li>
+<li><p><a class="reference internal" href="#main-settings" id="id3">Main Settings</a></p></li>
+<li><p><a class="reference internal" href="#processes" id="id4">Processes</a></p></li>
+<li><p><a class="reference internal" href="#beams" id="id5">Beams</a></p>
+<ul>
+<li><p><a class="reference internal" href="#beam-params-types" id="id6"><code class="docutils literal notranslate"><span class="pre">Beam</span> <span class="pre">Params</span></code> types</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#cascade" id="id7">Cascade</a></p>
+<ul>
+<li><p><a class="reference internal" href="#interaction-models" id="id8">Interaction Models</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#nuclearmodels" id="id9">NuclearModels</a></p>
+<ul>
+<li><p><a class="reference internal" href="#common-fields" id="id10">Common fields</a></p></li>
+<li><p><a class="reference internal" href="#qespectral" id="id11"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></p></li>
+<li><p><a class="reference internal" href="#hyperonspectral" id="id12"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></p></li>
+<li><p><a class="reference internal" href="#fortranmodel" id="id13"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="#formfactorfile-format" id="id14"><code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code> format</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#nuclei" id="id15">Nuclei</a></p>
+<ul>
+<li><p><a class="reference internal" href="#nucleus-fields" id="id16">Nucleus fields</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#hardcuts" id="id17">HardCuts</a></p></li>
+<li><p><a class="reference internal" href="#options" id="id18">Options</a></p></li>
+<li><p><a class="reference internal" href="#backend" id="id19">Backend</a></p></li>
+<li><p><a class="reference internal" href="#sherpa-options" id="id20">Sherpa Options</a></p></li>
+<li><p><a class="reference internal" href="#output-formats" id="id21">Output Formats</a></p></li>
 </ul>
 </nav>
+<section id="including-external-files">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">3.1. </span>Including External Files</a><a class="headerlink" href="#including-external-files" title="Link to this heading">#</a></h2>
+<p>Any value in the run card can be replaced by the contents of a separate YAML file using the
+custom <code class="docutils literal notranslate"><span class="pre">!include</span></code> tag:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SomeKey</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;path/to/file.yml&quot;</span>
+</pre></div>
+</div>
+<p>When Achilles loads the run card it replaces every <code class="docutils literal notranslate"><span class="pre">!include</span></code> scalar with the full parsed
+contents of the referenced file. The path is resolved relative to the Achilles data search
+path (the <code class="docutils literal notranslate"><span class="pre">Settings</span></code> directory); absolute paths are also accepted. Included files are
+processed recursively, so an included file may itself contain further <code class="docutils literal notranslate"><span class="pre">!include</span></code> tags.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">!include</span></code> tag is particularly useful for sharing nucleus definitions, cascade
+interaction tables, form factor files, and option defaults across multiple run cards without
+duplicating their contents. The pre-supplied defaults under <code class="docutils literal notranslate"><span class="pre">data/default/</span></code> make
+extensive use of this mechanism:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/12C.yml&quot;</span>
+
+<span class="nt">Cascade</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/VirtResInteractions.yml&quot;</span>
+
+<span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/OptionDefaults.yml&quot;</span>
+</pre></div>
+</div>
+</section>
 <section id="main-settings">
-<h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">3.1. </span>Main Settings</a><a class="headerlink" href="#main-settings" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Main Settings</a><a class="headerlink" href="#main-settings" title="Link to this heading">#</a></h2>
 <p>The first section in the run card is the <code class="docutils literal notranslate"><span class="pre">Main</span></code> section. This section contains information about the basic options for running Achilles. These include:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">NEvents</span></code> (integer): Number of unweighted events to generate</p></li>
@@ -385,10 +464,21 @@ gzip library or not.</p></li>
 </dl>
 </li>
 </ul>
-<p>Additional discussion on the output formats are discussed in detail in the <a href="#id12"><span class="problematic" id="id13">`Output Formats`_</span></a> section.</p>
+<p>Additional discussion on the output formats are discussed in detail in the <a class="reference internal" href="#output-formats">Output Formats</a> section.</p>
+<p>Example:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Main</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">NEvents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50000</span>
+<span class="w">  </span><span class="nt">HardCuts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">RunDecays</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">Output</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NuHepMC</span>
+<span class="w">    </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">achilles.hepmc</span>
+<span class="w">    </span><span class="nt">Zipped</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
 </section>
 <section id="processes">
-<h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
 <p>The processes section is where the set of incoming and outgoing leptons are listed.
 Each line in this section denotes a process to calculate. Achilles will combine this information
 with the list of nuclear models to consider listed in <a class="reference internal" href="#nuclearmodels">NuclearModels</a>.</p>
@@ -416,28 +506,780 @@ through the use of the <a class="reference internal" href="interfaces.html#sherp
 defining the physics model to be used, please see the discussion in <a class="reference internal" href="#sherpa-options">Sherpa Options</a>.</p>
 </section>
 <section id="beams">
-<h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Beams</a><a class="headerlink" href="#beams" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">3.4. </span>Beams</a><a class="headerlink" href="#beams" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Beams</span></code> section defines the energy distribution(s) of the incoming beam particle(s).
+Each entry in the list specifies a single beam via its PDG <code class="docutils literal notranslate"><span class="pre">PID</span></code> and a <code class="docutils literal notranslate"><span class="pre">Beam</span> <span class="pre">Params</span></code>
+sub-node that selects the beam type and its parameters.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beams</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Beam</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">PID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">14</span>
+<span class="w">      </span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Monochromatic</span>
+<span class="w">        </span><span class="nt">Energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+<p>Multiple entries are allowed when running with more than one beam species simultaneously;
+however, all beams must share the same energy range.</p>
+<section id="beam-params-types">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">3.4.1. </span><code class="docutils literal notranslate"><span class="pre">Beam</span> <span class="pre">Params</span></code> types</a><a class="headerlink" href="#beam-params-types" title="Link to this heading">#</a></h3>
+<p><strong>Monochromatic</strong></p>
+<p>A fixed-energy beam. All events use exactly the specified energy.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Monochromatic</span>
+<span class="w">  </span><span class="nt">Energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1108</span><span class="w">          </span><span class="c1"># beam energy in MeV</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Energy</span></code></p></td>
+<td><p>Beam energy in MeV.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Spectrum</strong></p>
+<p>A beam whose energy is sampled from a flux histogram read from a data file. The file
+format is auto-detected from its header line; supported formats are <code class="docutils literal notranslate"><span class="pre">Achilles</span></code>,
+<code class="docutils literal notranslate"><span class="pre">MiniBooNE</span></code>, and <code class="docutils literal notranslate"><span class="pre">T2K</span></code> (ND280).</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Spectrum</span>
+<span class="w">  </span><span class="nt">Histogram</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flux/my_flux.txt</span>
+</pre></div>
+</div>
+<p>Alternatively, a flux histogram stored in a HepData YAML file can be used:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Spectrum</span>
+<span class="w">  </span><span class="nt">HepData</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">flux/my_flux.yaml</span>
+</pre></div>
+</div>
+<p>If Achilles is compiled with ROOT support, a ROOT histogram can be specified:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Spectrum</span>
+<span class="w">  </span><span class="nt">ROOTHist</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">File</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my_flux.root</span><span class="w">      </span><span class="c1"># resolved under flux/ directory</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Histogram</span></code></p></td>
+<td><p>Path to a text-format flux histogram. The file format (<code class="docutils literal notranslate"><span class="pre">Achilles</span></code>,
+<code class="docutils literal notranslate"><span class="pre">MiniBooNE</span></code>, or <code class="docutils literal notranslate"><span class="pre">T2K</span></code>) is determined from the file’s header line.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HepData</span></code></p></td>
+<td><p>Path to a HepData YAML file containing the flux histogram.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ROOTHist</span></code></p></td>
+<td><p>Sub-node with a <code class="docutils literal notranslate"><span class="pre">File</span></code> key giving the ROOT file name (requires ROOT support).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>FlatFlux</strong></p>
+<p>A beam with a uniform (flat) energy distribution between <code class="docutils literal notranslate"><span class="pre">MinEnergy</span></code> and <code class="docutils literal notranslate"><span class="pre">MaxEnergy</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FlatFlux</span>
+<span class="w">  </span><span class="nt">MinEnergy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200</span><span class="w">          </span><span class="c1"># MeV</span>
+<span class="w">  </span><span class="nt">MaxEnergy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2000</span><span class="w">         </span><span class="c1"># MeV</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 80.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MinEnergy</span></code></p></td>
+<td><p>Minimum beam energy in MeV.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MaxEnergy</span></code></p></td>
+<td><p>Maximum beam energy in MeV.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="cascade">
-<h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">3.4. </span>Cascade</a><a class="headerlink" href="#cascade" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">3.5. </span>Cascade</a><a class="headerlink" href="#cascade" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Cascade</span></code> section controls the intranuclear cascade (INC) that propagates the
+hadronic final-state particles through the nucleus after the hard interaction.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Cascade</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/VirtResInteractions.yml&quot;</span>
+<span class="w">  </span><span class="nt">Step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">  </span><span class="nt">Probability</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cylinder</span>
+<span class="w">  </span><span class="nt">InMedium</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="w">  </span><span class="nt">PotentialProp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">Algorithm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Base</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Run</span></code></p></td>
+<td><p>Boolean. Set to <code class="docutils literal notranslate"><span class="pre">true</span></code> to enable the intranuclear cascade; <code class="docutils literal notranslate"><span class="pre">false</span></code> skips
+the cascade entirely.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Interactions</span></code></p></td>
+<td><p>List of interaction model definitions used during the cascade. Typically
+provided via <code class="docutils literal notranslate"><span class="pre">!include</span></code> (see below). Each entry has a <code class="docutils literal notranslate"><span class="pre">Name</span></code> and an
+<code class="docutils literal notranslate"><span class="pre">Options</span></code> sub-node.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Step</span></code></p></td>
+<td><p>Step size for particle propagation through the nucleus in fm. Smaller values
+increase accuracy at the cost of computation time. Default: <code class="docutils literal notranslate"><span class="pre">0.04</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Probability</span></code></p></td>
+<td><p>Model used to compute the interaction probability at each step. Accepted
+values: <code class="docutils literal notranslate"><span class="pre">Cylinder</span></code>, <code class="docutils literal notranslate"><span class="pre">Gaussian</span></code>, <code class="docutils literal notranslate"><span class="pre">Pion</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">InMedium</span></code></p></td>
+<td><p>In-medium correction applied to particle kinematics during propagation.
+Accepted values: <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">NonRelativistic</span></code>, <code class="docutils literal notranslate"><span class="pre">Relativistic</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PotentialProp</span></code></p></td>
+<td><p>Boolean. When <code class="docutils literal notranslate"><span class="pre">true</span></code>, the nuclear potential is used to modify particle
+trajectories during propagation.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Algorithm</span></code></p></td>
+<td><p>Cascade algorithm. Accepted values: <code class="docutils literal notranslate"><span class="pre">Base</span></code> (standard step-based propagation),
+<code class="docutils literal notranslate"><span class="pre">MFP</span></code> (mean-free-path sampling).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="interaction-models">
+<h3><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">3.5.1. </span>Interaction Models</a><a class="headerlink" href="#interaction-models" title="Link to this heading">#</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">Interactions</span></code> list specifies which hadronic interaction models are active
+during the cascade. Each entry requires a <code class="docutils literal notranslate"><span class="pre">Name</span></code> and an <code class="docutils literal notranslate"><span class="pre">Options</span></code> sub-node.</p>
+<p><strong>NucleonNucleon</strong></p>
+<p>Nucleon–nucleon rescattering.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NucleonNucleon</span>
+<span class="w">  </span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GiBUU</span>
+<span class="w">    </span><span class="nt">ResonanceMode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Decay</span>
+<span class="w">    </span><span class="nt">ExpSup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Mode</span></code></p></td>
+<td><p>Cross-section parametrisation. Currently <code class="docutils literal notranslate"><span class="pre">GiBUU</span></code> is supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ResonanceMode</span></code></p></td>
+<td><p>Treatment of resonances produced during NN scattering. <code class="docutils literal notranslate"><span class="pre">Decay</span></code> causes
+resonances to decay immediately; <code class="docutils literal notranslate"><span class="pre">Propagate</span></code> propagates them through the
+cascade.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExpSup</span></code></p></td>
+<td><p>Exponential suppression factor. Set to <code class="docutils literal notranslate"><span class="pre">0.0</span></code> to disable.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>DeltaInteraction</strong></p>
+<p>Delta resonance interactions (used together with <code class="docutils literal notranslate"><span class="pre">ResonanceMode:</span> <span class="pre">Propagate</span></code>).</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DeltaInteraction</span>
+<span class="w">  </span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GiBUU</span>
+<span class="w">    </span><span class="nt">SWaveAbsorption</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">ExpSup</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.0</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Mode</span></code></p></td>
+<td><p>Cross-section parametrisation. Currently <code class="docutils literal notranslate"><span class="pre">GiBUU</span></code> is supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SWaveAbsorption</span></code></p></td>
+<td><p>Boolean. Enable s-wave pion absorption via the Delta.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExpSup</span></code></p></td>
+<td><p>Exponential suppression factor. Set to <code class="docutils literal notranslate"><span class="pre">0.0</span></code> to disable.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>PionInteraction</strong></p>
+<p>Pion rescattering and absorption.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PionInteraction</span>
+<span class="w">  </span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">HardScatter</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MesonBaryonInteraction</span>
+<span class="w">      </span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Absorption</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PionAbsorptionOneStep</span>
+<span class="w">      </span><span class="nt">Options</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>ConstantInteraction</strong></p>
+<p>Assigns a fixed cross section to specified two-body initial states. Used to give
+zero-cross-section placeholders to hyperon and photon channels:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConstantInteraction</span>
+<span class="w">  </span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">InitialStates</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Incoming</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">22</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2112</span><span class="p p-Indicator">]</span>
+<span class="w">        </span><span class="nt">Outgoing</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Outgoing</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">22</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">2112</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">CrossSection</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</pre></div>
+</div>
+<p>Each entry under <code class="docutils literal notranslate"><span class="pre">InitialStates</span></code> maps a pair of incoming PIDs to one or more
+outgoing channels, each with a constant <code class="docutils literal notranslate"><span class="pre">CrossSection</span></code> in mb.</p>
+</section>
 </section>
 <section id="nuclearmodels">
-<h2><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">3.5. </span>NuclearModels</a><a class="headerlink" href="#nuclearmodels" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">3.6. </span>NuclearModels</a><a class="headerlink" href="#nuclearmodels" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">NuclearModels</span></code> section is a list of nuclear model configurations. Achilles
+evaluates every listed model for each process defined in <a class="reference internal" href="#processes">Processes</a>, so multiple
+models can be run simultaneously within a single job.</p>
+<p>Each entry begins with a <code class="docutils literal notranslate"><span class="pre">NuclearModel:</span></code> key whose sub-node contains at minimum a
+<code class="docutils literal notranslate"><span class="pre">Model</span></code> field identifying the model type, along with model-specific options described
+below.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QESpectral</span>
+<span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">      </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12p_tot.data</span>
+<span class="w">      </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12n_tot.data</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RES_Spectral_Func</span>
+<span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+<section id="common-fields">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">3.6.1. </span>Common fields</a><a class="headerlink" href="#common-fields" title="Link to this heading">#</a></h3>
+<p>The following fields are shared by all model types:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Model</span></code></p></td>
+<td><p>Model type identifier. Built-in values: <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code>, <code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code>,
+<code class="docutils literal notranslate"><span class="pre">FortranModel</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code></p></td>
+<td><p>Path to a YAML file defining the form factor parametrisations. See
+<code class="docutils literal notranslate"><span class="pre">data/default/FormFactors.yml</span></code> for the full set of supported parametrisations
+and their parameters.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Ward</span></code></p></td>
+<td><p>Ward–Takahashi identity gauge correction applied to the computed hadronic
+current. Accepted values: <code class="docutils literal notranslate"><span class="pre">None</span></code>, <code class="docutils literal notranslate"><span class="pre">Coulomb</span></code>, <code class="docutils literal notranslate"><span class="pre">Weyl</span></code>, <code class="docutils literal notranslate"><span class="pre">Landau</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="qespectral">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">3.6.2. </span><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a><a class="headerlink" href="#qespectral" title="Link to this heading">#</a></h3>
+<p>Quasi-elastic scattering computed with a nucleon spectral function.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QESpectral</span>
+<span class="w">  </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">  </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12p_tot.data</span>
+<span class="w">  </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12n_tot.data</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code></p></td>
+<td><p>Path to the nuclear configuration data file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SpectralP</span></code></p></td>
+<td><p>Path to the proton spectral function data file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SpectralN</span></code></p></td>
+<td><p>Path to the neutron spectral function data file.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="hyperonspectral">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">3.6.3. </span><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a><a class="headerlink" href="#hyperonspectral" title="Link to this heading">#</a></h3>
+<p>Hyperon production computed with a nucleon spectral function. The configuration keys
+are identical to <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HyperonSpectral</span>
+<span class="w">  </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_pke.data</span>
+<span class="w">  </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/pke12_tot.data</span>
+<span class="w">  </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/pke12_tot.data</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+</section>
+<section id="fortranmodel">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink"><span class="section-number">3.6.4. </span><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a><a class="headerlink" href="#fortranmodel" title="Link to this heading">#</a></h3>
+<p>A nuclear model implemented in Fortran and loaded through the
+<a class="reference internal" href="interfaces.html#fortran-interface"><span class="std std-ref">Fortran interface</span></a>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
+<span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RES_Spectral_Func</span>
+<span class="w">  </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>Name of the registered Fortran model to instantiate (must match the name
+passed to <code class="docutils literal notranslate"><span class="pre">factory%register_model</span></code> in <code class="docutils literal notranslate"><span class="pre">nuclear_model_interface.f90</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ConfigFile</span></code></p></td>
+<td><p>Path to the model configuration file passed verbatim to the Fortran <code class="docutils literal notranslate"><span class="pre">init</span></code>
+procedure.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ModelParamsFile</span></code> <em>(optional)</em></p></td>
+<td><p>Path to a YAML file whose <code class="docutils literal notranslate"><span class="pre">Parameters</span></code> mapping supplies additional numeric
+parameters to the Fortran model.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="formfactorfile-format">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink"><span class="section-number">3.6.5. </span><code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code> format</a><a class="headerlink" href="#formfactorfile-format" title="Link to this heading">#</a></h3>
+<p>The form factor YAML file (e.g. <code class="docutils literal notranslate"><span class="pre">data/default/FormFactors.yml</span></code>) has two parts.
+The first part maps each form factor category to its parametrisation name:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">vector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Kelly</span>
+<span class="nt">axial</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AxialZExpansion</span>
+<span class="nt">coherent</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Helm</span>
+<span class="nt">resonancevector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ResonanceVectorDummy</span>
+<span class="nt">resonanceaxial</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ResonanceAxialDummy</span>
+<span class="nt">mecvector</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MesonExchangeVector</span>
+<span class="nt">mecaxial</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MesonExchangeAxial</span>
+<span class="nt">hyperon</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Hyperon</span>
+</pre></div>
+</div>
+<p>The second part provides the parameter values for each named parametrisation. The
+available parametrisations for the vector form factors include <code class="docutils literal notranslate"><span class="pre">Kelly</span></code>, <code class="docutils literal notranslate"><span class="pre">BBBA</span></code>,
+<code class="docutils literal notranslate"><span class="pre">ArringtonHill</span></code>, and <code class="docutils literal notranslate"><span class="pre">VectorDipole</span></code>; for the axial form factor <code class="docutils literal notranslate"><span class="pre">AxialZExpansion</span></code>
+and <code class="docutils literal notranslate"><span class="pre">AxialDipole</span></code> are supported; for coherent scattering <code class="docutils literal notranslate"><span class="pre">Helm</span></code> and <code class="docutils literal notranslate"><span class="pre">Lovato</span></code>
+are available. Each parametrisation section must supply the numeric parameters listed
+in the corresponding form factor implementation.</p>
+</section>
 </section>
 <section id="nuclei">
-<h2><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">3.6. </span>Nuclei</a><a class="headerlink" href="#nuclei" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id15" role="doc-backlink"><span class="section-number">3.7. </span>Nuclei</a><a class="headerlink" href="#nuclei" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Nuclei</span></code> section is a list of target nuclei to simulate. Each entry is a
+<code class="docutils literal notranslate"><span class="pre">Nucleus:</span></code> node that can be written inline or loaded from a file with <code class="docutils literal notranslate"><span class="pre">!include</span></code>.
+The pre-supplied nucleus files are located in <code class="docutils literal notranslate"><span class="pre">data/default/</span></code>.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/12C.yml&quot;</span>
+</pre></div>
+</div>
+<p>Currently provided nucleus files: <code class="docutils literal notranslate"><span class="pre">1H.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">1N.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">12C.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">16O.yml</span></code>,
+<code class="docutils literal notranslate"><span class="pre">40Ar.yml</span></code>.</p>
+<section id="nucleus-fields">
+<h3><a class="toc-backref" href="#id16" role="doc-backlink"><span class="section-number">3.7.1. </span>Nucleus fields</a><a class="headerlink" href="#nucleus-fields" title="Link to this heading">#</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12C</span>
+<span class="nt">Binding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.6</span><span class="w">            </span><span class="c1"># MeV</span>
+<span class="nt">Fermi Momentum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">225</span><span class="w">     </span><span class="c1"># MeV</span>
+
+<span class="nt">Density</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">ProtonFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/densities/c12.prova.txt</span>
+<span class="w">  </span><span class="nt">NeutronFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/densities/c12.prova.txt</span>
+<span class="w">  </span><span class="nt">FilePotential</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/realOP_12C_EDAI.dat</span>
+<span class="w">  </span><span class="nt">Function</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">configuration</span>
+<span class="w">  </span><span class="nt">Configs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/configurations/QMC_configs.out.gz</span>
+
+<span class="nt">FermiGas</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Local</span>
+<span class="w">  </span><span class="nt">Correlated</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">SRCfraction</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<span class="w">  </span><span class="nt">LambdaSRC</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2.75</span>
+<span class="w">  </span><span class="nt">Params</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+
+<span class="nt">Potential</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Schroedinger</span>
+<span class="w">  </span><span class="nt">r0</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.16</span>
+<span class="w">  </span><span class="nt">Mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>Human-readable nucleus identifier (e.g. <code class="docutils literal notranslate"><span class="pre">12C</span></code>, <code class="docutils literal notranslate"><span class="pre">40Ar</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Binding</span></code></p></td>
+<td><p>Average binding energy per nucleon in MeV.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Fermi</span> <span class="pre">Momentum</span></code></p></td>
+<td><p>Fermi momentum in MeV.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Density sub-node</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ProtonFile</span></code></p></td>
+<td><p>Path to the proton density profile data file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NeutronFile</span></code></p></td>
+<td><p>Path to the neutron density profile data file.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FilePotential</span></code></p></td>
+<td><p>Path to the real optical potential data file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Function</span></code></p></td>
+<td><p>Density function type. Use <code class="docutils literal notranslate"><span class="pre">configuration</span></code> to sample from a set of
+pre-generated nucleon configurations.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Configs</span></code></p></td>
+<td><p>Path to the nucleon configuration file (gzip-compressed). Required when
+<code class="docutils literal notranslate"><span class="pre">Function</span></code> is <code class="docutils literal notranslate"><span class="pre">configuration</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>FermiGas sub-node</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Type</span></code></p></td>
+<td><p>Fermi gas model type. Currently <code class="docutils literal notranslate"><span class="pre">Local</span></code> (local Fermi gas) is supported.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Correlated</span></code></p></td>
+<td><p>Boolean. Enable short-range correlation (SRC) corrections.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SRCfraction</span></code></p></td>
+<td><p>Fraction of nucleons assigned to the SRC component.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LambdaSRC</span></code></p></td>
+<td><p>SRC momentum cut-off scale in GeV.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Params</span></code></p></td>
+<td><p>List of additional model-specific parameters (may be empty).</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Potential sub-node</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>Potential model. Accepted values: <code class="docutils literal notranslate"><span class="pre">Schroedinger</span></code> (Schrödinger-equivalent
+optical potential), <code class="docutils literal notranslate"><span class="pre">Cooper</span></code> (relativistic optical potential), <code class="docutils literal notranslate"><span class="pre">Wiringa</span></code>
+(non-relativistic Wiringa potential).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">r0</span></code></p></td>
+<td><p>Nuclear saturation density in fm<sup>-3</sup>. Typical value: <code class="docutils literal notranslate"><span class="pre">0.16</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Mode</span></code></p></td>
+<td><p>Integer mode flag passed to the potential implementation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="hardcuts">
-<h2><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">3.7. </span>HardCuts</a><a class="headerlink" href="#hardcuts" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">3.8. </span>HardCuts</a><a class="headerlink" href="#hardcuts" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">HardCuts</span></code> section defines kinematic selection cuts applied to the hard-scattering
+final state before event weighting. Cuts are only active when <code class="docutils literal notranslate"><span class="pre">HardCuts:</span> <span class="pre">true</span></code> is set
+in <a class="reference internal" href="#main-settings">Main Settings</a>. Each entry in the list specifies one cut:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">HardCuts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AngleTheta</span>
+<span class="w">    </span><span class="nt">PIDs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11</span>
+<span class="w">    </span><span class="nt">range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">36.5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">38.5</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Type</span></code></p></td>
+<td><p>Cut type. <code class="docutils literal notranslate"><span class="pre">AngleTheta</span></code> selects events where the polar angle <span class="math notranslate nohighlight">\(\theta\)</span>
+(in degrees) of the specified particle falls within the given range.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">PIDs</span></code></p></td>
+<td><p>PDG PID of the particle to which the cut is applied. A single integer or a
+list of integers is accepted.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">range</span></code></p></td>
+<td><p>Two-element list <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code> giving the allowed range for the cut variable.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <section id="options">
-<h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">3.8. </span>Options</a><a class="headerlink" href="#options" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id18" role="doc-backlink"><span class="section-number">3.9. </span>Options</a><a class="headerlink" href="#options" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Options</span></code> section controls the numerical integration and unweighting settings.
+It is most conveniently loaded from a shared defaults file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/OptionDefaults.yml&quot;</span>
+</pre></div>
+</div>
+<p>The full inline form is:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Options</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Initialize</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Seed</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12345678</span>
+<span class="w">    </span><span class="nt">Accuracy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.0e-2</span>
+<span class="w">  </span><span class="nt">Unweighting</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Percentile</span>
+<span class="w">    </span><span class="nt">percentile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">99</span>
+</pre></div>
+</div>
+<p><strong>Initialize sub-node</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Seed</span></code></p></td>
+<td><p>Integer seed for the random number generator. Use different seeds to obtain
+statistically independent runs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Accuracy</span></code></p></td>
+<td><p>Target relative integration accuracy for the adaptive Monte Carlo integration.
+Smaller values require more function evaluations.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Unweighting sub-node</strong></p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>Unweighting algorithm. <code class="docutils literal notranslate"><span class="pre">Percentile</span></code> determines the maximum weight from a
+high percentile of the weight distribution, reducing the impact of rare
+large-weight events.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">percentile</span></code></p></td>
+<td><p>Percentile (0–100) used to set the maximum weight when <code class="docutils literal notranslate"><span class="pre">Name</span></code> is
+<code class="docutils literal notranslate"><span class="pre">Percentile</span></code>. A value of <code class="docutils literal notranslate"><span class="pre">99</span></code> discards the top 1% of weights.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <section id="backend">
-<h2><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">3.9. </span>Backend</a><a class="headerlink" href="#backend" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id19" role="doc-backlink"><span class="section-number">3.10. </span>Backend</a><a class="headerlink" href="#backend" title="Link to this heading">#</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Backend</span></code> section selects the cross-section calculation backend.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Default</span>
+<span class="w">  </span><span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Name</span></code></p></td>
+<td><p>Backend identifier. <code class="docutils literal notranslate"><span class="pre">Default</span></code> uses the built-in matrix-element evaluator.
+<code class="docutils literal notranslate"><span class="pre">Sherpa</span></code> and <code class="docutils literal notranslate"><span class="pre">BSM</span></code> delegate to the Sherpa library (requires Achilles to be
+compiled with <code class="docutils literal notranslate"><span class="pre">ACHILLES_SHERPA_INTERFACE</span></code>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Options</span></code></p></td>
+<td><p>Backend-specific options passed as a YAML sequence. The <code class="docutils literal notranslate"><span class="pre">Default</span></code> backend
+accepts an empty list.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 </section>
 <section id="sherpa-options">
-<h2><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">3.10. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
+<h2><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">3.11. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
+<p>When the <code class="docutils literal notranslate"><span class="pre">Sherpa</span></code> or <code class="docutils literal notranslate"><span class="pre">BSM</span></code> backend is selected, Achilles requires a top-level
+<code class="docutils literal notranslate"><span class="pre">SherpaOptions</span></code> section. This is most conveniently provided via <code class="docutils literal notranslate"><span class="pre">!include</span></code>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SherpaOptions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/SherpaOptions.yml&quot;</span>
+</pre></div>
+</div>
+<p>The inline form is:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SherpaOptions</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SMnu</span>
+<span class="w">  </span><span class="nt">ParamCard</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">parameters.dat</span>
+</pre></div>
+</div>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 75.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Model</span></code></p></td>
+<td><p>Sherpa model identifier. <code class="docutils literal notranslate"><span class="pre">SMnu</span></code> is the Standard Model with massive neutrinos.
+Custom UFO models are also supported; see the
+<a class="reference internal" href="interfaces.html#sherpa-interface"><span class="std std-ref">Sherpa interface</span></a> documentation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ParamCard</span></code></p></td>
+<td><p>Path to the Sherpa parameter card file that sets coupling constants and particle
+masses for the selected model.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="output-formats">
+<h2><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">3.12. </span>Output Formats</a><a class="headerlink" href="#output-formats" title="Link to this heading">#</a></h2>
+<p>The output format is set by the <code class="docutils literal notranslate"><span class="pre">Format</span></code> key in the <code class="docutils literal notranslate"><span class="pre">Output</span></code> sub-node of
+<a class="reference internal" href="#main-settings">Main Settings</a>.</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">NuHepMC</span></code></dt><dd><p>The recommended output format. Events are written in the <a class="reference external" href="https://github.com/NuHepMC/Spec">NuHepMC</a> convention on top of the HepMC3 library.
+NuHepMC files are readable by standard HepMC3 analysis tools and carry
+neutrino-experiment-specific metadata. Compressed output (<code class="docutils literal notranslate"><span class="pre">Zipped:</span> <span class="pre">true</span></code>) uses
+gzip.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">HepMC</span></code> <em>(deprecated)</em></dt><dd><p>Plain HepMC3 format without NuHepMC metadata. Retained for backward compatibility.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">Achilles</span></code></dt><dd><p>Native Achilles binary format. This is a compact representation intended for
+internal debugging and post-processing within the Achilles framework.</p>
+</dd>
+</dl>
 </section>
 </section>
 
@@ -486,16 +1328,34 @@ defining the physics model to be used, please see the discussion in <a class="re
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.1. Main Settings</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.2. Processes</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.3. Beams</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.4. Cascade</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.5. NuclearModels</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.6. Nuclei</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.7. HardCuts</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.8. Options</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.9. Backend</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.10. Sherpa Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#including-external-files">3.1. Including External Files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.2. Main Settings</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.3. Processes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#beams">3.4. Beams</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#beam-params-types">3.4.1. <code class="docutils literal notranslate"><span class="pre">Beam</span> <span class="pre">Params</span></code> types</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cascade">3.5. Cascade</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#interaction-models">3.5.1. Interaction Models</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclearmodels">3.6. NuclearModels</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#common-fields">3.6.1. Common fields</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#qespectral">3.6.2. <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#hyperonspectral">3.6.3. <code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fortranmodel">3.6.4. <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#formfactorfile-format">3.6.5. <code class="docutils literal notranslate"><span class="pre">FormFactorFile</span></code> format</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#nuclei">3.7. Nuclei</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#nucleus-fields">3.7.1. Nucleus fields</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hardcuts">3.8. HardCuts</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#options">3.9. Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#backend">3.10. Backend</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-options">3.11. Sherpa Options</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#output-formats">3.12. Output Formats</a></li>
 </ul>
   </nav></div>
 

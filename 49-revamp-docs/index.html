@@ -159,11 +159,24 @@
  </script></div>
         <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
     <div class="bd-toc-item navbar-nav active">
-        <ul class="nav bd-sidenav">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="src/introduction.html">1. Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="src/getting-started.html">2. Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="src/run-card.html">3. Run Card Structure</a></li>
 <li class="toctree-l1"><a class="reference internal" href="src/interfaces.html">4. Interfaces</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="src/physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="src/physics/nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="src/references.html">References</a></li>
@@ -330,6 +343,7 @@ document.write(`
   <section id="welcome-to-achilles-s-documentation">
 <h1>Welcome to Achilles’s documentation!<a class="headerlink" href="#welcome-to-achilles-s-documentation" title="Link to this heading">#</a></h1>
 <div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="src/introduction.html">1. Introduction</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="src/introduction.html#introduction-to-achilles">1.1. Introduction to Achilles</a></li>
@@ -343,21 +357,74 @@ document.write(`
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="src/run-card.html">3. Run Card Structure</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#main-settings">3.1. Main Settings</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#processes">3.2. Processes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#beams">3.3. Beams</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#cascade">3.4. Cascade</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#nuclearmodels">3.5. NuclearModels</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#nuclei">3.6. Nuclei</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#hardcuts">3.7. HardCuts</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#options">3.8. Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#backend">3.9. Backend</a></li>
-<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#sherpa-options">3.10. Sherpa Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#including-external-files">3.1. Including External Files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#main-settings">3.2. Main Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#processes">3.3. Processes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#beams">3.4. Beams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#cascade">3.5. Cascade</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#nuclearmodels">3.6. NuclearModels</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#nuclei">3.7. Nuclei</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#hardcuts">3.8. HardCuts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#options">3.9. Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#backend">3.10. Backend</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#sherpa-options">3.11. Sherpa Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/run-card.html#output-formats">3.12. Output Formats</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="src/interfaces.html">4. Interfaces</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="src/interfaces.html#fortran-interface">4.1. Fortran Interface</a></li>
 <li class="toctree-l2"><a class="reference internal" href="src/interfaces.html#sherpa-interface">4.2. Sherpa Interface</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="src/physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/workflow.html">Event Generation Workflow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/workflow.html#nuclear-modes">Nuclear Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/nuclear-models.html">Nuclear Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nuclear-models.html#coherent"><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nuclear-models.html#qespectral"><code class="docutils literal notranslate"><span class="pre">QESpectral</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nuclear-models.html#hyperonspectral"><code class="docutils literal notranslate"><span class="pre">HyperonSpectral</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nuclear-models.html#fortranmodel"><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/form-factors.html">Form Factors</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/form-factors.html#categories-and-their-physical-role">Categories and their physical role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/form-factors.html#available-parametrisations">Available parametrisations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/form-factors.html#changing-a-parametrisation">Changing a parametrisation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/phase-space.html">Phase-Space Sampling and Unweighting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/phase-space.html#hadronic-phase-space-generators">Hadronic phase-space generators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/phase-space.html#vegas-adaptive-integration">Vegas adaptive integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/phase-space.html#multichannel-integration">MultiChannel integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/phase-space.html#options-settings-and-their-effect">Options settings and their effect</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/phase-space.html#unweighted-events-and-the-percentile-algorithm">Unweighted events and the Percentile algorithm</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/nucleus.html">Nucleus Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nucleus.html#binding-energy-and-fermi-momentum">Binding energy and Fermi momentum</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nucleus.html#nuclear-density-and-configuration-files">Nuclear density and configuration files</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nucleus.html#fermi-gas-parameters">Fermi-gas parameters</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/nucleus.html#nuclear-potential-models">Nuclear potential models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/cascade.html">Intranuclear Cascade Physics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/cascade.html#step-based-propagation">Step-based propagation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/cascade.html#interaction-probability-models">Interaction probability models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/cascade.html#in-medium-corrections">In-medium corrections</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/cascade.html#potential-propagation">Potential propagation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/cascade.html#interaction-models">Interaction models</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics/ward-identity.html">Ward Identity and Gauge Corrections</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/ward-identity.html#none"><code class="docutils literal notranslate"><span class="pre">None</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/ward-identity.html#coulomb"><code class="docutils literal notranslate"><span class="pre">Coulomb</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/ward-identity.html#weyl"><code class="docutils literal notranslate"><span class="pre">Weyl</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="src/physics/ward-identity.html#landau"><code class="docutils literal notranslate"><span class="pre">Landau</span></code></a></li>
 </ul>
 </li>
 </ul>
