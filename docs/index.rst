@@ -9,11 +9,25 @@ Welcome to Achilles's documentation!
 .. toctree::
    :maxdepth: 2
    :numbered:
+   :caption: User Guide
 
    src/introduction
    src/getting-started
    src/run-card
-   src/interfaces 
+   src/interfaces
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Physics Guide
+
+   src/physics-guide
+   src/physics/workflow
+   src/physics/nuclear-models
+   src/physics/form-factors
+   src/physics/phase-space
+   src/physics/nucleus
+   src/physics/cascade
+   src/physics/ward-identity
 
 Appendices
 ----------
