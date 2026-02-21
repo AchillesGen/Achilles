@@ -42,7 +42,7 @@ The first section in the run card is the ``Main`` section. This section contains
       gzip library or not.
 
 
-Additional discussion on these parameters can be found at:
+Additional discussion on the output formats are discussed in detail in the `Output Formats`_ section.
 
 
 *********
@@ -61,7 +61,23 @@ An example setup for running both neutral current and charged current is given b
      - Leptons: [14, [14]]
      - Leptons: [14, [13]]
 
-The above code block can be broken down as follows.
+The above code block can be broken down as follows. First is the YAML node giving the name of the section
+in this case ``Processes``. It is followed by a YAML list item. Each list item is described first by
+denoting that it is describing the leptons in the process, and then followed by a list of two elements.
+The first item is the PID for the incoming lepton. The second item is a list of all outgoing leptons.
+
+.. note::
+
+    In order to handle processes with final states beyond single leptons, Achilles needs to be compiled
+    with Sherpa support to handle the n-body final state phase space.
+
+The allowed values for the leptons are any that are defined in the model using the standard
+Particle Data Group Particle Identification Codes (`PID`_) numbering scheme.
+This section is designed to be flexible enough to define arbitrary processes that the user
+would be interested in studying through the use of the Achilles event generator.
+The extension to Beyond the Standard Model particles is also supported in this section
+through the use of the :ref:`Sherpa interface <sherpa-interface>`. For details on
+defining the physics model to be used, please see the discussion in `Sherpa Options`_.
 
 *****
 Beams
@@ -99,3 +115,6 @@ Backend
 **************
 Sherpa Options
 **************
+
+
+.. _PID: https://pdg.lbl.gov/2024/reviews/rpp2024-rev-monte-carlo-numbering.pdf 

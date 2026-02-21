@@ -39,8 +39,8 @@
   <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
     <script src="../_static/documentation_options.js?v=83a61292"></script>
-    <script src="../_static/doctools.js?v=9bcbadda"></script>
-    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/run-card';</script>
@@ -385,7 +385,7 @@ gzip library or not.</p></li>
 </dl>
 </li>
 </ul>
-<p>Additional discussion on these parameters can be found at:</p>
+<p>Additional discussion on the output formats are discussed in detail in the <a href="#id12"><span class="problematic" id="id13">`Output Formats`_</span></a> section.</p>
 </section>
 <section id="processes">
 <h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
@@ -398,7 +398,22 @@ with the list of nuclear models to consider listed in <a class="reference intern
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">13</span><span class="p p-Indicator">]]</span>
 </pre></div>
 </div>
-<p>The above code block can be broken down as follows.</p>
+<p>The above code block can be broken down as follows. First is the YAML node giving the name of the section
+in this case <code class="docutils literal notranslate"><span class="pre">Processes</span></code>. It is followed by a YAML list item. Each list item is described first by
+denoting that it is describing the leptons in the process, and then followed by a list of two elements.
+The first item is the PID for the incoming lepton. The second item is a list of all outgoing leptons.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to handle processes with final states beyond single leptons, Achilles needs to be compiled
+with Sherpa support to handle the n-body final state phase space.</p>
+</div>
+<p>The allowed values for the leptons are any that are defined in the model using the standard
+Particle Data Group Particle Identification Codes (<a class="reference external" href="https://pdg.lbl.gov/2024/reviews/rpp2024-rev-monte-carlo-numbering.pdf">PID</a>) numbering scheme.
+This section is designed to be flexible enough to define arbitrary processes that the user
+would be interested in studying through the use of the Achilles event generator.
+The extension to Beyond the Standard Model particles is also supported in this section
+through the use of the <a class="reference internal" href="interfaces.html#sherpa-interface"><span class="std std-ref">Sherpa interface</span></a>. For details on
+defining the physics model to be used, please see the discussion in <a class="reference internal" href="#sherpa-options">Sherpa Options</a>.</p>
 </section>
 <section id="beams">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Beams</a><a class="headerlink" href="#beams" title="Link to this heading">#</a></h2>
