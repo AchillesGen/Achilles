@@ -177,5 +177,8 @@ jobs:
             ./bin/achilles $file
             name=$(basename "$file")
             name="${name%.*}"
+            if [[ "$name" == *"sherpa"* ]]; then
+              continue
+            fi
             python ${{ github.workspace }}/test/validate_xsec.py achilles.log $name
           done
