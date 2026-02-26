@@ -1,6 +1,6 @@
-include(CheckCXXLinkerFlag)
+include(CheckLinkerFlag)
 
-CHECK_CXX_LINKER_FLAG("-Wl,--no-as-needed" LINKER_SUPPORTS_NO_AS_NEEDED)
+CHECK_LINKER_FLAG(CXX "-Wl,--no-as-needed" LINKER_SUPPORTS_NO_AS_NEEDED)
 
 add_library(sherpa SHARED
     SherpaInterface.cc
