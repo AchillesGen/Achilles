@@ -121,7 +121,6 @@ class FormFactor {
         double F1p{}, F2p{}, F1n{}, F2n{};
         double FA{}, FAs{}, FAP{};
         double Fcoh{};
-		double FPiA{}, FPiW{}, FPiZ{}, FGAPi{};
         double FresV{}, FresA{};
         double Fpiem{}, FmecV3{}, FmecV4{}, FmecV5{}, FmecA5{};
         double F1lam{}, F2lam{}, FAlam{};
