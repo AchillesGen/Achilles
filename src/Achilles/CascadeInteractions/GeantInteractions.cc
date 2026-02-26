@@ -64,7 +64,8 @@ void GeantInteraction::LoadData(bool samePID, const HighFive::Group &group) {
     // Get data for angular cross-section
     auto dims = sig.getDimensions();
     std::vector<double> sigAngular(dims[0] * dims[1]);
-    sig.read(sigAngular.data());
+    // TODO: Ensure this reads correctly using HighFive v3
+    sig.read_raw(sigAngular.data());
 
     // Perform interpolation for angles
     achilles::Interp2D interp(pcmVec, m_theta, sigAngular);
