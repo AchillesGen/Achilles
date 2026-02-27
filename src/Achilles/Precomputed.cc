@@ -7,7 +7,11 @@
 #include "Achilles/Potential.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/Utilities.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
+#include <functional>
+#include <sstream>
 
 #ifdef ACHILLES_ENABLE_HEPMC3
 #include "Plugins/HepMC3/HepMC3EventWriter.hh"
@@ -18,74 +22,162 @@
 
 #include <chrono>
 
-// TODO: Add other file formats
-achilles::Event achilles::Precomputed::ParseEvent(const std::string &line,
-                                                  std::shared_ptr<Nucleus> nuc) {
-    std::vector<std::string> tokens;
-    tokens.clear();
-    tokenize(line, tokens, ",");
+using namespace achilles::Precomputed;
 
-    // Setup the initial state of the event
-    Event event;
-    event.CurrentNucleus() = nuc;
-    event.CurrentNucleus()->GenerateConfig();
-    event.Weight() = std::stod(tokens[0]);
-    FourVector had_mom{std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3]),
-                       std::stod(tokens[4])};
-    FourVector lep_mom{std::stod(tokens[5]), std::stod(tokens[6]), std::stod(tokens[7]),
-                       std::stod(tokens[8])};
-    event.Leptons().push_back(Particle(PID::muon(), lep_mom, {}, ParticleStatus::final_state));
+RawEventReader::RawEventReader(const std::string &filename, std::shared_ptr<Nucleus> nuc)
+    : event_stream(filename), m_nucleus(nuc) {
+    if(!event_stream.is_open()) {
+        auto err_msg = fmt::format("Precomputed: File {} does not exist!", filename);
+        throw std::runtime_error(err_msg);
+    }
+}
 
-    auto neutrons = event.CurrentNucleus()->NeutronsIDs();
-    std::vector<size_t> selected;
-    Random::Instance().Sample(1, neutrons, selected);
-    event.CurrentNucleus()->Nucleons()[selected[0]].Status() = ParticleStatus::initial_state;
+std::optional<achilles::Event> RawEventReader::Next() {
+    // Read the line for the event
+    std::string line;
+    if(!std::getline(event_stream, line)) return std::nullopt;
 
-    Particle proton(PID::proton());
-    proton.Momentum() = had_mom;
-    proton.Status() = ParticleStatus::propagating;
-    proton.Position() = event.CurrentNucleus()->Nucleons()[selected[0]].Position();
-    event.CurrentNucleus()->Nucleons().push_back(proton);
+    return ParseLine(line);
+}
+
+achilles::Event RawEventReader::ParseLine(const std::string &line) {
+    std::istringstream ss(line);
+
+    // Read in event weight
+    double wgt;
+    ss >> wgt;
+
+    // Read in all the particles
+    std::vector<Particle> particles;
+    while(ss) {
+        long int pdg;
+        double E, px, py, pz;
+        ss >> pdg >> E >> px >> py >> pz;
+        FourVector mom{E, px, py, pz};
+        particles.emplace_back(pdg, mom);
+    }
+
+    // Setup event
+    Event event(m_nucleus, {}, 1);
+    event.Weight() = wgt;
+    ConvertEvent(event, particles);
 
     return event;
 }
+// TODO: Add other file formats?
 
-achilles::Precomputed::RunCascade::RunCascade(const std::string &config_file) {
-    auto config = YAML::LoadFile(config_file);
+void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
+    // Set the status of the particles and add to the event
+    bool first_lepton = true;
+    bool first_hadron = true;
+    ThreeVector initial_pos;
+    for(auto &particle : particles) {
+        if(particle.Info().IsLepton()) {
+            // Set the first lepton to the incoming one and final state otherwise
+            if(first_lepton) {
+                particle.Status() = ParticleStatus::beam;
+                first_lepton = false;
+            } else {
+                particle.Status() = ParticleStatus::final_state;
+            }
+            event.Leptons().push_back(particle);
+        }
+
+        if(particle.Info().IsHadron()) {
+            // Set the first hadron to the one within the nucleus and the rest to propagating
+            if(first_hadron) {
+                first_hadron = false;
+
+                if(particle.ID() == PID::proton()) {
+                    auto protons = event.Protons(ParticleStatus::background);
+                    auto sampled_protons = Random::Instance().Sample(1, protons);
+                    auto sampled_proton = sampled_protons[0];
+                    sampled_proton.get().Momentum() = particle.Momentum();
+                    sampled_proton.get().Status() = ParticleStatus::initial_state;
+                    initial_pos = sampled_proton.get().Position();
+                }
+
+                if(particle.ID() == PID::neutron()) {
+                    auto neutrons = event.Neutrons(ParticleStatus::background);
+                    auto sampled_neutrons = Random::Instance().Sample(1, neutrons);
+                    auto sampled_neutron = sampled_neutrons[0];
+                    sampled_neutron.get().Momentum() = particle.Momentum();
+                    sampled_neutron.get().Status() = ParticleStatus::initial_state;
+                    initial_pos = sampled_neutron.get().Position();
+                }
+            } else {
+                particle.Status() = ParticleStatus::propagating;
+                particle.Position() = initial_pos;
+                event.Hadrons().push_back(particle);
+            }
+        }
+    }
+
+    // Setup the event history
+    auto init_nuc = event.CurrentNucleus()->InitParticle();
+    std::vector<Particle> init_parts;
+    for(const auto &nucleon : event.Hadrons()) {
+        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
+    }
+    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
+                              EventHistory::StatusCode::target);
+    // Setup beam in history
+    auto init_lep = event.Leptons()[0];
+    auto init_beam = init_lep;
+    init_beam.Status() = ParticleStatus::beam;
+    event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
+
+    // TODO: Figure out how to best handle tracking this with the cascade and decays
+    std::vector<Particle> primary_out, propagating;
+    for(const auto &part : event.Particles()) {
+        if(part.IsFinal()) primary_out.push_back(part);
+        if(part.IsPropagating()) {
+            primary_out.push_back(part);
+            propagating.push_back(part);
+        }
+    }
+    init_parts.push_back(init_lep);
+    event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
+                              EventHistory::StatusCode::primary);
+}
+
+RunCascade::RunCascade(const std::string &config_file) {
+    auto config = Settings(config_file);
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
-    if(config["Initialize"]["Seed"])
-        if(config["Initialize"]["Seed"].as<int>() > 0)
-            seed = config["Initialize"]["Seed"].as<unsigned int>();
+    if(config.Exists("Options/Initialize/Seed"))
+        if(config.GetAs<int>("Options/Initialize/Seed") > 0)
+            seed = config.GetAs<unsigned int>("Options/Initialize/Seed");
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
 
-    // Setup nucleus
-    nucleus = std::make_shared<Nucleus>(config["Nucleus"].as<Nucleus>());
-    auto potential_name = config["Nucleus"]["Potential"]["Name"].as<std::string>();
-    auto potential = achilles::PotentialFactory::Initialize(potential_name, nucleus,
-                                                            config["Nucleus"]["Potential"]);
-    nucleus->SetPotential(std::move(potential));
+    // Setup nuclei (currently only supports a single nucleus)
+    auto nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
+    if(nuclei.size() == 0)
+        throw std::runtime_error("Precomputed: Must have at least one nucleus defined");
+    nucleus = nuclei[0];
 
     // Initialize Cascade parameters
-    cascade = config["Cascade"].as<Cascade>();
+    cascade = config.GetAs<Cascade>("Cascade");
 
     // Setup outputs
-    auto output = config["Main"]["Output"];
-    bool zipped = true;
-    if(output["Zipped"]) zipped = output["Zipped"].as<bool>();
-    spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
-    if(output["Format"].as<std::string>() == "Achilles") {
-        writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
+    bool zipped =
+        config.Exists("Main/Output/Zipped") ? config.GetAs<bool>("Main/Output/Zipped") : true;
+    auto format = config.GetAs<std::string>("Main/Output/Format");
+    auto name = config.GetAs<std::string>("Main/Output/Name");
+    spdlog::trace("Outputing as {} format", format);
+    if(format == "Achilles") {
+        writer = std::make_unique<AchillesWriter>(name, zipped);
 #ifdef ACHILLES_ENABLE_HEPMC3
-    } else if(output["Format"].as<std::string>() == "HepMC3") {
-        writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
+    } else if(format == "HepMC3") {
+        writer = std::make_unique<HepMC3Writer>(name, zipped);
+    } else if(format == "NuHepMC") {
+        writer = std::make_unique<NuHepMCWriter>(name, zipped);
 #endif
     } else {
-        std::string msg = fmt::format("Achilles: Invalid output format requested {}",
-                                      output["Format"].as<std::string>());
+        std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);
         throw std::runtime_error(msg);
     }
     std::vector<ProcessGroup> dummy;
@@ -93,13 +185,15 @@ achilles::Precomputed::RunCascade::RunCascade(const std::string &config_file) {
     event_filename = config["Main"]["EventFile"].as<std::string>();
 }
 
-void achilles::Precomputed::RunCascade::RunAll() {
+void RunCascade::RunAll() {
     auto run = [&](Event &event) { Run(event); };
-    ProcessEventsFromFile(run, event_filename.c_str(), nucleus);
+    EventPipeline pipeline(run);
+    RawEventReader reader(event_filename, nucleus);
+    RunPipeline(reader, pipeline);
 }
 
-void achilles::Precomputed::RunCascade::Run(Event &event) {
-    cascade.Evolve(&event);
+void RunCascade::Run(Event &event) {
+    cascade.Evolve(event, nucleus.get());
     std::vector<Particle> init_part, final_part;
     for(const auto &part : event.Particles()) {
         if(part.IsFinal()) final_part.push_back(part);

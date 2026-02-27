@@ -6,13 +6,11 @@
 #include "Achilles/Logging.hh"
 #include "Achilles/Logo.hh"
 #include "Achilles/NuclearModel.hh"
-#include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Plugins/Manager/PluginManager.hh"
-#include "git.h"
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/Channels.hh"
 #include "Plugins/Sherpa/SherpaInterface.hh"

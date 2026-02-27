@@ -7,8 +7,8 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
-#include <vector>
 
 namespace achilles {
 class Event;
@@ -16,16 +16,44 @@ class Event;
 
 namespace achilles::Precomputed {
 
-Event ParseEvent(const std::string &line, std::shared_ptr<Nucleus> nuc);
-template <typename Func>
-void ProcessEventsFromFile(Func func, const std::string &event_file, std::shared_ptr<Nucleus> nuc) {
-    std::ifstream ievents(event_file.c_str());
-    std::string line;
-    while(std::getline(ievents, line)) {
-        auto event = ParseEvent(line, nuc);
-        func(event);
-    }
+// Event Parsers
+class RawEventReader {
+  public:
+    RawEventReader(const std::string &, std::shared_ptr<Nucleus>);
+    std::optional<Event> Next();
+
+  private:
+    Event ParseLine(const std::string &);
+    std::ifstream event_stream;
+    std::shared_ptr<Nucleus> m_nucleus;
+};
+
+class NuHepMCReader {
+  public:
+    NuHepMCReader(const std::string &, std::shared_ptr<Nucleus>);
+    std::optional<Event> Next();
+
+  private:
+    std::shared_ptr<Nucleus> m_nucleus;
+};
+
+void ConvertEvent(Event &, Particles &);
+
+template <typename Reader, typename Pipeline> void RunPipeline(Reader &reader, Pipeline &pipeline) {
+    while(auto evt = reader.Next()) { pipeline.Process(evt.value()); }
 }
+
+template <typename... Actions> class EventPipeline {
+  public:
+    EventPipeline(Actions... actions) : actions_(std::move(actions)...) {}
+
+    void Process(Event &ev) {
+        std::apply([&](auto &...action) { (action(ev), ...); }, actions_);
+    }
+
+  private:
+    std::tuple<Actions...> actions_;
+};
 
 class RunCascade {
   public:

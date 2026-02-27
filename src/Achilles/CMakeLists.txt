@@ -184,7 +184,7 @@ endif()
 if(ACHILLES_ENABLE_PRECOMPUTED)
     add_executable(achilles-precomputed Precomputed.cc PrecomputedMain.cc)
     target_link_libraries(achilles-precomputed PRIVATE project_warnings
-                                               PUBLIC physics event_gen docopt::docopt)
+                                               PUBLIC physics event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-precomputed)
 endif()
 
