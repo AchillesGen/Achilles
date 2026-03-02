@@ -24,12 +24,12 @@ PYBIND11_MODULE(_achilles, m) {
     // info = 2
     // warn = 3
     // error = 4
-	py::module verbosity=m.def_submodule("verbosity","Logging Verbosity Levels");
-	verbosity.attr("trace")=0;
-	verbosity.attr("debug")=1;
-	verbosity.attr("info")=2;
-	verbosity.attr("warn")=3;
-	verbosity.attr("error")=4;
+    py::module verbosity = m.def_submodule("verbosity", "Logging Verbosity Levels");
+    verbosity.attr("trace") = 0;
+    verbosity.attr("debug") = 1;
+    verbosity.attr("info") = 2;
+    verbosity.attr("warn") = 3;
+    verbosity.attr("error") = 4;
 
     // TODO: This is an outdated interface. We should update or remove
     // // Utilities
