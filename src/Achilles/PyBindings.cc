@@ -15,16 +15,21 @@ PYBIND11_MODULE(_achilles, m) {
           "Sets logger settings. Can only be called once, before generating events.",
           py::arg("verbosity") = 2, py::arg("log_verbosity") = 2,
           py::arg("logfile") = "achilles.log");
+    m.def("generate_events", &achilles::GenerateEvents, "Runs the event generator.",
+          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs,
+          py::arg("batch_mode") = false);
     // verbosity levels:
     // trace = 0
     // debug = 1
     // info = 2
     // warn = 3
     // error = 4
-    // TODO: Adjust to use an enum that is also mapped to python
-    m.def("generate_events", &achilles::GenerateEvents, "Runs the event generator.",
-          py::arg("runcard") = "run.yml", py::arg("sherpa_args") = shargs,
-          py::arg("batch_mode") = false);
+	py::module verbosity=m.def_submodule("verbosity","Logging Verbosity Levels");
+	verbosity.attr("trace")=0;
+	verbosity.attr("debug")=1;
+	verbosity.attr("info")=2;
+	verbosity.attr("warn")=3;
+	verbosity.attr("error")=4;
 
     // TODO: This is an outdated interface. We should update or remove
     // // Utilities
