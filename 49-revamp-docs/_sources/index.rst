@@ -15,6 +15,13 @@ Welcome to Achilles's documentation!
    src/getting-started
    src/run-card
    src/interfaces
+   src/output
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials
+
+   src/tutorials
 
 .. toctree::
    :maxdepth: 2
@@ -34,6 +41,7 @@ Appendices
 .. toctree::
    :maxdepth: 2
 
+   src/faq
    src/references
 
 * :ref:`genindex`

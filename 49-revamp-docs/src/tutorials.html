@@ -1,0 +1,706 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Tutorials &#8212; Achilles 0.3.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/s5defs-roles.css?v=04af0cc0" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+
+    <script src="../_static/documentation_options.js?v=83a61292"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'src/tutorials';</script>
+    <link rel="icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Physics Guide" href="physics-guide.html" />
+    <link rel="prev" title="5. Output Formats &amp; Analysis" href="output.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+     
+  
+
+<a class="navbar-brand logo" href="https://achillesgen.github.io/Achilles/">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.svg" class="logo__image only-light" alt="Achilles 0.3.0 documentation - Home"/>
+    <img src="../_static/logo.svg" class="logo__image only-dark pst-js-only" alt="Achilles 0.3.0 documentation - Home"/>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">1. Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">2. Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="run-card.html">3. Run Card Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interfaces.html">4. Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">5. Output Formats &amp; Analysis</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Tutorials</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="physics-guide.html">Physics Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/workflow.html">Event Generation Workflow</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="physics/nuclear-models.html">Nuclear Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/form-factors.html">Form Factors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/phase-space.html">Phase-Space Sampling and Unweighting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/nucleus.html">Nucleus Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/cascade.html">Intranuclear Cascade Physics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item"><a href="https://achillesgen.github.io/Achilles/"
+   class="btn btn-sm btn-link-all-versions"
+   title="All versions"
+   data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  <span class="btn__icon-container">
+    <i class="fas fa-home"></i>
+  </span>
+  <span class="btn__text-container"></span>
+</a></div>
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/src/tutorials.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button pst-navbar-icon"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm pst-navbar-icon" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Tutorials</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-1-quasielastic-neutrino-scattering-on-carbon">Tutorial 1: Quasielastic Neutrino Scattering on Carbon</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-run-card">The run card</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-simulation">Running the simulation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#expected-output">Expected output</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-2-electron-scattering-on-hydrogen">Tutorial 2: Electron Scattering on Hydrogen</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-differences-from-tutorial-1">Key differences from Tutorial 1</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Running the simulation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Expected output</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-3-enabling-the-cascade">Tutorial 3: Enabling the Cascade</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#modifying-the-run-card">Modifying the run card</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-changes-in-the-output">What changes in the output</a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="tutorials">
+<span id="id1"></span><h1>Tutorials<a class="headerlink" href="#tutorials" title="Link to this heading">#</a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#tutorial-1-quasielastic-neutrino-scattering-on-carbon" id="id4">Tutorial 1: Quasielastic Neutrino Scattering on Carbon</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-run-card" id="id5">The run card</a></p></li>
+<li><p><a class="reference internal" href="#running-the-simulation" id="id6">Running the simulation</a></p></li>
+<li><p><a class="reference internal" href="#expected-output" id="id7">Expected output</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#tutorial-2-electron-scattering-on-hydrogen" id="id8">Tutorial 2: Electron Scattering on Hydrogen</a></p>
+<ul>
+<li><p><a class="reference internal" href="#key-differences-from-tutorial-1" id="id9">Key differences from Tutorial 1</a></p></li>
+<li><p><a class="reference internal" href="#id2" id="id10">Running the simulation</a></p></li>
+<li><p><a class="reference internal" href="#id3" id="id11">Expected output</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#tutorial-3-enabling-the-cascade" id="id12">Tutorial 3: Enabling the Cascade</a></p>
+<ul>
+<li><p><a class="reference internal" href="#modifying-the-run-card" id="id13">Modifying the run card</a></p></li>
+<li><p><a class="reference internal" href="#what-changes-in-the-output" id="id14">What changes in the output</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<p>These tutorials walk through running Achilles with the example run cards shipped in
+the <code class="docutils literal notranslate"><span class="pre">examples/</span></code> directory. Each tutorial explains the run card configuration, shows
+how to launch the simulation, and describes the expected output.</p>
+<p>Before starting, make sure Achilles is built and the executable is available (see
+<a class="reference internal" href="getting-started.html#building-achilles"><span class="std std-ref">Building Achilles</span></a>).</p>
+<section id="tutorial-1-quasielastic-neutrino-scattering-on-carbon">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Tutorial 1: Quasielastic Neutrino Scattering on Carbon</a><a class="headerlink" href="#tutorial-1-quasielastic-neutrino-scattering-on-carbon" title="Link to this heading">#</a></h2>
+<p>This tutorial uses the run card <code class="docutils literal notranslate"><span class="pre">examples/run_nue_12C_SF_1000.yml</span></code>, which simulates
+charged-current quasielastic (CCQE) electron-neutrino scattering on a <sup>12</sup>C
+target at 1 GeV using a spectral function nuclear model.</p>
+<section id="the-run-card">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">The run card</a><a class="headerlink" href="#the-run-card" title="Link to this heading">#</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Main</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">NEvents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">  </span><span class="nt">HardCuts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">RunDecays</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">Output</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NuHepMC</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">achilles_nue_12C_SF_1000.hepmc</span>
+<span class="w">      </span><span class="nt">Zipped</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>NEvents</strong>: Number of unweighted events to generate. Increase this for production
+runs (e.g. 50000).</p></li>
+<li><p><strong>HardCuts</strong>: No kinematic cuts are applied at the hard scattering level.</p></li>
+<li><p><strong>Output</strong>: Events are written in NuHepMC format, gzip-compressed.</p></li>
+</ul>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Processes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">12</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">11</span><span class="p p-Indicator">]]</span>
+</pre></div>
+</div>
+<p>The process line defines the leptonic current: an incoming <span class="math notranslate nohighlight">\(\nu_e\)</span> (PID 12)
+producing an outgoing <span class="math notranslate nohighlight">\(e^-\)</span> (PID 11). This is charged-current scattering.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Beams</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Beam</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">PID</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+<span class="w">      </span><span class="nt">Beam Params</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Monochromatic</span>
+<span class="w">        </span><span class="nt">Energy</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+</pre></div>
+</div>
+<p>A monochromatic <span class="math notranslate nohighlight">\(\nu_e\)</span> beam at 1000 MeV.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Cascade</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">False</span>
+</pre></div>
+</div>
+<p>The intranuclear cascade is disabled. The output contains only the primary hard
+scattering products. See <a class="reference internal" href="#tutorial-cascade"><span class="std std-ref">Tutorial 3</span></a> for enabling the cascade.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">NuclearModels</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QESpectral</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">      </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12p_tot.data</span>
+<span class="w">      </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12n_tot.data</span>
+<span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</pre></div>
+</div>
+<p>The nuclear model is <code class="docutils literal notranslate"><span class="pre">QESpectral</span></code> – quasielastic scattering computed with proton
+and neutron spectral functions for <sup>12</sup>C. No Ward gauge correction is applied.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12C</span>
+<span class="w">      </span><span class="nt">Binding</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8.6</span>
+<span class="w">      </span><span class="nt">Fermi Momentum</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">225</span>
+<span class="w">      </span><span class="l l-Scalar l-Scalar-Plain">...</span>
+</pre></div>
+</div>
+<p>The target nucleus is <sup>12</sup>C with a binding energy of 8.6 MeV and Fermi
+momentum of 225 MeV. The density profile and nucleon configurations are loaded from
+the data files.</p>
+</section>
+<section id="running-the-simulation">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Running the simulation</a><a class="headerlink" href="#running-the-simulation" title="Link to this heading">#</a></h3>
+<p>From the build directory:</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./achilles<span class="w"> </span>../examples/run_nue_12C_SF_1000.yml
+</pre></div>
+</div>
+<p>Achilles will:</p>
+<ol class="arabic simple">
+<li><p>Initialise the adaptive Monte Carlo integrator.</p></li>
+<li><p>Run an optimisation phase to map out the phase space.</p></li>
+<li><p>Generate the requested number of unweighted events.</p></li>
+<li><p>Write the output to <code class="docutils literal notranslate"><span class="pre">achilles_nue_12C_SF_1000.hepmc.gz</span></code>.</p></li>
+</ol>
+<p>Progress is logged to the terminal and to <code class="docutils literal notranslate"><span class="pre">achilles.log</span></code>.</p>
+</section>
+<section id="expected-output">
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Expected output</a><a class="headerlink" href="#expected-output" title="Link to this heading">#</a></h3>
+<p>The output file <code class="docutils literal notranslate"><span class="pre">achilles_nue_12C_SF_1000.hepmc.gz</span></code> contains unweighted events
+in NuHepMC format. Each event has:</p>
+<ul class="simple">
+<li><p>An incoming <span class="math notranslate nohighlight">\(\nu_e\)</span> and a target nucleus (<sup>12</sup>C).</p></li>
+<li><p>A primary vertex with an outgoing <span class="math notranslate nohighlight">\(e^-\)</span> and a knocked-out nucleon.</p></li>
+<li><p>Spectator nucleons from the nuclear configuration.</p></li>
+<li><p>Event weights and cross-section metadata.</p></li>
+</ul>
+</section>
+</section>
+<section id="tutorial-2-electron-scattering-on-hydrogen">
+<h2><a class="toc-backref" href="#id8" role="doc-backlink">Tutorial 2: Electron Scattering on Hydrogen</a><a class="headerlink" href="#tutorial-2-electron-scattering-on-hydrogen" title="Link to this heading">#</a></h2>
+<p>This tutorial uses <code class="docutils literal notranslate"><span class="pre">examples/run_electron_1H_SF_1000.yml</span></code>, which simulates
+electron scattering on a free proton (hydrogen) at 1 GeV. This is a simpler
+configuration that serves as a good starting point for understanding the code.</p>
+<section id="key-differences-from-tutorial-1">
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Key differences from Tutorial 1</a><a class="headerlink" href="#key-differences-from-tutorial-1" title="Link to this heading">#</a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Processes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">11</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">11</span><span class="p p-Indicator">]]</span>
+</pre></div>
+</div>
+<p>Both the incoming and outgoing leptons are electrons (PID 11). This is
+electromagnetic (electron) scattering rather than neutrino scattering.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Main</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">HardCuts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">HardCuts</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AngleTheta</span>
+<span class="w">    </span><span class="nt">PIDs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11</span>
+<span class="w">    </span><span class="nt">range</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">10</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">90</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+<p>Hard cuts are enabled. The outgoing electron is required to have a polar angle
+<span class="math notranslate nohighlight">\(\theta\)</span> between 10 and 90 degrees. This mimics a typical electron scattering
+experiment acceptance.</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1H</span>
+</pre></div>
+</div>
+<p>The target is hydrogen (a free proton). Because there is no nuclear medium, the
+spectral function and Fermi gas settings have no effect – Achilles automatically
+treats hydrogen as a single-nucleon target.</p>
+</section>
+<section id="id2">
+<h3><a class="toc-backref" href="#id10" role="doc-backlink">Running the simulation</a><a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./achilles<span class="w"> </span>../examples/run_electron_1H_SF_1000.yml
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink">Expected output</a><a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<p>The output file <code class="docutils literal notranslate"><span class="pre">achilles_electron_1000_SF_1H.hepmc.gz</span></code> contains events with:</p>
+<ul class="simple">
+<li><p>An incoming and outgoing electron.</p></li>
+<li><p>A recoil proton.</p></li>
+<li><p>No nuclear effects (no spectator nucleons, no cascade).</p></li>
+</ul>
+<p>This provides a clean baseline for validating form factor implementations against
+known electron-proton scattering data.</p>
+</section>
+</section>
+<section id="tutorial-3-enabling-the-cascade">
+<span id="tutorial-cascade"></span><h2><a class="toc-backref" href="#id12" role="doc-backlink">Tutorial 3: Enabling the Cascade</a><a class="headerlink" href="#tutorial-3-enabling-the-cascade" title="Link to this heading">#</a></h2>
+<p>The intranuclear cascade (INC) propagates hadronic final-state particles through the
+nuclear medium, allowing them to rescatter, produce pions, or be absorbed. This
+tutorial shows how to modify a run card to enable the cascade.</p>
+<section id="modifying-the-run-card">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink">Modifying the run card</a><a class="headerlink" href="#modifying-the-run-card" title="Link to this heading">#</a></h3>
+<p>Starting from <code class="docutils literal notranslate"><span class="pre">examples/run_nue_12C_SF_1000.yml</span></code>, change the <code class="docutils literal notranslate"><span class="pre">Cascade</span></code> section:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Cascade</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">True</span>
+<span class="w">  </span><span class="nt">Interaction</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GeantInteractions</span>
+<span class="w">    </span><span class="nt">GeantData</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/GeantData.hdf5</span>
+<span class="w">  </span><span class="nt">Step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
+<span class="w">  </span><span class="nt">Probability</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cylinder</span>
+</pre></div>
+</div>
+<p>Setting <code class="docutils literal notranslate"><span class="pre">Run:</span> <span class="pre">True</span></code> activates the cascade. The key parameters are:</p>
+<ul class="simple">
+<li><p><strong>Interaction</strong>: The interaction model used during propagation. <code class="docutils literal notranslate"><span class="pre">GeantInteractions</span></code>
+uses tabulated nucleon-nucleon cross sections from Geant4 data.</p></li>
+<li><p><strong>Step</strong>: The propagation step size in fm. Smaller values give higher accuracy.</p></li>
+<li><p><strong>Probability</strong>: The model for computing interaction probability at each step.</p></li>
+</ul>
+<p>For more sophisticated cascade configurations using the virtual-resonance model,
+see the Cascade section of the <a class="reference internal" href="run-card.html#run-card-structure"><span class="std std-ref">Run Card Structure</span></a> documentation, which
+describes the <code class="docutils literal notranslate"><span class="pre">NucleonNucleon</span></code>, <code class="docutils literal notranslate"><span class="pre">DeltaInteraction</span></code>, and <code class="docutils literal notranslate"><span class="pre">PionInteraction</span></code> models.</p>
+</section>
+<section id="what-changes-in-the-output">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink">What changes in the output</a><a class="headerlink" href="#what-changes-in-the-output" title="Link to this heading">#</a></h3>
+<p>With the cascade enabled, events will contain additional vertices and particles
+beyond the primary interaction:</p>
+<ul class="simple">
+<li><p><strong>Rescattered nucleons</strong>: Nucleons that interacted with the nuclear medium during
+propagation, visible as cascade vertices.</p></li>
+<li><p><strong>Produced pions</strong>: Secondary pions created through nucleon-nucleon or
+Delta-resonance interactions.</p></li>
+<li><p><strong>Absorbed particles</strong>: Particles that were captured by the nucleus and do not
+appear in the final state.</p></li>
+</ul>
+<p>The vertex status codes in the NuHepMC output distinguish primary interaction vertices
+from cascade vertices, making it straightforward to separate the hard scattering from
+final-state interactions in analysis.</p>
+<p>Running with the cascade increases computation time per event because each hadronic
+particle must be propagated step-by-step through the nucleus.</p>
+</section>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="output.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title"><span class="section-number">5. </span>Output Formats &amp; Analysis</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="physics-guide.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Physics Guide</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item"><div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-1-quasielastic-neutrino-scattering-on-carbon">Tutorial 1: Quasielastic Neutrino Scattering on Carbon</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#the-run-card">The run card</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#running-the-simulation">Running the simulation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#expected-output">Expected output</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-2-electron-scattering-on-hydrogen">Tutorial 2: Electron Scattering on Hydrogen</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#key-differences-from-tutorial-1">Key differences from Tutorial 1</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Running the simulation</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Expected output</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tutorial-3-enabling-the-cascade">Tutorial 3: Enabling the Cascade</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#modifying-the-run-card">Modifying the run card</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-changes-in-the-output">What changes in the output</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, Achilles Collaboration.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

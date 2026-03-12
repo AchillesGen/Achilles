@@ -51,7 +51,7 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Physics Guide" href="physics-guide.html" />
+    <link rel="next" title="5. Output Formats &amp; Analysis" href="output.html" />
     <link rel="prev" title="3. Run Card Structure" href="run-card.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -154,6 +154,11 @@
 <li class="toctree-l1"><a class="reference internal" href="getting-started.html">2. Getting Started</a></li>
 <li class="toctree-l1"><a class="reference internal" href="run-card.html">3. Run Card Structure</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">4. Interfaces</a></li>
+<li class="toctree-l1"><a class="reference internal" href="output.html">5. Output Formats &amp; Analysis</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Physics Guide</span></p>
 <ul class="nav bd-sidenav">
@@ -168,6 +173,7 @@
 <li class="toctree-l1"><a class="reference internal" href="physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
 </ul>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Troubleshooting &amp; FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
@@ -340,7 +346,13 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementing-a-new-fortran-model">4.1.5. Implementing a New Fortran Model</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">4.2.1. Overview</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-types">4.2.2. Backend Types</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-card-configuration">4.2.3. Run Card Configuration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">4.2.4. Limitations</a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -356,29 +368,36 @@
 <h1><span class="section-number">4. </span>Interfaces<a class="headerlink" href="#interfaces" title="Link to this heading">#</a></h1>
 <nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#fortran-interface" id="id3">Fortran Interface</a></p>
+<li><p><a class="reference internal" href="#fortran-interface" id="id5">Fortran Interface</a></p>
 <ul>
-<li><p><a class="reference internal" href="#the-model-abstract-type" id="id4">The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a></p>
+<li><p><a class="reference internal" href="#the-model-abstract-type" id="id6">The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a></p>
 <ul>
-<li><p><a class="reference internal" href="#currents-argument-list" id="id5"><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a></p></li>
-<li><p><a class="reference internal" href="#init-wgt-argument-list" id="id6"><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a></p></li>
+<li><p><a class="reference internal" href="#currents-argument-list" id="id7"><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a></p></li>
+<li><p><a class="reference internal" href="#init-wgt-argument-list" id="id8"><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#the-modelfactory-type" id="id7">The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a></p></li>
-<li><p><a class="reference internal" href="#cfortran-bridge-nuclear-model-interface" id="id8">C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a></p></li>
-<li><p><a class="reference internal" href="#the-fortranmodel-c-class" id="id9">The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a></p>
+<li><p><a class="reference internal" href="#the-modelfactory-type" id="id9">The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a></p></li>
+<li><p><a class="reference internal" href="#cfortran-bridge-nuclear-model-interface" id="id10">C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a></p></li>
+<li><p><a class="reference internal" href="#the-fortranmodel-c-class" id="id11">The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a></p>
 <ul>
-<li><p><a class="reference internal" href="#ward-gauge-corrections" id="id10">Ward Gauge Corrections</a></p></li>
+<li><p><a class="reference internal" href="#ward-gauge-corrections" id="id12">Ward Gauge Corrections</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#implementing-a-new-fortran-model" id="id11">Implementing a New Fortran Model</a></p></li>
+<li><p><a class="reference internal" href="#implementing-a-new-fortran-model" id="id13">Implementing a New Fortran Model</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#sherpa-interface" id="id12">Sherpa Interface</a></p></li>
+<li><p><a class="reference internal" href="#sherpa-interface" id="id14">Sherpa Interface</a></p>
+<ul>
+<li><p><a class="reference internal" href="#overview" id="id15">Overview</a></p></li>
+<li><p><a class="reference internal" href="#backend-types" id="id16">Backend Types</a></p></li>
+<li><p><a class="reference internal" href="#run-card-configuration" id="id17">Run Card Configuration</a></p></li>
+<li><p><a class="reference internal" href="#limitations" id="id18">Limitations</a></p></li>
+</ul>
+</li>
 </ul>
 </nav>
 <section id="fortran-interface">
-<span id="id1"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">4.1. </span>Fortran Interface</a><a class="headerlink" href="#fortran-interface" title="Link to this heading">#</a></h2>
+<span id="id1"></span><h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">4.1. </span>Fortran Interface</a><a class="headerlink" href="#fortran-interface" title="Link to this heading">#</a></h2>
 <p>Achilles provides a Fortran interface that allows nuclear models written in Fortran to be
 used directly within the C++ framework. The interface is structured in three layers:</p>
 <ol class="arabic simple">
@@ -398,7 +417,7 @@ configuration file and parameter map.</p></li>
 weighting to the Fortran model via <code class="docutils literal notranslate"><span class="pre">GetCurrents</span></code> and <code class="docutils literal notranslate"><span class="pre">GetInitialStateWeight</span></code>.</p></li>
 </ul>
 <section id="the-model-abstract-type">
-<h3><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">4.1.1. </span>The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a><a class="headerlink" href="#the-model-abstract-type" title="Link to this heading">#</a></h3>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">4.1.1. </span>The <code class="docutils literal notranslate"><span class="pre">model</span></code> Abstract Type</a><a class="headerlink" href="#the-model-abstract-type" title="Link to this heading">#</a></h3>
 <p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model.f90</span></code></p>
 <p>Every Fortran nuclear model must extend the abstract <code class="docutils literal notranslate"><span class="pre">model</span></code> type and implement all of
 its deferred procedures.</p>
@@ -483,7 +502,7 @@ describing this model. Used for citations in the output.</p></td>
 </table>
 </div>
 <section id="currents-argument-list">
-<span id="currents-signature"></span><h4><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">4.1.1.1. </span><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a><a class="headerlink" href="#currents-argument-list" title="Link to this heading">#</a></h4>
+<span id="currents-signature"></span><h4><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">4.1.1.1. </span><code class="docutils literal notranslate"><span class="pre">currents</span></code> Argument List</a><a class="headerlink" href="#currents-argument-list" title="Link to this heading">#</a></h4>
 <div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">subroutine </span><span class="n">nm_currents</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="n">pids_in</span><span class="p">,</span><span class="w"> </span><span class="n">mom_in</span><span class="p">,</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pids_out</span><span class="p">,</span><span class="w"> </span><span class="n">mom_out</span><span class="p">,</span><span class="w"> </span><span class="n">nout</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                       </span><span class="n">pids_spect</span><span class="p">,</span><span class="w"> </span><span class="n">mom_spect</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
@@ -506,7 +525,7 @@ momentum transfer <span class="math notranslate nohighlight">\(Q^2\)</span>. <co
 the <span class="math notranslate nohighlight">\(\mu\)</span>-th Lorentz component for spin state <code class="docutils literal notranslate"><span class="pre">spin</span></code>.</p>
 </section>
 <section id="init-wgt-argument-list">
-<span id="init-wgt-signature"></span><h4><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">4.1.1.2. </span><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a><a class="headerlink" href="#init-wgt-argument-list" title="Link to this heading">#</a></h4>
+<span id="init-wgt-signature"></span><h4><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">4.1.1.2. </span><code class="docutils literal notranslate"><span class="pre">init_wgt</span></code> Argument List</a><a class="headerlink" href="#init-wgt-argument-list" title="Link to this heading">#</a></h4>
 <div class="highlight-fortran notranslate"><div class="highlight"><pre><span></span><span class="k">function </span><span class="n">nm_init_wgt</span><span class="p">(</span><span class="n">self</span><span class="p">,</span><span class="w"> </span><span class="n">pids_in</span><span class="p">,</span><span class="w"> </span><span class="n">mom_in</span><span class="p">,</span><span class="w"> </span><span class="n">nin</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                     </span><span class="n">pids_spect</span><span class="p">,</span><span class="w"> </span><span class="n">mom_spect</span><span class="p">,</span><span class="w"> </span><span class="n">nspect</span><span class="p">,</span><span class="w"> </span><span class="p">&amp;</span>
 <span class="w">                     </span><span class="n">nproton</span><span class="p">,</span><span class="w"> </span><span class="n">nneutron</span><span class="p">)</span><span class="w"> </span><span class="k">result</span><span class="p">(</span><span class="n">wgt</span><span class="p">)</span>
@@ -524,7 +543,7 @@ The return value is the probability weight for the sampled initial-state configu
 </section>
 </section>
 <section id="the-modelfactory-type">
-<h3><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">4.1.2. </span>The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a><a class="headerlink" href="#the-modelfactory-type" title="Link to this heading">#</a></h3>
+<h3><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">4.1.2. </span>The <code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> Type</a><a class="headerlink" href="#the-modelfactory-type" title="Link to this heading">#</a></h3>
 <p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model_factory.f90</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">ModelFactory</span></code> maintains a list of named model constructors and creates model instances
 on demand.</p>
@@ -563,7 +582,7 @@ pointer if no model with that name exists.</p></td>
 </div>
 </section>
 <section id="cfortran-bridge-nuclear-model-interface">
-<h3><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">4.1.3. </span>C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a><a class="headerlink" href="#cfortran-bridge-nuclear-model-interface" title="Link to this heading">#</a></h3>
+<h3><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">4.1.3. </span>C–Fortran Bridge (<code class="docutils literal notranslate"><span class="pre">nuclear_model_interface</span></code>)</a><a class="headerlink" href="#cfortran-bridge-nuclear-model-interface" title="Link to this heading">#</a></h3>
 <p><em>Defined in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/nuclear_model_interface.f90</span></code></p>
 <p>This module exposes ISO C-bound procedures consumed by the C++ <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> class.
 Users typically do not call these directly, but must call <code class="docutils literal notranslate"><span class="pre">register_all</span></code> (via the C
@@ -637,7 +656,7 @@ the model’s <code class="docutils literal notranslate"><span class="pre">curre
 </div>
 </section>
 <section id="the-fortranmodel-c-class">
-<h3><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">4.1.4. </span>The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a><a class="headerlink" href="#the-fortranmodel-c-class" title="Link to this heading">#</a></h3>
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">4.1.4. </span>The <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> C++ Class</a><a class="headerlink" href="#the-fortranmodel-c-class" title="Link to this heading">#</a></h3>
 <p><em>Declared in</em> <code class="docutils literal notranslate"><span class="pre">include/Achilles/fortran/FNuclearModel.hh</span></code>,
 <em>implemented in</em> <code class="docutils literal notranslate"><span class="pre">src/Achilles/fortran/FNuclearModel.cc</span></code></p>
 <p><code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> is a concrete subclass of <code class="docutils literal notranslate"><span class="pre">NuclearModel</span></code> that delegates all
@@ -717,7 +736,7 @@ flags used by <code class="docutils literal notranslate"><span class="pre">CalcC
 </table>
 </div>
 <section id="ward-gauge-corrections">
-<h4><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">4.1.4.1. </span>Ward Gauge Corrections</a><a class="headerlink" href="#ward-gauge-corrections" title="Link to this heading">#</a></h4>
+<h4><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">4.1.4.1. </span>Ward Gauge Corrections</a><a class="headerlink" href="#ward-gauge-corrections" title="Link to this heading">#</a></h4>
 <p>After computing the hadronic current the <code class="docutils literal notranslate"><span class="pre">FortranModel</span></code> can enforce a gauge condition
 on the Lorentz components. The choice is controlled by the <code class="docutils literal notranslate"><span class="pre">Ward</span></code> run-card key:</p>
 <ul class="simple">
@@ -730,7 +749,7 @@ in the Coulomb gauge.</p></li>
 </section>
 </section>
 <section id="implementing-a-new-fortran-model">
-<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">4.1.5. </span>Implementing a New Fortran Model</a><a class="headerlink" href="#implementing-a-new-fortran-model" title="Link to this heading">#</a></h3>
+<h3><a class="toc-backref" href="#id13" role="doc-backlink"><span class="section-number">4.1.5. </span>Implementing a New Fortran Model</a><a class="headerlink" href="#implementing-a-new-fortran-model" title="Link to this heading">#</a></h3>
 <p>To add a new nuclear model written in Fortran, follow these steps:</p>
 <ol class="arabic">
 <li><p><strong>Create a Fortran module</strong> that <code class="docutils literal notranslate"><span class="pre">use</span></code>s <code class="docutils literal notranslate"><span class="pre">nuclear_model</span></code> and defines a concrete
@@ -786,7 +805,101 @@ new module and a <code class="docutils literal notranslate"><span class="pre">ca
 </section>
 </section>
 <section id="sherpa-interface">
-<span id="id2"></span><h2><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">4.2. </span>Sherpa Interface</a><a class="headerlink" href="#sherpa-interface" title="Link to this heading">#</a></h2>
+<span id="id2"></span><h2><a class="toc-backref" href="#id14" role="doc-backlink"><span class="section-number">4.2. </span>Sherpa Interface</a><a class="headerlink" href="#sherpa-interface" title="Link to this heading">#</a></h2>
+<p>The Sherpa interface enables Achilles to use the <a class="reference external" href="https://sherpa-team.gitlab.io/">Sherpa</a>
+Monte Carlo event generator for Beyond the Standard Model (BSM) processes and tau lepton decays.
+The interface is built as an optional plugin and requires a custom version of Sherpa with UFO
+support (see <a class="reference internal" href="getting-started.html#building-achilles"><span class="std std-ref">Building Achilles</span></a> for build instructions). The physics details are described
+in <span id="id3">[<a class="reference internal" href="references.html#id7" title="Joshua Isaacson, Stefan Höche, Diego Lopez Gutierrez, and Noemi Rocco. Novel event generator for the automated simulation of neutrino scattering. Phys. Rev. D, 105(9):096006, 2022. arXiv:2110.15319, doi:10.1103/PhysRevD.105.096006.">IHocheLGR22</a>]</span> for BSM and <span id="id4">[<a class="reference internal" href="references.html#id5" title="Joshua Isaacson, Stefan Höche, Frank Siegert, and Sherry Wang. Tau polarization and correlated decays in neutrino experiments. Phys. Rev. D, 108(9):093004, 2023. arXiv:2303.08104, doi:10.1103/PhysRevD.108.093004.">IHocheSW23</a>]</span> for tau lepton decays.</p>
+<section id="overview">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink"><span class="section-number">4.2.1. </span>Overview</a><a class="headerlink" href="#overview" title="Link to this heading">#</a></h3>
+<p>The interface is implemented through the <code class="docutils literal notranslate"><span class="pre">SherpaInterface</span></code> class, which wraps the Sherpa
+generator and provides several key capabilities:</p>
+<ul class="simple">
+<li><p><strong>Leptonic current calculations</strong> — Sherpa computes the leptonic transition currents
+including full spinor information for all helicity combinations.</p></li>
+<li><p><strong>Matrix element evaluation</strong> — differential cross sections are computed using Sherpa’s
+Comix matrix element generator.</p></li>
+<li><p><strong>Form factor extraction</strong> — nucleon form factors are read from the Sherpa model’s vertex
+definitions (requires a UFO 2.0 model).</p></li>
+<li><p><strong>Phase space channel generation</strong> — Sherpa’s combinatorics are used to automatically build
+efficient multi-channel integration mappings.</p></li>
+<li><p><strong>Tau lepton decays</strong> — after the intranuclear cascade, Sherpa handles the showering and
+hadronic decay of unstable particles such as the tau lepton.</p></li>
+</ul>
+</section>
+<section id="backend-types">
+<h3><a class="toc-backref" href="#id16" role="doc-backlink"><span class="section-number">4.2.2. </span>Backend Types</a><a class="headerlink" href="#backend-types" title="Link to this heading">#</a></h3>
+<p>Two cross-section backends make use of the Sherpa interface:</p>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">BSMBackend</span></code></dt><dd><p>Used for BSM processes. The leptonic currents and matrix elements are both computed by
+Sherpa, while the hadronic side uses form factors extracted from the Sherpa model vertices.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">SherpaBackend</span></code></dt><dd><p>All amplitude computations are fully delegated to Sherpa. This is the appropriate backend
+when the full process (both leptonic and hadronic sides) is described within the Sherpa
+framework.</p>
+</dd>
+</dl>
+</section>
+<section id="run-card-configuration">
+<h3><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">4.2.3. </span>Run Card Configuration</a><a class="headerlink" href="#run-card-configuration" title="Link to this heading">#</a></h3>
+<p>To use the Sherpa interface, set the backend in the run card:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Backend</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Sherpa</span><span class="w">   </span><span class="c1"># or BSM for beyond-SM physics</span>
+</pre></div>
+</div>
+<p>Sherpa-specific parameters are passed as command-line arguments. Common options include:</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 35.0%" />
+<col style="width: 65.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">MODEL</span></code></p></td>
+<td><p>The particle physics model to use (default: <code class="docutils literal notranslate"><span class="pre">SMnu</span></code>). Set to a custom UFO model
+name for BSM studies.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ParamCard</span></code></p></td>
+<td><p>Path to a UFO parameter card for custom models.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LEPTONIC_CURRENT_MODE=1</span></code></p></td>
+<td><p>Enable leptonic current calculations.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MASSIVE[15]=1</span></code></p></td>
+<td><p>Treat the tau lepton as massive.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">STABLE[15]=0</span></code></p></td>
+<td><p>Allow the tau lepton to decay.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">HARD_SPIN_CORRELATIONS=1</span></code></p></td>
+<td><p>Enable spin correlations in hard processes.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SOFT_SPIN_CORRELATIONS=1</span></code></p></td>
+<td><p>Include spin correlations in the parton shower.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>To enable Sherpa-driven decays after the cascade (e.g. for tau lepton decay), set:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Main</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">RunDecays</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</section>
+<section id="limitations">
+<h3><a class="toc-backref" href="#id18" role="doc-backlink"><span class="section-number">4.2.4. </span>Limitations</a><a class="headerlink" href="#limitations" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>A custom version of Sherpa with UFO support is required. Contact the Achilles authors for
+details on obtaining it.</p></li>
+<li><p>Form factor extraction from Sherpa model vertices requires the UFO 2.0 format.</p></li>
+<li><p>The factorization scale is currently fixed at <span class="math notranslate nohighlight">\(\mu^2 = 100\;\text{GeV}^2\)</span>.</p></li>
+</ul>
+</section>
 </section>
 </section>
 
@@ -811,11 +924,11 @@ new module and a <code class="docutils literal notranslate"><span class="pre">ca
       </div>
     </a>
     <a class="right-next"
-       href="physics-guide.html"
+       href="output.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Physics Guide</p>
+        <p class="prev-next-title"><span class="section-number">5. </span>Output Formats &amp; Analysis</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -852,7 +965,13 @@ new module and a <code class="docutils literal notranslate"><span class="pre">ca
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#implementing-a-new-fortran-model">4.1.5. Implementing a New Fortran Model</a></li>
 </ul>
 </li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sherpa-interface">4.2. Sherpa Interface</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#overview">4.2.1. Overview</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#backend-types">4.2.2. Backend Types</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#run-card-configuration">4.2.3. Run Card Configuration</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#limitations">4.2.4. Limitations</a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
