@@ -19,6 +19,27 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Generate versions.json from gh-pages
+        run: |
+          git fetch origin gh-pages --depth=1 || true
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            # List top-level directories on gh-pages as available versions
+            git ls-tree --name-only origin/gh-pages \
+              | while read entry; do
+                  # Only include entries that are directories (trees)
+                  type=$(git cat-file -t "origin/gh-pages:$entry" 2>/dev/null)
+                  if [ "$type" = "tree" ]; then
+                    echo "$entry"
+                  fi
+                done \
+              | grep -vE '^_' \
+              | jq -R . | jq -s . > versions.json
+          else
+            echo '["latest"]' > versions.json
+          fi
+          echo "Generated versions.json:"
+          cat versions.json
+
       - name: Build landing page
         run: sphinx-build -b html . _build/html
 
