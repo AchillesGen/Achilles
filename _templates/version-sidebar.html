@@ -1,0 +1,31 @@
+{% set has_releases = [] %}
+{% set has_branches = [] %}
+{% for v in versions %}
+  {% if v == 'latest' or v.startswith('v') %}
+    {% if has_releases.append(1) %}{% endif %}
+  {% else %}
+    {% if has_branches.append(1) %}{% endif %}
+  {% endif %}
+{% endfor %}
+
+{% if has_releases %}
+<h3>{{ _('Releases') }}</h3>
+<ul>
+  {%- for v in versions %}
+    {%- if v == 'latest' or v.startswith('v') %}
+  <li><a href="{{ v }}/index.html">{% if v == 'latest' %}Latest{% else %}{{ v }}{% endif %}</a></li>
+    {%- endif %}
+  {%- endfor %}
+</ul>
+{% endif %}
+
+{% if has_branches %}
+<h3>{{ _('Branches') }}</h3>
+<ul>
+  {%- for v in versions %}
+    {%- if v != 'latest' and not v.startswith('v') %}
+  <li><a href="{{ v }}/index.html">{{ v }}</a></li>
+    {%- endif %}
+  {%- endfor %}
+</ul>
+{% endif %}

@@ -1,4 +1,4 @@
-breathe
+sphinx
 sphinx-book-theme
 sphinxcontrib-bibtex
 sphinx-design

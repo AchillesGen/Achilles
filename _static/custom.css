@@ -1,0 +1,8 @@
+/* Landing page: minimal overrides to keep consistent with docs theme */
+
+.hero-tagline {
+    font-size: 1.2rem;
+    color: var(--pst-color-text-muted);
+    font-weight: 300;
+    margin-bottom: 1.5rem;
+}
