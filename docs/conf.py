@@ -6,6 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import subprocess, os
+
 project = 'Achilles'
 copyright = '2025, Achilles Collaboration'
 author = 'Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Pickering, Hayden Piwonka, Noemi Rocco, Noah Steinberg'
@@ -44,14 +46,18 @@ html_theme_options = {
     'logo': {
         "image_light": '../assets/logo.svg',
         "image_dark": '../assets/logo.svg',
-    }
+    },
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
+    "switcher": {
+        "json_url": "https://achillesgen.github.io/Achilles/switcher.json",
+        "version_match": os.environ.get("DOCS_VERSION", "latest"),
+    },
+    "extra_navbar": '<a href="https://achillesgen.github.io/Achilles/">← Back to all versions</a>',
 }
 html_css_files = ['css/s5defs-roles.css']
 
 # -- Breathe configuration ---------------------------------------------------
 breathe_default_project = "Achilles"
-
-import subprocess, os
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :

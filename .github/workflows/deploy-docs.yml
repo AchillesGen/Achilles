@@ -34,11 +34,22 @@ jobs:
           cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DACHILLES_BUILD_DOCS=ON
         working-directory: .
 
+      - name: Determine docs version
+        id: docs-version
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "version=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build documentation
         run: |
           cd build
           cmake --build . --target achilles-docs
         working-directory: .
+        env:
+          DOCS_VERSION: ${{ steps.docs-version.outputs.version }}
 
       - name: Mark timestamp for branch builds
         if: github.event_name == 'push'
@@ -52,22 +63,25 @@ jobs:
 
       - name: Copy docs
         run: |
-          if [ "$GITHUB_REF_NAME" = "main" ]; then
-            DEST="latest"
-          else
-            DEST="${GITHUB_REF_NAME}"
-          fi
+          DEST="${{ steps.docs-version.outputs.version }}"
           mkdir -p gh-pages/$DEST
           rsync -a --delete build/docs/sphinx/ gh-pages/$DEST/
 
-      - name: Update versions.json
+      - name: Update versions.json and switcher.json
         run: |
           cd gh-pages
+          BASE_URL="https://achillesgen.github.io/Achilles"
           # Include all version directories (including 'latest')
           ls -d */ | cut -f1 -d'/' | grep -vE '^_' \
             | jq -R . | jq -s . > versions.json
           echo "Generated versions.json:"
           cat versions.json
+
+          # Generate switcher.json for pydata-sphinx-theme version switcher
+          jq '[.[] | {name: ., version: ., url: ("'"$BASE_URL"'/" + . + "/")}]' \
+            versions.json > switcher.json
+          echo "Generated switcher.json:"
+          cat switcher.json
 
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v4
