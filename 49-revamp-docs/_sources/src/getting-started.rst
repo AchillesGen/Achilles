@@ -14,6 +14,21 @@ Getting Started
 Obtaining the code
 ******************
 
+The Achilles source code is hosted on GitHub. You can clone the repository using:
+
+.. code-block:: shell-session
+
+   $ git clone https://github.com/AchillesGen/Achilles.git
+   $ cd Achilles
+
+If you would like to use a specific release version, you can checkout the corresponding tag:
+
+.. code-block:: shell-session
+
+   $ git checkout vX.Y.Z
+
+where ``X.Y.Z`` is the desired version number. Available releases can be found on the
+`GitHub releases page <https://github.com/AchillesGen/Achilles/releases>`_.
 
 .. _Installation:
 
@@ -38,7 +53,7 @@ All additional required dependencies will be automatically downloaded and instal
 If you wish to install them yourself, please see :ref:`All Dependencies` for details.
 
 In addition to the required dependencies, Achilles has some additional optional dependencies to extend the functionality of the code.
-If the user wishes to study Beyond the Standard Model processes or the decay of tau neutrinos, an additional dependency on `Sherpa`_ is required.
+If the user wishes to study Beyond the Standard Model processes or the decay of tau leptons, an additional dependency on `Sherpa`_ is required.
 The interface and current limitations are described in detail in :cite:`Isaacson:2021xty` for BSM and :cite:`Isaacson:2023gwp` for tau decays.
 Additional details on the interface can be found in the :ref:`Sherpa Interface <sherpa-interface>` section.
 Details on enabling the interface and options for finding the Sherpa installation can be found in :ref:`Build Options`.
@@ -72,6 +87,16 @@ Dependencies
 Required Dependencies
 ---------------------
 
+The following dependencies are automatically downloaded and built by CMake using `CPM <https://github.com/cpm-cmake/CPM.cmake>`_
+if they are not already found on the system:
+
+- `fmt <https://github.com/fmtlib/fmt>`_ (v11.0.0) -- Modern C++ formatting library
+- `spdlog <https://github.com/gabime/spdlog>`_ (v1.14.1) -- Fast C++ logging library
+- `docopt <https://github.com/docopt/docopt.cpp>`_ (v0.6.3) -- Command-line interface library
+- `yaml-cpp <https://github.com/jbeder/yaml-cpp>`_ -- YAML parser and emitter
+- `yaml-fortran <https://github.com/jximenes-cern/yaml-fortran>`_ -- Fortran YAML bindings
+- `NuHepMC_CPPUtils <https://github.com/NuHepMC/cpputils>`_ (v1-RC10) -- NuHepMC C++ utilities (includes HepMC3)
+- `HighFive <https://github.com/BlueBrain/HighFive>`_ (v2.6.2) -- C++ interface for HDF5
 
 ---------------------
 Optional Dependencies
@@ -80,6 +105,17 @@ Optional Dependencies
 ^^^^^^
 Sherpa
 ^^^^^^
+
+`Sherpa`_ is required for studying Beyond the Standard Model (BSM) processes or tau lepton decays.
+A custom version of Sherpa with UFO support is needed; contact the Achilles authors for details on
+obtaining it. To use Sherpa, build it with the ``--enable-ufo`` configure flag and then enable
+the interface in Achilles with:
+
+.. code-block:: shell-session
+
+   $ cmake -S . -B build -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/sherpa
+
+For further details on the interface, see the :ref:`Sherpa Interface <sherpa-interface>` section.
 
 
 .. _Build Options:
@@ -234,10 +270,39 @@ without the tag, but you can add the tag to the specific version in each command
 Running the Container
 =====================
 
+Once the image has been downloaded, you can run the container with:
+
+.. code-block:: shell-session
+
+   $ docker run ghcr.io/achillesgen/achilles
+
+This will launch Achilles with the default run card (``run.yml``) that is included in the image.
+To run with a custom run card, you can pass it as an argument:
+
+.. code-block:: shell-session
+
+   $ docker run ghcr.io/achillesgen/achilles <run_card>
+
+To get an interactive shell inside the container for exploring or debugging:
+
+.. code-block:: shell-session
+
+   $ docker run -it --entrypoint /bin/sh ghcr.io/achillesgen/achilles
 
 =========================================
 Handling files between host and container
 =========================================
+
+By default, the Docker container is isolated from the host filesystem. To pass files into the container
+(such as custom run cards or nuclear data files) or to retrieve output files (such as generated events),
+you can use Docker's volume mount feature:
+
+.. code-block:: shell-session
+
+   $ docker run -v /path/on/host:/achilles/work ghcr.io/achillesgen/achilles work/<run_card>
+
+This mounts the host directory ``/path/on/host`` into the container at ``/achilles/work``. Any output
+files written to ``/achilles/work`` inside the container will appear in ``/path/on/host`` on the host machine.
 
 
 .. _Sherpa: https://sherpa-team.gitlab.io/
