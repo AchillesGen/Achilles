@@ -1,50 +1,50 @@
-.. Achilles documentation master file, created by
-   sphinx-quickstart on Mon Sep 22 23:17:23 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+:html_theme.sidebar_secondary.remove:
 
 Welcome to Achilles!
 ====================
 
-.. raw:: html
+.. rst-class:: hero-tagline
 
-   <div style="display: flex; flex-direction: column; align-items: center; margin-top: 2em;">
+   A CHIcago Land Lepton Event Simulator
 
-   <a href="latest/index.html" style="
-       text-decoration: none;
-       padding: 1em 2em;
-       background-color: #4CAF50;
-       color: white;
-       border-radius: 8px;
-       font-size: 1.2em;
-       margin-bottom: 1em;
-       display: inline-block;">
-       📘 Go to Documentation
-   </a>
+Achilles is a modern, theory-driven lepton event generator for simulating
+neutrino-nucleus and electron-nucleus scattering. Built with modularity and
+extensibility at its core, Achilles provides a next-generation framework for
+the neutrino physics community with rigorous uncertainty quantification.
 
-   <label for="version-select" style="font-size: 1.1em; margin-bottom: 0.5em;">Choose a version:</label>
-   <select id="version-select" onchange="if (this.value) window.location.href=this.value" style="
-       font-size: 1em;
-       padding: 0.5em;
-       border-radius: 4px;">
-   </select>
+.. grid:: 2
+   :gutter: 3
 
-   <script>
-     fetch('versions.json')
-       .then(response => response.json())
-       .then(versions => {
-         const select = document.getElementById('version-select');
-         versions.forEach(v => {
-           const opt = document.createElement('option');
-           opt.value = v + '/index.html';
-           opt.textContent = v;
-           if (v === 'latest') {
-             opt.textContent = 'Latest Release';
-             opt.selected = true;
-           }
-           select.appendChild(opt);
-         });
-       });
-   </script>
+   .. grid-item-card:: Get Started
+      :link: latest/index.html
 
-   </div>
+      Access the latest documentation to learn how to install,
+      configure, and run Achilles.
+
+   .. grid-item-card:: Source Code
+      :link: https://github.com/AchillesGen/Achilles
+
+      Browse the source, report issues, and contribute
+      on GitHub.
+
+Key Features
+------------
+
+.. grid:: 2 2 4 4
+   :gutter: 2
+
+   .. grid-item-card:: Modular Framework
+
+      Seamlessly switch between different nuclear and interaction models.
+
+   .. grid-item-card:: User Extensible
+
+      Extend with custom nuclear models, interactions, and flux definitions.
+
+   .. grid-item-card:: Theory Driven
+
+      Rigorous uncertainty quantification built into the simulation framework.
+
+   .. grid-item-card:: BSM Physics
+
+      Automated Beyond Standard Model calculations for neutrino experiments.
