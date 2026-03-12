@@ -52,15 +52,22 @@ jobs:
 
       - name: Copy docs
         run: |
-          BRANCH=${GITHUB_REF_NAME}
-          mkdir -p gh-pages/$BRANCH
-          rsync -a --delete build/docs/sphinx/ gh-pages/$BRANCH/
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            DEST="latest"
+          else
+            DEST="${GITHUB_REF_NAME}"
+          fi
+          mkdir -p gh-pages/$DEST
+          rsync -a --delete build/docs/sphinx/ gh-pages/$DEST/
 
       - name: Update versions.json
         run: |
           cd gh-pages
-          ls -d */ | cut -f1 -d'/' | grep -vE '^(latest|_)' \
+          # Include all version directories (including 'latest')
+          ls -d */ | cut -f1 -d'/' | grep -vE '^_' \
             | jq -R . | jq -s . > versions.json
+          echo "Generated versions.json:"
+          cat versions.json
 
       - name: Deploy docs
         uses: peaceiris/actions-gh-pages@v4
@@ -69,3 +76,14 @@ jobs:
           publish_dir: gh-pages
           publish_branch: gh-pages
           keep_files: true
+
+  rebuild-landing:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger landing page rebuild
+        run: |
+          gh api repos/${{ github.repository }}/dispatches \
+            -f event_type=rebuild-landing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
