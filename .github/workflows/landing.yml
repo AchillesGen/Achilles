@@ -32,7 +32,7 @@ jobs:
                     echo "$entry"
                   fi
                 done \
-              | grep -vE '^_' \
+              | grep -vE '^[_.]' \
               | jq -R . | jq -s . > versions.json
           else
             echo '["latest"]' > versions.json
