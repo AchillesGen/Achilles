@@ -371,3 +371,89 @@ To add a new nuclear model written in Fortran, follow these steps:
 
 Sherpa Interface
 ================
+
+The Sherpa interface enables Achilles to use the `Sherpa <https://sherpa-team.gitlab.io/>`_
+Monte Carlo event generator for Beyond the Standard Model (BSM) processes and tau lepton decays.
+The interface is built as an optional plugin and requires a custom version of Sherpa with UFO
+support (see :ref:`Building Achilles` for build instructions). The physics details are described
+in :cite:`Isaacson:2021xty` for BSM and :cite:`Isaacson:2023gwp` for tau lepton decays.
+
+Overview
+--------
+
+The interface is implemented through the ``SherpaInterface`` class, which wraps the Sherpa
+generator and provides several key capabilities:
+
+- **Leptonic current calculations** — Sherpa computes the leptonic transition currents
+  including full spinor information for all helicity combinations.
+- **Matrix element evaluation** — differential cross sections are computed using Sherpa's
+  Comix matrix element generator.
+- **Form factor extraction** — nucleon form factors are read from the Sherpa model's vertex
+  definitions (requires a UFO 2.0 model).
+- **Phase space channel generation** — Sherpa's combinatorics are used to automatically build
+  efficient multi-channel integration mappings.
+- **Tau lepton decays** — after the intranuclear cascade, Sherpa handles the showering and
+  hadronic decay of unstable particles such as the tau lepton.
+
+Backend Types
+-------------
+
+Two cross-section backends make use of the Sherpa interface:
+
+``BSMBackend``
+   Used for BSM processes. The leptonic currents and matrix elements are both computed by
+   Sherpa, while the hadronic side uses form factors extracted from the Sherpa model vertices.
+
+``SherpaBackend``
+   All amplitude computations are fully delegated to Sherpa. This is the appropriate backend
+   when the full process (both leptonic and hadronic sides) is described within the Sherpa
+   framework.
+
+Run Card Configuration
+----------------------
+
+To use the Sherpa interface, set the backend in the run card:
+
+.. code-block:: yaml
+
+   Backend:
+     Name: Sherpa   # or BSM for beyond-SM physics
+
+Sherpa-specific parameters are passed as command-line arguments. Common options include:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Option
+     - Description
+   * - ``MODEL``
+     - The particle physics model to use (default: ``SMnu``). Set to a custom UFO model
+       name for BSM studies.
+   * - ``ParamCard``
+     - Path to a UFO parameter card for custom models.
+   * - ``LEPTONIC_CURRENT_MODE=1``
+     - Enable leptonic current calculations.
+   * - ``MASSIVE[15]=1``
+     - Treat the tau lepton as massive.
+   * - ``STABLE[15]=0``
+     - Allow the tau lepton to decay.
+   * - ``HARD_SPIN_CORRELATIONS=1``
+     - Enable spin correlations in hard processes.
+   * - ``SOFT_SPIN_CORRELATIONS=1``
+     - Include spin correlations in the parton shower.
+
+To enable Sherpa-driven decays after the cascade (e.g. for tau lepton decay), set:
+
+.. code-block:: yaml
+
+   Main:
+     RunDecays: true
+
+Limitations
+-----------
+
+- A custom version of Sherpa with UFO support is required. Contact the Achilles authors for
+  details on obtaining it.
+- Form factor extraction from Sherpa model vertices requires the UFO 2.0 format.
+- The factorization scale is currently fixed at :math:`\mu^2 = 100\;\text{GeV}^2`.
