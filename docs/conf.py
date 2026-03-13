@@ -46,8 +46,9 @@ html_theme_options = {
         "image_dark": '../assets/logo.svg',
         "link": "https://achillesgen.github.io/Achilles/",
     },
+    "repository_url": "https://github.com/AchillesGen/Achilles",
+    "use_repository_button": True,
     "article_header_end": [
-        "landing-link.html",
         "article-header-buttons.html",
     ],
 }
