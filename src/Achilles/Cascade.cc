@@ -247,35 +247,6 @@ void Cascade::Validate(Event &event) {
             event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
                                       final, EventHistory::StatusCode::decay);
         }
-        if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {
-            static constexpr size_t nwarns = 10;
-            static size_t iwarns = 0;
-            if(iwarns < nwarns) {
-                spdlog::warn("Cascade: Resonance did not decay before escaping, decaying now");
-            } else if(iwarns == nwarns) {
-                spdlog::warn(
-                    "Cascade: Reached maximum escaped resonance warnings, suppressing the rest");
-            }
-            iwarns++;
-
-            // Force decay
-            auto particles_out = m_decays.Decay(particle);
-            event.Hadrons()[idx].Status() = ParticleStatus::decayed;
-
-            // Ensure outgoing particles are propagating and add to list of particles in event
-            // and assign formation zone
-            std::vector<Particle> final;
-            for(auto &out : particles_out) {
-                out.Status() = ParticleStatus::final_state;
-                out.Position() = event.Hadrons()[idx].Position();
-                event.Hadrons().push_back(out);
-                final.push_back(event.Hadrons().back());
-            }
-
-            // Add decay to the event history
-            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
-                                      final, EventHistory::StatusCode::decay);
-        }
     }
 }
 
@@ -851,46 +822,6 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         survival_prob = exp(-timeStep / running_lifetime);
     }
 
-    // Should we attempt a decay in this time step
-    spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
-                  lifetime);
-    if(Random::Instance().Uniform(0.0, 1.0) < survival_prob) return false;
-
-    // Look up in decay handler
-    auto particles_out = m_decays.Decay(part);
-
-    for(const auto &out : particles_out) {
-        if(PauliBlocking(out)) return false;
-    }
-
-    event.Hadrons()[idx].Status() = ParticleStatus::decayed;
-
-    // Ensure outgoing particles are propagating and add to list of particles in event
-    // and assign formation zone
-    std::vector<Particle> final;
-    for(auto &out : particles_out) {
-        if(std::isnan(out.Momentum()[0])) {
-            spdlog::error("Nan momentum in decay");
-            spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
-            throw AchillesCascadeError("Nan momentum in decay");
-        }
-        out.Status() = ParticleStatus::propagating;
-        out.SetFormationZone(out.Momentum(), part.Momentum());
-        event.Hadrons().push_back(out);
-        final.push_back(event.Hadrons().back());
-    }
-
-    // Add decay to the event history
-    event.History().AddVertex(part.Position(), {event.Hadrons()[idx]}, final,
-                              EventHistory::StatusCode::decay);
-
-    return true;
-}
-
-bool Cascade::Decay(Event &event, size_t idx) const {
-    auto part = event.Hadrons()[idx];
-    double lifetime = Constant::HBARC / part.Info().Width();
-    double decay_prob = exp(-timeStep / lifetime);
     // Should we attempt a decay in this time step
     spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
                   lifetime);

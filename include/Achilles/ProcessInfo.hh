@@ -34,7 +34,6 @@ struct ProcessInfo {
     std::vector<long> Ids() const;
     std::map<size_t, long> m_mom_map;
     int LeptonicCharge() const;
-    size_t NInitialStates(size_t, size_t) const;
 
     bool operator==(const ProcessInfo &other) const {
         return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic &&
@@ -56,25 +55,6 @@ struct ProcessInfo {
 namespace fmt {
 
 template <> struct formatter<achilles::ProcessInfo> {
-    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
-        return ctx.begin();
-    }
-
-    auto format(const achilles::ProcessInfo &info, format_context &ctx) const
-        -> format_context::iterator {
-        return format_to(
-            ctx.out(), "ProcessInfo([{}, {}] -> [{}, {}])", info.m_leptonic.first,
-            fmt::join(info.m_hadronic.first.begin(), info.m_hadronic.first.end(), ", "),
-            fmt::join(info.m_leptonic.second.begin(), info.m_leptonic.second.end(), ", "),
-            fmt::join(info.m_hadronic.second.begin(), info.m_hadronic.second.end(), ", "));
-    }
-};
-} // namespace fmt
-
-namespace fmt {
-
-template<>
-struct formatter<achilles::ProcessInfo> {
     constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
         return ctx.begin();
     }

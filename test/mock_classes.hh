@@ -109,7 +109,6 @@ class MockSherpaInterface : public trompeloeil::mock_interface<achilles::SherpaI
     IMPLEMENT_MOCK1(FillAmplitudes);
     IMPLEMENT_CONST_MOCK2(FormFactors);
     IMPLEMENT_MOCK1(FillAmplitudes);
-    IMPLEMENT_CONST_MOCK2(FormFactors);
 };
 */
 
@@ -202,25 +201,6 @@ class MockProcess : public trompeloeil::mock_interface<achilles::Process> {
     IMPLEMENT_MOCK1(Unweight);
     IMPLEMENT_CONST_MOCK6(ExtractMomentum);
     IMPLEMENT_CONST_MOCK6(ExtractParticles);
-};
-
-class MockBackend : public trompeloeil::mock_interface<XSecBackend>,
-                    RegistrableBackend<MockBackend> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK2(CrossSection);
-    IMPLEMENT_MOCK1(SetOptions);
-    IMPLEMENT_MOCK1(SetSherpa);
-    IMPLEMENT_MOCK1(AddNuclearModel);
-    IMPLEMENT_MOCK0(GetNuclearModel);
-    IMPLEMENT_MOCK1(AddProcess);
-    IMPLEMENT_MOCK0(Validate);
-    IMPLEMENT_MOCK4(SetupChannels);
-
-    // Required factory methods
-    static std::unique_ptr<XSecBackend> Construct() { return std::move(self); }
-    static std::string Name() { return "Mock"; }
-    static std::unique_ptr<MockBackend> self;
-    static void SetSelf(std::unique_ptr<MockBackend> backend) { self = std::move(backend); }
 };
 
 class MockBackend : public trompeloeil::mock_interface<XSecBackend>,

@@ -35,11 +35,6 @@ struct ProcessMetadata {
     std::string name, description, inspireHEP;
 };
 
-struct ProcessMetadata {
-    int id;
-    std::string name, description, inspireHEP;
-};
-
 class Process {
   public:
     Process(ProcessInfo info, std::unique_ptr<Unweighter> unweighter)

@@ -8,11 +8,6 @@ size_t achilles::ProcessInfo::Multiplicity() const {
     return 1 + m_hadronic.first.size() + FinalStateMultiplicity();
 }
 
-size_t achilles::ProcessInfo::NInitialStates(size_t nprotons, size_t nneutrons) const {
-    // TODO: Work out the case for multiple hadrons in initial state
-    return m_hadronic.first[0] == PID::proton() ? nprotons : nneutrons;
-}
-
 std::vector<double> achilles::ProcessInfo::Masses() const {
     std::vector<double> masses;
 
@@ -41,16 +36,13 @@ std::vector<long> achilles::ProcessInfo::Ids() const {
     // Get remaining leptonic ids
     for(const auto &part : m_leptonic.second) ids.push_back(part.AsInt());
 
-    // Get initial hadronic ids
-    for(const auto &part : m_hadronic.first) ids.push_back(part.AsInt());
+    // Get remaining hadronic ids
+    for(const auto &part : m_hadronic.second) ids.push_back(part.AsInt());
 
     // Get spectator ids
     for(const auto &part : m_spectator) ids.push_back(part.AsInt());
 
-    // Get remaining hadronic ids
-    for(const auto &part : m_hadronic.second) ids.push_back(part.AsInt());
-
-    return ids_;
+    return ids;
 }
 
 int achilles::ProcessInfo::LeptonicCharge() const {

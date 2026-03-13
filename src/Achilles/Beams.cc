@@ -13,7 +13,6 @@
 using achilles::FlatFlux;
 using achilles::PDFBeam;
 using achilles::Spectrum;
-using achilles::PDFBeam;
 
 Spectrum::Spectrum(const YAML::Node &node) {
     spdlog::debug("Loading spectrum flux");
@@ -337,25 +336,6 @@ double FlatFlux::GenerateWeight(const FourVector &beam, std::vector<double> &ran
     double delta_energy = m_max_energy - min_energy;
     ran[0] = (beam.E() - min_energy) / delta_energy;
     return delta_energy;
-}
-
-PDFBeam::PDFBeam(const YAML::Node&) {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-}
-
-achilles::FourVector PDFBeam::Flux(const std::vector<double>&, double) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
-}
-
-double PDFBeam::GenerateWeight(const FourVector&, std::vector<double>&, double) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
-}
-
-double PDFBeam::EvaluateFlux(const FourVector&) const {
-    throw std::runtime_error("PDFBeam: Not implemented yet!");
-    return {};
 }
 
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {

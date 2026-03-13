@@ -10,7 +10,6 @@
 #include "Achilles/EventHistory.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/ProcessInfo.hh"
-#include "Achilles/EventHistory.hh"
 
 namespace achilles {
 

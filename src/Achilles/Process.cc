@@ -13,12 +13,6 @@
 
 #include "fmt/ranges.h"
 
-#include "Achilles/Settings.hh"
-#include "Achilles/Unweighter.hh"
-#include "Achilles/Utilities.hh"
-
-#include "fmt/ranges.h"
-
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -255,20 +249,6 @@ bool Process::LoadState(std::istream &is) {
     return true;
 }
 
-bool Process::SaveState(std::ostream &os) const {
-    m_info.SaveState(os);
-    m_xsec.SaveState(os);
-    m_unweighter->SaveState(os);
-    return true;
-}
-
-bool Process::LoadState(std::istream &is) {
-    m_info.LoadState(is);
-    m_xsec.LoadState(is);
-    m_unweighter->LoadState(is);
-    return true;
-}
-
 std::vector<int> ProcessGroup::ProcessIds() const {
     std::vector<int> data;
     for(auto &process : m_processes) { data.push_back(process.ID()); }
@@ -398,10 +378,6 @@ bool ProcessGroup::NeedsOptimization() const {
     double rel_err = m_integrator.LastResult().RelError();
     return m_integrator.NeedsOptimization(rel_err);
 }
-
-void ProcessGroup::Optimize() {
-    // TODO: Clean up this control flow. It is a bit of a mess
-    b_optimize = true;
 
 void ProcessGroup::Optimize() {
     // TODO: Clean up this control flow. It is a bit of a mess

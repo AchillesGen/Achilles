@@ -70,8 +70,6 @@ dummy: dummy2
 
     auto nucleus = std::make_shared<MockNucleus>();
 
-    auto nucleus = std::make_shared<MockNucleus>();
-
     SECTION("Allowed States are valid") {
         // Require to build here or else form_factor is moved before expectations are set in next
         // test
@@ -192,8 +190,6 @@ dummy: dummy2
         .TIMES(1)
         .IN_SEQUENCE(seq)
         .LR_RETURN(std::ref(builder));
-
-    auto nucleus = std::make_shared<MockNucleus>();
 
     auto nucleus = std::make_shared<MockNucleus>();
 

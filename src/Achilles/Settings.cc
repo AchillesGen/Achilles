@@ -308,10 +308,6 @@ Settings::Settings(const YAML::Node &node) {
     m_settings = node;
 }
 
-Settings::Settings(const YAML::Node &node) {
-    m_settings = node;
-}
-
 void Settings::Print() const {
     std::cout << m_settings << std::endl;
 }

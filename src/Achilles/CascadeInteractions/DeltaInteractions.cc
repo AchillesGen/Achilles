@@ -252,11 +252,6 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         return HandleAbsorption(particle1, particle2, out_ids, ran);
     }
 
-    // S-wave absorption via Oset
-    if(particle1.Info().IsPion() && out_ids.size() == 2) {
-        return HandleAbsorption(particle1, particle2, out_ids, ran);
-    }
-
     // Boost to center of mass
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1CM = particle1.Momentum().Boost(-boostCM);

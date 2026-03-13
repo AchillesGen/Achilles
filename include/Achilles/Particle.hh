@@ -8,9 +8,6 @@
 #include "fmt/core.h"
 #include "fmt/format.h"
 #include "spdlog/fmt/ostr.h"
-#include "fmt/core.h"
-#include "fmt/format.h"
-#include "spdlog/fmt/ostr.h"
 
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"
@@ -46,37 +43,19 @@ inline auto format_as(achilles::ParticleStatus s) {
 /// mother particles, the particle's daughter particles, and any other needed information.
 /// Currently, the status codes are as follows:
 ///
-/// @verbatim embed:rst:leading-slashes
+/// @rst
 ///
-/// +-------------+----------------------------+
-/// | Status Code | Meaning                    |
-/// +=============+============================+
-/// |     -3      |  Internal Test Particle    |
-/// +-------------+----------------------------+
-/// |     -2      |  External Test Particle    |
-/// +-------------+----------------------------+
-/// |     -1      |  Propagating Particle      |
-/// +-------------+----------------------------+
-/// |      0      |  Background Particle       |
-/// +-------------+----------------------------+
-/// |      1      |  Initial State Particle    |
-/// +-------------+----------------------------+
-/// |      2      |  Final State Particle      |
-/// +-------------+----------------------------+
-/// |      3      |  Escaped Particle          |
-/// +-------------+----------------------------+
-/// |      4      |  Captured Particle         |
-/// +-------------+----------------------------+
-/// |      5      |  Decayed Particle          |
-/// +-------------+----------------------------+
-/// |      6      |  Beam Particle             |
-/// +-------------+----------------------------+
-/// |      7      |  Target Particle           |
-/// +-------------+----------------------------+
-/// |      8      |  Spectator Particle        |
-/// +-------------+----------------------------+
+/// +-------------+-----------------------+
+/// | Status Code | Meaning               |
+/// +=============+=======================+
+/// |     -1      |  Propagating Particle |
+/// +-------------+-----------------------+
+/// |      0      |  Background Particle  |
+/// +-------------+-----------------------+
+/// |      1      |  Escaped Particle     |
+/// +-------------+-----------------------+
 ///
-/// @endverbatim
+/// @endrst
 class Particle {
   public:
     /// @name Constructors and Destructors
@@ -277,10 +256,6 @@ class Particle {
     ///@return bool: True if the particle should be written out, False otherwise
     bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
 
-    /// Check to see if the particle is a final state particle
-    ///@return bool: True if a final state particle, False otherwise
-    bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
-
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
     void Propagate(const double &) noexcept;
@@ -411,41 +386,6 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "spectator({})", static_cast<int>(status));
         case achilles::ParticleStatus::interacted:
             return format_to(ctx.out(), "cascade({})", static_cast<int>(status));
-        default:
-            return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
-                             static_cast<int>(status));
-        }
-    }
-};
-
-template <> struct formatter<achilles::ParticleStatus> {
-    template <typename ParseContext> constexpr auto parse(ParseContext &ctx) { return ctx.begin(); }
-
-    template <typename FormatContext>
-    auto format(const achilles::ParticleStatus &status, FormatContext &ctx) const {
-        switch(status) {
-        case achilles::ParticleStatus::internal_test:
-            return format_to(ctx.out(), "internal_test({})", static_cast<int>(status));
-        case achilles::ParticleStatus::external_test:
-            return format_to(ctx.out(), "external_test({})", static_cast<int>(status));
-        case achilles::ParticleStatus::propagating:
-            return format_to(ctx.out(), "propagating({})", static_cast<int>(status));
-        case achilles::ParticleStatus::background:
-            return format_to(ctx.out(), "background({})", static_cast<int>(status));
-        case achilles::ParticleStatus::initial_state:
-            return format_to(ctx.out(), "initial_state({})", static_cast<int>(status));
-        case achilles::ParticleStatus::final_state:
-            return format_to(ctx.out(), "final_state({})", static_cast<int>(status));
-        case achilles::ParticleStatus::escaped:
-            return format_to(ctx.out(), "escaped({})", static_cast<int>(status));
-        case achilles::ParticleStatus::captured:
-            return format_to(ctx.out(), "captured({})", static_cast<int>(status));
-        case achilles::ParticleStatus::decayed:
-            return format_to(ctx.out(), "decayed({})", static_cast<int>(status));
-        case achilles::ParticleStatus::beam:
-            return format_to(ctx.out(), "beam({})", static_cast<int>(status));
-        case achilles::ParticleStatus::target:
-            return format_to(ctx.out(), "target({})", static_cast<int>(status));
         default:
             return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
                              static_cast<int>(status));

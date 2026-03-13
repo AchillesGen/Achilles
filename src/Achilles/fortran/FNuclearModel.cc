@@ -61,8 +61,6 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
 
     auto omega = qVec[0];
 
-    auto omega = qVec[0];
-
     auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
     std::vector<long> pids_in;
     std::vector<long> pids_out;
@@ -157,17 +155,7 @@ double FortranModel::InitialStateWeight(const std::vector<Particle> &had_in,
 
 std::unique_ptr<NuclearModel> FortranModel::Construct(const YAML::Node &config) {
     auto form_factor = LoadFormFactor(config);
-    return std::make_unique<FortranModel>(config, form_factor, nuc);
-}
-
-// Return name of initial state phase space needed
-std::string FortranModel::PhaseSpace(PID nuc_pid) const {
-    if(nuc_pid != PID::hydrogen() && nuc_pid != PID::free_neutron()) { return PSName(); }
-    if(nuc_pid == PID::hydrogen())
-        is_hydrogen = true;
-    else
-        is_free_neutron = true;
-    return "Coherent";
+    return std::make_unique<FortranModel>(config, form_factor);
 }
 
 // Return name of initial state phase space needed

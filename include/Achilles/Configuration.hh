@@ -16,7 +16,6 @@ struct ConfigurationParticle {
     bool is_proton;
     std::array<double, 3> position;
 };
-#endif
 
 struct Configuration {
     std::vector<ConfigurationParticle> nucleons;

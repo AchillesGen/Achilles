@@ -120,11 +120,6 @@ class MultiChannel {
     void LoadState(std::istream &);
     bool operator==(const MultiChannel &) const;
 
-    // Cache Results
-    void SaveState(std::ostream &) const;
-    void LoadState(std::istream &);
-    bool operator==(const MultiChannel &) const;
-
     // YAML interface
     friend YAML::convert<achilles::MultiChannel>;
 
@@ -190,28 +185,6 @@ template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func
         summary.results.push_back(results);
         summary.sum_results += results;
     }
-}
-
-template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
-    std::vector<double> rans(ndims);
-    std::vector<T> point(ndims);
-
-    // Generate needed random numbers
-    Random::Instance().Generate(rans);
-
-    // Select a channel
-    size_t ichannel = Random::Instance().SelectIndex(channel_weights);
-
-    // Map the point based on the channel
-    func.GeneratePoint(ichannel, rans, point);
-    return point;
-}
-
-template <typename T>
-double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vector<T> &point) {
-    size_t nchannels = channel_weights.size();
-    std::vector<double> densities(nchannels);
-    return func.GenerateWeight(channel_weights, point, densities);
 }
 
 template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
