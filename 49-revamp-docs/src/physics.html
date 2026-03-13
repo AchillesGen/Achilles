@@ -2191,53 +2191,9 @@
 <dt class="sig sig-object cpp" id="_CPPv4N8achilles8ParticleE">
 <span id="_CPPv3N8achilles8ParticleE"></span><span id="_CPPv2N8achilles8ParticleE"></span><span id="achilles::Particle"></span><span class="target" id="classachilles_1_1Particle"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Particle</span></span></span><a class="headerlink" href="#_CPPv4N8achilles8ParticleE" title="Link to this definition">#</a><br /></dt>
 <dd><p>The <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> class provides a container to handle information about the particle. The information includes the particle identification (PID), the momentum of the particle, the position of the particle, the status code associated with the particle, the particle’s mother particles, the particle’s daughter particles, and any other needed information. Currently, the status codes are as follows:</p>
-<p><div class="pst-scrollable-table-container"><table class="table">
-<thead>
-<tr class="row-odd"><th class="head"><p>Status Code</p></th>
-<th class="head"><p>Meaning</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p>-3</p></td>
-<td><p>Internal Test Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>-2</p></td>
-<td><p>External Test Particle</p></td>
-</tr>
-<tr class="row-even"><td><p>-1</p></td>
-<td><p>Propagating Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>0</p></td>
-<td><p>Background Particle</p></td>
-</tr>
-<tr class="row-even"><td><p>1</p></td>
-<td><p>Initial State Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>2</p></td>
-<td><p>Final State Particle</p></td>
-</tr>
-<tr class="row-even"><td><p>3</p></td>
-<td><p>Escaped Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>4</p></td>
-<td><p>Captured Particle</p></td>
-</tr>
-<tr class="row-even"><td><p>5</p></td>
-<td><p>Decayed Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>6</p></td>
-<td><p>Beam Particle</p></td>
-</tr>
-<tr class="row-even"><td><p>7</p></td>
-<td><p>Target Particle</p></td>
-</tr>
-<tr class="row-odd"><td><p>8</p></td>
-<td><p>Spectator Particle</p></td>
-</tr>
-</tbody>
-</table>
-</div>
-</p>
+<p>&#64;rst</p>
+<p>+———-&amp;#8212;+——————–&amp;#8212;+ | Status Code | Meaning | +=============+=======================+ | -1 | Propagating <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+ | 0 | Background <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+ | 1 | Escaped <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+</p>
+<p>&#64;endrst </p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-constructors-and-destructors">Constructors and Destructors</p>
 <dl class="cpp function">
@@ -2592,17 +2548,6 @@
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool: True if the particle should be written out, False otherwise </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Particle_1a95eb504b8e6a46f3c357b922f51338d2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">IsInitial</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><br /></dt>
-<dd><p>Check to see if the particle is a final state particle </p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool: True if a final state particle, False otherwise </p>
 </dd>
 </dl>
 </dd></dl>
