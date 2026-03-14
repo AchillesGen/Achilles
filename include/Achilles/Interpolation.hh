@@ -2,6 +2,7 @@
 #define INTERPOLATION_HH
 
 #include <cstddef>
+#include <istream>
 #include <vector>
 
 // #include "pybind11/numpy.h"
@@ -72,6 +73,10 @@ class Interp1D {
     ///@return double: The integration estimate
     double Integrate() const;
     ///@}
+
+    // Cache Interpolator
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
 
   private:
     double PolynomialInterp(double) const;

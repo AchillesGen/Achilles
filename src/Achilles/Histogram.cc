@@ -46,6 +46,12 @@ void Histogram::Fill(const double &x, const double &wgt) {
     }
 }
 
+std::vector<double> Histogram::Centers() const {
+    std::vector<double> centers(binvals.size());
+    for(size_t i = 0; i < centers.size(); ++i) { centers[i] = (binedges[i + 1] + binedges[i]) / 2; }
+    return centers;
+}
+
 void Histogram::Scale(const double &scale) {
     for(double &binval : binvals) { binval *= scale; }
 }

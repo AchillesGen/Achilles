@@ -49,12 +49,19 @@ class Histogram {
     virtual ~Histogram() = default;
 
     virtual void Fill(const double &x, const double &wgt = 1.0);
+    virtual std::vector<double> Edges() const { return binedges; }
+    virtual std::vector<double> Centers() const;
+    virtual std::vector<double> Heights() const { return binvals; }
     virtual void Scale(const double &);
     virtual void Normalize(const double &norm = 1.0);
     virtual double Integral() const;
     virtual double Integral(size_t, size_t) const;
     virtual void Save(std::ostream *out = &std::cout) const;
     virtual void Save(const std::string &) const;
+
+    // Cache histograms
+    virtual bool SaveState(std::ostream &) const;
+    virtual bool LoadState(std::istream &) const;
 
     virtual void SetName(const std::string &name_) { name = name_; }
     virtual void SetPath(const std::string &path_) { path = path_; }
