@@ -47,6 +47,24 @@ std::string achilles::Filesystem::FindFile(const std::string &filename, const st
     throw AchillesLoadError(filename);
 }
 
+std::string achilles::Filesystem::FindFlux(const std::string &filename, const std::string &head) {
+    spdlog::trace("{}: Loading flux file {}", head, filename);
+    auto dirs = AchillesPath();
+    dirs.push_back(PathVariables::Instance().FluxPath());
+
+    for(const auto &path : dirs) {
+        if(fs::exists(path / filename)) {
+            spdlog::debug("{}: Found {} at {}", head, filename, path);
+            return path / filename;
+        }
+        spdlog::debug("{}: Could not find {} at {}", head, filename, path);
+    }
+
+    spdlog::warn("{}: Could not load {} from {}", head, filename,
+                 fmt::join(dirs.begin(), dirs.end(), ":"));
+    throw AchillesLoadError(filename);
+}
+
 bool Cache::FindCachedState(std::size_t hash) {
     auto cachePath = Path() / fmt::format("{:x}", hash);
     return fs::exists(cachePath);

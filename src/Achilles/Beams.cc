@@ -1,6 +1,7 @@
 #include "Achilles/Beams.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Interpolation.hh"
+#include "Achilles/System.hh"
 #include "Achilles/Utilities.hh"
 
 #include <fstream>
@@ -17,7 +18,7 @@ using achilles::Spectrum;
 Spectrum::Spectrum(const YAML::Node &node) {
     spdlog::debug("Loading spectrum flux");
     if(node["Histogram"]) {
-        std::string filename = node["Histogram"].as<std::string>();
+        std::string filename = Filesystem::FindFlux(node["Histogram"].as<std::string>(), "Beam");
         std::ifstream hist(filename.c_str());
         spdlog::trace("Beam::Spectrum: Loading data from: {}", filename);
         if(hist.bad()) {
@@ -120,7 +121,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_delta_energy = m_max_energy - m_min_energy;
     } else if(node["HepData"]) {
         spdlog::debug("Reading from HepData yaml file");
-        std::string filename = node["HepData"].as<std::string>();
+        std::string filename = Filesystem::FindFlux(node["HepData"].as<std::string>(), "Beam");
         YAML::Node root = YAML::LoadFile(filename);
         std::vector<double> heights;
         // TODO: Handle multiple fluxes??
@@ -161,7 +162,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_delta_energy = m_max_energy - m_min_energy;
     } else if(node["ROOTHist"]) {
 #ifdef USE_ROOT
-        std::string filename = "flux/" + node["ROOTHist"]["File"].as<std::string>();
+        std::string filename = Filesystem::FindFlux(node["ROOTHist"]["File"].as<std::string>());
         spdlog::trace("Reading flux file: {}", filename);
         TFile *file = new TFile(filename.c_str());
         TH1D *hist =

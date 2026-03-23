@@ -66,6 +66,7 @@ class PathVariables {
 
     fs::path RootPath() const { return rootPath; }
     fs::path SharePath() const { return sharePath; }
+    fs::path FluxPath() const { return fluxPath; }
     fs::path DataPath() const { return dataPath; }
     fs::path LibsPath() const { return libsPath; }
     fs::path CachePath() const { return cacheDefault; }
@@ -86,6 +87,7 @@ namespace Filesystem {
 
 std::vector<fs::path> AchillesPath();
 std::string FindFile(const std::string &filename, const std::string &head);
+std::string FindFlux(const std::string &filename, const std::string &head);
 
 class Cache {
   public:
