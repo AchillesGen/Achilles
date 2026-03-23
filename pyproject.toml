@@ -5,6 +5,13 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "Achilles"
 version = "0.3.0"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0", "pyyaml"]
+
+[project.scripts]
+achilles-mcp = "Achilles.mcp_server.server:main"
 
 [tool.scikit-build]
 cmake.args = ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "-DACHILLES_ENABLE_PYTHON=ON"]
