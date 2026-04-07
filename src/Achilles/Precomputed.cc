@@ -142,7 +142,7 @@ void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
 }
 
 RunCascade::RunCascade(const std::string &config_file) {
-    auto config = Settings(config_file);
+    auto config = Settings(config_file, "data/Rules_precomputed.yml");
 
     // Setup random number generator
     auto seed = static_cast<unsigned int>(
