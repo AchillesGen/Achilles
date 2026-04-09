@@ -24,12 +24,25 @@
 
 using namespace achilles::Precomputed;
 
+bool iequals(const std::string &a, const std::string &b) {
+    return a.size() == b.size() &&
+           std::equal(a.begin(), a.end(), b.begin(), [](unsigned char c1, unsigned char c2) {
+               return std::tolower(c1) == std::tolower(c2);
+           });
+}
+
 RawEventReader::RawEventReader(const std::string &filename, std::shared_ptr<Nucleus> nuc)
     : event_stream(filename), m_nucleus(nuc) {
     if(!event_stream.is_open()) {
         auto err_msg = fmt::format("Precomputed: File {} does not exist!", filename);
         throw std::runtime_error(err_msg);
     }
+
+    // Read the preamble
+    // NOTE: Currently just the units exist in preamble
+    std::string line;
+    std::getline(event_stream, line);
+    if(iequals("gev", line)) to_mev = 1000;
 }
 
 std::optional<achilles::Event> RawEventReader::Next() {
@@ -53,7 +66,7 @@ achilles::Event RawEventReader::ParseLine(const std::string &line) {
         long int pdg;
         double E, px, py, pz;
         ss >> pdg >> E >> px >> py >> pz;
-        FourVector mom{E, px, py, pz};
+        FourVector mom{E * to_mev, px * to_mev, py * to_mev, pz * to_mev};
         particles.emplace_back(pdg, mom);
     }
 
@@ -75,7 +88,7 @@ void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
         if(particle.Info().IsLepton()) {
             // Set the first lepton to the incoming one and final state otherwise
             if(first_lepton) {
-                particle.Status() = ParticleStatus::beam;
+                particle.Status() = ParticleStatus::initial_state;
                 first_lepton = false;
             } else {
                 particle.Status() = ParticleStatus::final_state;
@@ -199,7 +212,6 @@ void RunCascade::Run(Event &event) {
         if(part.IsFinal()) final_part.push_back(part);
         if(part.IsInitial()) init_part.push_back(part);
     }
-    event.History().AddVertex(init_part[0].Position(), init_part, final_part,
-                              EventHistory::StatusCode::primary);
+    event.History().UpdateStatuses(event.Hadrons());
     writer->Write(event);
 }

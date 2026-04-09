@@ -26,6 +26,8 @@ class RawEventReader {
     Event ParseLine(const std::string &);
     std::ifstream event_stream;
     std::shared_ptr<Nucleus> m_nucleus;
+
+    double to_mev = 1;
 };
 
 class NuHepMCReader {

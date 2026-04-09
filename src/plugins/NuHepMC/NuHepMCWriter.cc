@@ -269,11 +269,13 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     // TODO: once we have a detector to simulate interaction location
     // Event position
     // FourVector position{event.Position()};
+    spdlog::trace("Writing out position");
     HepMC3::FourVector position{0, 0, 0, 0};
     visitor.evt.shift_position_to(position);
     NuHepMC::ER5::SetLabPosition(visitor.evt, {0, 0, 0, 0});
 
     // Walk the history and add to file
+    spdlog::trace("Walking history");
     event.History().WalkHistory(visitor);
     // visitor.evt.add_tree(visitor.beamparticles);
     file->write_event(visitor.evt);

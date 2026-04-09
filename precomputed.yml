@@ -1,0 +1,23 @@
+Main:
+  NEvents: 50000
+  HardCuts: true
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  EventFile: "events.txt"
+  Output:
+      Format: NuHepMC
+      Name: achilles.hepmc
+      Zipped: True
+
+Cascade:
+  Run: False
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
