@@ -12,6 +12,7 @@
 #include "Plugins/NuHepMC/NuHepMCWriter.hh"
 #include <functional>
 #include <sstream>
+#include <stdexcept>
 
 #ifdef ACHILLES_ENABLE_HEPMC3
 #include "Plugins/HepMC3/HepMC3EventWriter.hh"
@@ -42,7 +43,11 @@ RawEventReader::RawEventReader(const std::string &filename, std::shared_ptr<Nucl
     // NOTE: Currently just the units exist in preamble
     std::string line;
     std::getline(event_stream, line);
-    if(iequals("gev", line)) to_mev = 1000;
+    if(iequals("gev", line))
+        to_mev = 1000;
+    else if(!iequals("mev", line)) {
+        throw std::runtime_error("Precomputed: Invalid unit found in preamble");
+    }
 }
 
 std::optional<achilles::Event> RawEventReader::Next() {
