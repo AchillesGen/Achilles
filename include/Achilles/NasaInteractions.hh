@@ -8,7 +8,7 @@ namespace achilles {
 
 class NasaInteractions : public Interactions {
   public:
-    NasaInteractions(const std::string &){};
+    NasaInteractions(const std::string &) {};
 
     static std::unique_ptr<Interactions> Create(const std::string &data) {
         return std::make_unique<NasaInteractions>(data);
