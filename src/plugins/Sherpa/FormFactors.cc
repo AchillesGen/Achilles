@@ -22,19 +22,20 @@ FormFactorInterface::FormFactorInterface(const Vertex_Key &key, const std::strin
         if(key.m_j[i]->Flav().IsPhoton()) m_mode = static_cast<int>(i);
 }
 
+// TODO: Make this easier and more general to handle
 double FormFactorInterface::FF(double Q2) const {
     double result(0.);
     FormFactor::Values ffs((*p_ff)(Q2));
-    if(m_id == "F1PA" || m_id == "F1PZ" || m_id == "F1PW") {
+    if(m_id == "F1PA" || m_id == "F1PZ" || m_id == "F1PW" || m_id == "F1p") {
         result = ffs.F1p;
         // spdlog::trace("m_id = {}, Q2 = {}, F1p = {}", m_id, Q2, result);
-    } else if(m_id == "F2PA" || m_id == "F2PZ" || m_id == "F2PW") {
+    } else if(m_id == "F2PA" || m_id == "F2PZ" || m_id == "F2PW" || m_id == "F2p") {
         result = ffs.F2p;
         // spdlog::trace("m_id = {}, Q2 = {}, F2p = {}", m_id, Q2, result);
-    } else if(m_id == "F1NA" || m_id == "F1NZ" || m_id == "F1NW") {
+    } else if(m_id == "F1NA" || m_id == "F1NZ" || m_id == "F1NW" || m_id == "F1n") {
         result = ffs.F1n;
         // spdlog::trace("m_id = {}, Q2 = {}, F1n = {}", m_id, Q2, result);
-    } else if(m_id == "F2NA" || m_id == "F2NZ" || m_id == "F2NW") {
+    } else if(m_id == "F2NA" || m_id == "F2NZ" || m_id == "F2NW" || m_id == "F2n") {
         result = ffs.F2n;
         // spdlog::trace("m_id = {}, Q2 = {}, F2n = {}", m_id, Q2, result);
     } else if(m_id == "FA") {
@@ -103,6 +104,10 @@ FORM_FACTOR_IMPLEMENTATION(F1PW)
 FORM_FACTOR_IMPLEMENTATION(F2PW)
 FORM_FACTOR_IMPLEMENTATION(F1NW)
 FORM_FACTOR_IMPLEMENTATION(F2NW)
+FORM_FACTOR_IMPLEMENTATION(F1p)
+FORM_FACTOR_IMPLEMENTATION(F2p)
+FORM_FACTOR_IMPLEMENTATION(F1n)
+FORM_FACTOR_IMPLEMENTATION(F2n)
 FORM_FACTOR_IMPLEMENTATION(FA)
 FORM_FACTOR_IMPLEMENTATION(FCoh)
 FORM_FACTOR_IMPLEMENTATION(FPiA)

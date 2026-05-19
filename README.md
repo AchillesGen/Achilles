@@ -33,10 +33,10 @@ and Sherpa. The HepMC3 code provides a means to output events in the convention 
 The Sherpa interface allows for the simulation of beyond the Standard Model (BSM) processes. Details on obtaining
 these codes can be found in the next [section](#-optional-dependencies).
 
-To build Achilles with these default options can be done with:
+To build Achilles with these default options, run:
 ```bash
 mkdir build && cd build
-cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA_ROOT_DIR=/path/to/sherpa
+cmake .. -DACHILLES_ENABLE_SHERPA=ON -DSHERPA-MC_DIR=[sherpa_build_dir]/share/SHERPA-MC
 make -jN
 ```
 

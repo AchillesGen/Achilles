@@ -126,6 +126,7 @@ class FormFactor {
         double F1lam{}, F2lam{}, FAlam{};
         double F1sigm{}, F2sigm{}, FAsigm{};
         double F1sig0{}, F2sig0{}, FAsig0{};
+        double FPiA{}, FPiW{}, FPiZ{}, FGAPi{};
     };
 
     FormFactor() = default;

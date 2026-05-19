@@ -7,7 +7,11 @@
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wconversion"
+#ifdef __GNUC__
+#ifndef __clang__
 #pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
+#endif
 #include "ATOOLS/Math/Vector.H"
 #include "ATOOLS/Phys/Blob_List.H"
 #pragma GCC diagnostic pop

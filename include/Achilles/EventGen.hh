@@ -60,6 +60,7 @@ class EventGen {
     std::shared_ptr<EventWriter> writer;
     std::unique_ptr<Unweighter> unweighter;
     SherpaInterface *p_sherpa;
+    std::vector<std::string> shargs;
 };
 
 } // namespace achilles

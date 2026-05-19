@@ -1,0 +1,80 @@
+Main:
+  NEvents: 100000
+  HardCuts: false
+  RunDecays: false
+  Output:
+      Format: NuHepMC
+      Name: achilles_nue_12C_SF_500_sherpa.hepmc
+      Zipped: True
+
+SherpaOptions:
+  #Model: SMnu
+  # /Users/tvcr49@durham.ac.uk/code_analysis/ChiPT_mathematica/FeynRules_models_achilles/ChiralPT/myPions-Pion-Nucleon-Delta-GI-coupling/myPions-Pion-Nucleon-Delta-GI-coupling_UFO/ChiPT_UFO
+  MODEL: ChiPT_UFO
+  #ParamCard: parameters.dat
+  UFO_PARAM_CARD: param_ChiPT_UFO.dat
+  # ... and any other sherpa options can go here, get turned into sherpa.yaml file essentially (kind of)
+
+
+Processes:
+  - Leptons: [12, [11]]
+
+Initialize:
+  Seed: 12345678
+  Accuracy: 5e-3
+Unweighting:
+  Name: Percentile
+  percentile: 99
+
+Beams:
+  - Beam:
+      PID: 12
+      Beam Params:
+        Type: Monochromatic
+        Energy: 500
+
+Cascade:
+  Run: False
+  Interaction:
+    Name: GeantInteractions
+    GeantData: data/GeantData.hdf5
+  Step: 0.04
+  Probability: Cylinder
+
+HardCuts:
+
+Options: !include "data/default/OptionDefaults.yml"
+
+NuclearModels:
+  - NuclearModel:
+      Model: QESpectral
+      FormFactorFile: "FormFactors.yml"
+      SpectralP: data/Spectral_Functions/pke12p_tot.data
+      SpectralN: data/Spectral_Functions/pke12n_tot.data
+      Ward: None
+
+Nuclei:
+  - Nucleus:
+      Name: 12C
+      Binding: 8.6
+      Fermi Momentum: 225
+      Density:
+        ProtonFile: data/densities/c12.prova.txt
+        NeutronFile: data/densities/c12.prova.txt
+        # /Users/tvcr49@durham.ac.uk/code_software/Achilles/build/data/densities/c12.prova.txt
+        FilePotential: data/realOP_12C_EDAI.dat
+        Function: configuration
+        Configs: data/configurations/QMC_configs.out.gz
+      FermiGas: 
+        Type: Local
+      Potential: 
+        Name: Schroedinger
+        r0: 0.16
+        Mode: 3
+
+Backend:
+  #Name: Default # auto goes to achilles, we want sherpa 
+  Name: Sherpa 
+  Options: 
+    FormFactorFile: "FormFactors.yml" # input file for ff : /Users/tvcr49@durham.ac.uk/code_software/Achilles/FormFactors.yml
+

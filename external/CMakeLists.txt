@@ -52,8 +52,8 @@ CPMAddPackage(
 
 CPMAddPackage(
     NAME HighFive
-    VERSION 2.6.2
-    GITHUB_REPOSITORY BlueBrain/HighFive
+    VERSION 3.3.0
+    GITHUB_REPOSITORY highfive-devs/HighFive
     OPTIONS
         "HIGHFIVE_USE_BOOST OFF"
         "HIGHFIVE_EXAMPLES OFF"

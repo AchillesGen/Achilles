@@ -389,7 +389,8 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
 }
 
 void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {
-    auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
+    const auto filenameFF = options["FormFactorFile"].as<std::string>();
+    auto config = YAML::LoadFile(Filesystem::FindFile(filenameFF, "SherpaBackend"));
     const auto vectorFF = config["vector"].as<std::string>();
     const auto axialFF = config["axial"].as<std::string>();
     const auto coherentFF = config["coherent"].as<std::string>();
