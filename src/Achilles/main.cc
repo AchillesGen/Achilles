@@ -13,6 +13,7 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Plugins/Manager/PluginManager.hh"
 #include "git.h"
+#include <sstream>
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/Channels.hh"
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -183,7 +184,16 @@ int main(int argc, char *argv[]) {
     try {
         GenerateEvents(runcard, shargs, batchMode);
         success = "Success!";
-    } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
+    } catch(const std::runtime_error &error) {
+        spdlog::error(error.what());
+    }
+#ifdef ACHILLES_SHERPA_INTERFACE
+    catch(const ATOOLS::Exception &error) {
+        std::stringstream ss;
+        ss << error;
+        spdlog::error(ss.str());
+    }
+#endif
     spdlog::info("Event Run Concluded - " + success);
     spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
 
