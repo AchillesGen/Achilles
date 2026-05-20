@@ -9,6 +9,7 @@
 #include "ATOOLS/Phys/KF_Table.H"
 #include "Achilles/Current.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/EventHistory.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/Particle.hh"
@@ -28,8 +29,12 @@
 #include "SHERPA/Main/Sherpa.H"
 #include "SHERPA/PerturbativePhysics/Matrix_Element_Handler.H"
 #include "SHERPA/Single_Events/Event_Handler.H"
+#include <ATOOLS/Org/Exception.H>
+#include <ATOOLS/Phys/Particle.H>
 #include <METOOLS/Explicit/Vertex_Key.H>
 #include <bitset>
+#include <queue>
+#include <unordered_set>
 
 PHASIC::NLOTypeStringProcessMap_Map m_pmap;
 PHASIC::Process_Vector m_procs;
@@ -99,8 +104,8 @@ bool SherpaInterface::Initialize(YAML::Node &sherpa_settings) {
     sherpa_settings["SHOWER_GENERATOR"] = "CSS";
 
     // TODO: Figure out how to set this to work with Sherpa3.0
-    sherpa_settings["FRAGMENTATION"] = "None";
     sherpa_settings["HARD_DECAYS"]["ENABLED"] = "True";
+    sherpa_settings["HADRON_DECAYS"]["Spin_Correlations"] = 1;
     sherpa_settings["ME_QED"]["ENABLED"] = "OFF";
     sherpa_settings["BEAM_REMNANTS"] = "False";
 
@@ -386,8 +391,7 @@ SherpaInterface::CalcCurrent(const std::vector<long> &_fl,
     // return only nominal differntial xs for now
     double res(
         proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight());
-    // TODO: Update to Sherpa 3.0
-    // p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
+    p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
 
     singleProcess = proc->Get<COMIX::Single_Process>();
     std::map<int, std::vector<VCurrent>> results;
@@ -479,7 +483,7 @@ void achilles::SherpaInterface::RegisterParticles() const {
 
 void achilles::SherpaInterface::GenerateEvent(Event &event) {
     singleProcess->Integrator()->SetMax(event.Weight());
-    auto blob = p_sherpa->GetEventHandler()->GetBlobs();
+    // auto blob = p_sherpa->GetEventHandler()->GetBlobs();
     bool res(p_sherpa->GetEventHandler()->GenerateEvent(SHERPA::eventtype::StandardPerturbative));
 
     // Extract all active particles in the event
@@ -494,32 +498,27 @@ achilles::FourVector achilles::SherpaInterface::ToAchilles(const ATOOLS::Vec4D &
     return {mom[0] * 1000, mom[1] * 1000, mom[2] * 1000, mom[3] * 1000};
 }
 
-achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part, bool in) {
-    auto status = part->Info();
+achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part, bool in,
+                                                         bool is_intermediate) {
     auto flavor = static_cast<long>(part->Flav());
     auto mom = ToAchilles(part->Momentum());
     achilles::Particle out(flavor, mom);
-    // TODO: Fix this to be more general
-    switch(status) {
+    if(is_intermediate) {
+        out.Status() = achilles::ParticleStatus::decayed;
+        return out;
+    }
+    switch(part->Info()) {
     case 'G':
         out.Status() = achilles::ParticleStatus::initial_state;
-        break;
-    case 'H':
-        out.Status() = achilles::ParticleStatus::final_state;
         break;
     case 'D':
         out.Status() =
             in ? achilles::ParticleStatus::decayed : achilles::ParticleStatus::final_state;
         break;
-    // TODO: Figure out what takes this path
     default:
-        out.Status() =
-            in ? achilles::ParticleStatus::decayed : achilles::ParticleStatus::final_state;
+        out.Status() = achilles::ParticleStatus::final_state;
         break;
     }
-    return out;
-    out.Status() = status == ATOOLS::part_status::active ? achilles::ParticleStatus::final_state
-                                                         : achilles::ParticleStatus::decayed;
     return out;
 }
 
@@ -529,63 +528,73 @@ void achilles::SherpaInterface::AddHistoryNode(ATOOLS::Blob *blob, EventHistory 
     auto sherpa_out = blob->GetOutParticles();
     std::vector<achilles::Particle> achilles_in, achilles_out;
     for(const auto &part : sherpa_in) achilles_in.push_back(ToAchilles(part, true));
-    for(const auto &part : sherpa_out) achilles_out.push_back(ToAchilles(part, false));
+    for(const auto &part : sherpa_out) {
+        bool is_intermediate = (part->DecayBlob() != nullptr);
+        achilles_out.push_back(ToAchilles(part, false, is_intermediate));
+    }
     history.AddVertex({}, achilles_in, achilles_out, status);
+}
+
+void achilles::SherpaInterface::MergeIntoExistingPrimary(ATOOLS::Blob *blob,
+                                                         EventHistory &history) {
+    auto *primary_node = history.Primary();
+    for(auto *sherpa_part : blob->GetOutParticles()) {
+        bool is_intermediate = (sherpa_part->DecayBlob() != nullptr);
+        auto achilles_part = ToAchilles(sherpa_part, false, is_intermediate);
+
+        // Match by PID, then by closest 4-momentum (handles the off-shell case).
+        Particle *best_match = nullptr;
+        double best_diff = std::numeric_limits<double>::max();
+        for(auto &prim_part : primary_node->ParticlesOut()) {
+            if(prim_part.ID() != achilles_part.ID()) continue;
+            auto delta = prim_part.Momentum() - achilles_part.Momentum();
+            double diff = std::abs(delta.E()) + std::abs(delta.Px()) + std::abs(delta.Py()) +
+                          std::abs(delta.Pz());
+            if(diff < best_diff) {
+                best_diff = diff;
+                best_match = &prim_part;
+            }
+        }
+
+        if(best_match) {
+            best_match->Momentum() = achilles_part.Momentum();
+            best_match->Status() = achilles_part.Status();
+        }
+    }
 }
 
 void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs,
                                            achilles::EventHistory &history) {
-    // Collect primary vertex
-    auto blob = blobs->FindFirst(btp::code::Signal_Process);
-    AddHistoryNode(blob, history, EventHistory::StatusCode::primary);
+    auto *signal_blob = blobs->FindFirst(btp::code::Signal_Process);
+    MergeIntoExistingPrimary(signal_blob, history);
 
-    // Add in any existing shower vetrices
-    // auto shower_list = blobs -> Find(btp::code::Shower);
-    // for(const auto &shower : shower_list) {
-    //     AddHistoryNode(shower, history, EventHistory::StatusCode::shower);
-    // }
+    std::unordered_set<ATOOLS::Blob *> visited;
+    std::queue<ATOOLS::Blob *> to_process;
+    visited.insert(signal_blob);
 
-    // Add in any decay vertices
-    auto decay_list = blobs->Find(btp::code::Hadron_Decay);
-    for(const auto &decay : decay_list) {
-        AddHistoryNode(decay, history, EventHistory::StatusCode::decay);
+    for(auto *part : signal_blob->GetOutParticles()) {
+        if(auto *decay_blob = part->DecayBlob()) to_process.push(decay_blob);
+    }
 
-        // Update status of particle to be decayed in previous node
-        auto decay_part = history.Node(history.size() - 1)->ParticlesIn()[0];
-        auto to_update = history.FindNodeOut(decay_part);
-        // Handle case where momentum is not within 1e-10
-        // TODO: Discuss with Stefan why this happens
-        if(!to_update) {
-            // Find particle with same PID and closest momentum
-            PIDLocator visitor(decay_part.ID(), 1);
-            history.WalkHistory(visitor);
-            double min_diff = std::numeric_limits<double>::max();
-            size_t index = -1;
-            for(size_t i = 0; i < visitor.particles.size(); ++i) {
-                auto diff_mom = decay_part.Momentum() - visitor.particles[i].Momentum();
-                auto diff = std::abs(diff_mom.E()) + std::abs(diff_mom.Px()) +
-                            std::abs(diff_mom.Py()) + std::abs(diff_mom.Pz());
-                if(diff < min_diff) {
-                    index = i;
-                    min_diff = diff;
-                }
-            }
-            to_update = history.FindNodeOut(visitor.particles[index]);
-            auto compare = compare_momentum(visitor.particles[index]);
-            for(auto &particle : to_update->ParticlesOut()) {
-                if(compare(particle)) {
-                    particle = decay_part;
-                    break;
-                }
-            }
+    while(!to_process.empty()) {
+        auto *blob = to_process.front();
+        to_process.pop();
+
+        if(visited.count(blob)) continue;
+        visited.insert(blob);
+
+        auto blob_type = blob->Type();
+        if(blob_type == btp::code::Hadron_Decay) {
+            AddHistoryNode(blob, history, EventHistory::StatusCode::decay);
+        } else if(blob_type != btp::code::Shower) {
+            // Unknown blob type: skip without following outgoing particles
+            continue;
         }
+        // Shower blobs: skip adding to EventHistory but still traverse their
+        // outgoing particles so downstream Hadron_Decay blobs are reachable.
 
-        auto compare = compare_momentum(decay_part);
-        for(auto &particle : to_update->ParticlesOut()) {
-            if(compare(particle)) {
-                particle = decay_part;
-                break;
-            }
+        for(auto *part : blob->GetOutParticles()) {
+            if(auto *decay_blob = part->DecayBlob()) to_process.push(decay_blob);
         }
     }
 }

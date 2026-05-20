@@ -23,6 +23,7 @@
 #include <array>
 #include <complex>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace ATOOLS {
@@ -64,7 +65,8 @@ class SherpaInterface {
 
     PHASIC::Process_Base *getProcess(ATOOLS::Cluster_Amplitude *const ampl);
     COMIX::Single_Process *singleProcess;
-    static Particle ToAchilles(ATOOLS::Particle *, bool);
+    static Particle ToAchilles(ATOOLS::Particle *, bool, bool = false);
+    static void MergeIntoExistingPrimary(ATOOLS::Blob *blob, EventHistory &history);
     static void AddHistoryNode(ATOOLS::Blob *blob, EventHistory &history, EventHistory::StatusCode);
     static void ToAchilles(ATOOLS::Blob_List *, EventHistory &);
     static ATOOLS::Blob_List FromAchilles(EventHistory);
