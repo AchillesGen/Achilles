@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #ifndef HEPMC3_EVENT_WRITER_HH

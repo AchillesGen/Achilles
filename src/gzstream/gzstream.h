@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 // ============================================================================

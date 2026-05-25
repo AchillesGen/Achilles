@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # Distributed under the OSI-approved BSD 3-Clause License.  See accompanying
