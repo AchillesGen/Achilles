@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef CONSTANTINTERACTIONS_HH
 #define CONSTANTINTERACTIONS_HH
 

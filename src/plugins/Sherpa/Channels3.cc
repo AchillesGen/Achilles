@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifdef ACHILLES_EVENT_DETAILS
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 #endif

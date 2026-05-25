@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module mc_module
    implicit none
    integer*4, private, save :: nev,xA,i_fg,i_fsi,np,ne,nwlk,npot,np_del

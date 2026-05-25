@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
      subroutine nform(ichoice,Q2,F_1s,F_2s,F_1v,F_2v,G_es,G_ms,G_ev,G_mv)
 
 !      

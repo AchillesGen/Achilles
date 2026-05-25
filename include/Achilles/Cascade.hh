@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef CASCADE_HH
 #define CASCADE_HH
 

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/Sherpa/Channels1.hh"
 #include "ATOOLS/Phys/Flavour.H"
 #include "Plugins/Sherpa/PrintVec.hh"

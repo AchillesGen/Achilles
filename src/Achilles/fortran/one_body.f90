@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module parameters
     implicit none
     real*8, parameter :: xmp=938.272046d0,xmn=939.56563d0,xm=0.5d0*(xmn+xmp)

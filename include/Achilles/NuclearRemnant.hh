@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef NUCLEAR_REMNANT_HH
 #define NUCLEAR_REMNANT_HH
 

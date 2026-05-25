@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module dirac_matrices_pi
     implicit none
     integer*4, private, parameter :: nspin_in=2,nspin_f=2    

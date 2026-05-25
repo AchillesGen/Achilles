@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Load Catch2 information into variables
 include(FetchContent)
 FetchContent_GetProperties(catch2)

@@ -1,0 +1,58 @@
+version = 1
+SPDX-PackageName = "Achilles"
+SPDX-PackageSupplier = "Achilles Developers <isaacson@fnal.gov>"
+SPDX-PackageDownloadLocation = "https://github.com/AchillesGen/Achilles"
+
+[[annotations]]
+path = ["AUTHORS", "CITATIONS.bib", "README.md", "assets/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = [".clang-format", ".dockerignore", ".gitignore", ".pre-commit-config.yaml", ".github/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["cascade.yml", "run.yml", "run_hnl.yml", "FormFactors.yml", "parameters.dat", "data/default/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "UFO/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["data/**", "densities/**", "src/Achilles/fortran/dcc_EW.dat"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = "doc/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "examples/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = "flux/**"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2024 Achilles Developers"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["src/gzstream/CMakeLists.txt", "src/gzstream/Makefile", "src/gzstream/README", "src/gzstream/index.html", "src/gzstream/logo.gif", "src/gzstream/version", "src/gzstream/COPYING.LIB"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2001 Deepak Bandyopadhyay, Lutz Kettner"
+SPDX-License-Identifier = "LGPL-2.1-or-later"

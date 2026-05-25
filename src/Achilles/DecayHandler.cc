@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2024 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/DecayHandler.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Poincare.hh"
