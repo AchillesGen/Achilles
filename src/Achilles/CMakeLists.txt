@@ -146,6 +146,9 @@ if(ACHILLES_ENABLE_PYTHON)
     )
 target_link_libraries(_achilles PRIVATE project_warnings
                                 PUBLIC event_gen cmake_git_version_tracking plugin_manager dl)
+set_target_properties(_achilles PROPERTIES
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "$<IF:$<PLATFORM_ID:Darwin>,@loader_path/../lib,$ORIGIN/../lib>")
 install(TARGETS _achilles DESTINATION Achilles)
 endif(ACHILLES_ENABLE_PYTHON)
 
