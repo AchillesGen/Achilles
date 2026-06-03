@@ -22,22 +22,11 @@ template <> struct convert<std::shared_ptr<achilles::FluxType>> {
 
     static bool decode(const Node &node, std::shared_ptr<achilles::FluxType> &rhs) {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
-        if(node["Type"].as<std::string>() == "Monochromatic") {
-            auto energy = node["Energy"].as<double>();
-            rhs = std::make_shared<achilles::Monochromatic>(energy);
-            return true;
-        } else if(node["Type"].as<std::string>() == "Spectrum") {
-            rhs = std::make_shared<achilles::Spectrum>(node);
-            return true;
-        } else if(node["Type"].as<std::string>() == "PDFBeam") {
-            rhs = std::make_shared<achilles::PDFBeam>(node);
-            return true;
-        } else if(node["Type"].as<std::string>() == "FlatFlux") {
-            rhs = std::make_shared<achilles::FlatFlux>(node);
-            return true;
-        }
-
-        return false;
+        using FluxFactory = achilles::Factory<achilles::FluxType, const YAML::Node &>;
+        const auto type = node["Type"].as<std::string>();
+        if(!FluxFactory::IsRegistered(type)) return false;
+        rhs = FluxFactory::Initialize(type, node);
+        return true;
     }
 };
 

@@ -1,10 +1,69 @@
 #include "catch2/catch.hpp"
 
 #include "Achilles/Beams.hh"
+#include "Achilles/Factory.hh"
+#include "Achilles/FluxLoaders.hh"
 #include "Achilles/YAML/Beams.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <iostream>
+
+TEST_CASE("Flux file loaders", "[Beams]") {
+    SECTION("HistogramFluxLoader detects and parses the Achilles format") {
+        YAML::Node node = YAML::Load("Histogram: flux/miniboone.dat");
+        auto data = achilles::HistogramFluxLoader{}.Load(node);
+        CHECK(data.format == "Achilles");
+        CHECK(data.min_energy == 0.0);
+        CHECK(data.max_energy == 4450.0);
+        CHECK(data.bin_centers.size() == data.heights.size());
+        CHECK(data.bin_centers.size() >= 2);
+    }
+
+    SECTION("HistogramFluxLoader detects and parses the MiniBooNE format") {
+        YAML::Node node = YAML::Load("Histogram: flux/miniboone_nu.dat");
+        auto data = achilles::HistogramFluxLoader{}.Load(node);
+        CHECK(data.format == "MiniBooNE");
+        CHECK(data.min_energy == 0.0);
+        CHECK(data.max_energy == 10.0);
+    }
+
+    SECTION("HistogramFluxLoader detects and parses the T2K format") {
+        YAML::Node node = YAML::Load("Histogram: flux/T2K_nu.dat");
+        auto data = achilles::HistogramFluxLoader{}.Load(node);
+        CHECK(data.format == "T2K");
+        CHECK(data.min_energy == 0.0);
+        CHECK(data.max_energy == 30.0);
+    }
+}
+
+TEST_CASE("Flux factory dispatch", "[Beams]") {
+    using FluxFactory = achilles::Factory<achilles::FluxType, const YAML::Node &>;
+
+    SECTION("Known flux types self-register") {
+        CHECK(FluxFactory::IsRegistered("Monochromatic"));
+        CHECK(FluxFactory::IsRegistered("Spectrum"));
+        CHECK(FluxFactory::IsRegistered("FlatFlux"));
+        CHECK(FluxFactory::IsRegistered("PDFBeam"));
+    }
+
+    SECTION("Unknown flux type is not registered") {
+        CHECK_FALSE(FluxFactory::IsRegistered("Nonexistent"));
+    }
+
+    SECTION("Decode dispatches through the factory") {
+        YAML::Node node = YAML::Load("Type: FlatFlux\nMinEnergy: 100\nMaxEnergy: 500");
+        auto flux = node.as<std::shared_ptr<achilles::FluxType>>();
+        REQUIRE(flux != nullptr);
+        CHECK(flux->Type() == "FlatFlux");
+        CHECK(flux->MinEnergy() == 100);
+        CHECK(flux->MaxEnergy() == 500);
+    }
+
+    SECTION("Decode of an unknown flux type throws") {
+        YAML::Node node = YAML::Load("Type: Nonexistent");
+        CHECK_THROWS(node.as<std::shared_ptr<achilles::FluxType>>());
+    }
+}
 
 TEST_CASE("Spectrum Beam", "[Beams]") {
     SECTION("Parse headers") {

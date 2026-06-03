@@ -2,6 +2,7 @@
 #define BEAMS_HH
 
 #include "Achilles/Achilles.hh"
+#include "Achilles/Factory.hh"
 #include "Achilles/Hashable.hh"
 #include "Achilles/Histogram.hh"
 #include <memory>
@@ -29,11 +30,16 @@ class FluxType {
     virtual double MinEnergy() const = 0;
     virtual double MaxEnergy() const = 0;
     virtual double EvaluateFlux(const FourVector &) const = 0;
+
+    // Category name for the flux Factory (see Factory<FluxType, const YAML::Node &>).
+    static std::string Name() { return "Flux"; }
 };
 
-class Monochromatic : public FluxType {
+class Monochromatic : public FluxType, Registrable<FluxType, Monochromatic, const YAML::Node &> {
   public:
     Monochromatic(const double &energy) : m_energy(energy) {}
+    static std::string Name() { return "Monochromatic"; }
+    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 0; }
     FourVector Flux(const std::vector<double> &, double) const override {
         return {m_energy, 0, 0, m_energy};
@@ -50,19 +56,16 @@ class Monochromatic : public FluxType {
     double m_energy;
 };
 
-class Spectrum : public FluxType {
+class Spectrum : public FluxType, Registrable<FluxType, Spectrum, const YAML::Node &> {
   public:
     enum class Type {
         Histogram,
         ROOTHist,
     };
-    enum class FluxFormat {
-        Achilles,
-        MiniBooNE,
-        T2K,
-    };
 
     Spectrum(const YAML::Node &);
+    static std::string Name() { return "Spectrum"; }
+    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -73,30 +76,18 @@ class Spectrum : public FluxType {
     double EvaluateFlux(const FourVector &) const override;
 
   private:
-    void AchillesHeader(std::ifstream &);
-    void MiniBooNEHeader(std::ifstream &);
-    void T2KHeader(std::ifstream &);
-
-    enum class flux_units {
-        v_m2_POT_500MeV,
-        v_nb_POT_MeV,
-        v_cm2_POT_MeV,
-        v_cm2_POT_50MeV,
-        v_cm2_POT_125MeV,
-        v_cm2_POT_100MeV,
-        cm2_50MeV,
-    };
     std::function<double(double)> m_flux{};
     double m_min_energy{}, m_max_energy{};
     double m_delta_energy{}, m_energy_units{1};
     double m_flux_integral{};
-    flux_units m_units;
-    FluxFormat m_format;
+    std::string m_format_str{"Undefined"};
 };
 
-class PDFBeam : public FluxType {
+class PDFBeam : public FluxType, Registrable<FluxType, PDFBeam, const YAML::Node &> {
   public:
     PDFBeam(const YAML::Node &);
+    static std::string Name() { return "PDFBeam"; }
+    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -109,9 +100,11 @@ class PDFBeam : public FluxType {
     std::unique_ptr<PDFBase> p_pdf;
 };
 
-class FlatFlux : public FluxType {
+class FlatFlux : public FluxType, Registrable<FluxType, FlatFlux, const YAML::Node &> {
   public:
     FlatFlux(const YAML::Node &);
+    static std::string Name() { return "FlatFlux"; }
+    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -122,6 +115,28 @@ class FlatFlux : public FluxType {
 
   private:
     double m_min_energy, m_max_energy;
+};
+
+class GeometryBeam : public FluxType {
+  public:
+    enum class Mode {
+        WarmUp,
+        Generate,
+    };
+
+    GeometryBeam(const YAML::Node &);
+    int NVariables() const override { return 1; }
+    FourVector Flux(const std::vector<double> &, double) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    std::string Type() const override { return "GeometryBeam"; }
+    double MinEnergy() const override;
+    double MaxEnergy() const override;
+    double EvaluateFlux(const FourVector &) const override;
+    void SetMode(Mode mode) { m_mode = mode; }
+    void SetInjected(int nu_pid, const FourVector &);
+
+  private:
+    Mode m_mode;
 };
 
 class Beam {
@@ -146,6 +161,7 @@ class Beam {
     }
     size_t NBeams() const { return m_beams.size(); }
     MOCK const std::set<PID> &BeamIDs() const { return m_pids; }
+    double MinEnergy() const;
     double MaxEnergy() const;
     MOCK double EvaluateFlux(const PID pid, const FourVector &p) const {
         return m_beams.at(pid)->EvaluateFlux(p);

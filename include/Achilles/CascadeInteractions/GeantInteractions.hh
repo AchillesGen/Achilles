@@ -4,14 +4,9 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Interpolation.hh"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#ifndef __clang__
-#pragma GCC diagnostic ignored "-Wuseless-cast"
-#endif
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-#include "highfive/H5Group.hpp"
-#pragma GCC diagnostic pop
+namespace HighFive {
+class Group;
+} // namespace HighFive
 
 namespace achilles {
 
