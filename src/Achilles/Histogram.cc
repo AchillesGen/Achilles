@@ -97,6 +97,14 @@ void Histogram::Save(const std::string &filename) const {
     Save(&out);
 }
 
+bool Histogram::SaveState(std::ostream &) const {
+    return false;
+}
+
+bool Histogram::LoadState(std::istream &) const {
+    return false;
+}
+
 #ifdef HAVE_YODA
 
 YODAHistogram::YODAHistogram(const size_t &nbins, const double &lower, const double &upper,

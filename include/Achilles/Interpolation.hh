@@ -13,7 +13,7 @@
 
 namespace achilles {
 
-enum class InterpolationType { NearestNeighbor, Polynomial, CubicSpline };
+enum class InterpolationType : size_t { NearestNeighbor = 0, Polynomial, CubicSpline };
 
 double Polint(const std::vector<double> &, const std::vector<double> &, size_t, double);
 
@@ -146,6 +146,10 @@ class Interp2D {
     ///@return double: The interpolated value of the function
     double operator()(const double &, const double &) const;
     ///@}
+
+    // Cache Interpolator
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
 
   private:
     double NearestNeighbor(double, double) const;

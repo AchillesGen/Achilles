@@ -11,6 +11,7 @@
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
 
+#include "Achilles/XSecSpline.hh"
 #include "fmt/ranges.h"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
@@ -373,6 +374,18 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     return true;
 }
 
+void ProcessGroup::SetupSplines() {
+    // Setup XSecHistograms for splines
+    auto beam_id = m_beam->BeamIDs().begin();
+    auto nuc_id = m_nucleus->ID();
+    double min_energy = m_beam->MinEnergy();
+    double max_energy = m_beam->MaxEnergy();
+    if(min_energy != max_energy) {
+        m_use_spline = true;
+        m_spline = XSecSpline(fmt::format("{}-{}", *beam_id, nuc_id), min_energy, max_energy, 200);
+    }
+}
+
 bool ProcessGroup::NeedsOptimization() const {
     if(!m_integrator.HasResults()) return true;
     double rel_err = m_integrator.LastResult().RelError();
@@ -426,6 +439,7 @@ void ProcessGroup::Optimize() {
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
+    if(m_use_spline) m_spline.InitializeSpline();
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
 }
 
@@ -461,7 +475,15 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
-    if(b_optimize || event.Weight() == 0) return event;
+    if(b_optimize || event.Weight() == 0) {
+        // Fill the XSecSpline histogram
+        // NOTE: Assuming first momentum is the lepton momentum
+        if(m_use_spline) {
+            double flux = m_beam->EvaluateFlux(event.Leptons()[0].ID(), event.Momentum()[0]);
+            m_spline.Fill(event.Momentum()[0].E(), event.Weight() / flux);
+        }
+        return event;
+    }
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];

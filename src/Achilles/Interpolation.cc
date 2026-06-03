@@ -208,6 +208,77 @@ double Interp1D::PolynomialInterp(double x) const {
     return Polint(xInterp, tmp, static_cast<size_t>(polyOrder), x);
 }
 
+bool Interp1D::SaveState(std::ostream &os) const {
+    os << static_cast<size_t>(kMode) << " ";
+    switch(kMode) {
+    case InterpolationType::Polynomial:
+        os << polyOrder << " ";
+        [[fallthrough]];
+    case InterpolationType::NearestNeighbor:
+        os << knotX.size() << " ";
+        for(const auto &kx : knotX) { os << kx << " "; }
+        for(const auto &ky : knotY) { os << ky << " "; }
+        break;
+    case InterpolationType::CubicSpline:
+        os << kSplineInit << " ";
+        os << knotX.size() << " ";
+        for(const auto &kx : knotX) { os << kx << " "; }
+        for(const auto &ky : knotY) { os << ky << " "; }
+        if(kSplineInit) {
+            for(const auto &deriv : derivs2) { os << deriv << " "; }
+        }
+        break;
+    }
+    return true;
+}
+
+bool Interp1D::LoadState(std::istream &is) {
+    size_t mode;
+    size_t size;
+    is >> mode;
+    kMode = static_cast<InterpolationType>(mode);
+    switch(kMode) {
+    case InterpolationType::Polynomial:
+        is >> polyOrder;
+        [[fallthrough]];
+    case InterpolationType::NearestNeighbor:
+        is >> size;
+        for(size_t i = 0; i < size; ++i) {
+            double kx;
+            is >> kx;
+            knotX.push_back(kx);
+        }
+        for(size_t i = 0; i < size; ++i) {
+            double ky;
+            is >> ky;
+            knotY.push_back(ky);
+        }
+        break;
+    case InterpolationType::CubicSpline:
+        is >> kSplineInit;
+        is >> size;
+        for(size_t i = 0; i < size; ++i) {
+            double kx;
+            is >> kx;
+            knotX.push_back(kx);
+        }
+        for(size_t i = 0; i < size; ++i) {
+            double ky;
+            is >> ky;
+            knotY.push_back(ky);
+        }
+        if(kSplineInit) {
+            for(size_t i = 0; i < size; ++i) {
+                double deriv;
+                is >> deriv;
+                derivs2.push_back(deriv);
+            }
+        }
+        break;
+    }
+    return true;
+}
+
 Interp2D::Interp2D(const std::vector<double> &x, const std::vector<double> &y,
                    const std::vector<double> &z, InterpolationType mode)
     : kMode{mode} {

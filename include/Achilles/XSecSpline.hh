@@ -8,6 +8,7 @@ namespace achilles {
 
 class XSecSpline {
   public:
+    XSecSpline() = default;
     XSecSpline(const std::string &, double emin, double emax, size_t nbins);
     void Fill(double x, double wgt);
     void InitializeSpline();
@@ -24,13 +25,18 @@ class XSecSpline {
     Interp1D m_interp;
 };
 
-using NuElmPair = std::pair<size_t, size_t>;
+using NuElmPair = std::pair<int, int>;
 
 class GeometryXSecSpline {
   public:
     GeometryXSecSpline() = default;
-    void AddSpline(size_t nu_pid, size_t elm_pid, const XSecSpline &spline);
-    double TotalXSec(double energy, size_t nu_pid, std::vector<size_t> mat_pid) const;
+    void AddSpline(int nu_pid, int elm_pid, const XSecSpline &spline);
+    XSecSpline &GetSpline(int nu_pid, int elm_pid);
+    double TotalXSec(double energy, int nu_pid, std::vector<int> mat_pid) const;
+
+    // Cache Splines
+    bool SaveState(std::ostream &) const;
+    bool LoadState(std::istream &);
 
   private:
     std::map<NuElmPair, XSecSpline> m_xsecs;

@@ -7,6 +7,7 @@
 #include "Achilles/Statistics.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/XSecBackend.hh"
+#include "Achilles/XSecSpline.hh"
 #include "fmt/base.h"
 
 #include <optional>
@@ -104,7 +105,9 @@ class ProcessGroup {
 
     // Handling physics objects
     Beam *GetBeam() { return m_beam.get(); }
+    const Beam *GetBeam() const { return m_beam.get(); }
     Nucleus *GetNucleus() { return m_nucleus.get(); }
+    const Nucleus *GetNucleus() const { return m_nucleus.get(); }
     void SetupBackend(const Settings &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
     void SetupLeptons(Event &, std::optional<size_t>) const;
@@ -125,6 +128,10 @@ class ProcessGroup {
     double &MaxWeight() { return m_maxweight; }
     void SetOptimize(bool optimize) { b_optimize = optimize; }
     size_t Multiplicity() const { return m_processes[0].Info().Multiplicity(); }
+
+    // Handling of XSecSplines for Geometry
+    void SetupSplines();
+    const GeometryXSecSpline &GetSplines() const;
 
     // Metadata handlers
     std::vector<ProcessMetadata> Metadata() const;
@@ -150,6 +157,8 @@ class ProcessGroup {
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;
+    XSecSpline m_spline{};
+    bool m_use_spline{false};
 
     // Parameters
     std::vector<double> m_process_weights;
