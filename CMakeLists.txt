@@ -26,28 +26,35 @@ IF("${isSystemDir}" STREQUAL "-1")
   endif()
 ENDIF()
 
-# Link this 'library' to set the c++ standard / compile-time options requested
-# Additionally, link to get include and external dependencies
-add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_17)
-target_include_directories(project_options INTERFACE
+include(GNUInstallDirs)
+
+# Public usage requirements: everything a downstream consumer of Achilles
+# needs (C++ standard, include path, public compile definitions). This
+# target IS exported as part of the Achilles package.
+add_library(achilles_public_headers INTERFACE)
+add_library(achilles::PublicHeaders ALIAS achilles_public_headers)
+target_compile_features(achilles_public_headers INTERFACE cxx_std_17)
+target_include_directories(achilles_public_headers INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+    "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
+
+# Internal-only build settings: sanitizers, coverage, PCH, TESTING define.
+# Linked PRIVATE by Achilles libraries; never exported.
+add_library(achilles_options INTERFACE)
 
 enable_language(Fortran)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 
-# Link this 'library' to use the warnings specified in CompilerWarnings.cmake
-add_library(project_warnings INTERFACE)
-
-# Standard compiler warnings
+# Internal-only compiler warnings; never exported.
+add_library(achilles_warnings INTERFACE)
 include(CMake/CompilerWarnings.cmake)
-set_project_warnings(project_warnings)
+set_achilles_warnings(achilles_warnings)
 
-# Sanitizer options if supported by compiler
+# Sanitizer / coverage options if supported by compiler
 include(CMake/Sanitizers.cmake)
-enable_sanitizers(project_options)
+enable_sanitizers(achilles_options)
 
 # Allow for static analysis options
 include(CMake/StaticAnalyzers.cmake)
@@ -63,7 +70,8 @@ int main() {
     return 0;
 }" ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
 if(ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
-  target_compile_definitions(project_options INTERFACE ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
+  # Public: this define gates code visible in installed headers.
+  target_compile_definitions(achilles_public_headers INTERFACE ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
 endif()
 
 option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
@@ -76,7 +84,7 @@ if(ACHILLES_ENABLE_PCH)
   # This sets a global PCH parameter, each project will build its own PCH,
   # which is a good idea if any #define's change
   # These should be headers included in many places
-  target_precompile_headers(project_options INTERFACE <vector> <string> <map>)
+  target_precompile_headers(achilles_options INTERFACE <vector> <string> <map>)
 endif()
 
 # Check for python development environment
@@ -148,7 +156,11 @@ set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
-configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/Achilles/System.hh)
+configure_file(
+    include/Achilles/System.hh.in
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/include/Achilles/System.hh
+    @ONLY
+)
 
 # Copy over data files
 file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -177,10 +189,10 @@ endif()
 # Testing
 if(ACHILLES_ENABLE_TESTING)
   if(ACHILLES_COVERAGE)
-    target_compile_options(project_options INTERFACE --coverage)
-    target_link_libraries(project_options INTERFACE gcov)
+    target_compile_options(achilles_options INTERFACE --coverage)
+    target_link_libraries(achilles_options INTERFACE gcov)
   endif()
-  target_compile_definitions(project_options INTERFACE TESTING)
+  target_compile_definitions(achilles_options INTERFACE TESTING)
   enable_testing()
   message(STATUS "Building Tests.")
   add_subdirectory(test)
@@ -189,26 +201,52 @@ endif()
 # Main code
 add_subdirectory(src)
 
-# Install CMake find_package files
+# Install the public-headers INTERFACE target into the export set so that
+# downstream consumers inherit the include path, C++ standard, and public
+# compile definitions through find_package(Achilles).
+install(TARGETS achilles_public_headers
+        EXPORT AchillesTargets
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Install the generated System.hh alongside the rest of the public headers.
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/generated/include/Achilles/System.hh
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/Achilles)
+
+# Generate and install the package config files.
 include(CMakePackageConfigHelpers)
 
+# Capture build-time feature flags so the installed config file can issue
+# the right find_dependency() calls (see AchillesConfig.cmake.in).
+set(ACHILLES_ENABLE_SHERPA ${ACHILLES_ENABLE_SHERPA})
+set(ACHILLES_ENABLE_ROOT   ${ACHILLES_ENABLE_ROOT})
+set(ACHILLES_ENABLE_HEPMC3 ${ACHILLES_ENABLE_HEPMC3})
+set(ACHILLES_ENABLE_GZIP   ${ACHILLES_ENABLE_GZIP})
+
 configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/CMake/achilles-config.cmake.in
-    ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+    ${CMAKE_SOURCE_DIR}/CMake/AchillesConfig.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/AchillesConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
 )
 
 write_basic_package_version_file(
-    ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
+    ${CMAKE_BINARY_DIR}/CMake/AchillesConfigVersion.cmake
     VERSION ${ACHILLES_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 install(
     FILES
-        ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
-        ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+        ${CMAKE_BINARY_DIR}/CMake/AchillesConfig.cmake
+        ${CMAKE_BINARY_DIR}/CMake/AchillesConfigVersion.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
+)
+
+# Export the targets file. Library and executable targets register
+# themselves into the AchillesTargets export set in src/Achilles/CMakeLists.txt.
+install(EXPORT AchillesTargets
+    FILE AchillesTargets.cmake
+    NAMESPACE achilles::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
 )
 
 # Install default run card and form factors card

@@ -6,7 +6,7 @@ add_library(AchillesIntegrator SHARED
     GaussKronrod.cc
     NewtonCotes.cc
 )
-target_link_libraries(AchillesIntegrator PRIVATE project_warnings
+target_link_libraries(AchillesIntegrator PRIVATE achilles_options achilles_warnings
                                          PUBLIC utilities)
 list(APPEND achilles_targets AchillesIntegrator)
 set(achilles_targets ${achilles_targets} PARENT_SCOPE)

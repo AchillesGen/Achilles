@@ -4,7 +4,7 @@
 
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
-#include "Plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Achilles/Writers/NuHepMCWriter.hh"
 
 TEST_CASE("Passes Validator", "[NuHepMC]") {
     // Setup dummy event

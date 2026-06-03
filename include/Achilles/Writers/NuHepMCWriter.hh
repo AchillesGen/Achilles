@@ -1,8 +1,8 @@
 #ifndef NUHEPMC_WRITER
 #define NUHEPMC_WRITER
 
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Statistics.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"

@@ -4,7 +4,6 @@
 #include "Achilles/Channels.hh"
 #include "Achilles/Debug.hh"
 #include "Achilles/Event.hh"
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
@@ -12,6 +11,7 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -26,11 +26,11 @@ class SherpaInterface {};
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
-#include "Plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Achilles/Writers/HepMC3EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#include "Plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Achilles/Writers/NuHepMCWriter.hh"
 #endif
 
 #include "fmt/std.h"
@@ -191,6 +191,7 @@ void achilles::EventGen::Initialize() {
 
     spdlog::info("Starting optimization runs");
     for(auto &group : process_groups) {
+        group.SetupSplines();
         group.Optimize();
         m_group_weights.push_back(group.MaxWeight());
         m_max_weight += group.MaxWeight();

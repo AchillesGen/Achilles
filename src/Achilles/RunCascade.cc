@@ -2,21 +2,21 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/EventHistory.hh"
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Settings.hh"
+#include "Achilles/Writers/EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
-#include "Plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Achilles/Writers/HepMC3EventWriter.hh"
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
-#include "Plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Achilles/Writers/NuHepMCWriter.hh"
 
 #include "spdlog/spdlog.h"
 

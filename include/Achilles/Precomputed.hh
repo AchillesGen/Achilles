@@ -2,8 +2,8 @@
 
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Nucleus.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 #include <fstream>
 #include <memory>

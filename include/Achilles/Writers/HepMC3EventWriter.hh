@@ -1,8 +1,8 @@
 #ifndef HEPMC3_EVENT_WRITER_HH
 #define HEPMC3_EVENT_WRITER_HH
 
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Statistics.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"

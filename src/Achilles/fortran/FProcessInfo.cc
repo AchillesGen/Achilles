@@ -2,16 +2,17 @@
 
 extern "C" {
 void ProcessIDs(achilles::ProcessInfo *info, long *ids, size_t &len) {
-    auto pids = info->Ids();
+    const auto pids = info->Ids();
     len = pids.size();
-    ids = pids.data();
+    for(size_t i = 0; i < pids.size(); ++i) ids[i] = pids[i];
 }
 size_t ProcessMultiplicity(achilles::ProcessInfo *info) {
     return info->Multiplicity();
 }
 void ProcessMasses(achilles::ProcessInfo *info, double *masses, size_t &len) {
-    masses = info->Masses().data();
-    len = info->Masses().size();
+    const auto &m = info->Masses();
+    len = m.size();
+    for(size_t i = 0; i < m.size(); ++i) masses[i] = m[i];
 }
 void ProcessAddState(achilles::ProcessInfo *info, long *initial, long *final, size_t in,
                      size_t out) {

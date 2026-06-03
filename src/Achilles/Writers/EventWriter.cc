@@ -1,4 +1,4 @@
-#include "Achilles/EventWriter.hh"
+#include "Achilles/Writers/EventWriter.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"

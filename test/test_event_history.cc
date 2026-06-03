@@ -1,5 +1,8 @@
 #include "catch2/catch.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
 #include "catch2/trompeloeil.hpp"
+#pragma GCC diagnostic pop
 
 #include "Achilles/Constants.hh"
 #include "Achilles/EventHistory.hh"

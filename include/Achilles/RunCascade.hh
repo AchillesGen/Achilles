@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Achilles/Cascade.hh"
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
 #include "Achilles/Settings.hh"
+#include "Achilles/Writers/EventWriter.hh"
 #include "yaml-cpp/yaml.h"
 
 #include <string>

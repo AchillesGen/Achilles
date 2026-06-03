@@ -9,7 +9,7 @@ add_library(AchillesCascadeInteractions SHARED
     DeltaInteractions.cc
     NucleonNucleon.cc
 )
-target_link_libraries(AchillesCascadeInteractions PRIVATE project_options project_warnings
+target_link_libraries(AchillesCascadeInteractions PRIVATE achilles_options achilles_warnings HighFive
                                                   PUBLIC physics AchillesIntegrator)
 list(APPEND achilles_targets AchillesCascadeInteractions)
 set(achilles_targets ${achilles_targets} PARENT_SCOPE)

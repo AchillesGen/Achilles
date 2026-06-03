@@ -1,4 +1,4 @@
-#include "Plugins/NuHepMC/NuHepMCWriter.hh"
+#include "Achilles/Writers/NuHepMCWriter.hh"
 
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
@@ -68,7 +68,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     run->add_attribute("NuHepMC.ProcessIDs",
                        std::make_shared<HepMC3::VectorIntAttribute>(proc_ids));
     auto metadata = achilles::AllProcessMetadata(groups);
-    for(const auto data : metadata) {
+    for(const auto &data : metadata) {
         NuHepMC::add_attribute(run, fmt::format("NuHepMC.ProcessInfo[{}].Name", data.id),
                                data.name);
         NuHepMC::add_attribute(run, fmt::format("NuHepMC.ProcessInfo[{}].Description", data.id),
@@ -160,6 +160,10 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Spectator;
     case achilles::ParticleStatus::interacted:
         return NuHepMC::ParticleStatus::Cascade;
+    case achilles::ParticleStatus::any:
+    case achilles::ParticleStatus::residue:
+    case achilles::ParticleStatus::absorption_partner:
+        return -1;
     }
     return -1;
 }
@@ -240,7 +244,6 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
 
 void NuHepMCWriter::Write(const achilles::Event &event) {
     spdlog::debug("Writing out event");
-    constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
@@ -252,7 +255,7 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     spdlog::trace("Setting up units");
     NuHepMCVisitor visitor;
     visitor.evt.set_run_info(file->run_info());
-    visitor.evt.set_event_number(results.Calls());
+    visitor.evt.set_event_number(static_cast<int>(results.Calls()));
 
     // Interaction type
     NuHepMC::ER3::SetProcessID(visitor.evt, event.ProcessId());
@@ -260,8 +263,9 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
-    cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(),
-                                     results.Calls());
+    cross_section->set_cross_section(results.Mean(), results.Error(),
+                                     static_cast<long>(results.FiniteCalls()),
+                                     static_cast<long>(results.Calls()));
     visitor.evt.set_cross_section(cross_section);
 
     NuHepMC::add_attribute(visitor.evt, "Flux", event.Flux());

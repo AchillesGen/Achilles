@@ -1,16 +1,16 @@
 #include "Achilles/Precomputed.hh"
 #include "Achilles/Cascade.hh"
 #include "Achilles/EventHistory.hh"
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 #ifdef ACHILLES_ENABLE_HEPMC3
-#include "Plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Achilles/Writers/HepMC3EventWriter.hh"
 #endif
 
 #include "spdlog/spdlog.h"

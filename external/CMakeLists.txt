@@ -1,11 +1,15 @@
-CPMAddPackage(
+# Runtime deps: prefer system installs, fall back to fetching.
+# Using CPMFindPackage so a system-provided install (or one shipped by a
+# chained dep like NuHepMC_CPPUtils) satisfies us without a duplicate fetch.
+CPMFindPackage(
     NAME fmt
     GIT_TAG 11.0.0
     GITHUB_REPOSITORY fmtlib/fmt
+    OPTIONS
+        "FMT_INSTALL ON"
 )
-add_library(fmt::fmt ALIAS fmt)
 
-CPMAddPackage(
+CPMFindPackage(
     NAME spdlog
     GIT_TAG "v1.14.1"
     GITHUB_REPOSITORY gabime/spdlog
@@ -15,34 +19,20 @@ CPMAddPackage(
         "SPDLOG_BUILD_SHARED ON"
         "SPDLOG_INSTALL ON"
 )
-add_library(spdlog::spdlog ALIAS spdlog)
 
-CPMAddPackage(
-    NAME docopt
-    GIT_TAG v0.6.3
-    GITHUB_REPOSITORY docopt/docopt.cpp
-)
-add_library(docopt::docopt ALIAS docopt)
-
-CPMAddPackage(
+CPMFindPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
-    GIT_TAG master
+    # Pinned to a post-0.8.0 fix that has not yet been released.
+    GIT_TAG 4861d04
     OPTIONS
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
         "YAML_CPP_BUILD_TOOLS OFF"
+        "YAML_CPP_INSTALL ON"
 )
-add_library(yaml::cpp ALIAS yaml-cpp)
 
-CPMAddPackage(
-    NAME yaml-fortran
-    GITHUB_REPOSITORY jxi24/fortran-yaml
-    GIT_TAG master
-)
-add_library(yaml::fortran ALIAS yaml-fortran)
-
-CPMAddPackage(
+CPMFindPackage(
   NAME NuHepMC_CPPUtils
   GIT_TAG v1-RC18
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
@@ -51,7 +41,7 @@ CPMAddPackage(
           "NuHepMC_CPPUtils_PROTOBUF_INTERFACE OFF"
 )
 
-CPMAddPackage(
+CPMFindPackage(
     NAME HighFive
     VERSION 2.6.2
     GITHUB_REPOSITORY BlueBrain/HighFive
@@ -61,6 +51,21 @@ CPMAddPackage(
         "HIGHFIVE_BUILD_DOCS OFF"
         "HIGHFIVE_UNIT_TESTS OFF"
 )
+
+# Build-only deps (not exposed in install interface).
+CPMAddPackage(
+    NAME docopt
+    GIT_TAG v0.6.3
+    GITHUB_REPOSITORY docopt/docopt.cpp
+)
+add_library(docopt::docopt ALIAS docopt)
+
+CPMAddPackage(
+    NAME yaml-fortran
+    GITHUB_REPOSITORY jxi24/fortran-yaml
+    GIT_TAG master
+)
+add_library(yaml::fortran ALIAS yaml-fortran)
 
 CPMAddPackage(
     Name CmakeGitVersion

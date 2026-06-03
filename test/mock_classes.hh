@@ -2,7 +2,10 @@
 #define MOCK_CLASSES
 
 #include "catch2/catch.hpp"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wfree-nonheap-object"
 #include "catch2/trompeloeil.hpp"
+#pragma GCC diagnostic pop
 
 // Includes to mock
 #include "Achilles/Beams.hh"

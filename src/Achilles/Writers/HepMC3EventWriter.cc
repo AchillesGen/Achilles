@@ -1,4 +1,4 @@
-#include "Plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Achilles/Writers/HepMC3EventWriter.hh"
 #ifdef GZIP
 #include "gzstream/gzstream.h"
 #endif
@@ -87,7 +87,6 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
 
 void HepMC3Writer::Write(const achilles::Event &event) {
     spdlog::trace("Writing out event");
-    constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
@@ -99,7 +98,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     spdlog::trace("Setting up units");
     HepMC3Visitor visitor;
     visitor.evt.set_run_info(file.run_info());
-    visitor.evt.set_event_number(results.Calls());
+    visitor.evt.set_event_number(static_cast<int>(results.Calls()));
 
     // Interaction type
     // TODO: Add interaction type to the event, and have ids for different modes
@@ -108,8 +107,9 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
-    cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(),
-                                     results.Calls());
+    cross_section->set_cross_section(results.Mean(), results.Error(),
+                                     static_cast<long>(results.FiniteCalls()),
+                                     static_cast<long>(results.Calls()));
     visitor.evt.add_attribute("GenCrossSection", cross_section);
     visitor.evt.add_attribute("Flux", std::make_shared<DoubleAttribute>(event.Flux()));
     visitor.evt.weight("Default") = event.Weight() * nb_to_pb;

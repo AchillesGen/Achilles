@@ -3,9 +3,9 @@
 
 #include <sstream>
 
-#include "Achilles/EventWriter.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
+#include "Achilles/Writers/EventWriter.hh"
 
 using achilles::Particle;
 
