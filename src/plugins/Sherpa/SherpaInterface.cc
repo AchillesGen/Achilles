@@ -104,7 +104,7 @@ bool SherpaInterface::Initialize(YAML::Node &sherpa_settings) {
     sherpa_settings["SHOWER_GENERATOR"] = "CSS";
 
     // TODO: Figure out how to set this to work with Sherpa3.0
-    sherpa_settings["HARD_DECAYS"]["ENABLED"] = "True";
+    sherpa_settings["HADRON_DECAYS"]["ENABLED"] = "True";
     sherpa_settings["HADRON_DECAYS"]["Spin_Correlations"] = 1;
     sherpa_settings["ME_QED"]["ENABLED"] = "OFF";
     sherpa_settings["BEAM_REMNANTS"] = "False";

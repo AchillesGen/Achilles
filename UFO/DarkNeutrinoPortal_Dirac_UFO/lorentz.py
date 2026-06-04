@@ -51,23 +51,23 @@ FFV1 = Lorentz(name = 'FFV1',
 
 FFVp1 = Lorentz(name = 'FFVp1',
                spins = [ 2, 2, 3 ],
-               structure = 'Gamma(3,2,1)*F1p(P(-1, 3)**2)')
+               structure = 'Gamma(3,2,1)*F1p(-P(-1, 3)**2)')
 
 FFVp2 = Lorentz(name = 'FFVp2',
                spins = [ 2, 2, 3 ],
-               structure = 'Sigma(3,-1,2,1)*P(-1,3)*F2p(P(-2, 3)**2)')
+               structure = 'Sigma(3,-1,2,1)*P(-1,3)*F2p(-P(-2, 3)**2)')
 
 FFVn1 = Lorentz(name = 'FFVn1',
                spins = [ 2, 2, 3 ],
-               structure = 'Gamma(3,2,1)*F1n(P(-1, 3)**2)')
+               structure = 'Gamma(3,2,1)*F1n(-P(-1, 3)**2)')
 
 FFVn2 = Lorentz(name = 'FFVn2',
                spins = [ 2, 2, 3 ],
-               structure = 'Sigma(3,-1,2,1)*P(-1,3)*F2n(P(-2, 3)**2)')
+               structure = 'Sigma(3,-1,2,1)*P(-1,3)*F2n(-P(-2, 3)**2)')
 
 FFVA = Lorentz(name = 'FFVA',
                spins = [ 2, 2, 3 ],
-               structure = 'Gamma(3,2,-1)*Gamma5(-1,1)*FA(P(-2, 3)**2)')
+               structure = 'Gamma(3,2,-1)*Gamma5(-1,1)*FA(-P(-2, 3)**2)')
 
 FFV2 = Lorentz(name = 'FFV2',
                spins = [ 2, 2, 3 ],
@@ -83,7 +83,7 @@ VSS1 = Lorentz(name = 'VSS1',
 
 VSSCoh = Lorentz(name = 'VSSCoh',
                spins = [ 3, 1, 1 ],
-               structure = '(P(1,2) + P(1,3))*ForFac.FCoh(P(-1, 1)**2)')
+               structure = '(P(1,2) + P(1,3))*ForFac.FCoh(-P(-1, 1)**2)')
 
 VVS1 = Lorentz(name = 'VVS1',
                spins = [ 3, 3, 1 ],

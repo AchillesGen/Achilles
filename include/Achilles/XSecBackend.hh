@@ -60,9 +60,9 @@ class DefaultBackend : public XSecBackend, RegistrableBackend<DefaultBackend> {
 };
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-class BSMBackend : public XSecBackend, RegistrableBackend<BSMBackend> {
+class SherpaLeptonicBackend : public XSecBackend, RegistrableBackend<SherpaLeptonicBackend> {
   public:
-    BSMBackend();
+    SherpaLeptonicBackend();
     void SetSherpa(SherpaInterface *sherpa) override { p_sherpa = sherpa; }
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
@@ -71,17 +71,19 @@ class BSMBackend : public XSecBackend, RegistrableBackend<BSMBackend> {
                        PID) override;
 
     // Required factory methods
-    static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<BSMBackend>(); }
-    static std::string Name() { return "BSM"; }
+    static std::unique_ptr<XSecBackend> Construct() {
+        return std::make_unique<SherpaLeptonicBackend>();
+    }
+    static std::string Name() { return "SherpaLeptonic"; }
 
   private:
     Currents CalcLeptonCurrents(const std::vector<FourVector> &, const ProcessInfo &) const;
     SherpaInterface *p_sherpa = nullptr;
 };
 
-class SherpaBackend : public XSecBackend, RegistrableBackend<SherpaBackend> {
+class SherpaFullBackend : public XSecBackend, RegistrableBackend<SherpaFullBackend> {
   public:
-    SherpaBackend();
+    SherpaFullBackend();
     void SetSherpa(SherpaInterface *sherpa) override { p_sherpa = sherpa; }
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
@@ -90,8 +92,10 @@ class SherpaBackend : public XSecBackend, RegistrableBackend<SherpaBackend> {
                        PID) override;
 
     // Required factory methods
-    static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<SherpaBackend>(); }
-    static std::string Name() { return "Sherpa"; }
+    static std::unique_ptr<XSecBackend> Construct() {
+        return std::make_unique<SherpaFullBackend>();
+    }
+    static std::string Name() { return "SherpaFull"; }
 
   private:
     SherpaInterface *p_sherpa = nullptr;

@@ -298,6 +298,14 @@ WT = Parameter(name = 'WT',
                lhablock = 'DECAY',
                lhacode = [ 6 ])
 
+WTA = Parameter(name = 'WTA',
+               nature = 'external',
+               type = 'real',
+               value = 2.27e-12,
+               texname = '\\text{WTA}',
+               lhablock = 'DECAY',
+               lhacode = [ 15 ])
+
 WH = Parameter(name = 'WH',
                nature = 'external',
                type = 'real',
