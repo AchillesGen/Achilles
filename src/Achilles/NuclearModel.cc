@@ -22,6 +22,7 @@ using achilles::Coherent;
 using achilles::HyperonSpectral;
 using achilles::NuclearModel;
 using achilles::QESpectral;
+using achilles::DeepInelastic;
 using Type = achilles::FormFactorInfo::Type;
 
 NuclearModel::NuclearModel(const YAML::Node &config,
@@ -229,11 +230,15 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
 
 // TODO: Rewrite to match process grouping
 std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo &info) const {
-    // Check for charge conservation
-    const auto charge = info.LeptonicCharge();
-    spdlog::debug("Charge = {}, ModelType = {}", charge, ToString(Mode()));
-    std::vector<ProcessInfo> results;
-    auto local = info;
+	// Lists of quarks allowed by Achilles DIS
+	static const std::vector<PID> disUpQuarks={PID::up(),PID::charm()};
+	static const std::vector<PID> disDownQuarks={PID::down(),PID::strange(),PID::bottom()};
+
+	// Check for charge conservation
+	const auto charge = info.LeptonicCharge();
+	spdlog::debug("Charge = {}, ModelType = {}", charge, ToString(Mode()));
+	std::vector<ProcessInfo> results;
+	ProcessInfo local = info;
 
     switch(Mode()) {
     case NuclearMode::None:
@@ -402,9 +407,48 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
         return results;
 
+	case NuclearMode::DeepInelastic:
+		if(std::abs(charge) > 1)
+			throw std::runtime_error(fmt::format(
+				"DIS: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+		switch(charge) {
+			case -1: // Final lepton has less charge than initial
+				for(PID u:disUpQuarks)
+					for(PID d:disDownQuarks) {
+						local.m_hadronic={{d},{u}};
+						results.push_back(local);
+						local.m_hadronic={{-u},{-d}};
+						results.push_back(local);
+					}
+				break;
+			case 0: // Same charge in inital and final
+				for(PID u:disUpQuarks) {
+					local.m_hadronic={{u},{u}};
+					results.push_back(local);
+					local.m_hadronic={{-u},{-u}};
+					results.push_back(local);
+				}
+				for(PID d:disDownQuarks) {
+					local.m_hadronic={{d},{d}};
+					results.push_back(local);
+					local.m_hadronic={{-d},{-d}};
+					results.push_back(local);
+				}
+				break;
+			case 1: // Final lepton has more charge than initial
+				for(PID u:disUpQuarks)
+					for(PID d:disDownQuarks) {
+						local.m_hadronic={{u},{d}};
+						results.push_back(local);
+						local.m_hadronic={{-d},{-u}};
+						results.push_back(local);
+					}
+				break;
+		}
+		return results;
+
     // TODO: Implement remaining cases
     case NuclearMode::ShallowInelastic:
-    case NuclearMode::DeepInelastic:
         throw std::runtime_error(fmt::format(
             "NuclearModel: Allowed states for {} not implemented yet", ToString(Mode())));
     }
@@ -423,11 +467,11 @@ size_t NuclearModel::NSpins() const {
     case NuclearMode::Interference_QE_MEC:
     case NuclearMode::Resonance:
     case NuclearMode::Hyperon:
+    case NuclearMode::DeepInelastic:
         return 4;
     case NuclearMode::MesonExchangeCurrent:
         return 16;
     case NuclearMode::ShallowInelastic:
-    case NuclearMode::DeepInelastic:
         throw std::runtime_error(
             fmt::format("NuclearModel: NSpins for {} not implemented yet", ToString(Mode())));
     }
@@ -779,4 +823,113 @@ std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {
     else
         is_free_neutron = true;
     return Coherent::Name();
+}
+
+
+// TODO: Clean this interface up
+DeepInelastic::DeepInelastic(const YAML::Node &config, const YAML::Node &form_factor,
+                       FormFactorBuilder &builder = FormFactorBuilder::Instance())
+    : NuclearModel(form_factor, builder),
+      m_ward{ToEnum(config["NuclearModel"]["Ward"].as<std::string>())},
+      spectral_proton{config["NuclearModel"]["SpectralP"].as<std::string>()},
+      spectral_neutron{config["NuclearModel"]["SpectralN"].as<std::string>()} {}
+
+
+std::string DeepInelastic::PhaseSpace(PID nuc_id) const {
+    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
+    if(nuc_id == PID::hydrogen())
+        is_hydrogen = true;
+    else
+        is_free_neutron = true;
+    return Coherent::Name();
+}
+
+
+std::unique_ptr<NuclearModel> DeepInelastic::Construct(const YAML::Node &config) {
+    auto form_factor = LoadFormFactor(config);
+    return std::make_unique<DeepInelastic>(config, form_factor);
+}
+
+
+NuclearModel::Currents DeepInelastic::CalcCurrents(const std::vector<Particle>& had_in,
+                                                const std::vector<Particle>& had_out,
+                                                const std::vector<Particle>&, const FourVector& q,
+                                                const FFInfoMap& ff) const {
+    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
+    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
+
+    auto pIn = had_in[0].Momentum();
+    auto pOut = had_out[0].Momentum();
+    auto qVec = q;
+    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
+    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
+    auto omega = qVec.E();
+    qVec.E() = qVec.E() + pIn.E() - free_energy;
+
+    Currents results;
+
+    // Setup spinors
+    pIn.E() = free_energy;
+    std::array<Spinor, 2> ubar, u;
+    ubar[0] = UBarSpinor(-1, pOut);
+    ubar[1] = UBarSpinor(1, pOut);
+    u[0] = USpinor(-1, -pIn);
+    u[1] = USpinor(1, -pIn);
+
+    // Calculate nucleon contributions
+    for(const auto& formFactor:ff) {
+        auto ffVal = CouplingsFF(ffVals, formFactor.second);
+        spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
+                      ffVal[Type::FA]);
+        Current current = HadronicCurrent(ubar, u, qVec, ffVal);
+        for(auto& subcur:current) {
+            // Correct the Ward identity
+            switch(m_ward) {
+            case WardGauge::None:
+                continue;
+                break;
+            case WardGauge::Coulomb:
+                CoulombGauge(subcur, q, omega);
+                break;
+            case WardGauge::Weyl:
+                WeylGauge(subcur, q, omega);
+                break;
+            case WardGauge::Landau:
+                LandauGauge(subcur, q);
+                break;
+            }
+        }
+        results[formFactor.first] = current;
+    }
+    return results;
+};
+
+
+NuclearModel::Current DeepInelastic::HadronicCurrent(const std::array<Spinor, 2> &ubar,
+                                                  const std::array<Spinor, 2> &u,
+                                                  const FourVector &qVec,
+                                                  const FormFactorMap &ffVal) const {
+    Current result;
+    std::array<SpinMatrix, 4> gamma{};
+    for(size_t mu = 0; mu < 4; ++mu) {
+        gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
+        gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
+        double sign = 1;
+        for(size_t nu = 0; nu < 4; ++nu) {
+            gamma[mu] +=
+                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
+                                              sign * qVec[nu] / (2 * Constant::mN));
+            sign = -1;
+        }
+    }
+
+    for(size_t i = 0; i < 2; ++i) {
+        for(size_t j = 0; j < 2; ++j) {
+            VCurrent subcur;
+            for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
+            result.push_back(subcur);
+        }
+    }
+    return result;
 }

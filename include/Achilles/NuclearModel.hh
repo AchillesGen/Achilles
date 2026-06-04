@@ -254,7 +254,7 @@ class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic
                           const std::vector<Particle> &, const FourVector &,
                           const FFInfoMap &) const override;
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
-                              size_t) const override;
+                              size_t) const override { return 1; }
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node&);
