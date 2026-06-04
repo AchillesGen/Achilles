@@ -14,6 +14,8 @@
 
 namespace achilles {
 
+struct FluxData;
+
 class FluxType {
   public:
     FluxType() = default;
@@ -30,16 +32,11 @@ class FluxType {
     virtual double MinEnergy() const = 0;
     virtual double MaxEnergy() const = 0;
     virtual double EvaluateFlux(const FourVector &) const = 0;
-
-    // Category name for the flux Factory (see Factory<FluxType, const YAML::Node &>).
-    static std::string Name() { return "Flux"; }
 };
 
-class Monochromatic : public FluxType, Registrable<FluxType, Monochromatic, const YAML::Node &> {
+class Monochromatic : public FluxType {
   public:
     Monochromatic(const double &energy) : m_energy(energy) {}
-    static std::string Name() { return "Monochromatic"; }
-    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 0; }
     FourVector Flux(const std::vector<double> &, double) const override {
         return {m_energy, 0, 0, m_energy};
@@ -56,16 +53,9 @@ class Monochromatic : public FluxType, Registrable<FluxType, Monochromatic, cons
     double m_energy;
 };
 
-class Spectrum : public FluxType, Registrable<FluxType, Spectrum, const YAML::Node &> {
+class Spectrum : public FluxType {
   public:
-    enum class Type {
-        Histogram,
-        ROOTHist,
-    };
-
-    Spectrum(const YAML::Node &);
-    static std::string Name() { return "Spectrum"; }
-    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
+    explicit Spectrum(const FluxData &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -83,11 +73,9 @@ class Spectrum : public FluxType, Registrable<FluxType, Spectrum, const YAML::No
     std::string m_format_str{"Undefined"};
 };
 
-class PDFBeam : public FluxType, Registrable<FluxType, PDFBeam, const YAML::Node &> {
+class PDFBeam : public FluxType {
   public:
     PDFBeam(const YAML::Node &);
-    static std::string Name() { return "PDFBeam"; }
-    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -100,11 +88,9 @@ class PDFBeam : public FluxType, Registrable<FluxType, PDFBeam, const YAML::Node
     std::unique_ptr<PDFBase> p_pdf;
 };
 
-class FlatFlux : public FluxType, Registrable<FluxType, FlatFlux, const YAML::Node &> {
+class FlatFlux : public FluxType {
   public:
     FlatFlux(const YAML::Node &);
-    static std::string Name() { return "FlatFlux"; }
-    static std::unique_ptr<FluxType> Construct(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
@@ -139,6 +125,23 @@ class GeometryBeam : public FluxType {
     Mode m_mode;
 };
 
+// Energy support [Min, Max] shared by every species in a beam.
+class EnergyDomain {
+  public:
+    EnergyDomain() = default;
+    EnergyDomain(double min, double max) : m_min(min), m_max(max) {}
+    double Min() const { return m_min; }
+    double Max() const { return m_max; }
+    bool Contains(double energy) const { return energy >= m_min && energy <= m_max; }
+    bool operator==(const EnergyDomain &other) const {
+        return m_min == other.m_min && m_max == other.m_max;
+    }
+
+  private:
+    double m_min{};
+    double m_max{};
+};
+
 class Beam {
   public:
     using BeamMap = std::map<achilles::PID, std::shared_ptr<FluxType>>;
@@ -161,6 +164,7 @@ class Beam {
     }
     size_t NBeams() const { return m_beams.size(); }
     MOCK const std::set<PID> &BeamIDs() const { return m_pids; }
+    const EnergyDomain &Domain() const { return m_domain; }
     double MinEnergy() const;
     double MaxEnergy() const;
     MOCK double EvaluateFlux(const PID pid, const FourVector &p) const {
@@ -179,6 +183,7 @@ class Beam {
     int n_vars;
     std::set<PID> m_pids;
     BeamMap m_beams;
+    EnergyDomain m_domain;
 };
 
 } // namespace achilles

@@ -1,6 +1,7 @@
 Achilles
 MiniBooNE Flux
 units: cm^{-2}/50MeV
+species: 14
   lower edge      upper edge    value        error
   0.000           50            1            0.0
   50              100           1            0.0

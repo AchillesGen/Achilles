@@ -57,7 +57,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
     // Load initial beam and nuclei
     spdlog::trace("Initializing the beams");
-    beam = std::make_shared<Beam>(config.GetAs<Beam>("Beams"));
+    beam = std::make_shared<Beam>(config.GetAs<Beam>("Beam"));
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
 
     // Initialize Cascade parameters

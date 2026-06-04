@@ -4,48 +4,12 @@
 #include "Achilles/Utilities.hh"
 
 #include <limits>
-#include <memory>
 
 using achilles::FlatFlux;
-using achilles::FluxType;
-using achilles::Monochromatic;
 using achilles::PDFBeam;
 using achilles::Spectrum;
 
-std::unique_ptr<FluxType> Monochromatic::Construct(const YAML::Node &node) {
-    return std::make_unique<Monochromatic>(node["Energy"].as<double>());
-}
-
-std::unique_ptr<FluxType> Spectrum::Construct(const YAML::Node &node) {
-    return std::make_unique<Spectrum>(node);
-}
-
-std::unique_ptr<FluxType> PDFBeam::Construct(const YAML::Node &node) {
-    return std::make_unique<PDFBeam>(node);
-}
-
-std::unique_ptr<FluxType> FlatFlux::Construct(const YAML::Node &node) {
-    return std::make_unique<FlatFlux>(node);
-}
-
-Spectrum::Spectrum(const YAML::Node &node) {
-    spdlog::debug("Loading spectrum flux");
-
-    // Pick the loader whose registered key (e.g. "Histogram") is present in the
-    // config, dispatching through Factory<FluxFileLoader> so new formats only
-    // need to register a loader.
-    using LoaderFactory = Factory<FluxFileLoader>;
-    std::unique_ptr<FluxFileLoader> loader;
-    for(const auto &name : LoaderFactory::List()) {
-        if(node[name]) {
-            loader = LoaderFactory::Initialize(name);
-            break;
-        }
-    }
-    if(!loader) throw std::runtime_error("Spectrum: Only histogram fluxes are implemented");
-
-    FluxData data = loader->Load(node);
-
+Spectrum::Spectrum(const FluxData &data) {
     Interp1D interp(data.bin_centers, data.heights, InterpolationType::Polynomial);
     interp.SetPolyOrder(1);
 
@@ -124,20 +88,19 @@ achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
     n_vars = 0;
     for(const auto &beam : m_beams) {
         if(beam.second->NVariables() > n_vars) n_vars = beam.second->NVariables();
-        if(m_pids.find(beam.first) != m_pids.end())
-            throw std::logic_error(
-                fmt::format("Multiple beams exist for PID: {}", int(beam.first)));
         spdlog::debug("Beam with PID: {} created.", beam.first);
         m_pids.insert(beam.first);
-        if(m_beams.begin()->second->MinEnergy() != beam.second->MinEnergy())
-            throw std::logic_error(
-                fmt::format("Beams must have the same minimum energies. Got {} and {}",
-                            m_beams.begin()->second->MinEnergy(), beam.second->MinEnergy()));
-        if(m_beams.begin()->second->MaxEnergy() != beam.second->MaxEnergy())
-            throw std::logic_error(
-                fmt::format("Beams must have the same minimum energies. Got {} and {}",
-                            m_beams.begin()->second->MaxEnergy(), beam.second->MaxEnergy()));
+        // Every species must share the same energy support (single EnergyDomain).
+        if(m_beams.begin()->second->MinEnergy() != beam.second->MinEnergy() ||
+           m_beams.begin()->second->MaxEnergy() != beam.second->MaxEnergy())
+            throw std::logic_error(fmt::format(
+                "Beam: all species must share the same energy support. Got [{}, {}] and [{}, {}]",
+                m_beams.begin()->second->MinEnergy(), m_beams.begin()->second->MaxEnergy(),
+                beam.second->MinEnergy(), beam.second->MaxEnergy()));
     }
+    if(!m_beams.empty())
+        m_domain = EnergyDomain(m_beams.begin()->second->MinEnergy(),
+                                m_beams.begin()->second->MaxEnergy());
 }
 
 double achilles::Beam::MaxEnergy() const {

@@ -1,176 +1,145 @@
 #include "catch2/catch.hpp"
 
 #include "Achilles/Beams.hh"
-#include "Achilles/Factory.hh"
 #include "Achilles/FluxLoaders.hh"
 #include "Achilles/YAML/Beams.hh"
 #include "yaml-cpp/yaml.h"
 
-#include <iostream>
+using achilles::PID;
 
 TEST_CASE("Flux file loaders", "[Beams]") {
-    SECTION("HistogramFluxLoader detects and parses the Achilles format") {
-        YAML::Node node = YAML::Load("Histogram: flux/miniboone.dat");
-        auto data = achilles::HistogramFluxLoader{}.Load(node);
-        CHECK(data.format == "Achilles");
-        CHECK(data.min_energy == 0.0);
-        CHECK(data.max_energy == 4450.0);
-        CHECK(data.bin_centers.size() == data.heights.size());
-        CHECK(data.bin_centers.size() >= 2);
+    SECTION("Achilles format is single-species and self-describing") {
+        auto data = achilles::HistogramFluxLoader{}.Load(YAML::Load("flux/miniboone.dat"));
+        REQUIRE(data.size() == 1);
+        REQUIRE(data.count(PID(14)) == 1);
+        CHECK(data.at(PID(14)).format == "Achilles");
+        CHECK(data.at(PID(14)).min_energy == 0.0);
+        CHECK(data.at(PID(14)).max_energy == 4450.0);
     }
 
-    SECTION("HistogramFluxLoader detects and parses the MiniBooNE format") {
-        YAML::Node node = YAML::Load("Histogram: flux/miniboone_nu.dat");
-        auto data = achilles::HistogramFluxLoader{}.Load(node);
-        CHECK(data.format == "MiniBooNE");
-        CHECK(data.min_energy == 0.0);
-        CHECK(data.max_energy == 10.0);
+    SECTION("MiniBooNE format yields all four species") {
+        auto data = achilles::HistogramFluxLoader{}.Load(YAML::Load("flux/miniboone_nu.dat"));
+        CHECK(data.size() == 4);
+        CHECK(data.count(PID(14)) == 1);
+        CHECK(data.count(PID(-14)) == 1);
+        CHECK(data.count(PID(12)) == 1);
+        CHECK(data.count(PID(-12)) == 1);
+        CHECK(data.at(PID(14)).format == "MiniBooNE");
     }
 
-    SECTION("HistogramFluxLoader detects and parses the T2K format") {
-        YAML::Node node = YAML::Load("Histogram: flux/T2K_nu.dat");
-        auto data = achilles::HistogramFluxLoader{}.Load(node);
-        CHECK(data.format == "T2K");
-        CHECK(data.min_energy == 0.0);
-        CHECK(data.max_energy == 30.0);
-    }
-}
-
-TEST_CASE("Flux factory dispatch", "[Beams]") {
-    using FluxFactory = achilles::Factory<achilles::FluxType, const YAML::Node &>;
-
-    SECTION("Known flux types self-register") {
-        CHECK(FluxFactory::IsRegistered("Monochromatic"));
-        CHECK(FluxFactory::IsRegistered("Spectrum"));
-        CHECK(FluxFactory::IsRegistered("FlatFlux"));
-        CHECK(FluxFactory::IsRegistered("PDFBeam"));
+    SECTION("T2K text format maps to numu") {
+        auto data = achilles::HistogramFluxLoader{}.Load(YAML::Load("flux/T2K_nu.dat"));
+        REQUIRE(data.size() == 1);
+        CHECK(data.count(PID(14)) == 1);
+        CHECK(data.at(PID(14)).format == "T2K");
+        CHECK(data.at(PID(14)).max_energy == 30.0);
     }
 
-    SECTION("Unknown flux type is not registered") {
-        CHECK_FALSE(FluxFactory::IsRegistered("Nonexistent"));
+    SECTION("CSV format maps columns to PIDs by name") {
+        auto data = achilles::CsvFluxLoader{}.Load(YAML::Load("flux/t2k_flux.csv"));
+        CHECK(data.size() == 4);
+        CHECK(data.count(PID(14)) == 1);
+        CHECK(data.count(PID(-14)) == 1);
+        CHECK(data.count(PID(12)) == 1);
+        CHECK(data.count(PID(-12)) == 1);
     }
 
-    SECTION("Decode dispatches through the factory") {
-        YAML::Node node = YAML::Load("Type: FlatFlux\nMinEnergy: 100\nMaxEnergy: 500");
-        auto flux = node.as<std::shared_ptr<achilles::FluxType>>();
-        REQUIRE(flux != nullptr);
-        CHECK(flux->Type() == "FlatFlux");
-        CHECK(flux->MinEnergy() == 100);
-        CHECK(flux->MaxEnergy() == 500);
-    }
-
-    SECTION("Decode of an unknown flux type throws") {
-        YAML::Node node = YAML::Load("Type: Nonexistent");
-        CHECK_THROWS(node.as<std::shared_ptr<achilles::FluxType>>());
+    SECTION("LoaderForFile dispatches by file extension") {
+        const auto entry = YAML::Load("flux/t2k_flux.csv");
+        auto data = achilles::LoaderForFile(entry)->Load(entry);
+        CHECK(data.size() == 4);
     }
 }
 
-TEST_CASE("Spectrum Beam", "[Beams]") {
-    SECTION("Parse headers") {
-        SECTION("Parse Achilles header") {
-            YAML::Node beam = YAML::Load("Histogram: flux/miniboone.dat");
-            achilles::Spectrum spectrum(beam);
-            CHECK(spectrum.Format() == "Achilles");
-            CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 4450.0);
-        }
-        SECTION("Parse MINVERvA Flux") {
-            YAML::Node beam = YAML::Load("Histogram: flux/minerva_numu_fhc.dat");
-            achilles::Spectrum spectrum(beam);
-            CHECK(spectrum.Format() == "Achilles");
-            CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 100.0);
-        }
-        SECTION("Parse MiniBooNE header") {
-            YAML::Node beam = YAML::Load("Histogram: flux/miniboone_nu.dat");
-            achilles::Spectrum spectrum(beam);
-            CHECK(spectrum.Format() == "MiniBooNE");
-            CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 10.0);
-        }
-        SECTION("Parse T2K header") {
-            YAML::Node beam = YAML::Load("Histogram: flux/T2K_nu.dat");
-            achilles::Spectrum spectrum(beam);
-            CHECK(spectrum.Format() == "T2K");
-            CHECK(spectrum.MinEnergy() == 0.0);
-            CHECK(spectrum.MaxEnergy() == 30.0);
-        }
-    }
-
-    SECTION("Parameters set correctly") {
-        YAML::Node beam = YAML::Load("Histogram: flux/dummy.dat");
-        achilles::Spectrum spectrum(beam);
-
-        CHECK(spectrum.NVariables() == 1);
-        CHECK(spectrum.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
-        std::vector<double> rans(1);
-        CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1.0);
-        CHECK(rans[0] == 0.5);
-    }
+TEST_CASE("SpeciesNameToPID", "[Beams]") {
+    CHECK(achilles::SpeciesNameToPID("numu_flux") == PID(14));
+    CHECK(achilles::SpeciesNameToPID("NuMuBar") == PID(-14));
+    CHECK(achilles::SpeciesNameToPID("nue") == PID(12));
+    CHECK(achilles::SpeciesNameToPID("nuebar_flux") == PID(-12));
+    CHECK_THROWS(achilles::SpeciesNameToPID("proton"));
 }
 
-TEST_CASE("From YAML", "[Beams]") {
-    SECTION("Multiple Monochromatic Beams") {
-        YAML::Node beams = YAML::Load(R"beam(
+TEST_CASE("Spectrum from FluxData", "[Beams]") {
+    auto data = achilles::HistogramFluxLoader{}.Load(YAML::Load("flux/dummy.dat"));
+    achilles::Spectrum spectrum(data.at(PID(14)));
 
-Beams:
-  - Beam:
-      PID: 12
-      Beam Params:
-        Type: Monochromatic
-        Energy: 100
-  - Beam:
-      PID: 13
-      Beam Params:
-        Type: Monochromatic
-        Energy: 100)beam");
+    CHECK(spectrum.NVariables() == 1);
+    CHECK(spectrum.Format() == "Achilles");
+    CHECK(spectrum.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
+    std::vector<double> rans(1);
+    CHECK(spectrum.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1.0);
+    CHECK(rans[0] == 0.5);
+}
 
-        auto beam = beams["Beams"].as<achilles::Beam>();
+TEST_CASE("Beam from YAML", "[Beams]") {
+    SECTION("Monochromatic with multiple species") {
+        auto node = YAML::Load(R"beam(
+Type: Monochromatic
+Energy: 100
+Species: [12, 13]
+)beam");
+        auto beam = node.as<achilles::Beam>();
 
         CHECK(beam.NBeams() == 2);
-        CHECK(beam.BeamIDs() == std::set<achilles::PID>{12, 13});
-        CHECK(beam.at(achilles::PID(12)) == beam[achilles::PID(12)]);
-        CHECK(beam.Flux(achilles::PID(12), {}, 0) == achilles::FourVector(100, 0, 0, 100));
-        CHECK(beam.Flux(achilles::PID(13), {}, 0) == achilles::FourVector(100, 0, 0, 100));
-        std::vector<double> rans;
-        CHECK(beam.GenerateWeight(achilles::PID(12), {}, rans, 0) == 1.0);
-        CHECK(beam.GenerateWeight(achilles::PID(13), {}, rans, 0) == 1.0);
+        CHECK(beam.BeamIDs() == std::set<PID>{PID(12), PID(13)});
+        CHECK(beam.Domain().Min() == 100);
+        CHECK(beam.Domain().Max() == 100);
+        CHECK(beam.Flux(PID(12), {}, 0) == achilles::FourVector(100, 0, 0, 100));
+        CHECK(beam.Flux(PID(13), {}, 0) == achilles::FourVector(100, 0, 0, 100));
     }
 
-    SECTION("Multiple Monochromatic Beams, throw on energy mismatch") {
-        YAML::Node beams = YAML::Load(R"beam(
+    SECTION("Spectrum aggregates single-species files over a shared support") {
+        auto node = YAML::Load(R"beam(
+Type: Spectrum
+Files:
+  - flux/minerva_numu_fhc.dat
+  - flux/minerva_nue_fhc.dat
+)beam");
+        auto beam = node.as<achilles::Beam>();
 
-Beams:
-  - Beam:
-      PID: 12
-      Beam Params:
-        Type: Monochromatic
-        Energy: 100
-  - Beam:
-      PID: 13
-      Beam Params:
-        Type: Monochromatic
-        Energy: 200)beam");
-
-        CHECK_THROWS_WITH(beams["Beams"].as<achilles::Beam>(),
-                          "Beams must have the same minimum energies. Got 100 and 200");
+        CHECK(beam.BeamIDs() == std::set<PID>{PID(14), PID(12)});
+        CHECK(beam.Domain().Min() == 0.0);
+        CHECK(beam.Domain().Max() == 100.0);
     }
 
-    SECTION("Throw on Identical Beams") {
-        YAML::Node beams = YAML::Load(R"beam(
+    SECTION("Spectrum from a single multi-species file") {
+        auto node = YAML::Load(R"beam(
+Type: Spectrum
+Files: [flux/miniboone_nu.dat]
+)beam");
+        auto beam = node.as<achilles::Beam>();
 
-Beams:
-  - Beam:
-      PID: 12
-      Beam Params:
-        Type: Monochromatic
-        Energy: 100
-  - Beam:
-      PID: 12
-      Beam Params:
-        Type: Monochromatic
-        Energy: 100)beam");
+        CHECK(beam.BeamIDs() == std::set<PID>{PID(14), PID(-14), PID(12), PID(-12)});
+    }
 
-        CHECK_THROWS_WITH(beams["Beams"].as<achilles::Beam>(), "Multiple beams exist for PID: 12");
+    SECTION("A multi-species file must be the only file in the beam") {
+        auto node = YAML::Load(R"beam(
+Type: Spectrum
+Files:
+  - flux/t2k_flux.csv
+  - flux/minerva_numu_fhc.dat
+)beam");
+        CHECK_THROWS_WITH(node.as<achilles::Beam>(),
+                          "Beam: a multi-species flux file must be the only file in the beam");
+    }
+
+    SECTION("Duplicate species across files are rejected") {
+        auto node = YAML::Load(R"beam(
+Type: Spectrum
+Files:
+  - flux/minerva_numu_fhc.dat
+  - flux/minerva_numu_rhc.dat
+)beam");
+        CHECK_THROWS_WITH(node.as<achilles::Beam>(), "Multiple beams exist for PID: 14");
+    }
+
+    SECTION("Mismatched energy support is rejected") {
+        auto node = YAML::Load(R"beam(
+Type: Spectrum
+Files:
+  - flux/miniboone.dat
+  - flux/minerva_nue_fhc.dat
+)beam");
+        CHECK_THROWS(node.as<achilles::Beam>());
     }
 }

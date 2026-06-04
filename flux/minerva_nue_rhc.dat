@@ -1,6 +1,7 @@
 Achilles
 MINERvA Flux
 units: v/m^2/POT/500MeV
+species: 12
   lower edge      upper edge   value                    error
   0.0             0.5          1.76190e-08              4.99385e-09  
   0.5             1.0          2.44680e-08              3.51855e-09 

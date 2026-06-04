@@ -21,12 +21,10 @@ Unweighting:
   Name: Percentile
   percentile: 99
 
-Beams:
-  - Beam:
-      PID: -12
-      Beam Params:
-        Type: Monochromatic
-        Energy: 1000
+Beam:
+  Type: Monochromatic
+  Energy: 1000
+  Species: [-12]
 
 Cascade:
   Run: False

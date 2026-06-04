@@ -3,6 +3,11 @@
 
 #include "Achilles/Beams.hh"
 #include "Achilles/ElectronPDF.hh"
+#include "Achilles/FluxLoaders.hh"
+
+#include <map>
+#include <memory>
+#include <vector>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -11,39 +16,48 @@
 
 namespace YAML {
 
-template <> struct convert<std::shared_ptr<achilles::FluxType>> {
-    // FIXME: How to encode a generic flux
-    static Node encode(const std::shared_ptr<achilles::FluxType> &rhs) {
-        Node node;
-        node["Type"] = rhs->Type();
-
-        return node;
-    }
-
-    static bool decode(const Node &node, std::shared_ptr<achilles::FluxType> &rhs) {
-        // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
-        using FluxFactory = achilles::Factory<achilles::FluxType, const YAML::Node &>;
-        const auto type = node["Type"].as<std::string>();
-        if(!FluxFactory::IsRegistered(type)) return false;
-        rhs = FluxFactory::Initialize(type, node);
-        return true;
-    }
-};
-
+// A beam has a single flux Type shared by all of its species (kinds are never
+// mixed). Spectrum draws from one or more files (each file self-describes its
+// species); the analytic kinds list their species explicitly.
 template <> struct convert<achilles::Beam> {
     static bool decode(const Node &node, achilles::Beam &rhs) {
         achilles::Beam::BeamMap beams;
+        const auto type = node["Type"].as<std::string>();
 
-        for(YAML::const_iterator it = node.begin(); it != node.end(); ++it) {
-            YAML::Node beamNode = *it;
-            auto pid = achilles::PID(beamNode["Beam"]["PID"].as<int>());
-            auto beam = beamNode["Beam"]["Beam Params"].as<std::shared_ptr<achilles::FluxType>>();
+        auto add_flux = [&beams](achilles::PID pid, std::shared_ptr<achilles::FluxType> flux) {
             if(beams.find(pid) != beams.end())
                 throw std::logic_error(fmt::format("Multiple beams exist for PID: {}", int(pid)));
-            beams[pid] = beam;
+            beams[pid] = std::move(flux);
+        };
+
+        if(type == "Spectrum") {
+            std::vector<std::map<achilles::PID, achilles::FluxData>> loaded;
+            for(const auto &entry : node["Files"])
+                loaded.push_back(achilles::LoaderForFile(entry)->Load(entry));
+
+            bool multi_species_file = false;
+            for(const auto &file : loaded)
+                if(file.size() > 1) multi_species_file = true;
+            if(multi_species_file && loaded.size() > 1)
+                throw std::logic_error(
+                    "Beam: a multi-species flux file must be the only file in the beam");
+
+            for(const auto &file : loaded)
+                for(const auto &flux : file)
+                    add_flux(flux.first, std::make_shared<achilles::Spectrum>(flux.second));
+        } else if(type == "Monochromatic") {
+            auto flux = std::make_shared<achilles::Monochromatic>(node["Energy"].as<double>());
+            for(const auto &s : node["Species"]) add_flux(achilles::PID(s.as<int>()), flux);
+        } else if(type == "FlatFlux") {
+            auto flux = std::make_shared<achilles::FlatFlux>(node);
+            for(const auto &s : node["Species"]) add_flux(achilles::PID(s.as<int>()), flux);
+        } else {
+            throw std::logic_error(fmt::format("Beam: unknown flux Type '{}'", type));
         }
 
-        rhs = achilles::Beam(beams);
+        if(beams.empty()) throw std::logic_error("Beam: no species defined");
+
+        rhs = achilles::Beam(std::move(beams));
         return true;
     }
 };
