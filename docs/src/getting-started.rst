@@ -58,7 +58,7 @@ The interface and current limitations are described in detail in :cite:`Isaacson
 Additional details on the interface can be found in the :ref:`Sherpa Interface <sherpa-interface>` section.
 Details on enabling the interface and options for finding the Sherpa installation can be found in :ref:`Build Options`.
 
-To build Achilles with the default options can be accomplished with the standard CMake pipeline, assuming you are in the Achilles root directory:
+Building Achilles with the default options can be accomplished with the standard CMake pipeline, assuming you are in the Achilles root directory:
 
 .. code-block:: shell-session
 
@@ -108,7 +108,7 @@ Sherpa
 
 `Sherpa`_ is required for studying Beyond the Standard Model (BSM) processes or tau lepton decays.
 A custom version of Sherpa with UFO support is needed; contact the Achilles authors for details on
-obtaining it. To use Sherpa, build it with the ``--enable-ufo`` configure flag and then enable
+obtaining it. To use Sherpa, build it with the ``-DSHERPA_ENABLE_UFO`` configure flag and then enable
 the interface in Achilles with:
 
 .. code-block:: shell-session
@@ -208,6 +208,8 @@ In which the ``<run_card>`` is the desired `YAML <https://yaml.org/>`_ configura
     | ``-v`` / ``-vv``         | Increase verbosity level       | 
     +--------------------------+--------------------------------+
     | ``-l`` / ``-ll``         | Increase log verbosity level   |
+    +--------------------------+--------------------------------+
+    | ``-b``                   | Batch Mode (log-friendly)      |
     +--------------------------+--------------------------------+
     | ``--logfile``            | File to write log info to.     |
     |                          | Defaults to ``achilles.log``   |
