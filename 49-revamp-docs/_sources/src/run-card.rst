@@ -4,8 +4,8 @@
 Run Card Structure
 ##################
 
-An Achilles setup is steered by a various set of options. These options enable the user to run Achilles
-in a various ways to study the different physics choices in the code.
+An Achilles simulation is steered by a set of options. These options enable the user to run Achilles
+in various ways to study the different physics choices in the code.
 
 The options have to be specified in a run card which by default is named ``run.yml`` residing in the current
 working directory. If you want to use a different run card, it can be passed into the Achilles executable
@@ -34,9 +34,9 @@ custom ``!include`` tag:
 
    SomeKey: !include "path/to/file.yml"
 
-When Achilles loads the run card it replaces every ``!include`` scalar with the full parsed
+When Achilles loads the run card it replaces every ``!include`` scalar with the fully parsed
 contents of the referenced file. The path is resolved relative to the Achilles data search
-path (the ``Settings`` directory); absolute paths are also accepted. Included files are
+paths (first in the current working directory, then the environment variable ``ACHILLES_PATH``, and finally the install location); absolute paths are also accepted. Included files are
 processed recursively, so an included file may itself contain further ``!include`` tags.
 
 The ``!include`` tag is particularly useful for sharing nucleus definitions, cascade
@@ -65,10 +65,10 @@ The first section in the run card is the ``Main`` section. This section contains
 * ``HardCuts`` (boolean): Flag to turn on / off cuts at the hard scattering level
 * ``EventCuts`` (boolean): :yellow:`[deprecated]` Handles cuts to be applied after all simulation steps
 * ``RunDecays`` (boolean): Decay particles that are unstable longer than the typical cascade time scale,
-  such as tau leptons
+  such as tau leptons (requires Sherpa to be linked)
 * ``Output`` (YAML Node): Parameters determining how events are written out to file
     * ``Format`` (string): Format of file to be written out. Current supported options are:
-      ``NuHepMC``, ``HepMC`` (:yellow:`[deprecated]`), and ``Achilles``.
+      ``NuHepMC`` (default), ``HepMC`` (:yellow:`[deprecated]`), and ``Achilles``.
     * ``Name`` (string): File path from the current working directory to write the events out to
     * ``Zipped`` (boolean): Flag to determine if the output should be written compressed using the
       gzip library or not.
@@ -267,10 +267,10 @@ hadronic final-state particles through the nucleus after the hard interaction.
        increase accuracy at the cost of computation time. Default: ``0.04``.
    * - ``Probability``
      - Model used to compute the interaction probability at each step. Accepted
-       values: ``Cylinder``, ``Gaussian``, ``Pion``.
+       values: ``Cylinder``, ``Gaussian``.
    * - ``InMedium``
      - In-medium correction applied to particle kinematics during propagation.
-       Accepted values: ``None``, ``NonRelativistic``, ``Relativistic``.
+       Accepted values: ``None``, ``NonRelativistic``.
    * - ``PotentialProp``
      - Boolean. When ``true``, the nuclear potential is used to modify particle
        trajectories during propagation.
@@ -303,11 +303,11 @@ Nucleon–nucleon rescattering.
    * - Option
      - Description
    * - ``Mode``
-     - Cross-section parametrisation. Currently ``GiBUU`` is supported.
+     - Cross-section parametrisation. Currently only ``GiBUU`` is supported.
    * - ``ResonanceMode``
      - Treatment of resonances produced during NN scattering. ``Decay`` causes
        resonances to decay immediately; ``Propagate`` propagates them through the
-       cascade.
+       cascade and decays probabilistically according to the particle lifetime.
    * - ``ExpSup``
      - Exponential suppression factor. Set to ``0.0`` to disable.
 
@@ -330,9 +330,9 @@ Delta resonance interactions (used together with ``ResonanceMode: Propagate``).
    * - Option
      - Description
    * - ``Mode``
-     - Cross-section parametrisation. Currently ``GiBUU`` is supported.
+     - Cross-section parametrisation. Currently only ``GiBUU`` is supported.
    * - ``SWaveAbsorption``
-     - Boolean. Enable s-wave pion absorption via the Delta.
+     - Boolean. Enable s-wave pion absorption via the Delta using the Oset model.
    * - ``ExpSup``
      - Exponential suppression factor. Set to ``0.0`` to disable.
 
@@ -353,7 +353,7 @@ Pion rescattering and absorption.
 
 **ConstantInteraction**
 
-Assigns a fixed cross section to specified two-body initial states. Used to give
+Assigns a fixed cross section to specified two-body initial states. For example, can be used to give
 zero-cross-section placeholders to hyperon and photon channels:
 
 .. code-block:: yaml
@@ -379,14 +379,14 @@ models can be run simultaneously within a single job.
 
 Each entry begins with a ``NuclearModel:`` key whose sub-node contains at minimum a
 ``Model`` field identifying the model type, along with model-specific options described
-below.
+below. The full list of available models loaded into Achilles can be displayed by running
+with the option ``--display-nuc-models``.
 
 .. code-block:: yaml
 
    NuclearModels:
      - NuclearModel:
          Model: QESpectral
-         ConfigFile: data/info_C12_pke.data
          SpectralP: data/Spectral_Functions/pke12p_tot.data
          SpectralN: data/Spectral_Functions/pke12n_tot.data
          FormFactorFile: "FormFactors.yml"
@@ -429,7 +429,6 @@ Quasi-elastic scattering computed with a nucleon spectral function.
 
    NuclearModel:
      Model: QESpectral
-     ConfigFile: data/info_C12_pke.data
      SpectralP: data/Spectral_Functions/pke12p_tot.data
      SpectralN: data/Spectral_Functions/pke12n_tot.data
      FormFactorFile: "FormFactors.yml"
@@ -441,8 +440,6 @@ Quasi-elastic scattering computed with a nucleon spectral function.
 
    * - Key
      - Description
-   * - ``ConfigFile``
-     - Path to the nuclear configuration data file.
    * - ``SpectralP``
      - Path to the proton spectral function data file.
    * - ``SpectralN``
@@ -458,7 +455,6 @@ are identical to ``QESpectral``:
 
    NuclearModel:
      Model: HyperonSpectral
-     ConfigFile: data/info_pke.data
      SpectralP: data/pke12_tot.data
      SpectralN: data/pke12_tot.data
      FormFactorFile: "FormFactors.yml"
@@ -663,6 +659,8 @@ in `Main Settings`_. Each entry in the list specifies one cut:
    * - ``range``
      - Two-element list ``[min, max]`` giving the allowed range for the cut variable.
 
+For a list of all implemented cuts, a user can run Achilles with the option ``--display-cuts``.
+
 *******
 Options
 *******
@@ -696,7 +694,7 @@ The full inline form is:
      - Description
    * - ``Seed``
      - Integer seed for the random number generator. Use different seeds to obtain
-       statistically independent runs.
+       statistically independent runs. Setting to -1 results in using a different seed each run.
    * - ``Accuracy``
      - Target relative integration accuracy for the adaptive Monte Carlo integration.
        Smaller values require more function evaluations.
@@ -710,9 +708,11 @@ The full inline form is:
    * - Key
      - Description
    * - ``Name``
-     - Unweighting algorithm. ``Percentile`` determines the maximum weight from a
+     - Unweighting algorithm. ``Percentile`` (default) determines the maximum weight from a
        high percentile of the weight distribution, reducing the impact of rare
-       large-weight events.
+       large-weight events. In this mode, Achilles returns partially unwighted events.
+       Another option is ``NoUnweigheter`` set using option ``None``, which
+       make Achilles return fully weighted events.
    * - ``percentile``
      - Percentile (0–100) used to set the maximum weight when ``Name`` is
        ``Percentile``. A value of ``99`` discards the top 1% of weights.
@@ -769,7 +769,8 @@ The inline form is:
    * - Key
      - Description
    * - ``Model``
-     - Sherpa model identifier. ``SMnu`` is the Standard Model with massive neutrinos.
+     - Sherpa model identifier. ``SMnu`` is the Standard Model setup with nucleons to not mess
+       with the default Standard Model setup used in collider physics within Sherpa.
        Custom UFO models are also supported; see the
        :ref:`Sherpa interface <sherpa-interface>` documentation.
    * - ``ParamCard``
