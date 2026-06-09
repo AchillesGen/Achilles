@@ -171,8 +171,8 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     auto multiplicity = process_info.FinalStateMultiplicity();
     if(multiplicity > 3) {
         const std::string error =
-            fmt::format("Leptonic Tensor can only handle n->2 and n->3 processes without "
-                        "BSM being enabled. "
+            fmt::format("Leptonic Tensor can only handle n->2 and n->3 processes. "
+                        "Use the SherpaLeptonic or SherpaFull backend for higher multiplicities. "
                         "Got a n->{} process",
                         multiplicity);
         throw std::runtime_error(error);
@@ -190,9 +190,9 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-achilles::BSMBackend::BSMBackend() {}
+achilles::SherpaLeptonicBackend::SherpaLeptonicBackend() {}
 
-void achilles::BSMBackend::AddProcess(Process &process) {
+void achilles::SherpaLeptonicBackend::AddProcess(Process &process) {
     auto &process_info = process.Info();
     spdlog::debug("Initializing leptonic currents");
     if(!p_sherpa->InitializeProcess(process_info)) {
@@ -202,7 +202,8 @@ void achilles::BSMBackend::AddProcess(Process &process) {
     process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
-double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &process) const {
+double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
+                                                     const Process &process) const {
     auto event = event_in;
     m_model->TransformFrame(event, process, true);
 
@@ -261,8 +262,9 @@ double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
-achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<FourVector> &p,
-                                                            const ProcessInfo &info) const {
+achilles::Currents
+achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const std::vector<FourVector> &p,
+                                                    const ProcessInfo &info) const {
     spdlog::trace("Converting momenta to Sherpa format");
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
@@ -294,9 +296,9 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
     return currents;
 }
 
-void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
-                                         std::shared_ptr<Beam> beam,
-                                         Integrand<FourVector> &integrand, PID nuc_id) {
+void achilles::SherpaLeptonicBackend::SetupChannels(const ProcessInfo &process_info,
+                                                    std::shared_ptr<Beam> beam,
+                                                    Integrand<FourVector> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
@@ -308,7 +310,7 @@ void achilles::BSMBackend::SetupChannels(const ProcessInfo &process_info,
     }
 }
 
-void achilles::BSMBackend::SetOptions(const YAML::Node &options) {
+void achilles::SherpaLeptonicBackend::SetOptions(const YAML::Node &options) {
     auto config = YAML::LoadFile(options["FormFactorFile"].as<std::string>());
     const auto vectorFF = config["vector"].as<std::string>();
     const auto axialFF = config["axial"].as<std::string>();
@@ -321,9 +323,9 @@ void achilles::BSMBackend::SetOptions(const YAML::Node &options) {
     FormFactorInterface::SetFormFactor(std::move(ff));
 }
 
-achilles::SherpaBackend::SherpaBackend() {}
+achilles::SherpaFullBackend::SherpaFullBackend() {}
 
-void achilles::SherpaBackend::AddProcess(Process &process) {
+void achilles::SherpaFullBackend::AddProcess(Process &process) {
     auto &process_info = process.Info();
     spdlog::debug("Initializing leptonic currents");
     if(!p_sherpa->InitializeProcess(process_info)) {
@@ -333,7 +335,7 @@ void achilles::SherpaBackend::AddProcess(Process &process) {
     process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
-double achilles::SherpaBackend::CrossSection(const Event &event, const Process &process) const {
+double achilles::SherpaFullBackend::CrossSection(const Event &event, const Process &process) const {
     auto p = event.Momentum();
     auto info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
@@ -373,9 +375,9 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     return amps2 * flux * initial_wgt * event.Weight();
 }
 
-void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
-                                            std::shared_ptr<Beam> beam,
-                                            Integrand<FourVector> &integrand, PID nuc_id) {
+void achilles::SherpaFullBackend::SetupChannels(const ProcessInfo &process_info,
+                                                std::shared_ptr<Beam> beam,
+                                                Integrand<FourVector> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
@@ -387,7 +389,7 @@ void achilles::SherpaBackend::SetupChannels(const ProcessInfo &process_info,
     }
 }
 
-void achilles::SherpaBackend::SetOptions(const YAML::Node &options) {
+void achilles::SherpaFullBackend::SetOptions(const YAML::Node &options) {
     const auto filenameFF = options["FormFactorFile"].as<std::string>();
     auto config = YAML::LoadFile(Filesystem::FindFile(filenameFF, "SherpaBackend"));
     const auto vectorFF = config["vector"].as<std::string>();
