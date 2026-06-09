@@ -48,8 +48,7 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
                                        const std::vector<Particle> &p_in,
                                        const std::vector<Particle> &p_spect) const {
-    auto initial_wgt = m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
-    return initial_wgt;
+    return m_model->InitialStateWeight(p_in, p_spect, nprotons, nneutrons);
 }
 
 achilles::DefaultBackend::DefaultBackend() {}

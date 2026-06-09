@@ -247,7 +247,7 @@ class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic
     size_t NSpins() const override { return 4; }
     std::string GetName() const override { return DeepInelastic::Name(); }
     std::string InspireHEP() const override { return ""; }
-    std::string PSName() const override { return "OneBodySpectral"; } //TODO find out what this means
+    std::string PSName() const override { return "DISNucleus"; }
 
     std::string PhaseSpace(PID) const override;
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
@@ -261,10 +261,6 @@ class DeepInelastic : public NuclearModel, RegistrableNuclearModel<DeepInelastic
     static std::string Name() { return "DeepInelastic"; }
 
   private:
-    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
-                            const FourVector &, const FormFactorMap &) const;
-
-    const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
     mutable bool is_hydrogen{false};
