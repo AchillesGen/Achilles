@@ -44,6 +44,7 @@ decay 	23      2.4952                # WZ
 decay 	24      2.085                 # WW
 decay 	6       1.50833649            # WT
 decay 	25      0.00407               # WH
+decay   15      2.27e-12              # WTA
 decay 	9000005 5.e-12 # WZD
 decay 	9000006 4.630139622813411e-06 # WvD
 
