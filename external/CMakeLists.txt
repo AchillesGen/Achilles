@@ -50,6 +50,11 @@ CPMAddPackage(
           "NuHepMC_CPPUtils_PYTHON_ENABLED OFF"
           "NuHepMC_CPPUtils_PROTOBUF_INTERFACE OFF"
 )
+# cpputils hardcodes -Werror, and the HepMC3 headers it bundles trigger
+# warnings on newer compilers; demote those back to warnings.
+if(TARGET nuhepmc_private_compile_options)
+    target_compile_options(nuhepmc_private_compile_options INTERFACE -Wno-error)
+endif()
 
 CPMAddPackage(
     NAME HighFive
