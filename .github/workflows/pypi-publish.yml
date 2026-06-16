@@ -38,6 +38,9 @@ jobs:
         with:
           persist-credentials: false
 
+      # The build[uv] frontend needs uv on PATH
+      - uses: astral-sh/setup-uv@v6
+
       # Pick a deterministic ccache dir on macOS so it matches what we cache.
       - name: Configure ccache dir (macOS)
         if: runner.os == 'macOS'
