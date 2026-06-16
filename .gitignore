@@ -38,3 +38,4 @@ coverage.info
 install*
 doc-pm/
 Doxyfile
+.achilles
