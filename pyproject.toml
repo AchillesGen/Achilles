@@ -6,6 +6,9 @@ build-backend = "scikit_build_core.build"
 name = "Achilles"
 version = "0.3.0"
 requires-python = ">=3.10"
+readme = "README.md"
+license = "GPL-v3"
+license-files = ["LICENSE.md"]
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0", "pyyaml"]
@@ -17,3 +20,9 @@ achilles-mcp = "Achilles.mcp_server.server:main"
 cmake.args = ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "-DACHILLES_ENABLE_PYTHON=ON"]
 cmake.source-dir = "."
 sdist.include = ["data/**", "flux/**"]
+
+[tool.cibuildwheel]
+test-groups = ["test"]
+test-command = "pytest {project}/tests"
+build-frontend = "build[uv]"
+build-verbosity = 1
