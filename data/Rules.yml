@@ -61,3 +61,26 @@ Rules:
     Optional: True
     Min: 0.0
     Max: 2.0
+
+  - Type: RangeConstraint
+    Description: Integration accuracy must be between 0 and 1.
+    ErrorMessage: "Integration accuracy must be between 0 and 1."
+    Path: Options/Integrator/MultiChannel/Accuracy
+    Optional: True
+    Min: 0.0
+    Max: 1.0
+
+  - Type: RangeConstraint
+    Description: The integrator sampling batch size must be at least 1.
+    ErrorMessage: "The integrator batch size must be at least 1."
+    Path: Options/Integrator/BatchSize
+    Optional: True
+    Min: 1
+
+  - Type: RangeConstraint
+    Description: Unweighting percentile must be between 0 and 100.
+    ErrorMessage: "Unweighting percentile must be between 0 and 100."
+    Path: Options/Unweighting/percentile
+    Optional: True
+    Min: 0.0
+    Max: 100.0

@@ -1,6 +1,32 @@
 Initialize:
   Seed: 12345678
-  Accuracy: 1e-2
+
+# Integrator backend. Type selects MultiChannel (Vegas-based, default) or Flow
+# (normalizing flow; requires building with ACHILLES_ENABLE_PYTHON and `pip install
+# achilles[flow]`). BatchSize is a performance-only knob shared by both backends.
+Integrator:
+  Type: MultiChannel
+  BatchSize: 1024
+  MultiChannel:
+    Accuracy: 1e-2
+  # Flow:
+  #   File: ""             # optional path to a user .py file defining the flow class
+  #   Class: NormFlow      # built-in: NormFlow (coupling), ZukoFlow (CNF/coupling),
+  #                        #           FlowMatchingFlow, UniformFlow, OnnxFlow
+  #   Epochs: 1000         # maximum training iterations
+  #   NIterations: 7       # minimum training iterations
+  #   NCalls: 10000        # samples per training iteration
+  #   Accuracy: 1.0e-2     # target relative error
+  #   WeightsPath: achilles_flow.weights   # where trained weights are cached
+  #   # Any other keys are forwarded to the flow constructor as kwargs. Benchmark axes:
+  #   channel_select: learned   # learned (small categorical) | uniform (reuse the
+  #                             #   analytic multichannel selection)
+  #   conditional: false        # false: one flow per channel; true: one flow
+  #                             #   conditioned on the channel (ZukoFlow/FlowMatchingFlow)
+  #   hidden: 64           # hidden units
+  #   lr: 1.0e-3           # Adam learning rate
+  #   blocks: 4            # coupling blocks (NormFlow)
+  #   flow: CNF            # zuko.flows class (ZukoFlow)
 
 Unweighting:
   Name: Percentile

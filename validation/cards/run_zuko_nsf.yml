@@ -1,0 +1,75 @@
+Main:
+  NEvents: 1000
+  HardCuts: true
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: validation/out/zuko_nsf.hepmc
+      Zipped: True
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [11, [11]]
+
+Beams:
+  - Beam:
+      PID: 11
+      Beam Params:
+        Type: Monochromatic
+        Energy: 1108
+
+Cascade:
+  Run: False
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+- NuclearModel:
+   Model: QESpectral
+   ConfigFile: data/info_C12_pke.data
+   SpectralP: data/Spectral_Functions/pke12p_tot.data
+   SpectralN: data/Spectral_Functions/pke12n_tot.data
+   FormFactorFile: "FormFactors.yml"
+   Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 11
+    range: [36.5, 38.5]
+
+Options:
+  Initialize:
+    Seed: 123456
+  Integrator:
+    BatchSize: 1024
+    Type: Flow
+    Flow:
+      Class: ZukoFlow
+      flow: NSF
+      hidden: 32
+      transforms: 3
+      Epochs: 300
+      NIterations: 20
+      NCalls: 10000
+  Unweighting:
+    Name: Percentile
+    percentile: 99
+
+Backend:
+  Name: Default
+  Options: []
+
+# Each validation run computes from scratch (no cross-run cache reuse).
+Cache:
+  Load: false
+  Save: false

@@ -11,6 +11,8 @@ add_library(utilities SHARED
     Vegas.cc
     AdaptiveMap.cc
     Multichannel.cc
+    Integrator.cc
+    FlowIntegrator.cc
     Histogram.cc
     MomSolver.cc
     Autodiff.cc
@@ -34,6 +36,18 @@ target_link_libraries(utilities PUBLIC autodiff::autodiff)
 endif()
 if(ACHILLES_EVENT_DETAILS)
 target_compile_definitions(utilities PUBLIC ACHILLES_EVENT_DETAILS)
+endif()
+if(ACHILLES_ENABLE_PYTHON)
+# The Flow integrator backend drives a Python flow object via pybind11. Compiling
+# PyFlowSampler here keeps the MakeFlowIntegrator factory in the same library as the
+# Integrator factory that calls it.
+target_sources(utilities PRIVATE PyFlowSampler.cc)
+target_compile_definitions(utilities PUBLIC ACHILLES_ENABLE_PYTHON)
+target_link_libraries(utilities PUBLIC pybind11::embed)
+# pybind11 types carry hidden visibility; holding a py::object in a default-visibility
+# class trips -Wattributes, which the project promotes to an error. Silence it just for
+# this pybind glue file.
+set_source_files_properties(PyFlowSampler.cc PROPERTIES COMPILE_OPTIONS "-Wno-attributes")
 endif()
 list(APPEND achilles_targets utilities)
 

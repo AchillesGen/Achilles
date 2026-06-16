@@ -51,8 +51,6 @@ class EventGen {
     std::vector<ProcessGroup> process_groups;
     CutCollection hard_cuts{};
     // CutCollection event_cuts{};
-    MultiChannel integrator;
-    Integrand<FourVector> integrand;
     Settings config;
     std::vector<double> m_group_weights{};
     double m_max_weight{};

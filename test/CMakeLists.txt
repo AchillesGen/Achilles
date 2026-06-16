@@ -28,6 +28,7 @@ add_executable(achilles-testsuite
     test_stats.cc
     test_vegas.cc
     test_multichannel.cc
+    test_flow_integrator.cc
     # TODO: Rewrite tests for serializing the integrand results
     # test_integrand.cc
     test_spectral.cc

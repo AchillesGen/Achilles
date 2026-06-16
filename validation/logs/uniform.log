@@ -1,0 +1,53 @@
+[info] Achilles git information
+[info]     Commit: e76b2df060fb76ccf87fece1327135bb49fb024b
+[info]     Branch: normflows
+[info]     Local Changes: Yes
+[info] Start Time: Wed Jun 10 13:38:19 2026
+
+[info] Nucleus: parsing nuclear name '12C', expecting a density with A=12 total nucleons and Z=6 protons.
+[info] Found Process: ProcessInfo([11, 2112] -> [11, 2112])
+[info] Found Process: ProcessInfo([11, 2212] -> [11, 2212])
+[info] Apply hard cuts? true
+[info] Starting optimization runs
+[info] Calculating maximum weight
+[info] Process xsec: 18.182843806682076 
+[info] Process xsec: 66.86251478987894 
+[info] Total xsec: 85.04535859656139 +/- 7.22192459628325 (8.491850367217161%)
+[info] Process weights: 65.9935994545978, 217.40955012162112 / 283.40314957621894
+[info] Group weights: 283.40314957621894 / 283.40314957621894
+[info] Group weights: 1
+[info] Finished optimization
+[info] Generated 0 / 1000 events
+[info] Generated 1 / 1000 events
+[info] Generated 2 / 1000 events
+[info] Generated 3 / 1000 events
+[info] Generated 4 / 1000 events
+[info] Generated 5 / 1000 events
+[info] Generated 6 / 1000 events
+[info] Generated 7 / 1000 events
+[info] Generated 8 / 1000 events
+[info] Generated 9 / 1000 events
+[info] Generated 10 / 1000 events
+[info] Generated 20 / 1000 events
+[info] Generated 30 / 1000 events
+[info] Generated 40 / 1000 events
+[info] Generated 50 / 1000 events
+[info] Generated 60 / 1000 events
+[info] Generated 70 / 1000 events
+[info] Generated 80 / 1000 events
+[info] Generated 90 / 1000 events
+[info] Generated 100 / 1000 events
+[info] Generated 200 / 1000 events
+[info] Generated 300 / 1000 events
+[info] Generated 400 / 1000 events
+[info] Generated 500 / 1000 events
+[info] Generated 600 / 1000 events
+[info] Generated 700 / 1000 events
+[info] Generated 800 / 1000 events
+[info] Generated 900 / 1000 events
+[info] Generated 1000 / 1000 events
+[info] Event Run Concluded - Success!
+[info] Records of this run can be found in "/home/isaacson/Documents/Projects/NeutrinoGenerator/Achilles/138-feature-pip-installable/validation/logs/uniform.log"
+[info] End Time: Wed Jun 10 13:38:26 2026
+
+[info] Run Duration: 7s
