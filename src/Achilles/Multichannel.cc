@@ -150,6 +150,7 @@ void achilles::MultiChannel::PrintIteration() const {
 void achilles::MultiChannel::SaveState(std::ostream &os) const {
     const auto default_precision{os.precision()};
     os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);
+    os << static_cast<int>(IntegratorType::MultiChannel) << " ";
     os << ndims << " ";
     achilles::SaveState(os, params);
     os << " ";
@@ -161,7 +162,14 @@ void achilles::MultiChannel::SaveState(std::ostream &os) const {
     os << std::setprecision(static_cast<int>(default_precision));
 }
 
-void achilles::MultiChannel::LoadState(std::istream &is) {
+bool achilles::MultiChannel::LoadState(std::istream &is) {
+    // A missing cache, or one written by a different integrator backend, is not an
+    // error: leave this integrator empty so it reports NeedsOptimization() and gets
+    // optimized from scratch. Do not consume the rest of the stream in that case.
+    int tag;
+    if(!(is >> tag)) return false;
+    if(tag != static_cast<int>(IntegratorType::MultiChannel)) return false;
+
     is >> ndims;
     achilles::LoadState(is, params);
     achilles::LoadState(is, summary);
@@ -180,9 +188,36 @@ void achilles::MultiChannel::LoadState(std::istream &is) {
         best_weights[i] = wgt;
     }
     is >> min_diff;
+    return true;
 }
 
 bool achilles::MultiChannel::operator==(const MultiChannel &rhs) const {
     return ndims == rhs.ndims && params == rhs.params && channel_weights == rhs.channel_weights &&
            best_weights == rhs.best_weights && min_diff == rhs.min_diff && summary == rhs.summary;
+}
+
+// Integrator interface: forward to the templated cores instantiated on FourVector.
+void achilles::MultiChannel::operator()(Integrand<FourVector> &func) {
+    this->operator()<FourVector>(func);
+}
+
+void achilles::MultiChannel::Optimize(Integrand<FourVector> &func) {
+    this->Optimize<FourVector>(func);
+}
+
+std::vector<std::vector<achilles::FourVector>>
+achilles::MultiChannel::GeneratePoints(Integrand<FourVector> &func, size_t n) {
+    std::vector<std::vector<FourVector>> points;
+    points.reserve(n);
+    for(size_t i = 0; i < n; ++i) points.push_back(GeneratePoint<FourVector>(func));
+    return points;
+}
+
+std::vector<double>
+achilles::MultiChannel::GenerateWeights(Integrand<FourVector> &func,
+                                        const std::vector<std::vector<FourVector>> &points) {
+    std::vector<double> weights;
+    weights.reserve(points.size());
+    for(const auto &point : points) weights.push_back(GenerateWeight<FourVector>(func, point));
+    return weights;
 }

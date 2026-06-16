@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Achilles/CombinedCuts.hh"
+#include "Achilles/Integrator.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -9,7 +10,9 @@
 #include "Achilles/XSecBackend.hh"
 #include "fmt/base.h"
 
+#include <memory>
 #include <optional>
+#include <utility>
 
 #if __has_include(<filesystem>)
 #include <filesystem>
@@ -147,9 +150,19 @@ class ProcessGroup {
 
     // Numerical components
     bool NeedsOptimization() const;
-    MultiChannel m_integrator;
+    // Determines the per-process maximum weights (and cross sections) used for
+    // unweighting. The unbiased sampling itself is done by Integrator::SampleForMaxWeight.
+    void CalculateMaxWeight();
+    static constexpr size_t max_weight_samples = 300000;
+    std::unique_ptr<Integrator> m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;
+
+    // Buffer of pre-sampled (phase-space point, weight) pairs. Event generation pulls
+    // one per event and refills with a single batched integrator call (of the
+    // integrator's BatchSize()) when empty, so a normalizing-flow backend can sample a
+    // whole batch per forward pass.
+    std::vector<std::pair<std::vector<FourVector>, double>> m_sample_buffer;
 
     // Parameters
     std::vector<double> m_process_weights;

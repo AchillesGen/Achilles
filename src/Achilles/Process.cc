@@ -13,6 +13,8 @@
 
 #include "fmt/ranges.h"
 
+#include <algorithm>
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -357,26 +359,15 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
         m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
-    UnitsEnum display_unit = UnitsEnum::nb;
-    if(config.Exists("Main/DisplayUnit")) {
-        display_unit = ToUnitEnum(config.GetAs<std::string>("Main/DisplayUnit"));
-    }
-
-    MultiChannelParams multichannel_params;
-    if(config.Exists("Options/Initialize/Parameters"))
-        multichannel_params = config.GetAs<MultiChannelParams>("Options/Initialize/Parameters");
-    m_integrator = MultiChannel(m_integrand.NDims(), m_integrand.NChannels(), multichannel_params,
-                                display_unit);
-    if(config.Exists("Options/Initialize/Accuracy"))
-        m_integrator.Parameters().rtol = config.GetAs<double>("Options/Initialize/Accuracy");
+    m_integrator = MakeIntegrator(config, m_integrand.NDims(), m_integrand.NChannels());
 
     return true;
 }
 
 bool ProcessGroup::NeedsOptimization() const {
-    if(!m_integrator.HasResults()) return true;
-    double rel_err = m_integrator.LastResult().RelError();
-    return m_integrator.NeedsOptimization(rel_err);
+    if(!m_integrator->HasResults()) return true;
+    double rel_err = m_integrator->LastResult().RelError();
+    return m_integrator->NeedsOptimization(rel_err);
 }
 
 void ProcessGroup::Optimize() {
@@ -387,54 +378,82 @@ void ProcessGroup::Optimize() {
         return SingleEvent(mom, wgt).Weight();
     };
     m_integrand.Function() = func;
-    if(NeedsOptimization()) {
+    // A pre-trained / inference-only integrator has nothing to optimize, so skip straight
+    // to the maximum-weight calculation below.
+    if(m_integrator->RequiresTraining() && NeedsOptimization()) {
         spdlog::info(
             "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
             m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
             m_processes[0].Info().Multiplicity());
-        m_integrator.Optimize(m_integrand);
+        m_integrator->Optimize(m_integrand);
     }
 
     // Ensure that the integrator does not save these results into the summary
-    m_integrator.UpdateSummary(false);
-    if(m_maxweight == 0) {
-        spdlog::info("Calculating maximum weight");
-        b_calc_weights = true;
-        m_integrator.Parameters().ncalls = 100000;
-        for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
-        b_calc_weights = false;
-
-        std::ofstream outFile("Results.txt");
-
-        // Store max weight and weight vector
-        m_process_weights.resize(m_processes.size());
-        for(size_t i = 0; i < m_processes.size(); ++i) {
-            m_process_weights[i] = m_processes[i].MaxWeight();
-            m_maxweight += m_process_weights[i];
-            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
-            outFile << m_processes[i].TotalCrossSection() << "\n";
-        }
-
-        outFile.close();
-    } else {
-        for(size_t i = 0; i < m_processes.size(); ++i) {
-            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
-        }
-    }
+    m_integrator->UpdateSummary(false);
+    CalculateMaxWeight();
     b_optimize = false;
     spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
+
+    // Any pre-sampled points are stale once the sampler has been (re)optimized, since the
+    // weights they were drawn under have changed. Discard them so generation refills from
+    // the final distribution.
+    m_sample_buffer.clear();
+}
+
+void ProcessGroup::CalculateMaxWeight() {
+    // If the maximum weight was restored from cache there is nothing to recompute; just
+    // report the cross sections.
+    if(m_maxweight != 0) {
+        for(const auto &process : m_processes)
+            spdlog::info("Process xsec: {} ", process.TotalCrossSection());
+        return;
+    }
+
+    spdlog::info("Calculating maximum weight");
+    // The integrator draws the unbiased samples (no adaptation); the per-sample evaluation
+    // inside SampleForMaxWeight feeds the process-weight and cross-section accounting here.
+    b_calc_weights = true;
+    m_integrator->SampleForMaxWeight(m_integrand, max_weight_samples);
+    b_calc_weights = false;
+
+    std::ofstream outFile("Results.txt");
+
+    // Store max weight and weight vector
+    m_process_weights.resize(m_processes.size());
+    for(size_t i = 0; i < m_processes.size(); ++i) {
+        m_process_weights[i] = m_processes[i].MaxWeight();
+        m_maxweight += m_process_weights[i];
+        spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
+        outFile << m_processes[i].TotalCrossSection() << "\n";
+    }
+
+    outFile.close();
 }
 
 void ProcessGroup::Summary() const {}
 
 achilles::Event ProcessGroup::GenerateEvent() {
-    const auto mom = m_integrator.GeneratePoint(m_integrand);
-    const auto ps_wgt = m_integrator.GenerateWeight(m_integrand, mom);
-    return SingleEvent(mom, ps_wgt);
+    // Refill the sample buffer with a single batched call when empty. The buffer holds
+    // points drawn under the integrator's current (post-optimization, fixed) sampling
+    // distribution; Optimize() clears it whenever the weights change. Because the
+    // weights are fixed during generation the points are iid, so the batch size is a
+    // pure performance knob (it lets a flow backend sample a whole batch per forward
+    // pass) and does not affect the statistics.
+    if(m_sample_buffer.empty()) {
+        const size_t n = m_integrator->BatchSize();
+        auto points = m_integrator->GeneratePoints(m_integrand, n);
+        auto weights = m_integrator->GenerateWeights(m_integrand, points);
+        m_sample_buffer.reserve(points.size());
+        for(size_t i = 0; i < points.size(); ++i)
+            m_sample_buffer.emplace_back(std::move(points[i]), weights[i]);
+    }
+    auto sample = std::move(m_sample_buffer.back());
+    m_sample_buffer.pop_back();
+    return SingleEvent(sample.first, sample.second);
 }
 
 achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
@@ -499,7 +518,7 @@ bool ProcessGroup::Save(const fs::path &cache_dir) const {
     for(const auto &process : m_processes) process.SaveState(out_processes);
 
     std::ofstream out_integrator(cache_dir / "integrator.achilles");
-    m_integrator.SaveState(out_integrator);
+    m_integrator->SaveState(out_integrator);
     m_integrand.SaveState(out_integrator);
 
     std::ofstream out_xsec(cache_dir / "xsec.achilles");
@@ -526,8 +545,10 @@ bool ProcessGroup::Load(const fs::path &cache_dir) {
     for(auto &process : m_processes) process.LoadState(in_processes);
 
     std::ifstream in_integrator(cache_dir / "integrator.achilles");
-    m_integrator.LoadState(in_integrator);
-    m_integrand.LoadState(in_integrator);
+    // Only load the integrand state if the cached integrator matches this backend; on a
+    // mismatch the integrator is left empty (it will be optimized from scratch) and the
+    // integrand state, which follows in the same stream, must not be read.
+    if(m_integrator->LoadState(in_integrator)) m_integrand.LoadState(in_integrator);
 
     std::ifstream in_xsec(cache_dir / "xsec.achilles");
     m_xsec.LoadState(in_xsec);
@@ -554,5 +575,11 @@ std::size_t std::hash<ProcessGroup>::operator()(const achilles::ProcessGroup &p)
     seed ^= std::hash<achilles::Beam>{}(*(p.m_beam.get())) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     seed ^= std::hash<achilles::Nucleus>{}(*(p.m_nucleus.get())) + 0x9e3779b9 + (seed << 6) +
             (seed >> 2);
+    // Fold in the integrator backend so different integrators (MultiChannel, or distinct
+    // flow classes) for the same physics use independent caches rather than loading each
+    // other's cross sections.
+    if(p.m_integrator)
+        seed ^= std::hash<std::string>{}(p.m_integrator->CacheTag()) + 0x9e3779b9 + (seed << 6) +
+                (seed >> 2);
     return seed;
 }

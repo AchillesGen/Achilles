@@ -53,22 +53,35 @@ class MultiChannel : public Integrator {
     MultiChannelParams Parameters() const { return params; }
     MultiChannelParams &Parameters() { return params; }
 
-    // Optimization and event generation
+    // Optimization and event generation. These templated cores carry the actual logic
+    // and remain usable on any T (e.g. Integrand<double> in the unit tests).
     template <typename T> void operator()(Integrand<T> &);
     template <typename T> void Optimize(Integrand<T> &);
     template <typename T> std::vector<T> GeneratePoint(Integrand<T> &);
     template <typename T> double GenerateWeight(Integrand<T> &, const std::vector<T> &);
 
+    // Integrator interface (runtime-polymorphic, FourVector only). Each forwards to the
+    // templated core above; the batched sampling loops the single-point logic.
+    void operator()(Integrand<FourVector> &) override;
+    void Optimize(Integrand<FourVector> &) override;
+    std::vector<std::vector<FourVector>> GeneratePoints(Integrand<FourVector> &, size_t n) override;
+    std::vector<double>
+    GenerateWeights(Integrand<FourVector> &,
+                    const std::vector<std::vector<FourVector>> &points) override;
+    void SetRtol(double rtol) override { params.rtol = rtol; }
+    void SetNCalls(size_t ncalls) override { params.ncalls = ncalls; }
+    std::string CacheTag() const override { return "MultiChannel"; }
+
     // Getting results
-    bool HasResults() const { return summary.results.size() != 0; }
-    void UpdateSummary(bool update) { update_summary = update; }
+    bool HasResults() const override { return summary.results.size() != 0; }
+    void UpdateSummary(bool update) override { update_summary = update; }
     MultiChannelSummary Summary();
-    StatsData LastResult() const { return summary.LastResult(); }
-    bool NeedsOptimization(double) const;
+    StatsData LastResult() const override { return summary.LastResult(); }
+    bool NeedsOptimization(double) const override;
 
     // Cache Results
-    void SaveState(std::ostream &) const;
-    void LoadState(std::istream &);
+    void SaveState(std::ostream &) const override;
+    bool LoadState(std::istream &) override;
     bool operator==(const MultiChannel &) const;
 
     // YAML interface
