@@ -75,6 +75,13 @@ CPMAddPackage(
         "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
+# This static library gets linked into the _achilles Python extension (a shared
+# object), so its objects must be position-independent.
+if(TARGET cmake_git_version_tracking)
+    set_target_properties(cmake_git_version_tracking PROPERTIES
+        POSITION_INDEPENDENT_CODE ON)
+endif()
+
 if(ACHILLES_ENABLE_PYTHON)
 find_package(python COMPONENTS Interpreter Development)
 CPMFindPackage(

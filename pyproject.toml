@@ -17,12 +17,33 @@ mcp = ["mcp>=1.0", "pyyaml"]
 achilles-mcp = "Achilles.mcp_server.server:main"
 
 [tool.scikit-build]
-cmake.args = ["-DCMAKE_POLICY_VERSION_MINIMUM=3.5", "-DACHILLES_ENABLE_PYTHON=ON"]
+cmake.args = [
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+    "-DACHILLES_ENABLE_PYTHON=ON",
+    "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+    "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+    "-DCMAKE_Fortran_COMPILER_LAUNCHER=ccache",
+]
 cmake.source-dir = "."
 sdist.include = ["data/**", "flux/**"]
 
 [tool.cibuildwheel]
-test-groups = ["test"]
-test-command = "pytest {project}/tests"
 build-frontend = "build[uv]"
 build-verbosity = 1
+# TODO: Perform robustness tests
+# Ensure we can import Achilles
+test-command = "python -c \"import Achilles; print(Achilles.__version__)\""
+environment-pass = ["CCACHE_DIR"]
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install -y epel-release",
+    "yum install -y hdf5-devel ccache",
+]
+environment = { CCACHE_DIR = "/host/tmp/achilles-ccache" }
+
+[tool.cibuildwheel.macos]
+before-all = "brew install hdf5 ccache"
+
+[tool.cibuildwheel.windows]
+before-all = "vcpkg install hdf5:x64-windows"

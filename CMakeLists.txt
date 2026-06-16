@@ -22,7 +22,10 @@ IF("${isSystemDir}" STREQUAL "-1")
     set(CMAKE_INSTALL_RPATH "@executable_path/../lib")
     list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
   elseif(UNIX)
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    # Cover both lib and lib64: GNUInstallDirs resolves CMAKE_INSTALL_LIBDIR to
+    # lib64 on RHEL/manylinux but lib on Debian/Arch. Without both, auditwheel
+    # cannot locate the bundled internal libraries in the wheel.
+    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../lib64;${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
   endif()
 ENDIF()
 
