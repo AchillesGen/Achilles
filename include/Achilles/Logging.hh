@@ -5,6 +5,7 @@
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "spdlog/spdlog.h"
 
+#include <algorithm>
 #include <csignal>
 
 inline void SignalHandler(int signal) {
@@ -41,9 +42,9 @@ inline void CreateLogger(int level, int log_level, int flush_time,
     auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(destination, true);
     file_sink->set_level(slog_level);
 
-    spdlog::sinks_init_list sink_list = {file_sink, console_sink};
+    spdlog::sinks_init_list sink_list = {console_sink, file_sink};
     auto logger = std::make_shared<spdlog::logger>("achilles", sink_list);
-    logger->set_level(slevel);
+    logger->set_level(std::min(slevel, slog_level));
     logger->flush_on(spdlog::level::warn);
     spdlog::register_logger(logger);
     spdlog::set_default_logger(logger);
