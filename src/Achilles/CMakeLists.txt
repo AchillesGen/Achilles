@@ -185,12 +185,21 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
+# In a wheel, install the CLI executables into the package directory (next to
+# _achilles) instead of bin/. A small console-script launcher
+# (Achilles._cli:main) re-exposes it on PATH after pip install.
+if(SKBUILD)
+    set(achilles_runtime_dest Achilles)
+else()
+    set(achilles_runtime_dest ${CMAKE_INSTALL_BINDIR})
+endif()
+
 # TODO: Ensure that all packages installed by CPM are included when installing
 install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt docopt #pybind11 fortran_interface_f
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION ${achilles_runtime_dest}
         INCLUDES DESTINATION include
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Achilles
