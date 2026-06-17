@@ -7,6 +7,8 @@
 using achilles::CoherentMapper;
 using achilles::IntfSpectralMapper;
 using achilles::QESpectralMapper;
+using achilles::DISSingleNucleonMapper;
+using achilles::DISNucleusMapper;
 
 CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
     : HadronicBeamMapper(info, idx) {
@@ -243,4 +245,79 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 #endif
 
     return wgt;
+}
+
+
+DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info,size_t idx): HadronicBeamMapper(info,idx) {
+	SetMasses(info.Masses());
+	// Hadron is always stationary in this model
+	pHadron={ParticleInfo(info.m_hadronic.first[0]).Mass(),0,0,0};
+}
+
+static double xMin=1e-10,xMax=1.0;
+
+static achilles::FourVector getQuarkMomentum(achilles::FourVector& pLepton,achilles::FourVector& pHadron,double x) {
+	// Center of Mass Frame
+	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
+
+	// Boost Hadron to COM Frame and take momentum fraction
+	achilles::FourVector quarkBoosted=pHadron.Boost(com)*x;
+
+	// Boost back to Lab Frame
+	return quarkBoosted.Boost(-com);
+}
+
+void DISSingleNucleonMapper::GeneratePoint(std::vector<FourVector>& point,const std::vector<double>& rans) {
+	// Generate initial quark state
+	// Here, pHadron is a member variable
+	double x=xMin*pow(xMax/xMin,rans[0]);
+	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
+}
+
+double DISSingleNucleonMapper::GenerateWeight(const std::vector<FourVector>& point,std::vector<double>& rans) {
+	// x=E(quark)/E(hadron) in COM frame
+	ThreeVector com=(point[0]+pHadron).BoostVector();
+	double x=point[HadronIdx()].Boost(com).E()/pHadron.Boost(com).E();
+
+	// Random + Jacobian
+	rans[0]=log(x/xMin)/log(xMax/xMin);
+	return 1.0/(point[HadronIdx()].P2()*(x*log(xMax/xMin)));
+}
+
+
+DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info,size_t idx): HadronicBeamMapper(info,idx) {
+	SetMasses(info.Masses());
+}
+
+void DISNucleusMapper::GeneratePoint(std::vector<FourVector>& point,const std::vector<double>& rans) {
+	// Generate inital nucleon state
+	double radical =
+		pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+	if(radical < 0) radical = 0;
+	double pmin = point[0].E() - sqrt(radical);
+	double pmax = point[0].E() + sqrt(radical);
+	pmin = pmin < 0 ? 0 : pmin;
+	pmax = pmax > 800 ? 800 : pmax;
+	double dp = pmax - pmin;
+	const double mom = dp * rans[0] + pmin;
+	double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
+					  (2 * point[0].E() * mom);
+	cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
+	const double cosT = (cosT_max + 1) * rans[1] - 1;
+	const double sinT = sqrt(1 - cosT * cosT);
+	const double phi = dPhi * rans[2];
+	ThreeVector pmom = {mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+
+	const double det = pow(point[0].E(), 2) + mom * mom + 2 * pmom * point[0].Vec3() + Smin();
+	double emax = Constant::mN + point[0].E() - sqrt(det);
+	emax = std::min(emax, Constant::mN - mom);
+	emax = emax > 400 ? 400 : emax;
+	const double energy = emax * rans[3] - 1e-8;
+
+	FourVector pHadron={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+
+	// Generate initial quark state
+	// Here, pHadron was just computed from the spectral functions
+	double x=xMin*pow(xMax/xMin,rans[4]);
+	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
 }

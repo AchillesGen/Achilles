@@ -176,7 +176,7 @@ class FourVector {
     ///@return double: Angle between z-axis and transverse plane
     double CosTheta() const noexcept { return cos(Theta()); }
 
-    /// Return the angle in the transverse plane
+    /// Return the angle in the transverse plane, between 0 and 2pi
     ///@return double: The angle in the transverse plane
     double Phi() const noexcept;
 

@@ -96,22 +96,30 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
-	void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-	double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
+	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
+
+	// rans -> [x]
 	size_t NDims() const override { return 1; }
+  private:
+	FourVector pHadron;
 };
 
 class DISNucleusMapper: public HadronicBeamMapper,
 		Registrable<HadronicBeamMapper,DISNucleusMapper,const ProcessInfo&,size_t> {
   public:
 	DISNucleusMapper(const ProcessInfo&,size_t);
-    static std::string Name() { return "DISSingleNucleon"; }
+    static std::string Name() { return "DISNucleus"; }
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
-	void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-	double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
+	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
+
+	// rans -> [|pQuark|,cosTheta,phi,energy,x]
 	size_t NDims() const override { return 5; }
+  private:
+	static constexpr double dPhi=2*M_PI;
 };
 
 } // namespace achilles
