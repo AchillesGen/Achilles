@@ -23,10 +23,11 @@ jobs:
             runs-on: ubuntu-latest
           - os: linux-arm
             runs-on: ubuntu-24.04-arm
-          - os: windows-intel
-            runs-on: windows-latest
-          - os: windows-arm
-            runs-on: windows-11-arm
+          # TODO: Figure out Windows wheels
+          # - os: windows-intel
+          #   runs-on: windows-latest
+          # - os: windows-arm
+          #   runs-on: windows-11-arm
           - os: macos-intel
             # macos-15-intel is the last x86_64 runner
             runs-on: macos-15-intel
@@ -43,18 +44,18 @@ jobs:
 
       # Pick a deterministic ccache dir on macOS so it matches what we cache.
       - name: Configure ccache dir (macOS)
-        if: runner.os == 'macOS'
+        if: contains(runner.os, 'macos')
         run: echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
 
       - name: Setup GFortran
-        if: runner.os == 'maxOS'
+        if: contains(runner.os, 'macos')
         uses: fortran-lang/setup-fortran@v1
         with:
           compiler: gcc
 
       # Persist the C/C++/Fortran object cache across CI runs.
       - name: Restore ccache (Linux)
-        if: runner.os == 'Linux'
+        if: contains(runner.os, 'linux')
         uses: actions/cache@v4
         with:
           path: /tmp/achilles-ccache
@@ -62,7 +63,7 @@ jobs:
           restore-keys: ccache-${{ matrix.os }}-
 
       - name: Restore ccache (macOS)
-        if: runner.os == 'macOS'
+        if: contains(runner.os, 'macos')
         uses: actions/cache@v4
         with:
           path: ${{ env.CCACHE_DIR }}
