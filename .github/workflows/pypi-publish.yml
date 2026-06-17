@@ -46,6 +46,11 @@ jobs:
         if: runner.os == 'macOS'
         run: echo "CCACHE_DIR=$HOME/.ccache" >> "$GITHUB_ENV"
 
+      - name: Setup GFortran
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+
       # Persist the C/C++/Fortran object cache across CI runs.
       - name: Restore ccache (Linux)
         if: runner.os == 'Linux'
