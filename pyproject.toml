@@ -27,6 +27,10 @@ cmake.args = [
 ]
 cmake.source-dir = "."
 sdist.include = ["data/**", "flux/**"]
+# Drop the top-level lib/ that some CPM deps install themselves into (hardcoding
+# lib/ and ignoring CMAKE_INSTALL_LIBDIR). The libraries we actually need are
+# re-installed into Achilles/lib with correct rpaths.
+wheel.exclude = ["lib/**"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"

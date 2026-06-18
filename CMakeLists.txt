@@ -13,21 +13,40 @@ include(CMake/StandardProjectSettings.cmake)
 set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# For a wheel we set an explicit relative $ORIGIN rpath below and co-locate
+# every needed library in Achilles/lib
+if(SKBUILD)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+else()
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
+
+# For a wheel, install every shared library into Achilles/lib so
+# they are co-located and a single $ORIGIN rpath resolves them all.
+# This must be set before the dependencies are configured.
+if(SKBUILD)
+  set(CMAKE_INSTALL_LIBDIR "Achilles/lib" CACHE PATH "Wheel library install dir" FORCE)
+endif()
 
 # Set RPATH for the install location
-LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
-IF("${isSystemDir}" STREQUAL "-1")
+if(SKBUILD)
   if(APPLE)
-    set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
-    list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-  elseif(UNIX)
-    # Cover both lib and lib64: GNUInstallDirs resolves CMAKE_INSTALL_LIBDIR to
-    # lib64 on RHEL/manylinux but lib on Debian/Arch. Without both, auditwheel
-    # cannot locate the bundled internal libraries in the wheel.
-    set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../lib64;${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(CMAKE_INSTALL_RPATH "@loader_path;@loader_path/lib")
+  else()
+    set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/lib")
   endif()
-ENDIF()
+else()
+  LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+  IF("${isSystemDir}" STREQUAL "-1")
+    if(APPLE)
+      set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+      list(APPEND CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    elseif(UNIX)
+      # Cover both lib and lib64
+      set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib;$ORIGIN/../lib64;${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    endif()
+  ENDIF()
+endif()
 
 # Link this 'library' to set the c++ standard / compile-time options requested
 # Additionally, link to get include and external dependencies
