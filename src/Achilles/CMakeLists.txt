@@ -159,6 +159,15 @@ add_executable(achilles main.cc AchillesInit.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles plugin_manager)
+# Like _achilles, the executable lives in the package dir and needs Achilles/lib.
+# Bake the rpath at build time: macOS install-time rpath rewriting of executables
+# is unreliable and otherwise leaves the binary with no rpath (delocate then
+# cannot resolve its @rpath dependencies).
+if(SKBUILD)
+    set_target_properties(achilles PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "$<IF:$<PLATFORM_ID:Darwin>,@loader_path/lib,$ORIGIN/lib>")
+endif()
 
 # TODO: Change the name of the option to be more clear
 if(ACHILLES_ENABLE_CASCADE_TEST)
