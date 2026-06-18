@@ -39,6 +39,7 @@ build-verbosity = 1
 # Ensure we can import Achilles
 test-command = "python -c \"import Achilles; print(Achilles.__version__)\""
 environment-pass = ["CCACHE_DIR"]
+skip = ["*-musllinux*", "pp*", "cp3??t-*"]
 
 [tool.cibuildwheel.linux]
 before-all = [
