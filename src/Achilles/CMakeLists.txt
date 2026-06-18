@@ -43,7 +43,9 @@ if(ACHILLES_ENABLE_PYTHON)
 # Integrator factory that calls it.
 target_sources(utilities PRIVATE PyFlowSampler.cc)
 target_compile_definitions(utilities PUBLIC ACHILLES_ENABLE_PYTHON)
-target_link_libraries(utilities PUBLIC pybind11::embed)
+# The standalone achilles executable, which truly embeds an interpreter, links
+# pybind11::embed itself (see below).
+target_link_libraries(utilities PUBLIC pybind11::module)
 # pybind11 types carry hidden visibility; holding a py::object in a default-visibility
 # class trips -Wattributes, which the project promotes to an error. Silence it just for
 # this pybind glue file.
@@ -169,6 +171,11 @@ endif(ACHILLES_ENABLE_PYTHON)
 add_executable(achilles main.cc AchillesInit.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
+if(ACHILLES_ENABLE_PYTHON)
+    # The standalone executable embeds its own interpreter (scoped_interpreter in
+    # PyFlowSampler), so it -- and only it -- needs libpython linked.
+    target_link_libraries(achilles PUBLIC pybind11::embed)
+endif()
 list(APPEND achilles_targets achilles plugin_manager)
 
 # TODO: Change the name of the option to be more clear
