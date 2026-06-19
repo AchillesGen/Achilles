@@ -349,8 +349,8 @@ f2py_rout_xsec_cc1(const PyObject *capi_self, PyObject *capi_args, PyObject *cap
                                                 /*closepyobjfrom*/
                                                 /*end of closepyobjfrom*/
                                             } /*if (f2py_success) after callfortranroutine*/
-                                              /*cleanupfrompyobj*/
-                                        }     /*if (capi_sig_tmp == NULL) ... else of sig*/
+                                            /*cleanupfrompyobj*/
+                                        } /*if (capi_sig_tmp == NULL) ... else of sig*/
                                         /* End of cleaning variable sig */
                                     } /*if (f2py_success) of ig*/
                                     /* End of cleaning variable ig */
@@ -435,8 +435,8 @@ static PyObject *f2py_rout_xsec_sigccc(const PyObject *capi_self, PyObject *capi
             /*closepyobjfrom*/
             /*end of closepyobjfrom*/
         } /*if (f2py_success) after callfortranroutine*/
-          /*cleanupfrompyobj*/
-    }     /*if (f2py_success) of ig*/
+        /*cleanupfrompyobj*/
+    } /*if (f2py_success) of ig*/
     /* End of cleaning variable ig */
     /* End of cleaning variable sig */
     /*end of cleanupfrompyobj*/
@@ -505,8 +505,8 @@ static PyObject *f2py_rout_xsec_dirac_matrices_dirac_matrices_in(const PyObject 
             /*closepyobjfrom*/
             /*end of closepyobjfrom*/
         } /*if (f2py_success) after callfortranroutine*/
-          /*cleanupfrompyobj*/
-    }     /*if (f2py_success) of xmn_in*/
+        /*cleanupfrompyobj*/
+    } /*if (f2py_success) of xmn_in*/
     /* End of cleaning variable xmn_in */
     /*end of cleanupfrompyobj*/
     if(capi_buildvalue == NULL) {
@@ -565,8 +565,8 @@ static PyObject *f2py_rout_xsec_dirac_matrices_define_spinors(const PyObject *ca
         /*closepyobjfrom*/
         /*end of closepyobjfrom*/
     } /*if (f2py_success) after callfortranroutine*/
-      /*cleanupfrompyobj*/
-      /*end of cleanupfrompyobj*/
+    /*cleanupfrompyobj*/
+    /*end of cleanupfrompyobj*/
     if(capi_buildvalue == NULL) {
         /*routdebugfailure*/
     } else {
@@ -682,7 +682,7 @@ f2py_rout_xsec_dirac_matrices_current_init(const PyObject *capi_self, PyObject *
                     /*closepyobjfrom*/
                     /*end of closepyobjfrom*/
                 } /*if (f2py_success) after callfortranroutine*/
-                  /*cleanupfrompyobj*/
+                /*cleanupfrompyobj*/
                 if((PyObject *)capi_q_in_tmp != q_in_capi) { Py_XDECREF(capi_q_in_tmp); }
             } /*if (capi_q_in_tmp == NULL) ... else of q_in*/
             /* End of cleaning variable q_in */
@@ -764,8 +764,8 @@ static PyObject *f2py_rout_xsec_dirac_matrices_det_ja(const PyObject *capi_self,
                 /*closepyobjfrom*/
                 /*end of closepyobjfrom*/
             } /*if (f2py_success) after callfortranroutine*/
-              /*cleanupfrompyobj*/
-        }     /*if (f2py_success) of f2v*/
+            /*cleanupfrompyobj*/
+        } /*if (f2py_success) of f2v*/
         /* End of cleaning variable f2v */
     } /*if (f2py_success) of f1v*/
     /* End of cleaning variable f1v */
@@ -841,8 +841,8 @@ static PyObject *f2py_rout_xsec_dirac_matrices_det_res1b(const PyObject *capi_se
                 /*closepyobjfrom*/
                 /*end of closepyobjfrom*/
             } /*if (f2py_success) after callfortranroutine*/
-              /*cleanupfrompyobj*/
-        }     /*if (f2py_success) of rt*/
+            /*cleanupfrompyobj*/
+        } /*if (f2py_success) of rt*/
         /* End of cleaning variable rt */
     } /*if (f2py_success) of rl*/
     /* End of cleaning variable rl */
