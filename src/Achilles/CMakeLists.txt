@@ -135,7 +135,7 @@ target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings
                                 PUBLIC physics mappers fortran_interface nuclear_models
-                                       AchillesCascadeInteractions) #fortran_interface
+                                       ${AchillesCascadeInteractionsLink}) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
 if(ACHILLES_ENABLE_PYTHON)
