@@ -27,8 +27,8 @@ mcp = FastMCP("achilles-neutrino-generator")
 # Server-side run card builder state
 _builder = RunCardBuilder()
 
-# Resolve data directories from the installed Achilles package
-_ACHILLES_ROOT = Path(importlib.resources.files("Achilles"))
+# Resolve data directories from the installed achilles package
+_ACHILLES_ROOT = Path(importlib.resources.files("achilles"))
 _DATA_DIR = _ACHILLES_ROOT / "data"
 _EXAMPLES_DIR = _ACHILLES_ROOT.parent / "examples"  # examples at install root
 _FLUX_DIR = _ACHILLES_ROOT / "flux"
@@ -386,7 +386,7 @@ async def runcard_validate() -> str:
 async def get_version() -> str:
     """Get the Achilles version string."""
     try:
-        from Achilles import __version__
+        from achilles import __version__
         return __version__
     except ImportError:
         return "Achilles not installed — install with: pip install 'Achilles[mcp]'"

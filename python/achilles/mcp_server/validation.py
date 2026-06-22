@@ -46,7 +46,7 @@ def validate_config(config: dict) -> None:
 def _load_rules_yml() -> list[dict]:
     """Load Rules.yml from the Achilles data directory."""
     try:
-        data_dir = Path(importlib.resources.files("Achilles")) / "data"
+        data_dir = Path(importlib.resources.files("achilles")) / "data"
     except (TypeError, AttributeError):
         data_dir = Path(__file__).resolve().parent.parent.parent.parent / "data"
     rules_path = data_dir / "Rules.yml"

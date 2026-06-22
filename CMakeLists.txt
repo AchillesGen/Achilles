@@ -14,18 +14,18 @@ set(CMAKE_MACOSX_RPATH 1)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 # For a wheel we set an explicit relative $ORIGIN rpath below and co-locate
-# every needed library in Achilles/lib
+# every needed library in achilles/lib
 if(SKBUILD)
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 else()
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
-# For a wheel, install every shared library into Achilles/lib so
+# For a wheel, install every shared library into achilles/lib so
 # they are co-located and a single $ORIGIN rpath resolves them all.
 # This must be set before the dependencies are configured.
 if(SKBUILD)
-  set(CMAKE_INSTALL_LIBDIR "Achilles/lib" CACHE PATH "Wheel library install dir" FORCE)
+  set(CMAKE_INSTALL_LIBDIR "achilles/lib" CACHE PATH "Wheel library install dir" FORCE)
 endif()
 
 # Set RPATH for the install location
@@ -256,9 +256,9 @@ install(DIRECTORY
 
 if(ACHILLES_ENABLE_PYTHON)
 install(DIRECTORY data
-        DESTINATION Achilles)
+        DESTINATION achilles)
 install(DIRECTORY flux
-        DESTINATION Achilles)
+        DESTINATION achilles)
 install(FILES FormFactors.yml
-        DESTINATION Achilles)
+        DESTINATION achilles)
 endif(ACHILLES_ENABLE_PYTHON)

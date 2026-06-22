@@ -14,8 +14,8 @@ license-files = ["LICENSE.md"]
 mcp = ["mcp>=1.0", "pyyaml"]
 
 [project.scripts]
-achilles = "Achilles._cli:main"
-achilles-mcp = "Achilles.mcp_server.server:main"
+achilles = "achilles._cli:main"
+achilles-mcp = "achilles.mcp_server.server:main"
 
 [tool.scikit-build]
 cmake.args = [
@@ -27,17 +27,15 @@ cmake.args = [
 ]
 cmake.source-dir = "."
 sdist.include = ["data/**", "flux/**"]
-# Drop the top-level lib/ that some CPM deps install themselves into (hardcoding
-# lib/ and ignoring CMAKE_INSTALL_LIBDIR). The libraries we actually need are
-# re-installed into Achilles/lib with correct rpaths.
+wheel.packages = { achilles = "python/achilles" }
 wheel.exclude = ["lib/**"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
 build-verbosity = 1
 # TODO: Perform robustness tests
-# Ensure we can import Achilles
-test-command = "python -c \"import Achilles; print(Achilles.__version__)\""
+# Ensure we can import achilles
+test-command = "python -c \"import achilles; print(achilles.__version__)\""
 environment-pass = ["CCACHE_DIR"]
 skip = ["*-musllinux*", "pp*", "cp3??t-*"]
 

@@ -44,7 +44,7 @@ async def run_generation(run_card_yaml: str, output_dir: str | None = None) -> d
     script = (
         "import os, sys\n"
         f"os.chdir({work_dir!r})\n"
-        "from Achilles import initialize_logging, generate_events\n"
+        "from achilles import initialize_logging, generate_events\n"
         "initialize_logging(verbosity=3, log_verbosity=2, logfile='achilles_mcp.log')\n"
         f"generate_events(runcard={run_card_path!r}, batch_mode=True)\n"
     )
