@@ -2,6 +2,7 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/EventWriter.hh"
+#include "Achilles/Exception.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
@@ -9,13 +10,15 @@
 #include "Achilles/Random.hh"
 #include "Achilles/Settings.hh"
 #include "Achilles/Utilities.hh"
-#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 #include <functional>
 #include <sstream>
 #include <stdexcept>
 
 #ifdef ACHILLES_ENABLE_HEPMC3
+#include "HepMC3/Print.h"
+#include "NuHepMC/EventUtils.hxx"
 #include "Plugins/HepMC3/HepMC3EventWriter.hh"
+#include "Plugins/NuHepMC/NuHepMCWriter.hh"
 #endif
 
 #include "spdlog/spdlog.h"
@@ -30,6 +33,11 @@ bool iequals(const std::string &a, const std::string &b) {
            std::equal(a.begin(), a.end(), b.begin(), [](unsigned char c1, unsigned char c2) {
                return std::tolower(c1) == std::tolower(c2);
            });
+}
+
+std::unique_ptr<EventReader> RawEventReader::Construct(const std::string &filename,
+                                                       const std::shared_ptr<Nucleus> &nuc) {
+    return std::make_unique<RawEventReader>(filename, nuc);
 }
 
 RawEventReader::RawEventReader(const std::string &filename, std::shared_ptr<Nucleus> nuc)
@@ -82,7 +90,6 @@ achilles::Event RawEventReader::ParseLine(const std::string &line) {
 
     return event;
 }
-// TODO: Add other file formats?
 
 void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
     // Set the status of the particles and add to the event
@@ -99,9 +106,7 @@ void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
                 particle.Status() = ParticleStatus::final_state;
             }
             event.Leptons().push_back(particle);
-        }
-
-        if(particle.Info().IsHadron()) {
+        } else if(particle.Info().IsHadron()) {
             // Set the first hadron to the one within the nucleus and the rest to propagating
             if(first_hadron) {
                 first_hadron = false;
@@ -159,6 +164,170 @@ void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
                               EventHistory::StatusCode::primary);
 }
 
+std::unique_ptr<EventReader> NuHepMCReader::Construct(const std::string &filename,
+                                                      const std::shared_ptr<Nucleus> &nuc) {
+    return std::make_unique<NuHepMCReader>(filename, nuc);
+}
+
+NuHepMCReader::NuHepMCReader(const std::string &filename, std::shared_ptr<Nucleus> nuc)
+    : m_nucleus{nuc} {
+    spdlog::debug("[NuHepMCReader]: Initializing Reader");
+    m_reader = std::make_unique<NuHepMC::Reader>(filename);
+    if(!m_reader) {
+        auto err_msg = fmt::format(
+            "Precomputed: Failed to instantiate HepMC3::Reader from file: {}", filename);
+        throw std::runtime_error(err_msg);
+    }
+
+    HepMC3::GenEvent evt;
+    m_reader->read_event(evt);
+    if(m_reader->failed()) {
+        auto err_msg =
+            fmt::format("Precomputed: Failed to read the first event from file: {}", filename);
+        throw std::runtime_error(err_msg);
+    }
+
+    auto in_run_info = evt.run_info();
+    if(!in_run_info) {
+        // TODO: Determine to warn about missing info and not to trust header or fail
+        auto err_msg = fmt::format("Precomputed: Can't read run info after first event.");
+        throw std::runtime_error(err_msg);
+    }
+
+    // Read in needed header information
+    m_vertex_status = NuHepMC::GR9::ReadVertexStatusIdDefinitions(in_run_info);
+    m_particle_status = NuHepMC::GR10::ReadParticleStatusIdDefinitions(in_run_info);
+
+    // TODO: Pass this to the NuHepMC Writer to ensure consistency / convert all to Achilles
+    // definitions?
+    // TODO: Setup Achilles components and output writer
+    // TODO: Add Achilles information to the header
+
+    // Re-open the file to ensure all events are read
+    m_reader = std::make_unique<NuHepMC::Reader>(filename);
+    spdlog::debug("[NuHepMCReader]: Finished initialization");
+}
+
+std::optional<achilles::Event> NuHepMCReader::Next() {
+    spdlog::debug("[NuHepMCReader]: Reading next event...");
+    HepMC3::GenEvent evt;
+    m_reader->read_event(evt);
+    if(m_reader->failed()) { return std::nullopt; }
+
+    // TODO: Get to work for a general file (i.e. need to test on NEUT, GENIE, etc.)
+    auto beampt = NuHepMC::Event::GetBeamParticle(evt);
+    auto tgtpt = NuHepMC::Event::GetTargetParticle(evt);
+
+    if(!beampt || !tgtpt) {
+        spdlog::error("Precomputed: Invalid event found. Aborting");
+        return std::nullopt;
+    }
+
+    // TODO: Make it work on a list of nuclei and skip instead of aborting if not available
+    if(tgtpt->pdg_id() != static_cast<int>(m_nucleus->ID())) {
+        spdlog::error("Precomputed: Invalid nucleus. Aborting");
+        return std::nullopt;
+    }
+
+    auto primary_vtx = NuHepMC::Event::GetPrimaryVertex(evt);
+    auto incoming = primary_vtx->particles_in();
+    auto outgoing = primary_vtx->particles_out();
+
+    // Convert from NuHepMC to internal event and return it
+    Event event(m_nucleus, {}, 1);
+    // TODO: Extend to propagate multiweights through and get the right statistics and weights
+    // TODO: Handle the units to convert correctly
+    event.Weight() = evt.weight();
+
+    // Convert particles to internal ones
+    // TODO: Handle multiple positions?
+    ThreeVector initial_pos;
+    for(auto &inpart : incoming) {
+        Particle part;
+        try {
+            part = FromHepMC3(inpart);
+        } catch(AchillesParseError &e) {
+            spdlog::warn("[NuHepMCReader]: {}", e.what());
+            continue;
+        }
+        if(part.Info().IsLepton()) event.Leptons().push_back(part);
+        if(part.Info().IsHadron()) {
+            event.Display();
+            if(part.ID() == PID::proton()) {
+                auto protons = event.Protons(ParticleStatus::background);
+                auto sampled_protons = Random::Instance().Sample(1, protons);
+                auto sampled_proton = sampled_protons[0];
+                sampled_proton.get().Momentum() = part.Momentum();
+                sampled_proton.get().Status() = ParticleStatus::initial_state;
+                std::cout << sampled_proton.get() << std::endl;
+                initial_pos = sampled_proton.get().Position();
+            }
+
+            if(part.ID() == PID::neutron()) {
+                auto neutrons = event.Neutrons(ParticleStatus::background);
+                auto sampled_neutrons = Random::Instance().Sample(1, neutrons);
+                auto sampled_neutron = sampled_neutrons[0];
+                sampled_neutron.get().Momentum() = part.Momentum();
+                sampled_neutron.get().Status() = ParticleStatus::initial_state;
+                std::cout << sampled_neutron.get() << std::endl;
+                initial_pos = sampled_neutron.get().Position();
+            }
+        }
+    }
+    for(auto &outpart : outgoing) {
+        Particle out;
+        try {
+            out = FromHepMC3(outpart);
+        } catch(AchillesParseError &e) { spdlog::warn("[NuHepMCReader]: {}", e.what()); }
+        if(out.Info().IsLepton()) event.Leptons().push_back(out);
+        if(out.Info().IsHadron()) {
+            out.Status() = ParticleStatus::propagating;
+            out.Position() = initial_pos;
+            event.Hadrons().push_back(out);
+        }
+    }
+    event.Display();
+
+    // Setup the event history
+    auto init_nuc = event.CurrentNucleus()->InitParticle();
+    std::vector<Particle> init_parts;
+    for(const auto &nucleon : event.Hadrons()) {
+        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
+    }
+    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
+                              EventHistory::StatusCode::target);
+    // Setup beam in history
+    auto init_lep = event.Leptons()[0];
+    auto init_beam = init_lep;
+    init_beam.Status() = ParticleStatus::beam;
+    event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
+
+    // TODO: Figure out how to best handle tracking this with the cascade and decays
+    std::vector<Particle> primary_out, propagating;
+    for(const auto &part : event.Particles()) {
+        if(part.IsFinal()) primary_out.push_back(part);
+        if(part.IsPropagating()) {
+            primary_out.push_back(part);
+            propagating.push_back(part);
+        }
+    }
+    init_parts.push_back(init_lep);
+    event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
+                              EventHistory::StatusCode::primary);
+
+    spdlog::debug("[NuHepMCReader]: Successfully read event.");
+    return event;
+}
+
+achilles::Particle NuHepMCReader::FromHepMC3(const HepMC3::ConstGenParticlePtr &part) const {
+    auto momentum = part->momentum();
+    FourVector mom(momentum.e(), momentum.px(), momentum.py(), momentum.pz());
+    if(part->status() > 4 || part->status() < 0)
+        throw AchillesParseError(
+            fmt::format("Invalid particle status {}, skipping particle", part->status()));
+    return Particle(part->pid(), mom, {}, static_cast<ParticleStatus>(part->status()));
+}
+
 RunCascade::RunCascade(const std::string &config_file) {
     auto config = Settings(config_file, "data/Rules_precomputed.yml");
 
@@ -200,13 +369,16 @@ RunCascade::RunCascade(const std::string &config_file) {
     }
     std::vector<ProcessGroup> dummy;
     writer->WriteHeader(config_file, dummy);
-    event_filename = config["Main"]["EventFile"].as<std::string>();
+
+    // Setup input
+    format = config.GetAs<std::string>("Main/Input/Format");
+    auto filename = config.GetAs<std::string>("Main/Input/Name");
+    reader = EventReaderFactory::Initialize(format, filename, nucleus);
 }
 
 void RunCascade::RunAll() {
     auto run = [&](Event &event) { Run(event); };
     EventPipeline pipeline(run);
-    RawEventReader reader(event_filename, nucleus);
     RunPipeline(reader, pipeline);
 }
 

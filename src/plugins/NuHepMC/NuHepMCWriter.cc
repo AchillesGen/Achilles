@@ -79,7 +79,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // List all possible vertex status codes
     // TODO: Make this a conversion from enum of the EventHistory class?
-    NuHepMC::GR5::WriteVertexStatusIDDefinitions(
+    NuHepMC::GR9::WriteVertexStatusIDDefinitions(
         run, {
                  {NuHepMC::VertexStatus::Primary, {"Primary", "The main hard interaction"}},
                  {NuHepMC::VertexStatus::Beam,
@@ -94,7 +94,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // List all possible particle status codes
     // TODO: Make this a conversion from ParticleStatus enum
-    NuHepMC::GR6::WriteParticleStatusIDDefinitions(
+    NuHepMC::GR10::WriteParticleStatusIDDefinitions(
         run, {
                  {NuHepMC::ParticleStatus::UndecayedPhysical,
                   {"Undecayed physical particle", "Final state \"stable\" particles"}},
@@ -116,17 +116,18 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // Signal conventions
     // TODO: Make flags to turn on / off different conventions
-    NuHepMC::GC1::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
+    NuHepMC::GR4::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
 
     // TODO: Update to using newer NuHepMC version
     const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
     const std::string tgtscale = "PerAtom";
-    NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
+    NuHepMC::GR6::SetCrossSectionUnits(run, scale, tgtscale);
 
+    // TODO: This isn't used. Figure out the correct NuHepMC standard
     // Write out the number of requested events
     // TODO: Read this from run card
-    long nevents = 10;
-    NuHepMC::GC2::SetExposureNEvents(run, nevents);
+    // long nevents = 10;
+    // NuHepMC::GC2::SetExposureNEvents(run, nevents);
 
     file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
     if(!file->run_info()) { throw; }
