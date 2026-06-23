@@ -133,22 +133,28 @@ where :math:`w_{\rm max}` is a chosen maximum weight. Events with
 residual weight :math:`|w|/w_{\rm max}` (they remain partially weighted).
 
 The ``Percentile`` algorithm sets :math:`w_{\rm max}` to the :math:`p`-th
-percentile of all event weights seen during integration:
+percentile of all event weights seen during integration. By construction a
+fraction :math:`(100 - p)\,\%` of events have :math:`|w| > w_{\rm max}` and are
+therefore *overweight* (accepted with residual weight :math:`|w|/w_{\rm max} > 1`),
+while the remaining :math:`p\,\%` are fully unweighted:
 
-- **High percentile** (e.g. 99): :math:`w_{\rm max}` is large, so almost all
-  events are accepted, but rare large-weight events may survive as partially
-  weighted outliers.
-- **Low percentile** (e.g. 80): :math:`w_{\rm max}` is small, so more events
-  are rejected outright, giving a more uniform sample at the cost of generation
-  efficiency.
+- **High percentile** (e.g. 99): :math:`w_{\rm max}` is large, so only ~1 % of
+  events are overweight — the sample is close to fully unweighted. Because
+  :math:`w_{\rm max}` is large, the acceptance probability :math:`|w|/w_{\rm max}`
+  is small for most events, so the generation (unweighting) efficiency is lower.
+- **Low percentile** (e.g. 80): :math:`w_{\rm max}` is smaller, so the acceptance
+  probability is higher and fewer events are rejected (better efficiency), but a
+  larger fraction — ~20 % — survive as overweight events, making the sample less
+  uniform.
 
 The percentile is tracked exactly using an online algorithm as integration
 proceeds, so no second pass over the data is needed.
 
 The ``percentile`` run-card parameter (0–100) directly sets :math:`p`.
-A value of ``99`` is recommended for most production runs: it discards the
-top 1 % of weights, which are typically integration-grid artefacts, while
-keeping 99 % of events fully unweighted.
+A value of ``99`` is recommended for most production runs: it caps
+:math:`w_{\rm max}` at the 99th percentile so that only ~1 % of events (the
+largest weights, typically integration-grid artefacts) remain overweight, while
+99 % are fully unweighted.
 
 The unweighting efficiency (fraction of phase-space points that produce an
 accepted event) is printed in the Achilles log after event generation.

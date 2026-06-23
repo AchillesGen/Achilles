@@ -27,7 +27,7 @@ that control each stage are indicated in parentheses.
          │
          ▼
    Cross-section weight assembled
-     – leptonic tensor × hadronic tensor contracted
+     – leptonic current × hadronic current contracted
      – initial-state spectral-function weight multiplied in
          │
          ▼
@@ -66,10 +66,10 @@ weight for a nucleus with :math:`N_{p/n}` protons/neutrons is
 **Hard-scattering current.** The nuclear model computes the hadronic transition
 current :math:`J^\mu` for the chosen hadronic subprocess, given the initial and
 final nucleon momenta and the four-momentum transfer :math:`q^\mu`. Form factors
-evaluated at :math:`Q^2 = -q^2` are passed into the current. The leptonic tensor
-:math:`L_{\mu\nu}` is assembled from the lepton kinematics (handled by the backend),
-and the event weight receives a factor :math:`L_{\mu\nu} W^{\mu\nu}` where
-:math:`W^{\mu\nu} \propto \sum_{\rm spins} J^\mu J^{\nu*}`.
+evaluated at :math:`Q^2 = -q^2` are passed into the current. The leptonic current
+:math:`L_{\mu}` is assembled from the lepton kinematics (handled by the backend),
+and the event weight receives a factor :math:`|L_{\mu} W^{\mu}|^2` where
+:math:`W^{\mu}` is the hadronic current.
 
 **Cascade.** If ``Cascade → Run: true``, struck nucleons and produced pions or
 resonances are propagated through the nuclear medium. Particles that re-scatter,
@@ -102,7 +102,7 @@ to avoid assigning two models the same mode. The available modes are:
    * - ``Coherent``
      - 1
      - The entire nucleus participates coherently. The nucleus recoils as a whole
-       without break-up. Only neutral-current processes are allowed
+       without break-up. Only neutral-current processes are currently allowed
        (leptonic charge = 0).
    * - ``Quasielastic``
      - 2
@@ -114,7 +114,7 @@ to avoid assigning two models the same mode. The available modes are:
      - 3
      - Two correlated nucleons are struck simultaneously via a meson-exchange
        current. The hadronic state has two nucleons in both initial and final
-       states (2p2h process). 16 spin states are summed.
+       states (2p2h process). 16 spin states are summed. *Currently being implemented*
    * - ``Resonance``
      - 4
      - Single-pion production via baryon resonances (dominantly the

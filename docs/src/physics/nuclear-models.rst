@@ -58,7 +58,8 @@ where :math:`u(p)` and :math:`\bar{u}(p^\prime)` are free Dirac spinors for the
 initial and final nucleons. The initial nucleon energy is set to the free on-shell
 value :math:`E_{\rm free} = \sqrt{|\boldsymbol{p}|^2 + m_N^2}`, while the energy
 transfer is shifted by the off-shell correction
-:math:`\omega \to \omega + E - E_{\rm free}`.
+:math:`\omega \to \omega + E - E_{\rm free}`. Restoration of the Ward identity
+is handled by the choice of scheme.
 
 All four spin-state combinations :math:`(s, s^\prime) \in \{-1,+1\}^2` are summed
 incoherently, giving 4 entries in the current array.

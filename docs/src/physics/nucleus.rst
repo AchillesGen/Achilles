@@ -50,20 +50,34 @@ The ``FermiGas`` sub-node controls corrections to the basic Fermi-gas picture
 that can optionally be applied within the cascade.
 
 ``Type: Local`` uses a local Fermi gas, where the Fermi momentum varies with
-the local nuclear density:
+the local nuclear density. It is evaluated separately for protons and neutrons
+from their respective local densities :math:`\rho_{p/n}(\boldsymbol{r})`:
 
 .. math::
 
-   k_F(\boldsymbol{r}) = \left(\frac{3\pi^2}{2}\,\rho(\boldsymbol{r})\right)^{1/3}
+   k_F^{p/n}(\boldsymbol{r}) = \left(3\pi^2\,\rho_{p/n}(\boldsymbol{r})\right)^{1/3}
+
+(spin degeneracy 2 per nucleon species; no isospin factor enters because the
+two species are treated independently).
 
 ``Correlated`` and the SRC parameters add short-range correlation (SRC)
 corrections to the nucleon momentum distribution. When ``Correlated: true`` a
-fraction ``SRCfraction`` of nucleons are assigned high-momentum tails extending
-beyond :math:`k_F`, parametrised by an exponential with scale ``LambdaSRC``
-(in GeV). This is important for nucleon momenta above ~300 MeV where the
-spectral function departs significantly from a simple Fermi gas. The default
-values ``SRCfraction: 0.2`` and ``LambdaSRC: 2.75`` are tuned to reproduce
-electron-scattering data.
+fraction ``SRCfraction`` of nucleons are drawn from a high-momentum tail
+extending beyond :math:`k_F`, instead of the usual uniform-in-:math:`k^3`
+Fermi sphere. The tail momentum is sampled as
+
+.. math::
+
+   k = \frac{k_F}{1 + 1/\Lambda_{\rm SRC} - x}, \qquad x \sim \mathcal{U}(0,1),
+
+which populates momenta from :math:`k_F/(1+1/\Lambda_{\rm SRC})` up to
+:math:`\Lambda_{\rm SRC}\,k_F` (a power-law-like tail, not an exponential).
+``LambdaSRC`` is therefore a dimensionless multiple of :math:`k_F` that sets the
+hardness of the tail, *not* a momentum scale in GeV. This matters for nucleon
+momenta above ~300 MeV where the spectral function departs significantly from a
+simple Fermi gas. The default values ``SRCfraction: 0.2`` and
+``LambdaSRC: 2.75`` (so the tail reaches :math:`\approx 2.75\,k_F`) are tuned to
+reproduce electron-scattering data.
 
 Nuclear potential models
 =========================

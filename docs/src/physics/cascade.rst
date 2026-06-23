@@ -29,11 +29,17 @@ discrete steps of size ``Step`` (in fm). At each step the algorithm:
 Particles that exit the nuclear volume escape; particles whose momentum falls
 below the Fermi momentum are recaptured by the residual nucleus.
 
-The ``MFP`` algorithm replaces the fixed-step loop with mean-free-path sampling:
-the path length to the next interaction is drawn from
-:math:`\ell \sim \text{Exp}(\lambda_{\rm mfp}^{-1})` where
-:math:`\lambda_{\rm mfp} = 1/(\rho\,\sigma)`. This is more efficient when the
+The ``MFP`` algorithm is intended to replicate the cascade algorithm in other event
+generators: the path length to the next interaction would be drawn
+from :math:`\ell \sim \text{Exp}(\lambda_{\rm mfp}^{-1})` where
+:math:`\lambda_{\rm mfp} = 1/(\rho\,\sigma)`, which is more efficient when the
 mean free path is large compared to the step size.
+
+.. warning::
+
+   The ``MFP`` algorithm is **not currently functional** — its interaction
+   sampling routine is unimplemented and throws at runtime. Use the ``Base``
+   algorithm for production runs.
 
 Interaction probability models
 ================================
@@ -48,17 +54,14 @@ into an interaction probability at each step.
    * - Model
      - Description
    * - ``Cylinder``
-     - Each nucleon is modelled as a hard cylinder of cross-sectional area
+     - Each hadron is modelled as a hard cylinder of cross-sectional area
        :math:`\sigma`. An interaction occurs if the impact parameter between
        the propagating particle and a spectator falls within
-       :math:`b < \sqrt{\sigma/\pi}`. This is the simplest and fastest model.
+       :math:`b < \sqrt{\sigma/\pi}`.
    * - ``Gaussian``
-     - Each nucleon is modelled with a Gaussian spatial distribution of width
+     - Each hadron is modelled with a Gaussian spatial distribution of width
        related to :math:`\sigma`. The interaction probability is the overlap
        integral of two Gaussians, smoothing the sharp cylinder edge.
-   * - ``Pion``
-     - Modified probability model tuned for pion propagation, accounting for
-       the pion's extended spatial wavefunction.
 
 In-medium corrections
 ======================
@@ -81,8 +84,10 @@ value. The ``InMedium`` setting controls the level of approximation.
        factor that accounts for the fraction of final-state phase space blocked by
        the Fermi sea.
    * - ``Relativistic``
-     - Full relativistic in-medium modification including effective masses and
-       mean-field potentials. Slowest but most accurate option for heavy nuclei.
+     - Reserved for a full relativistic in-medium modification (effective masses
+       and mean-field potentials). **Not yet implemented:** selecting it is
+       currently equivalent to ``None`` — the in-medium correction factor is
+       applied only for ``NonRelativistic``.
 
 Potential propagation
 =====================
