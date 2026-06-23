@@ -74,7 +74,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     spdlog::trace("  mom = {}", mom);
     spdlog::trace("  energy = {}", energy);
     spdlog::trace("  emax = {}", emax);
-    spdlog::trace("  s = {}", (point[0] + point[1]).M2());
+    spdlog::trace("  s = {}", (point[0] + point[HadronIdx()]).M2());
     spdlog::trace("  s_min = {}", Smin());
 #endif
 }
@@ -90,17 +90,17 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     rans[0] = (point[HadronIdx()].P() - pmin) / dp;
-    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[1].P2() - Smin()) /
-                      (2 * point[0].E() * point[1].P());
+    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[HadronIdx()].P2() - Smin()) /
+                      (2 * point[0].E() * point[HadronIdx()].P());
     cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     double dCos = (cosT_max + 1);
     rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
     rans[2] = point[HadronIdx()].Phi() / dPhi;
 
     const double det =
-        pow(point[0].E(), 2) + point[1].P2() + 2 * point[1].Vec3() * point[0].Vec3() + Smin();
+        pow(point[0].E(), 2) + point[HadronIdx()].P2() + 2 * point[HadronIdx()].Vec3() * point[0].Vec3() + Smin();
     double emax = Constant::mN + point[0].E() - sqrt(det);
-    emax = std::min(emax, Constant::mN - point[1].P());
+    emax = std::min(emax, Constant::mN - point[HadronIdx()].P());
     emax = emax > 400 ? 400 : emax;
     const double energy = Constant::mN - point[HadronIdx()].E();
     // if(energy < 0) return std::numeric_limits<double>::infinity();
@@ -114,7 +114,7 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     // ? 1 : cosT_max; const double dCos = (cosT_max + 1);
     // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
 
-    double wgt = 1.0 / point[1].P2() / dp / dCos / dPhi / dE;
+    double wgt = 1.0 / point[HadronIdx()].P2() / dp / dCos / dPhi / dE;
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
@@ -248,38 +248,52 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 }
 
 
+static achilles::FourVector getQuarkMomentum(achilles::FourVector& pLepton,achilles::FourVector& pHadron,double x) {
+	// ~~ Boost to COM Frame ~~
+	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
+	achilles::FourVector pHadBoosted=pHadron.Boost(com);
+
+	// Rotated hadron momentum is always [E,0,0,|p|]
+	// Instead of rotating I'll just call P() to act as pZ
+
+	// ~~ Lightcone Coords ~~
+	// p+_hadron = (Ehad + pZhad)/sqrt(2)
+	// p+ = x * p+_hadron
+	// pQuark=[(p+ + p-)/sqrt(2),0,0,(p+ - p-)/sqrt(2)] (regular coords)
+	// p- = mQuark^2/2p+ = 0 for massless quark
+	// => Equark = pZquark (rotated) = p+/sqrt(2) = x*(Ehad+pZhad)/2
+	double Eq=x*(pHadBoosted.E()+pHadBoosted.P())/2.0;
+	// => pQuark (COM frame, rotated) = [Eq,0,0,Eq]
+
+	// ~~ Rotate/Boost Back ~~
+	// pQuark (COM frame, unrotated) = [Eq,Eq*(original unit vector)]
+	// Want to return in Lab Frame (so boost by -com)
+	return achilles::FourVector(pHadBoosted.Vec3().Unit()*Eq,Eq).Boost(-com);
+}
+
+static double getX(const achilles::FourVector& pLepton,const achilles::FourVector& pHadron,const achilles::FourVector& pQuark) {
+	// Reversing the previous function
+	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
+	achilles::FourVector pHadBoosted=pHadron.Boost(com);
+	return 2.0*pQuark.Boost(com).E()/(pHadBoosted.E()+pHadBoosted.P());
+}
+
+static double xMin=1e-10,xMax=1.0;
+
 DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info,size_t idx): HadronicBeamMapper(info,idx) {
 	SetMasses(info.Masses());
 	// Hadron is always stationary in this model
 	pHadron={ParticleInfo(info.m_hadronic.first[0]).Mass(),0,0,0};
 }
 
-static double xMin=1e-10,xMax=1.0;
-
-static achilles::FourVector getQuarkMomentum(achilles::FourVector& pLepton,achilles::FourVector& pHadron,double x) {
-	// Center of Mass Frame
-	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
-
-	// Boost Hadron to COM Frame and take momentum fraction
-	achilles::FourVector quarkBoosted=pHadron.Boost(com)*x;
-
-	// Boost back to Lab Frame
-	return quarkBoosted.Boost(-com);
-}
-
 void DISSingleNucleonMapper::GeneratePoint(std::vector<FourVector>& point,const std::vector<double>& rans) {
 	// Generate initial quark state
-	// Here, pHadron is a member variable
 	double x=xMin*pow(xMax/xMin,rans[0]);
 	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
 }
 
 double DISSingleNucleonMapper::GenerateWeight(const std::vector<FourVector>& point,std::vector<double>& rans) {
-	// x=E(quark)/E(hadron) in COM frame
-	ThreeVector com=(point[0]+pHadron).BoostVector();
-	double x=point[HadronIdx()].Boost(com).E()/pHadron.Boost(com).E();
-
-	// Random + Jacobian
+	double x=getX(point[0],pHadron,point[HadronIdx()]);
 	rans[0]=log(x/xMin)/log(xMax/xMin);
 	return 1.0/(point[HadronIdx()].P2()*(x*log(xMax/xMin)));
 }
@@ -317,7 +331,43 @@ void DISNucleusMapper::GeneratePoint(std::vector<FourVector>& point,const std::v
 	FourVector pHadron={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 
 	// Generate initial quark state
-	// Here, pHadron was just computed from the spectral functions
 	double x=xMin*pow(xMax/xMin,rans[4]);
 	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
+}
+
+double DISNucleusMapper::GenerateWeight(const std::vector<FourVector>& point,std::vector<double>& rans) {
+	
+	//TODO: Get Hadron momentum from Spectator slot?? (Ask Josh)
+	FourVector pHadron;
+
+	double x=getX(point[0],pHadron,point[HadronIdx()]);
+
+	double radical =
+	    pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+	if(radical < 0) radical = 0;
+	double pmin = point[0].E() - sqrt(radical);
+	double pmax = point[0].E() + sqrt(radical);
+	pmin = pmin < 0 ? 0 : pmin;
+	pmax = pmax > 800 ? 800 : pmax;
+	double dp = pmax - pmin;
+	rans[0] = (pHadron.P() - pmin) / dp;
+	double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - pHadron.P2() - Smin()) /
+	                  (2 * point[0].E() * pHadron.P());
+	cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
+	double dCos = (cosT_max + 1);
+	rans[1] = (pHadron.CosTheta() + 1) / dCos;
+	rans[2] = pHadron.Phi() / dPhi;
+
+	const double det =
+	    pow(point[0].E(), 2) + pHadron.P2() + 2 * pHadron.Vec3() * point[0].Vec3() + Smin();
+	double emax = Constant::mN + point[0].E() - sqrt(det);
+	emax = std::min(emax, Constant::mN - pHadron.P());
+	emax = emax > 400 ? 400 : emax;
+	const double energy = Constant::mN - pHadron.E();
+	const double dE = emax;
+	rans[3] = (energy + 1e-8) / emax;
+
+	rans[4]=log(x/xMin)/log(xMax/xMin);
+
+    return 1.0/(point[HadronIdx()].P2()*dp*dCos*dPhi*dE*(x*log(xMax/xMin)));
 }

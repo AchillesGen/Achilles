@@ -92,7 +92,7 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 		Registrable<HadronicBeamMapper,DISSingleNucleonMapper,const ProcessInfo&,size_t> {
   public:
 	DISSingleNucleonMapper(const ProcessInfo&,size_t);
-    static std::string Name() { return "DISSingleNucleon"; }
+	static std::string Name() { return "DISSingleNucleon"; }
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
@@ -109,7 +109,7 @@ class DISNucleusMapper: public HadronicBeamMapper,
 		Registrable<HadronicBeamMapper,DISNucleusMapper,const ProcessInfo&,size_t> {
   public:
 	DISNucleusMapper(const ProcessInfo&,size_t);
-    static std::string Name() { return "DISNucleus"; }
+	static std::string Name() { return "DISNucleus"; }
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
