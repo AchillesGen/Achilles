@@ -73,9 +73,11 @@ projected transverse to :math:`q^\mu` by subtracting its longitudinal part:
 
 .. math::
 
-   J^\mu \;\to\; J^\mu - \frac{J \cdot q}{Q^2}\,q^\mu
+   J^\mu \;\to\; J^\mu + \frac{J \cdot q}{Q^2}\,q^\mu
 
-where :math:`Q^2 = -q^2 > 0`. This is a manifestly covariant operation.
+where :math:`Q^2 = -q^2 > 0` and :math:`J\cdot q = J^\mu q_\mu`. This is a
+manifestly covariant operation; one checks directly that the result satisfies
+:math:`q_\mu J^\mu = 0`. (Equivalently, :math:`J^\mu \to J^\mu - (J\cdot q)\,q^\mu/q^2`.)
 
 **When to use:** When a fully covariant treatment is required, for example in
 relativistic nuclear models where Lorentz covariance must be maintained

@@ -385,11 +385,17 @@ local Fermi momentum.</p></li>
 </ol>
 <p>Particles that exit the nuclear volume escape; particles whose momentum falls
 below the Fermi momentum are recaptured by the residual nucleus.</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">MFP</span></code> algorithm replaces the fixed-step loop with mean-free-path sampling:
-the path length to the next interaction is drawn from
-<span class="math notranslate nohighlight">\(\ell \sim \text{Exp}(\lambda_{\rm mfp}^{-1})\)</span> where
-<span class="math notranslate nohighlight">\(\lambda_{\rm mfp} = 1/(\rho\,\sigma)\)</span>. This is more efficient when the
+<p>The <code class="docutils literal notranslate"><span class="pre">MFP</span></code> algorithm is intended to replicate the cascade algorithm in other event
+generators: the path length to the next interaction would be drawn
+from <span class="math notranslate nohighlight">\(\ell \sim \text{Exp}(\lambda_{\rm mfp}^{-1})\)</span> where
+<span class="math notranslate nohighlight">\(\lambda_{\rm mfp} = 1/(\rho\,\sigma)\)</span>, which is more efficient when the
 mean free path is large compared to the step size.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">MFP</span></code> algorithm is <strong>not currently functional</strong> — its interaction
+sampling routine is unimplemented and throws at runtime. Use the <code class="docutils literal notranslate"><span class="pre">Base</span></code>
+algorithm for production runs.</p>
+</div>
 </section>
 <section id="interaction-probability-models">
 <h2>Interaction probability models<a class="headerlink" href="#interaction-probability-models" title="Link to this heading">#</a></h2>
@@ -407,19 +413,15 @@ into an interaction probability at each step.</p>
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Cylinder</span></code></p></td>
-<td><p>Each nucleon is modelled as a hard cylinder of cross-sectional area
+<td><p>Each hadron is modelled as a hard cylinder of cross-sectional area
 <span class="math notranslate nohighlight">\(\sigma\)</span>. An interaction occurs if the impact parameter between
 the propagating particle and a spectator falls within
-<span class="math notranslate nohighlight">\(b &lt; \sqrt{\sigma/\pi}\)</span>. This is the simplest and fastest model.</p></td>
+<span class="math notranslate nohighlight">\(b &lt; \sqrt{\sigma/\pi}\)</span>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Gaussian</span></code></p></td>
-<td><p>Each nucleon is modelled with a Gaussian spatial distribution of width
+<td><p>Each hadron is modelled with a Gaussian spatial distribution of width
 related to <span class="math notranslate nohighlight">\(\sigma\)</span>. The interaction probability is the overlap
 integral of two Gaussians, smoothing the sharp cylinder edge.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Pion</span></code></p></td>
-<td><p>Modified probability model tuned for pion propagation, accounting for
-the pion’s extended spatial wavefunction.</p></td>
 </tr>
 </tbody>
 </table>
@@ -451,8 +453,10 @@ factor that accounts for the fraction of final-state phase space blocked by
 the Fermi sea.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Relativistic</span></code></p></td>
-<td><p>Full relativistic in-medium modification including effective masses and
-mean-field potentials. Slowest but most accurate option for heavy nuclei.</p></td>
+<td><p>Reserved for a full relativistic in-medium modification (effective masses
+and mean-field potentials). <strong>Not yet implemented:</strong> selecting it is
+currently equivalent to <code class="docutils literal notranslate"><span class="pre">None</span></code> — the in-medium correction factor is
+applied only for <code class="docutils literal notranslate"><span class="pre">NonRelativistic</span></code>.</p></td>
 </tr>
 </tbody>
 </table>

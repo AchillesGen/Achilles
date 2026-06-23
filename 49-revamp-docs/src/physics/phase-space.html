@@ -493,21 +493,27 @@ likely. This is done by accept/reject on the event weight <span class="math notr
 <span class="math notranslate nohighlight">\(|w| &gt; w_{\rm max}\)</span> are accepted with probability 1 but assigned a
 residual weight <span class="math notranslate nohighlight">\(|w|/w_{\rm max}\)</span> (they remain partially weighted).</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">Percentile</span></code> algorithm sets <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> to the <span class="math notranslate nohighlight">\(p\)</span>-th
-percentile of all event weights seen during integration:</p>
+percentile of all event weights seen during integration. By construction a
+fraction <span class="math notranslate nohighlight">\((100 - p)\,\%\)</span> of events have <span class="math notranslate nohighlight">\(|w| &gt; w_{\rm max}\)</span> and are
+therefore <em>overweight</em> (accepted with residual weight <span class="math notranslate nohighlight">\(|w|/w_{\rm max} &gt; 1\)</span>),
+while the remaining <span class="math notranslate nohighlight">\(p\,\%\)</span> are fully unweighted:</p>
 <ul class="simple">
-<li><p><strong>High percentile</strong> (e.g. 99): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is large, so almost all
-events are accepted, but rare large-weight events may survive as partially
-weighted outliers.</p></li>
-<li><p><strong>Low percentile</strong> (e.g. 80): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is small, so more events
-are rejected outright, giving a more uniform sample at the cost of generation
-efficiency.</p></li>
+<li><p><strong>High percentile</strong> (e.g. 99): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is large, so only ~1 % of
+events are overweight — the sample is close to fully unweighted. Because
+<span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is large, the acceptance probability <span class="math notranslate nohighlight">\(|w|/w_{\rm max}\)</span>
+is small for most events, so the generation (unweighting) efficiency is lower.</p></li>
+<li><p><strong>Low percentile</strong> (e.g. 80): <span class="math notranslate nohighlight">\(w_{\rm max}\)</span> is smaller, so the acceptance
+probability is higher and fewer events are rejected (better efficiency), but a
+larger fraction — ~20 % — survive as overweight events, making the sample less
+uniform.</p></li>
 </ul>
 <p>The percentile is tracked exactly using an online algorithm as integration
 proceeds, so no second pass over the data is needed.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">percentile</span></code> run-card parameter (0–100) directly sets <span class="math notranslate nohighlight">\(p\)</span>.
-A value of <code class="docutils literal notranslate"><span class="pre">99</span></code> is recommended for most production runs: it discards the
-top 1 % of weights, which are typically integration-grid artefacts, while
-keeping 99 % of events fully unweighted.</p>
+A value of <code class="docutils literal notranslate"><span class="pre">99</span></code> is recommended for most production runs: it caps
+<span class="math notranslate nohighlight">\(w_{\rm max}\)</span> at the 99th percentile so that only ~1 % of events (the
+largest weights, typically integration-grid artefacts) remain overweight, while
+99 % are fully unweighted.</p>
 <p>The unweighting efficiency (fraction of phase-space points that produce an
 accepted event) is printed in the Achilles log after event generation.</p>
 </section>

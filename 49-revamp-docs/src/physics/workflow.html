@@ -381,7 +381,7 @@ Hard-scattering current calculation
       │
       ▼
 Cross-section weight assembled
-  – leptonic tensor × hadronic tensor contracted
+  – leptonic current × hadronic current contracted
   – initial-state spectral-function weight multiplied in
       │
       ▼
@@ -416,10 +416,10 @@ weight for a nucleus with <span class="math notranslate nohighlight">\(N_{p/n}\)
 <p><strong>Hard-scattering current.</strong> The nuclear model computes the hadronic transition
 current <span class="math notranslate nohighlight">\(J^\mu\)</span> for the chosen hadronic subprocess, given the initial and
 final nucleon momenta and the four-momentum transfer <span class="math notranslate nohighlight">\(q^\mu\)</span>. Form factors
-evaluated at <span class="math notranslate nohighlight">\(Q^2 = -q^2\)</span> are passed into the current. The leptonic tensor
-<span class="math notranslate nohighlight">\(L_{\mu\nu}\)</span> is assembled from the lepton kinematics (handled by the backend),
-and the event weight receives a factor <span class="math notranslate nohighlight">\(L_{\mu\nu} W^{\mu\nu}\)</span> where
-<span class="math notranslate nohighlight">\(W^{\mu\nu} \propto \sum_{\rm spins} J^\mu J^{\nu*}\)</span>.</p>
+evaluated at <span class="math notranslate nohighlight">\(Q^2 = -q^2\)</span> are passed into the current. The leptonic current
+<span class="math notranslate nohighlight">\(L_{\mu}\)</span> is assembled from the lepton kinematics (handled by the backend),
+and the event weight receives a factor <span class="math notranslate nohighlight">\(|L_{\mu} W^{\mu}|^2\)</span> where
+<span class="math notranslate nohighlight">\(W^{\mu}\)</span> is the hadronic current.</p>
 <p><strong>Cascade.</strong> If <code class="docutils literal notranslate"><span class="pre">Cascade</span> <span class="pre">→</span> <span class="pre">Run:</span> <span class="pre">true</span></code>, struck nucleons and produced pions or
 resonances are propagated through the nuclear medium. Particles that re-scatter,
 get absorbed, or escape the nucleus are recorded accordingly.</p>
@@ -450,7 +450,7 @@ to avoid assigning two models the same mode. The available modes are:</p>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Coherent</span></code></p></td>
 <td><p>1</p></td>
 <td><p>The entire nucleus participates coherently. The nucleus recoils as a whole
-without break-up. Only neutral-current processes are allowed
+without break-up. Only neutral-current processes are currently allowed
 (leptonic charge = 0).</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Quasielastic</span></code></p></td>
@@ -464,7 +464,7 @@ a spectator. Allowed hadronic transitions:
 <td><p>3</p></td>
 <td><p>Two correlated nucleons are struck simultaneously via a meson-exchange
 current. The hadronic state has two nucleons in both initial and final
-states (2p2h process). 16 spin states are summed.</p></td>
+states (2p2h process). 16 spin states are summed. <em>Currently being implemented</em></p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Resonance</span></code></p></td>
 <td><p>4</p></td>
