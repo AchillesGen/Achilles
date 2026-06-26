@@ -33,16 +33,16 @@ class FinalStateMapper : public Mapper<FourVector> {
 };
 
 class TwoBodyMapper : public FinalStateMapper,
-                      Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
+                      Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>,size_t> {
   public:
     TwoBodyMapper(const std::vector<double> &m,size_t idx) : FinalStateMapper(2,idx), s2{m[0]}, s3{m[1]} {}
     static std::string Name() { return "TwoBody"; }
-    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
+    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m,size_t idx) {
         if(m.size() != 2) {
             auto msg = fmt::format("Incorrect number of masses. Expected 2. Got {}", m.size());
             throw std::runtime_error(msg);
         }
-        return std::make_unique<TwoBodyMapper>(m);
+        return std::make_unique<TwoBodyMapper>(m,idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
@@ -55,17 +55,17 @@ class TwoBodyMapper : public FinalStateMapper,
 };
 
 class ThreeBodyMapper : public FinalStateMapper,
-                        Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
+                        Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>,size_t> {
   public:
     ThreeBodyMapper(const std::vector<double> &m,size_t idx)
         : FinalStateMapper(3,idx), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
     static std::string Name() { return "ThreeBody"; }
-    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
+    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m,size_t idx) {
         if(m.size() != 3) {
             auto msg = fmt::format("Incorrect number of masses. Expected 3. Got {}", m.size());
             throw std::runtime_error(msg);
         }
-        return std::make_unique<ThreeBodyMapper>(m);
+        return std::make_unique<ThreeBodyMapper>(m,idx);
     }
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
@@ -102,8 +102,8 @@ class ThreeBodyMapper : public FinalStateMapper,
 #ifdef ACHILLES_SHERPA_INTERFACE
 class SherpaMapper : public FinalStateMapper {
   public:
-    SherpaMapper(size_t _nout, Mapper_ptr<ATOOLS::Vec4D> _mapper)
-        : FinalStateMapper(_nout), sherpa_mapper{std::move(_mapper)} {}
+    SherpaMapper(size_t _nout,size_t idx, Mapper_ptr<ATOOLS::Vec4D> _mapper)
+        : FinalStateMapper(_nout,idx), sherpa_mapper{std::move(_mapper)} {}
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;

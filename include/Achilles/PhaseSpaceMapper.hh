@@ -21,9 +21,25 @@ class PSMapper : public Mapper<FourVector> {
     void SetLeptonBeam(Mapper_sptr<FourVector> _lbeam) { lbeam = _lbeam; }
     void SetHadronBeam(Mapper_sptr<FourVector> _hbeam) { hbeam = _hbeam; }
     void SetFinalState(Mapper_ptr<FourVector> _finalstate) { finalstate = std::move(_finalstate); }
-	size_t LeptonIdx() const { return 0; } // Start of Lepton list
-	size_t HadronIdx() const { return LeptonIdx()+lbeam->size(); } // Start of Hadron list
-	size_t FinalStateIdx() const { return HadronIdx()+hbeam->size(); } // Start of Final State
+	/// Start of Lepton list
+	size_t LeptonIdx() const { return 0; }
+	/// Start of Hadron list
+	size_t HadronIdx() const {
+		try {
+			return lbeam->size()+LeptonIdx();
+		} catch(...) {
+			// Assume lbeam has a size of 1 if not initialized
+			return 1+LeptonIdx();
+		}
+	}
+	/// Start of Final State
+	size_t FinalStateIdx() const {
+		try {
+			return hbeam->size()+HadronIdx();
+		} catch(...) {
+			return 1+HadronIdx();
+		}
+	}
 
     PSMapper(size_t _nleptons, size_t _nhadrons, size_t _nspectators)
         : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
