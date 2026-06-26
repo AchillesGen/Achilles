@@ -19,21 +19,23 @@ class FourVector;
 
 class FinalStateMapper : public Mapper<FourVector> {
   public:
-    FinalStateMapper(size_t _nout) : nout{std::move(_nout)} {}
+    FinalStateMapper(size_t _nout,size_t idx) : nout{std::move(_nout)}, m_idx{idx} {}
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
+	size_t size() const override { return nout; }
     size_t NDims() const override { return 3 * nout - 4; }
     static std::string Name() { return "Final State"; }
+	size_t FinalStateIdx() const { return m_idx; }
 
   private:
-    size_t nout;
+    size_t nout,m_idx;
 };
 
 class TwoBodyMapper : public FinalStateMapper,
                       Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
   public:
-    TwoBodyMapper(const std::vector<double> &m) : FinalStateMapper(2), s2{m[0]}, s3{m[1]} {}
+    TwoBodyMapper(const std::vector<double> &m,size_t idx) : FinalStateMapper(2,idx), s2{m[0]}, s3{m[1]} {}
     static std::string Name() { return "TwoBody"; }
     static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
         if(m.size() != 2) {
@@ -55,8 +57,8 @@ class TwoBodyMapper : public FinalStateMapper,
 class ThreeBodyMapper : public FinalStateMapper,
                         Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
   public:
-    ThreeBodyMapper(const std::vector<double> &m)
-        : FinalStateMapper(3), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
+    ThreeBodyMapper(const std::vector<double> &m,size_t idx)
+        : FinalStateMapper(3,idx), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
     static std::string Name() { return "ThreeBody"; }
     static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
         if(m.size() != 3) {

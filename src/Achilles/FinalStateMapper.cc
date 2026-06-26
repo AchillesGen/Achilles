@@ -34,18 +34,18 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
     auto lambda = sqrt(pow(s - s2 - s3, 2) - 4 * s2 * s3);
     auto pCM = lambda / (2 * sqrts);
 
-    mom[2] = {E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
-    mom[3] = {E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
+    mom[FinalStateIdx()] = {E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
+    mom[FinalStateIdx()+1] = {E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
 
-    zax.RotateBack(mom[2]);
-    zax.RotateBack(mom[3]);
+    zax.RotateBack(mom[FinalStateIdx()]);
+    zax.RotateBack(mom[FinalStateIdx()]);
 
-    mom[2] = mom[2].Boost(boostVec);
-    mom[3] = mom[3].Boost(boostVec);
+    mom[FinalStateIdx()] = mom[FinalStateIdx()].Boost(boostVec);
+    mom[FinalStateIdx()+1] = mom[FinalStateIdx()+1].Boost(boostVec);
 
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  MassCheck: {}", CheckMasses({mom[2], mom[3]}, {s2, s3}));
+    spdlog::trace("  MassCheck: {}", CheckMasses({mom[FinalStateIdx()], mom[FinalStateIdx()+1]}, {s2, s3}));
     spdlog::trace("  s = {}, lambda = {}", s, lambda);
 #endif
 }
@@ -55,7 +55,7 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
     auto boostVec = (mom[0] + mom[1]).BoostVector();
     auto mom0 = mom[0].Boost(-boostVec);
     auto rotMat = mom0.AlignZ();
-    auto p2 = mom[2].Boost(-boostVec).Rotate(rotMat);
+    auto p2 = mom[FinalStateIdx()].Boost(-boostVec).Rotate(rotMat);
     rans[0] = (p2.CosTheta() + 1) / dCos;
     rans[1] = p2.Phi() / dPhi;
 
@@ -97,12 +97,12 @@ void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vec
 
     FourVector p23;
     // Should tmass = res_mass?
-    TChannelMomenta(mom[0], mom[1], p23, mom[4], s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
+    TChannelMomenta(mom[0], mom[1], p23, mom[FinalStateIdx()+2], s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
                     rans[1], rans[2]);
-    Isotropic2Momenta(p23, s2, s3, mom[2], mom[3], rans[3], rans[4], m_ctmin, m_ctmax);
+    Isotropic2Momenta(p23, s2, s3, mom[FinalStateIdx()], mom[FinalStateIdx()+1], rans[3], rans[4], m_ctmin, m_ctmax);
 
     // Want to know gammaN invariant mass
-    // auto pGamma = mom[1] - mom[4];
+    // auto pGamma = mom[1] - mom[FinalStateIdx()+2];
     // auto pGammaN = pGamma + mom[0];
     // auto GammaN_mass = pGammaN.M();
     // spdlog::debug("GammaN invariant mass = {}", GammaN_mass);
@@ -130,16 +130,16 @@ double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
     double s23_max = pow(sqrts - sqrt(s4), 2);
     double s23_min = std::max(pow(sqrt(s2) + sqrt(s3), 2), 1E-8);
 
-    auto s23 = (mom[2] + mom[3]).M2();
+    auto s23 = (mom[FinalStateIdx()] + mom[FinalStateIdx()+1]).M2();
     rans[0] = (s23 - s23_min) / (s23_max - s23_min);
     wt *= 1. / (s23_max - s23_min);
 
     // wt *=
-    // MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((mom[2]+mom[3]).M2()),rans[0]);
+    // MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((mom[FinalStateIdx()]+mom[FinalStateIdx()+1]).M2()),rans[0]);
 
-    wt *= TChannelWeight(mom[0], mom[1], mom[2] + mom[3], mom[4], 0.0, m_alpha, m_ctmax, m_ctmin,
+    wt *= TChannelWeight(mom[0], mom[1], mom[FinalStateIdx()] + mom[FinalStateIdx()+1], mom[FinalStateIdx()+2], 0.0, m_alpha, m_ctmax, m_ctmin,
                          m_amct, 0, rans[1], rans[2]);
-    wt *= Isotropic2Weight(mom[2], mom[3], rans[3], rans[4], m_ctmin, m_ctmax);
+    wt *= Isotropic2Weight(mom[FinalStateIdx()], mom[FinalStateIdx()+1], rans[3], rans[4], m_ctmin, m_ctmax);
 
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, (3 * 3.) - 4.);
     Mapper<achilles::FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);

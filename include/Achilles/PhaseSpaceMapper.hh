@@ -16,10 +16,14 @@ class PSMapper : public Mapper<FourVector> {
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
-    size_t NDims() const override { return lbeam->NDims() + hbeam->NDims() + main->NDims(); }
+	size_t size() const override { return lbeam->size() + hbeam->size() + finalstate->size(); }
+    size_t NDims() const override { return lbeam->NDims() + hbeam->NDims() + finalstate->NDims(); }
     void SetLeptonBeam(Mapper_sptr<FourVector> _lbeam) { lbeam = _lbeam; }
     void SetHadronBeam(Mapper_sptr<FourVector> _hbeam) { hbeam = _hbeam; }
-    void SetFinalState(Mapper_ptr<FourVector> final) { main = std::move(final); }
+    void SetFinalState(Mapper_ptr<FourVector> _finalstate) { finalstate = std::move(_finalstate); }
+	size_t LeptonIdx() const { return 0; } // Start of Lepton list
+	size_t HadronIdx() const { return LeptonIdx()+lbeam->size(); } // Start of Hadron list
+	size_t FinalStateIdx() const { return HadronIdx()+hbeam->size(); } // Start of Final State
 
     PSMapper(size_t _nleptons, size_t _nhadrons, size_t _nspectators)
         : nleptons{std::move(_nleptons)}, nhadrons{std::move(_nhadrons)},
@@ -28,7 +32,7 @@ class PSMapper : public Mapper<FourVector> {
   private:
     size_t nleptons, nhadrons, nspectators;
     Mapper_sptr<FourVector> lbeam{}, hbeam{};
-    Mapper_ptr<FourVector> main{};
+    Mapper_ptr<FourVector> finalstate{};
 };
 
 } // namespace achilles

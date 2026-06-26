@@ -99,7 +99,7 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
 	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
 
-	// rans -> [x]
+	/// 1 for [x]
 	size_t NDims() const override { return 1; }
   private:
 	FourVector pHadron;
@@ -116,7 +116,9 @@ class DISNucleusMapper: public HadronicBeamMapper,
 	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
 	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
 
-	// rans -> [|pQuark|,cosTheta,phi,energy,x]
+	/// 2 for [pHadron,pQuark]
+	size_t size() const override { return 2; }
+	/// 5 for [|pHadron|,cosTheta,phi,energy,x]
 	size_t NDims() const override { return 5; }
   private:
 	static constexpr double dPhi=2*M_PI;

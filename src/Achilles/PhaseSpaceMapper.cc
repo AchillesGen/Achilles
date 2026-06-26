@@ -7,7 +7,7 @@ void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
     // Get the dimensions for each component of the PSMapper
     const int hbeamVars = static_cast<int>(hbeam->NDims());
     const int lbeamVars = static_cast<int>(lbeam->NDims());
-    const int mainVars = static_cast<int>(main->NDims());
+    const int mainVars = static_cast<int>(finalstate->NDims());
 
     // Separate the random numbers into the appropriate components
     const std::vector<double> hbeamRans(rans.begin(), rans.begin() + hbeamVars);
@@ -17,15 +17,15 @@ void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
 
     // Generate the phase space
     // The momentum are given in the following order:
-    // 1. Momentum of the initial lepton
-    // 2. Momentum of the initial hadron
+    // 1. Momentum of the initial lepton(s)
+    // 2. Momentum of the initial hadron(s)
     // 3. Momentum of all outgoing parts of the leptonic tensor
     // 4. Momentum of all outgoing hadrons
     // 5. Momentum of all spectators
-    momentum.resize(nleptons + nhadrons + nspectators);
+    momentum.resize(size());
     lbeam->GeneratePoint(momentum, lbeamRans);
     hbeam->GeneratePoint(momentum, hbeamRans);
-    main->GeneratePoint(momentum, mainRans);
+    finalstate->GeneratePoint(momentum, mainRans);
 
     // Debugging
     // Mapper<FourVector>::Print(__PRETTY_FUNCTION__, momentum, rans);
@@ -37,13 +37,13 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
     // temporary rans vector for each
     const auto hbeamVars = hbeam->NDims();
     const auto lbeamVars = lbeam->NDims();
-    const auto mainVars = main->NDims();
+    const auto mainVars = finalstate->NDims();
     std::vector<double> hbeamRans(hbeamVars), lbeamRans(lbeamVars), mainRans(mainVars);
 
     // Calculate the weights
     double lwgt = lbeam->GenerateWeight(momentum, lbeamRans);
     double hwgt = hbeam->GenerateWeight(momentum, hbeamRans);
-    double mwgt = main->GenerateWeight(momentum, mainRans);
+    double mwgt = finalstate->GenerateWeight(momentum, mainRans);
     double wgt = lwgt * hwgt * mwgt;
 
     // Merge the random numbers

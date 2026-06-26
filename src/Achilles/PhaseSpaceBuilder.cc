@@ -23,6 +23,16 @@ PSBuilder &PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, size_t idx) {
     return *this;
 }
 
+PSBuilder &PSBuilder::Hadron(const std::string &mode) {
+	try {
+		// If beam has been initialized, HadronIdx can be computed
+		return Hadron(mode,phase_space->HadronIdx());
+	} catch(...) {
+		// otherwise, HadronIdx is assumed to eventually be 1
+		return Hadron(mode,1);
+	}
+}
+
 PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
     // BUG: The idx parameter needs to be cast to size_t otherwise it is an error about rvalue and
     // lvalues
@@ -33,9 +43,17 @@ PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
 
 PSBuilder &PSBuilder::FinalState(const std::string &channel,
                                  std::optional<double> gauge_boson_mass) {
-    phase_space->main =
-        Factory<FinalStateMapper, std::vector<double>>::Initialize(channel, m_info.Masses());
-    if(gauge_boson_mass.has_value()) phase_space->main->SetGaugeBosonMass(gauge_boson_mass.value());
+	size_t idx;
+	try {
+		// If beam and hadrons have been initialized, FinalStateIdx can be computed
+		idx=phase_space->FinalStateIdx();
+	} catch(...) {
+		// otherwise, FinalStateIdx is assumed to eventually be 2
+		idx=2;
+	}
+    phase_space->finalstate =
+        Factory<FinalStateMapper, std::vector<double>, double>::Initialize(channel, m_info.Masses(),idx);
+    if(gauge_boson_mass.has_value()) phase_space->finalstate->SetGaugeBosonMass(gauge_boson_mass.value());
     return *this;
 }
 
@@ -43,12 +61,12 @@ PSBuilder &PSBuilder::FinalState(const std::string &channel,
 PSBuilder &PSBuilder::SherpaFinalState(const std::string &channel) {
     auto sherpaMap =
         Factory<PHASIC::Channels, std::vector<double>>::Initialize(channel, m_info.Masses());
-    phase_space->main = std::make_unique<SherpaMapper>(m_nlep + m_nhad - 2, std::move(sherpaMap));
+    phase_space->finalstate = std::make_unique<SherpaMapper>(m_nlep + m_nhad - 2, std::move(sherpaMap));
     return *this;
 }
 
 PSBuilder &PSBuilder::GenFinalState(std::unique_ptr<PHASIC::Channels> channel) {
-    phase_space->main = std::make_unique<SherpaMapper>(m_nlep + m_nhad - 2, std::move(channel));
+    phase_space->finalstate = std::make_unique<SherpaMapper>(m_nlep + m_nhad - 2, std::move(channel));
     return *this;
 }
 #endif
