@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module res_spectral_model
     use iso_c_binding
     use nuclear_model

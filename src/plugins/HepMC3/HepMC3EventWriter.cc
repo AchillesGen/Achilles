@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/HepMC3/HepMC3EventWriter.hh"
 #ifdef GZIP
 #include "gzstream/gzstream.h"

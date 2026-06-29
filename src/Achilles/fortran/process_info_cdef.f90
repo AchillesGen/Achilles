@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 interface
 
     subroutine process_ids_c(info, ids, len) bind(C, name="ProcessIDs")

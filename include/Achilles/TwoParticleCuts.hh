@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef TWO_PARTICLE_CUT_HH
 #define TWO_PARTICLE_CUT_HH
 
