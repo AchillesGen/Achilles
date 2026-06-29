@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Console-script launcher for the bundled native ``achilles`` executable.
 
 The compiled C++ ``achilles`` binary is installed inside the package directory

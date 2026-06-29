@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Constants and mappings for the Achilles MCP server."""
 
 # Beam type -> PDG ID and process lepton configuration

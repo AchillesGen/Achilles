@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Run card builder with YAML serialization supporting !include directives."""
 
 import yaml

@@ -1,5 +1,9 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/AchillesInit.hh"
 #include "Achilles/Cuts.hh"
+#include "Achilles/EventGen.hh"
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/HadronicMapper.hh"

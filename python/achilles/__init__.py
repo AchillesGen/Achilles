@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from ._achilles import __version__, set_paths, initialize_logging, generate_events, verbosity
 from importlib.resources import files, as_file
 from pathlib import Path
