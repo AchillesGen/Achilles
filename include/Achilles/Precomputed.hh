@@ -16,7 +16,7 @@
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wconversion"
-#pragma GCC diagnostic ignored "-Wuseless-cast"
+// #pragma GCC diagnostic ignored "-Wuseless-cast"
 #include "NuHepMC/Reader.hxx"
 #include "NuHepMC/ReaderUtils.hxx"
 #include "NuHepMC/Types.hxx"
