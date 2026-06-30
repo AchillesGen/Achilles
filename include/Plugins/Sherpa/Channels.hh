@@ -17,7 +17,7 @@ class Flavour;
 
 namespace PHASIC {
 
-class Channels : public achilles::Mapper<ATOOLS::Vec4D> {
+class Channels : public achilles::Mapper<std::vector<ATOOLS::Vec4D>> {
   public:
     double GenerateWeight(const std::vector<ATOOLS::Vec4D> &, std::vector<double> &) override = 0;
     void GeneratePoint(std::vector<ATOOLS::Vec4D> &, const std::vector<double> &) override = 0;

@@ -16,7 +16,7 @@ namespace achilles {
 class FourVector;
 class Beam;
 
-class QuasielasticTestMapper : public Mapper<FourVector> {
+class QuasielasticTestMapper : public Mapper<std::vector<FourVector>> {
   public:
     QuasielasticTestMapper(const YAML::Node &, std::shared_ptr<Beam>);
 

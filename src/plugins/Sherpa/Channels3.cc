@@ -381,7 +381,7 @@ void C3_0::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34 = CE.MasslessPropMomenta(m_salpha, s34_min, s34_max, ran[0]);
     CE.Isotropic2Momenta(p[0] + p[1] - p[5], s2, s34, p[2], p34, ran[1], ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_0::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -394,7 +394,7 @@ double C3_0::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.Isotropic2Weight(p[2], p[3] + p[4], rans[1], rans[2], -1, 1);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -409,7 +409,7 @@ void C3_1::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     double s34 = CE.MassivePropMomenta(fl34.Mass(), fl34.Width(), s34_min, s34_max, ran[0]);
     CE.Isotropic2Momenta(p[0] + p[1] - p[5], s2, s34, p[2], p34, ran[1], ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_1::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -424,7 +424,7 @@ double C3_1::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.Isotropic2Weight(p[2], p[3] + p[4], rans[1], rans[2], -1, 1);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -440,7 +440,7 @@ void C3_2::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
                        ran[2]);
     CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., ran[3],
                        ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_2::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -455,7 +455,7 @@ double C3_2::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., rans[3],
                             rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -472,7 +472,7 @@ void C3_3::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
                        ran[1], ran[2]);
     CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[4], p[3], s4, s3, 0., m_alpha, 1., -1., ran[3],
                        ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_3::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -488,7 +488,7 @@ double C3_3::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[4], p[3], 0., m_alpha, 1., -1., rans[3],
                             rans[4]);
     if(wt != 0.) wt = 1. / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -504,7 +504,7 @@ void C3_4::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
                        ran[2]);
     CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., ran[3],
                        ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_4::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -519,7 +519,7 @@ double C3_4::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., rans[3],
                             rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -536,7 +536,7 @@ void C3_5::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
                        ran[1], ran[2]);
     CE.TChannelMomenta(p[0] - p[5], p[1] - p[2], p[3], p[4], s3, s4, 0., m_alpha, 1., -1., ran[3],
                        ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_5::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -552,7 +552,7 @@ double C3_5::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
     wt *= CE.TChannelWeight(p[0] - p[5], p[1] - p[2], p[3], p[4], 0., m_alpha, 1., -1., rans[3],
                             rans[4]);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -567,7 +567,7 @@ void C3_6::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
                        ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_6::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -581,7 +581,7 @@ double C3_6::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
                             rans[1], rans[2]);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }
 
@@ -597,7 +597,7 @@ void C3_7::GeneratePoint(std::vector<Vec4D> &p, const std::vector<double> &ran) 
     CE.TChannelMomenta(p[0] - p[5], p[1], p34, p[2], s34, s2, 0., m_alpha, m_ctmax, m_ctmin, ran[1],
                        ran[2]);
     CE.Isotropic2Momenta(p34, s3, s4, p[3], p[4], ran[3], ran[4]);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, ran);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, ran);
 }
 
 double C3_7::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &rans) {
@@ -613,6 +613,6 @@ double C3_7::GenerateWeight(const std::vector<Vec4D> &p, std::vector<double> &ra
                             rans[1], rans[2]);
     wt *= CE.Isotropic2Weight(p[3], p[4], rans[3], rans[4], -1, 1);
     if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, 3 * 4. - 4.);
-    // Mapper<Vec4D>::Print(__PRETTY_FUNCTION__, p, rans);
+    // Mapper<std::vector<Vec4D>>::Print(__PRETTY_FUNCTION__, p, rans);
     return 1 / wt;
 }

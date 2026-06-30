@@ -12,7 +12,7 @@ double test_func_exp(const std::vector<double> &x, double wgt) {
            3.0 * wgt;
 }
 
-class DoubleMapper : public achilles::Mapper<double> {
+class DoubleMapper : public achilles::Mapper<std::vector<double>> {
   public:
     DoubleMapper(size_t channel) : m_channel{std::move(channel)} {}
     void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {

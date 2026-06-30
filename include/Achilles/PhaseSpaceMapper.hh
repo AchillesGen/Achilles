@@ -9,7 +9,7 @@ class FourVector;
 
 class PSBuilder;
 
-class PSMapper : public Mapper<FourVector> {
+class PSMapper : public Mapper<std::vector<FourVector>> {
   public:
     friend class PSBuilder;
     static PSBuilder build(size_t, size_t, size_t);
@@ -18,9 +18,9 @@ class PSMapper : public Mapper<FourVector> {
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
 	size_t size() const override { return lbeam->size() + hbeam->size() + finalstate->size(); }
     size_t NDims() const override { return lbeam->NDims() + hbeam->NDims() + finalstate->NDims(); }
-    void SetLeptonBeam(Mapper_sptr<FourVector> _lbeam) { lbeam = _lbeam; }
-    void SetHadronBeam(Mapper_sptr<FourVector> _hbeam) { hbeam = _hbeam; }
-    void SetFinalState(Mapper_ptr<FourVector> _finalstate) { finalstate = std::move(_finalstate); }
+    void SetLeptonBeam(Mapper_sptr<std::vector<FourVector>> _lbeam) { lbeam = _lbeam; }
+    void SetHadronBeam(Mapper_sptr<std::vector<FourVector>> _hbeam) { hbeam = _hbeam; }
+    void SetFinalState(Mapper_ptr<std::vector<FourVector>> _finalstate) { finalstate = std::move(_finalstate); }
 	/// Start of Lepton list
 	size_t LeptonIdx() const { return 0; }
 	/// Start of Hadron list
@@ -47,8 +47,8 @@ class PSMapper : public Mapper<FourVector> {
 
   private:
     size_t nleptons, nhadrons, nspectators;
-    Mapper_sptr<FourVector> lbeam{}, hbeam{};
-    Mapper_ptr<FourVector> finalstate{};
+    Mapper_sptr<std::vector<FourVector>> lbeam{}, hbeam{};
+    Mapper_ptr<std::vector<FourVector>> finalstate{};
 };
 
 } // namespace achilles

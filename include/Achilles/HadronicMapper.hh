@@ -11,7 +11,7 @@ namespace achilles {
 
 class FourVector;
 
-class HadronicBeamMapper : public Mapper<FourVector> {
+class HadronicBeamMapper : public Mapper<std::vector<FourVector>> {
   public:
     HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{idx} {}
 

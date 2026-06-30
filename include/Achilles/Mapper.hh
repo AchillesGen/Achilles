@@ -30,9 +30,9 @@ template <typename T> class Mapper {
     virtual ~Mapper() = default;
 
     // Functions
-    virtual void GeneratePoint(std::vector<T> &, const std::vector<double> &) = 0;
-    virtual double GenerateWeight(const std::vector<T> &, std::vector<double> &) = 0;
-	/// Number of slots in the vector<T> that get populated by GeneratePoint()
+    virtual void GeneratePoint(T &, const std::vector<double> &) = 0;
+    virtual double GenerateWeight(const T &, std::vector<double> &) = 0;
+	/// Number of slots in T that get populated by GeneratePoint()
 	/// and are read by GenerateWeight()
 	virtual size_t size() const { return 1; }
 	/// Number of slots in the vector<double> that are read by GeneratePoint()
@@ -43,13 +43,11 @@ template <typename T> class Mapper {
     virtual void SetGaugeBosonMass(double) {}
 
     // Printers
-    static void Print(const char *func, const std::vector<T> &point,
+    static void Print(const char *func, const T &point,
                       const std::vector<double> &rans) {
         spdlog::trace("{}", func);
+        spdlog::trace("  Point: {}",point);
         size_t idx = 0;
-        spdlog::trace("  Point:");
-        for(const auto &p : point) spdlog::trace("    - {}: {}", idx++, p);
-        idx = 0;
         spdlog::trace("  Rans:");
         for(const auto &r : rans) spdlog::trace("    - {}: {}", idx++, r);
     }

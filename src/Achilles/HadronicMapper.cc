@@ -17,7 +17,7 @@ CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
 
 void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
     point[HadronIdx()] = {m_mass, 0, 0, 0};
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, {});
+    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, {});
 }
 
 double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) {
@@ -67,7 +67,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_max = {}", cosT_max);
@@ -117,7 +117,7 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 
     double wgt = 1.0 / point[HadronIdx()].P2() / dp / dCos / dPhi / dE;
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);
     spdlog::trace("  dCos: {}", dCos);
@@ -181,7 +181,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_min = {}", cosT_max);
@@ -238,7 +238,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     double wgt =
         1.0 / point[1].P2() / dp / dCos / dPhi / dE / point.back().P2() / dp2 / dCos2 / dPhi;
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);
     spdlog::trace("  dCos: {}", dCos);

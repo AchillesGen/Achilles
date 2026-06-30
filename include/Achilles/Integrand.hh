@@ -10,7 +10,7 @@ namespace achilles {
 
 template <typename T> struct Channel {
     Vegas integrator;
-    std::unique_ptr<Mapper<T>> mapping;
+    std::unique_ptr<Mapper<std::vector<T>>> mapping;
     std::vector<double> train_data;
     std::vector<double> rans;
 

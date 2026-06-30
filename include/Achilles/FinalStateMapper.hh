@@ -17,7 +17,7 @@ namespace achilles {
 
 class FourVector;
 
-class FinalStateMapper : public Mapper<FourVector> {
+class FinalStateMapper : public Mapper<std::vector<FourVector>> {
   public:
     FinalStateMapper(size_t _nout,size_t idx) : nout{std::move(_nout)}, m_idx{idx} {}
 
@@ -102,7 +102,7 @@ class ThreeBodyMapper : public FinalStateMapper,
 #ifdef ACHILLES_SHERPA_INTERFACE
 class SherpaMapper : public FinalStateMapper {
   public:
-    SherpaMapper(size_t _nout,size_t idx, Mapper_ptr<ATOOLS::Vec4D> _mapper)
+    SherpaMapper(size_t _nout,size_t idx, Mapper_ptr<std::vector<ATOOLS::Vec4D>> _mapper)
         : FinalStateMapper(_nout,idx), sherpa_mapper{std::move(_mapper)} {}
 
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
@@ -110,7 +110,7 @@ class SherpaMapper : public FinalStateMapper {
     // size_t NDims() const override { return sherpa_mapper -> NDims(); }
 
   private:
-    Mapper_ptr<ATOOLS::Vec4D> sherpa_mapper;
+    Mapper_ptr<std::vector<ATOOLS::Vec4D>> sherpa_mapper;
 };
 #endif // ACHILLES_SHERPA_INTERFACE
 

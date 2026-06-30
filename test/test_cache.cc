@@ -175,7 +175,7 @@ double test_func_exp_cache(const std::vector<double> &x, double wgt) {
            3.0 * wgt;
 }
 
-class DoubleMapperCache : public achilles::Mapper<double> {
+class DoubleMapperCache : public achilles::Mapper<std::vector<double>> {
   public:
     DoubleMapperCache(size_t channel) : m_channel{std::move(channel)} {}
     void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {

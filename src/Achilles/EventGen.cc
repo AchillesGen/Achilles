@@ -242,8 +242,8 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
 
 bool achilles::EventGen::GenerateSingleEvent() {
     // Select the process group and generate an event
-    auto &group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
-    auto &&event = group.GenerateEvent();
+    ProcessGroup& group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
+    Event&& event = group.GenerateEvent();
     event.Weight() *= m_max_weight;
     if(event.Weight() == 0) {
         writer->Write(event);

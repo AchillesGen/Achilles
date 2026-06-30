@@ -8,7 +8,7 @@ namespace achilles {
 class FourVector;
 class Beam;
 
-class BeamMapper : public Mapper<FourVector> {
+class BeamMapper : public Mapper<std::vector<FourVector>> {
   public:
     BeamMapper(size_t idx, std::shared_ptr<Beam> beam)
         : m_idx{std::move(idx)}, m_beam{std::move(beam)} {}

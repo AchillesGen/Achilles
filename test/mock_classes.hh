@@ -167,7 +167,7 @@ class MockFormFactorBuilder : public trompeloeil::mock_interface<achilles::FormF
     IMPLEMENT_MOCK0(build);
 };
 
-class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<achilles::FourVector>> {
+class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<std::vector<achilles::FourVector>>> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK2(GeneratePoint);
     IMPLEMENT_MOCK2(GenerateWeight);

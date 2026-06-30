@@ -5,7 +5,7 @@ double dummy_func(const std::vector<double> &, double) {
     return 1.0;
 }
 
-class DummyMapper : public achilles::Mapper<double> {
+class DummyMapper : public achilles::Mapper<std::vector<double>> {
   public:
     void GeneratePoint(std::vector<double> &point, const std::vector<double> &rans) override {
         std::copy(rans.begin(), rans.end(), point.begin());
