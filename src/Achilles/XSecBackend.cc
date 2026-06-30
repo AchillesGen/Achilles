@@ -234,9 +234,7 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
     double amps2 = 0;
     // Loop over lepton spin
     for(size_t i = 0; i < nlep_spins; ++i) {
-        // FIXME: this to be correct!!!
         size_t idx = ((i & ~1ul) << 2) + ((i & 1ul) << 1);
-        idx = idx == 2 ? 10 : 2;
         // Loop over hadron spin
         for(size_t j = 0; j < nhad_spins; ++j) {
             std::complex<double> amp = 0;
