@@ -1,7 +1,13 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
 #include "mock_classes.hh"
+
+#ifdef CATCH_CONFIG_ENABLE_BENCHMARKING
+#include "catch2/benchmark/catch_benchmark.hpp"
+#include "catch2/benchmark/catch_chronometer.hpp"
+#endif
 
 double stencil5(std::function<double(double)> f, double x, double h) {
     return (-f(x + 2 * h) + 8 * f(x + h) - 8 * f(x - h) - f(x - 2 * h)) / (12 * h);
@@ -51,22 +57,17 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         double disdp = autodiff::derivative(func_is, autodiff::wrt(plab), autodiff::at(plab, r));
         double disdr = autodiff::derivative(func_is, autodiff::wrt(r), autodiff::at(plab, r));
 
-        std::cout << drvdp << " " << drvdr << "\n";
-        std::cout << divdp << " " << divdr << "\n";
-        std::cout << drsdp << " " << drsdr << "\n";
-        std::cout << disdp << " " << disdr << "\n";
-
         auto stencilp = potential.derivative_p(plab, r, 0.01);
         auto stencilr = potential.derivative_r(plab, r, 0.01);
 
-        CHECK(drvdp == Approx(stencilp.rvector));
-        CHECK(drvdr == Approx(stencilr.rvector));
-        CHECK(divdp == Approx(stencilp.ivector));
-        CHECK(divdr == Approx(stencilr.ivector));
-        CHECK(drsdp == Approx(stencilp.rscalar));
-        CHECK(drsdr == Approx(stencilr.rscalar));
-        CHECK(disdp == Approx(stencilp.iscalar));
-        CHECK(disdr == Approx(stencilr.iscalar));
+        CHECK(drvdp == Catch::Approx(stencilp.rvector));
+        CHECK(drvdr == Catch::Approx(stencilr.rvector));
+        CHECK(divdp == Catch::Approx(stencilp.ivector));
+        CHECK(divdr == Catch::Approx(stencilr.ivector));
+        CHECK(drsdp == Catch::Approx(stencilp.rscalar));
+        CHECK(drsdr == Catch::Approx(stencilr.rscalar));
+        CHECK(disdp == Catch::Approx(stencilp.iscalar));
+        CHECK(disdr == Catch::Approx(stencilr.iscalar));
 #else
         double r = 0.15;
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
@@ -77,18 +78,13 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto stencilr = potential.derivative_r(plab, r);
 
         // Require to match to 0.01% of Cooper code
-        CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
-        CHECK(vals.ivector == Approx(ivector).epsilon(0.0001));
-        CHECK(vals.rscalar == Approx(rscalar).epsilon(0.0001));
-        CHECK(vals.iscalar == Approx(iscalar).epsilon(0.0001));
+        CHECK(vals.rvector == Catch::Approx(rvector).epsilon(0.0001));
+        CHECK(vals.ivector == Catch::Approx(ivector).epsilon(0.0001));
+        CHECK(vals.rscalar == Catch::Approx(rscalar).epsilon(0.0001));
+        CHECK(vals.iscalar == Catch::Approx(iscalar).epsilon(0.0001));
 
         CHECK(stencilp.rvector != 0);
         CHECK(stencilr.rvector != 0);
-
-        std::cout << stencilp.rvector << " " << stencilp.ivector << "\n";
-        std::cout << stencilp.rscalar << " " << stencilp.iscalar << "\n";
-        std::cout << stencilr.rvector << " " << stencilr.ivector << "\n";
-        std::cout << stencilr.rscalar << " " << stencilr.iscalar << "\n";
     }
 
 #if defined(CATCH_CONFIG_ENABLE_BENCHMARKING)
@@ -200,9 +196,9 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         auto vals = potential(plab, r);
 
         // Require to match to 0.01% of Cooper code
-        CHECK(vals.rvector == Approx(rvector).epsilon(0.0001));
-        CHECK(vals.ivector == Approx(ivector).epsilon(0.0001));
-        CHECK(vals.rscalar == Approx(0));
-        CHECK(vals.iscalar == Approx(0));
+        CHECK(vals.rvector == Catch::Approx(rvector).epsilon(0.0001));
+        CHECK(vals.ivector == Catch::Approx(ivector).epsilon(0.0001));
+        CHECK(vals.rscalar == Catch::Approx(0));
+        CHECK(vals.iscalar == Catch::Approx(0));
     }
 }

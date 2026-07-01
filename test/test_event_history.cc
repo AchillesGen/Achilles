@@ -1,4 +1,6 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_string.hpp"
+#include "catch2/matchers/catch_matchers_vector.hpp"
 #include "catch2/trompeloeil.hpp"
 
 #include "Achilles/Constants.hh"
@@ -205,9 +207,9 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
             R"exp(Node(beam, {Particle[14, 25, FourVector(1.00000000e+04, 0.00000000e+00, 0.00000000e+00, 1.00000000e+04), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[14, 25, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
 
         // Check for expected substrings, in case order of visiting changes in future
-        CHECK_THAT(visitor.data, Catch::Matchers::Contains(expected1));
-        CHECK_THAT(visitor.data, Catch::Matchers::Contains(expected2));
-        CHECK_THAT(visitor.data, Catch::Matchers::Contains(expected3));
+        CHECK_THAT(visitor.data, Catch::Matchers::ContainsSubstring(expected1));
+        CHECK_THAT(visitor.data, Catch::Matchers::ContainsSubstring(expected2));
+        CHECK_THAT(visitor.data, Catch::Matchers::ContainsSubstring(expected3));
     }
 
     SECTION("Mock Visitor") {

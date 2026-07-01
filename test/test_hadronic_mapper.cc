@@ -1,4 +1,5 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
@@ -61,10 +62,10 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             std::vector<achilles::FourVector> mom2(2);
             mom2[0] = mom[0];
             mapper->GeneratePoint(mom2, ran);
-            CHECK(mom[1].Px() == Approx(mom2[1].Px()));
-            CHECK(mom[1].Py() == Approx(mom2[1].Py()));
-            CHECK(mom[1].Pz() == Approx(mom2[1].Pz()));
-            CHECK(mom[1].E() == Approx(mom2[1].E()));
+            CHECK(mom[1].Px() == Catch::Approx(mom2[1].Px()));
+            CHECK(mom[1].Py() == Catch::Approx(mom2[1].Py()));
+            CHECK(mom[1].Pz() == Catch::Approx(mom2[1].Pz()));
+            CHECK(mom[1].E() == Catch::Approx(mom2[1].E()));
         }
     }
 }

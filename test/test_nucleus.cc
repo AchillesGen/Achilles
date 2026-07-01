@@ -1,4 +1,7 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
+#include "catch2/internal/catch_unique_ptr.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Nucleus.hh"
@@ -15,8 +18,7 @@ std::string const &RandomNucleusGenerator::get() const {
 // is a value-wrapper around std::unique_ptr<IGenerator<std::string>>.
 Catch::Generators::GeneratorWrapper<std::string> randomNucleus(size_t length) {
     return Catch::Generators::GeneratorWrapper<std::string>(
-        std::unique_ptr<Catch::Generators::IGenerator<std::string>>(
-            new RandomNucleusGenerator(length)));
+        Catch::Detail::make_unique<RandomNucleusGenerator>(length));
 }
 
 const std::string dFile = "data/densities/c12.prova.txt";

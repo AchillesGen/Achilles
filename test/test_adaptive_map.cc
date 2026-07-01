@@ -1,4 +1,7 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
+#include "catch2/matchers/catch_matchers_vector.hpp"
 
 #include "Achilles/AdaptiveMap.hh"
 
@@ -28,7 +31,7 @@ TEST_CASE("Numbers generated according to Adaptive Map", "[vegas]") {
         auto wgt = map(rans);
 
         // Check that the jacobian is 1 for a uniform distribution
-        CHECK(wgt == Approx(1.0));
+        CHECK(wgt == Catch::Approx(1.0));
 
         // Check that the input number is the same as the output numbers;
         CHECK_THAT(rans, Catch::Matchers::Approx(rans));
@@ -51,10 +54,10 @@ TEST_CASE("Numbers generated according to Adaptive Map", "[vegas]") {
             jac *= jacobian[idx];
             const auto val =
                 newEdges[idx] + (position - static_cast<double>(idx)) * map.width(i, idx);
-            CHECK(rans[i] == Approx(val));
+            CHECK(rans[i] == Catch::Approx(val));
         }
 
-        CHECK(wgt == Approx(jac));
+        CHECK(wgt == Catch::Approx(jac));
     }
 }
 
@@ -78,7 +81,7 @@ TEST_CASE("Adaptive Map Histogram Updates", "[vegas]") {
             CHECK(std::is_sorted(map.Hist().begin() + static_cast<int>(i * (nbins + 1)),
                                  map.Hist().begin() + static_cast<int>((i + 1) * (nbins + 1))));
             for(size_t j = 1; j < nbins; ++j) {
-                CHECK(map.Edges(i)[j] != Approx(edges[i][j]));
+                CHECK(map.Edges(i)[j] != Catch::Approx(edges[i][j]));
                 CHECK((map.Edges(i)[j] >= 0 && map.Edges(i)[j] <= 1));
             }
         }

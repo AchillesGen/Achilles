@@ -1,5 +1,6 @@
 #include "Achilles/Current.hh"
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_floating_point.hpp"
 
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Particle.hh"

@@ -50,7 +50,7 @@ add_executable(achilles-testsuite
     test_delta.cc
     test_clebsch_gordan.cc
 )
-target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
+target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings
     PUBLIC physics mappers event_gen)
 if(ENABLE_BSM)
     target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
@@ -84,8 +84,22 @@ target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
 include(Catch)
-# add_test(NAME fortran-testsuite
-#          COMMAND achilles-fortran-testsuite)
+
+# Register the C++ Catch2 cases (one CTest entry per test case) ...
 catch_discover_tests(achilles-testsuite
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    PROPERTIES LABELS "cpp"
+)
+
+# ... and the Fortran suite as a single CTest entry so a single `ctest` call
+# runs both. The Fortran program returns a non-zero exit code on failure (see
+# test_fortran.f90); FAIL_REGULAR_EXPRESSION backstops that against the FUT
+# framework's default of always exiting 0.
+add_test(NAME achilles-fortran-testsuite
+    COMMAND achilles-fortran-testsuite
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+set_tests_properties(achilles-fortran-testsuite PROPERTIES
+    LABELS "fortran"
+    FAIL_REGULAR_EXPRESSION "failed with reason"
 )

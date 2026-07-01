@@ -1,7 +1,9 @@
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/Process.hh"
 #include "Achilles/Vegas.hh"
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_template_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
+#include "catch2/generators/catch_generators_random.hpp"
 #include "catch_utils.hh"
 #include "mock_classes.hh"
 

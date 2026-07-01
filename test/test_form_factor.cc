@@ -1,4 +1,6 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 #include <iostream>
 
@@ -52,12 +54,12 @@ TEST_CASE("Vector", "[FormFactor]") {
                           "FormFactor: Expected type vector, got type axial");
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
-        CHECK(vals.Gep == Approx(0.25));
+        CHECK(vals.Gep == Catch::Approx(0.25));
         // Value below is the result of:
         // (-muN*Q2/(1+5.6*Q2/mp^2)/4mp^2) * Gep
         // with:
         // muN = 1, Q2 = 1, Gep = 1/4, mp = 0.93827208816
-        CHECK(vals.Gen == Approx(-0.038578136359582302263831 * 0.25));
+        CHECK(vals.Gen == Catch::Approx(-0.038578136359582302263831 * 0.25));
         CHECK(vals.Gmp == vals.Gep);
         CHECK(vals.Gmn == vals.Gep);
     }
@@ -78,8 +80,8 @@ TEST_CASE("Vector", "[FormFactor]") {
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
         const double tau = 1.0 / (4 * pow(achilles::Constant::mp / 1_GeV, 2));
-        CHECK(vals.Gep == Approx((1 + tau) / (1 + tau + tau * tau + tau * tau * tau)));
-        CHECK(vals.Gen == Approx(0.25 * tau / (1 + tau)));
+        CHECK(vals.Gep == Catch::Approx((1 + tau) / (1 + tau + tau * tau + tau * tau * tau)));
+        CHECK(vals.Gen == Catch::Approx(0.25 * tau / (1 + tau)));
         CHECK(vals.Gmp == vals.Gep);
         CHECK(vals.Gmn == vals.Gep);
     }
@@ -105,10 +107,10 @@ TEST_CASE("Vector", "[FormFactor]") {
         const double tau = 1.0 / (4 * pow(achilles::Constant::mp / 1_GeV, 2));
         const double num = 1 + tau + tau * tau + tau * tau * tau;
         const double den = 1 + tau + tau * tau + tau * tau * tau + tau * tau * tau * tau;
-        CHECK(vals.Gep == Approx(num / den));
-        CHECK(vals.Gen == Approx(num / den));
-        CHECK(vals.Gmp == Approx(num / den));
-        CHECK(vals.Gmn == Approx(num / den));
+        CHECK(vals.Gep == Catch::Approx(num / den));
+        CHECK(vals.Gen == Catch::Approx(num / den));
+        CHECK(vals.Gmp == Catch::Approx(num / den));
+        CHECK(vals.Gmn == Catch::Approx(num / den));
     }
 
     SECTION("Arrington-Hill") {
@@ -127,10 +129,10 @@ TEST_CASE("Vector", "[FormFactor]") {
         auto ff = achilles::ArringtonHill::Construct(achilles::FFType::vector, node);
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
-        CHECK(vals.Gep == Approx(13));
-        CHECK(vals.Gen == Approx(13));
-        CHECK(vals.Gmp == Approx(13));
-        CHECK(vals.Gmn == Approx(13));
+        CHECK(vals.Gep == Catch::Approx(13));
+        CHECK(vals.Gen == Catch::Approx(13));
+        CHECK(vals.Gmp == Catch::Approx(13));
+        CHECK(vals.Gmn == Catch::Approx(13));
     }
 }
 
@@ -142,8 +144,8 @@ TEST_CASE("Axial", "[FormFactor]") {
         auto ff = achilles::AxialDipole::Construct(achilles::FFType::axial, node);
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
-        CHECK(vals.FA == Approx(-0.25));
-        CHECK(vals.FAs == Approx(-0.25));
+        CHECK(vals.FA == Catch::Approx(-0.25));
+        CHECK(vals.FAs == Catch::Approx(-0.25));
     }
     SECTION("AxialZExpansion") {
         YAML::Node node = YAML::Load(R"node(
@@ -158,10 +160,10 @@ TEST_CASE("Axial", "[FormFactor]") {
         achilles::FormFactor::Values vals;
         ff->Evaluate(0, vals);
         // fA(Q2=0) = gA = -1.27...
-        CHECK(vals.FA == Approx(-1.27).epsilon(1e-2));
+        CHECK(vals.FA == Catch::Approx(-1.27).epsilon(1e-2));
         // Q2=0 --> z=-0.234172
         // \sum_{n=0}^{8} (-0.234172)^n \approx 0.810262
-        CHECK(vals.FAs == Approx(0.810262).epsilon(1e-6));
+        CHECK(vals.FAs == Catch::Approx(0.810262).epsilon(1e-6));
     }
 }
 
@@ -180,7 +182,7 @@ TEST_CASE("Coherent", "[FormFactor]") {
         const double kappa = 1.0 / achilles::Constant::HBARC;
         const double result = 3 * exp(-kappa * kappa * 0.2 * 0.2 / 2) *
                               (sin(kappa * r) - kappa * r * cos(kappa * r)) / pow(kappa * r, 3);
-        CHECK(vals.Fcoh == Approx(result));
+        CHECK(vals.Fcoh == Catch::Approx(result));
     }
 
     SECTION("Lovato") {
@@ -192,7 +194,7 @@ TEST_CASE("Coherent", "[FormFactor]") {
         ff->Evaluate(1, vals);
         const double x = 1.0 / achilles::Constant::HBARC;
         const double result = exp(-0.5 * x * x) * (1 + x + x * x + x * x * x + x * x * x * x) / 6.0;
-        CHECK(vals.Fcoh == Approx(result));
+        CHECK(vals.Fcoh == Catch::Approx(result));
     }
 }
 
@@ -208,15 +210,15 @@ TEST_CASE("Builder", "[FormFactor]") {
     auto vals = ff->operator()(1);
     const double x = 1.0 / achilles::Constant::HBARC;
     const double result = exp(-0.5 * x * x) * (1 + x + x * x + x * x * x + x * x * x * x) / 6.0;
-    CHECK(vals.Gep == Approx(0.25));
+    CHECK(vals.Gep == Catch::Approx(0.25));
     // Value below is the result of:
     // (-muN*Q2/(1+5.6*Q2/mp^2)/4mp^2) * Gep
     // with:
     // muN = 1, Q2 = 1, Gep = 1/4, mp = 0.93827208816
-    CHECK(vals.Gen == Approx(-0.038578136359582302263831 * 0.25));
+    CHECK(vals.Gen == Catch::Approx(-0.038578136359582302263831 * 0.25));
     CHECK(vals.Gmp == vals.Gep);
     CHECK(vals.Gmn == vals.Gep);
-    CHECK(vals.FA == Approx(-0.25));
-    CHECK(vals.FAs == Approx(-0.25));
-    CHECK(vals.Fcoh == Approx(result));
+    CHECK(vals.FA == Catch::Approx(-0.25));
+    CHECK(vals.FAs == Catch::Approx(-0.25));
+    CHECK(vals.Fcoh == Catch::Approx(result));
 }

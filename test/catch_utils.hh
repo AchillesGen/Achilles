@@ -3,7 +3,8 @@
 
 // Inspired from Catch2/examples/300-Gen-OwnGenerator.cpp
 
-#include "catch2/catch_all.hpp"
+#include "catch2/generators/catch_generators.hpp"
+#include "catch2/internal/catch_unique_ptr.hpp"
 #include <random>
 #include <string>
 
@@ -74,8 +75,7 @@ inline achilles::FourVector const &RandomMomentumGenerator::get() const {
 inline Catch::Generators::GeneratorWrapper<achilles::FourVector> randomMomentum(double max,
                                                                                 double mass = 0) {
     return Catch::Generators::GeneratorWrapper<achilles::FourVector>(
-        std::unique_ptr<Catch::Generators::IGenerator<achilles::FourVector>>(
-            new RandomMomentumGenerator(max, mass)));
+        Catch::Detail::make_unique<RandomMomentumGenerator>(max, mass));
 }
 
 class RandomVectorGenerator : public Catch::Generators::IGenerator<std::vector<double>> {
@@ -109,8 +109,7 @@ inline std::vector<double> const &RandomVectorGenerator::get() const {
 inline Catch::Generators::GeneratorWrapper<std::vector<double>>
 randomVector(size_t size, double min = 0, double max = 1) {
     return Catch::Generators::GeneratorWrapper<std::vector<double>>(
-        std::unique_ptr<Catch::Generators::IGenerator<std::vector<double>>>(
-            new RandomVectorGenerator(size, min, max)));
+        Catch::Detail::make_unique<RandomVectorGenerator>(size, min, max));
 }
 
 #endif

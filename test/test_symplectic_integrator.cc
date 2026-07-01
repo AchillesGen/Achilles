@@ -1,14 +1,14 @@
-#include "catch2/catch_all.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_template_test_macros.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "Achilles/Constants.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
 #include "mock_classes.hh"
-#include "spdlog/spdlog.h"
 
 #include <complex>
-#include <fstream>
 
 using achilles::ThreeVector;
 
@@ -131,73 +131,59 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
         return dHamiltonian_dp(p_, q_, pot_);
     };
 
-    achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr_func, dHamiltonian_dp_func,
-                                      omega);
+    const double E0 = Hamiltonian(q, p, potential);
 
-    SECTION("Order 2") {
-        std::ofstream out("symplectic2_" + potential->Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
-        out << "X,Y,Z,Px,Py,Pz,E\n";
-        out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-        out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
-        for(size_t i = 0; i < nsteps; ++i) {
-            si.Step<2>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
-            out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-            out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
-        }
+    // The defining property of a symplectic integrator is that it conserves the
+    // Hamiltonian (the total energy) to within a bounded error that shrinks as the
+    // integration order increases. We integrate the trajectory and check that the
+    // relative energy drift stays small, rather than dumping the trajectory to a
+    // file for visual inspection.
+    SECTION("Order 2 conserves energy") {
+        achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr_func,
+                                          dHamiltonian_dp_func, omega);
+        for(size_t i = 0; i < nsteps; ++i) si.Step<2>(step_size);
+
         const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        const double Ef2 = Hamiltonian(si.State().x, si.State().y, potential);
-        spdlog::info("Final Hamiltonian Value: {}, {}, {}, {}",
-                     Hamiltonian(si.Q(), si.P(), potential), std::abs(Ef - E0) / E0, Ef2,
-                     std::abs(Ef2 - E0) / E0);
-        spdlog::info("Final Position: {}, {}, {}", si.Q(), si.State().x,
-                     (si.Q() - si.State().x).P() / si.Q().P());
-        spdlog::info("Final Momentum: {}, {}, {}", si.P(), si.State().y,
-                     (si.P() - si.State().y).P() / si.P().P());
-        out.close();
+        CHECK(std::abs(Ef - E0) / E0 < 1e-3);
+
+        // The auxiliary (x, y) copy tracked by the integrator must stay locked to
+        // the primary (q, p) phase-space point.
+        CHECK(Hamiltonian(si.State().x, si.State().y, potential) ==
+              Catch::Approx(Ef).epsilon(1e-6));
     }
 
-    SECTION("Order 4") {
-        std::ofstream out("symplectic4_" + potential->Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
-        out << "X,Y,Z,Px,Py,Pz,E\n";
-        out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-        out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
+    SECTION("Order 4 conserves energy better than order 2") {
+        achilles::SymplecticIntegrator si2(q, p, potential, dHamiltonian_dr_func,
+                                           dHamiltonian_dp_func, omega);
+        achilles::SymplecticIntegrator si4(q, p, potential, dHamiltonian_dr_func,
+                                           dHamiltonian_dp_func, omega);
         for(size_t i = 0; i < nsteps; ++i) {
-            si.Step<4>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
-            out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-            out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
+            si2.Step<2>(step_size);
+            si4.Step<4>(step_size);
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential),
-                     std::abs(Ef - E0) / E0);
-        spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
-        spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
-        out.close();
+
+        const double drift2 = std::abs(Hamiltonian(si2.Q(), si2.P(), potential) - E0) / E0;
+        const double drift4 = std::abs(Hamiltonian(si4.Q(), si4.P(), potential) - E0) / E0;
+        CHECK(drift4 < 1e-4);
+        CHECK(drift4 < drift2);
     }
 
-    SECTION("Order 6") {
-        std::ofstream out("symplectic6_" + potential->Name() + ".txt");
-        const double E0 = Hamiltonian(q, p, potential);
-        spdlog::info("Initial Hamiltonian Value: {}", Hamiltonian(q, p, potential));
-        out << "X,Y,Z,Px,Py,Pz,E\n";
-        out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-        out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << E0 << "\n";
+    SECTION("Order 6 conserves energy better than order 2") {
+        // Orders 4 and 6 both reach the ~1e-7 error floor for these parameters, so we
+        // do not compare them against each other; instead we check order 6 against the
+        // much larger order-2 drift, which is a stable, well-separated comparison.
+        achilles::SymplecticIntegrator si2(q, p, potential, dHamiltonian_dr_func,
+                                           dHamiltonian_dp_func, omega);
+        achilles::SymplecticIntegrator si6(q, p, potential, dHamiltonian_dr_func,
+                                           dHamiltonian_dp_func, omega);
         for(size_t i = 0; i < nsteps; ++i) {
-            si.Step<6>(step_size);
-            const double Ei = Hamiltonian(si.Q(), si.P(), potential);
-            out << si.Q().X() << "," << si.Q().Y() << "," << si.Q().Z() << ",";
-            out << si.P().X() << "," << si.P().Y() << "," << si.P().Z() << "," << Ei << "\n";
+            si2.Step<2>(step_size);
+            si6.Step<6>(step_size);
         }
-        const double Ef = Hamiltonian(si.Q(), si.P(), potential);
-        spdlog::info("Final Hamiltonian Value: {}, {}", Hamiltonian(si.Q(), si.P(), potential),
-                     std::abs(Ef - E0) / E0);
-        spdlog::info("Final Position: {}, {}", si.Q(), si.State().x);
-        spdlog::info("Final Momentum: {}, {}", si.P(), si.State().y);
-        out.close();
+
+        const double drift2 = std::abs(Hamiltonian(si2.Q(), si2.P(), potential) - E0) / E0;
+        const double drift6 = std::abs(Hamiltonian(si6.Q(), si6.P(), potential) - E0) / E0;
+        CHECK(drift6 < 1e-5);
+        CHECK(drift6 < drift2);
     }
 }
