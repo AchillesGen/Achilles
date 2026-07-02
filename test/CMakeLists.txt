@@ -53,10 +53,12 @@ add_executable(achilles-testsuite
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings
     PUBLIC physics mappers event_gen)
 if(ENABLE_BSM)
-    target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
+    target_link_libraries(achilles-testsuite PRIVATE -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
 endif()
-target_link_libraries(achilles-testsuite PUBLIC Catch2::Catch2WithMain trompeloeil)
-target_compile_definitions(achilles-testsuite PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
+target_link_libraries(achilles-testsuite PRIVATE Catch2::Catch2WithMain trompeloeil)
+target_compile_definitions(achilles-testsuite PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING)
+# Turn off false positive in GCC as an error
+target_compile_options(achilles-testsuite PRIVATE -Wno-error=null-dereference)
 
 set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
