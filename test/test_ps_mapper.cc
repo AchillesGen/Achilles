@@ -12,7 +12,7 @@ class DummyHadron : public achilles::HadronicBeamMapper,
                                           const achilles::ProcessInfo &, size_t> {
   public:
     DummyHadron(const achilles::ProcessInfo &info, size_t idx) : HadronicBeamMapper(info, idx) {}
-    static std::string Name() { return "Dummy"; }
+    static std::string Name() { return "DummyHadron"; }
     static std::unique_ptr<achilles::HadronicBeamMapper>
     Construct(const achilles::ProcessInfo &info, size_t idx) {
         return std::make_unique<DummyHadron>(info, idx);
@@ -28,13 +28,15 @@ class DummyHadron : public achilles::HadronicBeamMapper,
     size_t NDims() const override { return 0; }
 };
 
-class DummyFS : public achilles::FinalStateMapper,
-                achilles::Registrable<achilles::FinalStateMapper, DummyFS, std::vector<double>> {
+class DummyFS
+    : public achilles::FinalStateMapper,
+      achilles::Registrable<achilles::FinalStateMapper, DummyFS, std::vector<double>, size_t> {
   public:
-    DummyFS(const std::vector<double> &) : FinalStateMapper(2) {}
-    static std::string Name() { return "Dummy"; }
-    static std::unique_ptr<achilles::FinalStateMapper> Construct(const std::vector<double> &m) {
-        return std::make_unique<DummyFS>(m);
+    DummyFS(const std::vector<double> &, size_t) : FinalStateMapper(2, 2) {}
+    static std::string Name() { return "DummyFS"; }
+    static std::unique_ptr<achilles::FinalStateMapper> Construct(const std::vector<double> &m,
+                                                                 size_t a) {
+        return std::make_unique<DummyFS>(m, a);
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
@@ -56,7 +58,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
     auto mapper =
-        achilles::PSBuilder(info).Beam(beam, 0).Hadron("Dummy").FinalState("Dummy").build();
+        achilles::PSBuilder(info).Beam(beam, 0).Hadron("DummyHadron").FinalState("DummyFS").build();
     std::vector<double> rans(2);
     std::vector<double> beam_rans;
     std::set<achilles::PID> beam_id{achilles::PID::electron()};
@@ -94,6 +96,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
     std::vector<double> rans{0.5, 0.5, 0.5, 0.5, 0.5, 0.5}, rans_out(6);
 
     REQUIRE_CALL(*beam_map, NDims()).TIMES(2).LR_RETURN((beam_dims));
+    REQUIRE_CALL(*beam_map, size()).TIMES(1).LR_RETURN(1ul);
     REQUIRE_CALL(*beam_map, GeneratePoint(mom, lbeam_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(mom[1] = beam_mom);
@@ -103,6 +106,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .RETURN(1.0);
 
     REQUIRE_CALL(*hadron_map, NDims()).TIMES(2).LR_RETURN((hadron_dims));
+    REQUIRE_CALL(*hadron_map, size()).TIMES(1).LR_RETURN(1ul);
     REQUIRE_CALL(*hadron_map, GeneratePoint(mom2, hadron_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(mom[0] = hadron_mom);
@@ -112,6 +116,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .RETURN(1.0);
 
     REQUIRE_CALL(*final_state_map, NDims()).TIMES(2).LR_RETURN((final_state_dims));
+    REQUIRE_CALL(*final_state_map, size()).TIMES(1).LR_RETURN(2ul);
     REQUIRE_CALL(*final_state_map, GeneratePoint(mom3, final_state_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(mom[2] = final_state_mom[0])

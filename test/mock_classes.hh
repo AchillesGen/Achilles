@@ -167,11 +167,13 @@ class MockFormFactorBuilder : public trompeloeil::mock_interface<achilles::FormF
     IMPLEMENT_MOCK0(build);
 };
 
-class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<std::vector<achilles::FourVector>>> {
+class MockMapper
+    : public trompeloeil::mock_interface<achilles::Mapper<std::vector<achilles::FourVector>>> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK2(GeneratePoint);
     IMPLEMENT_MOCK2(GenerateWeight);
     IMPLEMENT_CONST_MOCK0(NDims);
+    IMPLEMENT_CONST_MOCK0(size);
     IMPLEMENT_MOCK1(SetMasses);
     IMPLEMENT_CONST_MOCK0(Masses);
     IMPLEMENT_MOCK1(SetGaugeBosonMass);
@@ -180,7 +182,8 @@ class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<std::vect
 class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK2(Beam);
-    IMPLEMENT_MOCK2(Hadron);
+    MAKE_MOCK1(Hadron, PSBuilder &(const std::string &), override);
+    MAKE_MOCK2(Hadron, PSBuilder &(const std::string &, size_t), override);
     IMPLEMENT_MOCK2(FinalState);
     IMPLEMENT_MOCK0(build);
 };

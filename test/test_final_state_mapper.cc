@@ -6,12 +6,12 @@
 
 TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
     SECTION("Only works for 2->2") {
-        CHECK_THROWS_WITH(achilles::TwoBodyMapper::Construct({0, 0, 0}),
+        CHECK_THROWS_WITH(achilles::TwoBodyMapper::Construct({0, 0, 0}, 1),
                           "Incorrect number of masses. Expected 2. Got 3");
-        CHECK(achilles::TwoBodyMapper::Construct({0, 0})->NDims() == 2);
+        CHECK(achilles::TwoBodyMapper::Construct({0, 0}, 1)->NDims() == 2);
     }
 
-    auto mapper = achilles::TwoBodyMapper::Construct({0, 0});
+    auto mapper = achilles::TwoBodyMapper::Construct({0, 0}, 2);
 
     SECTION("Forward Map") {
         SECTION("TwoBodyMapper") {

@@ -55,8 +55,18 @@ add_executable(achilles-testsuite
     test_delta.cc
     test_clebsch_gordan.cc
 )
-target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
+target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main
     PUBLIC event_gen)
+# trompeloeil's lifetime_monitor destructor triggers a GCC false positive here
+# (multiple-inheritance offset confuses -Wfree-nonheap-object's escape analysis
+# after inlining); keep the warning but don't let it fail the build.
+#
+# Similarly, calling Process::MaxWeight() through the Unweighter base pointer
+# gets speculatively devirtualized to PercentileUnweighter::MaxValue() even
+# when the object actually constructed is the smaller NoUnweighter, so GCC
+# flags a bogus out-of-bounds read inside Percentile::Get().
+target_compile_options(achilles-testsuite PRIVATE
+    $<$<CXX_COMPILER_ID:GNU>:-Wno-error=free-nonheap-object -Wno-error=array-bounds>)
 
 set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib

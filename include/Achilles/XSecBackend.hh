@@ -30,6 +30,8 @@ class XSecBackend {
     virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                                PID) = 0;
 
+    static std::string Name() { return "XSecBackend"; }
+
   protected:
     double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
     double InitialStateFactor(size_t, size_t, const std::vector<Particle> &,

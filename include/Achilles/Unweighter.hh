@@ -28,6 +28,8 @@ class Unweighter {
     }
     size_t Accepted() const { return m_accepted; }
 
+    static std::string Name() { return "Unweighter"; }
+
   protected:
     size_t m_accepted{}, m_total{};
 };

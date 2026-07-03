@@ -18,6 +18,10 @@ template <typename Base, typename... Args> class Factory {
 
   public:
     static std::unique_ptr<Base> Initialize(const std::string &name, Args &&...args) {
+        if(!IsRegistered(name)) {
+            auto msg = fmt::format("{}: No type named {} found", Base::Name(), name);
+            throw std::runtime_error(msg);
+        }
         auto constructor = Registry().at(name);
         return constructor(std::forward<Args>(args)...);
     }
