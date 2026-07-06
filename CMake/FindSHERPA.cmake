@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 #TODO: Clean this up to use the Sherpa CMake interface when available
 find_library(SHERPA_LIBRARY NAMES SherpaMain HINTS $ENV{SHERPA_ROOT_DIR}/lib/SHERPA-MC ${SHERPA_ROOT_DIR}/lib/SHERPA-MC)
 IF(${SHERPA_LIBRARY} MATCHES "SHERPA_LIBRARY-NOTFOUND")
