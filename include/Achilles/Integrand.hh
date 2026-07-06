@@ -10,7 +10,7 @@ namespace achilles {
 
 template <typename T> struct Channel {
     Vegas integrator;
-    std::unique_ptr<Mapper<std::vector<T>>> mapping;
+    std::unique_ptr<Mapper<T>> mapping;
     std::vector<double> train_data;
     std::vector<double> rans;
 
@@ -28,17 +28,17 @@ template <typename T> class Integrand {
     Func<T> &Function() { return m_func; }
 
     // Channel Utilities
-    void AddChannel(Channel<T> channel) {
+    void AddChannel(Channel<std::vector<T>> channel) {
         if(channels.size() != 0)
             if(channels[0].NDims() != channel.NDims())
                 throw std::runtime_error("Integrand: Channels have different dimensions");
         channels.push_back(std::move(channel));
     }
     void RemoveChannel(int idx) { channels.erase(channels.begin() + idx); }
-    std::vector<Channel<T>> Channels() const { return channels; }
-    std::vector<Channel<T>> &Channels() { return channels; }
-    Channel<T> GetChannel(size_t idx) const { return channels[idx]; }
-    Channel<T> &GetChannel(size_t idx) { return channels[idx]; }
+    std::vector<Channel<std::vector<T>>> Channels() const { return channels; }
+    std::vector<Channel<std::vector<T>>> &Channels() { return channels; }
+    Channel<std::vector<T>> GetChannel(size_t idx) const { return channels[idx]; }
+    Channel<std::vector<T>> &GetChannel(size_t idx) { return channels[idx]; }
     size_t NChannels() const { return channels.size(); }
     size_t NDims() const { return channels[0].NDims(); }
 
@@ -99,7 +99,7 @@ template <typename T> class Integrand {
     friend YAML::convert<achilles::Integrand<T>>;
 
   private:
-    std::vector<Channel<T>> channels;
+    std::vector<Channel<std::vector<T>>> channels;
     Func<T> m_func{};
 };
 
@@ -121,7 +121,7 @@ template <typename T> struct convert<achilles::Integrand<T>> {
         auto nchannels = node["NChannels"].as<size_t>();
         if(node["Channels"].size() != nchannels) return false;
         for(const auto &channel : node["Channels"])
-            rhs.channels.push_back(channel.as<achilles::Channel<T>>());
+            rhs.channels.push_back(channel.as<achilles::Channel<std::vector<T>>>());
 
         return true;
     }

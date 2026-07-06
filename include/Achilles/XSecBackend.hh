@@ -104,6 +104,11 @@ class SherpaFullBackend : public XSecBackend, RegistrableBackend<SherpaFullBacke
 };
 #endif
 
+/*class DummyBackend: public XSecBackend, RegistrableBackend<DummyBackend> {
+  public:
+	double CrossSection(const Event&,const Process&) const { return 1; }
+};*/
+
 class XSecBuilder {
   public:
     XSecBuilder(const std::string &);

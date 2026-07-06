@@ -2,8 +2,8 @@
 
 using namespace achilles;
 
-Channel<FourVector> achilles::BuildChannelTest(const YAML::Node &node, std::shared_ptr<Beam> beam) {
-    Channel<FourVector> channel;
+Channel<std::vector<FourVector>> achilles::BuildChannelTest(const YAML::Node &node, std::shared_ptr<Beam> beam) {
+    Channel<std::vector<FourVector>> channel;
     channel.mapping = std::make_unique<QuasielasticTestMapper>(node, beam);
     AdaptiveMap map(channel.mapping->NDims(), 2);
     channel.integrator = Vegas(map, {});
@@ -11,11 +11,11 @@ Channel<FourVector> achilles::BuildChannelTest(const YAML::Node &node, std::shar
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-Channel<FourVector> achilles::BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
+Channel<std::vector<FourVector>> achilles::BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
                                               std::shared_ptr<Beam> beam,
                                               std::unique_ptr<PHASIC::Channels> final_state,
                                               PID nuc_id) {
-    Channel<FourVector> channel;
+    Channel<std::vector<FourVector>> channel;
     channel.mapping = PSBuilder(info)
                           .Beam(beam)
                           .Hadron(model->PhaseSpace(nuc_id))

@@ -179,11 +179,11 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     }
 
     if(multiplicity == 2) {
-        Channel<FourVector> channel0 =
+        Channel<std::vector<FourVector>> channel0 =
             BuildChannel<TwoBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
-        Channel<FourVector> channel0 =
+        Channel<std::vector<FourVector>> channel0 =
             BuildChannel<ThreeBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
@@ -303,7 +303,7 @@ void achilles::SherpaLeptonicBackend::SetupChannels(const ProcessInfo &process_i
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
+        Channel<std::vector<FourVector>> channel =
             achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
@@ -382,7 +382,7 @@ void achilles::SherpaFullBackend::SetupChannels(const ProcessInfo &process_info,
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<FourVector> channel =
+        Channel<std::vector<FourVector>> channel =
             achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);

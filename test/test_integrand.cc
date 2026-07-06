@@ -18,14 +18,14 @@ class DummyMapper : public achilles::Mapper<std::vector<double>> {
 };
 
 TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
-    achilles::Channel<double> channel;
+    achilles::Channel<std::vector<double>> channel;
     achilles::AdaptiveMap map(1, 10);
     channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
     channel.mapping = std::make_unique<DummyMapper>();
 
     YAML::Node node;
     node["Channel"] = channel;
-    auto channel2 = node["Channel"].as<achilles::Channel<double>>();
+    auto channel2 = node["Channel"].as<achilles::Channel<std::vector<double>>>();
 
     CHECK(channel.integrator.Grid().Dims() == channel2.integrator.Grid().Dims());
     CHECK(channel.integrator.Grid().Bins() == channel2.integrator.Grid().Bins());
@@ -35,7 +35,7 @@ TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
 TEST_CASE("YAML encoding / decoding Integrand", "[multichannel]") {
     achilles::Integrand<double> integrand(dummy_func);
     for(size_t i = 0; i < 10; ++i) {
-        achilles::Channel<double> channel;
+        achilles::Channel<std::vector<double>> channel;
         achilles::AdaptiveMap map(1, 10);
         channel.integrator = achilles::Vegas(map, achilles::VegasParams{});
         channel.mapping = std::make_unique<DummyMapper>();

@@ -17,13 +17,13 @@
 
 namespace achilles {
 
-Channel<FourVector> BuildChannelTest(const YAML::Node &node, std::shared_ptr<Beam> beam);
+Channel<std::vector<FourVector>> BuildChannelTest(const YAML::Node &node, std::shared_ptr<Beam> beam);
 
 template <typename T>
-Channel<FourVector> BuildChannel(NuclearModel *model, const ProcessInfo &info,
+Channel<std::vector<FourVector>> BuildChannel(NuclearModel *model, const ProcessInfo &info,
                                  std::shared_ptr<Beam> beam, PID nuc_id,
                                  std::optional<double> gauge_boson_mass = std::nullopt) {
-    Channel<FourVector> channel;
+    Channel<std::vector<FourVector>> channel;
     channel.mapping = PSBuilder(info)
                           .Beam(beam)
                           .Hadron(model->PhaseSpace(nuc_id))
@@ -35,7 +35,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, const ProcessInfo &info,
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-Channel<FourVector> BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
+Channel<std::vector<FourVector>> BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
                                     std::shared_ptr<Beam> beam,
                                     std::unique_ptr<PHASIC::Channels> final_state, PID nuc_id);
 #endif
