@@ -42,7 +42,7 @@ class KBNSummation {
     double sum{}, correction{};
 };
 
-template <typename T> using Func = std::function<double(const std::vector<T> &, const double &)>;
+template <typename T> using Func = std::function<double(const T&, const double&)>;
 
 struct VegasParams {
     size_t ncalls{ncalls_default}, nrefine{nrefine_default};
@@ -100,8 +100,8 @@ class Vegas {
     void LoadState(std::istream &is);
 
     // Training the integratvegor
-    void operator()(const Func<double> &);
-    void Optimize(const Func<double> &);
+    void operator()(const Func<std::vector<double>> &);
+    void Optimize(const Func<std::vector<double>> &);
     double GenerateWeight(const std::vector<double> &) const;
     void Adapt(const std::vector<double> &);
     void Refine();

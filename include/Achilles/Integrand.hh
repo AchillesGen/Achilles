@@ -20,12 +20,12 @@ template <typename T> struct Channel {
 template <typename T> class Integrand {
   public:
     Integrand() = default;
-    Integrand(Func<T> func) : m_func{std::move(func)} {}
+    Integrand(Func<std::vector<T>> func) : m_func{std::move(func)} {}
 
     // Function Utilities
     double operator()(const std::vector<T> &point, double wgt) const { return m_func(point, wgt); }
-    Func<T> Function() const { return m_func; }
-    Func<T> &Function() { return m_func; }
+    Func<std::vector<T>> Function() const { return m_func; }
+    Func<std::vector<T>> &Function() { return m_func; }
 
     // Channel Utilities
     void AddChannel(Channel<std::vector<T>> channel) {
@@ -100,7 +100,7 @@ template <typename T> class Integrand {
 
   private:
     std::vector<Channel<std::vector<T>>> channels;
-    Func<T> m_func{};
+    Func<std::vector<T>> m_func{};
 };
 
 } // namespace achilles

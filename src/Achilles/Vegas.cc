@@ -52,7 +52,7 @@ void achilles::LoadState(std::istream &is, VegasSummary &summary) {
     }
 }
 
-void achilles::Vegas::operator()(const Func<double> &func) {
+void achilles::Vegas::operator()(const Func<std::vector<double>> &func) {
     std::vector<double> rans(grid.Dims());
     std::vector<double> train_data(grid.Dims() * grid.Bins());
 
@@ -77,7 +77,7 @@ void achilles::Vegas::operator()(const Func<double> &func) {
     summary.sum_results += results;
 }
 
-void achilles::Vegas::Optimize(const Func<double> &func) {
+void achilles::Vegas::Optimize(const Func<std::vector<double>> &func) {
     double abs_err = lim::max(), rel_err = lim::max();
     size_t irefine = 0;
     while((abs_err > params.atol && rel_err > params.rtol) ||
