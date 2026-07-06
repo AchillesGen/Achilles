@@ -27,7 +27,7 @@ class XSecBackend {
     virtual NuclearModel *GetNuclearModel() { return m_model.get(); }
     virtual void AddProcess(Process &process) = 0;
     virtual bool Validate() { return m_model != nullptr; }
-    virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+    virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<std::vector<FourVector>> &,
                                PID) = 0;
 
     static std::string Name() { return "XSecBackend"; }
@@ -49,7 +49,7 @@ class DefaultBackend : public XSecBackend, RegistrableBackend<DefaultBackend> {
     DefaultBackend();
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<std::vector<FourVector>> &,
                        PID) override;
 
     // Required factory methods
@@ -69,7 +69,7 @@ class SherpaLeptonicBackend : public XSecBackend, RegistrableBackend<SherpaLepto
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<std::vector<FourVector>> &,
                        PID) override;
 
     // Required factory methods
@@ -90,7 +90,7 @@ class SherpaFullBackend : public XSecBackend, RegistrableBackend<SherpaFullBacke
     void SetOptions(const YAML::Node &) override;
     double CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
-    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
+    void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<std::vector<FourVector>> &,
                        PID) override;
 
     // Required factory methods

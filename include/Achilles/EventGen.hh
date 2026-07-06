@@ -52,7 +52,7 @@ class EventGen {
     CutCollection hard_cuts{};
     // CutCollection event_cuts{};
     MultiChannel integrator;
-    Integrand<FourVector> integrand;
+    Integrand<std::vector<FourVector>> integrand;
     Settings config;
     std::vector<double> m_group_weights{};
     double m_max_weight{};

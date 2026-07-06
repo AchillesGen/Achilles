@@ -33,7 +33,7 @@ TEST_CASE("YAML encoding / decoding Channel", "[multichannel]") {
 }
 
 TEST_CASE("YAML encoding / decoding Integrand", "[multichannel]") {
-    achilles::Integrand<double> integrand(dummy_func);
+    achilles::Integrand<std::vector<double>> integrand(dummy_func);
     for(size_t i = 0; i < 10; ++i) {
         achilles::Channel<std::vector<double>> channel;
         achilles::AdaptiveMap map(1, 10);
@@ -44,7 +44,7 @@ TEST_CASE("YAML encoding / decoding Integrand", "[multichannel]") {
 
     YAML::Node node;
     node["Integrand"] = integrand;
-    auto integrand2 = node["Integrand"].as<achilles::Integrand<double>>();
+    auto integrand2 = node["Integrand"].as<achilles::Integrand<std::vector<double>>>();
 
     CHECK(integrand.NChannels() == integrand2.NChannels());
     for(size_t i = 0; i < integrand.NChannels(); ++i) {

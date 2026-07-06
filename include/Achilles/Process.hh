@@ -114,8 +114,8 @@ class ProcessGroup {
                                                           std::shared_ptr<Beam>,
                                                           std::shared_ptr<Nucleus>);
 
-    Integrand<FourVector> &GetIntegrand() { return m_integrand; }
-    const Integrand<FourVector> &GetIntegrand() const { return m_integrand; }
+    Integrand<std::vector<FourVector>> &GetIntegrand() { return m_integrand; }
+    const Integrand<std::vector<FourVector>> &GetIntegrand() const { return m_integrand; }
     bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
@@ -148,7 +148,7 @@ class ProcessGroup {
     // Numerical components
     bool NeedsOptimization() const;
     MultiChannel m_integrator;
-    Integrand<FourVector> m_integrand;
+    Integrand<std::vector<FourVector>> m_integrand;
     StatsData m_xsec;
 
     // Parameters

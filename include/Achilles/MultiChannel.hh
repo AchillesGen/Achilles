@@ -103,10 +103,10 @@ class MultiChannel {
     MultiChannelParams &Parameters() { return params; }
 
     // Optimization and event generation
-    template <typename T> void operator()(Integrand<T> &);
-    template <typename T> void Optimize(Integrand<T> &);
-    template <typename T> std::vector<T> GeneratePoint(Integrand<T> &);
-    template <typename T> double GenerateWeight(Integrand<T> &, const std::vector<T> &);
+    template <typename T> void operator()(Integrand<T> &, T&);
+    template <typename T> void Optimize(Integrand<T> &, T&);
+    template <typename T> void GeneratePoint(Integrand<T> &, T&);
+    template <typename T> double GenerateWeight(Integrand<T> &, const T&);
 
     // Getting results
     bool HasResults() const { return summary.results.size() != 0; }
@@ -146,10 +146,9 @@ class MultiChannel {
     UnitsEnum m_units = UnitsEnum::nb;
 };
 
-template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func) {
+template <typename T> void achilles::MultiChannel::operator()(Integrand<T>& func, T& point) {
     size_t nchannels = channel_weights.size();
     std::vector<double> rans(ndims);
-    std::vector<T> point(ndims);
     std::vector<double> densities(nchannels);
     std::vector<double> train_data(nchannels);
 
@@ -187,11 +186,10 @@ template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func
     }
 }
 
-template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integrand<T> &func) {
-    std::vector<double> rans(ndims);
-    std::vector<T> point(ndims);
+template <typename T> void achilles::MultiChannel::GeneratePoint(Integrand<T>& func, T& point) {
 
     // Generate needed random numbers
+    std::vector<double> rans(ndims);
     Random::Instance().Generate(rans);
 
     // Select a channel
@@ -199,20 +197,19 @@ template <typename T> std::vector<T> achilles::MultiChannel::GeneratePoint(Integ
 
     // Map the point based on the channel
     func.GeneratePoint(ichannel, rans, point);
-    return point;
 }
 
 template <typename T>
-double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vector<T> &point) {
+double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const T& point) {
     size_t nchannels = channel_weights.size();
     std::vector<double> densities(nchannels);
     return func.GenerateWeight(channel_weights, point, densities);
 }
 
-template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func) {
+template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func, T& point) {
     double rel_err = lim::max();
     while(NeedsOptimization(rel_err)) {
-        (*this)(func);
+        (*this)(func,point);
         StatsData current = summary.results.back();
         rel_err = current.Error() / std::abs(current.Mean());
 

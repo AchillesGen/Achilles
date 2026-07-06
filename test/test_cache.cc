@@ -204,7 +204,7 @@ class DoubleMapperCache : public achilles::Mapper<std::vector<double>> {
 };
 
 TEST_CASE("Save/Load MultiChannel", "[Cache]") {
-    achilles::Integrand<double> integrand(test_func_exp_cache);
+    achilles::Integrand<std::vector<double>> integrand(test_func_exp_cache);
     for(size_t i = 0; i < 2; ++i) {
         achilles::Channel<std::vector<double>> channel;
         channel.mapping = std::make_unique<DoubleMapperCache>(i);

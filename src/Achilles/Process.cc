@@ -429,7 +429,8 @@ void ProcessGroup::Optimize() {
             "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
             m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
             m_processes[0].Info().Multiplicity());
-        m_integrator.Optimize(m_integrand);
+		std::vector<FourVector> point(m_integrator.Dimensions());
+        m_integrator.Optimize(m_integrand,point);
     }
 
     // Ensure that the integrator does not save these results into the summary
@@ -438,9 +439,13 @@ void ProcessGroup::Optimize() {
         spdlog::info("Calculating maximum weight");
         b_calc_weights = true;
         m_integrator.Parameters().ncalls = 100000;
-        for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
-        b_calc_weights = false;
 
+		// Create dummy point for training purposes
+		std::vector<FourVector> point(m_integrator.Dimensions());
+        for(size_t i = 0; i < 3; ++i)
+			m_integrator(m_integrand,point);
+
+        b_calc_weights = false;
         std::ofstream outFile("Results.txt");
 
         // Store max weight and weight vector
@@ -469,8 +474,9 @@ void ProcessGroup::Optimize() {
 void ProcessGroup::Summary() const {}
 
 achilles::Event ProcessGroup::GenerateEvent() {
-    const auto mom = m_integrator.GeneratePoint(m_integrand);
-    const auto ps_wgt = m_integrator.GenerateWeight(m_integrand, mom);
+    std::vector<FourVector> mom(m_integrator.Dimensions());
+	m_integrator.GeneratePoint(m_integrand,mom);
+    const double ps_wgt = m_integrator.GenerateWeight(m_integrand, mom);
     return SingleEvent(mom, ps_wgt);
 }
 

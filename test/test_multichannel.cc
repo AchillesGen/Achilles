@@ -85,7 +85,7 @@ TEST_CASE("YAML encoding / decoding Multichannel Parameters", "[multichannel]") 
 }
 
 TEST_CASE("Multi-Channel Integration", "[multichannel]") {
-    achilles::Integrand<double> integrand(test_func_exp);
+    achilles::Integrand<std::vector<double>> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
         achilles::Channel<std::vector<double>> channel;
         channel.mapping = std::make_unique<DoubleMapper>(i);
@@ -121,7 +121,7 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
 }
 
 TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
-    achilles::Integrand<double> integrand(test_func_exp);
+    achilles::Integrand<std::vector<double>> integrand(test_func_exp);
     for(size_t i = 0; i < 2; ++i) {
         achilles::Channel<std::vector<double>> channel;
         achilles::AdaptiveMap map(1, 50);

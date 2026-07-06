@@ -166,7 +166,7 @@ void achilles::DefaultBackend::AddProcess(Process &process) {
 
 void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
                                              std::shared_ptr<Beam> beam,
-                                             Integrand<FourVector> &integrand, PID nuc_id) {
+                                             Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto multiplicity = process_info.FinalStateMultiplicity();
     if(multiplicity > 3) {
@@ -298,7 +298,7 @@ achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const std::vector<FourVector
 
 void achilles::SherpaLeptonicBackend::SetupChannels(const ProcessInfo &process_info,
                                                     std::shared_ptr<Beam> beam,
-                                                    Integrand<FourVector> &integrand, PID nuc_id) {
+                                                    Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
@@ -377,7 +377,7 @@ double achilles::SherpaFullBackend::CrossSection(const Event &event, const Proce
 
 void achilles::SherpaFullBackend::SetupChannels(const ProcessInfo &process_info,
                                                 std::shared_ptr<Beam> beam,
-                                                Integrand<FourVector> &integrand, PID nuc_id) {
+                                                Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
