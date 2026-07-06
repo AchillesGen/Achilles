@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Create a macro for properly linking the libraries for the pybind11 modules 
 macro(pylink target includes libraries)
     target_include_directories(${target} PRIVATE ${includes})

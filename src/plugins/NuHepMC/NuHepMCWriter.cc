@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/NuHepMC/NuHepMCWriter.hh"
 
 #include "Achilles/Event.hh"
@@ -116,11 +119,12 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // Signal conventions
     // TODO: Make flags to turn on / off different conventions
-    NuHepMC::GR4::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
+    // TODO: Automate citation writeout from ReferenceHandler
+    NuHepMC::GR4::SetConventions(run, {"G.C.3", "E.C.1", "E.C.4", "V.C.1"});
 
     // TODO: Update to using newer NuHepMC version
     const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
-    const std::string tgtscale = "PerAtom";
+    const auto tgtscale = NuHepMC::to_string(NuUnits::TargetScale::PerAtom);
     NuHepMC::GR6::SetCrossSectionUnits(run, scale, tgtscale);
 
     // TODO: This isn't used. Figure out the correct NuHepMC standard

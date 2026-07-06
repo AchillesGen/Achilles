@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/Cascade.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
