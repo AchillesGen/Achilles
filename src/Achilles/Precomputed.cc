@@ -92,118 +92,111 @@ achilles::Event RawEventReader::ParseLine(const std::string &line) {
 }
 
 void achilles::Precomputed::ConvertEvent(Event &event, Particles &particles) {
-// Set the status of the particles and add to the event
-    
-	// MEC mode: the first two hadrons in the raw event are interpreted
-	// as the two initial nucleons participating in the two-body current.
-	std::size_t n_leptons_seen = 0;
-	std::size_t n_initial_hadrons_seen = 0;
-	std::size_t n_outgoing_hadrons_seen = 0;
+    // Set the status of the particles and add to the event
 
-	std::vector<ThreeVector> initial_positions;
-	
-	for(auto &particle : particles) {
+    // MEC mode: the first two hadrons in the raw event are interpreted
+    // as the two initial nucleons participating in the two-body current.
+    std::size_t n_leptons_seen = 0;
+    std::size_t n_initial_hadrons_seen = 0;
+    std::size_t n_outgoing_hadrons_seen = 0;
 
-	   if(particle.Info().IsLepton()) {
-    	       if(n_leptons_seen == 0) {
-        	   particle.Status() = ParticleStatus::initial_state;
-               } else {
-                  particle.Status() = ParticleStatus::final_state;
-               }
-               event.Leptons().push_back(particle);
-               ++n_leptons_seen;
+    std::vector<ThreeVector> initial_positions;
 
-	    } else if(particle.Info().IsHadron()) {
+    for(auto &particle : particles) {
+        if(particle.Info().IsLepton()) {
+            if(n_leptons_seen == 0) {
+                particle.Status() = ParticleStatus::initial_state;
+            } else {
+                particle.Status() = ParticleStatus::final_state;
+            }
+            event.Leptons().push_back(particle);
+            ++n_leptons_seen;
 
-		if(n_leptons_seen == 0) {
-                   throw std::runtime_error(
-                   "Precomputed: Found a hadron before the initial lepton");
-                }    
-		if(n_leptons_seen == 1) {
-		    if(particle.ID() == PID::proton()) {
-			auto protons = event.Protons(ParticleStatus::background);
+        } else if(particle.Info().IsHadron()) {
+            if(n_leptons_seen == 0) {
+                throw std::runtime_error("Precomputed: Found a hadron before the initial lepton");
+            }
+            if(n_leptons_seen == 1) {
+                if(particle.ID() == PID::proton()) {
+                    auto protons = event.Protons(ParticleStatus::background);
 
-			if(protons.empty()) {
-			    throw std::runtime_error("Precomputed: No background protons available");
-			}
+                    if(protons.empty()) {
+                        throw std::runtime_error("Precomputed: No background protons available");
+                    }
 
-			auto sampled_protons = Random::Instance().Sample(1, protons);
-			auto sampled_proton = sampled_protons[0];
+                    auto sampled_protons = Random::Instance().Sample(1, protons);
+                    auto sampled_proton = sampled_protons[0];
 
-			// Use the momentum from the precomputed event,
-			// but keep the position from the sampled Achilles nucleon.
-			sampled_proton.get().Momentum() = particle.Momentum();
-			sampled_proton.get().Status() = ParticleStatus::initial_state;
+                    // Use the momentum from the precomputed event,
+                    // but keep the position from the sampled Achilles nucleon.
+                    sampled_proton.get().Momentum() = particle.Momentum();
+                    sampled_proton.get().Status() = ParticleStatus::initial_state;
 
-			initial_positions.push_back(sampled_proton.get().Position());
+                    initial_positions.push_back(sampled_proton.get().Position());
 
-		    } else if(particle.ID() == PID::neutron()) {
-			auto neutrons = event.Neutrons(ParticleStatus::background);
+                } else if(particle.ID() == PID::neutron()) {
+                    auto neutrons = event.Neutrons(ParticleStatus::background);
 
-			if(neutrons.empty()) {
-			    throw std::runtime_error("Precomputed: No background neutrons available");
-			}
+                    if(neutrons.empty()) {
+                        throw std::runtime_error("Precomputed: No background neutrons available");
+                    }
 
-			auto sampled_neutrons = Random::Instance().Sample(1, neutrons);
-			auto sampled_neutron = sampled_neutrons[0];
+                    auto sampled_neutrons = Random::Instance().Sample(1, neutrons);
+                    auto sampled_neutron = sampled_neutrons[0];
 
-			sampled_neutron.get().Momentum() = particle.Momentum();
-			sampled_neutron.get().Status() = ParticleStatus::initial_state;
+                    sampled_neutron.get().Momentum() = particle.Momentum();
+                    sampled_neutron.get().Status() = ParticleStatus::initial_state;
 
-			initial_positions.push_back(sampled_neutron.get().Position());
+                    initial_positions.push_back(sampled_neutron.get().Position());
 
-		    } else {
-			throw std::runtime_error(
-			    "Precomputed: Initial hadron must be a proton or neutron");
-		    }
+                } else {
+                    throw std::runtime_error(
+                        "Precomputed: Initial hadron must be a proton or neutron");
+                }
 
-		    ++n_initial_hadrons_seen;
+                ++n_initial_hadrons_seen;
 
-		} else {
-		    
-		    particle.Status() = ParticleStatus::propagating;
+            } else {
+                particle.Status() = ParticleStatus::propagating;
 
-		    if(initial_positions.empty()) {
-			throw std::runtime_error(
-			    "Precomputed: No initial nucleon positions available");
-		    }
-		    particle.Position() =
-			initial_positions[n_outgoing_hadrons_seen % initial_positions.size()];
+                if(initial_positions.empty()) {
+                    throw std::runtime_error("Precomputed: No initial nucleon positions available");
+                }
+                particle.Position() =
+                    initial_positions[n_outgoing_hadrons_seen % initial_positions.size()];
 
-		    event.Hadrons().push_back(particle);
-		    ++n_outgoing_hadrons_seen;
-		}
-	    }
-	}
+                event.Hadrons().push_back(particle);
+                ++n_outgoing_hadrons_seen;
+            }
+        }
+    }
 
-	if(n_leptons_seen < 2) {
-      	   throw std::runtime_error("Precomputed: Expected at least two leptons");
-   	}
+    if(n_leptons_seen < 2) {
+        throw std::runtime_error("Precomputed: Expected at least two leptons");
+    }
 
-   	if(n_initial_hadrons_seen == 0) {
-      	   throw std::runtime_error("Precomputed: No initial hadrons found");
-   	}
+    if(n_initial_hadrons_seen == 0) {
+        throw std::runtime_error("Precomputed: No initial hadrons found");
+    }
 
-	auto init_nuc = event.CurrentNucleus()->InitParticle();
-	std::vector<Particle> init_parts;
-	for(const auto &nucleon : event.Hadrons()) {
-    	if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
-	}
+    auto init_nuc = event.CurrentNucleus()->InitParticle();
+    std::vector<Particle> init_parts;
+    for(const auto &nucleon : event.Hadrons()) {
+        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
+    }
 
-	if(init_parts.empty()) {
-  	  throw std::runtime_error("Precomputed: No initial nucleons found in event");
-	}
+    if(init_parts.empty()) {
+        throw std::runtime_error("Precomputed: No initial nucleons found in event");
+    }
 
-// For the event history, use one representative primary position.
-// For a two-body MEC event, use the center of the sampled initial pair.
-	ThreeVector primary_pos;
-	for(const auto &part : init_parts) {
-    	primary_pos += part.Position();
-	}	
-	primary_pos /= static_cast<double>(init_parts.size());
+    // For the event history, use one representative primary position.
+    // For a two-body MEC event, use the center of the sampled initial pair.
+    ThreeVector primary_pos;
+    for(const auto &part : init_parts) { primary_pos += part.Position(); }
+    primary_pos /= static_cast<double>(init_parts.size());
 
-	event.History().AddVertex(primary_pos, {init_nuc}, init_parts,
-                          EventHistory::StatusCode::target);
+    event.History().AddVertex(primary_pos, {init_nuc}, init_parts,
+                              EventHistory::StatusCode::target);
 
     // Setup beam in history
     auto init_lep = event.Leptons()[0];
