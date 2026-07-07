@@ -279,7 +279,8 @@ install(DIRECTORY
 if(ACHILLES_ENABLE_PYTHON)
 # NOTE: data/ is deliberately NOT bundled here. It is 227 MB and would push the wheel
 # past PyPI's 100 MB per-file limit, so it is downloaded on demand into a user cache
-# via `achilles-data get` (python/achilles/_data.py).install(DIRECTORY flux
+# via `achilles-data get` (python/achilles/_data.py).
+install(DIRECTORY flux
         DESTINATION achilles)
 install(FILES FormFactors.yml
         DESTINATION achilles)
