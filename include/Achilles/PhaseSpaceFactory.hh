@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef PHASE_SPACE_FACTORY_HH
 #define PHASE_SPACE_FACTORY_HH
 
