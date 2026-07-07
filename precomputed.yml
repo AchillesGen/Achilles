@@ -4,14 +4,16 @@ Main:
   EventCuts: false
   DoRotate: false
   RunDecays: False
-  EventFile: "events.txt"
+  Input:
+      Format: Raw
+      Name: events.txt
   Output:
       Format: NuHepMC
       Name: achilles.hepmc
       Zipped: True
 
 Cascade:
-  Run: False
+  Run: True
   Interactions: !include "data/default/VirtResInteractions.yml"
   Step: 0.04
   Probability: Cylinder
