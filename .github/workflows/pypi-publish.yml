@@ -52,6 +52,7 @@ jobs:
         uses: fortran-lang/setup-fortran@v1
         with:
           compiler: gcc
+          version: 15
 
       # Persist the C/C++/Fortran object cache across CI runs.
       - name: Restore ccache (Linux)

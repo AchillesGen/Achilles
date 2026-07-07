@@ -56,7 +56,7 @@ environment = { CCACHE_DIR = "/host/tmp/achilles-ccache" }
 
 [tool.cibuildwheel.macos]
 before-all = "brew install hdf5 ccache"
-environment = { MACOSX_DEPLOYMENT_TARGET = "15.0" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "15.0", CC = "gcc-15", CXX = "g++-15", FC = "gfortran-15" }
 
 [tool.cibuildwheel.windows]
 before-all = "vcpkg install hdf5:x64-windows"
