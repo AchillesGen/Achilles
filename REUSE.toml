@@ -34,10 +34,10 @@ SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-path = "doc/**"
+path = "docs/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
-SPDX-License-Identifier = "GPL-3.0-or-later"
+SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
 path = "examples/**"
@@ -56,3 +56,16 @@ path = ["src/gzstream/CMakeLists.txt", "src/gzstream/Makefile", "src/gzstream/RE
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2001 Deepak Bandyopadhyay, Lutz Kettner"
 SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+# Third-party docs assets: keep original attribution rather than the docs/** default above.
+[[annotations]]
+path = "docs/_static/css/s5defs-roles.css"
+precedence = "override"
+SPDX-FileCopyrightText = "2013-2016 Lilian Besson"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = "docs/s5defs.rst"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
