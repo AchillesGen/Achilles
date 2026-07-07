@@ -175,11 +175,23 @@ set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
 configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/Achilles/System.hh)
 
-# Copy over data files
-file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+# Data is versioned independently of the code: bump this only when the data set itself
+# changes, then publish a matching GitHub Release tagged with this value. Generated into
+# the build tree and installed into the wheel below (see ACHILLES_ENABLE_PYTHON block).
+set(ACHILLES_DATA_RELEASE "achilles-data-v1" CACHE STRING
+    "GitHub Release tag of the Achilles data set downloaded on demand")
+configure_file(python/achilles/_data_release.py.in
+    ${CMAKE_CURRENT_BINARY_DIR}/python/achilles/_data_release.py @ONLY)
+
+# Copy over data files. The heavy data/ tree is excluded from the sdist (it is
+# downloaded on demand at runtime), so it may be absent when building from an sdist;
+# guard on its presence. flux/ is small and always shipped.
+if(EXISTS ${ACHILLES_SOURCE_DIR}/data)
+    file(COPY ${ACHILLES_SOURCE_DIR}/data DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${ACHILLES_SOURCE_DIR}/data/default/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY ${ACHILLES_SOURCE_DIR}/data/default/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 file(COPY ${ACHILLES_SOURCE_DIR}/flux DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ACHILLES_SOURCE_DIR}/data/default/run.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY ${ACHILLES_SOURCE_DIR}/data/default/FormFactors.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/parameters.dat DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY ${ACHILLES_SOURCE_DIR}/cascade.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -236,20 +248,27 @@ install(
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
 )
 
-# Install default run card and form factors card
+# Install default run card and form factors card (only when data/ is available;
+# absent for slim-sdist builds, where these come from the downloaded data set).
+if(EXISTS ${CMAKE_BINARY_DIR}/data/default/run.yml)
 install(
     FILES
         ${CMAKE_BINARY_DIR}/data/default/run.yml
         ${CMAKE_BINARY_DIR}/data/default/FormFactors.yml
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
+endif()
 
-# Install the data files to be found
+# Install the data files to be found.
+# Skipped for wheel builds (SKBUILD): the wheel ships no heavy data — the large
+# data/ set is downloaded on demand into a user cache (see python/achilles/_data.py).
+if(NOT SKBUILD)
 install(DIRECTORY
     ${CMAKE_BINARY_DIR}/data
     ${CMAKE_BINARY_DIR}/flux
     DESTINATION share/Achilles
 )
+endif(NOT SKBUILD)
 
 # Install examples into the install directory
 install(DIRECTORY
@@ -258,10 +277,13 @@ install(DIRECTORY
 )
 
 if(ACHILLES_ENABLE_PYTHON)
-install(DIRECTORY data
-        DESTINATION achilles)
-install(DIRECTORY flux
+# NOTE: data/ is deliberately NOT bundled here. It is 227 MB and would push the wheel
+# past PyPI's 100 MB per-file limit, so it is downloaded on demand into a user cache
+# via `achilles-data get` (python/achilles/_data.py).install(DIRECTORY flux
         DESTINATION achilles)
 install(FILES FormFactors.yml
+        DESTINATION achilles)
+# Baked-in achilles-data pin consumed by python/achilles/_data.py.
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/python/achilles/_data_release.py
         DESTINATION achilles)
 endif(ACHILLES_ENABLE_PYTHON)

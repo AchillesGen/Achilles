@@ -12,12 +12,14 @@ requires-python = ">=3.10"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE.md"]
+dependencies = ["platformdirs>=3.0"]
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0", "pyyaml"]
 
 [project.scripts]
 achilles = "achilles._cli:main"
+achilles-data = "achilles._data:main"
 achilles-mcp = "achilles.mcp_server.server:main"
 
 [tool.scikit-build]
@@ -29,7 +31,10 @@ cmake.args = [
     "-DCMAKE_Fortran_COMPILER_LAUNCHER=ccache",
 ]
 cmake.source-dir = "."
-sdist.include = ["data/**", "flux/**"]
+# data/** is intentionally excluded: it is 227 MB (past PyPI's 100 MB per-file limit
+# for both wheels and sdists) and is downloaded on demand at runtime instead. flux/ is
+# small and stays bundled.
+sdist.include = ["flux/**"]
 wheel.packages = { achilles = "python/achilles" }
 wheel.exclude = ["lib/**"]
 

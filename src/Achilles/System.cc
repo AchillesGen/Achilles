@@ -21,6 +21,11 @@ std::vector<fs::path> achilles::Filesystem::AchillesPath() {
     std::vector<std::string> tmp;
     if(env) tokenize(std::string(env), tmp, ":");
     for(const auto &path : tmp) dirs.push_back(fs::path(path));
+    // Shared data cache populated by the Python downloader. The directory name is
+    // chosen entirely on the Python side (cross-platform) and handed to us via the
+    // environment. Falls back to SharePath() for standalone installs.
+    const char *dataDir = std::getenv("ACHILLES_DATA_DIR");
+    if(dataDir) dirs.push_back(fs::path(dataDir));
     dirs.push_back(PathVariables::Instance().SharePath());
     return dirs;
 }
