@@ -31,10 +31,7 @@ cmake.args = [
     "-DCMAKE_Fortran_COMPILER_LAUNCHER=ccache",
 ]
 cmake.source-dir = "."
-# data/** is intentionally excluded: it is 227 MB (past PyPI's 100 MB per-file limit
-# for both wheels and sdists) and is downloaded on demand at runtime instead. flux/ is
-# small and stays bundled.
-sdist.include = ["flux/**"]
+sdist.exclude = ["data/**"]
 wheel.packages = { achilles = "python/achilles" }
 wheel.exclude = ["lib/**"]
 
