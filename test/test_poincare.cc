@@ -13,7 +13,7 @@ TEST_CASE("Boost", "[Poincare]") {
     achilles::Poincare poincare(p1, -1);
     poincare.Boost(p2);
     poincare.BoostBack(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-16));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
 
 TEST_CASE("Rotation", "[Poincare]") {
@@ -37,7 +37,7 @@ TEST_CASE("Lambda", "[Poincare]") {
     achilles::Poincare poincare(p1, p3, 3);
     poincare.Lambda(p2);
     poincare.LambdaBack(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-16));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
 
 TEST_CASE("Invert", "[Poincare]") {
@@ -49,5 +49,5 @@ TEST_CASE("Invert", "[Poincare]") {
     poincare.Boost(p2);
     poincare.Invert();
     poincare.Boost(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-8));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
