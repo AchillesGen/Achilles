@@ -1,6 +1,8 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/System.hh"
 
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <memory>
 
@@ -38,6 +40,18 @@ void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
         particleDB.emplace(entry->id, entry);
         nameToPID.emplace(entry->idname, entry->id);
     }
+    if(particleYAML["Containers"]) {
+        for(auto container : particleYAML["Containers"]) {
+            // [pid, name, [members]] -- keep member order as declared
+            auto node = container["Container"];
+            auto id = node[0].as<PID>();
+            auto name = node[1].as<std::string>();
+            std::vector<PID> members;
+            for(const auto &member : node[2]) members.push_back(member.as<PID>());
+
+            RegisterContainer(id, name, members);
+        }
+    }
     PrintDatabase();
 }
 
@@ -60,8 +74,41 @@ std::ostream &operator<<(std::ostream &os, const ParticleInfoEntry &entry) {
     return os;
 }
 
+const std::vector<PID> &ParticleInfoEntry::Members() const noexcept {
+    return members;
+}
+
+void ParticleInfoEntry::ClearMembers() noexcept {
+    members.clear();
+}
+
+void ParticleInfoEntry::AddMember(PID pid) {
+    if(std::find(members.begin(), members.end(), pid) != members.end()) return;
+
+    // Mass-only container invariant: the first member sets the container's kinematics;
+    // later members must agree in mass within tolerance.
+    ParticleInfo part(pid);
+    const double member_mass = part.Mass();
+    if(members.empty()) {
+        mass = member_mass;
+        hmass = member_mass;
+        massive = part.IsMassive();
+    } else {
+        const double group_mass = massive ? mass : 0.0;
+        if(std::abs(member_mass - group_mass) > mass_tolerance) {
+            auto msg = fmt::format(
+                "ParticleInfo: adding particle of mass {} to container of mass {} exceeds "
+                "tolerance {}",
+                member_mass, group_mass, mass_tolerance);
+            throw std::runtime_error(msg);
+        }
+    }
+    members.push_back(pid);
+}
+
 ParticleInfo::ParticleDB ParticleInfo::particleDB;
 std::map<std::string, achilles::PID> ParticleInfo::nameToPID;
+std::map<PID, ParticleInfo::ContainerRule> ParticleInfo::rules;
 
 bool ParticleInfo::IsNucleon() const noexcept {
     return info->id == PID::proton() || info->id == PID::neutron();
@@ -127,10 +174,73 @@ double ParticleInfo::GenerateLifeTime() const {
     return 0.0;
 }
 
+ParticleInfo ParticleInfo::operator[](size_t i) const {
+    if(!IsGroup()) return *this;
+    if(i >= Size()) {
+        auto msg =
+            fmt::format("ParticleInfo: Asking for group member {} for group of size {}", i, Size());
+        throw std::runtime_error(msg);
+    }
+    // Members are stored as particles; bar them when this container handle is anti
+    ParticleInfo member(info->Members()[i]);
+    return anti ? member.Anti() : member;
+}
+
+bool ParticleInfo::Includes(const ParticleInfo &other) const {
+    // Compares by ID() (unsigned), so it does not distinguish a member from its anti-particle.
+    return std::find(info->Members().begin(), info->Members().end(), other.ID()) !=
+           info->Members().end();
+}
+
+std::vector<ParticleInfo> ParticleInfo::Decompose() const {
+    if(!IsGroup()) return {*this};
+    std::vector<ParticleInfo> parts;
+    for(const auto &member : info->Members()) {
+        ParticleInfo part(member);
+        parts.push_back(anti ? part.Anti() : part);
+    }
+    return parts;
+}
+
 bool ParticleInfo::IsStable() const noexcept {
     if(info->stable == 0) return false;
     if(info->stable == 1) return true;
     if(info->stable == 2 && !IsAnti()) return true;
     if(info->stable == 3 && IsAnti()) return true;
     return false;
+}
+
+void ParticleInfo::RegisterContainer(PID id, std::string name, std::vector<PID> members) {
+    auto entry = std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
+    entry->id = id;
+    entry->idname = name;
+    entry->antiname = name;
+    // AddMember adopts the mass and enforces the mass-only tolerance.
+    for(const auto &member : members) entry->AddMember(member);
+
+    particleDB[id] = entry;
+    nameToPID[name] = id;
+}
+
+void ParticleInfo::RegisterContainerRule(PID id, std::string name, ContainerRule pred) {
+    auto entry = std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
+    entry->id = id;
+    entry->idname = name;
+    entry->antiname = name;
+
+    particleDB[id] = entry;
+    nameToPID[name] = id;
+    rules[id] = pred;
+}
+
+void ParticleInfo::FinalizeContainers() {
+    // Rebuild rule-based membership from the finalized table.
+    for(const auto &[group_id, rule] : rules) {
+        auto &group = particleDB[group_id];
+        group->ClearMembers();
+        for(const auto &[pid, entry] : particleDB) {
+            if(entry->IsGroup() || rules.count(pid)) continue;
+            if(rule(ParticleInfo(pid))) group->AddMember(pid);
+        }
+    }
 }

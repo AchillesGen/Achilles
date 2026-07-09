@@ -7,8 +7,10 @@
 #include <map>
 #include <memory>
 #include <spdlog/spdlog.h>
+#include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "fmt/core.h"
 #pragma GCC diagnostic push
@@ -97,6 +99,13 @@ class PID {
     static constexpr PID free_neutron() { return PID{1000000010}; }
     static constexpr PID carbon() { return PID{1000060120}; }
     static constexpr PID argon() { return PID{1000180400}; }
+    // Particle containers
+    static constexpr PID lepton() { return PID{90}; }
+    static constexpr PID neutrino() { return PID{91}; }
+    static constexpr PID fermion() { return PID{92}; }
+    static constexpr PID jet() { return PID{93}; }
+    static constexpr PID quark() { return PID{94}; }
+    static constexpr PID nucleon() { return PID{95}; }
 
     // Stream Operator
     template <typename OStream> friend OStream &operator<<(OStream &os, const PID &pid) {
@@ -143,6 +152,10 @@ class ParticleInfoEntry {
                antiname == other.antiname && isospin == other.isospin;
     }
     bool operator!=(const ParticleInfoEntry &other) const noexcept { return !(*this == other); }
+    bool IsGroup() const noexcept { return !members.empty(); }
+    const std::vector<PID> &Members() const noexcept;
+    void ClearMembers() noexcept;
+    void AddMember(PID);
 
     std::string ToString() const noexcept {
         return fmt::format("{:10d} {:20s} {:20s} {:^8d} {: .4e}    {:.4e}", static_cast<int>(id),
@@ -155,17 +168,20 @@ class ParticleInfoEntry {
 
   private:
     PID id;
+    std::vector<PID> members;
     double mass{}, hmass{}, width{};
     int icharge{}, strong{}, isospin{};
     int spin{}, stable{}, majorana{};
     bool massive{};
     bool hadron{};
     std::string idname, antiname;
+    static constexpr double mass_tolerance = 5; // MeV
 };
 
 class ParticleInfo {
   private:
     using ParticleDB = std::map<PID, std::shared_ptr<ParticleInfoEntry>>;
+    using ContainerRule = std::function<bool(const ParticleInfo &)>;
     static ParticleDB particleDB;
     static std::map<std::string, PID> nameToPID;
     static void BuildDatabase(const std::string &);
@@ -263,6 +279,12 @@ class ParticleInfo {
     bool HasCharm() const noexcept { return IsCHadron(); }
 
     double GenerateLifeTime() const;
+    bool IsGroup() const noexcept { return info->IsGroup(); }
+    size_t Size() const noexcept { return info->Members().size(); }
+    ParticleInfo operator[](size_t i) const;
+
+    bool Includes(const ParticleInfo &other) const;
+    std::vector<ParticleInfo> Decompose() const;
 
     bool operator==(const ParticleInfo &other) const noexcept {
         return info == other.info && anti == other.anti;
@@ -276,11 +298,15 @@ class ParticleInfo {
             BuildDatabase(filename);
         }
     }
+    static void RegisterContainer(PID id, std::string name, std::vector<PID> members);
+    static void RegisterContainerRule(PID id, std::string name, ContainerRule pred);
+    static void FinalizeContainers();
     static void PrintDatabase();
     static const std::map<std::string, PID> &NameToPID() { return nameToPID; }
 
   private:
     std::shared_ptr<ParticleInfoEntry> info;
+    static std::map<PID, ContainerRule> rules;
     bool anti;
 };
 

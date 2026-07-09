@@ -57,3 +57,10 @@ Particles:
     - Particle: [23, 91.18e3, 2.495e3, 0, 0, 0, 2, 0, 1,  true, false,      Z, Z]
     - Particle: [24, 80.38e3, 2.085e3, 3, 0, 0, 2, 0, 0,  true, false,     W+, W-]
     - Particle: [25, 125.1e3,     4.0, 0, 0, 0, 0, 0, 1,  true, false,  Higgs, Higgs]
+
+Containers:
+    # [pid, name, [members]] -- members are particles only; anti-particles come
+    # from decomposing the anti-container (operator[]/Decompose propagate anti).
+    - Container: [91, neutrino, [12, 14, 16]]
+    - Container: [93, jet, [1, 2, 3, 21]]
+    - Container: [95, nucleon, [2212, 2112]]

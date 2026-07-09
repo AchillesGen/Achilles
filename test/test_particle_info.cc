@@ -88,3 +88,104 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
         CHECK(info1 != info4);
     }
 }
+
+TEST_CASE("Particle Containers", "[ParticleInfo]") {
+    achilles::ParticleInfo::RegisterContainer(achilles::PID::nucleon(), "nucleon", {2212, 2112});
+    achilles::ParticleInfo info(achilles::PID::nucleon());
+    achilles::ParticleInfo proton(achilles::PID::proton());
+    achilles::ParticleInfo neutron(achilles::PID::neutron());
+
+    SECTION("Creates groups") {
+        CHECK(info.IsGroup());
+    }
+
+    SECTION("Group Membership") {
+        CHECK(info.Size() == 2);
+        CHECK(info[0] == proton);
+        CHECK(info[1] == neutron);
+        CHECK(info.Includes(achilles::PID::proton()));
+        CHECK(info.Includes(achilles::PID::neutron()));
+    }
+
+    SECTION("Decompose") {
+        auto ids = info.Decompose();
+        CHECK(ids.size() == 2);
+        CHECK(ids[0] == proton);
+        CHECK(ids[1] == neutron);
+    }
+
+    SECTION("Properties") {
+        CHECK(info.Mass() == proton.Mass());
+    }
+
+    SECTION("Masses must be the same") {
+        CHECK_THROWS_AS(achilles::ParticleInfo::RegisterContainer(achilles::PID::lepton(), "lepton",
+                                                                  {11, 13, 15}),
+                        std::runtime_error);
+    }
+}
+
+TEST_CASE("FinalizeContainers", "[ParticleInfo]") {
+    using achilles::ParticleInfo;
+    using achilles::PID;
+
+    // Massless (light) quarks only, excluding the undefined placeholder (PID 0).
+    auto light_quarks = [](const ParticleInfo &p) {
+        return p.ID() != PID::undefined() && p.IsQuark() && !p.IsMassive();
+    };
+
+    SECTION("Rule-based population from the table") {
+        ParticleInfo::RegisterContainerRule(PID::quark(), "quark", light_quarks);
+
+        // Empty until finalized.
+        CHECK(ParticleInfo(PID::quark()).Size() == 0);
+
+        ParticleInfo::FinalizeContainers();
+
+        ParticleInfo quark(PID::quark());
+        CHECK(quark.IsGroup());
+        CHECK(quark.Size() == 3);
+        CHECK(quark.Includes(PID::down()));
+        CHECK(quark.Includes(PID::up()));
+        CHECK(quark.Includes(PID::strange()));
+        CHECK_FALSE(quark.Includes(PID::charm())); // massive -> excluded
+        CHECK_FALSE(quark.Includes(PID::gluon())); // not a quark
+        CHECK(quark.Mass() == 0);                  // adopted massless
+    }
+
+    SECTION("Idempotent") {
+        ParticleInfo::RegisterContainerRule(PID::quark(), "quark", light_quarks);
+        ParticleInfo::FinalizeContainers();
+        ParticleInfo::FinalizeContainers();
+        CHECK(ParticleInfo(PID::quark()).Size() == 3); // not doubled
+    }
+
+    SECTION("BSM/open-world: re-finalizing tracks the table") {
+        ParticleInfo::RegisterContainerRule(PID::quark(), "quark", light_quarks);
+        ParticleInfo::FinalizeContainers();
+        REQUIRE(ParticleInfo(PID::quark()).Size() == 3);
+
+        // A newly registered massless quark-like state is picked up on re-finalize.
+        const PID bsm_quark{7};
+        ParticleInfo::Database()[bsm_quark] = std::make_shared<achilles::ParticleInfoEntry>(
+            bsm_quark, 0, 0, -1, 3, 1, 1, 2, 0, false, false, "d'", "d'bar");
+        ParticleInfo::FinalizeContainers();
+        CHECK(ParticleInfo(PID::quark()).Size() == 4);
+        CHECK(ParticleInfo(PID::quark()).Includes(bsm_quark));
+
+        // Clean up so the added state does not leak into other test cases.
+        ParticleInfo::Database().erase(bsm_quark);
+        ParticleInfo::FinalizeContainers();
+        CHECK(ParticleInfo(PID::quark()).Size() == 3);
+    }
+
+    SECTION("Containers are never nested") {
+        // A rule that would match container PIDs (90-95) must still yield an empty
+        // container: FinalizeContainers skips groups and rule containers (incl. self).
+        ParticleInfo::RegisterContainerRule(PID::quark(), "quark", [](const ParticleInfo &p) {
+            return p.ID().AsInt() >= 90 && p.ID().AsInt() <= 95;
+        });
+        ParticleInfo::FinalizeContainers();
+        CHECK(ParticleInfo(PID::quark()).Size() == 0);
+    }
+}
