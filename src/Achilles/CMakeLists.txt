@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 set(achilles_targets "")
 
 add_library(utilities SHARED
@@ -135,7 +138,7 @@ target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
 target_link_libraries(event_gen PRIVATE project_warnings
                                 PUBLIC physics mappers fortran_interface nuclear_models
-                                       AchillesCascadeInteractions) #fortran_interface
+                                       ${AchillesCascadeInteractionsLink}) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
                             # pybind11_add_module(_achilles MODULE

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef NASAINTERACTIONS_HH
 #define NASAINTERACTIONS_HH
 
@@ -8,7 +11,7 @@ namespace achilles {
 
 class NasaInteractions : public Interactions {
   public:
-    NasaInteractions(const std::string &){};
+    NasaInteractions(const std::string &) {};
 
     static std::unique_ptr<Interactions> Create(const std::string &data) {
         return std::make_unique<NasaInteractions>(data);
