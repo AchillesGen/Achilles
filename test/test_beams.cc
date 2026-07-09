@@ -118,3 +118,43 @@ Beams:
         CHECK_THROWS_WITH(beams["Beams"].as<achilles::Beam>(), "Multiple beams exist for PID: 12");
     }
 }
+
+TEST_CASE("FlatFlux", "[Beams]") {
+    SECTION("Appropriately reads min and max energy") {
+        YAML::Node flatflux = YAML::Load(R"beam(
+MinEnergy: 0
+MaxEnergy: 4000
+)beam");
+
+        achilles::FlatFlux flux(flatflux);
+        CHECK(flux.MinEnergy() == 0);
+        CHECK(flux.MaxEnergy() == 4000);
+    }
+
+    SECTION("Appropriately reads range") {
+        YAML::Node flatflux = YAML::Load(R"beam(
+Range: [0, 4000]
+)beam");
+
+        achilles::FlatFlux flux(flatflux);
+        CHECK(flux.MinEnergy() == 0);
+        CHECK(flux.MaxEnergy() == 4000);
+    }
+
+    SECTION("Throws if missing min/max energy or range") {
+        YAML::Node flatflux = YAML::Load(R"beam(
+)beam");
+
+        CHECK_THROWS_AS(achilles::FlatFlux(flatflux), std::runtime_error);
+    }
+
+    SECTION("Throws if both min/max energy and range are given") {
+        YAML::Node flatflux = YAML::Load(R"beam(
+MinEnergy: 0
+MaxEnergy: 4000
+Range: [0, 4000]
+)beam");
+
+        CHECK_THROWS_AS(achilles::FlatFlux(flatflux), std::runtime_error);
+    }
+}

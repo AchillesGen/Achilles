@@ -322,8 +322,17 @@ double PDFBeam::EvaluateFlux(const FourVector &) const {
 }
 
 FlatFlux::FlatFlux(const YAML::Node &node) {
-    m_min_energy = node["MinEnergy"].as<double>();
-    m_max_energy = node["MaxEnergy"].as<double>();
+    if(node["MinEnergy"] && node["MaxEnergy"] && !node["Range"]) {
+        m_min_energy = node["MinEnergy"].as<double>();
+        m_max_energy = node["MaxEnergy"].as<double>();
+    } else if(node["Range"] && !(node["MinEnergy"] || node["MaxEnergy"])) {
+        auto range = node["Range"].as<std::pair<double, double>>();
+        m_min_energy = range.first;
+        m_max_energy = range.second;
+    } else {
+        throw std::runtime_error(
+            "FlatFlux: Invalid format. Requires either MinEnergy and MaxEnergy or Range");
+    }
 }
 
 achilles::FourVector FlatFlux::Flux(const std::vector<double> &ran, double min_energy) const {
