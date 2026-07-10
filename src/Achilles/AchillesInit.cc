@@ -88,8 +88,14 @@ void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs
         if(runcard == "run.yml") {
             spdlog::error("Achilles: Could not find \"run.yml\". Copying over default run card to "
                           "this location");
-            fs::copy(achilles::PathVariables::Instance().DataPath() / "default/run.yml",
-                     fs::current_path());
+            // Resolve the default run card through the standard search path
+            try {
+                auto default_runcard =
+                    achilles::Filesystem::FindFile("data/default/run.yml", "Achilles");
+                fs::copy(default_runcard, fs::current_path() / "run.yml");
+            } catch(const std::exception &error) {
+                spdlog::error("Achilles: Could not copy the default run card: {}", error.what());
+            }
         } else
             spdlog::error("Achilles: Could not find \"" + runcard + "\".");
         return;

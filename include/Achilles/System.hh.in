@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include <system_error>
+
 #if __has_include(<filesystem>)
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -153,7 +155,11 @@ bool is_type(const T &path, FileType type) {
 
 template<typename Func>
 void RecurseDirectories(const fs::path &directory, Func f, FileType type = FileType::any) {
-    for(const auto &file_path : fs::recursive_directory_iterator(directory)) {
+    // Plugin/search directories are optional and may not exist.
+    std::error_code ec;
+    if(!fs::is_directory(directory, ec)) return;
+    for(const auto &file_path : fs::recursive_directory_iterator(directory, ec)) {
+        if(ec) break;
         if(!is_type(file_path, type)) continue;
         f(file_path);
     }
