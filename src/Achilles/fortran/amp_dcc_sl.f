@@ -68,7 +68,7 @@ c
       end subroutine
 
       subroutine amplitude(qvec_in,xpnuc_in,xk_in,mode_in,isl,itiz,itpiz
-     &  ,ipar,zj_mu)
+     &  ,ipar,zj_mu,filepath)
       implicit real*8(a-h,o-y)
       implicit complex*16(z)
       common / cscal / pi,fm,alfa
@@ -107,6 +107,7 @@ c
       dimension isp(-1:1),zcrnt(2,2,-1:2)
      &  ,zcrntx(2,2,-1:2),zsumx(2,2)
       common / eps_tpin / eps_tpin
+      character(len=*), intent(in) :: filepath
       data init /1/
       data ixi_cnv /1,2,5,6,3,4,7,8/
       data isp /2,0,1/
@@ -174,7 +175,7 @@ c
         stop 'ipar error'
       endif 
 c
-      call read_amp(isl,icomp,ipar,0,0  ! called after fnuci is set
+      call read_amp(isl,icomp,ipar,0,0,filepath  ! called after fnuci is set
      & )
 c        
       tmax=tm_f+.5d0+eps_tpin
@@ -421,7 +422,7 @@ c
       return
       end
 c
-      subroutine read_amp(isl,icomp,ipar,nnresc,npiresc
+      subroutine read_amp(isl,icomp,ipar,nnresc,npiresc,filepath
      &  )
       implicit real*8 (a-h,o-y)
       implicit complex*16 (z)
@@ -463,6 +464,7 @@ c
       common / zamp_pin_save / zamp_pin_save(maxmom,npar,maxlsj)
       common / eps_tpin / eps_tpin
       common / igmbs / tm_f,igmbs(npar),igmb_final_meson
+      character(len=*), intent(in) :: filepath
       dimension id1(4),id2(4),itizs(2),cgiso(-1:1,3)
      &  ,pmom_mid(maxmom)
       data id1 /1,2,3,7/
@@ -477,7 +479,7 @@ c
       if(isl==1)then
       open(10,file='sl_EW.dat',form='formatted',status='old')
       else
-      open(10,file='data/dcc_EW.dat',form='formatted',status='old')
+      open(10,file=trim(filepath),form='formatted',status='old')
       endif 
       read(10,*) njLs
       jmax=0
