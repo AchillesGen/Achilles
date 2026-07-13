@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[build-system]
+requires = ["scikit-build-core>=0.5"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "AchillesGen"
+version = "0.3.0.dev20260710"
+requires-python = ">=3.10"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.md"]
+dependencies = ["platformdirs>=3.0"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.0", "pyyaml"]
+
+[project.scripts]
+achilles = "achilles._cli:main"
+achilles-data = "achilles._data:main"
+achilles-mcp = "achilles.mcp_server.server:main"
+
+[tool.scikit-build]
+cmake.args = [
+    "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+    "-DACHILLES_ENABLE_PYTHON=ON",
+    "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+    "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+    "-DCMAKE_Fortran_COMPILER_LAUNCHER=ccache",
+]
+cmake.source-dir = "."
+sdist.exclude = ["data/**"]
+wheel.packages = { achilles = "python/achilles" }
+wheel.exclude = ["lib/**"]
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+build-verbosity = 1
+# TODO: Perform robustness tests
+# Ensure we can import achilles
+test-command = "python -c \"import achilles; print(achilles.__version__)\""
+environment-pass = ["CCACHE_DIR"]
+skip = ["*-musllinux*", "pp*", "cp3??t-*"]
+
+[tool.cibuildwheel.linux]
+before-all = [
+    "yum install -y epel-release",
+    "yum install -y hdf5-devel ccache",
+]
+environment = { CCACHE_DIR = "/host/tmp/achilles-ccache" }
+
+[tool.cibuildwheel.macos]
+before-all = "brew install hdf5 ccache"
+environment = { MACOSX_DEPLOYMENT_TARGET = "15.0", CC = "gcc-15", CXX = "g++-15", FC = "gfortran-15" }
+
+[tool.cibuildwheel.windows]
+before-all = "vcpkg install hdf5:x64-windows"
