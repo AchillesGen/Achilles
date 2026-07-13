@@ -2,6 +2,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/ThreeVector.hh"
+#include "Achilles/Event.hh"
 #include "spdlog/spdlog.h"
 
 using achilles::CoherentMapper;
@@ -15,12 +16,12 @@ CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
     m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
 }
 
-void CoherentMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &) {
-    point[HadronIdx()] = {m_mass, 0, 0, 0};
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, {});
+void CoherentMapper::GeneratePoint(Event& event, const std::vector<double> &) {
+    event.Momentum()[HadronIdx()] = {m_mass, 0, 0, 0};
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, {});
 }
 
-double CoherentMapper::GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) {
+double CoherentMapper::GenerateWeight(const Event&, std::vector<double> &) {
     return 1;
 }
 
@@ -30,8 +31,9 @@ QESpectralMapper::QESpectralMapper(const ProcessInfo &info, size_t idx)
     SetMasses(info.Masses());
 }
 
-void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
+void QESpectralMapper::GeneratePoint(Event& event,
                                      const std::vector<double> &rans) {
+	std::vector<FourVector>& point=event.Momentum();
     // Generate inital nucleon state
     double radical =
         pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
@@ -67,7 +69,7 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_max = {}", cosT_max);
@@ -80,8 +82,9 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 #endif
 }
 
-double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
+double QESpectralMapper::GenerateWeight(const Event& event,
                                         std::vector<double> &rans) {
+	const std::vector<FourVector>& point=event.Momentum();
     double radical =
         pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
     if(radical < 0) radical = 0;
@@ -117,7 +120,7 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 
     double wgt = 1.0 / point[HadronIdx()].P2() / dp / dCos / dPhi / dE;
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);
     spdlog::trace("  dCos: {}", dCos);
@@ -134,8 +137,9 @@ IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info, size_t idx)
     SetMasses(info.Masses());
 }
 
-void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
+void IntfSpectralMapper::GeneratePoint(Event& event,
                                        const std::vector<double> &rans) {
+	std::vector<FourVector>& point=event.Momentum();
     // Generate spectator momentum from a flat distribution
     double p2 = dp2 * rans[4];
     double cosT2 = dCos2 * rans[5] - 1.;
@@ -181,7 +185,7 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
                           mom * cosT};
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  point[0] = {}", point[0]);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_min = {}", cosT_max);
@@ -195,8 +199,9 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 #endif
 }
 
-double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
+double IntfSpectralMapper::GenerateWeight(const Event& event,
                                           std::vector<double> &rans) {
+	const std::vector<FourVector>& point=event.Momentum();
     double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
                                       Constant::mN2 - Smin());
     double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
@@ -238,7 +243,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     double wgt =
         1.0 / point[1].P2() / dp / dCos / dPhi / dE / point.back().P2() / dp2 / dCos2 / dPhi;
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, point, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  Weight: {}", wgt);
     spdlog::trace("  dp: {}", dp);
     spdlog::trace("  dCos: {}", dCos);
@@ -288,13 +293,15 @@ DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info,size_t id
 	pHadron={ParticleInfo(info.m_hadronic.first[0]).Mass(),0,0,0};
 }
 
-void DISSingleNucleonMapper::GeneratePoint(std::vector<FourVector>& point,const std::vector<double>& rans) {
+void DISSingleNucleonMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
+	std::vector<FourVector>& point=event.Momentum();
 	// Generate initial quark state
 	double x=xMin*pow(xMax/xMin,rans[0]);
 	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
 }
 
-double DISSingleNucleonMapper::GenerateWeight(const std::vector<FourVector>& point,std::vector<double>& rans) {
+double DISSingleNucleonMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
+	const std::vector<FourVector>& point=event.Momentum();
 	double x=getX(point[0],pHadron,point[HadronIdx()]);
 	rans[0]=log(x/xMin)/log(xMax/xMin);
 	return 1.0/(point[HadronIdx()].P2()*(x*log(xMax/xMin)));
@@ -305,7 +312,8 @@ DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info,size_t idx): Hadronic
 	SetMasses(info.Masses());
 }
 
-void DISNucleusMapper::GeneratePoint(std::vector<FourVector>& point,const std::vector<double>& rans) {
+void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
+	std::vector<FourVector>& point=event.Momentum();
 	// Generate inital nucleon state
 	double radical =
 		pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
@@ -339,7 +347,8 @@ void DISNucleusMapper::GeneratePoint(std::vector<FourVector>& point,const std::v
 	point[HadronIdx()+1]=getQuarkMomentum(point[0],point[HadronIdx()],x);
 }
 
-double DISNucleusMapper::GenerateWeight(const std::vector<FourVector>& point,std::vector<double>& rans) {
+double DISNucleusMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
+	const std::vector<FourVector>& point=event.Momentum();
 	double x=getX(point[0],point[HadronIdx()],point[HadronIdx()+1]);
 
 	double radical =

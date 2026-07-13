@@ -5,6 +5,7 @@
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
+#include "Achilles/Event.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 using achilles::SherpaMapper;
@@ -14,7 +15,8 @@ using achilles::FourVector;
 using achilles::ThreeBodyMapper;
 using achilles::TwoBodyMapper;
 
-void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
+void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
+	std::vector<FourVector>& mom=event.Momentum();
     // The momentum are given in the following order:
     // 1. Momentum of the initial hadron
     // 2. Momentum of the initial lepton
@@ -50,8 +52,8 @@ void TwoBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vecto
 #endif
 }
 
-double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
-                                     std::vector<double> &rans) {
+double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
+	const std::vector<FourVector>& mom=event.Momentum();
     auto boostVec = (mom[0] + mom[1]).BoostVector();
     auto mom0 = mom[0].Boost(-boostVec);
     auto rotMat = mom0.AlignZ();
@@ -76,7 +78,9 @@ double TwoBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
     return wgt;
 }
 
-void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vector<double> &rans) {
+void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
+	std::vector<FourVector>& mom=event.Momentum();
+
     // Mass and width of "resonance"
     // double res_mass = 1232.;
     // double res_width = 120.;
@@ -110,8 +114,9 @@ void ThreeBodyMapper::GeneratePoint(std::vector<FourVector> &mom, const std::vec
     Mapper<std::vector<achilles::FourVector>>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
 
-double ThreeBodyMapper::GenerateWeight(const std::vector<FourVector> &mom,
-                                       std::vector<double> &rans) {
+double ThreeBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
+	const std::vector<FourVector>& mom=event.Momentum();
+
     // The momentum are given in the following order:
     // 1. Momentum of the initial hadron
     // 2. Momentum of the initial lepton
@@ -364,7 +369,8 @@ void ThreeBodyMapper::Boost(int lflag, const FourVector &q, const FourVector &ph
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vector<double> &rans) {
+void SherpaMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
+	std::vector<FourVector>& point=event.Momentum();
     std::vector<Vec4D> mom(point.size());
     mom[0] =
         Vec4D(point[0][0] / 1_GeV, point[0][1] / 1_GeV, point[0][2] / 1_GeV, point[0][3] / 1_GeV);
@@ -377,8 +383,8 @@ void SherpaMapper::GeneratePoint(std::vector<FourVector> &point, const std::vect
     }
 }
 
-double SherpaMapper::GenerateWeight(const std::vector<FourVector> &point,
-                                    std::vector<double> &rans) {
+double SherpaMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
+	const std::vector<FourVector>& point=event.Momentum();
     std::vector<Vec4D> mom{};
     for(const auto &pt : point)
         mom.emplace_back(pt[0] / 1_GeV, pt[1] / 1_GeV, pt[2] / 1_GeV, pt[3] / 1_GeV);

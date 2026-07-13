@@ -107,8 +107,8 @@ int main(int argc, char *argv[]) {
     auto &ref_handler = achilles::ReferenceHandler::Handle();
     ref_handler.AddReference(main_ref);
 
-    auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    auto log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    int verbosity = static_cast<int>(2 - args["-v"].asLong());
+    int log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
 
     bool batchMode = args["-b"].asBool();
 

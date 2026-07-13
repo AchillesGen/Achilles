@@ -114,12 +114,13 @@ class ProcessGroup {
                                                           std::shared_ptr<Beam>,
                                                           std::shared_ptr<Nucleus>);
 
-    Integrand<std::vector<FourVector>> &GetIntegrand() { return m_integrand; }
-    const Integrand<std::vector<FourVector>> &GetIntegrand() const { return m_integrand; }
+    Integrand<Event> &GetIntegrand() { return m_integrand; }
+    const Integrand<Event> &GetIntegrand() const { return m_integrand; }
     bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
     Event GenerateEvent();
+	void EventSetup(Event&);
     Event SingleEvent(const std::vector<FourVector> &, double);
     const double &MaxWeight() const { return m_maxweight; }
     double &MaxWeight() { return m_maxweight; }
@@ -148,7 +149,7 @@ class ProcessGroup {
     // Numerical components
     bool NeedsOptimization() const;
     MultiChannel m_integrator;
-    Integrand<std::vector<FourVector>> m_integrand;
+    Integrand<Event> m_integrand;
     StatsData m_xsec;
 
     // Parameters

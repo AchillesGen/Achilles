@@ -529,6 +529,7 @@ achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<Partic
                                                         const std::vector<Particle> &,
                                                         const FourVector &qVec,
                                                         const FFInfoMap &ff) const {
+	spdlog::trace("[Coherent] Calculating Currents");
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto ffVals = EvalFormFactor(-qVec.M2());
@@ -590,6 +591,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
                                                 const std::vector<Particle> &had_out,
                                                 const std::vector<Particle> &, const FourVector &q,
                                                 const FFInfoMap &ff) const {
+	spdlog::trace("[QESpectral] Calculating Currents");
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
     if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
 
@@ -705,6 +707,7 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
                                                      const std::vector<Particle> &,
                                                      const FourVector &q,
                                                      const FFInfoMap &ff) const {
+	spdlog::trace("[HyperonSpectral] Calculating Currents");
     if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
     if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
 

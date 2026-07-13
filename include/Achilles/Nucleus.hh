@@ -30,7 +30,7 @@ class PID;
 class Particle;
 class ThreeVector;
 
-using Particles = std::vector<Particle>;
+using vParticles = std::vector<Particle>;
 
 /// The Nucleus class implements the physics needed to describe an arbitrary nucleus. It provides
 /// the ability to generate configurations of nucleons for the cascade, as well as perform checks
@@ -183,7 +183,7 @@ class Nucleus {
     /// @{
 
     /// Generate a configuration of the nucleus based on the density function
-    MOCK Particles GenerateConfig();
+    MOCK vParticles GenerateConfig();
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum

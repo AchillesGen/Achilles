@@ -16,13 +16,14 @@
 namespace achilles {
 
 class FourVector;
+class Event;
 
-class FinalStateMapper : public Mapper<std::vector<FourVector>> {
+class FinalStateMapper : public Mapper<Event> {
   public:
     FinalStateMapper(size_t _nout,size_t idx) : nout{std::move(_nout)}, m_idx{idx} {}
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
+    void GeneratePoint(Event&, const std::vector<double> &) override = 0;
+    double GenerateWeight(const Event&, std::vector<double> &) override = 0;
 	size_t size() const override { return nout; }
     size_t NDims() const override { return 3 * nout - 4; }
     static std::string Name() { return "Final State"; }
@@ -45,8 +46,8 @@ class TwoBodyMapper : public FinalStateMapper,
         return std::make_unique<TwoBodyMapper>(m,idx);
     }
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
 
   private:
     const double s2, s3;
@@ -68,8 +69,8 @@ class ThreeBodyMapper : public FinalStateMapper,
         return std::make_unique<ThreeBodyMapper>(m,idx);
     }
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
     double MassivePropagatorMomenta(double mass, double width, double smin, double smax,
                                     double ran);
     void Isotropic2Momenta(FourVector p, double s1_, double s2_, FourVector &p1, FourVector &p2,
@@ -105,8 +106,8 @@ class SherpaMapper : public FinalStateMapper {
     SherpaMapper(size_t _nout,size_t idx, Mapper_ptr<std::vector<ATOOLS::Vec4D>> _mapper)
         : FinalStateMapper(_nout,idx), sherpa_mapper{std::move(_mapper)} {}
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
     // size_t NDims() const override { return sherpa_mapper -> NDims(); }
 
   private:

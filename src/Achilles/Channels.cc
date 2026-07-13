@@ -11,11 +11,11 @@ Channel<std::vector<FourVector>> achilles::BuildChannelTest(const YAML::Node &no
 }
 
 #ifdef ACHILLES_SHERPA_INTERFACE
-Channel<std::vector<FourVector>> achilles::BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
+Channel<Event> achilles::BuildGenChannel(NuclearModel *model, const ProcessInfo &info,
                                               std::shared_ptr<Beam> beam,
                                               std::unique_ptr<PHASIC::Channels> final_state,
                                               PID nuc_id) {
-    Channel<std::vector<FourVector>> channel;
+    Channel<Event> channel;
     channel.mapping = PSBuilder(info)
                           .Beam(beam)
                           .Hadron(model->PhaseSpace(nuc_id))

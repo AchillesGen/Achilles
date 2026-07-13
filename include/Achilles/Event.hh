@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include "fmt/format.h"
+
 #include "Achilles/Achilles.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/NuclearRemnant.hh"
@@ -28,6 +30,7 @@ using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 class Event {
   public:
     Event() = default;
+	Event(std::shared_ptr<Nucleus> nuc): Event(nuc,std::vector<FourVector>(),0.0) {}
     Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
     Event(const Event &);
     Event &operator=(const Event &);
@@ -42,6 +45,7 @@ class Event {
 
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
+	void setNucleus(std::shared_ptr<Nucleus> nucleus) { m_nuc=nucleus; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
@@ -100,5 +104,26 @@ class Event {
 };
 
 } // namespace achilles
+
+template <> struct fmt::formatter<achilles::Event> {
+    char presentation = 'e';
+    constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
+        // Parse the presentation format and store it in the formatter:
+        auto it = ctx.begin(), end = ctx.end();
+        if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
+
+        // Check if reached the end of the range:
+        if(it != end && *it != '}') throw format_error("Invalid format");
+
+        // Return an iterator past the end of the parsed range:
+        return it;
+    }
+
+    auto format(const achilles::Event&, format_context &ctx) const
+        -> format_context::iterator {
+        // ctx.out() is an output iterator to write to
+        return format_to(ctx.out(),"Event. (TODO: Implement Formatted Output)");
+    }
+};
 
 #endif

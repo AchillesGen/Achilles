@@ -150,8 +150,7 @@ void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
         had_in.push_back(momentum[1]);
         for(size_t i = 2; i < m_info.m_mom_map.size(); ++i) {
             PID pid(m_info.m_mom_map[i]);
-            bool is_lepton = ParticleInfo(pid).IsLepton();
-            if(is_lepton)
+            if(ParticleInfo(pid).IsLepton())
                 lep_out.push_back(momentum[i]);
             else
                 had_out.push_back(momentum[i]);
@@ -420,8 +419,11 @@ void ProcessGroup::Optimize() {
     // TODO: Clean up this control flow. It is a bit of a mess
     b_optimize = true;
 
-    auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
-        return SingleEvent(mom, wgt).Weight();
+    auto func = [&](const Event& event, const double& wgt) {
+		Event clone(event); // because "event" is immutable. Is there a better way to do this?
+		clone.Weight()=wgt;
+		EventSetup(clone);
+        return clone.Weight();
     };
     m_integrand.Function() = func;
     if(NeedsOptimization()) {
@@ -429,8 +431,8 @@ void ProcessGroup::Optimize() {
             "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
             m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
             m_processes[0].Info().Multiplicity());
-		std::vector<FourVector> point(m_integrator.Dimensions());
-        m_integrator.Optimize(m_integrand,point);
+		Event event(m_nucleus);
+        m_integrator.Optimize(m_integrand,event);
     }
 
     // Ensure that the integrator does not save these results into the summary
@@ -440,10 +442,11 @@ void ProcessGroup::Optimize() {
         b_calc_weights = true;
         m_integrator.Parameters().ncalls = 100000;
 
-		// Create dummy point for training purposes
-		std::vector<FourVector> point(m_integrator.Dimensions());
-        for(size_t i = 0; i < 3; ++i)
-			m_integrator(m_integrand,point);
+        for(size_t i = 0; i < 3; ++i) {
+			// Create dummy point for training purposes
+			Event event(m_nucleus);
+			m_integrator(m_integrand,event);
+		}
 
         b_calc_weights = false;
         std::ofstream outFile("Results.txt");
@@ -474,18 +477,17 @@ void ProcessGroup::Optimize() {
 void ProcessGroup::Summary() const {}
 
 achilles::Event ProcessGroup::GenerateEvent() {
-    std::vector<FourVector> mom(m_integrator.Dimensions());
-	m_integrator.GeneratePoint(m_integrand,mom);
-    const double ps_wgt = m_integrator.GenerateWeight(m_integrand, mom);
-    return SingleEvent(mom, ps_wgt);
+	Event event(m_nucleus);
+	m_integrator.GeneratePoint(m_integrand,event);
+	event.Weight()=m_integrator.GenerateWeight(m_integrand,event);
+	EventSetup(event);
+	return event;
 }
 
-achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
-    Event event = Event(m_nucleus, mom, ps_wgt);
-
+void ProcessGroup::EventSetup(Event& event) {
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
-    for(const auto &momentum : event.Momentum()) {
+    for(const FourVector& momentum : event.Momentum()) {
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
@@ -498,20 +500,24 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
             m_xsec += 0;
         }
         event.Weight() = 0;
-        return event;
+        return;
     }
 
     CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
-    if(b_optimize || event.Weight() == 0) return event;
+    if(b_optimize || event.Weight() == 0) return;
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
     event.ProcessId() = process.ID();
     process.SetupHadrons(event);
+}
 
+achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
+    Event event = Event(m_nucleus, mom, ps_wgt);
+	EventSetup(event);
     return event;
 }
 

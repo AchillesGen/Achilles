@@ -2,8 +2,7 @@
 #include "Achilles/FourVector.hh"
 #include "spdlog/spdlog.h"
 
-void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
-                                       const std::vector<double> &rans) {
+void achilles::PSMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
     // Get the dimensions for each component of the PSMapper
     const int hbeamVars = static_cast<int>(hbeam->NDims());
     const int lbeamVars = static_cast<int>(lbeam->NDims());
@@ -22,17 +21,16 @@ void achilles::PSMapper::GeneratePoint(std::vector<FourVector> &momentum,
     // 3. Momentum of all outgoing parts of the leptonic tensor
     // 4. Momentum of all outgoing hadrons
     // 5. Momentum of all spectators
-    momentum.resize(size());
-    lbeam->GeneratePoint(momentum, lbeamRans);
-    hbeam->GeneratePoint(momentum, hbeamRans);
-    finalstate->GeneratePoint(momentum, mainRans);
+    event.Momentum().resize(size());
+    lbeam->GeneratePoint(event, lbeamRans);
+    hbeam->GeneratePoint(event, hbeamRans);
+    finalstate->GeneratePoint(event, mainRans);
 
     // Debugging
-    // Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, momentum, rans);
+    // Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
 }
 
-double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentum,
-                                          std::vector<double> &rans) {
+double achilles::PSMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
     // Get the dimensions for each component of the PSMapper and create
     // temporary rans vector for each
     const auto hbeamVars = hbeam->NDims();
@@ -41,9 +39,9 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
     std::vector<double> hbeamRans(hbeamVars), lbeamRans(lbeamVars), mainRans(mainVars);
 
     // Calculate the weights
-    double lwgt = lbeam->GenerateWeight(momentum, lbeamRans);
-    double hwgt = hbeam->GenerateWeight(momentum, hbeamRans);
-    double mwgt = finalstate->GenerateWeight(momentum, mainRans);
+    double lwgt = lbeam->GenerateWeight(event, lbeamRans);
+    double hwgt = hbeam->GenerateWeight(event, hbeamRans);
+    double mwgt = finalstate->GenerateWeight(event, mainRans);
     double wgt = lwgt * hwgt * mwgt;
 
     // Merge the random numbers
@@ -55,7 +53,7 @@ double achilles::PSMapper::GenerateWeight(const std::vector<FourVector> &momentu
 
     // Debugging
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<FourVector>>::Print(__PRETTY_FUNCTION__, momentum, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  Lepton Beam Weight = {}", lwgt);
     spdlog::trace("  Hadron Beam Weight = {}", hwgt);
     spdlog::trace("  Phase Space Weight = {}", mwgt);

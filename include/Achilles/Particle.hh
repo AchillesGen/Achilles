@@ -248,8 +248,8 @@ class Particle {
     ///@return bool: True if a final state particle, False otherwise
     bool IsFinal() const noexcept { return status == ParticleStatus::final_state; }
 
-    /// Check to see if the particle is a final state particle
-    ///@return bool: True if a final state particle, False otherwise
+    /// Check to see if the particle is an initial state particle
+    ///@return bool: True if an initial state particle, False otherwise
     bool IsInitial() const noexcept { return status == ParticleStatus::initial_state; }
 
     /// Check to see if the particle should be written out

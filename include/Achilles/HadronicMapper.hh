@@ -10,13 +10,14 @@
 namespace achilles {
 
 class FourVector;
+class Event;
 
-class HadronicBeamMapper : public Mapper<std::vector<FourVector>> {
+class HadronicBeamMapper : public Mapper<Event> {
   public:
     HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{idx} {}
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
+    void GeneratePoint(Event&, const std::vector<double> &) override = 0;
+    double GenerateWeight(const Event&, std::vector<double> &) override = 0;
     size_t NDims() const override = 0;
     static std::string Name() { return "Hadronic Initial State"; }
 
@@ -38,8 +39,8 @@ class QESpectralMapper
         return std::make_unique<QESpectralMapper>(info, idx);
     }
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
     size_t NDims() const override { return 4; }
 
   private:
@@ -59,8 +60,8 @@ class CoherentMapper
         return std::make_unique<CoherentMapper>(info, idx);
     }
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
     size_t NDims() const override { return 0; }
 
   private:
@@ -77,8 +78,8 @@ class IntfSpectralMapper
         return std::make_unique<IntfSpectralMapper>(info, idx);
     }
 
-    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
-    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    void GeneratePoint(Event&, const std::vector<double> &) override;
+    double GenerateWeight(const Event&, std::vector<double> &) override;
     size_t NDims() const override { return 7; }
 
   private:
@@ -96,8 +97,8 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
-	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
-	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
+	void GeneratePoint(Event&,const std::vector<double>&) override;
+	double GenerateWeight(const Event&,std::vector<double>&) override;
 
 	/// 1 for [x]
 	size_t NDims() const override { return 1; }
@@ -113,8 +114,8 @@ class DISNucleusMapper: public HadronicBeamMapper,
 	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
 		return std::make_unique<DISSingleNucleonMapper>(info,idx);
 	}
-	void GeneratePoint(std::vector<FourVector>&,const std::vector<double>&) override;
-	double GenerateWeight(const std::vector<FourVector>&,std::vector<double>&) override;
+	void GeneratePoint(Event&,const std::vector<double>&) override;
+	double GenerateWeight(const Event&,std::vector<double>&) override;
 
 	/// 2 for [pHadron,pQuark]
 	size_t size() const override { return 2; }

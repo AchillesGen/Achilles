@@ -56,13 +56,17 @@ achilles::DefaultBackend::DefaultBackend() {}
 double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
     auto event = event_in;
 
+	spdlog::debug("Pre-Transform:");
+	size_t np=0;
     for(const auto &part : event.Momentum()) {
-        spdlog::debug("Momentum: ({}, {}, {}, {})", part[0], part[1], part[2], part[3]);
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  part[0], part[1], part[2], part[3]);
     }
     m_model->TransformFrame(event, process, true);
 
+	spdlog::debug("Post-Transform:");
+	np=0;
     for(const auto &part : event.Momentum()) {
-        spdlog::debug("Momentum: ({}, {}, {}, {})", part[0], part[1], part[2], part[3]);
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++, part[0], part[1], part[2], part[3]);
     }
 
     const auto &process_info = process.Info();
@@ -133,6 +137,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         spdlog::warn("Got nan for xsec, setting to 0");
         xsec = 0;
     }
+	spdlog::debug("xsec: {}",xsec);
     return xsec;
 }
 
@@ -166,7 +171,7 @@ void achilles::DefaultBackend::AddProcess(Process &process) {
 
 void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
                                              std::shared_ptr<Beam> beam,
-                                             Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
+                                             Integrand<Event> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto multiplicity = process_info.FinalStateMultiplicity();
     if(multiplicity > 3) {
@@ -179,11 +184,11 @@ void achilles::DefaultBackend::SetupChannels(const ProcessInfo &process_info,
     }
 
     if(multiplicity == 2) {
-        Channel<std::vector<FourVector>> channel0 =
+        Channel<Event> channel0 =
             BuildChannel<TwoBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     } else {
-        Channel<std::vector<FourVector>> channel0 =
+        Channel<Event> channel0 =
             BuildChannel<ThreeBodyMapper>(m_model.get(), process_info, beam, nuc_id);
         integrand.AddChannel(std::move(channel0));
     }
@@ -298,12 +303,12 @@ achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const std::vector<FourVector
 
 void achilles::SherpaLeptonicBackend::SetupChannels(const ProcessInfo &process_info,
                                                     std::shared_ptr<Beam> beam,
-                                                    Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
+                                                    Integrand<Event> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
-    auto channels = p_sherpa->GenerateChannels(process_info.Ids());
+    std::vector<std::unique_ptr<PHASIC::Channels>> channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<std::vector<FourVector>> channel =
+        Channel<Event> channel =
             achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
@@ -377,12 +382,12 @@ double achilles::SherpaFullBackend::CrossSection(const Event &event, const Proce
 
 void achilles::SherpaFullBackend::SetupChannels(const ProcessInfo &process_info,
                                                 std::shared_ptr<Beam> beam,
-                                                Integrand<std::vector<FourVector>> &integrand, PID nuc_id) {
+                                                Integrand<Event> &integrand, PID nuc_id) {
     auto masses = process_info.Masses();
     auto channels = p_sherpa->GenerateChannels(process_info.Ids());
     size_t count = 0;
     for(auto &chan : channels) {
-        Channel<std::vector<FourVector>> channel =
+        Channel<Event> channel =
             achilles::BuildGenChannel(m_model.get(), process_info, beam, std::move(chan), nuc_id);
         integrand.AddChannel(std::move(channel));
         spdlog::info("Adding Channel{}", count++);
