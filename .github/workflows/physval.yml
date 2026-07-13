@@ -1,0 +1,206 @@
+name: Physics Validation (NUISANCE3)
+
+# Distribution-level physics validation: compares this branch against experimental
+# data and the stored `main` baseline via NUISANCE3, then posts a Sherpa-style
+# summary table as a PR comment (flagging any measurement with compatibility
+# p_compat < 0.05). Heavy + on-demand, NOT part of the per-PR build lane.
+#
+# Triggers:
+#   * a commit whose message contains the marker  !physval
+#   * manual "Run workflow"  (workflow_dispatch)
+#   * nightly schedule (safety net; runs on the default branch only)
+#
+# NOTE: the real Achilles-generation + NUISANCE3 steps are TODO (see
+# validation/physval/README.md). Until they are wired up, `dry_run: true` exercises
+# the full plumbing with the synthetic adapter so this workflow runs today.
+
+on:
+  push:
+    # Gated at the job level by the '!physval' commit-message marker.
+  workflow_dispatch:
+    inputs:
+      events:
+        description: 'Events per measurement'
+        default: '500000'
+      seed:
+        description: 'RNG seed (pinned for reproducibility)'
+        default: '42'
+      dry_run:
+        description: 'Use the synthetic adapter (until NUISANCE3 is wired up)'
+        type: boolean
+        default: true
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: physval-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write        # commit run plots to the physval-baselines branch
+  pull-requests: write   # post/update the summary comment
+
+env:
+  PHYSVAL_DIR: validation/physval
+  BASELINE_BRANCH: physval-baselines
+  # TODO: pin these once the NUISANCE3 image + data release are chosen.
+  NUISANCE_IMAGE: ''
+  NUISANCE_VERSION: 'TODO'
+  PHYSVAL_DATA_RELEASE: 'TODO'
+  N_BOOT: '1000'   # must be >> max n_bins (Hartlap requirement; see README)
+
+jobs:
+  setup:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' &&
+       contains(join(github.event.commits.*.message, ' '), '!physval'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - id: mk
+        name: Build one-measurement-per-shard matrix from the config
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, yaml
+          cfg = yaml.safe_load(open('validation/physval/measurements.yml'))
+          names = [m['name'] for m in cfg['measurements']]
+          print('matrix=' + json.dumps({'measurement': names}))
+          PY
+      - id: mode
+        run: echo "dry_run=${{ github.event.inputs.dry_run || 'true' }}" >> "$GITHUB_OUTPUT"
+
+  generate:
+    needs: setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml matplotlib
+
+      - name: Restore stored main baseline
+        run: |
+          # The baseline branch holds baselines/<key>.json (main predictions +
+          # bootstrap covariance + data). Missing branch => driver computes main
+          # inline and notes it in the comment.
+          mkdir -p baseline
+          if git fetch origin "$BASELINE_BRANCH" --depth 1 2>/dev/null; then
+            git --work-tree=baseline checkout "origin/$BASELINE_BRANCH" -- baselines 2>/dev/null || true
+          else
+            echo "No $BASELINE_BRANCH branch yet."
+          fi
+
+      # ---------------------------------------------------------------------
+      # TODO(real path): build/download Achilles, generate events for
+      # ${{ matrix.measurement }} inside the $NUISANCE_IMAGE container, write
+      # NuHepMC-v1.0, histogram via NUISANCE3 (legacy interface), and render the
+      # new/old/data overlay PNG to out/<name>/<name>.png.
+      # Until then, --dry-run drives the synthetic adapter.
+      # ---------------------------------------------------------------------
+      - name: Run physval for one measurement
+        run: |
+          cd "$PHYSVAL_DIR"
+          KEY="${NUISANCE_VERSION}-${PHYSVAL_DATA_RELEASE}"
+          FLAGS=""
+          [ "${{ needs.setup.outputs.dry_run }}" = "true" ] && FLAGS="--dry-run"
+          python3 physval.py --config measurements.yml $FLAGS \
+            --only "${{ matrix.measurement }}" \
+            --key "$KEY" --baseline-dir "$GITHUB_WORKSPACE/baseline" \
+            --out-dir "out/${{ matrix.measurement }}" \
+            --events "${{ github.event.inputs.events || '500000' }}" \
+            --seed "${{ github.event.inputs.seed || '42' }}" \
+            --n-boot "$N_BOOT" \
+            --nuisance-image "$NUISANCE_IMAGE" \
+            --nuisance-version "$NUISANCE_VERSION" \
+            --data-release "$PHYSVAL_DATA_RELEASE" \
+            --feature-sha "$GITHUB_SHA"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.measurement }}
+          path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.measurement }}
+          retention-days: 7
+
+  aggregate:
+    needs: [setup, generate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: shards
+
+      - name: Merge shards into the summary + comment
+        run: |
+          cd "$PHYSVAL_DIR"
+          python3 physval.py --merge "$GITHUB_WORKSPACE"/shards/shard-*/summary.json \
+            --out-dir final
+
+      # Commit this run's plots to physval-baselines/plots/<sha>/ so the comment can
+      # embed inline thumbnails via raw URLs. Fork PRs have no write token -> skipped
+      # (the shard artifacts remain the fallback).
+      - name: Publish plots to baseline branch
+        if: ${{ github.event.pull_request.head.repo.fork != true }}
+        run: |
+          set -e
+          SHA="${GITHUB_SHA}"
+          shopt -s nullglob
+          plots=("$GITHUB_WORKSPACE"/shards/shard-*/*.png)
+          if [ ${#plots[@]} -eq 0 ]; then echo "no plots produced (dry-run); skipping"; exit 0; fi
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git fetch origin "$BASELINE_BRANCH" 2>/dev/null || true
+          git worktree add -B "$BASELINE_BRANCH" bl "origin/$BASELINE_BRANCH" 2>/dev/null \
+            || git worktree add -B "$BASELINE_BRANCH" bl
+          mkdir -p "bl/plots/$SHA"
+          cp "${plots[@]}" "bl/plots/$SHA/"
+          git -C bl add "plots/$SHA"
+          git -C bl commit -m "physval plots for $SHA" || echo "nothing to commit"
+          git -C bl push origin "$BASELINE_BRANCH"
+
+      - name: Post or update the PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ env.PHYSVAL_DIR }}/final/comment.md', 'utf8');
+            const marker = '<!-- achilles-physval-summary -->';
+            // Find the open PR for this branch (push/dispatch have no PR context).
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`, state: 'open',
+            });
+            if (prs.length === 0) { core.info('No open PR for this branch; comment skipped.'); return; }
+            const issue_number = prs[0].number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number, body });
+            }

@@ -1,0 +1,87 @@
+name: Physval Baseline Refresh
+
+# Recomputes and stores the `main` physics-validation baseline (per-measurement
+# central histograms + bootstrap covariance + experimental data) on the
+# physval-baselines branch, keyed by NUISANCE3 version + data release. PR runs then
+# compare against this stored baseline instead of regenerating `main`.
+#
+# Runs on push to main and can be dispatched manually (e.g. after a NUISANCE3 or
+# data-release bump). Same TODO applies: real generation is wired via the NUISANCE3
+# adapter; dry_run uses the synthetic adapter to exercise the plumbing.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Refresh when physics, the measurement list, or the driver changes.
+      - 'src/**'
+      - 'data/**'
+      - 'validation/physval/**'
+  workflow_dispatch:
+    inputs:
+      events:
+        description: 'Events per measurement'
+        default: '2000000'
+      seed:
+        default: '42'
+      dry_run:
+        type: boolean
+        default: true
+
+concurrency:
+  group: physval-baseline
+  cancel-in-progress: false   # never interleave two baseline writers
+
+permissions:
+  contents: write
+
+env:
+  PHYSVAL_DIR: validation/physval
+  BASELINE_BRANCH: physval-baselines
+  NUISANCE_IMAGE: ''
+  NUISANCE_VERSION: 'TODO'
+  PHYSVAL_DATA_RELEASE: 'TODO'
+  N_BOOT: '1000'
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml
+
+      # TODO(real path): build Achilles + generate/histogram via the NUISANCE3
+      # container, exactly as in physval.yml. --dry-run uses the synthetic adapter.
+      - name: Compute the baseline
+        run: |
+          cd "$PHYSVAL_DIR"
+          KEY="${NUISANCE_VERSION}-${PHYSVAL_DATA_RELEASE}"
+          FLAGS=""
+          [ "${{ github.event.inputs.dry_run || 'true' }}" = "true" ] && FLAGS="--dry-run"
+          mkdir -p "$GITHUB_WORKSPACE/baseline"
+          python3 physval.py --config measurements.yml $FLAGS --make-baseline \
+            --key "$KEY" --baseline-dir "$GITHUB_WORKSPACE/baseline" \
+            --events "${{ github.event.inputs.events || '2000000' }}" \
+            --seed "${{ github.event.inputs.seed || '42' }}" \
+            --n-boot "$N_BOOT" \
+            --nuisance-image "$NUISANCE_IMAGE" \
+            --nuisance-version "$NUISANCE_VERSION" \
+            --data-release "$PHYSVAL_DATA_RELEASE"
+
+      - name: Store baseline on the physval-baselines branch
+        run: |
+          set -e
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git fetch origin "$BASELINE_BRANCH" 2>/dev/null || true
+          git worktree add -B "$BASELINE_BRANCH" bl "origin/$BASELINE_BRANCH" 2>/dev/null \
+            || git worktree add -B "$BASELINE_BRANCH" bl
+          mkdir -p bl/baselines
+          cp -r "$GITHUB_WORKSPACE"/baseline/baselines/. bl/baselines/
+          git -C bl add baselines
+          git -C bl commit -m "refresh baseline @ ${GITHUB_SHA}" || echo "no baseline change"
+          git -C bl push origin "$BASELINE_BRANCH"
