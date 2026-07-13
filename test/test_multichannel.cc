@@ -99,8 +99,9 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         static constexpr double rtol = 2e-2;
 
         achilles::MultiChannel integrator(1, integrand.NChannels(),
-                                          achilles::MultiChannelParams{1000, nitn_min, rtol});
-        integrator.Optimize(integrand);
+		                                  achilles::MultiChannelParams{1000, nitn_min, rtol});
+		std::vector<double> rans;
+		integrator.Optimize(integrand,rans);
         auto results = integrator.Summary();
 
         CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
@@ -112,7 +113,8 @@ TEST_CASE("Multi-Channel Integration", "[multichannel]") {
         static constexpr double rtol = 1e-3;
         achilles::MultiChannel integrator(1, integrand.NChannels(),
                                           achilles::MultiChannelParams{1000, nitn_min, rtol});
-        integrator.Optimize(integrand);
+		std::vector<double> rans;
+		integrator.Optimize(integrand,rans);
         auto results = integrator.Summary();
 
         CHECK(std::abs(results.sum_results.Mean() - 1.0) < nsigma * results.sum_results.Error());
@@ -135,7 +137,8 @@ TEST_CASE("YAML encoding / decoding Multichannel", "[multichannel]") {
     achilles::MultiChannel integrator(1, integrand.NChannels(),
                                       achilles::MultiChannelParams{ncalls, nitn_min, rtol});
     integrator.Parameters().rescale_factor = rescale_factor;
-    integrator.Optimize(integrand);
+	std::vector<double> rans;
+	integrator.Optimize(integrand,rans);
     auto results1 = integrator.Summary();
 
     YAML::Node node;

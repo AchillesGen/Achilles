@@ -31,6 +31,7 @@ class Event {
   public:
     Event() = default;
 	Event(std::shared_ptr<Nucleus> nuc): Event(nuc,std::vector<FourVector>(),0.0) {}
+	Event(std::vector<FourVector> mom): Event(nullptr,mom,0.0) {}
     Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
     Event(const Event &);
     Event &operator=(const Event &);

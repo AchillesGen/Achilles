@@ -213,7 +213,8 @@ TEST_CASE("Save/Load MultiChannel", "[Cache]") {
         integrand.AddChannel(std::move(channel));
     }
     achilles::MultiChannel multi(1, integrand.NChannels(), {5000, 3, 1e-2, 1, 0.25, 1e-5, 1.5, 0});
-    multi.Optimize(integrand);
+	std::vector<double> rans;
+    multi.Optimize(integrand,rans);
     std::stringstream ss;
     multi.SaveState(ss);
 

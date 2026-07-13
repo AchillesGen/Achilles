@@ -4,6 +4,7 @@
 #include "Achilles/HadronicMapper.hh"
 #include "Achilles/PhaseSpaceBuilder.hh"
 #include "Achilles/PhaseSpaceMapper.hh"
+#include "Achilles/Event.hh"
 #include "Approx.hh"
 #include "mock_classes.hh"
 
@@ -18,10 +19,10 @@ class DummyHadron : public achilles::HadronicBeamMapper,
         return std::make_unique<DummyHadron>(info, idx);
     }
 
-    void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[HadronIdx()] = {achilles::Constant::mN, 0, 0, 0};
+    void GeneratePoint(achilles::Event& event, const std::vector<double> &) override {
+        event.Momentum()[HadronIdx()] = {achilles::Constant::mN, 0, 0, 0};
     }
-    double GenerateWeight(const std::vector<achilles::FourVector> &,
+    double GenerateWeight(const achilles::Event&,
                           std::vector<double> &) override {
         return 1.0;
     }
@@ -39,11 +40,11 @@ class DummyFS
         return std::make_unique<DummyFS>(m, a);
     }
 
-    void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[2] = {achilles::Constant::mN, 0, 0, 0};
-        p[3] = {achilles::Constant::mN, 0, 0, 0};
+    void GeneratePoint(achilles::Event& event, const std::vector<double> &) override {
+        event.Momentum()[2] = {achilles::Constant::mN, 0, 0, 0};
+        event.Momentum()[3] = {achilles::Constant::mN, 0, 0, 0};
     }
-    double GenerateWeight(const std::vector<achilles::FourVector> &,
+    double GenerateWeight(const achilles::Event&,
                           std::vector<double> &) override {
         return 1.0;
     }
@@ -57,6 +58,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     achilles::FourVector beam_mom = {achilles::Constant::mN, 0, 0, 0};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
+	achilles::Event event(output);
     auto mapper =
         achilles::PSBuilder(info).Beam(beam, 0).Hadron("DummyHadron").FinalState("DummyFS").build();
     std::vector<double> rans(2);
@@ -68,8 +70,8 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
         .LR_RETURN((beam_mom));
     REQUIRE_CALL(*beam, NVariables()).TIMES(2).RETURN(0);
     CHECK(mapper->NDims() == 2);
-    mapper->GeneratePoint(output, rans);
-    CHECK_THAT(output, AllFourVectorApprox(expected));
+    mapper->GeneratePoint(event, rans);
+    CHECK_THAT(event.Momentum(), AllFourVectorApprox(expected));
 }
 
 TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
@@ -95,33 +97,36 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
     std::vector<double> final_state_rans{0.5, 0.5}, final_state_rans_out(2);
     std::vector<double> rans{0.5, 0.5, 0.5, 0.5, 0.5, 0.5}, rans_out(6);
 
+	achilles::Event final_state_event(final_state_mom),event_out(mom_out),
+					event(mom),event2(mom2),event3(mom3);
+
     REQUIRE_CALL(*beam_map, NDims()).TIMES(2).LR_RETURN((beam_dims));
     REQUIRE_CALL(*beam_map, size()).TIMES(1).LR_RETURN(1ul);
-    REQUIRE_CALL(*beam_map, GeneratePoint(mom, lbeam_rans))
+    REQUIRE_CALL(*beam_map, GeneratePoint(event, lbeam_rans))
         .TIMES(1)
-        .LR_SIDE_EFFECT(mom[1] = beam_mom);
-    REQUIRE_CALL(*beam_map, GenerateWeight(mom_out, lbeam_rans_out))
+        .LR_SIDE_EFFECT(event.Momentum()[1] = beam_mom);
+    REQUIRE_CALL(*beam_map, GenerateWeight(event_out, lbeam_rans_out))
         .TIMES(1)
         .LR_SIDE_EFFECT(_2 = lbeam_rans)
         .RETURN(1.0);
 
     REQUIRE_CALL(*hadron_map, NDims()).TIMES(2).LR_RETURN((hadron_dims));
     REQUIRE_CALL(*hadron_map, size()).TIMES(1).LR_RETURN(1ul);
-    REQUIRE_CALL(*hadron_map, GeneratePoint(mom2, hadron_rans))
+    REQUIRE_CALL(*hadron_map, GeneratePoint(event2, hadron_rans))
         .TIMES(1)
-        .LR_SIDE_EFFECT(mom[0] = hadron_mom);
-    REQUIRE_CALL(*hadron_map, GenerateWeight(mom_out, hadron_rans_out))
+        .LR_SIDE_EFFECT(event.Momentum()[0] = hadron_mom);
+    REQUIRE_CALL(*hadron_map, GenerateWeight(event_out, hadron_rans_out))
         .TIMES(1)
         .LR_SIDE_EFFECT(_2 = hadron_rans)
         .RETURN(1.0);
 
     REQUIRE_CALL(*final_state_map, NDims()).TIMES(2).LR_RETURN((final_state_dims));
     REQUIRE_CALL(*final_state_map, size()).TIMES(1).LR_RETURN(2ul);
-    REQUIRE_CALL(*final_state_map, GeneratePoint(mom3, final_state_rans))
+    REQUIRE_CALL(*final_state_map, GeneratePoint(event3, final_state_rans))
         .TIMES(1)
-        .LR_SIDE_EFFECT(mom[2] = final_state_mom[0])
-        .LR_SIDE_EFFECT(mom[3] = final_state_mom[1]);
-    REQUIRE_CALL(*final_state_map, GenerateWeight(mom_out, final_state_rans_out))
+        .LR_SIDE_EFFECT(event.Momentum()[2] = final_state_mom[0])
+        .LR_SIDE_EFFECT(event.Momentum()[3] = final_state_mom[1]);
+    REQUIRE_CALL(*final_state_map, GenerateWeight(event_out, final_state_rans_out))
         .TIMES(1)
         .LR_SIDE_EFFECT(_2 = final_state_rans)
         .RETURN(1.0);
@@ -131,12 +136,12 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
     mapper.SetHadronBeam(hadron_map);
     mapper.SetFinalState(std::move(final_state_map));
 
-    mapper.GeneratePoint(mom, rans);
-    auto wgt = mapper.GenerateWeight(mom, rans_out);
+    mapper.GeneratePoint(event, rans);
+    auto wgt = mapper.GenerateWeight(event, rans_out);
 
     CHECK(wgt == 1.0);
     CHECK_THAT(rans, Catch::Matchers::Approx(rans_out));
-    CHECK_THAT(mom, AllFourVectorApprox(mom_out));
+    CHECK_THAT(event.Momentum(), AllFourVectorApprox(event_out.Momentum()));
 
     // TODO: Move this to test EventGen.cc
     // MockPSBuilder builder;

@@ -2,6 +2,7 @@
 
 #include "Achilles/BeamMapper.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Event.hh"
 #include "Approx.hh"
 #include "mock_classes.hh"
 
@@ -35,22 +36,26 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
             achilles::BeamMapper mapper(0, beam);
             mapper.SetMasses({0, achilles::Constant::mN2});
             std::vector<achilles::FourVector> mom(1);
-            mapper.GeneratePoint(mom, beam_rans);
-            double wgt = mapper.GenerateWeight(mom, new_rans);
+			achilles::Event event(mom);
+            mapper.GeneratePoint(event, beam_rans);
+            double wgt = mapper.GenerateWeight(event, new_rans);
             CHECK_THAT(beam_rans, Catch::Matchers::Approx(new_rans));
             CHECK(wgt == 1.0);
-            CHECK_THAT(mom, AllFourVectorApprox({beam_mom}));
+            CHECK_THAT(event.Momentum(), AllFourVectorApprox({beam_mom}));
         }
 
         SECTION("Reverse") {
             achilles::BeamMapper mapper(0, beam);
             mapper.SetMasses({0, achilles::Constant::mN2});
-            double wgt = mapper.GenerateWeight({beam_mom}, new_rans);
-            std::vector<achilles::FourVector> mom(1);
-            mapper.GeneratePoint(mom, new_rans);
+			std::vector<achilles::FourVector> mom={beam_mom};
+			achilles::Event event(mom);
+            double wgt = mapper.GenerateWeight(event, new_rans);
+            std::vector<achilles::FourVector> mom2(1);
+			achilles::Event event2(mom2);
+            mapper.GeneratePoint(event2, new_rans);
             CHECK_THAT(beam_rans, Catch::Matchers::Approx(new_rans));
             CHECK(wgt == 1.0);
-            CHECK_THAT(mom, AllFourVectorApprox({beam_mom}));
+            CHECK_THAT(event2.Momentum(), AllFourVectorApprox({beam_mom}));
         }
     }
 }
