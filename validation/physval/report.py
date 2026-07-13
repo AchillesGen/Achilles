@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Render the Achilles physval summary as a PR comment and a machine-readable JSON.
 
 The comment is modeled on the Sherpa physval summary table: one row per

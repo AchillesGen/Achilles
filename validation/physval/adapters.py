@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Adapter boundary between the physval statistics and Achilles / NUISANCE3.
 
 Everything that actually shells out to Achilles (event generation) or NUISANCE3
