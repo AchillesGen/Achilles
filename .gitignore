@@ -5,7 +5,7 @@ __pycache__/*
 .DS_Store
 *.so
 *.egg-info/
-build*
+build*/
 *.png
 *.eps
 *.pdf
@@ -35,6 +35,6 @@ coverage.info
 .sherpa
 .vscode/c_cpp_properties.json
 .vscode/settings.json
-install*
+install*/
 doc-pm/
 Doxyfile
