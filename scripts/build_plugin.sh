@@ -21,10 +21,12 @@
 #   4. Installs the library into the plugin discovery directory.
 #
 # Usage:
-#   scripts/build_plugin.sh [-n NAME] [-s SOURCE.cc] [-o OUTPUT_DIR] [-r ACHILLES_ROOT]
+#   scripts/build_plugin.sh [-n NAME] [-s SOURCE.cc] [-l LINK] [-o OUTPUT_DIR] [-r ACHILLES_ROOT]
 #
 #   -n NAME     Plugin name (default: Example). Library is libAchillesPlugin_<name>.so
 #   -s SOURCE   Plugin C++ source file. If omitted, an example cut plugin is generated.
+#   -l LINK     Imported Achilles target(s) to link (default: achilles::cuts). Use a
+#               ';'-separated list for several, e.g. "achilles::nuclear_models".
 #   -o DIR      Directory to install the .so into (default: auto-detected plugin dir).
 #   -r DIR      Achilles source root (default: auto-detected from this script's location).
 #
@@ -35,13 +37,15 @@ set -euo pipefail
 # --------------------------------------------------------------------------- #
 NAME="Example"
 SOURCE=""
+LINK="achilles::cuts"
 OUTPUT_DIR=""
 ACHILLES_ROOT=""
 
-while getopts ":n:s:o:r:h" opt; do
+while getopts ":n:s:l:o:r:h" opt; do
     case "$opt" in
         n) NAME="$OPTARG" ;;
         s) SOURCE="$OPTARG" ;;
+        l) LINK="$OPTARG" ;;
         o) OUTPUT_DIR="$OPTARG" ;;
         r) ACHILLES_ROOT="$OPTARG" ;;
         h) grep '^#' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -161,9 +165,10 @@ find_package(Achilles REQUIRED)
 # the target name must carry that prefix. MODULE == dlopen-only shared object.
 add_library(AchillesPlugin_${NAME} MODULE "${SOURCE}")
 
-# achilles::cuts pulls in the public headers, C++ standard and utilities core
-# transitively; a nuclear-model plugin would link achilles::nuclear_models etc.
-target_link_libraries(AchillesPlugin_${NAME} PRIVATE achilles::cuts)
+# The linked achilles:: target pulls in the public headers, C++ standard and the
+# rest of the library API transitively (e.g. achilles::cuts for a cut plugin,
+# achilles::nuclear_models for a nuclear-model plugin).
+target_link_libraries(AchillesPlugin_${NAME} PRIVATE ${LINK})
 
 # Emit exactly libAchillesPlugin_${NAME}.so (no extra target-name mangling).
 set_target_properties(AchillesPlugin_${NAME} PROPERTIES
