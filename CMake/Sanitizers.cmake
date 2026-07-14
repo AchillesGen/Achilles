@@ -1,14 +1,14 @@
 # SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-function(enable_sanitizers project_name)
+function(enable_sanitizers target_name)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         option(ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" FALSE)
 
         if(ENABLE_COVERAGE)
-            target_compile_options(project_options INTERFACE --coverage -O0 -g)
-            target_link_libraries(project_options INTERFACE --coverage)
+            target_compile_options(${target_name} INTERFACE --coverage -O0 -g)
+            target_link_libraries(${target_name} INTERFACE --coverage)
         endif()
 
         set(SANITIZERS "")
@@ -39,9 +39,9 @@ function(enable_sanitizers project_name)
 
     if(LIST_OF_SANITIZERS)
         if(NOT "${LIST_OF_SANITIZERS}" STREQUAL "")
-            target_compile_options(${project_name}
+            target_compile_options(${target_name}
                                    INTERFACE -fsanitize=${LIST_OF_SANITIZERS})
-            target_link_libraries(${project_name}
+            target_link_libraries(${target_name}
                                   INTERFACE -fsanitize=${LIST_OF_SANITIZERS})
         endif()
     endif()

@@ -1,0 +1,43 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Bundled find-modules (e.g. FindFilesystem) ship next to this config so the
+# imported targets they define (std::filesystem) can be recreated downstream.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+
+# utilities links std::filesystem publicly; recreate that imported target.
+find_dependency(Filesystem)
+
+# Build-time feature flags, baked in at configure time.
+set(ACHILLES_ENABLE_SHERPA @ACHILLES_ENABLE_SHERPA@)
+set(ACHILLES_ENABLE_ROOT   @ACHILLES_ENABLE_ROOT@)
+set(ACHILLES_ENABLE_HEPMC3 @ACHILLES_ENABLE_HEPMC3@)
+set(ACHILLES_ENABLE_GZIP   @ACHILLES_ENABLE_GZIP@)
+
+if(ACHILLES_ENABLE_GZIP)
+    find_dependency(ZLIB)
+endif()
+if(ACHILLES_ENABLE_SHERPA)
+    find_dependency(SHERPA COMPONENTS CXX)
+endif()
+if(ACHILLES_ENABLE_ROOT)
+    find_dependency(ROOT 6 COMPONENTS Core Hist)
+endif()
+
+# Public-interface deps. Each is guarded so an already-loaded target (e.g.
+# from a sibling find_package, or a CPMFindPackage in the consumer) is
+# reused rather than re-resolved. yaml-cpp is intentionally absent: it ships
+# no CMake package of its own, so it is bundled into AchillesTargets instead.
+if(NOT TARGET fmt::fmt)
+    find_dependency(fmt)
+endif()
+if(NOT TARGET spdlog::spdlog)
+    find_dependency(spdlog)
+endif()
+
+if(NOT TARGET achilles::PublicHeaders)
+    include("${CMAKE_CURRENT_LIST_DIR}/AchillesTargets.cmake")
+endif()
+
+check_required_components(Achilles)

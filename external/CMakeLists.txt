@@ -37,6 +37,13 @@ CPMAddPackage(
         "YAML_CPP_BUILD_TOOLS OFF"
 )
 add_library(yaml::cpp ALIAS yaml-cpp)
+# yaml-cpp is built with YAML_CPP_INSTALL OFF (no config/export of its own) and
+# is bundled into the AchillesTargets export instead. Its public headers are not
+# installed by yaml-cpp itself, so install them here to satisfy the
+# $<INSTALL_INTERFACE:include> of the exported yaml-cpp target.
+include(GNUInstallDirs)
+install(DIRECTORY ${yaml-cpp_SOURCE_DIR}/include/yaml-cpp
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 CPMAddPackage(
     NAME yaml-fortran

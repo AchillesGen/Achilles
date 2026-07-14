@@ -56,19 +56,19 @@ add_library(fortran_interface SHARED
     FNuclearModel.cc
     FSpectralFunction.cc
 )
-target_link_libraries(fortran_interface PRIVATE project_options #$<BUILD_INTERFACE:project_warnings>
+target_link_libraries(fortran_interface PRIVATE achilles_options achilles_warnings
                                         PUBLIC physics nuclear_models)
 
 target_compile_options(fortran_interface PUBLIC $<$<COMPILE_LANGUAGE:Fortran>: -ffree-line-length-none>) 
 add_library(AchillesPlugin_nuclear_test nuclear_model_test.f90)
-target_link_libraries(AchillesPlugin_nuclear_test PRIVATE project_options
+target_link_libraries(AchillesPlugin_nuclear_test PRIVATE achilles_options
                                                   PUBLIC fortran_interface)
 
 add_executable(constant_test 
     test_constants.f90
 )
-target_link_libraries(constant_test PRIVATE project_options
-                                    PUBLIC fortran_interface
+target_link_libraries(constant_test PRIVATE achilles_options
+                                            fortran_interface
 )
 # 
 # add_executable(interaction_test

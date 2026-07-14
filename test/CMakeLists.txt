@@ -58,7 +58,7 @@ add_executable(achilles-testsuite
     test_delta.cc
     test_clebsch_gordan.cc
 )
-target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
+target_link_libraries(achilles-testsuite PRIVATE achilles_options achilles_warnings catch_main
     PUBLIC physics mappers event_gen)
 if(ENABLE_BSM)
     target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
@@ -84,7 +84,7 @@ add_executable(achilles-fortran-testsuite
 )
 message(STATUS ${CMAKE_Fortran_MODULE_DIRECTORY})
 target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
-target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
+target_link_libraries(achilles-fortran-testsuite PRIVATE achilles_options achilles_warnings
     PUBLIC physics fortran_interface FUT::FUT)
 
 include(CTest)
