@@ -1,7 +1,11 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
+#include "catch2/generators/catch_generators_random.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Constants.hh"
@@ -43,10 +47,10 @@ TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {
     auto p4 = p1 + p2 - p3;
     auto pcm1 = p1 + p2;
     auto pcm2 = p3 + p4;
-    CHECK((pcm1.E() == Approx(pcm2.E()) && pcm1.Px() == Approx(pcm2.Px()) &&
-           pcm1.Py() == Approx(pcm2.Py()) && pcm1.Pz() == Approx(pcm2.Pz())));
-    CHECK(p3.M() == Approx(achilles::Constant::mN));
-    CHECK(p4.M() == Approx(achilles::Constant::mN));
+    CHECK((pcm1.E() == Catch::Approx(pcm2.E()) && pcm1.Px() == Catch::Approx(pcm2.Px()) &&
+           pcm1.Py() == Catch::Approx(pcm2.Py()) && pcm1.Pz() == Catch::Approx(pcm2.Pz())));
+    CHECK(p3.M() == Catch::Approx(achilles::Constant::mN));
+    CHECK(p4.M() == Catch::Approx(achilles::Constant::mN));
 }
 
 TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
@@ -96,10 +100,10 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
         auto pcm1 = p1 + p2;
         auto pcm2 = p3 + p4;
-        CHECK(pcm1.E() == Approx(pcm2.E()));
-        CHECK(pcm1.Px() == Approx(pcm2.Px()));
-        CHECK(pcm1.Py() == Approx(pcm2.Py()));
-        CHECK(pcm1.Pz() == Approx(pcm2.Pz()));
+        CHECK(pcm1.E() == Catch::Approx(pcm2.E()));
+        CHECK(pcm1.Px() == Catch::Approx(pcm2.Px()));
+        CHECK(pcm1.Py() == Catch::Approx(pcm2.Py()));
+        CHECK(pcm1.Pz() == Catch::Approx(pcm2.Pz()));
     }
 
     SECTION("CooperPotential") {
@@ -138,9 +142,9 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
         auto pcm1 = p1 + p2;
         auto pcm2 = p3 + p4;
-        CHECK(pcm1.E() == Approx(pcm2.E()));
-        CHECK(pcm1.Px() == Approx(pcm2.Px()));
-        CHECK(pcm1.Py() == Approx(pcm2.Py()));
-        CHECK(pcm1.Pz() == Approx(pcm2.Pz()));
+        CHECK(pcm1.E() == Catch::Approx(pcm2.E()));
+        CHECK(pcm1.Px() == Catch::Approx(pcm2.Px()));
+        CHECK(pcm1.Py() == Catch::Approx(pcm2.Py()));
+        CHECK(pcm1.Pz() == Catch::Approx(pcm2.Pz()));
     }
 }
