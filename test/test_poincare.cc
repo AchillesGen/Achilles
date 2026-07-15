@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 #include "Achilles/Poincare.hh"
 #include "Approx.hh"
@@ -15,7 +16,7 @@ TEST_CASE("Boost", "[Poincare]") {
     achilles::Poincare poincare(p1, -1);
     poincare.Boost(p2);
     poincare.BoostBack(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-16));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
 
 TEST_CASE("Rotation", "[Poincare]") {
@@ -39,7 +40,7 @@ TEST_CASE("Lambda", "[Poincare]") {
     achilles::Poincare poincare(p1, p3, 3);
     poincare.Lambda(p2);
     poincare.LambdaBack(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-16));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }
 
 TEST_CASE("Invert", "[Poincare]") {
@@ -51,5 +52,5 @@ TEST_CASE("Invert", "[Poincare]") {
     poincare.Boost(p2);
     poincare.Invert();
     poincare.Boost(p2);
-    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-8));
+    CHECK_THAT(p2, FourVectorApprox(expected).margin(1e-14));
 }

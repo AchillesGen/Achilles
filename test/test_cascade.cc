@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
-#include "catch_utils.hh"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Cascade.hh"
