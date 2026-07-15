@@ -179,10 +179,12 @@ YAML::Node NuclearModel::LoadFormFactor(const YAML::Node &config) {
     try {
         return YAML::LoadFile(Filesystem::FindFile(filename, "NuclearModel"));
     } catch(const AchillesLoadError &e) {
+        // Resolve the default run card through the standard search path
+        auto default_ff = Filesystem::FindFile("data/default/FormFactors.yml", "NuclearModel");
         spdlog::warn("NuclearModel: Copying and using default Form Factors file from {} as "
                      "FormFactorsDefault.yml",
-                     PathVariables::installDefaults / "FormFactors.yml");
-        fs::copy(PathVariables::installDefaults / "FormFactors.yml", "FormFactorsDefault.yml");
+                     default_ff);
+        fs::copy(default_ff, "FormFactorsDefault.yml", fs::copy_options::overwrite_existing);
         return YAML::LoadFile("FormFactorsDefault.yml");
     }
 }
