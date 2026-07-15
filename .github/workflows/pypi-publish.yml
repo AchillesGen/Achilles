@@ -181,7 +181,7 @@ jobs:
           path: dist/*.tar.gz
 
   pypi-publish:
-    name: Publish ${{ needs.version.outputs.version }} to PyPI
+    name: Publish to PyPI
     needs: [version, build_wheels, build_sdist]
     runs-on: ubuntu-latest
     environment:
