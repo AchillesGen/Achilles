@@ -10,18 +10,19 @@
 #include "Achilles/FourVector.hh"
 
 #include "Achilles/Particle.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 // Inspiration taken from: https://github.com/catchorg/Catch2/issues/1467#issuecomment-473928075
 
-template <typename T> class IsVectorApprox : public Catch::MatcherBase<T> {
+template <typename T> class IsVectorApprox : public Catch::Matchers::MatcherBase<T> {
   public:
     IsVectorApprox(T t) : _vec(t) {}
 
     bool match(const T &t) const override {
         bool result = true;
         for(size_t i = 0; i < t.Size(); ++i) {
-            result &= (t[i] == Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
+            result &= (t[i] == Catch::Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
         }
         return result;
     }
@@ -48,14 +49,15 @@ template <typename T> class IsVectorApprox : public Catch::MatcherBase<T> {
     double _margin{0.0};
 };
 
-class VectorComplexApprox : public Catch::MatcherBase<std::vector<std::complex<double>>> {
+class VectorComplexApprox : public Catch::Matchers::MatcherBase<std::vector<std::complex<double>>> {
   public:
     VectorComplexApprox(std::vector<std::complex<double>> t) : _vec(t) {}
 
     bool match(const std::vector<std::complex<double>> &t) const override {
         bool result = true;
         for(size_t i = 0; i < t.size(); ++i) {
-            result &= (t[i].real() == Approx(_vec[i].real()).epsilon(_epsilon).margin(_margin));
+            result &=
+                (t[i].real() == Catch::Approx(_vec[i].real()).epsilon(_epsilon).margin(_margin));
         }
         return result;
     }
@@ -86,14 +88,14 @@ class VectorComplexApprox : public Catch::MatcherBase<std::vector<std::complex<d
     double _margin{0.0};
 };
 
-class FourVectorApprox : public Catch::MatcherBase<achilles::FourVector> {
+class FourVectorApprox : public Catch::Matchers::MatcherBase<achilles::FourVector> {
   public:
     FourVectorApprox(achilles::FourVector t) : _vec(t) {}
 
     bool match(const achilles::FourVector &t) const override {
         bool result = true;
         for(size_t i = 0; i < 4; ++i) {
-            result &= (t[i] == Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
+            result &= (t[i] == Catch::Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
         }
         return result;
     }
@@ -120,7 +122,7 @@ class FourVectorApprox : public Catch::MatcherBase<achilles::FourVector> {
     double _margin{0.0};
 };
 
-class AllFourVectorApprox : public Catch::MatcherBase<std::vector<achilles::FourVector>> {
+class AllFourVectorApprox : public Catch::Matchers::MatcherBase<std::vector<achilles::FourVector>> {
   public:
     AllFourVectorApprox(std::vector<achilles::FourVector> t) : _vec(t) {}
 
@@ -157,7 +159,7 @@ class AllFourVectorApprox : public Catch::MatcherBase<std::vector<achilles::Four
     double _margin{0.0};
 };
 
-class AllParticleApprox : public Catch::MatcherBase<std::vector<achilles::Particle>> {
+class AllParticleApprox : public Catch::Matchers::MatcherBase<std::vector<achilles::Particle>> {
   public:
     AllParticleApprox(std::vector<achilles::Particle> t) : _vec(t) {}
 

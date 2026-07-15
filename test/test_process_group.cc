@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "Achilles/Settings.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
+#include "Achilles/Settings.hh"
 #include "Achilles/XSecBackend.hh"
 #include "mock_classes.hh"
 

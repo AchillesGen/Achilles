@@ -12,7 +12,7 @@ jobs:
             "include": [
               {
                 "name": "Ubuntu GCC",
-                "os": "ubuntu-latest",
+                "os": "ubuntu-26.04",
                 "cc": "gcc",
                 "cxx": "g++",
                 "fort": "gfortran",
