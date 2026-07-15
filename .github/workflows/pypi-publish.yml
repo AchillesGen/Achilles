@@ -13,8 +13,60 @@ on:
       - main
 
 jobs:
+  version:
+    name: Compute package version
+    # Data releases (achilles-data-v*) fire this trigger too; never publish those.
+    if: >-
+      github.event_name != 'release' ||
+      startsWith(github.event.release.tag_name, 'v')
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_release: ${{ steps.version.outputs.is_release }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          # `git tag` below needs the full tag history
+          fetch-depth: 0
+
+      - name: Compute version
+        id: version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "release" ]; then
+            version="${RELEASE_TAG#v}"
+            is_release=true
+          else
+            # Nightly. The v[0-9]* glob excludes achilles-data-v* tags.
+            tags="$(git tag --list 'v[0-9]*' --sort=-v:refname)"
+            base="$(TAGS="$tags" python3 - <<'EOF'
+          import os, re
+          # Bump the minor of the newest final so PEP 440 orders the nightly
+          # 0.3.1 < 0.4.0.devYYYYMMDD < 0.4.0rc1 < 0.4.0; skip rc tags, no tags -> 0.1.0.
+          for tag in os.environ["TAGS"].splitlines():
+              match = re.fullmatch(r"v(\d+)\.(\d+)\.(\d+)", tag.strip())
+              if match:
+                  major, minor, _ = map(int, match.groups())
+                  print(f"{major}.{minor + 1}.0")
+                  break
+          else:
+              print("0.1.0")
+          EOF
+            )"
+            version="${base}.dev$(date -u +%Y%m%d)"
+            is_release=false
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "is_release=${is_release}" >> "$GITHUB_OUTPUT"
+          echo "Building version ${version} (release: ${is_release})"
+
   build_wheels:
     name: Build wheels for ${{ matrix.os }}
+    needs: [version]
     runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
@@ -38,6 +90,23 @@ jobs:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      - name: Stamp version into pyproject.toml
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 - <<'EOF'
+          import os, pathlib, re
+          version = os.environ["VERSION"]
+          path = pathlib.Path("pyproject.toml")
+          patched, count = re.subn(
+              r'(?m)^version = ".*"$', f'version = "{version}"', path.read_text(), count=1
+          )
+          if count != 1:
+              raise SystemExit("no [project] version line found in pyproject.toml")
+          path.write_text(patched)
+          print(f"pyproject.toml version -> {version}")
+          EOF
 
       # The build[uv] frontend needs uv on PATH
       - uses: astral-sh/setup-uv@v6
@@ -80,11 +149,30 @@ jobs:
 
   build_sdist:
     name: Build source distribution
+    needs: [version]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           persist-credentials: false
+
+      - name: Stamp version into pyproject.toml
+        env:
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          python3 - <<'EOF'
+          import os, pathlib, re
+          version = os.environ["VERSION"]
+          path = pathlib.Path("pyproject.toml")
+          patched, count = re.subn(
+              r'(?m)^version = ".*"$', f'version = "{version}"', path.read_text(), count=1
+          )
+          if count != 1:
+              raise SystemExit("no [project] version line found in pyproject.toml")
+          path.write_text(patched)
+          print(f"pyproject.toml version -> {version}")
+          EOF
+
       - name: Build sdist
         run: pipx run build --sdist
       - uses: actions/upload-artifact@v4
@@ -93,18 +181,16 @@ jobs:
           path: dist/*.tar.gz
 
   pypi-publish:
-    name: Publish release to PyPI
-    needs: [build_wheels, build_sdist]
+    name: Publish ${{ needs.version.outputs.version }} to PyPI
+    needs: [version, build_wheels, build_sdist]
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/achillesgen
     permissions:
       id-token: write
-    # TODO: Add in once the pipeline works
-    # if: github.event_name == 'release' && github.event.action == 'published'
-    # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
-    # if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # Pull requests build and test the wheels but must never publish.
+    if: github.event_name != 'pull_request'
     steps:
       - uses: actions/download-artifact@v5
         with:
@@ -113,3 +199,6 @@ jobs:
           merge-multiple: true
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Same-day merges share a .devYYYYMMDD version; a release must never collide.
+          skip-existing: ${{ needs.version.outputs.is_release != 'true' }}
