@@ -93,6 +93,33 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     }
 }
 
+TEST_CASE("Default containers are auto-populated", "[ParticleInfo]") {
+    using achilles::ParticleInfo;
+    using achilles::PID;
+
+    // No explicit FinalizeContainers() call: the built-in jet/quark containers are
+    // registered and populated during InitDatabase (first ParticleInfo construction).
+    SECTION("quark = light quarks") {
+        ParticleInfo quark(PID::quark());
+        CHECK(quark.IsGroup());
+        CHECK(quark.Includes(PID::down()));
+        CHECK(quark.Includes(PID::up()));
+        CHECK(quark.Includes(PID::strange()));
+        CHECK_FALSE(quark.Includes(PID::charm())); // massive -> excluded
+        CHECK_FALSE(quark.Includes(PID::gluon()));
+        CHECK(quark.Mass() == 0);
+    }
+
+    SECTION("jet = light quarks + gluon") {
+        ParticleInfo jet(PID::jet());
+        CHECK(jet.IsGroup());
+        CHECK(jet.Includes(PID::down()));
+        CHECK(jet.Includes(PID::gluon()));
+        CHECK(jet.Size() == 4);
+        CHECK(jet.Mass() == 0);
+    }
+}
+
 TEST_CASE("Particle Containers", "[ParticleInfo]") {
     achilles::ParticleInfo::RegisterContainer(achilles::PID::nucleon(), "nucleon", {2212, 2112});
     achilles::ParticleInfo info(achilles::PID::nucleon());
