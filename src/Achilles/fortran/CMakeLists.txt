@@ -61,12 +61,19 @@ add_library(AchillesPlugin_nuclear_test nuclear_model_test.f90)
 target_link_libraries(AchillesPlugin_nuclear_test PRIVATE project_options
                                                   PUBLIC fortran_interface)
 
-add_executable(constant_test 
+add_executable(constant_test
     test_constants.f90
 )
 target_link_libraries(constant_test PRIVATE project_options
                                     PUBLIC fortran_interface
 )
+if(ACHILLES_ENABLE_PYTHON)
+    # fortran_interface pulls in libutilities.so, which references libpython symbols it
+    # does not itself link (see src/Achilles/CMakeLists.txt). This standalone test does
+    # not embed an interpreter, so it needs libpython available to load utilities. It is
+    # not installed into the wheel, so this does not affect wheel portability.
+    target_link_libraries(constant_test PUBLIC pybind11::embed)
+endif()
 # 
 # add_executable(interaction_test
 #     test_interaction.cc

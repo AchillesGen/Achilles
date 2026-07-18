@@ -42,6 +42,9 @@ class FlowSampler {
     // Whether this flow still needs training.
     virtual bool RequiresTraining() const { return true; }
 
+    // Emit any training diagnostics (e.g. a loss-vs-iteration plot). Default: no-op.
+    virtual void Plot() const {}
+
     // Persist / restore the learned parameters (e.g. torch weights) to a path.
     virtual void Save(const std::string &path) const = 0;
     virtual bool Load(const std::string &path) = 0;

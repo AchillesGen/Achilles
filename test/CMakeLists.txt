@@ -56,8 +56,16 @@ add_executable(achilles-testsuite
     test_delta.cc
     test_clebsch_gordan.cc
 )
-target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
+target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main
     PUBLIC physics mappers event_gen)
+if(ACHILLES_ENABLE_PYTHON)
+    # libutilities.so references libpython symbols but does not link it (see
+    # src/Achilles/CMakeLists.txt). This executable is run at build time by
+    # catch_discover_tests and loading utilities resolves those symbols eagerly, so the
+    # test binary must have libpython present. It is not bundled into the wheel, so
+    # linking the interpreter here does not affect wheel portability.
+    target_link_libraries(achilles-testsuite PUBLIC pybind11::embed)
+endif()
 if(ENABLE_BSM)
     target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
 endif()

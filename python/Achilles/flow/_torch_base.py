@@ -25,6 +25,13 @@ likelihood-based (e.g. flow matching) override :meth:`train`.
 import math
 
 import numpy as np
+import matplotlib
+
+# The loss plot is written from the embedded interpreter inside the C++ event generator,
+# which typically runs headless (no display). Force a non-interactive backend so
+# plot_loss() only ever writes a file and never tries to open a GUI window.
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 from . import Flow
 
@@ -73,6 +80,7 @@ class ChannelFlow(Flow):
         if self._learn_channels:
             opt_params.append(self.logits)
         self.optimizer = torch.optim.Adam(opt_params, lr=float(lr))
+        self.loss = []
 
     # -- subclass hooks --------------------------------------------------------------
     def _build_cores(self, **params):
@@ -168,7 +176,32 @@ class ChannelFlow(Flow):
         loss = -(weights * log_q).sum()
         loss.backward()
         self.optimizer.step()
+        self.loss.append(loss.detach().cpu().item())
         return float(loss.detach().cpu().item())
+
+    def plot_loss(self, path="loss.png"):
+        """Save a loss-vs-iteration curve for diagnosing training convergence.
+
+        Each entry of ``self.loss`` is the importance-weighted NLL from one online
+        training batch (one call to :meth:`train`), so the x-axis is the training
+        iteration. A curve that is still descending at the final iteration means more
+        iterations (``Epochs``) are needed; a noisy/non-decreasing curve at fixed
+        iteration means more events per batch (``NCalls``) are needed to tame the
+        gradient variance from the spread of importance weights.
+        """
+        if not self.loss:
+            return
+        iterations = np.arange(1, len(self.loss) + 1)
+        losses = np.array(self.loss)
+        fig, ax = plt.subplots()
+        ax.plot(iterations, losses, marker=".", linewidth=1)
+        ax.set_xlabel("training iteration")
+        ax.set_ylabel("importance-weighted NLL loss")
+        ax.set_title("Flow training loss")
+        ax.grid(True, alpha=0.3)
+        fig.tight_layout()
+        fig.savefig(path, dpi=150)
+        plt.close(fig)
 
     # -- helpers ---------------------------------------------------------------------
     def _normalized_weights(self, values):

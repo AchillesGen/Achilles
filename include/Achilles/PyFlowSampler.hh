@@ -25,6 +25,7 @@ class PyFlowSampler : public FlowSampler {
                                 const std::vector<std::vector<double>> &rans) override;
     double Train(const std::vector<size_t> &channels, const std::vector<std::vector<double>> &rans,
                  const std::vector<double> &values) override;
+    void Plot() const override;
     bool RequiresTraining() const override { return m_requires_training; }
     void Save(const std::string &path) const override;
     bool Load(const std::string &path) override;

@@ -37,6 +37,9 @@ class FlowIntegrator : public Integrator {
     // Integrator interface (runtime-polymorphic, FourVector only).
     void operator()(Integrand<FourVector> &) override;
     void Optimize(Integrand<FourVector> &) override;
+    virtual void Plot() const {
+        if(m_sampler) m_sampler->Plot();
+    }
     std::vector<std::vector<FourVector>> GeneratePoints(Integrand<FourVector> &, size_t n) override;
     std::vector<double>
     GenerateWeights(Integrand<FourVector> &,

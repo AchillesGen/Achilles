@@ -50,6 +50,18 @@ target_link_libraries(utilities PUBLIC pybind11::module)
 # class trips -Wattributes, which the project promotes to an error. Silence it just for
 # this pybind glue file.
 set_source_files_properties(PyFlowSampler.cc PROPERTIES COMPILE_OPTIONS "-Wno-attributes")
+# Because utilities links pybind11::module (not ::embed), libutilities.so references
+# libpython symbols it does not itself link -- they are resolved at runtime by the
+# interpreter embedded in the standalone `achilles` executable, or by the host
+# interpreter when loaded as the `_achilles` extension module. When GNU ld links an
+# *executable* against such a shared library it reports those deferred symbols as
+# undefined by default, breaking every executable that pulls in utilities transitively
+# but never drives the Python flow path (the Fortran/unit tests, achilles-cascade, ...).
+# Propagate --allow-shlib-undefined to all consumers so ld tolerates them; the achilles
+# executable additionally links pybind11::embed and resolves them for real.
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    target_link_options(utilities INTERFACE "LINKER:--allow-shlib-undefined")
+endif()
 endif()
 list(APPEND achilles_targets utilities)
 
@@ -184,6 +196,10 @@ if(ACHILLES_ENABLE_CASCADE_TEST)
     # TODO: Refactor the event_gen library to pull pieces unused by the cascade executable
     target_link_libraries(achilles-cascade PRIVATE project_warnings
                                            PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
+    if(ACHILLES_ENABLE_PYTHON)
+        # Pulls in libutilities.so, which references libpython without linking it.
+        target_link_libraries(achilles-cascade PUBLIC pybind11::embed)
+    endif()
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
@@ -191,6 +207,10 @@ if(ACHILLES_ENABLE_POTENTIAL_TEST)
     add_executable(achilles-potential PotentialMain.cc RunPotential.cc)
     target_link_libraries(achilles-potential PRIVATE project_warnings
                                              PUBLIC physics docopt::docopt)
+    if(ACHILLES_ENABLE_PYTHON)
+        # Pulls in libutilities.so, which references libpython without linking it.
+        target_link_libraries(achilles-potential PUBLIC pybind11::embed)
+    endif()
     list(APPEND achilles_targets achilles-potential)
 endif()
 
@@ -198,6 +218,10 @@ if(ACHILLES_ENABLE_PRECOMPUTED)
     add_executable(achilles-precomputed Precomputed.cc PrecomputedMain.cc)
     target_link_libraries(achilles-precomputed PRIVATE project_warnings
                                                PUBLIC physics event_gen docopt::docopt)
+    if(ACHILLES_ENABLE_PYTHON)
+        # Pulls in libutilities.so, which references libpython without linking it.
+        target_link_libraries(achilles-precomputed PUBLIC pybind11::embed)
+    endif()
     list(APPEND achilles_targets achilles-precomputed)
 endif()
 

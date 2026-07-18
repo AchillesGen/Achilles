@@ -149,6 +149,12 @@ double PyFlowSampler::Train(const std::vector<size_t> &channels,
     return loss.cast<double>();
 }
 
+void PyFlowSampler::Plot() const {
+    py::gil_scoped_acquire gil;
+    // Optional: only backends that record a training history expose this.
+    if(py::hasattr(m_flow, "plot_loss")) m_flow.attr("plot_loss")();
+}
+
 void PyFlowSampler::Save(const std::string &path) const {
     py::gil_scoped_acquire gil;
     m_flow.attr("save")(path);
