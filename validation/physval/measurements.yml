@@ -9,54 +9,71 @@
 # per measurement. CI shards one job per experiment (the expensive, generation-bound
 # axis); adding a measurement to an existing setup costs no extra generation.
 #
-# Start SMALL (a couple of well-understood CCQE + CC1pi samples) and expand once the
-# bootstrap p_compat noise floor is characterized (see README.md).
-#
 # Experiment fields:
-#   name          Stable identifier; the CI shard/job name.
-#   achilles_run  Achilles run-card template used to generate this setup's events. # TODO
+#   name          Identifier for the setup — the common prefix of its sample names;
+#                 also the CI shard/job name.
+#   achilles_run  Achilles run card for this setup, path relative to the repo root.
+#                 Flux/data files referenced inside the card (flux/..., data/...) need
+#                 no fixups here: Achilles' loader searches the CWD, $ACHILLES_PATH,
+#                 $ACHILLES_DATA_DIR and the install tree's share/Achilles (see
+#                 Filesystem::FindFile / FindFlux), so a flux file shipped in flux/
+#                 resolves both from a source checkout and from an install.
 #   dryrun        SyntheticAdapter generation params (--dry-run / self-test):
 #                 feature_shift simulates a physics change; ignored by nuisance3.
-#
-# Measurement fields:
-#   name             Stable identifier; also the plot basename and table row label.
-#   nuisance_sample  NUISANCE3 sample/analysis name (legacy interface enabled).     # TODO
-#   dryrun           SyntheticAdapter histogramming params (nbins); ignored by nuisance3.
-#
-# The 'achilles_run' and 'nuisance_sample' values below are PLACEHOLDERS — fill in
-# once the NUISANCE3 samples and the Achilles NuHepMC-v1.0 run cards are wired up.
+#   measurements  Full NUISANCE3 sample names, run verbatim. A bare name is enough;
+#                 use a mapping ({name: ..., dryrun: {nbins: N}}) only to override
+#                 synthetic-adapter binning.
 
 experiments:
-  - name: MINERvA_numu_CH
-    achilles_run: "TODO_minerva_numu_CH.yml"        # TODO: real Achilles run card
+  - name: MINERvA_CC0pinp_STV_XSec
+    achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"
     dryrun:
       feature_shift: 0.0        # synthetic: physics shift applied to feature events
     measurements:
-      - name: MINERvA_CC0pi_Tp
-        nuisance_sample: "TODO_MINERvA_CC0pi_Tp"    # TODO: real NUISANCE3 sample
-        dryrun:
-          nbins: 20
-      - name: MINERvA_CC0pi_ptmu
-        nuisance_sample: "TODO_MINERvA_CC0pi_ptmu"  # TODO
-        dryrun:
-          nbins: 18
+      - MINERvA_CC0pinp_STV_XSec_1Ddalphat_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddphit_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddpt_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpnreco_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpprot_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthprot_nu
 
-  - name: MiniBooNE_numu_CH2
-    achilles_run: "TODO_miniboone_numu_CH2.yml"     # TODO
+  # CC1Mu1p / CC1Mu2p / CC1MuNp share MicroBooNE's numu+Ar beam+target, so one
+  # generation serves all three sample families.
+  - name: MicroBooNE_CC1Mu
+    achilles_run: "examples/Microboone/run_uB_1mu_virtresonances.yml"
     dryrun:
       feature_shift: 0.0
     measurements:
-      - name: MiniBooNE_CC1pip_Q2
-        nuisance_sample: "TODO_MiniBooNE_CC1pip_Q2" # TODO
-        dryrun:
-          nbins: 16
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPty_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DECal_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonCosTheta_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonMomentum_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DProtonCosTheta_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Mu_Both_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Protons_Lab_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosp_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPp_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dthetamup_nu
 
-  - name: T2K_numu_CH
-    achilles_run: "TODO_t2k_numu_CH.yml"            # TODO
+  # CC0pinp / CC1pipNp share T2K's numu+CH beam+target.
+  - name: T2K_CC
+    achilles_run: "examples/T2K/run_T2K_virtresonances.yml"
     dryrun:
       feature_shift: 0.0
     measurements:
-      - name: T2K_CC0pi_cosTheta
-        nuisance_sample: "TODO_T2K_CC0pi_cosTheta"  # TODO
-        dryrun:
-          nbins: 24
+      - T2K_CC0pinp_STV_XSec_1Ddat_nu
+      - T2K_CC0pinp_STV_XSec_1Ddphit_nu
+      - T2K_CC0pinp_STV_XSec_1Ddpt_nu
+      - T2K_CC1pipNp_CH_XSec_1DdaT_nu
+      - T2K_CC1pipNp_CH_XSec_1DdpTT_nu
+      - T2K_CC1pipNp_CH_XSec_1DpN_nu

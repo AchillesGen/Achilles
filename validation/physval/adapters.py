@@ -50,8 +50,13 @@ class Nuisance3Adapter:
     """Achilles generation + NUISANCE3 histogramming. NOT YET WIRED UP.
 
     generate:   achilles <experiment['achilles_run']> -> NuHepMC-v1.0 file (once/setup).
-    histogram:  NUISANCE3 <measurement['nuisance_sample']> over that file -> (bin, weight).
+    histogram:  NUISANCE3 <measurement['name']> over that file -> (bin, weight).
     data_table: the sample's published data values + covariance from NUISANCE3.
+
+    ``achilles_run`` is repo-root-relative, so run achilles with cwd=repo root (or put
+    it on $ACHILLES_PATH). The flux/data paths inside a card resolve on their own:
+    Filesystem::FindFile/FindFlux search cwd, $ACHILLES_PATH, $ACHILLES_DATA_DIR and
+    the install tree's share/Achilles, which is where CMake ships flux/ and data/.
     """
 
     def __init__(self, workdir: str = "physval-work"):
@@ -67,12 +72,12 @@ class Nuisance3Adapter:
                   measurement: dict) -> EventSample:  # pragma: no cover
         raise NotImplementedError(
             "Nuisance3Adapter.histogram: run NUISANCE3 for "
-            f"'{measurement.get('nuisance_sample', measurement.get('name'))}'.")
+            f"'{measurement['name']}'.")
 
     def data_table(self, measurement: dict) -> DataTable:  # pragma: no cover
         raise NotImplementedError(
             "Nuisance3Adapter.data_table: pull NUISANCE3 data for "
-            f"'{measurement.get('nuisance_sample', measurement.get('name'))}'.")
+            f"'{measurement['name']}'.")
 
 
 class SyntheticAdapter:

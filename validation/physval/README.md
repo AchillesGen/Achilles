@@ -74,16 +74,16 @@ PATH. The adapter has two stages so the expensive step runs once per setup:
 `adapters.Nuisance3Adapter` is a documented skeleton. To make the real path live:
 
 1. **Per-experiment / per-measurement mapping** in `measurements.yml`: replace the
-   `TODO_*` `achilles_run` (run card, per experiment) and `nuisance_sample` (NUISANCE3
-   sample, per measurement) placeholders with real values.
+   placeholder `achilles_run` (run card, per experiment) and measurement `name`
+   (used verbatim as the NUISANCE3 sample) with real values.
 2. Implement `Nuisance3Adapter.generate`:
    - render the Achilles run card for `experiment['achilles_run']` with the pinned
      `seed` + `n_events`, `achilles <card>` → NuHepMC-v1.0 event file (delete after
      the setup's last measurement); return `GeneratedEvents(path=…)`.
 3. Implement `Nuisance3Adapter.histogram` / `.data_table`:
-   - run the NUISANCE3 comparison for `measurement['nuisance_sample']` over that
-     file; return the per-event `(bin_index, weight)` arrays and the sample's
-     published `DataTable(values, covariance)`.
+   - run the NUISANCE3 comparison for `measurement['name']` over that file; return
+     the per-event `(bin_index, weight)` arrays and the sample's published
+     `DataTable(values, covariance)`.
 
 Everything downstream (bootstrap, `p_compat`, Bonferroni, table, plots) is already
 implemented and tested against `SyntheticAdapter`.

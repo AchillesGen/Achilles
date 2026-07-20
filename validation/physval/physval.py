@@ -163,7 +163,13 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
 
 def _load_config(path: str) -> dict:
     with open(path) as fh:
-        return yaml.safe_load(fh)
+        config = yaml.safe_load(fh)
+    # A measurement is normally just its NUISANCE3 sample name; allow a mapping too
+    # for the odd entry that needs extra keys (e.g. a dryrun nbins override).
+    for exp in config["experiments"]:
+        exp["measurements"] = [m if isinstance(m, dict) else {"name": m}
+                               for m in exp["measurements"]]
+    return config
 
 
 def _filter_config(config: dict, only_experiments, only_measurements) -> dict:
