@@ -61,7 +61,6 @@ class Report:
     repo: str = "AchillesGen/Achilles"
     feature_sha: str = "unknown"
     nuisance_version: str = "unknown"
-    data_release: str = "unknown"
     seed: int = 0
     events_per_measurement: int = 0
     alpha: float = ALPHA
@@ -117,8 +116,8 @@ class Report:
             f"**Overall compatibility (Bonferroni, N={n}): p = {po:.3g} → {verdict}**")
         lines.append("")
         lines.append(
-            f"NUISANCE3 `{self.nuisance_version}` · data `{self.data_release}` · "
-            f"seed `{self.seed}` · {self.events_per_measurement:,} events/measurement "
+            f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
+            f"{self.events_per_measurement:,} events/measurement "
             f"· feature `{self.feature_sha[:8]}`")
         for extra in self.extra_header:
             lines.append(extra)
@@ -172,7 +171,6 @@ class Report:
             "repo": self.repo,
             "feature_sha": self.feature_sha,
             "nuisance_version": self.nuisance_version,
-            "data_release": self.data_release,
             "seed": self.seed,
             "events_per_measurement": self.events_per_measurement,
             "alpha": self.alpha,
@@ -201,7 +199,7 @@ def _selftest() -> int:
                           plot="T2K_CC0pi_cosTheta.png"),
     ]
     rep = Report(results, feature_sha="abcdef1234567890", nuisance_version="v3.0.1",
-                 data_release="2024-06", seed=42, events_per_measurement=500000)
+                 seed=42, events_per_measurement=500000)
     md = rep.to_markdown()
     summary = rep.to_summary_dict()
 

@@ -1,18 +1,13 @@
 name: Physics Validation (NUISANCE3)
 
-# Distribution-level physics validation: compares this branch against experimental
-# data and the stored `main` baseline via NUISANCE3, then posts a Sherpa-style
-# summary table as a PR comment (flagging any measurement with compatibility
-# p_compat < 0.05). Heavy + on-demand, NOT part of the per-PR build lane.
+# Compares this branch against experimental data and the stored `main` baseline via
+# NUISANCE3, posting a Sherpa-style PR comment (flags p_compat < 0.05). Heavy +
+# on-demand; triggered by a `!physval` commit marker, manual dispatch, or nightly.
 #
-# Triggers:
-#   * a commit whose message contains the marker  !physval
-#   * manual "Run workflow"  (workflow_dispatch)
-#   * nightly schedule (safety net; runs on the default branch only)
-#
-# NOTE: the real Achilles-generation + NUISANCE3 steps are TODO (see
-# validation/physval/README.md). Until they are wired up, `dry_run: true` exercises
-# the full plumbing with the synthetic adapter so this workflow runs today.
+# Runs inside the public ghcr.io/achillesgen/achilles-physval container (NUISANCE3 +
+# Achilles build deps): builds the current Achilles once, then shards by experimental
+# setup — each shard generates a setup's events once and reuses them across its
+# measurements. `dry_run: true` uses the synthetic adapter until Nuisance3Adapter lands.
 
 on:
   push:
@@ -20,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       events:
-        description: 'Events per measurement'
+        description: 'Events per experimental setup'
         default: '500000'
       seed:
         description: 'RNG seed (pinned for reproducibility)'
@@ -39,14 +34,15 @@ concurrency:
 permissions:
   contents: write        # commit run plots to the physval-baselines branch
   pull-requests: write   # post/update the summary comment
+  packages: read         # pull the achilles-physval container from GHCR
 
 env:
   PHYSVAL_DIR: validation/physval
   BASELINE_BRANCH: physval-baselines
-  # TODO: pin these once the NUISANCE3 image + data release are chosen.
-  NUISANCE_IMAGE: ''
-  NUISANCE_VERSION: 'TODO'
-  PHYSVAL_DATA_RELEASE: 'TODO'
+  # The physics-validation container (public): NUISANCE3 + ROOT + HepMC3 +
+  # ProSelecta + Achilles build deps. Pin to a digest/tag once it is versioned.
+  PHYSVAL_IMAGE: ghcr.io/achillesgen/achilles-physval:latest
+  BUILD_TYPE: Release
   N_BOOT: '1000'   # must be >> max n_bins (Hartlap requirement; see README)
 
 jobs:
@@ -67,72 +63,138 @@ jobs:
           python-version: '3.12'
       - run: pip install pyyaml
       - id: mk
-        name: Build one-measurement-per-shard matrix from the config
+        name: Build one-experiment-per-shard matrix from the config
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
           import json, yaml
           cfg = yaml.safe_load(open('validation/physval/measurements.yml'))
-          names = [m['name'] for m in cfg['measurements']]
-          print('matrix=' + json.dumps({'measurement': names}))
+          names = [e['name'] for e in cfg['experiments']]
+          print('matrix=' + json.dumps({'experiment': names}))
           PY
       - id: mode
         run: echo "dry_run=${{ github.event.inputs.dry_run || 'true' }}" >> "$GITHUB_OUTPUT"
 
-  generate:
+  # Resolve the moving :latest tag to an immutable manifest digest, so every job in
+  # this run uses the identical image and the baseline key changes whenever any part
+  # of the toolchain (NUISANCE2/3, ROOT, HepMC3, ProSelecta) is rebuilt.
+  resolve-image:
     needs: setup
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    outputs:
+      ref: ${{ steps.r.outputs.ref }}
+      short: ${{ steps.r.outputs.short }}
+    steps:
+      - id: r
+        run: |
+          DIGEST=$(docker buildx imagetools inspect "$PHYSVAL_IMAGE" \
+                     --format '{{ .Manifest.Digest }}')
+          SHORT="${DIGEST#sha256:}"
+          echo "ref=${PHYSVAL_IMAGE%:*}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "short=${SHORT:0:12}" >> "$GITHUB_OUTPUT"
+          echo "Resolved $PHYSVAL_IMAGE -> $DIGEST"
+
+  # Build Achilles once in the container; share the install tree with the shards.
+  build:
+    needs: [setup, resolve-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ${{ needs.resolve-image.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure Achilles
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DACHILLES_ENABLE_SHERPA=OFF \
+            -DACHILLES_ENABLE_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build Achilles
+        run: cmake --build build --config "$BUILD_TYPE" -j"$(nproc)"
+
+      - name: Install Achilles
+        run: cmake --install build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: achilles-install
+          path: install
+          retention-days: 7
+
+  # One shard per experimental setup, in the same container.
+  generate:
+    needs: [setup, resolve-image, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ needs.resolve-image.outputs.ref }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - run: pip install --no-cache-dir numpy scipy pyyaml matplotlib
+
+      - name: Restore Achilles install tree
+        uses: actions/download-artifact@v4
         with:
-          python-version: '3.12'
-      - run: pip install numpy scipy pyyaml matplotlib
+          name: achilles-install
+          path: install
+
+      - name: Put Achilles on PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/install/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      # The image records its resolved component shas; surface NUISANCE3's in the report.
+      - name: Read toolchain versions from the image
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          v = json.load(open("/opt/achilles-physval/versions.json"))
+          print("NUISANCE_VERSION=" + v["nuisance3"]["sha"][:12])
+          PY
 
       - name: Restore stored main baseline
         run: |
-          # The baseline branch holds baselines/<key>.json (main predictions +
-          # bootstrap covariance + data). Missing branch => driver computes main
-          # inline and notes it in the comment.
+          # baselines/<key>.json on the baseline branch; if absent the driver
+          # computes main inline and notes it in the comment.
           mkdir -p baseline
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           if git fetch origin "$BASELINE_BRANCH" --depth 1 2>/dev/null; then
             git --work-tree=baseline checkout "origin/$BASELINE_BRANCH" -- baselines 2>/dev/null || true
           else
             echo "No $BASELINE_BRANCH branch yet."
           fi
 
-      # ---------------------------------------------------------------------
-      # TODO(real path): build/download Achilles, generate events for
-      # ${{ matrix.measurement }} inside the $NUISANCE_IMAGE container, write
-      # NuHepMC-v1.0, histogram via NUISANCE3 (legacy interface), and render the
-      # new/old/data overlay PNG to out/<name>/<name>.png.
-      # Until then, --dry-run drives the synthetic adapter.
-      # ---------------------------------------------------------------------
-      - name: Run physval for one measurement
+      # achilles is on PATH and NUISANCE3 is in the container, so the driver defaults
+      # to the real path; --dry-run swaps in the synthetic adapter.
+      - name: Run physval for one experimental setup
         run: |
           cd "$PHYSVAL_DIR"
-          KEY="${NUISANCE_VERSION}-${PHYSVAL_DATA_RELEASE}"
-          FLAGS=""
-          [ "${{ needs.setup.outputs.dry_run }}" = "true" ] && FLAGS="--dry-run"
-          python3 physval.py --config measurements.yml $FLAGS \
-            --only "${{ matrix.measurement }}" \
+          # Key on the image digest: any toolchain rebuild invalidates the baseline
+          # (the driver then recomputes main inline and says so in the comment).
+          KEY="${{ needs.resolve-image.outputs.short }}"
+          [ "${{ needs.setup.outputs.dry_run }}" = "true" ] && DRY_RUN="--dry-run" || DRY_RUN=""
+          python3 physval.py --config measurements.yml $DRY_RUN \
+            --only-experiment "${{ matrix.experiment }}" \
             --key "$KEY" --baseline-dir "$GITHUB_WORKSPACE/baseline" \
-            --out-dir "out/${{ matrix.measurement }}" \
+            --out-dir "out/${{ matrix.experiment }}" \
             --events "${{ github.event.inputs.events || '500000' }}" \
             --seed "${{ github.event.inputs.seed || '42' }}" \
             --n-boot "$N_BOOT" \
-            --nuisance-image "$NUISANCE_IMAGE" \
             --nuisance-version "$NUISANCE_VERSION" \
-            --data-release "$PHYSVAL_DATA_RELEASE" \
             --feature-sha "$GITHUB_SHA"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: shard-${{ matrix.measurement }}
-          path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.measurement }}
+          name: shard-${{ matrix.experiment }}
+          path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.experiment }}
           retention-days: 7
 
   aggregate:
@@ -155,9 +217,8 @@ jobs:
           python3 physval.py --merge "$GITHUB_WORKSPACE"/shards/shard-*/summary.json \
             --out-dir final
 
-      # Commit this run's plots to physval-baselines/plots/<sha>/ so the comment can
-      # embed inline thumbnails via raw URLs. Fork PRs have no write token -> skipped
-      # (the shard artifacts remain the fallback).
+      # Publish plots to physval-baselines/plots/<sha>/ for inline thumbnails.
+      # Fork PRs lack a write token -> skipped (shard artifacts remain the fallback).
       - name: Publish plots to baseline branch
         if: ${{ github.event.pull_request.head.repo.fork != true }}
         run: |

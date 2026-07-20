@@ -3,22 +3,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Achilles distribution-based physics-validation driver.
 
-Ties the pieces together for one physval run:
+Per run: for each experimental setup, generate events once, histogram each of its
+measurements, bootstrap a covariance, compare against the stored 'main' baseline
+(compatibility p_compat) and the data (goodness-of-fit), and render a Sherpa-style
+PR comment + summary.json.
 
-    config (measurements.yml)
-        -> adapter.generate(feature)  -> bootstrap covariance  -> feature Prediction
-        -> baseline (stored main Prediction + data)            -> main Prediction
-        -> compatibility p_compat + goodness-of-fit vs data
-        -> Sherpa-style PR comment (comment.md) + summary.json
-
-Modes:
-    --dry-run           use the SyntheticAdapter (no Achilles/NUISANCE) end to end
-    --make-baseline     produce the stored 'main' baseline JSON (predictions + data
-                        + bootstrap covariance) for the physval-baselines branch
-    --selftest          dry-run with an injected regression; assert it is flagged
-
-The real path (NUISANCE3) is selected with --adapter nuisance3 once the container
-and sample mapping are wired up in adapters.Nuisance3Adapter.
+Modes: --make-baseline stores the 'main' baseline; --dry-run swaps in the synthetic
+adapter (no Achilles/NUISANCE); --selftest runs an injected-regression check.
 """
 
 from __future__ import annotations
@@ -31,7 +22,8 @@ from typing import Dict, Optional
 import numpy as np
 import yaml
 
-from adapters import Adapter, DataTable, make_adapter
+from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
+                      SyntheticAdapter)
 from report import MeasurementResult, Report
 from stats import (Prediction, bootstrap_covariance, compatibility,
                    goodness_of_fit)
@@ -61,15 +53,10 @@ def _measurement_baseline(baseline: dict, name: str):
     return main, data
 
 
-# ---------------------------------------------------------------------------
-# Core: build a Prediction for one branch/measurement
-# ---------------------------------------------------------------------------
-
-def predict(adapter: Adapter, measurement: dict, branch: str, seed: int,
-            n_events: int, n_boot: int,
-            rng: np.random.Generator) -> Prediction:
-    sample = adapter.generate(measurement, branch=branch, seed=seed,
-                              n_events=n_events)
+def predict(adapter, generated: GeneratedEvents, measurement: dict,
+            n_boot: int, rng: np.random.Generator) -> Prediction:
+    """Histogram shared per-experiment events onto one measurement and bootstrap."""
+    sample = adapter.histogram(generated, measurement)
     return bootstrap_covariance(sample.bin_index, sample.weights, sample.nbins,
                                 n_boot=n_boot, rng=rng)
 
@@ -78,19 +65,21 @@ def predict(adapter: Adapter, measurement: dict, branch: str, seed: int,
 # make-baseline: compute and store 'main' predictions + data + covariance
 # ---------------------------------------------------------------------------
 
-def make_baseline(adapter: Adapter, config: dict, key: str, seed: int,
+def make_baseline(adapter, config: dict, key: str, seed: int,
                   n_events: int, n_boot: int, out_dir: str) -> str:
     rng = np.random.default_rng(seed)
     measurements: Dict[str, dict] = {}
-    for m in config["measurements"]:
-        name = m["name"]
-        main = predict(adapter, m, "main", seed, n_events, n_boot, rng)
-        data = adapter.data_table(m)
-        measurements[name] = {
-            "prediction": main.to_dict(),
-            "data": {"values": data.values.tolist(),
-                     "covariance": data.covariance.tolist()},
-        }
+    for exp in config["experiments"]:
+        gen_main = adapter.generate(exp, "main", seed, n_events)  # once per setup
+        for m in exp["measurements"]:
+            name = m["name"]
+            main = predict(adapter, gen_main, m, n_boot, rng)
+            data = adapter.data_table(m)
+            measurements[name] = {
+                "prediction": main.to_dict(),
+                "data": {"values": data.values.tolist(),
+                         "covariance": data.covariance.tolist()},
+            }
     baseline = {
         "key": key,
         "seed": seed,
@@ -109,41 +98,47 @@ def make_baseline(adapter: Adapter, config: dict, key: str, seed: int,
 # run: compare feature branch against stored baseline, emit report
 # ---------------------------------------------------------------------------
 
-def run(adapter: Adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
+def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         baseline: Optional[dict], repo: str, feature_sha: str,
-        nuisance_version: str, data_release: str,
+        nuisance_version: str,
         out_dir: str) -> Report:
     rng = np.random.default_rng(seed + 101)
     results = []
     warnings = []
 
-    for m in config["measurements"]:
-        name = m["name"]
-        feature = predict(adapter, m, "feature", seed, n_events, n_boot, rng)
+    for exp in config["experiments"]:
+        # Feature events: once per setup, reused by every measurement. Main events
+        # are generated (also once) only for measurements with no stored baseline.
+        gen_feature = adapter.generate(exp, "feature", seed, n_events)
+        gen_main = None
 
-        if baseline is not None and name in baseline.get("measurements", {}):
-            main, data = _measurement_baseline(baseline, name)
-        else:
-            # No stored baseline (e.g. dry-run, or a new measurement): compute main
-            # inline so the run still produces a complete table.
-            warnings.append(name)
-            main = predict(adapter, m, "main", seed, n_events, n_boot, rng)
-            data = adapter.data_table(m)
+        for m in exp["measurements"]:
+            name = m["name"]
+            feature = predict(adapter, gen_feature, m, n_boot, rng)
 
-        compat = compatibility(main, feature)
-        gof_pr = goodness_of_fit(feature, data.values, data.covariance)
-        gof_main = goodness_of_fit(main, data.values, data.covariance)
+            if baseline is not None and name in baseline.get("measurements", {}):
+                main, data = _measurement_baseline(baseline, name)
+            else:
+                warnings.append(name)
+                if gen_main is None:
+                    gen_main = adapter.generate(exp, "main", seed, n_events)
+                main = predict(adapter, gen_main, m, n_boot, rng)
+                data = adapter.data_table(m)
 
-        results.append(MeasurementResult(
-            name=name,
-            ndof=compat.ndof,
-            chi2_ndof_main=gof_main.chi2_per_ndof,
-            chi2_ndof_pr=gof_pr.chi2_per_ndof,
-            delta_chi2=gof_pr.chi2 - gof_main.chi2,
-            p_compat=compat.pvalue,
-            p_data=gof_pr.pvalue,
-            plot=f"{name}.png",
-        ))
+            compat = compatibility(main, feature)
+            gof_pr = goodness_of_fit(feature, data.values, data.covariance)
+            gof_main = goodness_of_fit(main, data.values, data.covariance)
+
+            results.append(MeasurementResult(
+                name=name,
+                ndof=compat.ndof,
+                chi2_ndof_main=gof_main.chi2_per_ndof,
+                chi2_ndof_pr=gof_pr.chi2_per_ndof,
+                delta_chi2=gof_pr.chi2 - gof_main.chi2,
+                p_compat=compat.pvalue,
+                p_data=gof_pr.pvalue,
+                plot=f"{name}.png",
+            ))
 
     extra_header = []
     if warnings:
@@ -152,7 +147,7 @@ def run(adapter: Adapter, config: dict, *, seed: int, n_events: int, n_boot: int
             f"({', '.join(warnings)}); main was computed inline for this run.")
 
     report = Report(results=results, repo=repo, feature_sha=feature_sha,
-                    nuisance_version=nuisance_version, data_release=data_release,
+                    nuisance_version=nuisance_version,
                     seed=seed, events_per_measurement=n_events,
                     extra_header=extra_header)
 
@@ -171,15 +166,36 @@ def _load_config(path: str) -> dict:
         return yaml.safe_load(fh)
 
 
-def _filter_measurements(config: dict, only) -> dict:
-    if not only:
-        return config
-    wanted = set(only)
-    kept = [m for m in config["measurements"] if m["name"] in wanted]
-    missing = wanted - {m["name"] for m in kept}
-    if missing:
-        raise SystemExit(f"--only names not in config: {sorted(missing)}")
-    return {**config, "measurements": kept}
+def _filter_config(config: dict, only_experiments, only_measurements) -> dict:
+    """Shard the config by experiment (primary) and/or by measurement name.
+
+    ``--only-experiment`` selects whole experimental setups (the CI shard axis);
+    ``--only`` further narrows to individual measurements within them.
+    """
+    experiments = config["experiments"]
+
+    if only_experiments:
+        wanted = set(only_experiments)
+        experiments = [e for e in experiments if e["name"] in wanted]
+        missing = wanted - {e["name"] for e in experiments}
+        if missing:
+            raise SystemExit(
+                f"--only-experiment names not in config: {sorted(missing)}")
+
+    if only_measurements:
+        wanted = set(only_measurements)
+        kept = []
+        for e in experiments:
+            ms = [m for m in e["measurements"] if m["name"] in wanted]
+            if ms:
+                kept.append({**e, "measurements": ms})
+        found = {m["name"] for e in kept for m in e["measurements"]}
+        missing = wanted - found
+        if missing:
+            raise SystemExit(f"--only names not in config: {sorted(missing)}")
+        experiments = kept
+
+    return {**config, "experiments": experiments}
 
 
 def merge_shards(shard_paths, out_dir: str) -> Report:
@@ -208,7 +224,7 @@ def merge_shards(shard_paths, out_dir: str) -> Report:
     report = Report(results=results, repo=head["repo"],
                     feature_sha=head["feature_sha"],
                     nuisance_version=head["nuisance_version"],
-                    data_release=head["data_release"], seed=head["seed"],
+                    seed=head["seed"],
                     events_per_measurement=head["events_per_measurement"])
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
@@ -221,10 +237,6 @@ def build_argparser() -> argparse.ArgumentParser:
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--config", default="measurements.yml",
                    help="measurement-list YAML")
-    p.add_argument("--adapter", default="synthetic",
-                   choices=["synthetic", "nuisance3"])
-    p.add_argument("--nuisance-image", default=os.environ.get("NUISANCE_IMAGE", ""),
-                   help="NUISANCE3 container image (nuisance3 adapter)")
     p.add_argument("--workdir", default="physval-work")
     p.add_argument("--out-dir", default="physval-out")
     p.add_argument("--baseline-dir", default="physval-baselines",
@@ -238,24 +250,28 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--feature-sha", default=os.environ.get("GITHUB_SHA", "local"))
     p.add_argument("--nuisance-version", default=os.environ.get("NUISANCE_VERSION",
                                                                 "unknown"))
-    p.add_argument("--data-release", default=os.environ.get("PHYSVAL_DATA_RELEASE",
-                                                            "unknown"))
+    p.add_argument("--only-experiment", action="append", default=[],
+                   dest="only_experiments",
+                   help="run only this experimental setup (repeatable); the CI "
+                        "shard axis — its events are generated once and reused")
     p.add_argument("--only", action="append", default=[],
-                   help="run only this measurement (repeatable); used for sharding")
+                   dest="only_measurements",
+                   help="run only this measurement (repeatable); narrows within "
+                        "the selected experiment(s)")
     p.add_argument("--merge", nargs="+", default=None,
                    help="merge these shard summary.json files into one report")
     p.add_argument("--dry-run", action="store_true",
-                   help="force the synthetic adapter")
+                   help="use the synthetic adapter (no Achilles/NUISANCE)")
     p.add_argument("--make-baseline", action="store_true",
                    help="produce the stored main baseline instead of a comparison")
     p.add_argument("--selftest", action="store_true")
     return p
 
 
-def _adapter_from_args(args) -> Adapter:
-    kind = "synthetic" if args.dry_run else args.adapter
-    return make_adapter(kind, base_seed=args.seed, workdir=args.workdir,
-                        nuisance_image=args.nuisance_image)
+def _adapter_from_args(args):
+    if args.dry_run:
+        return SyntheticAdapter(base_seed=args.seed)
+    return Nuisance3Adapter(workdir=args.workdir)
 
 
 def main(argv=None) -> int:
@@ -270,7 +286,8 @@ def main(argv=None) -> int:
         print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
         return 0
 
-    config = _filter_measurements(_load_config(args.config), args.only)
+    config = _filter_config(_load_config(args.config), args.only_experiments,
+                            args.only_measurements)
     adapter = _adapter_from_args(args)
 
     if args.make_baseline:
@@ -285,7 +302,7 @@ def main(argv=None) -> int:
                  n_boot=args.n_boot, baseline=baseline, repo=args.repo,
                  feature_sha=args.feature_sha,
                  nuisance_version=args.nuisance_version,
-                 data_release=args.data_release, out_dir=args.out_dir)
+                 out_dir=args.out_dir)
 
     po = report.p_overall()
     print(f"p_overall={po:.4g} flagged={report.n_flagged()}/{len(report.results)} "
@@ -302,19 +319,23 @@ def main(argv=None) -> int:
 def _selftest() -> int:
     import tempfile
 
-    config = {"measurements": [
-        {"name": "SYNTH_stable", "dryrun": {"nbins": 12, "feature_shift": 0.0}},
-        {"name": "SYNTH_regressed", "dryrun": {"nbins": 12, "feature_shift": 0.05}},
+    # Two experimental setups: one whose feature generation is unchanged and one
+    # with an injected physics shift; each carries a single measurement.
+    config = {"experiments": [
+        {"name": "SYNTH_stable_exp", "dryrun": {"feature_shift": 0.0},
+         "measurements": [{"name": "SYNTH_stable", "dryrun": {"nbins": 12}}]},
+        {"name": "SYNTH_regressed_exp", "dryrun": {"feature_shift": 0.05},
+         "measurements": [{"name": "SYNTH_regressed", "dryrun": {"nbins": 12}}]},
     ]}
     with tempfile.TemporaryDirectory() as tmp:
-        adapter = make_adapter("synthetic", base_seed=7)
+        adapter = SyntheticAdapter(base_seed=7)
         bpath = make_baseline(adapter, config, key="selftest", seed=7,
                               n_events=60000, n_boot=150, out_dir=tmp)
         baseline = load_baseline(bpath)
         report = run(adapter, config, seed=7, n_events=60000, n_boot=150,
                      baseline=baseline, repo="AchillesGen/Achilles",
                      feature_sha="deadbeefcafef00d", nuisance_version="selftest",
-                     data_release="selftest", out_dir=tmp)
+                     out_dir=tmp)
         summary = report.to_summary_dict()
         by_name = {m["name"]: m for m in summary["measurements"]}
 

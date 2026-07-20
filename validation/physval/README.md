@@ -18,9 +18,9 @@ the move is a path change.
 |------|------|
 | `stats.py` | Bootstrap covariance, correlated-χ² compatibility (`p_compat`), goodness-of-fit vs data, Bonferroni overall p. Hartlap-corrected. **No external deps beyond numpy/scipy.** |
 | `report.py` | Renders the Sherpa-style `comment.md` table + `summary.json`. |
-| `adapters.py` | The boundary to Achilles/NUISANCE3: `SyntheticAdapter` (tests/dry-run) and `Nuisance3Adapter` (real path — skeleton). |
+| `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path (skeleton); `SyntheticAdapter` backs `--dry-run` and the self-tests. |
 | `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline`. |
-| `measurements.yml` | The measurement list (starter set; sample names are placeholders). |
+| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events (starter set; sample names are placeholders). |
 
 ## Run it locally
 
@@ -63,20 +63,27 @@ Non-Gaussian fallback: `empirical_pvalue` reads `p_compat` straight off a bootst
 
 ## Adapter boundary — external hand-offs (TODO)
 
+The CI runs inside the public `ghcr.io/achillesgen/achilles-physval` container
+(NUISANCE3 + ROOT + HepMC3 + ProSelecta + Achilles build deps), builds the current
+Achilles checkout there, and drives the adapter with `achilles` and NUISANCE3 on
+PATH. The adapter has two stages so the expensive step runs once per setup:
+
+* `generate(experiment, …)` → Achilles events for one run card (reused per measurement);
+* `histogram(generated, measurement)` → that measurement's per-event `(bin_index, weight)`.
+
 `adapters.Nuisance3Adapter` is a documented skeleton. To make the real path live:
 
-1. **NUISANCE3 container image** — pin an image with NUISANCE3 + ROOT + HepMC3 +
-   ProSelecta and the legacy interface enabled. Set `NUISANCE_IMAGE` /
-   `--nuisance-image`.
-2. **Per-measurement mapping** in `measurements.yml`: replace the `TODO_*`
-   `nuisance_sample` names with real NUISANCE3 sample names and `achilles_run` with
-   real Achilles run cards.
-3. Implement `Nuisance3Adapter.generate` / `.data_table`:
-   - render the Achilles run card with the pinned `seed` + `n_events`,
-     `achilles <card>` → NuHepMC-v1.0 event file (stream / gzip; delete after);
-   - run the NUISANCE3 comparison for the sample over that file; return the
-     per-event `(bin_index, weight)` arrays and the sample's published
-     `DataTable(values, covariance)`.
+1. **Per-experiment / per-measurement mapping** in `measurements.yml`: replace the
+   `TODO_*` `achilles_run` (run card, per experiment) and `nuisance_sample` (NUISANCE3
+   sample, per measurement) placeholders with real values.
+2. Implement `Nuisance3Adapter.generate`:
+   - render the Achilles run card for `experiment['achilles_run']` with the pinned
+     `seed` + `n_events`, `achilles <card>` → NuHepMC-v1.0 event file (delete after
+     the setup's last measurement); return `GeneratedEvents(path=…)`.
+3. Implement `Nuisance3Adapter.histogram` / `.data_table`:
+   - run the NUISANCE3 comparison for `measurement['nuisance_sample']` over that
+     file; return the per-event `(bin_index, weight)` arrays and the sample's
+     published `DataTable(values, covariance)`.
 
 Everything downstream (bootstrap, `p_compat`, Bonferroni, table, plots) is already
 implemented and tested against `SyntheticAdapter`.
@@ -90,20 +97,22 @@ baselines/<key>.json        # main central histograms + bootstrap covariance + d
 plots/<feature-sha>/*.png    # per-run new/old/data overlays (inline in the comment)
 ```
 
-`<key> = {nuisance_version}-{data_release}-{config_hash}-{sha}`. The baseline JSON is
-tiny and kept indefinitely; the plots are pruned on a time window by
-`physval-prune.yml`. If the feature run's NUISANCE3 / data version doesn't match the
-stored baseline's, recompute `main` inline (the driver already falls back and notes
-it in the comment header).
+`<key>` is the short physval-image manifest digest, so any toolchain rebuild
+(NUISANCE2/3, ROOT, HepMC3, ProSelecta) invalidates the baseline. The baseline JSON
+is tiny and kept indefinitely; the plots are pruned on a time window by
+`physval-prune.yml`. Where a run has no matching baseline, the driver recomputes
+`main` inline and notes it in the comment header.
 
 ## CI workflows
 
 - `physval.yml` — triggered by a `!physval` commit-message marker,
-  `workflow_dispatch`, or nightly `schedule`. Builds Achilles, shards event
-  generation across a matrix (one job per measurement), aggregates, commits plots to
+  `workflow_dispatch`, or nightly `schedule`. Builds Achilles once inside the
+  container, shards event generation across a matrix (one job per **experimental
+  setup**; measurements in a setup reuse its events), aggregates, commits plots to
   `physval-baselines/plots/<sha>/`, and posts/updates the PR comment.
 - `physval-baseline-refresh.yml` — on push to `main`, recompute and store the
-  baseline (predictions + bootstrap covariance + data) on `physval-baselines`.
+  baseline (predictions + bootstrap covariance + data) on `physval-baselines`,
+  building Achilles in the same container.
 - `physval-prune.yml` — scheduled pruning of old `plots/<sha>/` folders.
 
 See the plan for the full rationale (bootstrap vs same-seed, merge-base attribution,

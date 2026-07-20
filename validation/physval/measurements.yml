@@ -1,37 +1,62 @@
-# Achilles physics-validation measurement list.
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
-# Each entry defines one NUISANCE3 comparison. Start SMALL (a couple of
-# well-understood CCQE + CC1pi samples) and expand once the bootstrap p_compat
-# noise floor is characterized (see README.md).
+# Achilles physics-validation config.
 #
-# Fields:
+# Measurements are grouped under the *experimental setup* they share. Achilles
+# events are generated ONCE per experiment (one run card / beam+target) and reused
+# across every measurement in that setup — only the NUISANCE3 processing differs
+# per measurement. CI shards one job per experiment (the expensive, generation-bound
+# axis); adding a measurement to an existing setup costs no extra generation.
+#
+# Start SMALL (a couple of well-understood CCQE + CC1pi samples) and expand once the
+# bootstrap p_compat noise floor is characterized (see README.md).
+#
+# Experiment fields:
+#   name          Stable identifier; the CI shard/job name.
+#   achilles_run  Achilles run-card template used to generate this setup's events. # TODO
+#   dryrun        SyntheticAdapter generation params (--dry-run / self-test):
+#                 feature_shift simulates a physics change; ignored by nuisance3.
+#
+# Measurement fields:
 #   name             Stable identifier; also the plot basename and table row label.
-#   nuisance_sample  NUISANCE3 sample/analysis name (legacy interface enabled).   # TODO
-#   achilles_run     Achilles run-card template used to generate events.          # TODO
-#   dryrun           Parameters for the SyntheticAdapter (--dry-run / self-test);
-#                    ignored by the real nuisance3 adapter.
+#   nuisance_sample  NUISANCE3 sample/analysis name (legacy interface enabled).     # TODO
+#   dryrun           SyntheticAdapter histogramming params (nbins); ignored by nuisance3.
 #
-# The 'nuisance_sample' and 'achilles_run' values below are PLACEHOLDERS — fill in
-# once the NUISANCE3 container and the Achilles NuHepMC-v1.0 run cards are wired up.
+# The 'achilles_run' and 'nuisance_sample' values below are PLACEHOLDERS — fill in
+# once the NUISANCE3 samples and the Achilles NuHepMC-v1.0 run cards are wired up.
 
-measurements:
-  - name: MINERvA_CC0pi_Tp
-    nuisance_sample: "TODO_MINERvA_CC0pi_Tp"        # TODO: real NUISANCE3 sample
+experiments:
+  - name: MINERvA_numu_CH
     achilles_run: "TODO_minerva_numu_CH.yml"        # TODO: real Achilles run card
     dryrun:
-      nbins: 20
-      feature_shift: 0.0
+      feature_shift: 0.0        # synthetic: physics shift applied to feature events
+    measurements:
+      - name: MINERvA_CC0pi_Tp
+        nuisance_sample: "TODO_MINERvA_CC0pi_Tp"    # TODO: real NUISANCE3 sample
+        dryrun:
+          nbins: 20
+      - name: MINERvA_CC0pi_ptmu
+        nuisance_sample: "TODO_MINERvA_CC0pi_ptmu"  # TODO
+        dryrun:
+          nbins: 18
 
-  - name: MiniBooNE_CC1pip_Q2
-    nuisance_sample: "TODO_MiniBooNE_CC1pip_Q2"     # TODO
+  - name: MiniBooNE_numu_CH2
     achilles_run: "TODO_miniboone_numu_CH2.yml"     # TODO
     dryrun:
-      nbins: 16
       feature_shift: 0.0
+    measurements:
+      - name: MiniBooNE_CC1pip_Q2
+        nuisance_sample: "TODO_MiniBooNE_CC1pip_Q2" # TODO
+        dryrun:
+          nbins: 16
 
-  - name: T2K_CC0pi_cosTheta
-    nuisance_sample: "TODO_T2K_CC0pi_cosTheta"      # TODO
+  - name: T2K_numu_CH
     achilles_run: "TODO_t2k_numu_CH.yml"            # TODO
     dryrun:
-      nbins: 24
       feature_shift: 0.0
+    measurements:
+      - name: T2K_CC0pi_cosTheta
+        nuisance_sample: "TODO_T2K_CC0pi_cosTheta"  # TODO
+        dryrun:
+          nbins: 24
