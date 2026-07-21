@@ -52,7 +52,7 @@ class GeneratedEvents:
     x: Optional[np.ndarray] = None        # synthetic: in-memory event positions
     weights: Optional[np.ndarray] = None  # synthetic: per-event weights
     path: Optional[str] = None            # nuisance3: NuHepMC-v1.0 event file
-    target_nucleons: Optional[float] = None  # nucleons per target atom, for scaling
+    xsec_divisor: Optional[float] = None  # per-atom xsec / this = published convention
 
     def cleanup(self) -> None:
         """Drop the on-disk event file once every measurement has been histogrammed."""
@@ -199,12 +199,31 @@ class Nuisance3Adapter:
         if not os.path.exists(out_path):
             raise RuntimeError(
                 f"achilles produced no event file at {out_path} for {experiment['name']}")
+        return GeneratedEvents(path=out_path,
+                               xsec_divisor=self._xsec_divisor(experiment))
+
+    @staticmethod
+    def _xsec_divisor(experiment: dict) -> float:
+        """How much to divide the per-ATOM cross section by for this experiment.
+
+        Achilles reports per atom, but published data does not use one convention:
+        T2K/MINERvA quote CH per nucleon (divide by 13), while MicroBooNE quotes per
+        argon atom (divide by 1 -- *not* by 40). Getting this wrong is silent and
+        costs a factor of the target's mass number, so it is declared per experiment
+        rather than guessed.
+        """
+        per = experiment.get("data_per")
+        if per not in ("nucleon", "atom"):
+            raise KeyError(
+                f"experiment {experiment['name']!r} needs data_per: nucleon|atom "
+                f"(the published cross-section convention), got {per!r}")
+        if per == "atom":
+            return 1.0
         if "target_nucleons" not in experiment:
             raise KeyError(
-                f"experiment {experiment['name']!r} needs 'target_nucleons' (nucleons "
-                "per target atom, e.g. 13 for CH) to normalise the cross section")
-        return GeneratedEvents(path=out_path,
-                               target_nucleons=float(experiment["target_nucleons"]))
+                f"experiment {experiment['name']!r} has data_per: nucleon and so "
+                "needs 'target_nucleons' (e.g. 13 for CH)")
+        return float(experiment["target_nucleons"])
 
     # -- analysis ------------------------------------------------------------
 
@@ -270,9 +289,9 @@ class Nuisance3Adapter:
         # target it divides by the struck nucleus' A, which for CH measures out at
         # exactly 12 (carbon only), whereas the published data uses 13 (CH). That is a
         # silent 13/12 = 8% normalisation error.
-        if generated.target_nucleons is None:
-            raise ValueError("GeneratedEvents.target_nucleons is required to "
-                             "normalise; set 'target_nucleons' on the experiment")
+        if generated.xsec_divisor is None:
+            raise ValueError("GeneratedEvents.xsec_divisor is required to normalise; "
+                             "set data_per (and target_nucleons) on the experiment")
         fatx_col = cols.get("fatx_per_sumw.pb_per_target.estimate")
         if fatx_col is None:
             raise RuntimeError("event frame carries no per-target fatx estimate; "
@@ -285,7 +304,7 @@ class Nuisance3Adapter:
 
         widths = np.asarray(list(binning.bin_sizes()), dtype=float).reshape(-1)[:nbins]
         scale = np.divide(
-            fatx_per_sumw * self._PB_TO_CM2 / generated.target_nucleons, widths,
+            fatx_per_sumw * self._PB_TO_CM2 / generated.xsec_divisor, widths,
             out=np.zeros(nbins), where=widths != 0)
         if bin_index.size:
             weights = weights * scale[bin_index]
