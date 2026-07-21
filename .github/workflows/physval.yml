@@ -232,8 +232,10 @@ jobs:
 
       # Publish plots to physval-baselines/plots/<sha>/ for inline thumbnails.
       # Fork PRs lack a write token -> skipped (shard artifacts remain the fallback).
+      # Dry-run plots are synthetic, so they are kept out of the baseline branch.
       - name: Publish plots to baseline branch
-        if: ${{ github.event.pull_request.head.repo.fork != true }}
+        if: ${{ github.event.pull_request.head.repo.fork != true &&
+                needs.setup.outputs.dry_run != 'true' }}
         run: |
           set -e
           SHA="${GITHUB_SHA}"
