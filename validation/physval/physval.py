@@ -24,6 +24,7 @@ import yaml
 
 from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
                       SyntheticAdapter)
+from plots import plot_measurement
 from report import MeasurementResult, Report
 from stats import (Prediction, bootstrap_covariance, compatibility,
                    goodness_of_fit)
@@ -80,6 +81,7 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
                 "data": {"values": data.values.tolist(),
                          "covariance": data.covariance.tolist()},
             }
+        gen_main.cleanup()  # the event file can be many GB; drop it once binned
     baseline = {
         "key": key,
         "seed": seed,
@@ -129,6 +131,16 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
             gof_pr = goodness_of_fit(feature, data.values, data.covariance)
             gof_main = goodness_of_fit(main, data.values, data.covariance)
 
+            os.makedirs(out_dir, exist_ok=True)
+            plot_measurement(
+                os.path.join(out_dir, f"{name}.png"), name,
+                data=data.values, data_cov=data.covariance,
+                main=main.values, main_cov=main.covariance,
+                feature=feature.values, feature_cov=feature.covariance,
+                edges=data.edges, xlabel=data.xlabel, ylabel=data.ylabel,
+                subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
+                         f"{n_events:,} events  |  {feature_sha[:8]}")
+
             results.append(MeasurementResult(
                 name=name,
                 ndof=compat.ndof,
@@ -139,6 +151,10 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
                 p_data=gof_pr.pvalue,
                 plot=f"{name}.png",
             ))
+
+        gen_feature.cleanup()  # event files can be many GB; drop once binned
+        if gen_main is not None:
+            gen_main.cleanup()
 
     extra_header = []
     if warnings:

@@ -70,7 +70,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: pip install --no-cache-dir numpy scipy pyyaml matplotlib
+      # The image ships these via apt and is PEP-668 managed, so pip install fails.
+      - name: Check python deps from the image
+        run: python3 -c "import numpy, scipy, yaml, matplotlib, pyNUISANCE"
 
       - name: Read toolchain versions from the image
         run: |

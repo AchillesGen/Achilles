@@ -120,6 +120,15 @@ jobs:
       - name: Install Achilles
         run: cmake --install build
 
+      # The image's LD_LIBRARY_PATH (/opt/nuisance2/lib) outranks the binary's
+      # RUNPATH, and NUISANCE2's spdlog is built against a different fmt than the one
+      # Achilles bundles -- mixing them segfaults with no output. Achilles' own lib
+      # must come first. Fail here rather than mid-generation if that ever regresses.
+      - name: Smoke-test the built binary
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH"
+          "$GITHUB_WORKSPACE/install/bin/achilles" --version
+
       - uses: actions/upload-artifact@v4
         with:
           name: achilles-install
@@ -138,7 +147,11 @@ jobs:
       matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
-      - run: pip install --no-cache-dir numpy scipy pyyaml matplotlib
+
+      # The image ships numpy/scipy/pyyaml/matplotlib and pyNUISANCE via apt, and is
+      # PEP-668 managed, so pip install would fail here. Just check they import.
+      - name: Check python deps from the image
+        run: python3 -c "import numpy, scipy, yaml, matplotlib, pyNUISANCE"
 
       - name: Restore Achilles install tree
         uses: actions/download-artifact@v4

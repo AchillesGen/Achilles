@@ -18,6 +18,10 @@
 #                 $ACHILLES_DATA_DIR and the install tree's share/Achilles (see
 #                 Filesystem::FindFile / FindFlux), so a flux file shipped in flux/
 #                 resolves both from a source checkout and from an install.
+#   target_nucleons  Nucleons per target atom (13 for CH, 40 for Ar). The prediction
+#                 is normalised as fatx-per-ATOM / target_nucleons: NUISANCE's own
+#                 PerNucleon conversion divides a composite target by the struck
+#                 nucleus' A (12 for CH), not the 13 the published data uses.
 #   dryrun        SyntheticAdapter generation params (--dry-run / self-test):
 #                 feature_shift simulates a physics change; ignored by nuisance3.
 #   measurements  Full NUISANCE3 sample names, run verbatim. A bare name is enough;
@@ -27,6 +31,7 @@
 experiments:
   - name: MINERvA_CC0pinp_STV_XSec
     achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"
+    target_nucleons: 13        # CH
     dryrun:
       feature_shift: 0.0        # synthetic: physics shift applied to feature events
     measurements:
@@ -43,6 +48,7 @@ experiments:
   # generation serves all three sample families.
   - name: MicroBooNE_CC1Mu
     achilles_run: "examples/Microboone/run_uB_1mu_virtresonances.yml"
+    target_nucleons: 40        # 40Ar
     dryrun:
       feature_shift: 0.0
     measurements:
@@ -68,6 +74,7 @@ experiments:
   # CC0pinp / CC1pipNp share T2K's numu+CH beam+target.
   - name: T2K_CC
     achilles_run: "examples/T2K/run_T2K_virtresonances.yml"
+    target_nucleons: 13        # CH
     dryrun:
       feature_shift: 0.0
     measurements:

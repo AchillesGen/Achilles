@@ -18,9 +18,10 @@ the move is a path change.
 |------|------|
 | `stats.py` | Bootstrap covariance, correlated-χ² compatibility (`p_compat`), goodness-of-fit vs data, Bonferroni overall p. Hartlap-corrected. **No external deps beyond numpy/scipy.** |
 | `report.py` | Renders the Sherpa-style `comment.md` table + `summary.json`. |
-| `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path (skeleton); `SyntheticAdapter` backs `--dry-run` and the self-tests. |
+| `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path; `SyntheticAdapter` backs `--dry-run` and the self-tests. |
+| `plots.py` | Publication-style data/main/branch overlay + ratio panel, one PNG per measurement. |
 | `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline`. |
-| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events (starter set; sample names are placeholders). |
+| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events. |
 
 ## Run it locally
 
@@ -61,32 +62,40 @@ python3 physval.py --config measurements.yml --dry-run \
 Non-Gaussian fallback: `empirical_pvalue` reads `p_compat` straight off a bootstrap
 Δχ² null distribution if a measurement's statistic is far from χ²-distributed.
 
-## Adapter boundary — external hand-offs (TODO)
+## Adapter boundary
 
 The CI runs inside the public `ghcr.io/achillesgen/achilles-physval` container
 (NUISANCE3 + ROOT + HepMC3 + ProSelecta + Achilles build deps), builds the current
 Achilles checkout there, and drives the adapter with `achilles` and NUISANCE3 on
 PATH. The adapter has two stages so the expensive step runs once per setup:
 
-* `generate(experiment, …)` → Achilles events for one run card (reused per measurement);
-* `histogram(generated, measurement)` → that measurement's per-event `(bin_index, weight)`.
+* `generate(experiment, …)` renders the run card with the pinned seed / event count /
+  output path (`!include`s are round-tripped, and the `Options` include is expanded so
+  `Initialize.Seed` can be set), runs `achilles <card>` with `cwd` = repo root, and
+  returns the NuHepMC file. It is deleted once the setup's last measurement is binned.
+* `histogram(generated, measurement)` opens the file with `pn.EventSource`, lets
+  `IAnalysis.add_to_framegen` register the sample's selection + projections, and walks
+  the frame to get each selected event's bin (`Binning.find_bin`) and weight.
 
-`adapters.Nuisance3Adapter` is a documented skeleton. To make the real path live:
+Normalisation is **not** reimplemented here: `IAnalysis.process` yields the
+cross-section-scaled, bin-width-divided prediction, and the per-event weights are
+rescaled so they sum to it. The bootstrap therefore measures MC uncertainty directly
+in the data's units. `data_table` takes the published values and the *full*
+`get_covariance_matrix()`, falling back to diagonal errors only if that is absent.
 
-1. **Per-experiment / per-measurement mapping** in `measurements.yml`: replace the
-   placeholder `achilles_run` (run card, per experiment) and measurement `name`
-   (used verbatim as the NUISANCE3 sample) with real values.
-2. Implement `Nuisance3Adapter.generate`:
-   - render the Achilles run card for `experiment['achilles_run']` with the pinned
-     `seed` + `n_events`, `achilles <card>` → NuHepMC-v1.0 event file (delete after
-     the setup's last measurement); return `GeneratedEvents(path=…)`.
-3. Implement `Nuisance3Adapter.histogram` / `.data_table`:
-   - run the NUISANCE3 comparison for `measurement['name']` over that file; return
-     the per-event `(bin_index, weight)` arrays and the sample's published
-     `DataTable(values, covariance)`.
+Note the legacy NUISANCE2 record resolves analyses lazily — `get_analyses()` returns
+an empty list, but `record.analysis("<sample>")` works.
 
-Everything downstream (bootstrap, `p_compat`, Bonferroni, table, plots) is already
-implemented and tested against `SyntheticAdapter`.
+### Achilles' libraries must precede the image's
+
+The image exports `LD_LIBRARY_PATH=/opt/root/lib:/opt/nuisance3/lib:/opt/nuisance2/lib:…`,
+which outranks the binary's `RUNPATH`. NUISANCE2 ships `libspdlog` built against
+`fmt v10` while Achilles bundles `fmt v11`; loading both leaves Achilles calling a
+spdlog with a mismatched fmt and it **segfaults inside `InitializeLogging`, printing
+nothing at all** (the splash is lost to stdout buffering, so it looks like an instant
+silent crash). Putting Achilles' own `lib` first fixes it. `Nuisance3Adapter` does this
+itself when it spawns achilles, and the CI build job smoke-tests `achilles --version`
+so a regression fails early instead of mid-generation.
 
 ## `physval-baselines` branch
 
