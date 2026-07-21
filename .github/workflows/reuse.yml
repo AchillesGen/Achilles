@@ -4,7 +4,11 @@
 name: REUSE Compliance
 
 on:
+  # Listing branches rather than a bare `push` is what stops an in-repo PR branch
+  # from linting twice: once for the push and again for the pull_request.
   push:
+    branches: [main, dev]
+    tags: ['v*.*.*']
   pull_request:
   release:
     types: [published]
@@ -18,7 +22,7 @@ jobs:
     name: REUSE Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: REUSE Compliance Check
         uses: fsfe/reuse-action@v5
 
@@ -27,8 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install reuse
