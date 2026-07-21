@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "Achilles/Constants.hh"
 #include "Achilles/Spinor.hh"
@@ -22,11 +23,11 @@ TEST_CASE("Spinors", "[Spinors]") {
                 auto s3 = USpinor(i, mom2);
                 auto s4 = UBarSpinor(j, mom2);
                 if(i == j)
-                    CHECK((s2 * s1).real() == Approx(2.0 * mom.M()));
+                    CHECK((s2 * s1).real() == Catch::Approx(2.0 * mom.M()));
                 else
                     CHECK(s2 * s1 == std::complex<double>());
                 if(i == j)
-                    CHECK((s4 * s3).real() == Approx(2.0 * mom2.M()));
+                    CHECK((s4 * s3).real() == Catch::Approx(2.0 * mom2.M()));
                 else
                     CHECK(s4 * s3 == std::complex<double>());
             }
@@ -62,14 +63,14 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
             auto s1 = USpinor(1, mom);
             auto s2 = UBarSpinor(1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
             }
         }
         {
             auto s1 = USpinor(-1, mom);
             auto s2 = UBarSpinor(-1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
             }
         }
     }
@@ -80,14 +81,14 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
             auto s1 = USpinor(1, mom);
             auto s2 = UBarSpinor(1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
             }
         }
         {
             auto s1 = USpinor(-1, mom);
             auto s2 = UBarSpinor(-1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
             }
         }
     }
@@ -105,8 +106,8 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
 
         auto expected = SpinMatrix::Slashed(mom);
         for(size_t i = 0; i < result.size(); ++i) {
-            CHECK(result[i].real() == Approx(expected[i].real()));
-            CHECK(result[i].imag() == Approx(expected[i].imag()));
+            CHECK(result[i].real() == Catch::Approx(expected[i].real()));
+            CHECK(result[i].imag() == Catch::Approx(expected[i].imag()));
         }
     }
 
@@ -126,8 +127,8 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
 
         auto expected = SpinMatrix::Slashed(mom) + mass * SpinMatrix::Identity();
         for(size_t i = 0; i < result.size(); ++i) {
-            CHECK(result[i].real() == Approx(expected[i].real()));
-            CHECK(result[i].imag() == Approx(expected[i].imag()));
+            CHECK(result[i].real() == Catch::Approx(expected[i].real()));
+            CHECK(result[i].imag() == Catch::Approx(expected[i].imag()));
         }
     }
 
