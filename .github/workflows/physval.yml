@@ -274,7 +274,10 @@ jobs:
             || git worktree add -B "$BASELINE_BRANCH" bl
           mkdir -p "bl/plots/$SHA"
           cp "${plots[@]}" "bl/plots/$SHA/"
-          git -C bl add "plots/$SHA"
+          # -f: the repo ignores plots/ (local build output), but on the baseline
+          # branch these plots are the payload. Without it `git add` finds every path
+          # ignored, exits non-zero, and fails the step.
+          git -C bl add -f "plots/$SHA"
           git -C bl commit -m "physval plots for $SHA" || echo "nothing to commit"
           git -C bl push origin "$BASELINE_BRANCH"
 
