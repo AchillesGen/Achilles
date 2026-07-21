@@ -24,7 +24,6 @@ import yaml
 
 from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
                       SyntheticAdapter)
-from plots import plot_measurement
 from report import MeasurementResult, Report
 from stats import (Prediction, bootstrap_covariance, compatibility,
                    goodness_of_fit)
@@ -104,6 +103,10 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         baseline: Optional[dict], repo: str, feature_sha: str,
         nuisance_version: str,
         out_dir: str) -> Report:
+    # Imported here, not at module scope: only this path renders anything, so the
+    # aggregate job (which just merges shard summaries) needs no matplotlib.
+    from plots import plot_measurement
+
     rng = np.random.default_rng(seed + 101)
     results = []
     warnings = []

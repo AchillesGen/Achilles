@@ -2,7 +2,11 @@ name: Physics Validation (NUISANCE3)
 
 # Compares this branch against experimental data and the stored `main` baseline via
 # NUISANCE3, posting a Sherpa-style PR comment (flags p_compat < 0.05). Heavy +
-# on-demand; triggered by a `!physval` commit marker, manual dispatch, or nightly.
+# on-demand; triggered by a commit marker, manual dispatch, or nightly.
+#
+# Commit markers:
+#   !physval            full run against the real NUISANCE3 path (hours)
+#   !physval(dry-run)   synthetic adapter only, for a quick plumbing check
 #
 # Runs inside the public ghcr.io/achillesgen/achilles-physval container (NUISANCE3 +
 # Achilles build deps): builds the current Achilles once, then shards by experimental
@@ -21,9 +25,9 @@ on:
         description: 'RNG seed (pinned for reproducibility)'
         default: '42'
       dry_run:
-        description: 'Use the synthetic adapter (until NUISANCE3 is wired up)'
+        description: 'Use the synthetic adapter instead of the real NUISANCE3 path'
         type: boolean
-        default: true
+        default: false
   schedule:
     - cron: '0 6 * * *'
 
@@ -71,8 +75,22 @@ jobs:
           names = [e['name'] for e in cfg['experiments']]
           print('matrix=' + json.dumps({'experiment': names}))
           PY
+      # Marker semantics: `!physval` runs the real NUISANCE3 path; `!physval(dry-run)`
+      # runs the synthetic adapter for a quick plumbing check. Dispatch uses its input;
+      # the nightly schedule runs for real.
       - id: mode
-        run: echo "dry_run=${{ github.event.inputs.dry_run || 'true' }}" >> "$GITHUB_OUTPUT"
+        env:
+          COMMIT_MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DRY="${{ github.event.inputs.dry_run }}"
+          elif printf '%s' "$COMMIT_MESSAGES" | grep -qF '!physval(dry-run)'; then
+            DRY=true
+          else
+            DRY=false
+          fi
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY"
 
   # Resolve the moving :latest tag to an immutable manifest digest, so every job in
   # this run uses the identical image and the baseline key changes whenever any part
