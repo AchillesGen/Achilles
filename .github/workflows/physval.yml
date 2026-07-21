@@ -179,8 +179,15 @@ jobs:
 
       - name: Put Achilles on PATH
         run: |
+          # Artifacts are zipped, which drops the executable bit, so the restored
+          # binaries come back non-executable (cmake.yml chmods for the same reason).
+          chmod -R +x "$GITHUB_WORKSPACE/install/bin"
           echo "$GITHUB_WORKSPACE/install/bin" >> "$GITHUB_PATH"
           echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      # Fail here with a clear message rather than deep inside generation.
+      - name: Smoke-test the restored binary
+        run: achilles --version > /dev/null
 
       # The image records its resolved component shas; surface NUISANCE3's in the report.
       - name: Read toolchain versions from the image
