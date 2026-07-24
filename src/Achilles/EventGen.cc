@@ -21,7 +21,6 @@ class SherpaInterface {};
 } // namespace achilles
 #endif
 
-#ifdef ACHILLES_ENABLE_HEPMC3
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdouble-promotion"
@@ -31,13 +30,24 @@ class SherpaInterface {};
 #pragma clang diagnostic pop
 #endif
 #include "Achilles/Writers/NuHepMCWriter.hh"
-#endif
 
 #include "fmt/std.h"
 #include "yaml-cpp/yaml.h"
 
+#include <numeric>
+
 achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::string> shargs)
-    : config{configFile} {
+    : config{configFile}, m_run_card{configFile} {
+    Setup(std::move(shargs));
+}
+
+achilles::EventGen::EventGen(const YAML::Node &node, std::vector<std::string> shargs,
+                             const std::string &run_card_name)
+    : config{node}, m_run_card{run_card_name} {
+    Setup(std::move(shargs));
+}
+
+void achilles::EventGen::Setup(std::vector<std::string> shargs) {
     // Turning off decays in Sherpa. This is a temporary fix until we can get ISR and FSR properly
     // working in SHERPA.
     runDecays = false;
@@ -59,6 +69,12 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     spdlog::trace("Initializing the beams");
     beam = std::make_shared<Beam>(config.GetAs<Beam>("Beam"));
     nuclei = config.GetAs<std::vector<std::shared_ptr<Nucleus>>>("Nuclei");
+
+    // Keep a typed handle only when the configured beam is a geometry beam; the
+    // dynamic_cast yields nullptr for every other beam type, leaving the normal
+    // (non-geometry) path untouched. All species share one GeometryBeam.
+    if(!beam->BeamIDs().empty())
+        m_geometry_beam = dynamic_cast<GeometryBeam *>(beam->at(*beam->BeamIDs().begin()).get());
 
     // Initialize Cascade parameters
     runCascade = config.GetAs<bool>("Cascade/Run");
@@ -152,17 +168,15 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     spdlog::trace("Outputing as {} format", format);
     if(format == "Achilles") {
         writer = std::make_unique<AchillesWriter>(name, zipped);
-#ifdef ACHILLES_ENABLE_HEPMC3
     } else if(format == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(name, zipped);
     } else if(format == "NuHepMC") {
         writer = std::make_unique<NuHepMCWriter>(name, zipped);
-#endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);
         throw std::runtime_error(msg);
     }
-    writer->WriteHeader(configFile, process_groups);
+    writer->WriteHeader(m_run_card, process_groups);
 }
 
 void achilles::EventGen::Initialize() {
@@ -244,15 +258,125 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
     printFormat(accepted, nevents);
 }
 
+void achilles::EventGen::InjectRay(const FourVector &lab_ray, PID nu, PID target) {
+    if(!m_geometry_beam)
+        throw std::runtime_error("EventGen::InjectRay requires a beam of Type: Geometry");
+    m_geometry_beam->SetMode(GeometryBeam::Mode::Generate);
+    m_geometry_beam->SetInjected(lab_ray);
+    m_injection = std::make_pair(nu, target);
+    spdlog::trace("EventGen::InjectRay: E = {} MeV, nu = {}, target = {}", lab_ray.E(), nu, target);
+}
+
+void achilles::EventGen::WriteRunInfo(std::shared_ptr<HepMC3::GenRunInfo> run) const {
+    NuHepMCWriter::WriteHeader(std::move(run), m_run_card, process_groups);
+}
+
+void achilles::EventGen::Finalize() {
+    // TODO: flush splines / run statistics as the geometry workflow requires.
+    spdlog::info("EventGen: finalizing run");
+}
+
+double achilles::EventGen::VertexEnvelope(PID nu, PID target) const {
+    const auto weights = GeometryGroupWeights(process_groups, nu, target);
+    // Internal weights are in nb; NuGeom works in cm^2.
+    const double envelope =
+        std::accumulate(weights.begin(), weights.end(), 0.0) * Constant::NB_TO_CM2;
+    spdlog::trace("EventGen::VertexEnvelope(nu = {}, target = {}) = {} cm^2", nu, target, envelope);
+    return envelope;
+}
+
+double achilles::EventGen::TotalXSec(double energy, PID nu, PID target) const {
+    double total = 0;
+    for(const auto &group : process_groups)
+        if(group.GetNucleus()->ID() == target) total += group.TotalXSec(energy, nu);
+    // Spline values are in nb (same units as the raw weights); convert to cm^2
+    // so both layer-1 accessors feed NuGeom in the same units.
+    total *= Constant::NB_TO_CM2;
+    spdlog::trace("EventGen::TotalXSec(E = {} MeV, nu = {}, target = {}) = {} cm^2", energy, nu,
+                  target, total);
+    return total;
+}
+
 bool achilles::EventGen::GenerateSingleEvent() {
-    // Select the process group and generate an event
-    auto &group = process_groups[Random::Instance().SelectIndex(m_group_weights)];
-    auto &&event = group.GenerateEvent();
-    event.Weight() *= m_max_weight;
+    // Select the process group and generate an event. In geometry mode the
+    // injected ray restricts selection to the matching (neutrino, target);
+    // groups are weighted by only the matching species' max-weight so a group's
+    // unrelated (other-species) processes don't bias the choice. The normal path
+    // (no injection) is unchanged.
+    std::optional<PID> required_nu;
+    size_t group_idx;
+    if(m_injection) {
+        const auto nu = m_injection->first;
+        const auto target = m_injection->second;
+        required_nu = nu;
+
+        // The warm-up flat flux only calibrated the integrator and unweighter
+        // inside the configured EnergyRange; rays outside it have no model
+        // support and must be rejected (zero cross section), not extrapolated.
+        const double e_inj = m_geometry_beam->Injected().E();
+        if(e_inj < m_geometry_beam->MinEnergy() || e_inj > m_geometry_beam->MaxEnergy()) {
+            if(m_range_warnings < kMaxRangeWarnings) {
+                spdlog::warn("EventGen: injected ray energy {} MeV outside beam EnergyRange "
+                             "[{}, {}]; treating as zero cross section. Widen EnergyRange to "
+                             "cover the flux file. ({} more warnings before silencing)",
+                             e_inj, m_geometry_beam->MinEnergy(), m_geometry_beam->MaxEnergy(),
+                             kMaxRangeWarnings - m_range_warnings - 1);
+                ++m_range_warnings;
+            } else {
+                spdlog::debug("EventGen: injected ray energy {} MeV outside beam EnergyRange; "
+                              "rejected",
+                              e_inj);
+            }
+            return false;
+        }
+
+        auto weights = GeometryGroupWeights(process_groups, nu, target);
+        if(std::accumulate(weights.begin(), weights.end(), 0.0) == 0.0) {
+            spdlog::debug("EventGen: no process available for nu = {} on target = {}; rejected", nu,
+                          target);
+            return false;
+        }
+        group_idx = Random::Instance().SelectIndex(weights);
+        spdlog::trace("EventGen: selected process group {} for nu = {}, target = {}", group_idx, nu,
+                      target);
+    } else {
+        group_idx = Random::Instance().SelectIndex(m_group_weights);
+    }
+    auto &group = process_groups[group_idx];
+    auto &&event = group.GenerateEvent(required_nu);
+    // Weight convention depends on the run mode:
+    //  - Analytic (no injected ray): rescale the unweighted (unit) event back to
+    //    sigma units so sum(weight)/N_trials = sigma_tot. m_max_weight is the
+    //    global all-group envelope used by the analytic estimator.
+    //  - Geometry / EnvelopeNoRetry: leave the partial-unweight result
+    //    max(1, raw_w/w_max_p); the max-weight scale is absorbed into NuGeom's
+    //    layer-1 envelope (= VertexEnvelope), and the rate normalization is
+    //    carried by NuGeom's POT / 1-over-max_prob bookkeeping.
+    //  - Geometry / TotalXSecRetry: NuGeom's layer-1 uses sigma_tot, so the
+    //    event carries the LHC convention max(w_max_p, raw_w) = w_max_p * Unweight.
+    // Geometry mode (m_injection): the event keeps the partial-unweight
+    // weight max(1, raw_w/w_max_p) ~ 1 in BOTH sampling modes (E.C.1 "CV"
+    // convention); the sigma scale for the driver's estimator is
+    // VertexEnvelope, applied driver-side per trial.
+    if(!m_injection) event.Weight() *= m_max_weight;
     if(event.Weight() == 0) {
-        writer->Write(event);
+        spdlog::trace("EventGen: trial rejected by unweighter (weight = 0)");
+        // In geometry mode NuGeom owns the output and treats false as a rejected
+        // ray, so don't write anything here.
+        if(!m_injection) writer->Write(event);
         return false;
     }
+    spdlog::trace("EventGen: trial accepted with weight = {}", event.Weight());
+
+    // Geometry mode: undo the rotation that aligned the injected ray with +z
+    // before anything else, so the whole event -- history and cascade included --
+    // is built and stored in the lab frame.
+    if(m_injection) {
+        const auto &rotation = m_geometry_beam->Rotation();
+        for(auto &lepton : event.Leptons()) rotation.RotateBack(lepton.Momentum());
+        for(auto &hadron : event.Hadrons()) rotation.RotateBack(hadron.Momentum());
+    }
+
     if(spdlog::get_level() == spdlog::level::trace) event.Display();
 
     auto init_nuc = group.GetNucleus()->InitParticle();
@@ -263,12 +387,12 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // TODO: Handle multiple positions from MEC
     event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
                               EventHistory::StatusCode::target);
-    // Setup beam in history
+    // Setup beam in history. The beam particle is the incoming neutrino itself
+    // (leptons[0], the initial-state lepton at its sampled energy/direction), not
+    // a hardcoded max-energy +z vector.
     auto init_lep = event.Leptons()[0];
     auto init_beam = init_lep;
     init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
     event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays
@@ -323,6 +447,13 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // Running Sherpa interface if requested
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
+
+    // In geometry mode, hand the event back to NuGeom (via LastEvent) instead of
+    // writing it ourselves; it is already in the lab frame.
+    if(m_injection) {
+        m_last_event = event;
+        return true;
+    }
 
     writer->Write(event);
     return true;

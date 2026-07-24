@@ -74,3 +74,33 @@ TEST_CASE("YAML encoding / decoding StatsData", "[vegas]") {
     CHECK(data1.Error() == data2.Error());
     CHECK(data1.FiniteCalls() == data2.FiniteCalls());
 }
+
+TEST_CASE("Rejected (zero-weight) trials count toward the mean", "[vegas]") {
+    // The geometry-driver sigma estimator is sum(w) / N_trials with one entry
+    // per generator trial; rejected trials enter as zeros and must dilute the
+    // mean, while FiniteCalls tracks only the emitted events.
+    achilles::StatsData data;
+    data += 4.0;
+    data += 0.0;
+    data += 0.0;
+    data += 0.0;
+
+    CHECK(data.Calls() == 4);
+    CHECK(data.FiniteCalls() == 1);
+    CHECK(data.Mean() == Approx(1.0));
+}
+
+TEST_CASE("Variance is finite for degenerate samples", "[vegas]") {
+    // A single entry has no defined spread; it must not divide by zero.
+    achilles::StatsData single;
+    single += 2.5;
+    CHECK(single.Variance() == 0.0);
+    CHECK(single.Error() == 0.0);
+
+    // Identical entries: rounding can push sum2/n - mean^2 slightly negative,
+    // which must not turn into a NaN error via sqrt.
+    achilles::StatsData equal;
+    for(size_t i = 0; i < 1000; ++i) equal += 0.1;
+    CHECK(equal.Variance() >= 0.0);
+    CHECK(std::isfinite(equal.Error()));
+}

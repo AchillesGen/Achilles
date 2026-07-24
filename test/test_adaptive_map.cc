@@ -17,6 +17,26 @@ TEST_CASE("Adaptive Map Construction", "[vegas]") {
     CHECK(edges == map.Edges(1));
 }
 
+TEST_CASE("FindBin clamps out-of-range inputs", "[vegas]") {
+    achilles::AdaptiveMap map(1, 4); // edges {0, 0.25, 0.5, 0.75, 1}
+
+    // In-range lookups.
+    CHECK(map.FindBin(0, 0.1) == 0);
+    CHECK(map.FindBin(0, 0.3) == 1);
+    CHECK(map.FindBin(0, 0.8) == 3);
+
+    // Boundary values: x = 0 used to underflow the unsigned bin index
+    // (lower_bound returns the first edge), x = 1 belongs to the last bin.
+    CHECK(map.FindBin(0, 0.0) == 0);
+    CHECK(map.FindBin(0, 1.0) == 3);
+
+    // Out-of-range values (e.g. a geometry-mode remapped random number from a
+    // ray outside the beam's EnergyRange) must clamp instead of reading out
+    // of bounds.
+    CHECK(map.FindBin(0, -0.5) == 0);
+    CHECK(map.FindBin(0, 1.5) == 3);
+}
+
 TEST_CASE("Numbers generated according to Adaptive Map", "[vegas]") {
     constexpr size_t ndims = 2;
     constexpr size_t nbins = 10;

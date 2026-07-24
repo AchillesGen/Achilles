@@ -67,6 +67,9 @@ class Histogram {
     virtual void SetPath(const std::string &path_) { path = path_; }
 
     virtual std::string GetName() const { return name; }
+    // Total number of Fill calls (including under/overflow), i.e. the sample
+    // count. Used to normalize the cross-section spline by N.
+    virtual size_t Entries() const { return nentries; }
 
   protected:
     std::string name, path;

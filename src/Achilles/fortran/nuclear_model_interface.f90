@@ -96,6 +96,11 @@ contains
         type(qe_spec) :: qe
         type(res_spec) :: res
         type(intf_spec) :: intf
+        ! Idempotent: registration may be triggered both automatically on library
+        ! load and explicitly (e.g. by the achilles executable), so only run once.
+        logical, save :: registered = .false.
+        if(registered) return
+        registered = .true.
         ! Add all nuclear models to be registered here
         ! along with the function needed to build the model
         call factory%register_model(qe%model_name(), build_qe_spec)

@@ -19,6 +19,8 @@ static constexpr double NAVOGADRO = 6.02214076e23;   // mol^-1
 // constexpr double HBARC = 197.3269804_fm * 1_MeV;
 // constexpr double HBARC2 = 0.3893793721_mb * 1_GeV * 1_GeV;
 static constexpr double GAMMA_E = 0.5772156649015328606;
+static constexpr double TO_CM2 = 1e-36;    // pb to cm^2
+static constexpr double NB_TO_CM2 = 1e-33; // nb to cm^2
 
 // Masses
 static constexpr double mp = 938.27208816_MeV;

@@ -51,6 +51,11 @@ template <> struct convert<achilles::Beam> {
         } else if(type == "FlatFlux") {
             auto flux = std::make_shared<achilles::FlatFlux>(node);
             for(const auto &s : node["Species"]) add_flux(achilles::PID(s.as<int>()), flux);
+        } else if(type == "Geometry") {
+            // One shared GeometryBeam serves every species the driver may inject;
+            // the ray (and species/target selection) are set per event at runtime.
+            auto flux = std::make_shared<achilles::GeometryBeam>(node);
+            for(const auto &s : node["Species"]) add_flux(achilles::PID(s.as<int>()), flux);
         } else {
             throw std::logic_error(fmt::format("Beam: unknown flux Type '{}'", type));
         }

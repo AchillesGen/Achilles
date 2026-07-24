@@ -14,6 +14,9 @@
 #include "Achilles/XSecSpline.hh"
 #include "fmt/ranges.h"
 
+#include <map>
+#include <set>
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -288,13 +291,33 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
 void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
     if(!process_idx) {
         double weight = 0;
+        const bool fill_spline = b_calc_weights && m_use_spline;
+        // The spline is filled during the flat-flux warm-up, where energies are
+        // sampled uniformly over [Emin, Emax].  InitializeSpline() divides each
+        // bin by the TOTAL sample count (not the per-bin count), so it stores the
+        // flux-averaged density sigma(E)/(Emax-Emin) (nb/MeV), not sigma(E).
+        // Scaling every fill by the energy range (= m_flux_integral) undoes that
+        // 1/(Emax-Emin) normalization so TotalXSec() returns sigma(E) in nb.
+        // Without it sigma_tot is low by (Emax-Emin) ~ 1e5-1e6 MeV, and NuGeom's
+        // TotalXSecRetry layer-1 under-generates by that factor relative to
+        // EnvelopeNoRetry (whose VertexEnvelope is never flux-folded).
+        const double flux_range = fill_spline ? (m_beam->MaxEnergy() - m_beam->MinEnergy()) : 1.0;
+        std::map<int, double> nu_weights; // summed weight per incoming species
         for(size_t i = 0; i < m_processes.size(); ++i) {
             auto process_weight = m_backend->CrossSection(event, m_processes[i]);
             if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
+            if(fill_spline) {
+                const auto nu = m_processes[i].Info().m_leptonic.first;
+                const double flux = m_beam->EvaluateFlux(nu, event.Momentum()[0]);
+                nu_weights[static_cast<int>(nu.AsInt())] += process_weight / flux * flux_range;
+            }
         }
         event.Weight() = weight;
         if(b_calc_weights) m_xsec += weight;
+        // One fill per MC sample, summed over each species' processes, so every
+        // spline's Fill count equals the sample count N (the sigma normalization).
+        if(fill_spline) m_splines.FillSample(event.Momentum()[0].E(), nu_weights);
     } else {
         auto &process = m_processes[process_idx.value()];
         auto weight = m_backend->CrossSection(event, process);
@@ -302,8 +325,26 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
     }
 }
 
-size_t ProcessGroup::SelectProcess() const {
-    return Random::Instance().SelectIndex(m_process_weights);
+size_t ProcessGroup::SelectProcess(std::optional<PID> required_nu) const {
+    if(!required_nu) return Random::Instance().SelectIndex(m_process_weights);
+
+    // Geometry mode: restrict to processes whose incoming lepton matches the
+    // injected ray's species.
+    std::vector<double> weights(m_process_weights.size(), 0.0);
+    for(size_t i = 0; i < m_processes.size(); ++i)
+        if(m_processes[i].Info().m_leptonic.first == *required_nu)
+            weights[i] = m_process_weights[i];
+    return Random::Instance().SelectIndex(weights);
+}
+
+double ProcessGroup::NeutrinoMaxWeight(PID nu) const {
+    // m_process_weights are normalized to sum to 1 within the group, so the
+    // matching fraction times the group's absolute envelope is the absolute
+    // max-weight carried by the requested neutrino species.
+    double fraction = 0.0;
+    for(size_t i = 0; i < m_processes.size(); ++i)
+        if(m_processes[i].Info().m_leptonic.first == nu) fraction += m_process_weights[i];
+    return m_maxweight * fraction;
 }
 
 std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &settings,
@@ -375,15 +416,16 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
 }
 
 void ProcessGroup::SetupSplines() {
-    // Setup XSecHistograms for splines
-    auto beam_id = m_beam->BeamIDs().begin();
-    auto nuc_id = m_nucleus->ID();
-    double min_energy = m_beam->MinEnergy();
-    double max_energy = m_beam->MaxEnergy();
-    if(min_energy != max_energy) {
-        m_use_spline = true;
-        m_spline = XSecSpline(fmt::format("{}-{}", *beam_id, nuc_id), min_energy, max_energy, 200);
-    }
+    // sigma(E) splines only make sense for a beam spanning an energy range. The
+    // actual per-species splines are created and filled during the weight phase
+    // (Optimize), so a cache load can restore them without being clobbered here.
+    m_use_spline = m_beam->MinEnergy() != m_beam->MaxEnergy();
+}
+
+double ProcessGroup::TotalXSec(double energy, PID nu) const {
+    if(!m_use_spline) return 0;
+    return m_splines.TotalXSec(energy, static_cast<int>(nu.AsInt()),
+                               {static_cast<int>(m_nucleus->ID().AsInt())});
 }
 
 bool ProcessGroup::NeedsOptimization() const {
@@ -412,10 +454,26 @@ void ProcessGroup::Optimize() {
     m_integrator.UpdateSummary(false);
     if(m_maxweight == 0) {
         spdlog::info("Calculating maximum weight");
+        // Create one sigma(E) spline per incoming species (target = nucleus) so
+        // the weight runs below can fill them. Skipped if a cache load already
+        // populated them.
+        if(m_use_spline && m_splines.Empty()) {
+            const double emin = m_beam->MinEnergy(), emax = m_beam->MaxEnergy();
+            const int nuc_id = static_cast<int>(m_nucleus->ID().AsInt());
+            std::set<int> species;
+            for(const auto &process : m_processes)
+                species.insert(static_cast<int>(process.Info().m_leptonic.first.AsInt()));
+            for(int nu : species)
+                m_splines.AddSpline(nu, nuc_id,
+                                    XSecSpline(fmt::format("{}-{}", nu, nuc_id), emin, emax, 200));
+        }
+
         b_calc_weights = true;
         m_integrator.Parameters().ncalls = 100000;
         for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
         b_calc_weights = false;
+
+        if(m_use_spline) m_splines.InitializeSplines();
 
         std::ofstream outFile("Results.txt");
 
@@ -428,6 +486,11 @@ void ProcessGroup::Optimize() {
             outFile << m_processes[i].TotalCrossSection() << "\n";
         }
 
+        // Normalize only when freshly computed: cached states already store
+        // the normalized weights, and re-dividing them on every load would
+        // shrink NeutrinoMaxWeight / VertexEnvelope run after run.
+        for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
+
         outFile.close();
     } else {
         for(size_t i = 0; i < m_processes.size(); ++i) {
@@ -439,20 +502,36 @@ void ProcessGroup::Optimize() {
                  m_xsec.Error() / m_xsec.Mean() * 100);
     spdlog::info("Process weights: {} / {}",
                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
-    if(m_use_spline) m_spline.InitializeSpline();
-    for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
 }
 
 void ProcessGroup::Summary() const {}
 
-achilles::Event ProcessGroup::GenerateEvent() {
+achilles::Event ProcessGroup::GenerateEvent(std::optional<PID> required_nu) {
     const auto mom = m_integrator.GeneratePoint(m_integrand);
     const auto ps_wgt = m_integrator.GenerateWeight(m_integrand, mom);
-    return SingleEvent(mom, ps_wgt);
+    return SingleEvent(mom, ps_wgt, required_nu);
 }
 
-achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
+achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt,
+                                          std::optional<PID> required_nu) {
     Event event = Event(m_nucleus, mom, ps_wgt);
+
+    // A vanishing or non-finite phase-space weight means the point is outside
+    // the supported phase space (e.g. an injected geometry ray outside the
+    // beam's EnergyRange).  Skip the backend entirely -- evaluating the matrix
+    // element at unsupported kinematics can produce NaNs that would otherwise
+    // leak into the event weight.  Bookkeeping matches the cut-failure path so
+    // the sigma normalization still counts this sample.
+    if(ps_wgt == 0.0 || !std::isfinite(ps_wgt)) {
+        spdlog::debug("ProcessGroup: rejecting sample with phase-space weight = {}", ps_wgt);
+        if(b_calc_weights) {
+            for(auto &process : m_processes) process.AddWeight(0);
+            m_xsec += 0;
+            if(m_use_spline) m_splines.FillSample(event.Momentum()[0].E(), {});
+        }
+        event.Weight() = 0;
+        return event;
+    }
 
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
@@ -460,30 +539,30 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
-    auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
+    auto process_opt =
+        b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess(required_nu));
+    // Remember the selected process's max-weight so geometry mode can apply the
+    // TotalXSecRetry weight convention (max(w_max_p, raw_w)) downstream.
+    if(process_opt) m_last_max_weight = m_processes[*process_opt].MaxWeight();
     SetupLeptons(event, process_opt);
     if(!m_cuts.EvaluateCuts(event.Particles())) {
         // Ensure process weights are tracked correctly
         if(b_calc_weights) {
             for(auto &process : m_processes) process.AddWeight(0);
             m_xsec += 0;
+            // Cut-failed samples still count toward the spline normalization N
+            // (zero weight for every species).
+            if(m_use_spline) m_splines.FillSample(event.Momentum()[0].E(), {});
         }
         event.Weight() = 0;
         return event;
     }
 
+    // CrossSection fills the per-species sigma(E) splines during the weight phase.
     CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
-    if(b_optimize || event.Weight() == 0) {
-        // Fill the XSecSpline histogram
-        // NOTE: Assuming first momentum is the lepton momentum
-        if(m_use_spline) {
-            double flux = m_beam->EvaluateFlux(event.Leptons()[0].ID(), event.Momentum()[0]);
-            m_spline.Fill(event.Momentum()[0].E(), event.Weight() / flux);
-        }
-        return event;
-    }
+    if(b_optimize || event.Weight() == 0) { return event; }
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];
@@ -492,6 +571,14 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     process.SetupHadrons(event);
 
     return event;
+}
+
+std::vector<double> achilles::GeometryGroupWeights(const std::vector<ProcessGroup> &groups, PID nu,
+                                                   PID target) {
+    std::vector<double> weights(groups.size(), 0.0);
+    for(size_t i = 0; i < groups.size(); ++i)
+        if(groups[i].GetNucleus()->ID() == target) weights[i] = groups[i].NeutrinoMaxWeight(nu);
+    return weights;
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {
@@ -527,6 +614,9 @@ bool ProcessGroup::Save(const fs::path &cache_dir) const {
     std::ofstream out_xsec(cache_dir / "xsec.achilles");
     m_xsec.SaveState(out_xsec);
 
+    std::ofstream out_splines(cache_dir / "splines.achilles");
+    m_splines.SaveState(out_splines);
+
     // TODO: Store some metadata for validation
     std::ofstream out_metadata(cache_dir / "metadata.achilles");
 
@@ -553,6 +643,10 @@ bool ProcessGroup::Load(const fs::path &cache_dir) {
 
     std::ifstream in_xsec(cache_dir / "xsec.achilles");
     m_xsec.LoadState(in_xsec);
+
+    // sigma(E) splines (only present when cached with an energy-range beam).
+    std::ifstream in_splines(cache_dir / "splines.achilles");
+    if(in_splines) m_splines.LoadState(in_splines);
 
     // TODO: Load some metadata for validation
     std::ifstream in_metadata(cache_dir / "metadata.achilles");

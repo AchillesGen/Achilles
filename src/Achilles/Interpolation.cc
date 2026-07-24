@@ -110,13 +110,18 @@ double Interp1D::operator()(const double &x) const {
     if(!kSplineInit && kMode == InterpolationType::CubicSpline)
         throw std::runtime_error("Interpolation is not initialized!");
 
-    // Disallow extrapolation
-    if(x > knotX.back())
+    // Outside the knot range, either extrapolate linearly along the boundary
+    // slope or (default) refuse.
+    if(x > knotX.back()) {
+        if(kExtrapolate) return knotY.back() + Derivative(knotX.back()) * (x - knotX.back());
         throw std::domain_error(
             fmt::format("Input ({}) greater than maximum value ({})", x, knotX.back()));
-    if(x < knotX.front())
+    }
+    if(x < knotX.front()) {
+        if(kExtrapolate) return knotY.front() + Derivative(knotX.front()) * (x - knotX.front());
         throw std::domain_error(
             fmt::format("Input ({}) less than minimum value ({})", x, knotX.front()));
+    }
 
     // Find range by binary_search
     auto idxHigh = static_cast<size_t>(
@@ -151,6 +156,31 @@ double Interp1D::operator()(const double &x) const {
 //                         a, b, knotX.front(), knotX.back()));
 //     if(b < a) return -Integrate(b, a);
 // }
+
+double Interp1D::Derivative(const double &x) const {
+    if(!kSplineInit && kMode == InterpolationType::CubicSpline)
+        throw std::runtime_error("Interpolation is not initialized!");
+    if(knotX.size() < 2) throw std::runtime_error("Derivative needs at least two knots");
+
+    // Locate the segment, clamping into the valid range so end slopes can be used
+    // for extrapolation.
+    const double xq = std::clamp(x, knotX.front(), knotX.back());
+    auto idxHigh = static_cast<size_t>(
+        std::distance(knotX.begin(), std::upper_bound(knotX.begin(), knotX.end(), xq)));
+    if(idxHigh == 0) idxHigh = 1;
+    if(idxHigh >= knotX.size()) idxHigh = knotX.size() - 1;
+    const auto idxLow = idxHigh - 1;
+
+    const double h = knotX[idxHigh] - knotX[idxLow];
+    const double slope = (knotY[idxHigh] - knotY[idxLow]) / h;
+    if(kMode != InterpolationType::CubicSpline) return slope;
+
+    // d/dx of the cubic spline segment (Numerical Recipes form).
+    const double a = (knotX[idxHigh] - xq) / h;
+    const double b = (xq - knotX[idxLow]) / h;
+    return slope +
+           h / 6.0 * (-(3 * a * a - 1) * derivs2[idxLow] + (3 * b * b - 1) * derivs2[idxHigh]);
+}
 
 double Interp1D::Integrate() const {
     double result = 0;

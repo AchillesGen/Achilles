@@ -5,6 +5,17 @@
 using achilles::FortranModel;
 using achilles::NuclearModel;
 
+namespace {
+// Register the Fortran nuclear models when this library is loaded, so every
+// entry point (the achilles executable, EventGen, external drivers such as the
+// NuGeometry adapter) has them available without an explicit call. RegisterAll()
+// is idempotent, so main.cc's startup call remains a harmless no-op.
+const bool g_fortran_models_registered = [] {
+    RegisterAll();
+    return true;
+}();
+} // namespace
+
 FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_factor,
                            FormFactorBuilder &builder = FormFactorBuilder::Instance())
     : NuclearModel(form_factor, builder),

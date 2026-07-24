@@ -145,6 +145,33 @@ TEST_CASE("One Dimensional", "[Interp]") {
     }
 }
 
+TEST_CASE("Derivative and extrapolation", "[Interp]") {
+    // A straight line y = 2x + 1: the cubic spline is exact, its derivative is 2
+    // everywhere, and linear extrapolation continues the line.
+    const std::vector<double> x = achilles::Linspace(0, 10, 51);
+    std::vector<double> y;
+    for(const auto &xi : x) y.emplace_back(2 * xi + 1);
+    achilles::Interp1D interp(x, y, achilles::InterpolationType::CubicSpline);
+    interp.CubicSpline();
+
+    SECTION("derivative on a line is the slope") {
+        CHECK(interp.Derivative(3.0) == Approx(2.0).margin(1e-6));
+        CHECK(interp.Derivative(0.0) == Approx(2.0).margin(1e-6));  // left end
+        CHECK(interp.Derivative(10.0) == Approx(2.0).margin(1e-6)); // right end
+    }
+
+    SECTION("extrapolation is opt-in") {
+        CHECK_THROWS_AS(interp(-1.0), std::domain_error);
+        CHECK_THROWS_AS(interp(11.0), std::domain_error);
+    }
+
+    SECTION("linear extrapolation follows the boundary slope") {
+        interp.AllowExtrapolation(true);
+        CHECK(interp(-2.0) == Approx(2 * -2.0 + 1).margin(1e-6));
+        CHECK(interp(13.0) == Approx(2 * 13.0 + 1).margin(1e-6));
+    }
+}
+
 TEST_CASE("Two Dimensional", "[Interp]") {
     const std::vector<double> x = achilles::Linspace(0, 11, 97);
     const std::vector<double> y = achilles::Linspace(0, 11, 97);

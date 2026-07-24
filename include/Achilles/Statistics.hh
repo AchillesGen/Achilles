@@ -90,7 +90,12 @@ class StatsData {
     StatsData &operator=(StatsData &&) = default;
     ~StatsData() = default;
 
-    double Variance() const { return (sum2 / n - Mean() * Mean()) / (n - 1); }
+    // Sample variance of the mean; 0 for fewer than two entries (no spread is
+    // defined yet) and clamped at 0 against rounding when all entries are equal.
+    double Variance() const {
+        if(n < 2) return 0.0;
+        return std::max(0.0, (sum2 / n - Mean() * Mean()) / (n - 1));
+    }
 
     StatsData &operator+=(double x) {
         n++;

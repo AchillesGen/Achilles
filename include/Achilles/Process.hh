@@ -95,13 +95,19 @@ class ProcessGroup {
     ProcessGroup(std::shared_ptr<Beam> beam, std::shared_ptr<Nucleus> nucleus)
         : m_beam{std::move(beam)}, m_nucleus{std::move(nucleus)} {}
     void CrossSection(Event &, std::optional<size_t>);
-    size_t SelectProcess() const;
+    // Select a process by weight; if required_nu is set, restrict to processes
+    // whose incoming lepton matches it (used in geometry mode).
+    size_t SelectProcess(std::optional<PID> required_nu = std::nullopt) const;
 
     // Handling individual processes
     const Process &GetProcess(size_t i) const { return m_processes[i]; }
     Process &GetProcess(size_t i) { return m_processes[i]; }
     void AddProcess(Process process) { m_processes.push_back(std::move(process)); }
     const std::vector<Process> &Processes() const { return m_processes; }
+    // Absolute max-weight (same units as MaxWeight()) summed over only the
+    // processes whose incoming lepton is nu; 0 if the group has no such process.
+    // Used to weight group selection correctly in geometry mode.
+    double NeutrinoMaxWeight(PID nu) const;
 
     // Handling physics objects
     Beam *GetBeam() { return m_beam.get(); }
@@ -122,16 +128,28 @@ class ProcessGroup {
     bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
-    Event GenerateEvent();
-    Event SingleEvent(const std::vector<FourVector> &, double);
+    Event GenerateEvent(std::optional<PID> required_nu = std::nullopt);
+    Event SingleEvent(const std::vector<FourVector> &, double,
+                      std::optional<PID> required_nu = std::nullopt);
     const double &MaxWeight() const { return m_maxweight; }
     double &MaxWeight() { return m_maxweight; }
+    const std::vector<double> &ProcessWeights() const { return m_process_weights; }
+    std::vector<double> &ProcessWeights() { return m_process_weights; }
+    // Max-weight (w_max_p) of the process selected by the most recent
+    // GenerateEvent/SingleEvent call. Used to apply the TotalXSecRetry weight
+    // convention (max(w_max_p, raw_w)) in geometry mode.
+    double LastProcessMaxWeight() const { return m_last_max_weight; }
     void SetOptimize(bool optimize) { b_optimize = optimize; }
     size_t Multiplicity() const { return m_processes[0].Info().Multiplicity(); }
 
-    // Handling of XSecSplines for Geometry
+    // Handling of XSecSplines for Geometry. One sigma(E) spline per incoming
+    // neutrino species (the target is the group's nucleus); summed over the
+    // group's processes for that species.
     void SetupSplines();
-    const GeometryXSecSpline &GetSplines() const;
+    // sigma(E) for the given incoming neutrino on this group's nucleus, summed
+    // over the matching processes; 0 if the group has no such process or splines
+    // are disabled (mono-energetic beam).
+    double TotalXSec(double energy, PID nu) const;
 
     // Metadata handlers
     std::vector<ProcessMetadata> Metadata() const;
@@ -157,17 +175,26 @@ class ProcessGroup {
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;
-    XSecSpline m_spline{};
+    GeometryXSecSpline m_splines{};
     bool m_use_spline{false};
 
     // Parameters
     std::vector<double> m_process_weights;
     double m_maxweight{};
+    double m_last_max_weight{};
     bool b_optimize{true}, b_calc_weights{};
 };
 
 std::vector<int> AllProcessIDs(const std::vector<ProcessGroup> &);
 std::vector<ProcessMetadata> AllProcessMetadata(const std::vector<ProcessGroup> &);
+
+// Per-group selection weights for an injected (nu, target) ray in geometry mode:
+// each group's matching-species max-weight, or 0 when the group's nucleus is not
+// the target. Selecting proportionally to these (rather than a group's total
+// weight) keeps an injected ray's species from being biased by a group's
+// unrelated processes.
+std::vector<double> GeometryGroupWeights(const std::vector<ProcessGroup> &groups, PID nu,
+                                         PID target);
 
 } // namespace achilles
 

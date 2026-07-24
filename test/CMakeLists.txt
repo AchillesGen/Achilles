@@ -34,6 +34,7 @@ add_executable(achilles-testsuite
     test_spinor.cc
     test_histogram.cc
     test_configuration.cc
+    test_settings_node.cc
     test_nuclear_model.cc
     test_event_writer.cc
     test_process_info.cc
@@ -46,6 +47,7 @@ add_executable(achilles-testsuite
     test_poincare.cc
     test_process.cc
     test_process_group.cc
+    test_xsec_spline.cc
     # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_cache.cc

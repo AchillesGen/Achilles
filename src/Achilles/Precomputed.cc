@@ -9,9 +9,7 @@
 #include "Achilles/Utilities.hh"
 #include "Achilles/Writers/EventWriter.hh"
 
-#ifdef ACHILLES_ENABLE_HEPMC3
 #include "Achilles/Writers/HepMC3EventWriter.hh"
-#endif
 
 #include "spdlog/spdlog.h"
 #include "yaml-cpp/yaml.h"
@@ -79,10 +77,8 @@ achilles::Precomputed::RunCascade::RunCascade(const std::string &config_file) {
     spdlog::trace("Outputing as {} format", output["Format"].as<std::string>());
     if(output["Format"].as<std::string>() == "Achilles") {
         writer = std::make_unique<AchillesWriter>(output["Name"].as<std::string>(), zipped);
-#ifdef ACHILLES_ENABLE_HEPMC3
     } else if(output["Format"].as<std::string>() == "HepMC3") {
         writer = std::make_unique<HepMC3Writer>(output["Name"].as<std::string>(), zipped);
-#endif
     } else {
         std::string msg = fmt::format("Achilles: Invalid output format requested {}",
                                       output["Format"].as<std::string>());

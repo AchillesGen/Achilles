@@ -32,7 +32,13 @@ void AdaptiveMap::LoadState(std::istream &in) {
 size_t AdaptiveMap::FindBin(size_t dim, double x) const {
     const auto edges = Edges(dim);
     auto it = std::lower_bound(edges.begin(), edges.end(), x);
-    return static_cast<size_t>(std::distance(edges.begin(), it)) - 1;
+    // Clamp into [0, m_bins - 1]: x <= edges.front() would otherwise underflow
+    // the unsigned index (lower_bound returns begin), and x > edges.back()
+    // would index one past the last bin.
+    const auto dist = std::distance(edges.begin(), it);
+    if(dist < 1) return 0;
+    const auto bin = static_cast<size_t>(dist) - 1;
+    return std::min(bin, m_bins - 1);
 }
 
 double AdaptiveMap::operator()(std::vector<double> &rans) {

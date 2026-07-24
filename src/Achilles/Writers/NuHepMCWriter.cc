@@ -48,9 +48,19 @@ static constexpr int Cascade = 29;
 
 void NuHepMCWriter::WriteHeader(const std::string &filename,
                                 const std::vector<ProcessGroup> &groups) {
+    auto run = std::make_shared<HepMC3::GenRunInfo>();
+    WriteHeader(run, filename, groups);
+
+    file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
+    if(!file->run_info()) { throw; }
+    spdlog::trace("Finished writing Header");
+}
+
+void NuHepMCWriter::WriteHeader(std::shared_ptr<HepMC3::GenRunInfo> run,
+                                const std::string &filename,
+                                const std::vector<ProcessGroup> &groups) {
     // Setup generator information
     spdlog::trace("Writing Header");
-    auto run = std::make_shared<HepMC3::GenRunInfo>();
     NuHepMC::GR2::WriteVersion(run);
 
     struct HepMC3::GenRunInfo::ToolInfo generator = {std::string("Achilles"),
@@ -128,10 +138,6 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     // TODO: Read this from run card
     // long nevents = 10;
     // NuHepMC::GC2::SetExposureNEvents(run, nevents);
-
-    file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
-    if(!file->run_info()) { throw; }
-    spdlog::trace("Finished writing Header");
 }
 
 int ToNuHepMC(achilles::ParticleStatus status) {
@@ -241,6 +247,108 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
         evt.add_vertex(vertex);
     }
 };
+
+namespace {
+// Appends an Achilles event history onto a GenEvent that an external driver
+// (NuGeometry) has seeded with the primary vertex and the incoming neutrino.
+// The neutrino is reused; everything else -- the nucleon-separation vertex, the
+// struck nucleon, the primary outgoing particles, and the cascade -- comes from
+// Achilles. The beam node is skipped (the driver's neutrino is the beam).
+// Vertex positions are Achilles' nucleus-center-relative positions; the global
+// detector position is recorded separately via E.R.5.
+struct AppendVisitor : achilles::HistoryVisitor {
+    GenEvent &evt;
+    GenVertexPtr primary; // driver's vertex; already carries the incoming nu
+    GenParticlePtr nu_in; // driver's incoming neutrino (reused, not duplicated)
+    double p_scale;       // Achilles MeV -> event momentum unit
+    double x_scale;       // Achilles fm  -> event length unit
+    std::map<achilles::Particle, GenParticlePtr, NuHepMCVisitor::compare> converted;
+
+    AppendVisitor(GenEvent &e, GenVertexPtr pv, GenParticlePtr nu, double ps, double xs)
+        : evt(e), primary(std::move(pv)), nu_in(std::move(nu)), p_scale(ps), x_scale(xs) {}
+
+    HepMC3::FourVector Position(const achilles::EventHistoryNode *node) const {
+        const auto p = node->Position();
+        return {p.X() * x_scale, p.Y() * x_scale, p.Z() * x_scale, 0};
+    }
+
+    GenParticlePtr ToGen(const achilles::Particle &part) {
+        auto it = converted.find(part);
+        if(it != converted.end()) return it->second;
+        HepMC3::FourVector mom{part.Px() * p_scale, part.Py() * p_scale, part.Pz() * p_scale,
+                               part.E() * p_scale};
+        auto gp = std::make_shared<GenParticle>(mom, static_cast<int>(part.ID()),
+                                                ToNuHepMC(part.Status()));
+        converted[part] = gp;
+        return gp;
+    }
+
+    void visit(achilles::EventHistoryNode *node) override {
+        const auto status = node->Status();
+        if(status == achilles::EventHistory::StatusCode::beam) return;
+
+        GenVertexPtr vertex;
+        if(status == achilles::EventHistory::StatusCode::primary) {
+            // Reuse the driver's vertex; the incoming nu is already attached, so
+            // only add the remaining incoming particle(s) (the struck nucleon).
+            vertex = primary;
+            vertex->set_position(Position(node));
+            for(const auto &part : node->ParticlesIn()) {
+                auto gp = ToGen(part);
+                if(gp != nu_in) vertex->add_particle_in(gp);
+            }
+        } else {
+            vertex = std::make_shared<GenVertex>(Position(node));
+            vertex->set_status(ToNuHepMC(status));
+            for(const auto &part : node->ParticlesIn()) vertex->add_particle_in(ToGen(part));
+            evt.add_vertex(vertex);
+        }
+        for(const auto &part : node->ParticlesOut()) vertex->add_particle_out(ToGen(part));
+    }
+};
+} // namespace
+
+void achilles::FillHepMC3Event(const achilles::Event &event, HepMC3::GenEvent &evt,
+                               const achilles::StatsData &results) {
+    if(evt.vertices().empty())
+        throw std::runtime_error("FillHepMC3Event: GenEvent has no pre-filled primary vertex");
+    auto primary = evt.vertices().front();
+    auto incoming = primary->particles_in();
+    if(incoming.empty())
+        throw std::runtime_error("FillHepMC3Event: primary vertex has no incoming neutrino");
+    auto nu_in = incoming.front();
+
+    // The driver placed its vertex at the global interaction point; that belongs
+    // in E.R.5, while the vertices themselves are nucleus-center-relative.
+    const auto lab_position = primary->position();
+
+    // Convert Achilles units (momenta in MeV, positions in fm) into the units the
+    // driver created the event with.
+    const double p_scale = (evt.momentum_unit() == HepMC3::Units::GEV) ? 1e-3 : 1.0;
+    const double x_scale =
+        NuHepMCVisitor::to_mm * ((evt.length_unit() == HepMC3::Units::CM) ? 0.1 : 1.0);
+
+    AppendVisitor visitor(evt, primary, nu_in, p_scale, x_scale);
+    // Reuse the driver's neutrino for Achilles' incoming lepton (lab frame).
+    visitor.converted[event.Leptons().front()] = nu_in;
+    event.History().WalkHistory(visitor);
+
+    NuHepMC::ER3::SetProcessID(evt, event.ProcessId());
+    NuHepMC::ER5::SetLabPosition(
+        evt, {lab_position.x(), lab_position.y(), lab_position.z(), lab_position.t()});
+
+    auto cross_section = std::make_shared<GenCrossSection>();
+    cross_section->set_cross_section(results.Mean(), results.Error(),
+                                     static_cast<long>(results.FiniteCalls()),
+                                     static_cast<long>(results.Calls()));
+    evt.set_cross_section(cross_section);
+
+    NuHepMC::add_attribute(evt, "Flux", event.Flux());
+    // Geometry mode keeps the partial-unweight weight max(1, raw/max) ~ 1 on
+    // the event in both sampling modes; the sigma normalization is carried by
+    // the E.C.4 running estimate above (pb, per atom).
+    evt.weight("CV") = event.Weight();
+}
 
 void NuHepMCWriter::Write(const achilles::Event &event) {
     spdlog::debug("Writing out event");

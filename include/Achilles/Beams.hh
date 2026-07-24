@@ -11,6 +11,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/PDFBase.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Poincare.hh"
 
 namespace achilles {
 
@@ -100,9 +101,15 @@ class FlatFlux : public FluxType {
     double EvaluateFlux(const FourVector &) const override { return 1; }
 
   private:
-    double m_min_energy, m_max_energy;
+    double m_min_energy, m_max_energy, m_flux_integral;
 };
 
+// Beam for running inside an external geometry driver (e.g. NuGeometry). During
+// warm-up it behaves as a FlatFlux over [EnergyRange] so the integrator trains
+// over the full range the driver may inject; in Generate mode it serves the
+// currently-injected ray as a delta. The driver supplies lab-frame rays; the
+// ray is rotated onto +z for the (z-collinear) internals and the rotation is
+// stored so the generated event can be rotated back to the lab frame.
 class GeometryBeam : public FluxType {
   public:
     enum class Mode {
@@ -110,19 +117,30 @@ class GeometryBeam : public FluxType {
         Generate,
     };
 
-    GeometryBeam(const YAML::Node &);
+    explicit GeometryBeam(const YAML::Node &);
     int NVariables() const override { return 1; }
     FourVector Flux(const std::vector<double> &, double) const override;
     double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
-    std::string Type() const override { return "GeometryBeam"; }
-    double MinEnergy() const override;
-    double MaxEnergy() const override;
-    double EvaluateFlux(const FourVector &) const override;
+    std::string Type() const override { return "Geometry"; }
+    double MinEnergy() const override { return m_min_energy; }
+    double MaxEnergy() const override { return m_max_energy; }
+    double EvaluateFlux(const FourVector &) const override { return 1; }
+
     void SetMode(Mode mode) { m_mode = mode; }
-    void SetInjected(int nu_pid, const FourVector &);
+    Mode GetMode() const { return m_mode; }
+    // Inject one lab-frame ray; it is rotated onto +z and the rotation stored.
+    void SetInjected(const FourVector &lab_ray);
+    // The currently injected ray (rotated onto +z; energy unchanged).
+    const FourVector &Injected() const { return m_injected; }
+    // Rotation taking the lab ray onto +z; RotateBack maps the z-frame event
+    // back to the lab frame.
+    const Poincare &Rotation() const { return m_rotation; }
 
   private:
-    Mode m_mode;
+    Mode m_mode{Mode::WarmUp};
+    double m_min_energy{}, m_max_energy{}, m_flux_integral{};
+    FourVector m_injected{};
+    Poincare m_rotation{};
 };
 
 // Energy support [Min, Max] shared by every species in a beam.

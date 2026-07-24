@@ -5,6 +5,8 @@
 #include "Achilles/YAML/Beams.hh"
 #include "yaml-cpp/yaml.h"
 
+#include <cmath>
+
 using achilles::PID;
 
 TEST_CASE("Flux file loaders", "[Beams]") {
@@ -142,4 +144,82 @@ Files:
 )beam");
         CHECK_THROWS(node.as<achilles::Beam>());
     }
+}
+
+TEST_CASE("GeometryBeam", "[Beams]") {
+    auto node = YAML::Load(R"beam(
+Type: Geometry
+EnergyRange: [0, 1000]
+Species: [12, 14, -12, -14]
+)beam");
+
+    SECTION("Warm-up behaves like a flat flux over the range") {
+        achilles::GeometryBeam beam(node);
+        CHECK(beam.GetMode() == achilles::GeometryBeam::Mode::WarmUp);
+        CHECK(beam.MinEnergy() == 0);
+        CHECK(beam.MaxEnergy() == 1000);
+        CHECK(beam.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
+        std::vector<double> rans(1);
+        CHECK(beam.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1000);
+        CHECK(rans[0] == 0.5);
+    }
+
+    SECTION("Generate mode rejects injected energies outside the configured range") {
+        achilles::GeometryBeam beam(node);
+        beam.SetMode(achilles::GeometryBeam::Mode::Generate);
+        std::vector<double> rans(1);
+
+        // In range: the flat-flux phase-space volume, ran[0] in [0, 1].
+        beam.SetInjected({500, 0, 0, 500});
+        CHECK(beam.GenerateWeight(beam.Injected(), rans, 0) == 1000);
+        CHECK(rans[0] == Approx(0.5));
+
+        // Above the range: infinite volume (zero density -> rejected trial),
+        // and ran[0] clamped so downstream grid lookups stay in bounds.
+        beam.SetInjected({2000, 0, 0, 2000});
+        CHECK(std::isinf(beam.GenerateWeight(beam.Injected(), rans, 0)));
+        CHECK(rans[0] == 1.0);
+
+        // Below the per-process kinematic minimum: same rejection path.
+        beam.SetInjected({100, 0, 0, 100});
+        CHECK(std::isinf(beam.GenerateWeight(beam.Injected(), rans, 200)));
+        CHECK(rans[0] == 0.0);
+    }
+
+    SECTION("Generate mode serves the injected ray rotated onto +z") {
+        achilles::GeometryBeam beam(node);
+        beam.SetMode(achilles::GeometryBeam::Mode::Generate);
+
+        achilles::FourVector ray(1000, 300, -400, 500); // off-axis lab ray
+        beam.SetInjected(ray);
+
+        auto z = beam.Flux({}, 0);
+        CHECK(z.E() == Approx(ray.E()));
+        CHECK(z.Px() == Approx(0).margin(1e-9));
+        CHECK(z.Py() == Approx(0).margin(1e-9));
+        CHECK(z.Pz() == Approx(ray.P()));
+
+        // Rotating back recovers the original lab ray.
+        achilles::FourVector back = z;
+        beam.Rotation().RotateBack(back);
+        CHECK(back.E() == Approx(ray.E()));
+        CHECK(back.Px() == Approx(ray.Px()));
+        CHECK(back.Py() == Approx(ray.Py()));
+        CHECK(back.Pz() == Approx(ray.Pz()));
+    }
+}
+
+TEST_CASE("Geometry beam from YAML", "[Beams]") {
+    auto node = YAML::Load(R"beam(
+Type: Geometry
+EnergyRange: [0, 2000]
+Species: [12, 14]
+)beam");
+    auto beam = node.as<achilles::Beam>();
+
+    CHECK(beam.BeamIDs() == std::set<PID>{PID(12), PID(14)});
+    CHECK(beam.Domain().Min() == 0);
+    CHECK(beam.Domain().Max() == 2000);
+    // All species share one GeometryBeam object.
+    CHECK(beam.at(PID(12)) == beam.at(PID(14)));
 }

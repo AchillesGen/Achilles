@@ -306,6 +306,12 @@ Settings::Settings(const std::string &filename, const std::string &rules) {
 
 Settings::Settings(const YAML::Node &node) {
     m_settings = node;
+    // Resolve nested !include tags so a node forwarded from an embedding
+    // application (e.g. the NuGeometry geometry run card) behaves the same as
+    // one loaded from a file.
+    MutableYAMLVisitor([](YAML::Node scalar) {
+        if(scalar.Tag() == "!include") { scalar = IncludeFile(scalar.Scalar()); }
+    })(m_settings);
 }
 
 void Settings::Print() const {

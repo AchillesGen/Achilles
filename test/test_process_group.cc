@@ -3,13 +3,115 @@
 
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Process.hh"
+#include "Achilles/Random.hh"
 #include "Achilles/XSecBackend.hh"
 #include "mock_classes.hh"
+
+#include <array>
+#include <numeric>
 
 using achilles::Particle;
 using achilles::RegistrableBackend;
 
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
+
+// A process whose only relevant property here is its incoming lepton species.
+static achilles::Process MakeProcess(achilles::PID nu) {
+    achilles::ProcessInfo info;
+    info.m_leptonic = {nu, {nu}};
+    YAML::Node config;
+    return achilles::Process(info, std::make_unique<achilles::NoUnweighter>(config));
+}
+
+TEST_CASE("Geometry process selection", "[Process][Geometry]") {
+    auto beam = std::make_shared<MockBeam>();
+    auto nucleus = std::make_shared<MockNucleus>();
+
+    // Group with three processes: numu, numu, nue.
+    achilles::ProcessGroup group(beam, nucleus);
+    group.AddProcess(MakeProcess(achilles::PID(14)));
+    group.AddProcess(MakeProcess(achilles::PID(14)));
+    group.AddProcess(MakeProcess(achilles::PID(12)));
+    group.ProcessWeights() = {0.5, 0.3, 0.2}; // normalized within the group
+    group.MaxWeight() = 10.0;
+
+    SECTION("NeutrinoMaxWeight sums only the matching species") {
+        CHECK(group.NeutrinoMaxWeight(achilles::PID(14)) == Approx(8.0));
+        CHECK(group.NeutrinoMaxWeight(achilles::PID(12)) == Approx(2.0));
+        CHECK(group.NeutrinoMaxWeight(achilles::PID(16)) == 0.0);
+    }
+
+    SECTION("SelectProcess restricts to the requested species, weighted") {
+        achilles::Random::Instance().Seed(12345);
+        std::array<int, 3> counts{0, 0, 0};
+        const int N = 400000;
+        for(int i = 0; i < N; ++i) counts[group.SelectProcess(achilles::PID(14))]++;
+
+        CHECK(counts[2] == 0); // nue process never chosen for a numu ray
+        // The two numu processes are chosen in proportion to their weights.
+        CHECK(static_cast<double>(counts[0]) / counts[1] == Approx(0.5 / 0.3).epsilon(0.02));
+
+        // A nue ray always selects the single nue process.
+        for(int i = 0; i < 100; ++i) CHECK(group.SelectProcess(achilles::PID(12)) == 2);
+    }
+}
+
+TEST_CASE("Geometry group selection", "[Process][Geometry]") {
+    auto beam = std::make_shared<MockBeam>();
+    const achilles::PID carbon{1000060120}, hydrogen{1000010010};
+
+    // Group A (carbon): tiny numu weight but huge nue weight.
+    auto nucA = std::make_shared<MockNucleus>();
+    ALLOW_CALL(*nucA, ID()).RETURN(carbon);
+    achilles::ProcessGroup groupA(beam, nucA);
+    groupA.AddProcess(MakeProcess(achilles::PID(14)));
+    groupA.AddProcess(MakeProcess(achilles::PID(12)));
+    groupA.ProcessWeights() = {0.01, 0.99};
+    groupA.MaxWeight() = 100.0; // numu maxweight = 1.0, nue maxweight = 99
+
+    // Group B (carbon): numu only.
+    auto nucB = std::make_shared<MockNucleus>();
+    ALLOW_CALL(*nucB, ID()).RETURN(carbon);
+    achilles::ProcessGroup groupB(beam, nucB);
+    groupB.AddProcess(MakeProcess(achilles::PID(14)));
+    groupB.ProcessWeights() = {1.0};
+    groupB.MaxWeight() = 50.0; // numu maxweight = 50
+
+    // Group C (hydrogen): numu, but the wrong target.
+    auto nucC = std::make_shared<MockNucleus>();
+    ALLOW_CALL(*nucC, ID()).RETURN(hydrogen);
+    achilles::ProcessGroup groupC(beam, nucC);
+    groupC.AddProcess(MakeProcess(achilles::PID(14)));
+    groupC.ProcessWeights() = {1.0};
+    groupC.MaxWeight() = 1000.0;
+
+    std::vector<achilles::ProcessGroup> groups;
+    groups.push_back(std::move(groupA));
+    groups.push_back(std::move(groupB));
+    groups.push_back(std::move(groupC));
+
+    SECTION("Weights use only the matching species on the target nucleus") {
+        auto w = achilles::GeometryGroupWeights(groups, achilles::PID(14), carbon);
+        REQUIRE(w.size() == 3);
+        CHECK(w[0] == Approx(1.0));  // A: only the numu part, not its total of 100
+        CHECK(w[1] == Approx(50.0)); // B
+        CHECK(w[2] == 0.0);          // C: wrong target
+        // The numu-on-carbon envelope (what EventGen::VertexEnvelope sums).
+        CHECK(std::accumulate(w.begin(), w.end(), 0.0) == Approx(51.0));
+    }
+
+    SECTION("Selection frequencies follow the matching weights") {
+        auto w = achilles::GeometryGroupWeights(groups, achilles::PID(14), carbon);
+        achilles::Random::Instance().Seed(987);
+        std::array<int, 3> counts{0, 0, 0};
+        const int N = 400000;
+        for(int i = 0; i < N; ++i) counts[achilles::Random::Instance().SelectIndex(w)]++;
+
+        CHECK(counts[2] == 0); // wrong-target group never selected
+        // B is chosen ~50x more than A (50.0 : 1.0), despite A's large nue weight.
+        CHECK(static_cast<double>(counts[1]) / counts[0] == Approx(50.0).epsilon(0.05));
+    }
+}
 
 TEST_CASE("Process Grouping Setup", "[Process]") {
     auto beam = std::make_shared<MockBeam>();

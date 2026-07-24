@@ -51,6 +51,14 @@ class Interp1D {
     const double &min() const { return knotX.front(); }
     const double &max() const { return knotX.back(); }
 
+    /// Allow linear extrapolation outside the knot range using the boundary
+    /// slope. Off by default, so existing callers keep throwing on out-of-range.
+    void AllowExtrapolation(bool allow = true) { kExtrapolate = allow; }
+
+    /// First derivative of the interpolant at x. For points outside the knot
+    /// range the slope of the nearest end segment is returned.
+    double Derivative(const double &) const;
+
     void SetData(const std::vector<double> &x, const std::vector<double> &y) {
         knotX = x;
         knotY = y;
@@ -84,6 +92,7 @@ class Interp1D {
     InterpolationType kMode{InterpolationType::CubicSpline};
     static constexpr double maxDeriv = 1.E30;
     bool kSplineInit{};
+    bool kExtrapolate{false};
     size_t polyOrder{4};
     std::vector<double> knotX, knotY, derivs2;
 };
