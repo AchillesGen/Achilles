@@ -131,13 +131,19 @@ add_library(event_gen SHARED
     EventGen.cc
     Debug.cc
 )
-if(ACHILLES_ENABLE_HEPMC3)
-target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
-endif()
 target_link_libraries(event_gen PRIVATE achilles_options achilles_warnings
                                 PUBLIC physics mappers fortran_interface nuclear_models
                                        AchillesCascadeInteractions AchillesWriters)
 list(APPEND achilles_targets event_gen)
+
+# Aggregate interface target for downstream consumers: find_package(Achilles)
+# exposes achilles::Achilles. event_gen links the physics / mappers / writers /
+# cascade stack PUBLIC, so this pulls the whole event-generation API plus the
+# public headers.
+add_library(Achilles INTERFACE)
+add_library(achilles::Achilles ALIAS Achilles)
+target_link_libraries(Achilles INTERFACE achilles_public_headers event_gen)
+list(APPEND achilles_targets Achilles)
 
                             # pybind11_add_module(_achilles MODULE
                             #     # Main file

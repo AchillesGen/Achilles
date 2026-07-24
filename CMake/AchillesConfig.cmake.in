@@ -2,10 +2,15 @@
 
 include(CMakeFindDependencyMacro)
 
+# Achilles' bundled find-modules (e.g. FindFilesystem) are installed next to this
+# config so downstream resolves the same imported targets (achilles::utilities
+# links std::filesystem PUBLIC).
+list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+find_dependency(Filesystem)
+
 # Build-time feature flags, baked in at configure time.
 set(ACHILLES_ENABLE_SHERPA @ACHILLES_ENABLE_SHERPA@)
 set(ACHILLES_ENABLE_ROOT   @ACHILLES_ENABLE_ROOT@)
-set(ACHILLES_ENABLE_HEPMC3 @ACHILLES_ENABLE_HEPMC3@)
 set(ACHILLES_ENABLE_GZIP   @ACHILLES_ENABLE_GZIP@)
 
 if(ACHILLES_ENABLE_GZIP)
@@ -30,13 +35,11 @@ endif()
 if(NOT TARGET yaml-cpp::yaml-cpp)
     find_dependency(yaml-cpp)
 endif()
-if(ACHILLES_ENABLE_HEPMC3)
-    if(NOT TARGET HepMC3::HepMC3)
-        find_dependency(HepMC3)
-    endif()
-    if(NOT TARGET NuHepMC::CPPUtils)
-        find_dependency(NuHepMC_CPPUtils)
-    endif()
+if(NOT TARGET HepMC3::HepMC3)
+    find_dependency(HepMC3)
+endif()
+if(NOT TARGET NuHepMC::CPPUtils)
+    find_dependency(NuHepMC_CPPUtils)
 endif()
 
 if(NOT TARGET achilles::PublicHeaders)

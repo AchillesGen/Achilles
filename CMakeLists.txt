@@ -219,7 +219,6 @@ include(CMakePackageConfigHelpers)
 # the right find_dependency() calls (see AchillesConfig.cmake.in).
 set(ACHILLES_ENABLE_SHERPA ${ACHILLES_ENABLE_SHERPA})
 set(ACHILLES_ENABLE_ROOT   ${ACHILLES_ENABLE_ROOT})
-set(ACHILLES_ENABLE_HEPMC3 ${ACHILLES_ENABLE_HEPMC3})
 set(ACHILLES_ENABLE_GZIP   ${ACHILLES_ENABLE_GZIP})
 
 configure_package_config_file(
@@ -238,6 +237,7 @@ install(
     FILES
         ${CMAKE_BINARY_DIR}/CMake/AchillesConfig.cmake
         ${CMAKE_BINARY_DIR}/CMake/AchillesConfigVersion.cmake
+        ${CMAKE_SOURCE_DIR}/CMake/FindFilesystem.cmake
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
 )
 
