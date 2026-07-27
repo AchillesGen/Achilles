@@ -88,7 +88,8 @@ class Cascade {
     /// TODO: Should the ProbabilityType be part of the interaction class or the cascade class?
     Cascade() = default;
     Cascade(InteractionHandler, const ProbabilityType &, Algorithm, const InMedium &,
-            bool potential_prob = false, double dist = 0.03);
+            std::string_view decay_file = default_decay_file, bool potential_prob = false,
+            double dist = 0.03);
     Cascade(Cascade &&) = default;
     Cascade &operator=(Cascade &&) = default;
 
@@ -211,8 +212,7 @@ class Cascade {
     std::set<std::size_t> kickedIdxs;
     double distance{}, timeStep{}, currentTime{};
     InteractionHandler m_interactions{};
-    // TODO: Allow user to define externally which file to use
-    DecayHandler m_decays{"data/decays.yml"};
+    DecayHandler m_decays;
     std::function<double(double, double)> probability;
     std::function<size_t(Cascade *, size_t, Event &)> algorithm;
     Nucleus *m_nucleus;
@@ -242,7 +242,9 @@ template <> struct convert<achilles::Cascade> {
         auto potentialProp = node["PotentialProp"].as<bool>();
         auto distance = node["Step"].as<double>();
         auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
-        cascade = achilles::Cascade(std::move(handler), probType, algorithm, mediumType,
+        std::string_view decay_file = achilles::default_decay_file;
+        if(node["DecayFile"]) decay_file = node["DecayFile"].as<std::string_view>();
+        cascade = achilles::Cascade(std::move(handler), probType, algorithm, mediumType, decay_file,
                                     potentialProp, distance);
         return true;
     }

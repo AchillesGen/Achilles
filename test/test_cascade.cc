@@ -65,7 +65,8 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .RETURN(5);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
-                                  achilles::Cascade::InMedium::None, true);
+                                  achilles::Cascade::InMedium::None, achilles::default_decay_file,
+                                  true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
 
@@ -165,7 +166,8 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .RETURN(5);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
-                                  achilles::Cascade::InMedium::None, true);
+                                  achilles::Cascade::InMedium::None, achilles::default_decay_file,
+                                  true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
 
