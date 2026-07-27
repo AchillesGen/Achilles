@@ -6,7 +6,18 @@
 #include "Achilles/Utilities.hh"
 #include "spdlog/spdlog.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+#include <regex>
+#pragma GCC diagnostic pop
+
 using achilles::Filesystem::Cache;
+
+bool achilles::SystemVariables::IsPluginName(const std::string &filename) {
+    static const std::regex validPluginName{std::string(pluginBase) + ".*\\" +
+                                            std::string(libSuffix)};
+    return std::regex_search(filename, validPluginName);
+}
 
 achilles::PathVariables &achilles::PathVariables::Instance() {
     static PathVariables global_paths;

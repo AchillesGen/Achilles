@@ -9,7 +9,6 @@
 #include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
 #include <dlfcn.h>
-#include <regex>
 
 using achilles::Plugin::Manager;
 
@@ -24,7 +23,7 @@ void Manager::Open() {
     auto paths = achilles::Filesystem::GetPluginPaths();
     const auto load_plugin = [&](const auto &file) {
         auto filename = file.path().filename().string();
-        if(std::regex_search(filename, SystemVariables::validPluginName)) {
+        if(SystemVariables::IsPluginName(filename)) {
             void *handle = dlopen(file.path().c_str(), RTLD_NOW);
             spdlog::debug("PluginManager: Loading plugin {}", filename);
             if(!handle) {

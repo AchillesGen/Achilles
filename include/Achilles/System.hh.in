@@ -13,11 +13,8 @@
 #pragma GCC diagnostic pop
 #endif
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnull-dereference"
-#include <regex>
-#pragma GCC diagnostic pop
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <system_error>
@@ -43,12 +40,15 @@ namespace achilles {
 class ProcessGroup;
 
 namespace SystemVariables {
-    const std::string libPrefix = "@LIBPREFIX@";
-    const std::string libSuffix = "@LIBSUFFIX@";
-    const std::string pluginBase = libPrefix + "AchillesPlugin";
-    const std::string pluginRegex = pluginBase + ".*\\" + libSuffix;
-    const std::regex validPluginName(pluginRegex);
-}
+    inline constexpr std::string_view libPrefix = "@LIBPREFIX@";
+    inline constexpr std::string_view libSuffix = "@LIBSUFFIX@";
+    inline constexpr std::string_view pluginBase = "@LIBPREFIX@"
+                                                   "AchillesPlugin";
+
+    // Defined in System.cc to keep <regex> and the per-TU cost of building the
+    // regex out of every translation unit that includes this header.
+    bool IsPluginName(const std::string &filename);
+} // namespace SystemVariables
 
 class PathVariables {
   public:
