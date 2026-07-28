@@ -61,6 +61,9 @@ class ChannelFlow(Flow):
 
     requires_training = True
 
+    # y-axis label for plot_loss; backends with a different objective override it.
+    loss_ylabel = "importance-weighted NLL loss"
+
     def __init__(self, ndims, nchannels, lr=1.0e-3, channel_select="learned", **params):
         torch = require_torch()
         self.torch = torch
@@ -205,7 +208,7 @@ class ChannelFlow(Flow):
         fig, ax = plt.subplots()
         ax.plot(iterations, losses, marker=".", linewidth=1)
         ax.set_xlabel("training iteration")
-        ax.set_ylabel("importance-weighted NLL loss")
+        ax.set_ylabel(self.loss_ylabel)
         ax.set_title(f"{self.__class__.__name__} training loss")
         ax.grid(True, alpha=0.3)
         fig.tight_layout()

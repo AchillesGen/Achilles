@@ -41,6 +41,9 @@ def _require_flow_matching():
 
 
 class FlowMatchingFlow(ChannelFlow):
+    # Objective is weighted conditional flow matching + categorical NLL, not the base MLE.
+    loss_ylabel = "weighted CFM + categorical NLL loss"
+
     def _build_cores(self, hidden=64, step_size=0.05, method="midpoint", conditional=False,
                      **_unused):
         torch = self.torch
@@ -155,4 +158,6 @@ class FlowMatchingFlow(ChannelFlow):
 
         loss.backward()
         self.optimizer.step()
+        # Record for plot_loss (the base train() does this; this override must too).
+        self.loss.append(loss.detach().cpu().item())
         return float(loss.detach().cpu().item())
