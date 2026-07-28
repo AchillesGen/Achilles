@@ -34,6 +34,7 @@ void FlowIntegrator::operator()(Integrand<FourVector> &func) {
 
 void FlowIntegrator::Optimize(Integrand<FourVector> &func) {
     this->Optimize<FourVector>(func);
+    this->Plot();
 }
 
 std::vector<std::vector<achilles::FourVector>>
