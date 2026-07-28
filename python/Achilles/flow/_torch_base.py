@@ -23,6 +23,7 @@ likelihood-based (e.g. flow matching) override :meth:`train`.
 """
 
 import math
+from datetime import datetime
 
 import numpy as np
 import matplotlib
@@ -179,7 +180,7 @@ class ChannelFlow(Flow):
         self.loss.append(loss.detach().cpu().item())
         return float(loss.detach().cpu().item())
 
-    def plot_loss(self, path="loss.png"):
+    def plot_loss(self, path=None):
         """Save a loss-vs-iteration curve for diagnosing training convergence.
 
         Each entry of ``self.loss`` is the importance-weighted NLL from one online
@@ -188,16 +189,24 @@ class ChannelFlow(Flow):
         iterations (``Epochs``) are needed; a noisy/non-decreasing curve at fixed
         iteration means more events per batch (``NCalls``) are needed to tame the
         gradient variance from the spread of importance weights.
+
+        With no explicit ``path`` the file is tagged with the backend (e.g.
+        ``normflow``, ``flowmatchingflow``) and a run timestamp so repeated runs
+        accumulate distinct plots instead of overwriting a single ``loss.png``.
         """
         if not self.loss:
             return
+        if path is None:
+            model = self.__class__.__name__.lower()
+            stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            path = f"loss_{model}_{stamp}.png"
         iterations = np.arange(1, len(self.loss) + 1)
         losses = np.array(self.loss)
         fig, ax = plt.subplots()
         ax.plot(iterations, losses, marker=".", linewidth=1)
         ax.set_xlabel("training iteration")
         ax.set_ylabel("importance-weighted NLL loss")
-        ax.set_title("Flow training loss")
+        ax.set_title(f"{self.__class__.__name__} training loss")
         ax.grid(True, alpha=0.3)
         fig.tight_layout()
         fig.savefig(path, dpi=150)
