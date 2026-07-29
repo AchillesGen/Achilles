@@ -141,32 +141,36 @@ target_link_libraries(event_gen PRIVATE project_warnings
                                        ${AchillesCascadeInteractionsLink}) #fortran_interface
 list(APPEND achilles_targets event_gen)
 
-                            # pybind11_add_module(_achilles MODULE
-                            #     # Main file
-                            #     PyBindings.cc
-                            #
-                            #     # Utilities
-                            #     LoggingModule.cc
-                            #     ConstantsModule.cc
-                            #     InterpolationModule.cc
-                            #
-                            #     # Physics objects
-                            #     VectorModule.cc
-                            #     ParticleModule.cc
-                            #     ParticleInfoModule.cc
-                            #     NucleusModule.cc
-                            #
-                            #     # Calculation modules
-                            #     InteractionsModule.cc
-                            #     CascadeModule.cc
-                            # )
-                            # target_link_libraries(_achilles PRIVATE project_warnings
-                            #                               PUBLIC spdlog::spdlog utilities physics)
+if(ACHILLES_ENABLE_PYTHON)
+    pybind11_add_module(_achilles MODULE
+        # Main file
+        PyBindings.cc
+        AchillesInit.cc
+    )
+target_link_libraries(_achilles PRIVATE project_warnings
+                                PUBLIC event_gen cmake_git_version_tracking plugin_manager dl)
+# _achilles lives in the achilles package dir; the shared libraries are in the
+# lib/ subdir (achilles/lib), so point the rpath there ($ORIGIN/lib), not at a
+# top-level ../lib.
+set_target_properties(_achilles PROPERTIES
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "$<IF:$<PLATFORM_ID:Darwin>,@loader_path/lib,$ORIGIN/lib>")
+install(TARGETS _achilles DESTINATION achilles)
+endif(ACHILLES_ENABLE_PYTHON)
 
-add_executable(achilles main.cc)
+add_executable(achilles main.cc AchillesInit.cc)
 target_link_libraries(achilles PRIVATE project_options project_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles plugin_manager)
+# Like _achilles, the executable lives in the package dir and needs achilles/lib.
+# Bake the rpath at build time: macOS install-time rpath rewriting of executables
+# is unreliable and otherwise leaves the binary with no rpath (delocate then
+# cannot resolve its @rpath dependencies).
+if(SKBUILD)
+    set_target_properties(achilles PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "$<IF:$<PLATFORM_ID:Darwin>,@loader_path/lib,$ORIGIN/lib>")
+endif()
 
 # TODO: Change the name of the option to be more clear
 if(ACHILLES_ENABLE_CASCADE_TEST)
@@ -199,16 +203,37 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
 
 include(GNUInstallDirs)
 
+# In a wheel, install everything inside the achilles package directory:
+# This keeps the libraries inside the package so auditwheel does not orphan them
+if(SKBUILD)
+    set(achilles_runtime_dest achilles)
+    set(achilles_library_dest achilles/lib)
+else()
+    set(achilles_runtime_dest ${CMAKE_INSTALL_BINDIR})
+    set(achilles_library_dest ${CMAKE_INSTALL_LIBDIR})
+endif()
+
 # TODO: Ensure that all packages installed by CPM are included when installing
 install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt docopt #pybind11 fortran_interface_f
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${achilles_library_dest}
+        RUNTIME DESTINATION ${achilles_runtime_dest}
         INCLUDES DESTINATION include
 )
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Achilles
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+# Some CPM dependencies hardcode a top-level lib/ in their own install rules and
+# ignore CMAKE_INSTALL_LIBDIR, so they land outside achilles/lib where the
+# $ORIGIN rpath cannot reach them. Install those targets into achilles/lib too.
+if(SKBUILD)
+    foreach(_straggler nuhepmc_cpputils yaml-fortran)
+        if(TARGET ${_straggler})
+            install(TARGETS ${_straggler} LIBRARY DESTINATION achilles/lib)
+        endif()
+    endforeach()
+endif()
 # install(EXPORT achilles-targets
 #     FILE achilles-targets.cmake
 #     NAMESPACE achilles::

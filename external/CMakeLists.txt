@@ -78,13 +78,34 @@ CPMAddPackage(
         "GIT_FAIL_IF_NONZERO_EXIT OFF"
 )
 
+# This static library gets linked into the _achilles Python extension (a shared
+# object), so its objects must be position-independent.
+if(TARGET cmake_git_version_tracking)
+    set_target_properties(cmake_git_version_tracking PROPERTIES
+        POSITION_INDEPENDENT_CODE ON)
+endif()
+
+if(ACHILLES_ENABLE_PYTHON)
+find_package(python COMPONENTS Interpreter Development)
+CPMFindPackage(
+    NAME pybind11
+    VERSION 2.13.6
+    GITHUB_REPOSITORY pybind/pybind11
+    GIT_TAG "v2.13.6"
+)
+endif(ACHILLES_ENABLE_PYTHON)
+
 # Install testing framework
 if(ACHILLES_ENABLE_TESTING)
     # Catch2
+    # SYSTEM YES treats Catch2's bundled headers as system headers so that
+    # the project's -Wconversion -Werror does not fail on warnings triggered
+    # inside Catch2's own templates (e.g. the random/floating-point generators).
     CPMAddPackage(
         NAME catch2
         GITHUB_REPOSITORY catchorg/Catch2
-        GIT_TAG v2.13.6
+        GIT_TAG v3.15.1
+        SYSTEM YES
         OPTIONS
             "CATCH_ENABLE_COVERAGE"
     )
@@ -94,7 +115,7 @@ if(ACHILLES_ENABLE_TESTING)
     CPMAddPackage(
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
-        VERSION 47
+        VERSION 48
     )
 
     # Fortran Unit Tests
