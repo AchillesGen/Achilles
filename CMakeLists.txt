@@ -5,8 +5,8 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
-# Set the project name and basic settings
-project(ACHILLES LANGUAGES CXX VERSION 1.0.0)
+# Set the project name and basic settings.
+project(ACHILLES LANGUAGES C CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 # RPATH handling
