@@ -8,7 +8,7 @@ using achilles::BeamMapper;
 void BeamMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
     auto beam_id = *m_beam->BeamIDs().begin();
     // TODO: Should Masses().back() be the mass of the final state hadronic system or the initial?
-    event.Momentum()[m_idx] = m_beam->Flux(beam_id, rans, (Smin() - Masses()[1]) / (2 * sqrt(Masses()[1])));
+    event.addLeptonIn(m_beam->Flux(beam_id, rans, (Smin() - Masses()[1]) / (2 * sqrt(Masses()[1]))));
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
 #endif
@@ -17,7 +17,7 @@ void BeamMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
 double BeamMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
     auto beam_id = *m_beam->BeamIDs().begin();
     // TODO: Should Masses().back() be the mass of the final state hadronic system or the initial?
-    double wgt = m_beam->GenerateWeight(beam_id, event.Momentum()[m_idx], rans,
+    double wgt = m_beam->GenerateWeight(beam_id, event.LeptonsIn()[0].Momentum(), rans,
                                       (Smin() - Masses()[1]) / (2 * sqrt(Masses()[1])));
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);

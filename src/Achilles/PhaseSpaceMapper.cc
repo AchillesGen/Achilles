@@ -21,7 +21,6 @@ void achilles::PSMapper::GeneratePoint(Event& event, const std::vector<double> &
     // 3. Momentum of all outgoing parts of the leptonic tensor
     // 4. Momentum of all outgoing hadrons
     // 5. Momentum of all spectators
-    event.Momentum().resize(size());
     lbeam->GeneratePoint(event, lbeamRans);
     hbeam->GeneratePoint(event, hbeamRans);
     finalstate->GeneratePoint(event, mainRans);

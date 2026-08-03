@@ -260,8 +260,8 @@ bool achilles::EventGen::GenerateSingleEvent() {
     event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
                               EventHistory::StatusCode::target);
     // Setup beam in history
-    auto init_lep = event.Leptons()[0];
-    auto init_beam = init_lep;
+    Particle init_lep = event.LeptonsIn()[0];
+    Particle init_beam = init_lep;
     init_beam.Status() = ParticleStatus::beam;
     const double max_energy = beam->MaxEnergy();
     init_beam.Momentum() = {max_energy, 0, 0, max_energy};

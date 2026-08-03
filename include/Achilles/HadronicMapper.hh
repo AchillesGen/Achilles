@@ -14,7 +14,7 @@ class Event;
 
 class HadronicBeamMapper : public Mapper<Event> {
   public:
-    HadronicBeamMapper(const ProcessInfo &info, size_t idx) : m_info{info}, m_idx{idx} {}
+    HadronicBeamMapper(const ProcessInfo &info) : m_info{info} {}
 
     void GeneratePoint(Event&, const std::vector<double> &) override = 0;
     double GenerateWeight(const Event&, std::vector<double> &) override = 0;
@@ -22,21 +22,17 @@ class HadronicBeamMapper : public Mapper<Event> {
     static std::string Name() { return "Hadronic Initial State"; }
 
   protected:
-    size_t HadronIdx() const { return m_idx; }
     ProcessInfo m_info;
-
-  private:
-    size_t m_idx;
 };
 
 class QESpectralMapper
     : public HadronicBeamMapper,
-      Registrable<HadronicBeamMapper, QESpectralMapper, const ProcessInfo &, size_t> {
+      Registrable<HadronicBeamMapper, QESpectralMapper, const ProcessInfo &> {
   public:
-    QESpectralMapper(const ProcessInfo &info, size_t idx);
+    QESpectralMapper(const ProcessInfo &info);
     static std::string Name() { return "OneBodySpectral"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
-        return std::make_unique<QESpectralMapper>(info, idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info) {
+        return std::make_unique<QESpectralMapper>(info);
     }
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
@@ -52,12 +48,12 @@ class QESpectralMapper
 
 class CoherentMapper
     : public HadronicBeamMapper,
-      Registrable<HadronicBeamMapper, CoherentMapper, const ProcessInfo &, size_t> {
+      Registrable<HadronicBeamMapper, CoherentMapper, const ProcessInfo &> {
   public:
-    CoherentMapper(const ProcessInfo &info, size_t idx);
+    CoherentMapper(const ProcessInfo &info);
     static std::string Name() { return "Coherent"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
-        return std::make_unique<CoherentMapper>(info, idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info) {
+        return std::make_unique<CoherentMapper>(info);
     }
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
@@ -70,12 +66,12 @@ class CoherentMapper
 
 class IntfSpectralMapper
     : public HadronicBeamMapper,
-      Registrable<HadronicBeamMapper, IntfSpectralMapper, const ProcessInfo &, size_t> {
+      Registrable<HadronicBeamMapper, IntfSpectralMapper, const ProcessInfo &> {
   public:
-    IntfSpectralMapper(const ProcessInfo &info, size_t idx);
+    IntfSpectralMapper(const ProcessInfo &info);
     static std::string Name() { return "IntfSpectral"; }
-    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
-        return std::make_unique<IntfSpectralMapper>(info, idx);
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info) {
+        return std::make_unique<IntfSpectralMapper>(info);
     }
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
@@ -90,12 +86,12 @@ class IntfSpectralMapper
 };
 
 class DISSingleNucleonMapper: public HadronicBeamMapper,
-		Registrable<HadronicBeamMapper,DISSingleNucleonMapper,const ProcessInfo&,size_t> {
+		Registrable<HadronicBeamMapper,DISSingleNucleonMapper,const ProcessInfo&> {
   public:
-	DISSingleNucleonMapper(const ProcessInfo&,size_t);
+	DISSingleNucleonMapper(const ProcessInfo&);
 	static std::string Name() { return "DISSingleNucleon"; }
-	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
-		return std::make_unique<DISSingleNucleonMapper>(info,idx);
+	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info) {
+		return std::make_unique<DISSingleNucleonMapper>(info);
 	}
 	void GeneratePoint(Event&,const std::vector<double>&) override;
 	double GenerateWeight(const Event&,std::vector<double>&) override;
@@ -107,18 +103,16 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 };
 
 class DISNucleusMapper: public HadronicBeamMapper,
-		Registrable<HadronicBeamMapper,DISNucleusMapper,const ProcessInfo&,size_t> {
+		Registrable<HadronicBeamMapper,DISNucleusMapper,const ProcessInfo&> {
   public:
-	DISNucleusMapper(const ProcessInfo&,size_t);
+	DISNucleusMapper(const ProcessInfo&);
 	static std::string Name() { return "DISNucleus"; }
-	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info,size_t idx) {
-		return std::make_unique<DISSingleNucleonMapper>(info,idx);
+	static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo& info) {
+		return std::make_unique<DISNucleusMapper>(info);
 	}
 	void GeneratePoint(Event&,const std::vector<double>&) override;
 	double GenerateWeight(const Event&,std::vector<double>&) override;
 
-	/// 2 for [pHadron,pQuark]
-	size_t size() const override { return 2; }
 	/// 5 for [|pHadron|,cosTheta,phi,energy,x]
 	size_t NDims() const override { return 5; }
   private:

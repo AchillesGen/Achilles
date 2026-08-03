@@ -10,15 +10,14 @@ class Event;
 
 class BeamMapper : public Mapper<Event> {
   public:
-    BeamMapper(size_t idx, std::shared_ptr<Beam> beam)
-        : m_idx{std::move(idx)}, m_beam{std::move(beam)} {}
+    BeamMapper(std::shared_ptr<Beam> beam)
+        : m_beam{std::move(beam)} {}
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
     double GenerateWeight(const Event&, std::vector<double> &) override;
     size_t NDims() const override;
 
   private:
-    size_t m_idx;
     std::shared_ptr<Beam> m_beam;
 };
 

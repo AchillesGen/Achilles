@@ -11,13 +11,13 @@ using achilles::QESpectralMapper;
 using achilles::DISSingleNucleonMapper;
 using achilles::DISNucleusMapper;
 
-CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
-    : HadronicBeamMapper(info, idx) {
+CoherentMapper::CoherentMapper(const ProcessInfo &info)
+    : HadronicBeamMapper(info) {
     m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
 }
 
 void CoherentMapper::GeneratePoint(Event& event, const std::vector<double> &) {
-    event.Momentum()[HadronIdx()] = {m_mass, 0, 0, 0};
+    event.addHadronIn({m_mass,0,0,0},ParticleStatus::target);
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, {});
 }
 
@@ -26,99 +26,97 @@ double CoherentMapper::GenerateWeight(const Event&, std::vector<double> &) {
 }
 
 
-QESpectralMapper::QESpectralMapper(const ProcessInfo &info, size_t idx)
-    : HadronicBeamMapper(info, idx) {
+QESpectralMapper::QESpectralMapper(const ProcessInfo &info)
+    : HadronicBeamMapper(info) {
     SetMasses(info.Masses());
 }
 
 void QESpectralMapper::GeneratePoint(Event& event,
                                      const std::vector<double> &rans) {
-	std::vector<FourVector>& point=event.Momentum();
-    // Generate inital nucleon state
-    double radical =
-        pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
-    if(radical < 0) radical = 0;
-    double pmin = point[0].E() - sqrt(radical);
-    double pmax = point[0].E() + sqrt(radical);
-    pmin = pmin < 0 ? 0 : pmin;
-    pmax = pmax > 800 ? 800 : pmax;
-    double dp = pmax - pmin;
-    const double mom = dp * rans[0] + pmin;
-    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
-                      (2 * point[0].E() * mom);
-    cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
-    const double cosT = (cosT_max + 1) * rans[1] - 1;
-    const double sinT = sqrt(1 - cosT * cosT);
-    const double phi = dPhi * rans[2];
-    ThreeVector pmom = {mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
+	// Generate inital nucleon state
+	double radical =
+	    pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
+	if(radical < 0) radical = 0;
+	double pmin = lepIn.E() - sqrt(radical);
+	double pmax = lepIn.E() + sqrt(radical);
+	pmin = pmin < 0 ? 0 : pmin;
+	pmax = pmax > 800 ? 800 : pmax;
+	double dp = pmax - pmin;
+	const double mom = dp * rans[0] + pmin;
+	double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
+	                  (2 * lepIn.E() * mom);
+	cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
+	const double cosT = (cosT_max + 1) * rans[1] - 1;
+	const double sinT = sqrt(1 - cosT * cosT);
+	const double phi = dPhi * rans[2];
+	ThreeVector pmom = {mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 
-    const double det = pow(point[0].E(), 2) + mom * mom + 2 * pmom * point[0].Vec3() + Smin();
-    double emax = Constant::mN + point[0].E() - sqrt(det);
-    emax = std::min(emax, Constant::mN - mom);
-    emax = emax > 400 ? 400 : emax;
-    const double energy = emax * rans[3] - 1e-8;
-    // if(emax < 0) energy = emax - 1;
-    // const double energy = dE*rans[3];
+	const double det = pow(lepIn.E(), 2) + mom * mom + 2 * pmom * lepIn.Vec3() + Smin();
+	double emax = Constant::mN + lepIn.E() - sqrt(det);
+	emax = std::min(emax, Constant::mN - mom);
+	emax = emax > 400 ? 400 : emax;
+	const double energy = emax * rans[3] - 1e-8;
+	// if(emax < 0) energy = emax - 1;
+	// const double energy = dE*rans[3];
 
-    // double cosT_max = (Constant::mN2 + energy*energy - 2*Constant::mN*energy
-    // - mom*mom + 2*point[1].E()*Constant::mN - 2*point[1].E()*energy -
-    // Smin())/(2*mom*point[1].P()); cosT_max = cosT_max > 1 ? 1 : cosT_max;
-    // const double cosT = (cosT_max + 1) * rans[1] - 1;
-    // const double sinT = sqrt(1 - cosT*cosT);
+	// double cosT_max = (Constant::mN2 + energy*energy - 2*Constant::mN*energy
+	// - mom*mom + 2*point[1].E()*Constant::mN - 2*point[1].E()*energy -
+	// Smin())/(2*mom*point[1].P()); cosT_max = cosT_max > 1 ? 1 : cosT_max;
+	// const double cosT = (cosT_max + 1) * rans[1] - 1;
+	// const double sinT = sqrt(1 - cosT*cosT);
 
-    point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
-                          mom * cosT};
+	event.addHadronIn({Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT});
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
-    spdlog::trace("  point[0] = {}", point[0]);
+    spdlog::trace("  lepIn = {}", lepIn);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_max = {}", cosT_max);
     spdlog::trace("  cosT = {}", cosT);
     spdlog::trace("  mom = {}", mom);
     spdlog::trace("  energy = {}", energy);
     spdlog::trace("  emax = {}", emax);
-    spdlog::trace("  s = {}", (point[0] + point[HadronIdx()]).M2());
+    spdlog::trace("  s = {}", (lepIn + hadIn).M2());
     spdlog::trace("  s_min = {}", Smin());
 #endif
 }
 
 double QESpectralMapper::GenerateWeight(const Event& event,
                                         std::vector<double> &rans) {
-	const std::vector<FourVector>& point=event.Momentum();
-    double radical =
-        pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
+    double radical = pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
     if(radical < 0) radical = 0;
-    double pmin = point[0].E() - sqrt(radical);
-    double pmax = point[0].E() + sqrt(radical);
+    double pmin = lepIn.E() - sqrt(radical);
+    double pmax = lepIn.E() + sqrt(radical);
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
-    rans[0] = (point[HadronIdx()].P() - pmin) / dp;
-    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[HadronIdx()].P2() - Smin()) /
-                      (2 * point[0].E() * point[HadronIdx()].P());
+    rans[0] = (hadIn.P() - pmin) / dp;
+    double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - hadIn.P2() - Smin()) /
+                      (2 * lepIn.E() * hadIn.P());
     cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     double dCos = (cosT_max + 1);
-    rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
-    rans[2] = point[HadronIdx()].Phi() / dPhi;
+    rans[1] = (hadIn.CosTheta() + 1) / dCos;
+    rans[2] = hadIn.Phi() / dPhi;
 
     const double det =
-        pow(point[0].E(), 2) + point[HadronIdx()].P2() + 2 * point[HadronIdx()].Vec3() * point[0].Vec3() + Smin();
-    double emax = Constant::mN + point[0].E() - sqrt(det);
-    emax = std::min(emax, Constant::mN - point[HadronIdx()].P());
+        pow(lepIn.E(), 2) + hadIn.P2() + 2 * hadIn.Vec3() * lepIn.Vec3() + Smin();
+    double emax = Constant::mN + lepIn.E() - sqrt(det);
+    emax = std::min(emax, Constant::mN - hadIn.P());
     emax = emax > 400 ? 400 : emax;
-    const double energy = Constant::mN - point[HadronIdx()].E();
+    const double energy = Constant::mN - hadIn.E();
     // if(energy < 0) return std::numeric_limits<double>::infinity();
     const double dE = emax;
     rans[3] = (energy + 1e-8) / emax;
-    // rans[3] = (Constant::mN - point[HadronIdx()].E())/dE;
+    // rans[3] = (Constant::mN - hadIn.E())/dE;
 
-    // double cosT_max = (point[HadronIdx()].M2() +
-    // 2*point[1].E()*point[HadronIdx()].E() -
-    // Smin())/(2*point[HadronIdx()].P()*point[1].P()); cosT_max = cosT_max > 1
+    // double cosT_max = (hadIn.M2() +
+    // 2*point[1].E()*hadIn.E() -
+    // Smin())/(2*hadIn.P()*point[1].P()); cosT_max = cosT_max > 1
     // ? 1 : cosT_max; const double dCos = (cosT_max + 1);
-    // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
+    // rans[1] = (hadIn.CosTheta() + 1) / dCos;
 
-    double wgt = 1.0 / point[HadronIdx()].P2() / dp / dCos / dPhi / dE;
+    double wgt = 1.0 / hadIn.P2() / dp / dCos / dPhi / dE;
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  Weight: {}", wgt);
@@ -132,14 +130,14 @@ double QESpectralMapper::GenerateWeight(const Event& event,
 }
 
 
-IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info, size_t idx)
-    : HadronicBeamMapper(info, idx) {
+IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info)
+    : HadronicBeamMapper(info) {
     SetMasses(info.Masses());
 }
 
 void IntfSpectralMapper::GeneratePoint(Event& event,
                                        const std::vector<double> &rans) {
-	std::vector<FourVector>& point=event.Momentum();
+	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
     // Generate spectator momentum from a flat distribution
     double p2 = dp2 * rans[4];
     double cosT2 = dCos2 * rans[5] - 1.;
@@ -149,27 +147,27 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     ThreeVector pmom2 = {p2 * sinT2 * cos(phi2), p2 * sinT2 * sin(phi2), p2 * cosT2};
     double E2 = sqrt(p2 * p2 + Constant::mN2);
 
-    point.back() = {E2, pmom2[0], pmom2[1], pmom2[2]};
+    event.addSpectator({E2, pmom2[0], pmom2[1], pmom2[2]});
 
     // Generate inital nucleon state
-    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+    double pmin = lepIn.E() - sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
                                       Constant::mN2 - Smin());
-    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+    double pmax = lepIn.E() + sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
                                       Constant::mN2 - Smin());
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     const double mom = dp * rans[0] + pmin;
-    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
-                      (2 * point[0].E() * mom);
+    double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
+                      (2 * lepIn.E() * mom);
     cosT_max = cosT_max > 1 ? 1 : cosT_max;
     const double cosT = (cosT_max + 1) * rans[1] - 1;
     const double sinT = sqrt(1 - cosT * cosT);
     const double phi = dPhi * rans[2];
     ThreeVector pmom = {mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 
-    const double det = pow(point[0].E(), 2) + mom * mom + 2 * pmom * point[0].Vec3() + Smin();
-    double emax = Constant::mN + point[0].E() - sqrt(det);
+    const double det = pow(lepIn.E(), 2) + mom * mom + 2 * pmom * lepIn.Vec3() + Smin();
+    double emax = Constant::mN + lepIn.E() - sqrt(det);
     emax = std::min(emax, Constant::mN - mom);
     emax = emax > 400 ? 400 : emax;
     const double energy = emax * rans[3] - 1e-8;
@@ -182,11 +180,10 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     // const double cosT = (cosT_max + 1) * rans[1] - 1;
     // const double sinT = sqrt(1 - cosT*cosT);
 
-    point[HadronIdx()] = {Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi),
-                          mom * cosT};
+    event.addHadronIn({Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT});
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
-    spdlog::trace("  point[0] = {}", point[0]);
+    spdlog::trace("  lepIn = {}", lepIn);
     spdlog::trace("  dp = {}", dp);
     spdlog::trace("  cosT_min = {}", cosT_max);
     spdlog::trace("  cosT_max = {}", cosT_max);
@@ -194,54 +191,55 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     spdlog::trace("  mom = {}", mom);
     spdlog::trace("  energy = {}", energy);
     spdlog::trace("  emax = {}", emax);
-    spdlog::trace("  s = {}", (point[0] + point[1]).M2());
+    spdlog::trace("  s = {}", (lepIn + point[1]).M2());
     spdlog::trace("  s_min = {}", Smin());
 #endif
 }
 
 double IntfSpectralMapper::GenerateWeight(const Event& event,
                                           std::vector<double> &rans) {
-	const std::vector<FourVector>& point=event.Momentum();
-    double pmin = point[0].E() - sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
+					  spectator=event.Spectators()[0].Momentum();
+
+    double pmin = lepIn.E() - sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
                                       Constant::mN2 - Smin());
-    double pmax = point[0].E() + sqrt(pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN +
+    double pmax = lepIn.E() + sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
                                       Constant::mN2 - Smin());
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
-    rans[0] = (point[HadronIdx()].P() - pmin) / dp;
-    double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[1].P2() - Smin()) /
-                      (2 * point[0].E() * point[1].P());
+    rans[0] = (hadIn.P() - pmin) / dp;
+    double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - hadIn.P2() - Smin()) /
+                      (2 * lepIn.E() * hadIn.P());
     cosT_max = cosT_max > 1 ? 1 : cosT_max;
     double dCos = (cosT_max + 1);
-    rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
-    rans[2] = point[HadronIdx()].Phi() / dPhi;
+    rans[1] = (hadIn.CosTheta() + 1) / dCos;
+    rans[2] = hadIn.Phi() / dPhi;
 
     const double det =
-        pow(point[0].E(), 2) + point[1].P2() + 2 * point[1].Vec3() * point[0].Vec3() + Smin();
-    double emax = Constant::mN + point[0].E() - sqrt(det);
-    emax = std::min(emax, Constant::mN - point[1].P());
+        pow(lepIn.E(), 2) + hadIn.P2() + 2 * hadIn.Vec3() * lepIn.Vec3() + Smin();
+    double emax = Constant::mN + lepIn.E() - sqrt(det);
+    emax = std::min(emax, Constant::mN - hadIn.P());
     emax = emax > 400 ? 400 : emax;
-    const double energy = Constant::mN - point[HadronIdx()].E();
+    const double energy = Constant::mN - hadIn.E();
     // if(energy < 0) return std::numeric_limits<double>::infinity();
     const double dE = emax;
     rans[3] = (energy + 1e-8) / emax;
 
-    double spectator_momentum = point.back().P();
-    rans[4] = spectator_momentum / dp2;
-    rans[5] = (point.back().CosTheta() + 1) / dCos2;
-    rans[6] = point.back().Phi() / dPhi;
+    rans[4] = spectator.P() / dp2;
+    rans[5] = (spectator.CosTheta() + 1) / dCos2;
+    rans[6] = spectator.Phi() / dPhi;
 
-    // rans[3] = (Constant::mN - point[HadronIdx()].E())/dE;
+    // rans[3] = (Constant::mN - hadIn.E())/dE;
 
-    // double cosT_max = (point[HadronIdx()].M2() +
-    // 2*point[1].E()*point[HadronIdx()].E() -
-    // Smin())/(2*point[HadronIdx()].P()*point[1].P()); cosT_max = cosT_max > 1
+    // double cosT_max = (hadIn.M2() +
+    // 2*point[1].E()*hadIn.E() -
+    // Smin())/(2*hadIn.P()*point[1].P()); cosT_max = cosT_max > 1
     // ? 1 : cosT_max; const double dCos = (cosT_max + 1);
-    // rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
+    // rans[1] = (hadIn.CosTheta() + 1) / dCos;
 
     double wgt =
-        1.0 / point[1].P2() / dp / dCos / dPhi / dE / point.back().P2() / dp2 / dCos2 / dPhi;
+        1.0 / hadIn.P2() / dp / dCos / dPhi / dE / spectator.P2() / dp2 / dCos2 / dPhi;
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  Weight: {}", wgt);
@@ -287,96 +285,98 @@ static double getX(const achilles::FourVector& pLepton,const achilles::FourVecto
 
 static double xMin=1e-10,xMax=1.0;
 
-DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info,size_t idx): HadronicBeamMapper(info,idx) {
+DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info): HadronicBeamMapper(info) {
 	SetMasses(info.Masses());
 	// Hadron is always stationary in this model
 	pHadron={ParticleInfo(info.m_hadronic.first[0]).Mass(),0,0,0};
 }
 
 void DISSingleNucleonMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
-	std::vector<FourVector>& point=event.Momentum();
 	// Generate initial quark state
 	double x=xMin*pow(xMax/xMin,rans[0]);
-	point[HadronIdx()]=getQuarkMomentum(point[0],pHadron,x);
+	event.addHadronIn(getQuarkMomentum(event.LeptonsIn()[0].Momentum(),pHadron,x));
 }
 
 double DISSingleNucleonMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
-	const std::vector<FourVector>& point=event.Momentum();
-	double x=getX(point[0],pHadron,point[HadronIdx()]);
+	const FourVector& hadIn=event.HadronsIn()[0].Momentum();
+	double x=getX(event.LeptonsIn()[0].Momentum(),pHadron,hadIn);
 	rans[0]=log(x/xMin)/log(xMax/xMin);
-	return 1.0/(point[HadronIdx()].P2()*(x*log(xMax/xMin)));
+	return 1.0/(hadIn.P2()*(x*log(xMax/xMin)));
 }
 
 
-DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info,size_t idx): HadronicBeamMapper(info,idx) {
+DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info): HadronicBeamMapper(info) {
 	SetMasses(info.Masses());
 }
 
 void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
-	std::vector<FourVector>& point=event.Momentum();
+	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
 	// Generate inital nucleon state
 	double radical =
-		pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+		pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
 	if(radical < 0) radical = 0;
-	double pmin = point[0].E() - sqrt(radical);
-	double pmax = point[0].E() + sqrt(radical);
+	double pmin = lepIn.E() - sqrt(radical);
+	double pmax = lepIn.E() + sqrt(radical);
 	pmin = pmin < 0 ? 0 : pmin;
 	pmax = pmax > 800 ? 800 : pmax;
 	double dp = pmax - pmin;
 	const double mom = dp * rans[0] + pmin;
-	double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
-					  (2 * point[0].E() * mom);
+	double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - mom * mom - Smin()) /
+					  (2 * lepIn.E() * mom);
 	cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
 	const double cosT = (cosT_max + 1) * rans[1] - 1;
 	const double sinT = sqrt(1 - cosT * cosT);
 	const double phi = dPhi * rans[2];
 	ThreeVector pmom = {mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 
-	const double det = pow(point[0].E(), 2) + mom * mom + 2 * pmom * point[0].Vec3() + Smin();
-	double emax = Constant::mN + point[0].E() - sqrt(det);
+	const double det = pow(lepIn.E(), 2) + mom * mom + 2 * pmom * lepIn.Vec3() + Smin();
+	double emax = Constant::mN + lepIn.E() - sqrt(det);
 	emax = std::min(emax, Constant::mN - mom);
 	emax = emax > 400 ? 400 : emax;
 	const double energy = emax * rans[3] - 1e-8;
 
 	// pHadron
-	point[HadronIdx()]={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+	FourVector hadIn={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+	event.addHadronIn(hadIn);
 
 	double x=xMin*pow(xMax/xMin,rans[4]);
 
 	// pQuark
-	point[HadronIdx()+1]=getQuarkMomentum(point[0],point[HadronIdx()],x);
+	event.addHadronIn(getQuarkMomentum(lepIn,hadIn,x));
 }
 
 double DISNucleusMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
-	const std::vector<FourVector>& point=event.Momentum();
-	double x=getX(point[0],point[HadronIdx()],point[HadronIdx()+1]);
+	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),
+					  hadIn=event.HadronsIn()[0].Momentum(),
+					  quarkIn=event.HadronsIn()[1].Momentum();
+	double x=getX(lepIn,hadIn,quarkIn);
 
 	double radical =
-	    pow(point[0].E(), 2) + 2 * point[0].E() * Constant::mN + Constant::mN2 - Smin();
+	    pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
 	if(radical < 0) radical = 0;
-	double pmin = point[0].E() - sqrt(radical);
-	double pmax = point[0].E() + sqrt(radical);
+	double pmin = lepIn.E() - sqrt(radical);
+	double pmax = lepIn.E() + sqrt(radical);
 	pmin = pmin < 0 ? 0 : pmin;
 	pmax = pmax > 800 ? 800 : pmax;
 	double dp = pmax - pmin;
-	rans[0] = (point[HadronIdx()].P() - pmin) / dp;
-	double cosT_max = (2 * point[0].E() * Constant::mN + Constant::mN2 - point[HadronIdx()].P2() - Smin()) /
-	                  (2 * point[0].E() * point[HadronIdx()].P());
+	rans[0] = (hadIn.P() - pmin) / dp;
+	double cosT_max = (2 * lepIn.E() * Constant::mN + Constant::mN2 - hadIn.P2() - Smin()) /
+	                  (2 * lepIn.E() * hadIn.P());
 	cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
 	double dCos = (cosT_max + 1);
-	rans[1] = (point[HadronIdx()].CosTheta() + 1) / dCos;
-	rans[2] = point[HadronIdx()].Phi() / dPhi;
+	rans[1] = (hadIn.CosTheta() + 1) / dCos;
+	rans[2] = hadIn.Phi() / dPhi;
 
 	const double det =
-	    pow(point[0].E(), 2) + point[HadronIdx()].P2() + 2 * point[HadronIdx()].Vec3() * point[0].Vec3() + Smin();
-	double emax = Constant::mN + point[0].E() - sqrt(det);
-	emax = std::min(emax, Constant::mN - point[HadronIdx()].P());
+	    pow(lepIn.E(), 2) + hadIn.P2() + 2 * hadIn.Vec3() * lepIn.Vec3() + Smin();
+	double emax = Constant::mN + lepIn.E() - sqrt(det);
+	emax = std::min(emax, Constant::mN - hadIn.P());
 	emax = emax > 400 ? 400 : emax;
-	const double energy = Constant::mN - point[HadronIdx()].E();
+	const double energy = Constant::mN - hadIn.E();
 	const double dE = emax;
 	rans[3] = (energy + 1e-8) / emax;
 
 	rans[4]=log(x/xMin)/log(xMax/xMin);
 
-    return 1.0/(point[HadronIdx()+1].P2()*dp*dCos*dPhi*dE*(x*log(xMax/xMin)));
+    return 1.0/(quarkIn.P2()*dp*dCos*dPhi*dE*(x*log(xMax/xMin)));
 }

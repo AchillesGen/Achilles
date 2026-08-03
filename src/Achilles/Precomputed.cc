@@ -34,7 +34,7 @@ achilles::Event achilles::Precomputed::ParseEvent(const std::string &line,
                        std::stod(tokens[4])};
     FourVector lep_mom{std::stod(tokens[5]), std::stod(tokens[6]), std::stod(tokens[7]),
                        std::stod(tokens[8])};
-    event.Leptons().push_back(Particle(PID::muon(), lep_mom, {}, ParticleStatus::final_state));
+    event.LeptonsOut().push_back(Particle(PID::muon(), lep_mom, {}, ParticleStatus::final_state));
 
     auto neutrons = event.CurrentNucleus()->NeutronsIDs();
     std::vector<size_t> selected;

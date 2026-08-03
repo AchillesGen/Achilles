@@ -46,7 +46,7 @@ refParticles Process::SelectParticles(const refParticles &protons, const refPart
     return result;
 }
 
-void Process::SetupHadrons(Event &event) const {
+/*void Process::SetupHadrons(Event &event) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
@@ -116,7 +116,7 @@ void Process::SetupHadrons(Event &event) const {
         part.Status() = ParticleStatus::propagating;
         part.Momentum() = had_out[i];
         part.Position() = position;
-        event.Hadrons().push_back(part);
+        event.HadronsOut().push_back(part);
     }
 }
 
@@ -201,13 +201,12 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
                 had_out.emplace_back(pid, momentum[i]);
         }
     }
-}
+}*/
 
 achilles::FourVector Process::ExtractQ(const Event &event) const {
-    const auto &momentum = event.Momentum();
-    auto q = momentum[0];
-    size_t nleptons = m_info.m_leptonic.second.size();
-    for(size_t i = 0; i < nleptons; ++i) { q -= momentum[i + 1 + m_info.m_hadronic.first.size()]; }
+    auto q = event.LeptonsIn()[0].Momentum();
+    for(const Particle& lepOut:event.LeptonsOut())
+		q-=lepOut.Momentum();
     return q;
 }
 
@@ -296,7 +295,7 @@ std::vector<achilles::ProcessMetadata> ProcessGroup::Metadata() const {
     return data;
 }
 
-void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
+/*void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx) const {
     spdlog::trace("Setting up leptons");
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
@@ -317,21 +316,21 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
     }
 
     event.Leptons() = leptons;
-}
+}*/
 
 void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
     if(!process_idx) {
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
-            auto process_weight = m_backend->CrossSection(event, m_processes[i]);
+            double process_weight = m_backend->CrossSection(event, m_processes[i]);
             if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
         }
         event.Weight() = weight;
         if(b_calc_weights) m_xsec += weight;
     } else {
-        auto &process = m_processes[process_idx.value()];
-        auto weight = m_backend->CrossSection(event, process);
+        Process& process = m_processes[process_idx.value()];
+        double weight = m_backend->CrossSection(event, process);
         event.Weight() = process.Unweight(weight);
     }
 }
@@ -431,7 +430,7 @@ void ProcessGroup::Optimize() {
             "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
             m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
             m_processes[0].Info().Multiplicity());
-		Event event(m_nucleus);
+		Event event(GroupProcessInfo(),m_nucleus);
         m_integrator.Optimize(m_integrand,event);
     }
 
@@ -444,7 +443,7 @@ void ProcessGroup::Optimize() {
 
         for(size_t i = 0; i < 3; ++i) {
 			// Create dummy point for training purposes
-			Event event(m_nucleus);
+			Event event(GroupProcessInfo(),m_nucleus);
 			m_integrator(m_integrand,event);
 		}
 
@@ -477,7 +476,7 @@ void ProcessGroup::Optimize() {
 void ProcessGroup::Summary() const {}
 
 achilles::Event ProcessGroup::GenerateEvent() {
-	Event event(m_nucleus);
+	Event event(GroupProcessInfo(),m_nucleus);
 	m_integrator.GeneratePoint(m_integrand,event);
 	event.Weight()=m_integrator.GenerateWeight(m_integrand,event);
 	EventSetup(event);
@@ -487,12 +486,10 @@ achilles::Event ProcessGroup::GenerateEvent() {
 void ProcessGroup::EventSetup(Event& event) {
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
-    for(const FourVector& momentum : event.Momentum()) {
+    /*for(const FourVector& momentum : event.Momentum()) {
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
-    }
+    }*/
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
-    auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
-    SetupLeptons(event, process_opt);
     if(!m_cuts.EvaluateCuts(event.Particles())) {
         // Ensure process weights are tracked correctly
         if(b_calc_weights) {
@@ -503,6 +500,7 @@ void ProcessGroup::EventSetup(Event& event) {
         return;
     }
 
+    std::optional<size_t> process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
     CrossSection(event, process_opt);
 
     // If training the integrator or weight is zero, we can stop here
@@ -510,15 +508,8 @@ void ProcessGroup::EventSetup(Event& event) {
 
     // Otherwise, we need to fill the event with the selected process
     auto &process = m_processes[process_opt.value()];
-    event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
+    event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.LeptonsIn()[0].Momentum());
     event.ProcessId() = process.ID();
-    process.SetupHadrons(event);
-}
-
-achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, double ps_wgt) {
-    Event event = Event(m_nucleus, mom, ps_wgt);
-	EventSetup(event);
-    return event;
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {

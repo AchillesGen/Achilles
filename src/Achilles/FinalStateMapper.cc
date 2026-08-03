@@ -16,59 +16,64 @@ using achilles::ThreeBodyMapper;
 using achilles::TwoBodyMapper;
 
 void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	std::vector<FourVector>& mom=event.Momentum();
-    // The momentum are given in the following order:
-    // 1. Momentum of the initial hadron
-    // 2. Momentum of the initial lepton
-    // 3. Momentum of all outgoing parts of the leptonic tensor
-    // 4. Momentum of all outgoing hadrons
-    auto p01 = (mom[0] + mom[1]);
-    auto s = p01.M2();
-    auto sqrts = sqrt(s);
-    auto boostVec = p01.BoostVector();
-    auto mom0 = mom[0].Boost(-boostVec);
-    Poincare zax(mom0, FourVector(1., 0., 0., 1.));
-    auto cosT = dCos * rans[0] - 1;
-    auto sinT = sqrt(1 - cosT * cosT);
-    auto phi = dPhi * rans[1];
-    auto E1 = sqrts / 2 * (1 + s2 / s - s3 / s);
-    auto E2 = sqrts / 2 * (1 + s3 / s - s2 / s);
-    auto lambda = sqrt(pow(s - s2 - s3, 2) - 4 * s2 * s3);
-    auto pCM = lambda / (2 * sqrts);
+	// The momentum are given in the following order:
+	// 1. Momentum of the initial hadron
+	// 2. Momentum of the initial lepton
+	// 3. Momentum of all outgoing parts of the leptonic tensor
+	// 4. Momentum of all outgoing hadrons
+	FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
+	FourVector p01=lepIn+hadIn;
+	double s = p01.M2();
+	double sqrts = sqrt(s);
+	ThreeVector boostVec = p01.BoostVector();
+	FourVector mom0 = lepIn.Boost(-boostVec);
+	Poincare zax(mom0, FourVector(1., 0., 0., 1.));
+	double cosT = dCos * rans[0] - 1;
+	double sinT = sqrt(1 - cosT * cosT);
+	double phi = dPhi * rans[1];
+	double E1 = sqrts / 2 * (1 + s2 / s - s3 / s);
+	double E2 = sqrts / 2 * (1 + s3 / s - s2 / s);
+	double lambda = sqrt(pow(s - s2 - s3, 2) - 4 * s2 * s3);
+	double pCM = lambda / (2 * sqrts);
 
-    mom[FinalStateIdx()] = {E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
-    mom[FinalStateIdx()+1] = {E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
+	FourVector lepOut={E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
+	FourVector hadOut={E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
 
-    zax.RotateBack(mom[FinalStateIdx()]);
-    zax.RotateBack(mom[FinalStateIdx()]);
+	zax.RotateBack(lepOut);
+	zax.RotateBack(hadOut);
 
-    mom[FinalStateIdx()] = mom[FinalStateIdx()].Boost(boostVec);
-    mom[FinalStateIdx()+1] = mom[FinalStateIdx()+1].Boost(boostVec);
+	lepOut=lepOut.Boost(boostVec);
+	hadOut=hadOut.Boost(boostVec);
+
+	event.addLeptonOut(lepOut);
+	event.addHadronOut(hadOut);
 
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<achilles::FourVector>>::Print(__PRETTY_FUNCTION__, mom, rans);
-    spdlog::trace("  MassCheck: {}", CheckMasses({mom[FinalStateIdx()], mom[FinalStateIdx()+1]}, {s2, s3}));
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
+    spdlog::trace("  MassCheck: {}", CheckMasses({lepOut, hadOut}, {s2, s3}));
     spdlog::trace("  s = {}, lambda = {}", s, lambda);
 #endif
 }
 
 double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
-	const std::vector<FourVector>& mom=event.Momentum();
-    auto boostVec = (mom[0] + mom[1]).BoostVector();
-    auto mom0 = mom[0].Boost(-boostVec);
-    auto rotMat = mom0.AlignZ();
-    auto p2 = mom[FinalStateIdx()].Boost(-boostVec).Rotate(rotMat);
-    rans[0] = (p2.CosTheta() + 1) / dCos;
-    rans[1] = p2.Phi() / dPhi;
+	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
+					  lepOut=event.LeptonsOut()[0].Momentum();
+	FourVector com=lepIn+hadIn;
+	ThreeVector boostVec = com.BoostVector();
+	FourVector lepInBoosted = lepIn.Boost(-boostVec);
+	auto rotMat = lepInBoosted.AlignZ();
+	FourVector p2 = lepOut.Boost(-boostVec).Rotate(rotMat);
+	rans[0] = (p2.CosTheta() + 1) / dCos;
+	rans[1] = p2.Phi() / dPhi;
 
-    auto pcm = p2.P();
-    auto ecm = (mom[0] + mom[1]).M();
+	double pcm = p2.P();
+	double ecm = com.M();
 
-    auto factor = pcm / ecm / (16 * M_PI * M_PI);
-    auto wgt = 1.0 / dCos / dPhi / factor;
+	double factor = pcm / ecm / (16 * M_PI * M_PI);
+	double wgt = 1.0 / dCos / dPhi / factor;
 
 #ifdef ACHILLES_EVENT_DETAILS
-    Mapper<std::vector<achilles::FourVector>>::Print(__PRETTY_FUNCTION__, mom, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  ct: {}", p2.CosTheta());
     spdlog::trace("  pcm: {}", pcm);
     spdlog::trace("  ecm: {}", ecm);
@@ -79,15 +84,15 @@ double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &ra
 }
 
 void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	std::vector<FourVector>& mom=event.Momentum();
+	FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
 
     // Mass and width of "resonance"
     // double res_mass = 1232.;
     // double res_width = 120.;
 
-    auto p01 = (mom[0] + mom[1]);
-    auto s = p01.M2();
-    auto sqrts = sqrt(s);
+    FourVector p01 = lepIn+hadIn;
+    double s = p01.M2();
+    double sqrts = sqrt(s);
 
     // Minimum and maximum invariant mass of hadrons
     double s23_max = pow(sqrts - sqrt(s4), 2);
@@ -97,13 +102,17 @@ void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &ran
     // auto s23 = MassivePropagatorMomenta(res_mass, res_width, s23_min, s23_max, rans[0]);
 
     // new
-    auto s23 = s23_min + (s23_max - s23_min) * rans[0];
+    double s23 = s23_min + (s23_max - s23_min) * rans[0];
 
-    FourVector p23;
+    FourVector p23,lepOut,hadOut0,hadOut1;
     // Should tmass = res_mass?
-    TChannelMomenta(mom[0], mom[1], p23, mom[FinalStateIdx()+2], s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
+    TChannelMomenta(lepIn, hadIn, p23, hadOut1, s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
                     rans[1], rans[2]);
-    Isotropic2Momenta(p23, s2, s3, mom[FinalStateIdx()], mom[FinalStateIdx()+1], rans[3], rans[4], m_ctmin, m_ctmax);
+    Isotropic2Momenta(p23, s2, s3, lepOut, hadOut0, rans[3], rans[4], m_ctmin, m_ctmax);
+
+	event.addLeptonOut(lepOut);
+	event.addHadronOut(hadOut0);
+	event.addHadronOut(hadOut1);
 
     // Want to know gammaN invariant mass
     // auto pGamma = mom[1] - mom[FinalStateIdx()+2];
@@ -111,44 +120,45 @@ void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &ran
     // auto GammaN_mass = pGammaN.M();
     // spdlog::debug("GammaN invariant mass = {}", GammaN_mass);
 
-    Mapper<std::vector<achilles::FourVector>>::Print(__PRETTY_FUNCTION__, mom, rans);
+    Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
 }
 
 double ThreeBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
-	const std::vector<FourVector>& mom=event.Momentum();
+	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
+					  lepOut=event.LeptonsOut()[0].Momentum(),
+					  hadOut0=event.HadronsOut()[0].Momentum(),hadOut1=event.HadronsOut()[1].Momentum();
 
-    // The momentum are given in the following order:
-    // 1. Momentum of the initial hadron
-    // 2. Momentum of the initial lepton
-    // 3. Momentum of all outgoing hadrons
-    // 4. Momentum of all outgoing parts of the leptonic tensor
+	// The momentum are given in the following order:
+	// 1. Momentum of the initial hadron
+	// 2. Momentum of the initial lepton
+	// 3. Momentum of all outgoing hadrons
+	// 4. Momentum of all outgoing parts of the leptonic tensor
 
-    // Mass and width of "resonance"
-    // double res_mass = 1232.;
-    // double res_width = 120.;
-    auto wt = 1.0;
+	// Mass and width of "resonance"
+	// double res_mass = 1232.;
+	// double res_width = 120.;
+	double wt = 1.0;
 
-    auto p01 = (mom[0] + mom[1]);
-    auto s = p01.M2();
-    auto sqrts = sqrt(s);
+	FourVector p01=lepIn+hadIn;
+	double s = p01.M2();
+	double sqrts = sqrt(s);
 
-    double s23_max = pow(sqrts - sqrt(s4), 2);
-    double s23_min = std::max(pow(sqrt(s2) + sqrt(s3), 2), 1E-8);
+	double s23_max = pow(sqrts - sqrt(s4), 2);
+	double s23_min = std::max(pow(sqrt(s2) + sqrt(s3), 2), 1E-8);
 
-    auto s23 = (mom[FinalStateIdx()] + mom[FinalStateIdx()+1]).M2();
-    rans[0] = (s23 - s23_min) / (s23_max - s23_min);
-    wt *= 1. / (s23_max - s23_min);
+	double s23 = (lepOut+hadOut0).M2();
+	rans[0] = (s23 - s23_min) / (s23_max - s23_min);
+	wt *= 1. / (s23_max - s23_min);
 
-    // wt *=
-    // MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((mom[FinalStateIdx()]+mom[FinalStateIdx()+1]).M2()),rans[0]);
+	// wt *= MassivePropWeight(res_mass,res_width,1,s23_min,s23_max,fabs((lepOut+hadOut0).M2()),rans[0]);
 
-    wt *= TChannelWeight(mom[0], mom[1], mom[FinalStateIdx()] + mom[FinalStateIdx()+1], mom[FinalStateIdx()+2], 0.0, m_alpha, m_ctmax, m_ctmin,
-                         m_amct, 0, rans[1], rans[2]);
-    wt *= Isotropic2Weight(mom[FinalStateIdx()], mom[FinalStateIdx()+1], rans[3], rans[4], m_ctmin, m_ctmax);
+	wt *= TChannelWeight(lepIn, hadIn, lepOut+hadOut0, hadOut1, 0.0, m_alpha, m_ctmax, m_ctmin,
+	                     m_amct, 0, rans[1], rans[2]);
+	wt *= Isotropic2Weight(lepOut, hadOut0, rans[3], rans[4], m_ctmin, m_ctmax);
 
-    if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, (3 * 3.) - 4.);
-    Mapper<std::vector<achilles::FourVector>>::Print(__PRETTY_FUNCTION__, mom, rans);
-    return 1 / wt;
+	if(wt != 0.) wt = 1.0 / wt / pow(2. * M_PI, (3 * 3.) - 4.);
+	Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
+	return 1 / wt;
 }
 
 double ThreeBodyMapper::MassivePropagatorMomenta(double mass, double width, double smin,

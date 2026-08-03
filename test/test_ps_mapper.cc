@@ -10,17 +10,17 @@
 
 class DummyHadron : public achilles::HadronicBeamMapper,
                     achilles::Registrable<achilles::HadronicBeamMapper, DummyHadron,
-                                          const achilles::ProcessInfo &, size_t> {
+                                          const achilles::ProcessInfo &> {
   public:
-    DummyHadron(const achilles::ProcessInfo &info, size_t idx) : HadronicBeamMapper(info, idx) {}
+    DummyHadron(const achilles::ProcessInfo &info) : HadronicBeamMapper(info) {}
     static std::string Name() { return "DummyHadron"; }
     static std::unique_ptr<achilles::HadronicBeamMapper>
-    Construct(const achilles::ProcessInfo &info, size_t idx) {
-        return std::make_unique<DummyHadron>(info, idx);
+    Construct(const achilles::ProcessInfo &info) {
+        return std::make_unique<DummyHadron>(info);
     }
 
     void GeneratePoint(achilles::Event& event, const std::vector<double> &) override {
-        event.Momentum()[HadronIdx()] = {achilles::Constant::mN, 0, 0, 0};
+        event.addHadronIn({achilles::Constant::mN, 0, 0, 0});
     }
     double GenerateWeight(const achilles::Event&,
                           std::vector<double> &) override {
@@ -31,18 +31,17 @@ class DummyHadron : public achilles::HadronicBeamMapper,
 
 class DummyFS
     : public achilles::FinalStateMapper,
-      achilles::Registrable<achilles::FinalStateMapper, DummyFS, std::vector<double>, size_t> {
+      achilles::Registrable<achilles::FinalStateMapper, DummyFS, std::vector<double>> {
   public:
-    DummyFS(const std::vector<double> &, size_t) : FinalStateMapper(2, 2) {}
+    DummyFS(const std::vector<double> &) : FinalStateMapper(2) {}
     static std::string Name() { return "DummyFS"; }
-    static std::unique_ptr<achilles::FinalStateMapper> Construct(const std::vector<double> &m,
-                                                                 size_t a) {
-        return std::make_unique<DummyFS>(m, a);
+    static std::unique_ptr<achilles::FinalStateMapper> Construct(const std::vector<double> &m) {
+        return std::make_unique<DummyFS>(m);
     }
 
     void GeneratePoint(achilles::Event& event, const std::vector<double> &) override {
-        event.Momentum()[2] = {achilles::Constant::mN, 0, 0, 0};
-        event.Momentum()[3] = {achilles::Constant::mN, 0, 0, 0};
+        event.addHadronOut({achilles::Constant::mN, 0, 0, 0});
+        event.addHadronOut({achilles::Constant::mN, 0, 0, 0});
     }
     double GenerateWeight(const achilles::Event&,
                           std::vector<double> &) override {
@@ -101,7 +100,6 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
 					event(mom),event2(mom2),event3(mom3);
 
     REQUIRE_CALL(*beam_map, NDims()).TIMES(2).LR_RETURN((beam_dims));
-    REQUIRE_CALL(*beam_map, size()).TIMES(1).LR_RETURN(1ul);
     REQUIRE_CALL(*beam_map, GeneratePoint(event, lbeam_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(event.Momentum()[1] = beam_mom);
@@ -111,7 +109,6 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .RETURN(1.0);
 
     REQUIRE_CALL(*hadron_map, NDims()).TIMES(2).LR_RETURN((hadron_dims));
-    REQUIRE_CALL(*hadron_map, size()).TIMES(1).LR_RETURN(1ul);
     REQUIRE_CALL(*hadron_map, GeneratePoint(event2, hadron_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(event.Momentum()[0] = hadron_mom);
@@ -121,7 +118,6 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
         .RETURN(1.0);
 
     REQUIRE_CALL(*final_state_map, NDims()).TIMES(2).LR_RETURN((final_state_dims));
-    REQUIRE_CALL(*final_state_map, size()).TIMES(1).LR_RETURN(2ul);
     REQUIRE_CALL(*final_state_map, GeneratePoint(event3, final_state_rans))
         .TIMES(1)
         .LR_SIDE_EFFECT(event.Momentum()[2] = final_state_mom[0])

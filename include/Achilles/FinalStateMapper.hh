@@ -20,30 +20,28 @@ class Event;
 
 class FinalStateMapper : public Mapper<Event> {
   public:
-    FinalStateMapper(size_t _nout,size_t idx) : nout{std::move(_nout)}, m_idx{idx} {}
+    FinalStateMapper(size_t _nout) : nout{std::move(_nout)} {}
 
     void GeneratePoint(Event&, const std::vector<double> &) override = 0;
     double GenerateWeight(const Event&, std::vector<double> &) override = 0;
-	size_t size() const override { return nout; }
     size_t NDims() const override { return 3 * nout - 4; }
     static std::string Name() { return "Final State"; }
-	size_t FinalStateIdx() const { return m_idx; }
 
   private:
-    size_t nout,m_idx;
+    size_t nout;
 };
 
 class TwoBodyMapper : public FinalStateMapper,
-                      Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>,size_t> {
+                      Registrable<FinalStateMapper, TwoBodyMapper, std::vector<double>> {
   public:
-    TwoBodyMapper(const std::vector<double> &m,size_t idx) : FinalStateMapper(2,idx), s2{m[0]}, s3{m[1]} {}
+    TwoBodyMapper(const std::vector<double> &m) : FinalStateMapper(2), s2{m[0]}, s3{m[1]} {}
     static std::string Name() { return "TwoBody"; }
-    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m,size_t idx) {
+    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
         if(m.size() != 2) {
             auto msg = fmt::format("Incorrect number of masses. Expected 2. Got {}", m.size());
             throw std::runtime_error(msg);
         }
-        return std::make_unique<TwoBodyMapper>(m,idx);
+        return std::make_unique<TwoBodyMapper>(m);
     }
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
@@ -56,17 +54,17 @@ class TwoBodyMapper : public FinalStateMapper,
 };
 
 class ThreeBodyMapper : public FinalStateMapper,
-                        Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>,size_t> {
+                        Registrable<FinalStateMapper, ThreeBodyMapper, std::vector<double>> {
   public:
-    ThreeBodyMapper(const std::vector<double> &m,size_t idx)
-        : FinalStateMapper(3,idx), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
+    ThreeBodyMapper(const std::vector<double> &m)
+        : FinalStateMapper(3), s2{m[0]}, s3{m[1]}, s4{m[2]} {}
     static std::string Name() { return "ThreeBody"; }
-    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m,size_t idx) {
+    static std::unique_ptr<FinalStateMapper> Construct(const std::vector<double> &m) {
         if(m.size() != 3) {
             auto msg = fmt::format("Incorrect number of masses. Expected 3. Got {}", m.size());
             throw std::runtime_error(msg);
         }
-        return std::make_unique<ThreeBodyMapper>(m,idx);
+        return std::make_unique<ThreeBodyMapper>(m);
     }
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
@@ -103,8 +101,8 @@ class ThreeBodyMapper : public FinalStateMapper,
 #ifdef ACHILLES_SHERPA_INTERFACE
 class SherpaMapper : public FinalStateMapper {
   public:
-    SherpaMapper(size_t _nout,size_t idx, Mapper_ptr<std::vector<ATOOLS::Vec4D>> _mapper)
-        : FinalStateMapper(_nout,idx), sherpa_mapper{std::move(_mapper)} {}
+    SherpaMapper(size_t _nout, Mapper_ptr<std::vector<ATOOLS::Vec4D>> _mapper)
+        : FinalStateMapper(_nout), sherpa_mapper{std::move(_mapper)} {}
 
     void GeneratePoint(Event&, const std::vector<double> &) override;
     double GenerateWeight(const Event&, std::vector<double> &) override;

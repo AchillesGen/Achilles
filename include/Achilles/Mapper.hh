@@ -32,9 +32,6 @@ template <typename T> class Mapper {
     // Functions
     virtual void GeneratePoint(T &, const std::vector<double> &) = 0;
     virtual double GenerateWeight(const T &, std::vector<double> &) = 0;
-	/// Number of slots in T that get populated by GeneratePoint()
-	/// and are read by GenerateWeight()
-	virtual size_t size() const { return 1; }
 	/// Number of slots in the vector<double> that are read by GeneratePoint()
 	/// and get populated by GenerateWeight()
     virtual size_t NDims() const = 0;

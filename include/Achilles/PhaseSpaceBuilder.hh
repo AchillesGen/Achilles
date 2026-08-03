@@ -19,10 +19,8 @@ class PSBuilder {
   public:
     PSBuilder(const ProcessInfo &);
     MOCK ~PSBuilder() = default;
-    MOCK PSBuilder &Beam(std::shared_ptr<Beam>, size_t = 0);
-	// If index not specified, we need to compute it
+    MOCK PSBuilder &Beam(std::shared_ptr<Beam>);
     MOCK PSBuilder &Hadron(const std::string &);
-    MOCK PSBuilder &Hadron(const std::string &, size_t);
     MOCK PSBuilder &FinalState(const std::string &, std::optional<double> = std::nullopt);
 #ifdef ACHILLES_SHERPA_INTERFACE
     MOCK PSBuilder &SherpaFinalState(const std::string &);

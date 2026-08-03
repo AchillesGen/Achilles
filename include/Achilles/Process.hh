@@ -44,19 +44,12 @@ class Process {
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
     MOCK const ProcessInfo &Info() const { return m_info; }
-    void SetupHadrons(Event &) const;
     MOCK void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
         m_xsec += weight;
     }
     MOCK double Unweight(double weight) { return m_unweighter->AcceptEvent(weight); }
     double MaxWeight() { return m_unweighter->MaxValue(); }
-    MOCK void ExtractMomentum(const Event &, FourVector &, std::vector<FourVector> &,
-                              std::vector<FourVector> &, std::vector<FourVector> &,
-                              std::vector<FourVector> &) const;
-    MOCK void ExtractParticles(const Event &, Particle &, std::vector<Particle> &,
-                               std::vector<Particle> &, std::vector<Particle> &,
-                               std::vector<Particle> &) const;
     FourVector ExtractQ(const Event &) const;
     double UnweightEff() const { return std::abs(m_xsec.Mean()) / m_unweighter->MaxValue(); }
     bool operator==(const Process &other) const { return m_info == other.m_info; }
@@ -107,7 +100,6 @@ class ProcessGroup {
     Nucleus *GetNucleus() { return m_nucleus.get(); }
     void SetupBackend(const Settings &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
-    void SetupLeptons(Event &, std::optional<size_t>) const;
 
     // Initialize processes and process groups
     static std::map<size_t, ProcessGroup> ConstructGroups(const Settings &, NuclearModel *,
@@ -121,11 +113,16 @@ class ProcessGroup {
     void Summary() const;
     Event GenerateEvent();
 	void EventSetup(Event&);
-    Event SingleEvent(const std::vector<FourVector> &, double);
     const double &MaxWeight() const { return m_maxweight; }
     double &MaxWeight() { return m_maxweight; }
     void SetOptimize(bool optimize) { b_optimize = optimize; }
     size_t Multiplicity() const { return m_processes[0].Info().Multiplicity(); }
+
+	ProcessInfo& GroupProcessInfo() {
+		/// TODO: Once Particle Containers are done, this method should
+		/// return a separate ProcessInfo object that's owned by the group
+		return m_processes[0].Info();
+	}
 
     // Metadata handlers
     std::vector<ProcessMetadata> Metadata() const;
