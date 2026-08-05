@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.0", "pyyaml"]
-flow = ["torch", "normflows", "zuko", "flow_matching", "onnxruntime", "tqdm"]
+flow = ["torch", "normflows", "zuko", "flow_matching", "onnxruntime", "tqdm", "matplotlib"]
 
 [project.scripts]
 achilles-mcp = "Achilles.mcp_server.server:main"
