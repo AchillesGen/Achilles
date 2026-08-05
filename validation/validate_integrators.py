@@ -97,10 +97,10 @@ Options:
     Seed: {seed}
   Integrator:
     BatchSize: 1024
+    Accuracy: 1e-3
 {integrator}
   Unweighting:
-    Name: Percentile
-    percentile: 99
+    Name: None
 
 Backend:
   Name: Default
@@ -117,7 +117,7 @@ Cache:
 # tighten toward the baseline and the error shrink).
 TRAIN_PROFILES = {
     "fast": {"Epochs": 15, "NIterations": 3, "NCalls": 2000},
-    "quality": {"Epochs": 300, "NIterations": 20, "NCalls": 10000},
+    "quality": {"Epochs": 1000, "NIterations": 50, "NCalls": 20000},
 }
 
 # name -> dict(kind=MultiChannel|Flow, params={...}, needs=[modules], runner=python|cpp).
@@ -239,7 +239,7 @@ def run_one(name, cfg, nevents, seed, profile):
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--nevents", type=int, default=1000)
+    ap.add_argument("--nevents", type=int, default=100000)
     ap.add_argument("--seed", type=int, default=123456)
     ap.add_argument("--nsigma", type=float, default=5.0)
     ap.add_argument("--only", nargs="*", help="restrict to these config names")
