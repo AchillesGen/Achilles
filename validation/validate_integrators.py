@@ -249,9 +249,19 @@ def main():
     ap.add_argument("--quality", action="store_true",
                     help="train the flows much longer (the 'quality' profile) to check "
                          "whether weak agreement was just under-training")
+    ap.add_argument("--epochs", type=int,
+                    help="Number of epochs for ML models")
+    ap.add_argument("--ncalls", type=int,
+                    help="Number of calls per epoch for ML models")
     args = ap.parse_args()
 
     profile = TRAIN_PROFILES["quality" if args.quality else "fast"]
+    if args.epochs is not None:
+        print(f"Overriding default epochs to {args.epochs}")
+        profile["Epochs"] = args.epochs
+    if args.ncalls is not None:
+        print(f"Overriding default ncalls to {args.ncalls}")
+        profile["NCalls"] = args.ncalls
     print(f"Flow training profile: {'quality' if args.quality else 'fast'} {profile}")
 
     if importlib.util.find_spec("Achilles") is None:
