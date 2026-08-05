@@ -39,3 +39,6 @@ install*
 doc-pm/
 Doxyfile
 .achilles
+validation/cards/
+validation/logs/
+validation/out
