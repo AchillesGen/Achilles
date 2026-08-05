@@ -97,7 +97,6 @@ Options:
     Seed: {seed}
   Integrator:
     BatchSize: 1024
-    Accuracy: 1e-3
 {integrator}
   Unweighting:
     Name: None
@@ -124,22 +123,22 @@ TRAIN_PROFILES = {
 # `params` for a Flow are the constructor kwargs (Class + architecture); the training
 # profile (Epochs/NIterations/NCalls) is merged in per run.
 CONFIGS = {
-    "multichannel": {"kind": "MultiChannel", "params": {"Accuracy": "1.0e-2"},
+    "multichannel": {"kind": "MultiChannel", "params": {"Accuracy": "1.0e-3"},
                      "needs": [], "runner": "python"},
-    "uniform": {"kind": "Flow", "params": {"Class": "UniformFlow"},
+    "uniform": {"kind": "Flow", "params": {"Class": "UniformFlow", "Accuracy": "1.0e-3"},
                 "needs": [], "runner": "python"},
-    "normflow": {"kind": "Flow", "params": {"Class": "NormFlow", "hidden": 32, "blocks": 4},
+    "normflow": {"kind": "Flow", "params": {"Class": "NormFlow", "hidden": 32, "blocks": 4, "Accuracy": "1.0e-3"},
                  "needs": ["torch", "normflows"], "runner": "python"},
     "spline": {"kind": "Flow",
-               "params": {"Class": "SplineFlow", "hidden": 32, "blocks": 4, "bins": 8},
+               "params": {"Class": "SplineFlow", "hidden": 32, "blocks": 4, "bins": 8, "Accuracy": "1.0e-3"},
                "needs": ["torch", "normflows"], "runner": "python"},
     "zuko_nsf": {"kind": "Flow",
-                 "params": {"Class": "ZukoFlow", "flow": "NSF", "hidden": 32, "transforms": 3},
+                 "params": {"Class": "ZukoFlow", "flow": "NSF", "hidden": 32, "transforms": 3, "Accuracy": "1.0e-3"},
                  "needs": ["torch", "zuko"], "runner": "python"},
-    "zuko_cnf": {"kind": "Flow", "params": {"Class": "ZukoFlow", "flow": "CNF", "hidden": 32},
+    "zuko_cnf": {"kind": "Flow", "params": {"Class": "ZukoFlow", "flow": "CNF", "hidden": 32, "Accuracy": "1.0e-3"},
                  "needs": ["torch", "zuko"], "runner": "python"},
     "flowmatching": {"kind": "Flow",
-                     "params": {"Class": "FlowMatchingFlow", "hidden": 32, "step_size": 0.1},
+                     "params": {"Class": "FlowMatchingFlow", "hidden": 32, "step_size": 0.1, "Accuracy": "1.0e-3"},
                      "needs": ["torch", "flow_matching"], "runner": "python"},
 }
 
