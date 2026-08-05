@@ -45,7 +45,7 @@ def find_tail_cutoff(arr, percentage):
 
 parser = argparse.ArgumentParser(description="A weight plotter")
 parser.add_argument("filename", type=str, help="Event file to plot")
-parser.add_argument("--cutoff", type=float, default=0.1, help="Percent cutoff")
+parser.add_argument("--cutoff", type=float, default=10, help="Percent cutoff")
 args = parser.parse_args()
 
 stem = Path(args.filename).stem
@@ -57,7 +57,7 @@ with pyhepmc.open(args.filename) as f:
 
 wgt = np.array(weights)
 mean = np.mean(wgt)
-target_percentage = args.cutoff
+target_percentage = args.cutoff/100
 max_wgt = find_tail_cutoff(wgt, target_percentage)
 percentile = np.percentile(wgt, 99)
 eff = mean/max_wgt*100
