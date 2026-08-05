@@ -1,8 +1,9 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
-#include "catch_utils.hh"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Cascade.hh"
@@ -64,7 +65,8 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
             .RETURN(5);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
-                                  achilles::Cascade::InMedium::None, true);
+                                  achilles::Cascade::InMedium::None, achilles::default_decay_file,
+                                  true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
 
@@ -164,7 +166,8 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
             .RETURN(5);
 
         achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Base,
-                                  achilles::Cascade::InMedium::None, true);
+                                  achilles::Cascade::InMedium::None, achilles::default_decay_file,
+                                  true);
         cascade.SetKicked(0);
         cascade.Evolve(event, &nucleus);
 
