@@ -57,11 +57,11 @@ Main:
 SherpaOptions: !include "data/default/SherpaOptions.yml"
 
 Processes:
-  - Leptons: [11, [11]]
+  - Leptons: [14, [13]]
 
 Beams:
   - Beam:
-      PID: 11
+      PID: 14
       Beam Params:
         Type: Monochromatic
         Energy: 1108
