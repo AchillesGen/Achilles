@@ -11,29 +11,25 @@
 
 TEST_CASE("BeamMapper", "[PhaseSpace]") {
     static constexpr auto electron = achilles::PID::electron();
-    const std::set<achilles::PID> beam_ids{electron};
     const achilles::FourVector beam_mom{1000, 0, 0, 1000};
     const std::vector<double> beam_rans{0.5};
     std::vector<double> new_rans(1);
     static constexpr int nvars = 1;
 
     SECTION("Variables is passed through") {
-        auto beam = std::make_shared<MockBeam>();
-        REQUIRE_CALL(*beam, NVariables()).TIMES(1).LR_RETURN((nvars));
+        auto beam = MakeBeam(electron, std::make_shared<MockFluxType>(nvars));
         achilles::BeamMapper mapper(0, beam);
         CHECK(mapper.NDims() == nvars);
     }
 
     SECTION("Forward and Backward pass") {
-        auto beam = std::make_shared<MockBeam>();
-        REQUIRE_CALL(*beam, BeamIDs()).TIMES(2).LR_RETURN((beam_ids));
-        REQUIRE_CALL(*beam, Flux(electron, beam_rans, trompeloeil::ge(0)))
-            .TIMES(1)
-            .LR_RETURN((beam_mom));
-        REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_, trompeloeil::ge(0)))
-            .LR_SIDE_EFFECT(_3[0] = 0.5)
+        auto flux = std::make_shared<MockFluxType>(nvars);
+        REQUIRE_CALL(*flux, Flux(beam_rans, trompeloeil::ge(0))).TIMES(1).LR_RETURN((beam_mom));
+        REQUIRE_CALL(*flux, GenerateWeight(beam_mom, trompeloeil::_, trompeloeil::ge(0)))
+            .LR_SIDE_EFFECT(_2[0] = 0.5)
             .TIMES(1)
             .RETURN(1.0);
+        auto beam = MakeBeam(electron, flux);
 
         SECTION("Forward") {
             achilles::BeamMapper mapper(0, beam);

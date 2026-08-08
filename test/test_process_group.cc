@@ -15,8 +15,8 @@ using achilles::RegistrableBackend;
 std::unique_ptr<MockBackend> MockBackend::self = nullptr;
 
 TEST_CASE("Process Grouping Setup", "[Process]") {
-    auto beam = std::make_shared<MockBeam>();
-    auto nucleus = std::make_shared<MockNucleus>();
+    auto beam = std::make_shared<achilles::Beam>();
+    auto nucleus = MakeNucleus();
 
     SECTION("Setup Leptons") {
         achilles::ProcessInfo info;
@@ -41,13 +41,13 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         expected_leptons.emplace_back(info.m_leptonic.second[0], momentum[2]);
         expected_leptons.back().Status() = achilles::ParticleStatus::final_state;
 
-        MockEvent event;
-        const MockEvent &cevent = event;
-        REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, Leptons()).TIMES(1).LR_RETURN(leptons);
+        achilles::Event event;
+        event.Momentum() = momentum;
+        event.Leptons() = leptons;
 
         group.SetupLeptons(event, std::optional<size_t>(0));
 
+        leptons = event.Leptons();
         CHECK(leptons.size() == expected_leptons.size());
         CHECK(leptons[0] == expected_leptons[0]);
         CHECK(leptons[1] == expected_leptons[1]);
@@ -86,8 +86,8 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
 }
 
 TEST_CASE("Process Grouping CrossSection", "[Process]") {
-    auto beam = std::make_shared<MockBeam>();
-    auto nucleus = std::make_shared<MockNucleus>();
+    auto beam = std::make_shared<achilles::Beam>();
+    auto nucleus = MakeNucleus();
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
@@ -116,13 +116,10 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
     REQUIRE_CALL(*backend, AddProcess(trompeloeil::_)).TIMES(1).IN_SEQUENCE(seq);
 
     SECTION("Cross Section") {
-        MockEvent event;
-        const MockEvent &cevent = event;
-        double weight;
+        achilles::Event event;
         static constexpr double expected_weight = 10;
-        REQUIRE_CALL(event, Weight()).TIMES(1).LR_RETURN(weight);
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
-            .LR_WITH(_1 == cevent)
+            .LR_WITH(_1 == event)
             .TIMES(1)
             .RETURN(expected_weight);
         MockBackend::SetSelf(std::move(backend));
@@ -130,12 +127,12 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
 
         SECTION("Optimize") {
             group.CrossSection(event, std::optional<size_t>());
-            CHECK(weight == expected_weight);
+            CHECK(event.Weight() == expected_weight);
         }
 
         SECTION("Generate") {
             group.CrossSection(event, std::optional<size_t>(0));
-            CHECK(weight == expected_weight);
+            CHECK(event.Weight() == expected_weight);
         }
     }
 }
@@ -151,9 +148,12 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
 
     std::vector<achilles::Particle> nucleons = {Particle{achilles::PID::proton()},
                                                 Particle{achilles::PID::neutron()}};
-    auto beam = std::make_shared<MockBeam>();
-    auto nucleus = std::make_shared<MockNucleus>();
-    REQUIRE_CALL(*nucleus, GenerateConfig()).TIMES(1).LR_RETURN(nucleons);
+    auto mock_flux = std::make_shared<MockFluxType>();
+    auto beam = MakeBeam(achilles::PID::electron(), mock_flux);
+    auto density = std::make_unique<MockDensity>();
+    REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).LR_RETURN(nucleons);
+    auto nucleus = MakeNucleus();
+    nucleus->SetDensity(std::move(density));
 
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
@@ -198,9 +198,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
 
     SECTION("Generate") {
         auto optimize = false;
-        REQUIRE_CALL(*beam, EvaluateFlux(achilles::PID::electron(), momentum[0]))
-            .TIMES(1)
-            .LR_RETURN(flux);
+        REQUIRE_CALL(*mock_flux, EvaluateFlux(momentum[0])).TIMES(1).LR_RETURN(flux);
         YAML::Node config;
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
