@@ -12,15 +12,13 @@
 
 TEST_CASE("QuasielasticTestMapper", "[PhaseSpace]") {
     static constexpr auto electron = achilles::PID::electron();
-    const std::set<achilles::PID> beam_ids = {electron};
     const achilles::FourVector beam_mom = {1000, 0, 0, 1000};
     const std::vector<double> beam_rans{0};
     static constexpr int nvars = 1;
-    auto beam = std::make_shared<MockBeam>();
-    REQUIRE_CALL(*beam, BeamIDs()).TIMES(2).LR_RETURN((beam_ids));
-    REQUIRE_CALL(*beam, Flux(electron, beam_rans, 0)).TIMES(1).LR_RETURN((beam_mom));
-    REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_, 0)).TIMES(1).RETURN(1.0);
-    REQUIRE_CALL(*beam, NVariables()).TIMES(4).RETURN(nvars);
+    auto flux = std::make_shared<MockFluxType>(nvars);
+    REQUIRE_CALL(*flux, Flux(beam_rans, 0)).TIMES(1).LR_RETURN((beam_mom));
+    REQUIRE_CALL(*flux, GenerateWeight(beam_mom, trompeloeil::_, 0)).TIMES(1).RETURN(1.0);
+    auto beam = MakeBeam(electron, flux);
 
     auto input_fmt = R"node(
         Run Mode: {}
