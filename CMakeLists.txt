@@ -40,7 +40,7 @@ target_include_directories(achilles_public_headers INTERFACE
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
 
-# Internal-only build settings: sanitizers, coverage, PCH, TESTING define.
+# Internal-only build settings: sanitizers, coverage, PCH.
 # Linked PRIVATE by Achilles libraries; never exported.
 add_library(achilles_options INTERFACE)
 
@@ -192,7 +192,6 @@ if(ACHILLES_ENABLE_TESTING)
     target_compile_options(achilles_options INTERFACE --coverage)
     target_link_libraries(achilles_options INTERFACE gcov)
   endif()
-  target_compile_definitions(achilles_options INTERFACE TESTING)
   enable_testing()
   message(STATUS "Building Tests.")
   add_subdirectory(test)

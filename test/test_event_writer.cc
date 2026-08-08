@@ -39,11 +39,11 @@ TEST_CASE("Builtin", "[EventWriter]") {
             Particle{achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
         achilles::NuclearRemnant remnant(11, 5);
 
-        const MockEvent event{};
+        achilles::Event event{};
         double wgt = 1.0;
-        REQUIRE_CALL(event, Particles()).TIMES(1).LR_RETURN((particles));
-        REQUIRE_CALL(event, Remnant()).TIMES(1).LR_RETURN((remnant));
-        REQUIRE_CALL(event, Weight()).TIMES(1).LR_RETURN((wgt));
+        event.Hadrons() = particles;
+        event.Remnant() = remnant;
+        event.Weight() = wgt;
 
         writer.Write(event);
 

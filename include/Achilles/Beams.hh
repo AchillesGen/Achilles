@@ -1,7 +1,6 @@
 #ifndef BEAMS_HH
 #define BEAMS_HH
 
-#include "Achilles/Achilles.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/Hashable.hh"
 #include "Achilles/Histogram.hh"
@@ -169,23 +168,23 @@ class Beam {
     Beam(Beam &&) = default;
     Beam &operator=(const Beam &) = delete;
     Beam &operator=(Beam &&) = default;
-    virtual ~Beam() = default;
+    ~Beam() = default;
 
     Beam() { n_vars = 0; }
-    MOCK int NVariables() const { return n_vars; }
-    MOCK FourVector Flux(const PID pid, const std::vector<double> &rans, double smin) const {
+    int NVariables() const { return n_vars; }
+    FourVector Flux(const PID pid, const std::vector<double> &rans, double smin) const {
         return m_beams.at(pid)->Flux(rans, smin);
     }
-    MOCK double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans,
+    double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans,
                                double smin) const {
         return m_beams.at(pid)->GenerateWeight(p, rans, smin);
     }
     size_t NBeams() const { return m_beams.size(); }
-    MOCK const std::set<PID> &BeamIDs() const { return m_pids; }
+    const std::set<PID> &BeamIDs() const { return m_pids; }
     const EnergyDomain &Domain() const { return m_domain; }
     double MinEnergy() const;
     double MaxEnergy() const;
-    MOCK double EvaluateFlux(const PID pid, const FourVector &p) const {
+    double EvaluateFlux(const PID pid, const FourVector &p) const {
         return m_beams.at(pid)->EvaluateFlux(p);
     }
 

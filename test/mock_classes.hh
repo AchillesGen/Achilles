@@ -77,17 +77,42 @@ class MockPotential : public trompeloeil::mock_interface<achilles::Potential> {
     MAKE_CONST_MOCK2(call_op, achilles::PotentialVals(const double &, const double &));
 };
 
-class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK0(GenerateConfig);
-    IMPLEMENT_CONST_MOCK0(ID);
-    MAKE_CONST_MOCK0(Radius, const double &(), noexcept override);
-    MAKE_CONST_MOCK1(Rho, double(const double &), noexcept override);
-    MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
-    MAKE_CONST_MOCK0(NProtons, size_t(), noexcept override);
-    MAKE_CONST_MOCK0(NNeutrons, size_t(), noexcept override);
-    MAKE_CONST_MOCK0(GetPotential, std::shared_ptr<achilles::Potential>(), noexcept override);
-};
+// Nucleus is a concrete type, so tests build a real one. Its density profile is
+// tabulated rather than read from a file, and GenerateConfig is steered through
+// the (real) Density interface, which MockDensity implements.
+inline std::shared_ptr<achilles::Nucleus> MakeNucleus(size_t Z = 6, size_t A = 12,
+                                                      double radius = 10, double rho = 0.16) {
+    auto nucleus = std::make_shared<achilles::Nucleus>();
+    nucleus->Initialize(Z, A);
+    nucleus->SetRadius(radius);
+    nucleus->SetFermiMomentum(225);
+    std::vector<double> radii, density;
+    static constexpr size_t nknots = 20;
+    for(size_t i = 0; i < nknots; ++i) {
+        radii.push_back(radius * static_cast<double>(i) / (nknots - 1));
+        density.push_back(rho);
+    }
+    nucleus->SetDensityProfile(radii, density, density);
+    return nucleus;
+}
+
+// As above, but with the density profile sampled from `profile` so a test can
+// pin Rho(r) to a specific function.
+inline std::shared_ptr<achilles::Nucleus>
+MakeNucleus(size_t Z, size_t A, double radius, const std::function<double(double)> &profile,
+            size_t nknots = 400) {
+    auto nucleus = std::make_shared<achilles::Nucleus>();
+    nucleus->Initialize(Z, A);
+    nucleus->SetRadius(radius);
+    nucleus->SetFermiMomentum(225);
+    std::vector<double> radii, density;
+    for(size_t i = 0; i < nknots; ++i) {
+        radii.push_back(radius * static_cast<double>(i) / static_cast<double>(nknots - 1));
+        density.push_back(profile(radii.back()));
+    }
+    nucleus->SetDensityProfile(radii, density, density);
+    return nucleus;
+}
 
 class MockNuclearModel : public trompeloeil::mock_interface<achilles::NuclearModel> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -123,32 +148,32 @@ class MockInteraction : public trompeloeil::mock_interface<achilles::Interaction
     IMPLEMENT_CONST_MOCK0(GetName);
 };
 
-class MockBeam : public trompeloeil::mock_interface<achilles::Beam> {
-    IMPLEMENT_CONST_MOCK0(NVariables);
-    IMPLEMENT_CONST_MOCK3(Flux);
-    IMPLEMENT_CONST_MOCK4(GenerateWeight);
-    IMPLEMENT_CONST_MOCK0(BeamIDs);
-    IMPLEMENT_CONST_MOCK2(EvaluateFlux);
-};
-
-class MockEvent : public trompeloeil::mock_interface<achilles::Event> {
+// Beam itself is a concrete container, so mock the flux it holds and put that in
+// a real Beam. The plain properties are the ones the Beam constructor queries
+// and no test asserts on.
+class MockFluxType : public trompeloeil::mock_interface<achilles::FluxType> {
+  public:
     static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK0(Remnant);
-    IMPLEMENT_MOCK0(CurrentNucleus);
-    IMPLEMENT_CONST_MOCK0(CurrentNucleus);
+    MockFluxType(int nvars = 1, double emin = 0, double emax = 1000)
+        : m_nvars{nvars}, m_emin{emin}, m_emax{emax} {}
+    int NVariables() const override { return m_nvars; }
+    double MinEnergy() const override { return m_emin; }
+    double MaxEnergy() const override { return m_emax; }
+    std::string Type() const override { return "Mock"; }
 
-    IMPLEMENT_CONST_MOCK0(Particles);
-    IMPLEMENT_MOCK0(Hadrons);
-    IMPLEMENT_CONST_MOCK0(Hadrons);
-    IMPLEMENT_MOCK0(Leptons);
-    IMPLEMENT_CONST_MOCK0(Leptons);
+    IMPLEMENT_CONST_MOCK2(Flux);
+    IMPLEMENT_CONST_MOCK3(GenerateWeight);
+    IMPLEMENT_CONST_MOCK1(EvaluateFlux);
 
-    IMPLEMENT_MOCK0(Momentum);
-    IMPLEMENT_CONST_MOCK0(Momentum);
-    IMPLEMENT_MOCK0(Weight);
-    IMPLEMENT_CONST_MOCK0(Weight);
-    IMPLEMENT_CONST_MOCK0(History);
+  private:
+    int m_nvars;
+    double m_emin, m_emax;
 };
+
+inline std::shared_ptr<achilles::Beam> MakeBeam(achilles::PID pid,
+                                                std::shared_ptr<achilles::FluxType> flux) {
+    return std::make_shared<achilles::Beam>(achilles::Beam::BeamMap{{pid, std::move(flux)}});
+}
 
 class MockFormFactor : public trompeloeil::mock_interface<achilles::FormFactor> {
     static constexpr bool trompeloeil_movable_mock = true;
@@ -180,14 +205,6 @@ class MockMapper : public trompeloeil::mock_interface<achilles::Mapper<achilles:
     IMPLEMENT_MOCK1(SetGaugeBosonMass);
 };
 
-class MockPSBuilder : public trompeloeil::mock_interface<achilles::PSBuilder> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_MOCK2(Beam);
-    IMPLEMENT_MOCK2(Hadron);
-    IMPLEMENT_MOCK2(FinalState);
-    IMPLEMENT_MOCK0(build);
-};
-
 class MockUnweighter : public trompeloeil::mock_interface<achilles::Unweighter> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK1(AddEvent);
@@ -195,15 +212,6 @@ class MockUnweighter : public trompeloeil::mock_interface<achilles::Unweighter> 
     IMPLEMENT_MOCK0(MaxValue);
     IMPLEMENT_CONST_MOCK1(SaveState);
     IMPLEMENT_MOCK1(LoadState);
-};
-
-class MockProcess : public trompeloeil::mock_interface<achilles::Process> {
-    static constexpr bool trompeloeil_movable_mock = true;
-    IMPLEMENT_CONST_MOCK0(Info);
-    IMPLEMENT_MOCK1(AddWeight);
-    IMPLEMENT_MOCK1(Unweight);
-    IMPLEMENT_CONST_MOCK6(ExtractMomentum);
-    IMPLEMENT_CONST_MOCK6(ExtractParticles);
 };
 
 class MockBackend : public trompeloeil::mock_interface<XSecBackend>,

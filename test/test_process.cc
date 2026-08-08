@@ -65,8 +65,8 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        const MockEvent event{};
-        REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
+        achilles::Event event{};
+        event.Momentum() = momentum;
 
         process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
         CHECK(lep_in == lep_in_expected);
@@ -82,8 +82,8 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        const MockEvent event{};
-        REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
+        achilles::Event event{};
+        event.Momentum() = momentum;
 
         auto qvec = process.ExtractQ(event);
         CHECK_THAT(qvec, FourVectorApprox(expected));
@@ -106,8 +106,8 @@ TEST_CASE("Handles events correctly", "[Process]") {
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
 
-        const MockEvent event{};
-        REQUIRE_CALL(event, Momentum()).TIMES(1).RETURN(momentum);
+        achilles::Event event{};
+        event.Momentum() = momentum;
 
         process.ExtractParticles(event, lep_in, had_in, lep_out, had_out, spect);
         CHECK(lep_in == lep_in_expected);
@@ -129,13 +129,13 @@ TEST_CASE("Handles events correctly", "[Process]") {
         expected_nucleons.emplace_back(achilles::PID::carbon(), momentum[3]);
         expected_nucleons.back().Status() = achilles::ParticleStatus::final_state;
 
-        MockEvent event;
-        const MockEvent &cevent = event;
-        REQUIRE_CALL(cevent, Momentum()).TIMES(1).LR_RETURN(momentum);
-        REQUIRE_CALL(event, Hadrons()).TIMES(4).LR_RETURN(std::ref(nucleons));
+        achilles::Event event;
+        event.Momentum() = momentum;
+        event.Hadrons() = nucleons;
 
         process.SetupHadrons(event);
 
+        nucleons = event.Hadrons();
         CHECK(nucleons.size() == expected_nucleons.size());
         CHECK(nucleons[0] == expected_nucleons[0]);
         CHECK(nucleons[1] == expected_nucleons[1]);

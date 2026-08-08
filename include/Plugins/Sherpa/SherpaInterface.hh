@@ -11,7 +11,6 @@
 #include "ATOOLS/Math/Vector.H"
 #include "ATOOLS/Phys/Blob_List.H"
 #pragma GCC diagnostic pop
-#include "Achilles/Achilles.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
@@ -70,7 +69,7 @@ class SherpaInterface {
     using LeptonCurrents = std::map<int, std::vector<VCurrent>>;
 
     SherpaInterface() = default;
-    MOCK ~SherpaInterface();
+    ~SherpaInterface();
 
     bool Initialize(const std::vector<std::string> &args);
     bool InitializeProcess(const ProcessInfo &info);
@@ -79,13 +78,13 @@ class SherpaInterface {
     GenerateChannels(const std::vector<long> &fl) const;
     std::map<size_t, long> MomentumMap(const std::vector<long> &fl) const;
 
-    MOCK LeptonCurrents CalcCurrent(const std::vector<long> &fl,
+    LeptonCurrents CalcCurrent(const std::vector<long> &fl,
                                     const std::vector<std::array<double, 4>> &p, const double &mu2);
-    MOCK double CalcDifferential(const std::vector<long> &fl,
+    double CalcDifferential(const std::vector<long> &fl,
                                  const std::vector<std::array<double, 4>> &p, const double &mu2);
-    MOCK void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
+    void FillAmplitudes(std::vector<METOOLS::Spin_Amplitudes> &amps);
 
-    MOCK std::vector<FormFactorInfo> FormFactors(int, int) const;
+    std::vector<FormFactorInfo> FormFactors(int, int) const;
     double Coupling(const std::string &) const;
     void RegisterParticles() const;
 

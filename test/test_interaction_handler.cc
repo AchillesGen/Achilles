@@ -44,8 +44,8 @@ TEST_CASE("Testing Cross Section", "[InteractionHandler]") {
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     achilles::Particles particles = {p1, p2};
-    MockEvent event;
-    REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(2));
+    achilles::Event event;
+    event.Hadrons() = particles;
 
     auto results = handler.CrossSection(event, 0, 1);
     REQUIRE(results.size() == 1);
@@ -73,8 +73,8 @@ TEST_CASE("Validate Interactions", "[InteractionHandler]") {
 
     msg = fmt::format("Cross section not registered for particles: [211, 2212]");
     achilles::Particles particles = {Particle{PID::pionp(), {}}, Particle{PID::proton(), {}}};
-    MockEvent event;
-    REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(2));
+    achilles::Event event;
+    event.Hadrons() = particles;
     REQUIRE_THROWS_MATCHES(handler.CrossSection(event, 0, 1), std::runtime_error,
                            Catch::Matchers::Message(msg));
 
@@ -96,8 +96,8 @@ TEST_CASE("Testing Multiple Final States", "[InteractionHandler]") {
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     achilles::Particles particles = {p1, p2};
-    MockEvent event;
-    REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(2));
+    achilles::Event event;
+    event.Hadrons() = particles;
 
     auto results = handler.CrossSection(event, 0, 1);
     REQUIRE(results.size() == 2);
@@ -125,8 +125,8 @@ TEST_CASE("Channel Selection", "[InteractionHandler]") {
     achilles::Particle p1{PID::proton(), {}};
     achilles::Particle p2{PID::proton(), {}};
     achilles::Particles particles = {p1, p2};
-    MockEvent event;
-    REQUIRE_CALL(event, Hadrons()).LR_RETURN((particles)).TIMES(AT_LEAST(2));
+    achilles::Event event;
+    event.Hadrons() = particles;
 
     auto results = handler.CrossSection(event, 0, 1);
     auto channel = handler.SelectChannel(results, 0.5);

@@ -55,11 +55,11 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
     auto r1 = GENERATE(take(3, random(rmin, rmax)));
     auto r2 = GENERATE(take(3, random(rmin, rmax)));
     auto q_free = p1 + p2;
-    auto nucleus = std::make_shared<MockNucleus>();
+    
 
     SECTION("WiringaPotential") {
         constexpr double rho0 = 0.16;
-        REQUIRE_CALL(*nucleus, Rho(trompeloeil::gt(0))).LR_RETURN((rho0)).TIMES(AT_LEAST(4));
+        auto nucleus = MakeNucleus(6, 12, 10, rho0);
 
         achilles::WiringaPotential potential(nucleus, rho0);
 
@@ -101,7 +101,7 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
     SECTION("CooperPotential") {
         constexpr size_t AA = 12;
-        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(4));
+        auto nucleus = MakeNucleus(6, AA);
 
         achilles::CooperPotential potential(nucleus);
 

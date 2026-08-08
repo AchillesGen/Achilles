@@ -7,7 +7,6 @@
 #include <complex>
 #include <memory>
 
-#include "Achilles/Achilles.hh"
 
 #include "fmt/format.h"
 
@@ -129,9 +128,9 @@ class FormFactor {
     };
 
     FormFactor() = default;
-    MOCK ~FormFactor() = default;
+    virtual ~FormFactor() = default;
 
-    MOCK Values operator()(double Q2) const;
+    virtual Values operator()(double Q2) const;
 
     friend FormFactorBuilder;
 
@@ -199,18 +198,18 @@ class FormFactorBuilder {
         static FormFactorBuilder instance;
         return instance;
     }
-    MOCK ~FormFactorBuilder() = default;
-    MOCK void Reset() { form_factor = std::make_unique<FormFactor>(); }
-    MOCK FormFactorBuilder &Vector(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &AxialVector(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &Coherent(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &ResonanceVector(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &ResonanceAxial(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &MesonExchangeVector(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &MesonExchangeAxial(const std::string &, const YAML::Node &);
-    MOCK FormFactorBuilder &Hyperon(const std::string &, const YAML::Node &);
+    virtual ~FormFactorBuilder() = default;
+    virtual void Reset() { form_factor = std::make_unique<FormFactor>(); }
+    virtual FormFactorBuilder &Vector(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &AxialVector(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &Coherent(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &ResonanceVector(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &ResonanceAxial(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &MesonExchangeVector(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &MesonExchangeAxial(const std::string &, const YAML::Node &);
+    virtual FormFactorBuilder &Hyperon(const std::string &, const YAML::Node &);
 
-    MOCK std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
+    virtual std::unique_ptr<FormFactor> build() { return std::move(form_factor); }
 
   private:
     std::unique_ptr<FormFactor> form_factor = nullptr;
