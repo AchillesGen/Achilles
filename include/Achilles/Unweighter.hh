@@ -69,27 +69,70 @@ class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
     double m_max_weight{};
 };
 
-class PercentileUnweighter : public Unweighter, RegistrableUnweighter<PercentileUnweighter> {
+class SortedWeightUnweighter : public Unweighter {
+  public:
+    SortedWeightUnweighter(double param) : m_param{param} {}
+
+    void AddEvent(double weight) override;
+    double AcceptEvent(double weight) override;
+    double MaxValue() override;
+    void SaveState(std::ostream &os) const override;
+    void LoadState(std::istream &is) override;
+
+    double RealizedTailFraction();
+    double RealizedExcessFraction();
+    bool CapAtMaximum();
+    bool Frozen() const { return m_frozen; }
+
+  protected:
+    virtual double ComputeCap(const std::vector<double> &sorted_weights, double total) const = 0;
+    virtual std::string RuleTag() const = 0;
+    void EnsureCap();
+
+    std::vector<double> m_weights{};
+    double m_param{};
+    double m_max_weight{};
+    double m_cap{};
+    bool m_dirty{true};
+    bool m_frozen{false};
+};
+
+// Cap = the p-th percentile of |weights|.
+class PercentileUnweighter : public SortedWeightUnweighter,
+                             RegistrableUnweighter<PercentileUnweighter> {
   public:
     PercentileUnweighter(const YAML::Node &);
-    void AddEvent(double) override;
-    double AcceptEvent(double) override;
-    double MaxValue() override { return m_percentile.Get(); }
-    void SaveState(std::ostream &os) const override {
-        m_percentile.SaveState(os);
-        os << m_accepted << " " << m_total << " ";
-    }
-    void LoadState(std::istream &is) override {
-        m_percentile.LoadState(is);
-        is >> m_accepted >> m_total;
-    }
-
-    // Required factory methods
     static std::unique_ptr<Unweighter> Construct(const YAML::Node &);
     static std::string Name() { return "Percentile"; }
 
-  private:
-    Percentile m_percentile;
+  protected:
+    double ComputeCap(const std::vector<double> &sorted_weights, double total) const override;
+    std::string RuleTag() const override { return Name(); }
+};
+
+// Cap = smallest C with sum_j max(|w_j|-C,0) <= eps*sum|w|.
+class ExcessUnweighter : public SortedWeightUnweighter, RegistrableUnweighter<ExcessUnweighter> {
+  public:
+    ExcessUnweighter(const YAML::Node &);
+    static std::unique_ptr<Unweighter> Construct(const YAML::Node &);
+    static std::string Name() { return "Excess"; }
+
+  protected:
+    double ComputeCap(const std::vector<double> &sorted_weights, double total) const override;
+    std::string RuleTag() const override { return Name(); }
+};
+
+// Cap = smallest C with sum_{|w_j|>C} |w_j| <= eps*sum|w|.
+class TailFractionUnweighter : public SortedWeightUnweighter,
+                               RegistrableUnweighter<TailFractionUnweighter> {
+  public:
+    TailFractionUnweighter(const YAML::Node &);
+    static std::unique_ptr<Unweighter> Construct(const YAML::Node &);
+    static std::string Name() { return "TailFraction"; }
+
+  protected:
+    double ComputeCap(const std::vector<double> &sorted_weights, double total) const override;
+    std::string RuleTag() const override { return Name(); }
 };
 
 } // namespace achilles
