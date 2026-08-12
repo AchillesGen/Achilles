@@ -41,4 +41,4 @@ Doxyfile
 
 # physval scratch: rendered run cards, generator logs and multi-GB event files
 validation/physval/physval-work/
-validation/physval/*-out/
+validation/physval/*out*/

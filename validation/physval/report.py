@@ -288,28 +288,46 @@ class ScanReport:
         return lines
 
     def _mark(self, s: "VariantSummary") -> str:
-        """🎯 reference · 🧪 null control · 🚩 worse than the null · ✅ otherwise."""
+        """🎯 reference · 🧪 null control · ❔ uncalibrated · 🚩 flagged · ✅ ok."""
         if s.is_null_control:
             return "🧪"
+        if not self.calibrated():
+            return "❔"
         p_thr, s_thr = self.thresholds()
         return "🚩" if (s.p_overall < p_thr or s.p_shape_overall < s_thr) else "✅"
+
+    def null_control(self) -> Optional["VariantSummary"]:
+        return next((s for s in self.summaries if s.is_null_control), None)
+
+    def calibrated(self) -> bool:
+        """Whether the p-values mean anything for this run.
+
+        The null control is the reference's own configuration at a different seed, so
+        it is a draw from the null hypothesis and ought to sit above ``alpha``. When
+        it does not, the covariance is missing variance that is present between any
+        two runs, every p-value is compressed against zero, and ranking the variants
+        by p would be reading noise — several of them underflow to 0.0 outright.
+        The report says so instead of naming a culprit.
+        """
+        null = self.null_control()
+        if null is None:
+            return True  # no control was run; fall back to the nominal alpha
+        return null.p_overall >= self.alpha and null.p_shape_overall >= self.alpha
 
     def thresholds(self) -> tuple:
         """Flagging thresholds for (p_compat, p_shape), floored by the null control.
 
-        The null control is the reference scheme rerun at a different seed, so its
-        p-values are drawn from the null. Whatever it scores is what an *identical*
-        configuration costs, and no real scheme should be called out for doing at
-        least as well. The control can therefore only make the test more
-        conservative — ``min`` with ``alpha`` — never less, so a control that happens
-        to land at p ≈ 1 leaves the nominal threshold untouched.
+        Whatever the control scores is what an *identical* configuration costs, and
+        no real scheme should be called out for doing at least as well. The control
+        can therefore only make the test more conservative — ``min`` with ``alpha`` —
+        never less, so a control that lands at p ≈ 1 leaves the threshold untouched.
         """
-        for s in self.summaries:
-            if s.is_null_control:
-                p, q = s.p_overall, s.p_shape_overall
-                return (min(self.alpha, p if p == p else self.alpha),
-                        min(self.alpha, q if q == q else self.alpha))
-        return (self.alpha, self.alpha)
+        null = self.null_control()
+        if null is None:
+            return (self.alpha, self.alpha)
+        p, q = null.p_overall, null.p_shape_overall
+        return (min(self.alpha, p if p == p else self.alpha),
+                min(self.alpha, q if q == q else self.alpha))
 
     def _detail_table(self, rows: List[VariantMeasurement]) -> List[str]:
         lines = [
@@ -328,10 +346,15 @@ class ScanReport:
 
     def to_markdown(self) -> str:
         biased = self.biased()
-        n_var = len([s for s in self.summaries if not s.is_reference])
-        verdict = ("✅ every scheme reproduces the reference"
-                   if not biased else
-                   f"⚠️ {len(biased)} of {n_var} scheme(s) differ from the reference")
+        n_var = len([s for s in self.summaries
+                     if not (s.is_reference or s.is_null_control)])
+        if not self.calibrated():
+            verdict = ("❔ uncalibrated — the null control fails its own test, so "
+                       "no scheme can be judged on p")
+        elif biased:
+            verdict = f"⚠️ {len(biased)} of {n_var} scheme(s) differ from the reference"
+        else:
+            verdict = "✅ every scheme reproduces the reference"
 
         lines: List[str] = [
             COMMENT_MARKER, "## 🎚️ Unweighting scan", "",
@@ -345,7 +368,8 @@ class ScanReport:
         lines.extend(self._summary_table())
         lines.append("")
 
-        flagged_rows = [r for r in self.rows if r.p_compat < self.alpha]
+        flagged_rows = ([] if not self.calibrated()
+                        else [r for r in self.rows if r.p_compat < self.alpha])
         if flagged_rows:
             lines.append("### Measurements differing from the reference")
             lines.extend(self._detail_table(
@@ -357,17 +381,33 @@ class ScanReport:
         lines.extend(self._detail_table(self.rows))
         lines.append("\n</details>")
         lines.append("")
-        null = next((x for x in self.summaries if x.is_null_control), None)
-        if null is not None:
+        null = self.null_control()
+        if null is not None and not self.calibrated():
+            lines.append(
+                f"❔ **The p columns above are not usable for this run.** 🧪 "
+                f"`null-control` is the reference's own configuration at a different "
+                f"seed — a draw from the null hypothesis, which should sit above "
+                f"α={self.alpha}. It scores p = {self._fmt(null.p_overall)} "
+                f"(shape {self._fmt(null.p_shape_overall)}). Two *identical* "
+                f"configurations are therefore \"incompatible\", so the covariance is "
+                f"missing variance that is present between any two runs: the bootstrap "
+                f"is estimated inside a single run and carries neither the run-to-run "
+                f"scatter of the flux-averaged cross section nor the spread from each "
+                f"run's own adapted integration grid. Ranking variants by p here would "
+                f"be reading noise — some p-values underflow to 0.0 outright.")
+            lines.append("")
+            lines.append(
+                "The **effect sizes are still valid**: Δnorm, ESS/event, MC error and "
+                "wall time are direct measurements, not test statistics. Compare each "
+                "scheme's Δnorm against the null control's — a scheme inside that is "
+                "indistinguishable from rerunning the reference.")
+        elif null is not None:
             p_thr, s_thr = self.thresholds()
             lines.append(
-                f"🧪 **null control** — the reference scheme rerun at a different "
-                f"seed, so its rows are drawn from the null hypothesis. It scores "
-                f"p = {self._fmt(null.p_overall)} (shape "
-                f"{self._fmt(null.p_shape_overall)}), which is what two *identical* "
-                f"configurations cost: the bootstrap covariance is estimated inside a "
-                f"single run and so does not carry the generator's run-to-run scatter "
-                f"in the overall normalisation. Thresholds are floored at that value "
+                f"🧪 **null control** — the reference rerun at a different seed, so its "
+                f"rows are drawn from the null. It scores p = "
+                f"{self._fmt(null.p_overall)} (shape "
+                f"{self._fmt(null.p_shape_overall)}); thresholds are floored there "
                 f"— {self._fmt(p_thr)} and {self._fmt(s_thr)} — so no scheme is "
                 f"flagged for doing as well as an identical rerun.")
             lines.append("")
