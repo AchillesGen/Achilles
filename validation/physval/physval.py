@@ -17,15 +17,16 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import yaml
 
 from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
                       SyntheticAdapter)
-from report import MeasurementResult, Report
-from stats import (Prediction, bootstrap_covariance, compatibility,
+from report import (ALPHA, MeasurementResult, Report, ScanReport,
+                    VariantMeasurement, VariantSummary)
+from stats import (Prediction, bonferroni, bootstrap_covariance, compatibility,
                    goodness_of_fit)
 
 
@@ -177,6 +178,201 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
 
 
 # ---------------------------------------------------------------------------
+# Unweighting scan: the same setup generated once per unweighting scheme
+# ---------------------------------------------------------------------------
+
+def _mean_error(pred: Prediction) -> float:
+    """Mean per-bin bootstrap 1-sigma — the size of the prediction's error band."""
+    return float(np.mean(np.sqrt(np.clip(np.diag(pred.covariance), 0.0, None))))
+
+
+def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
+                         n_boot: int, repo: str, feature_sha: str,
+                         nuisance_version: str, out_dir: str) -> ScanReport:
+    """Generate each setup once per unweighting variant and compare them.
+
+    Unweighting is variance reduction, so every variant must reproduce the reference
+    variant's distributions; what legitimately differs is the MC noise per event and
+    the wall time. Variants share a seed and an event count, so the only difference
+    between two runs of a setup is the scheme itself.
+    """
+    from plots import plot_variants
+
+    spec = config.get("unweighting")
+    if not spec:
+        raise SystemExit("--unweighter-scan needs an 'unweighting:' block in the config")
+    variants = spec["variants"]
+    reference = spec["reference"]
+    names = [v["name"] for v in variants]
+    if reference not in names:
+        raise SystemExit(f"unweighting.reference {reference!r} is not one of {names}")
+
+    rng = np.random.default_rng(seed + 202)
+    rows: List[VariantMeasurement] = []
+    # variant -> per-measurement pieces, rolled up once every setup has been seen.
+    per_variant: Dict[str, dict] = {v["name"]: {"pvalues": [], "ess": [], "err": [],
+                                                "norm": [], "seconds": 0.0,
+                                                "eff": []} for v in variants}
+
+    for exp in config["experiments"]:
+        data = {m["name"]: adapter.data_table(m) for m in exp["measurements"]}
+        preds: Dict[str, Dict[str, Prediction]] = {}
+        samples: Dict[str, Dict[str, object]] = {}
+
+        # One generation per variant, immediately binned into every measurement of
+        # the setup so only a single event file is on disk at a time.
+        for variant in variants:
+            name = variant["name"]
+            gen = adapter.generate(exp, name, seed, n_events,
+                                   unweighting=variant["options"], seed_offset=0)
+            preds[name], samples[name] = {}, {}
+            for m in exp["measurements"]:
+                sample = adapter.histogram(gen, m)
+                preds[name][m["name"]] = bootstrap_covariance(
+                    sample.bin_index, sample.weights, sample.nbins,
+                    n_boot=n_boot, rng=rng)
+                samples[name][m["name"]] = sample
+            if gen.run is not None:
+                if gen.run.seconds:
+                    per_variant[name]["seconds"] += gen.run.seconds
+                if gen.run.unweight_eff:
+                    per_variant[name]["eff"].append(gen.run.unweight_eff)
+            gen.cleanup()
+
+        os.makedirs(out_dir, exist_ok=True)
+        for m in exp["measurements"]:
+            mname = m["name"]
+            ref_pred = preds[reference][mname]
+            ref_total = float(np.sum(ref_pred.values))
+            ref_err = _mean_error(ref_pred)
+
+            for variant in variants:
+                vname = variant["name"]
+                pred = preds[vname][mname]
+                sample = samples[vname][mname]
+                compat = compatibility(ref_pred, pred)
+                gof = goodness_of_fit(pred, data[mname].values, data[mname].covariance)
+                total = float(np.sum(pred.values))
+                row = VariantMeasurement(
+                    measurement=mname, variant=vname, ndof=compat.ndof,
+                    chi2_ndof_data=gof.chi2_per_ndof,
+                    # The reference has nothing to be compared against; NaN keeps it
+                    # out of the flagged rows and renders as a dash.
+                    p_compat=float("nan") if vname == reference else compat.pvalue,
+                    p_data=gof.pvalue,
+                    norm_shift=(total - ref_total) / ref_total if ref_total else float("nan"),
+                    ess_fraction=sample.ess_fraction(),
+                    max_over_mean=sample.max_over_mean(),
+                    mc_error_ratio=_mean_error(pred) / ref_err if ref_err else float("nan"))
+                rows.append(row)
+                agg = per_variant[vname]
+                agg["ess"].append(row.ess_fraction)
+                agg["err"].append(row.mc_error_ratio)
+                agg["norm"].append(row.norm_shift)
+                if vname != reference:
+                    agg["pvalues"].append(compat.pvalue)
+
+            plot_variants(
+                os.path.join(out_dir, f"{mname}.unweighting.png"), mname,
+                data=data[mname].values, data_cov=data[mname].covariance,
+                variants={v["name"]: (preds[v["name"]][mname].values,
+                                      preds[v["name"]][mname].covariance)
+                          for v in variants},
+                reference=reference,
+                edges=data[mname].edges, xlabel=data[mname].xlabel,
+                ylabel=data[mname].ylabel,
+                subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
+                         f"{n_events:,} events/variant  |  {feature_sha[:8]}")
+
+    report = ScanReport(
+        summaries=_scan_summaries(
+            [(v["name"], v["options"]) for v in variants], rows, reference,
+            {name: (agg["seconds"], agg["eff"]) for name, agg in per_variant.items()}),
+        rows=rows, reference=reference, repo=repo, feature_sha=feature_sha,
+        nuisance_version=nuisance_version, seed=seed,
+        events_per_measurement=n_events)
+    os.makedirs(out_dir, exist_ok=True)
+    report.write(os.path.join(out_dir, "comment.md"),
+                 os.path.join(out_dir, "summary.json"))
+    return report
+
+
+def _scan_summaries(variants, rows: List[VariantMeasurement], reference: str,
+                    runtime: Dict[str, tuple]) -> List[VariantSummary]:
+    """Roll the per-measurement scan rows up into one line per variant.
+
+    ``variants`` is an ordered ``(name, options)`` sequence; ``runtime`` maps a
+    variant to ``(total_seconds, [per-setup efficiencies])``. Shared by the direct
+    run and by ``merge_scan_shards`` so a sharded scan reports identically.
+    """
+    by_variant: Dict[str, List[VariantMeasurement]] = {}
+    for r in rows:
+        by_variant.setdefault(r.variant, []).append(r)
+
+    summaries = []
+    for name, options in variants:
+        mine = by_variant.get(name, [])
+        pv = [r.p_compat for r in mine if r.p_compat == r.p_compat]  # drops the ref's NaN
+        seconds, effs = runtime.get(name, (0.0, []))
+        summaries.append(VariantSummary(
+            variant=name, options=dict(options), n_measurements=len(mine),
+            p_worst=float(np.min(pv)) if pv else float("nan"),
+            p_overall=bonferroni(pv) if pv else float("nan"),
+            n_flagged=sum(1 for p in pv if p < ALPHA),
+            ess_fraction=float(np.nanmedian([r.ess_fraction for r in mine]))
+            if mine else float("nan"),
+            mc_error_ratio=float(np.nanmedian([r.mc_error_ratio for r in mine]))
+            if mine else float("nan"),
+            max_norm_shift=max((r.norm_shift for r in mine), key=abs)
+            if mine else float("nan"),
+            seconds=seconds or None,
+            unweight_eff=float(np.min(effs)) if effs else None,
+            is_reference=name == reference))
+    return summaries
+
+
+def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
+    """Combine per-experiment unweighting-scan ``summary.json`` files into one report.
+
+    The scan shards on the same axis as the branch comparison — one experimental
+    setup per job — so the rows just concatenate; only the per-variant rollup has to
+    be recomputed across the whole family.
+    """
+    shards = []
+    for p in shard_paths:
+        with open(p) as fh:
+            shards.append(json.load(fh))
+    if not shards:
+        raise SystemExit("merge_scan_shards: no shard summaries given")
+    if any(s.get("kind") != "unweighting-scan" for s in shards):
+        raise SystemExit("merge_scan_shards: not every shard is an unweighting scan")
+
+    head = shards[0]
+    rows = [VariantMeasurement(**r) for s in shards for r in s["rows"]]
+    # Variant order and options come from the first shard; every shard runs the
+    # same variant list, so this is just the display order.
+    variants = [(v["variant"], v["options"]) for v in head["variants"]]
+    runtime: Dict[str, tuple] = {name: (0.0, []) for name, _ in variants}
+    for s in shards:
+        for v in s["variants"]:
+            seconds, effs = runtime[v["variant"]]
+            runtime[v["variant"]] = (seconds + (v["seconds"] or 0.0),
+                                     effs + ([v["unweight_eff"]]
+                                             if v["unweight_eff"] else []))
+
+    report = ScanReport(
+        summaries=_scan_summaries(variants, rows, head["reference"], runtime),
+        rows=rows, reference=head["reference"], repo=head["repo"],
+        feature_sha=head["feature_sha"],
+        nuisance_version=head["nuisance_version"], seed=head["seed"],
+        events_per_measurement=head["events_per_measurement"])
+    os.makedirs(out_dir, exist_ok=True)
+    report.write(os.path.join(out_dir, "comment.md"),
+                 os.path.join(out_dir, "summary.json"))
+    return report
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 
@@ -191,11 +387,13 @@ def _load_config(path: str) -> dict:
     return config
 
 
-def _filter_config(config: dict, only_experiments, only_measurements) -> dict:
+def _filter_config(config: dict, only_experiments, only_measurements,
+                   only_variants=None) -> dict:
     """Shard the config by experiment (primary) and/or by measurement name.
 
     ``--only-experiment`` selects whole experimental setups (the CI shard axis);
-    ``--only`` further narrows to individual measurements within them.
+    ``--only`` further narrows to individual measurements within them;
+    ``--only-variant`` narrows the unweighting scan's variant list.
     """
     experiments = config["experiments"]
 
@@ -220,7 +418,20 @@ def _filter_config(config: dict, only_experiments, only_measurements) -> dict:
             raise SystemExit(f"--only names not in config: {sorted(missing)}")
         experiments = kept
 
-    return {**config, "experiments": experiments}
+    config = {**config, "experiments": experiments}
+
+    if only_variants:
+        spec = config.get("unweighting")
+        if not spec:
+            raise SystemExit("--only-variant needs an 'unweighting:' block in the config")
+        wanted = set(only_variants) | {spec["reference"]}  # the reference is required
+        kept_variants = [v for v in spec["variants"] if v["name"] in wanted]
+        missing = wanted - {v["name"] for v in kept_variants}
+        if missing:
+            raise SystemExit(f"--only-variant names not in config: {sorted(missing)}")
+        config["unweighting"] = {**spec, "variants": kept_variants}
+
+    return config
 
 
 def merge_shards(shard_paths, out_dir: str) -> Report:
@@ -283,6 +494,13 @@ def build_argparser() -> argparse.ArgumentParser:
                    dest="only_measurements",
                    help="run only this measurement (repeatable); narrows within "
                         "the selected experiment(s)")
+    p.add_argument("--only-variant", action="append", default=[],
+                   dest="only_variants",
+                   help="run only this unweighting variant (repeatable); the "
+                        "reference variant is always kept")
+    p.add_argument("--unweighter-scan", action="store_true",
+                   help="generate each setup once per Options/Unweighting variant "
+                        "and compare them against the reference variant")
     p.add_argument("--merge", nargs="+", default=None,
                    help="merge these shard summary.json files into one report")
     p.add_argument("--dry-run", action="store_true",
@@ -305,6 +523,12 @@ def main(argv=None) -> int:
         return _selftest()
 
     if args.merge:
+        if args.unweighter_scan:
+            scan = merge_scan_shards(args.merge, out_dir=args.out_dir)
+            print(f"merged {len(args.merge)} scan shard(s): rows={len(scan.rows)} "
+                  f"biased={[s.variant for s in scan.biased()] or 'none'}")
+            print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
+            return 0
         report = merge_shards(args.merge, out_dir=args.out_dir)
         print(f"merged {len(args.merge)} shard(s): p_overall={report.p_overall():.4g} "
               f"flagged={report.n_flagged()}/{len(report.results)}")
@@ -312,8 +536,20 @@ def main(argv=None) -> int:
         return 0
 
     config = _filter_config(_load_config(args.config), args.only_experiments,
-                            args.only_measurements)
+                            args.only_measurements, args.only_variants)
     adapter = _adapter_from_args(args)
+
+    if args.unweighter_scan:
+        report = run_unweighting_scan(
+            adapter, config, seed=args.seed, n_events=args.events,
+            n_boot=args.n_boot, repo=args.repo, feature_sha=args.feature_sha,
+            nuisance_version=args.nuisance_version, out_dir=args.out_dir)
+        biased = [s.variant for s in report.biased()]
+        print(f"reference={report.reference} "
+              f"variants={len(report.summaries)} rows={len(report.rows)} "
+              f"biased={biased or 'none'}")
+        print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
+        return 0
 
     if args.make_baseline:
         path = make_baseline(adapter, config, key=args.key, seed=args.seed,
@@ -372,11 +608,59 @@ def _selftest() -> int:
             "comment written": os.path.exists(os.path.join(tmp, "comment.md")),
             "summary written": os.path.exists(os.path.join(tmp, "summary.json")),
         }
+        checks.update(_selftest_scan(tmp))
         for name, ok in checks.items():
             print(f"[{'ok' if ok else 'FAIL'}] {name}")
         ok = all(checks.values())
         print("SELFTEST:", "PASS" if ok else "FAIL")
         return 0 if ok else 1
+
+
+def _selftest_scan(tmp: str) -> dict:
+    """Unweighting scan on synthetic events: unbiased, sharper per event, slower.
+
+    The synthetic adapter applies the real cap rules (``adapters.unweighting_cap``),
+    so this checks both the scan plumbing and the trade the schemes are supposed to
+    make: at a fixed accepted-event count, accept-with-excess unweighting leaves the
+    distribution alone and buys precision, paid for in extra trials.
+    """
+    config = {
+        "unweighting": {
+            "reference": "weighted",
+            "variants": [
+                {"name": "weighted", "options": {"Name": "None"}},
+                {"name": "percentile-99", "options": {"Name": "Percentile",
+                                                      "percentile": 99}},
+                {"name": "excess-1e-2", "options": {"Name": "Excess",
+                                                    "epsilon": 0.01}},
+                {"name": "tailfrac-1e-2", "options": {"Name": "TailFraction",
+                                                      "epsilon": 0.01}},
+            ],
+        },
+        "experiments": [
+            {"name": "SYNTH_exp", "dryrun": {"feature_shift": 0.0},
+             "measurements": [{"name": "SYNTH_scan", "dryrun": {"nbins": 12}}]},
+        ],
+    }
+    out = os.path.join(tmp, "scan")
+    report = run_unweighting_scan(SyntheticAdapter(base_seed=3), config, seed=3,
+                                 n_events=40000, n_boot=200,
+                                 repo="AchillesGen/Achilles",
+                                 feature_sha="deadbeefcafef00d",
+                                 nuisance_version="selftest", out_dir=out)
+    by_name = {s.variant: s for s in report.summaries}
+    ref, cut = by_name["weighted"], by_name["percentile-99"]
+    return {
+        "scan: every variant reported": len(report.summaries) == 4,
+        "scan: no variant biases the distribution": report.biased() == [],
+        "scan: unweighting raises ESS/event": cut.ess_fraction > ref.ess_fraction,
+        "scan: sharper per accepted event": cut.mc_error_ratio < 1.0,
+        "scan: paid for in wall time": cut.seconds > ref.seconds,
+        "scan: normalisation preserved": abs(cut.max_norm_shift) < 0.05,
+        "scan: comment written": os.path.exists(os.path.join(out, "comment.md")),
+        "scan: overlay plot written": os.path.exists(
+            os.path.join(out, "SYNTH_scan.unweighting.png")),
+    }
 
 
 if __name__ == "__main__":

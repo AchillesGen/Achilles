@@ -20,8 +20,8 @@ the move is a path change.
 | `report.py` | Renders the Sherpa-style `comment.md` table + `summary.json`. |
 | `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path; `SyntheticAdapter` backs `--dry-run` and the self-tests. |
 | `plots.py` | Publication-style data/main/branch overlay + ratio panel, one PNG per measurement. |
-| `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline`. |
-| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events. |
+| `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline` and `--unweighter-scan`. |
+| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events, plus the `unweighting:` variant list. |
 
 ## Run it locally
 
@@ -40,6 +40,55 @@ python3 physval.py --config measurements.yml --dry-run \
     --key dev --baseline-dir /tmp/pv --out-dir /tmp/pv/out --feature-sha $(git rev-parse HEAD)
 # -> /tmp/pv/out/comment.md  and  /tmp/pv/out/summary.json
 ```
+
+## Unweighting scan (`--unweighter-scan`)
+
+A second comparison axis over the same machinery: instead of *this branch vs `main`*,
+it runs *one unweighting scheme vs another* on a single checkout. Achilles registers
+several `Options/Unweighting` schemes — `None` (keep the weights), `Percentile`
+(cap at the p-th percentile of |w|), `Excess` (smallest cap `C` with
+`Σ max(|w|−C,0) ≤ ε·Σ|w|`) and `TailFraction` (smallest `C` with
+`Σ_{|w|>C} |w| ≤ ε·Σ|w|`) — and all of them are supposed to be *variance reduction*,
+not physics: an event above the cap is kept carrying its excess weight, so no scheme
+may move a distribution.
+
+```bash
+python3 physval.py --config measurements.yml --unweighter-scan \
+    --only-experiment MINERvA_CC0pinp_STV_XSec --events 200000 --out-dir out
+# add --dry-run to exercise the plumbing without Achilles/NUISANCE
+# add --only-variant <name> (repeatable) to shorten the scan; the reference is kept
+
+# One job per setup, then merge — same shard axis as the branch comparison:
+python3 physval.py --unweighter-scan --merge out/*/summary.json --out-dir final
+```
+
+The variants live under `unweighting:` in `measurements.yml`. Each setup is generated
+once per variant, at the **same seed and the same accepted-event count**, so the only
+difference between two runs is the scheme. Every variant is then compared to
+`unweighting.reference` — the loosest cap in the list, which leaves the fewest events
+overweighted — with the same correlated χ² the branch comparison uses.
+
+`Name: None` is **not** usable as that reference today: its events arrive normalised
+low by a large factor, because `NoUnweighter::AcceptEvent` returns the raw weight
+while every capped scheme returns `weight/cap`, and `EventGen::GenerateSingleEvent`
+multiplies by the summed caps regardless. Fixing that would make `None` the natural
+reference, since it is unbiased by construction.
+
+Reading the summary table:
+
+- **p (vs reference)** — Bonferroni over the setup's measurements. A flag here means
+  the scheme *changed the physics*, which is a bug rather than a trade-off.
+- **ESS/event** — Kish effective sample size `(Σ|w|)²/(N Σw²)` on the raw generator
+  weights, i.e. the statistical power the scheme delivers per accepted event
+  (`1.0` = perfect unit weights). Computed pre-normalisation, so the bin-width
+  division does not masquerade as weight spread.
+- **MC error** — mean bootstrap σ relative to the reference's. At a fixed accepted-
+  event count, a harsher cap buys precision here and pays for it in **wall**.
+- **Δnorm** — change in the integrated cross section, which no scheme should move.
+- **max/mean w** — the heaviest surviving overweight, the tail the cap left behind.
+
+`adapters.unweighting_cap` reimplements the three cap rules in numpy so `--dry-run`
+is a real test of the scan (and a second opinion on the C++).
 
 ## The statistics
 

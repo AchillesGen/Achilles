@@ -189,6 +189,177 @@ class Report:
             json.dump(self.to_summary_dict(), fh, indent=2)
 
 
+# ---------------------------------------------------------------------------
+# Unweighting scan
+# ---------------------------------------------------------------------------
+
+@dataclass
+class VariantMeasurement:
+    """One unweighting variant's prediction for one measurement.
+
+    ``p_compat`` is against the *reference* variant (the fully weighted sample), so a
+    small value means the scheme is biasing the distribution — a correctness failure,
+    not a cost. ``ess_fraction`` is the statistical power the scheme delivered per
+    selected event, and ``mc_error_ratio`` the resulting error band relative to the
+    reference's.
+    """
+
+    measurement: str
+    variant: str
+    ndof: int
+    chi2_ndof_data: float
+    p_compat: float
+    p_data: float
+    norm_shift: float        # (Σ variant − Σ reference) / Σ reference
+    ess_fraction: float
+    max_over_mean: float
+    mc_error_ratio: float    # mean sigma_i(variant) / mean sigma_i(reference)
+
+
+@dataclass
+class VariantSummary:
+    """Per-variant rollup across every measurement in the scan."""
+
+    variant: str
+    options: dict
+    n_measurements: int
+    p_worst: float
+    p_overall: float          # Bonferroni over this variant's measurements
+    n_flagged: int
+    ess_fraction: float       # median across measurements
+    mc_error_ratio: float     # median across measurements
+    max_norm_shift: float
+    seconds: Optional[float] = None
+    unweight_eff: Optional[float] = None
+    is_reference: bool = False
+
+
+@dataclass
+class ScanReport:
+    """The unweighting-scan comment: a per-variant verdict plus the detail rows."""
+
+    summaries: List[VariantSummary]
+    rows: List[VariantMeasurement]
+    reference: str
+    repo: str = "AchillesGen/Achilles"
+    feature_sha: str = "unknown"
+    nuisance_version: str = "unknown"
+    seed: int = 0
+    events_per_measurement: int = 0
+    alpha: float = ALPHA
+    extra_header: List[str] = field(default_factory=list)
+
+    def biased(self) -> List[VariantSummary]:
+        """Variants whose distributions differ from the reference beyond MC noise."""
+        return [s for s in self.summaries
+                if not s.is_reference and s.p_overall < self.alpha]
+
+    @staticmethod
+    def _fmt(value: Optional[float], spec: str = ".3g", dash: str = "—") -> str:
+        if value is None or value != value:
+            return dash
+        return format(value, spec)
+
+    def _summary_table(self) -> List[str]:
+        lines = [
+            "| Unweighting | p (vs reference) | worst p | ESS/event | "
+            "MC error | max Δnorm | Achilles eff | wall | |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for s in self.summaries:
+            if s.is_reference:
+                mark, pcell, wcell = "🎯", "_reference_", "_reference_"
+            else:
+                mark = "🚩" if s.p_overall < self.alpha else "✅"
+                pcell, wcell = self._fmt(s.p_overall), self._fmt(s.p_worst)
+            wall = (f"{s.seconds / 60:.1f} min" if s.seconds else "—")
+            lines.append(
+                f"| `{s.variant}` | {pcell} | {wcell} | "
+                f"{self._fmt(s.ess_fraction, '.3f')} | "
+                f"×{self._fmt(s.mc_error_ratio, '.2f')} | "
+                f"{self._fmt(s.max_norm_shift, '+.2%')} | "
+                f"{self._fmt(s.unweight_eff, '.3g')} | {wall} | {mark} |")
+        return lines
+
+    def _detail_table(self, rows: List[VariantMeasurement]) -> List[str]:
+        lines = [
+            "| Measurement | Unweighting | ndof | χ²/ndof (data) | p (vs ref) | "
+            "Δnorm | ESS/event | max/mean w |",
+            "|---|---|---|---|---|---|---|---|",
+        ]
+        for r in rows:
+            lines.append(
+                f"| {r.measurement} | `{r.variant}` | {r.ndof} | "
+                f"{self._fmt(r.chi2_ndof_data, '.2f')} | {self._fmt(r.p_compat)} | "
+                f"{self._fmt(r.norm_shift, '+.2%')} | "
+                f"{self._fmt(r.ess_fraction, '.3f')} | "
+                f"{self._fmt(r.max_over_mean, '.1f')} |")
+        return lines
+
+    def to_markdown(self) -> str:
+        biased = self.biased()
+        n_var = len([s for s in self.summaries if not s.is_reference])
+        verdict = ("✅ every scheme reproduces the reference"
+                   if not biased else
+                   f"⚠️ {len(biased)} of {n_var} scheme(s) differ from the reference")
+
+        lines: List[str] = [
+            COMMENT_MARKER, "## 🎚️ Unweighting scan", "",
+            f"**Reference `{self.reference}` · {verdict}**", "",
+            f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
+            f"{self.events_per_measurement:,} events/variant/setup "
+            f"· `{self.feature_sha[:8]}`",
+        ]
+        lines.extend(self.extra_header)
+        lines.append("")
+        lines.extend(self._summary_table())
+        lines.append("")
+
+        flagged_rows = [r for r in self.rows if r.p_compat < self.alpha]
+        if flagged_rows:
+            lines.append("### Measurements differing from the reference")
+            lines.extend(self._detail_table(
+                sorted(flagged_rows, key=lambda r: r.p_compat)))
+            lines.append("")
+
+        lines.append(f"<details><summary>All {len(self.rows)} variant × "
+                     "measurement rows</summary>\n")
+        lines.extend(self._detail_table(self.rows))
+        lines.append("\n</details>")
+        lines.append("")
+        lines.append(
+            "Legend: **p (vs ref)** — correlated χ² against the reference variant's "
+            "histogram using both bootstrap covariances; small means the scheme "
+            "*biases* the distribution (🚩), which is a bug, not a cost. "
+            "**ESS/event** — Kish effective sample size per selected event "
+            "(1.0 = unit weights); **MC error** — mean bootstrap error relative to "
+            "the reference; **Δnorm** — change in the integrated cross section; "
+            "**max/mean w** — heaviest surviving overweight."
+        )
+        return "\n".join(lines)
+
+    def to_summary_dict(self) -> dict:
+        return {
+            "kind": "unweighting-scan",
+            "reference": self.reference,
+            "repo": self.repo,
+            "feature_sha": self.feature_sha,
+            "nuisance_version": self.nuisance_version,
+            "seed": self.seed,
+            "events_per_measurement": self.events_per_measurement,
+            "alpha": self.alpha,
+            "biased_variants": [s.variant for s in self.biased()],
+            "variants": [asdict(s) for s in self.summaries],
+            "rows": [asdict(r) for r in self.rows],
+        }
+
+    def write(self, comment_path: str, summary_path: str) -> None:
+        with open(comment_path, "w") as fh:
+            fh.write(self.to_markdown())
+        with open(summary_path, "w") as fh:
+            json.dump(self.to_summary_dict(), fh, indent=2)
+
+
 def _selftest() -> int:
     results = [
         MeasurementResult("MINERvA_CC0pi_Tp", 38, 1.11, 1.10, -0.4, 0.62, 0.31,

@@ -23,6 +23,10 @@ import numpy as np
 C_DATA = "#333333"
 C_MAIN = "#0072B2"
 C_FEATURE = "#D55E00"
+# The unweighting scan draws several predictions at once; rest of Okabe-Ito, with
+# the reference variant taking the first (blue) slot.
+C_VARIANTS = ("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
+              "#8B4513", "#7570B3")
 
 _STYLE = {
     "figure.dpi": 150,
@@ -140,6 +144,85 @@ def plot_measurement(path: str, name: str, *,
         rax.set_ylabel("MC / data")
         rax.set_xlabel(xlabel)
         rax.set_ylim(0.5, 1.5)
+        rax.margins(x=0.01)
+
+        fig.savefig(path)
+        plt.close(fig)
+    return path
+
+
+def plot_variants(path: str, name: str, *,
+                  data: np.ndarray,
+                  data_cov: Optional[np.ndarray] = None,
+                  variants: "dict[str, tuple]",
+                  reference: str,
+                  edges: Optional[Sequence[float]] = None,
+                  xlabel: str = "bin",
+                  ylabel: str = "d$\\sigma$/dx",
+                  subtitle: str = "") -> str:
+    """Overlay every unweighting variant, with a ratio-to-reference panel.
+
+    ``variants`` maps a variant name to ``(values, covariance)``. The ratio panel is
+    against the *reference* variant rather than the data: the question the scan asks
+    is whether the schemes agree with each other, not with the measurement.
+    """
+    data = np.asarray(data, dtype=float)
+    nbins = data.shape[0]
+    edges = (np.asarray(edges, dtype=float) if edges is not None
+             else np.arange(nbins + 1, dtype=float))
+    centers = 0.5 * (edges[:-1] + edges[1:])
+
+    ref_values = np.asarray(variants[reference][0], dtype=float)
+    safe_ref = np.where(ref_values != 0.0, ref_values, np.nan)
+
+    with plt.rc_context(_STYLE):
+        fig, (ax, rax) = plt.subplots(
+            2, 1, figsize=(7.0, 5.6), sharex=True,
+            gridspec_kw={"height_ratios": [3, 1], "hspace": 0.07})
+
+        ax.errorbar(centers, data, yerr=_errors(data_cov, nbins), fmt="o",
+                    color=C_DATA, markersize=3.4, elinewidth=1.0, capsize=0,
+                    label="Data", zorder=5)
+
+        for i, (label, (values, cov)) in enumerate(variants.items()):
+            values = np.asarray(values, dtype=float)
+            err = _errors(cov, nbins)
+            color = C_VARIANTS[i % len(C_VARIANTS)]
+            is_ref = label == reference
+            # The reference gets the band; the rest would just overprint each other.
+            if is_ref:
+                _band(ax, edges, values, err, color)
+            ax.stairs(values, edges, color=color, linewidth=1.8 if is_ref else 1.2,
+                      linestyle="-" if is_ref else (0, (4, 1.5)),
+                      label=f"{label} (ref)" if is_ref else label)
+
+            with np.errstate(invalid="ignore", divide="ignore"):
+                ratio = values / safe_ref
+                rerr = err / np.abs(safe_ref)
+                if is_ref:
+                    _band(rax, edges, ratio, rerr, color)
+                else:
+                    rax.errorbar(centers, ratio, yerr=rerr, fmt="none",
+                                 ecolor=color, elinewidth=0.9, alpha=0.7)
+                rax.stairs(ratio, edges, color=color,
+                           linewidth=1.6 if is_ref else 1.1,
+                           linestyle="-" if is_ref else (0, (4, 1.5)))
+
+        ax.set_ylabel(ylabel)
+        ax.set_title(name, loc="left", pad=18 if subtitle else 6)
+        if subtitle:
+            ax.text(0.0, 1.012, subtitle, transform=ax.transAxes, fontsize=8,
+                    color="#666666", va="bottom")
+        offset = ax.yaxis.get_offset_text()
+        offset.set_horizontalalignment("right")
+        offset.set_position((1.0, 1.0))
+        ax.legend(loc="best", ncols=2)
+        ax.margins(x=0.01)
+
+        rax.axhline(1.0, color="#888888", linewidth=0.9, zorder=1)
+        rax.set_ylabel(f"/ {reference}")
+        rax.set_xlabel(xlabel)
+        rax.set_ylim(0.8, 1.2)
         rax.margins(x=0.01)
 
         fig.savefig(path)

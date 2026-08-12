@@ -30,6 +30,45 @@
 #                 use a mapping ({name: ..., dryrun: {nbins: N}}) only to override
 #                 synthetic-adapter binning.
 
+# Unweighting scan (`physval.py --unweighter-scan`).
+#
+# Unweighting is variance reduction, not physics: whatever cap a scheme picks, an
+# event above it is kept with its excess weight, so every scheme must reproduce the
+# same distributions and differ only in how much MC noise it carries per generated
+# event. The scan therefore re-generates each experimental setup once per variant,
+# compares every variant against `reference` with the same correlated chi-square the
+# branch comparison uses (a flag here means a scheme is *biasing* the physics), and
+# reports the efficiency each one bought.
+#
+#   reference   Variant every other one is compared against. The loosest cap in the
+#               list is the right choice: it leaves the fewest events overweighted,
+#               so it is the closest thing to an uncapped answer that still goes
+#               through the normal normalisation path.
+#   variants    name     label used in tables, plots and event-file names
+#               options  the Options/Unweighting block, substituted verbatim
+#
+# `Name: None` is deliberately NOT the reference. It looks like the ideal one — keep
+# every event with its weight, no cap, no bias — but its events come out of the
+# NuHepMC writer normalised low by a large factor: `NoUnweighter::AcceptEvent`
+# returns the raw weight where every capped scheme returns weight/cap, and
+# `EventGen::GenerateSingleEvent` multiplies by the summed caps either way. Until
+# that is reconciled, `None` is not on a comparable footing with the rest.
+unweighting:
+  reference: percentile-99.9
+  variants:
+    - name: percentile-99.9
+      options: {Name: Percentile, percentile: 99.9}
+    - name: percentile-99
+      options: {Name: Percentile, percentile: 99}       # the shipped default
+    - name: excess-1e-2
+      options: {Name: Excess, epsilon: 0.01}
+    - name: excess-1e-3
+      options: {Name: Excess, epsilon: 0.001}
+    - name: tailfrac-1e-2
+      options: {Name: TailFraction, epsilon: 0.01}
+    - name: tailfrac-1e-3
+      options: {Name: TailFraction, epsilon: 0.001}
+
 experiments:
   - name: MINERvA_CC0pinp_STV_XSec
     achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"

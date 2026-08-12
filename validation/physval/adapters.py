@@ -15,6 +15,7 @@ just picks one — no base class needed.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -22,6 +23,15 @@ from typing import Optional
 
 import numpy as np
 import yaml
+
+
+def _as_float(text: str) -> Optional[float]:
+    """Parse a scraped number, discarding the -nan/0 that empty groups print."""
+    try:
+        value = float(text)
+    except ValueError:
+        return None
+    return value if np.isfinite(value) and value > 0.0 else None
 
 
 # The run cards use `!include <path>` for shared blocks. Round-trip the tag so a
@@ -53,11 +63,25 @@ class GeneratedEvents:
     weights: Optional[np.ndarray] = None  # synthetic: per-event weights
     path: Optional[str] = None            # nuisance3: NuHepMC-v1.0 event file
     xsec_divisor: Optional[float] = None  # per-atom xsec / this = published convention
+    run: Optional["RunStats"] = None      # generator-side cost of this sample
 
     def cleanup(self) -> None:
         """Drop the on-disk event file once every measurement has been histogrammed."""
         if self.path and os.path.exists(self.path):
             os.remove(self.path)
+
+
+@dataclass
+class RunStats:
+    """What the generation itself cost, independent of any one measurement.
+
+    ``unweight_eff`` is Achilles' own estimate (<xsec>/max_weight per process group,
+    the acceptance an ideal unweighter would reach for the cap it settled on); the
+    smallest finite group value is kept, since the slowest group paces the run.
+    """
+
+    seconds: Optional[float] = None
+    unweight_eff: Optional[float] = None
 
 
 @dataclass
@@ -67,6 +91,30 @@ class EventSample:
     bin_index: np.ndarray
     weights: np.ndarray
     nbins: int
+    raw_weights: Optional[np.ndarray] = None  # pre-normalisation weight.cv
+
+    def ess_fraction(self) -> float:
+        """Kish effective sample size as a fraction of the selected events.
+
+        ``(Σ|w|)² / (N Σw²)`` — 1 for perfectly unit-weight events, and the factor by
+        which a scheme's statistical power falls short of its raw event count. Scale
+        free, so it is computed on the raw generator weights rather than the
+        bin-width-divided ones (whose spread is binning, not unweighting).
+        """
+        w = self.raw_weights if self.raw_weights is not None else self.weights
+        w = np.abs(np.asarray(w, dtype=float))
+        denom = float(w.size) * float(np.sum(w ** 2))
+        if denom <= 0.0:
+            return float("nan")
+        return float(np.sum(w) ** 2 / denom)
+
+    def max_over_mean(self) -> float:
+        """Heaviest selected weight in units of the mean — the overweight tail."""
+        w = np.abs(np.asarray(
+            self.raw_weights if self.raw_weights is not None else self.weights,
+            dtype=float))
+        mean = float(np.mean(w)) if w.size else 0.0
+        return float(np.max(w) / mean) if mean > 0.0 else float("nan")
 
 
 @dataclass
@@ -122,7 +170,7 @@ class Nuisance3Adapter:
     # -- generation ----------------------------------------------------------
 
     def _render_card(self, experiment: dict, branch: str, seed: int, n_events: int,
-                     out_path: str) -> str:
+                     out_path: str, unweighting: Optional[dict] = None) -> str:
         """Copy the run card with our seed, event count and output path pinned."""
         os.makedirs(self.workdir, exist_ok=True)
         card_path = os.path.join(self.repo_root, experiment["achilles_run"])
@@ -144,6 +192,11 @@ class Nuisance3Adapter:
                 options = yaml.load(fh, Loader=_CardLoader)
         card["Options"] = options or {}
         card["Options"].setdefault("Initialize", {})["Seed"] = int(seed)
+        # The unweighting scan swaps this whole block per variant. Replace rather than
+        # merge: the schemes take different keys (percentile vs epsilon), so a leftover
+        # key from the card's default would silently apply to the wrong scheme.
+        if unweighting is not None:
+            card["Options"]["Unweighting"] = dict(unweighting)
 
         rendered = os.path.join(self.workdir,
                                 f"{experiment['name']}_{branch}.card.yml")
@@ -170,14 +223,19 @@ class Nuisance3Adapter:
         env["LD_LIBRARY_PATH"] = ":".join(parts)
         return env
 
-    def generate(self, experiment: dict, branch: str, seed: int,
-                 n_events: int) -> GeneratedEvents:
+    def generate(self, experiment: dict, branch: str, seed: int, n_events: int, *,
+                 unweighting: Optional[dict] = None,
+                 seed_offset: Optional[int] = None) -> GeneratedEvents:
         os.makedirs(self.workdir, exist_ok=True)
         # Offset the seed by branch so an inline 'main' is not the identical stream.
-        seed = int(seed) + (0 if branch == "main" else 1)
+        # The unweighting scan pins seed_offset=0 instead: every variant then starts
+        # from the same stream, so what differs between them is only the scheme.
+        seed = int(seed) + (seed_offset if seed_offset is not None
+                            else (0 if branch == "main" else 1))
         out_path = os.path.join(self.workdir,
                                 f"{experiment['name']}_{branch}.hepmc")
-        card = self._render_card(experiment, branch, seed, n_events, out_path)
+        card = self._render_card(experiment, branch, seed, n_events, out_path,
+                                 unweighting=unweighting)
 
         exe = shutil.which(self.achilles) or self.achilles
         log_path = os.path.join(self.workdir,
@@ -200,7 +258,33 @@ class Nuisance3Adapter:
             raise RuntimeError(
                 f"achilles produced no event file at {out_path} for {experiment['name']}")
         return GeneratedEvents(path=out_path,
-                               xsec_divisor=self._xsec_divisor(experiment))
+                               xsec_divisor=self._xsec_divisor(experiment),
+                               run=self._run_stats(log_path))
+
+    # Achilles' own end-of-run numbers. Both are printed rather than written to a
+    # machine-readable file, so they are scraped; a miss just leaves the field blank.
+    _RE_DURATION = re.compile(r"Run Duration:\s*(?:(\d+)h\s*)?(?:(\d+)m\s*)?(\d+)s")
+    _RE_EFF = re.compile(r"Estimated unweighting eff for this group:\s*(\S+)")
+
+    @classmethod
+    def _run_stats(cls, log_path: str) -> RunStats:
+        try:
+            with open(log_path, errors="replace") as fh:
+                text = fh.read()
+        except OSError:
+            return RunStats()
+
+        seconds = None
+        m = cls._RE_DURATION.search(text)
+        if m:
+            h, mi, s = (int(g or 0) for g in m.groups())
+            seconds = float(3600 * h + 60 * mi + s)
+
+        # Process groups with no allowed states print -nan; keep the least efficient
+        # real group, which is the one that paces the run.
+        effs = [v for v in (_as_float(x) for x in cls._RE_EFF.findall(text)) if v]
+        return RunStats(seconds=seconds,
+                        unweight_eff=min(effs) if effs else None)
 
     @staticmethod
     def _xsec_divisor(experiment: dict) -> float:
@@ -263,7 +347,8 @@ class Nuisance3Adapter:
         table = np.asarray(frame.table, dtype=float)
         if table.size == 0:
             return EventSample(bin_index=np.empty(0, int),
-                               weights=np.empty(0, float), nbins=nbins)
+                               weights=np.empty(0, float), nbins=nbins,
+                               raw_weights=np.empty(0, float))
 
         proj_cols = [cols[p.fname] for p in projections]
         selected = table[table[:, cols[selection.fname]] != 0]
@@ -280,6 +365,9 @@ class Nuisance3Adapter:
 
         bin_index = np.asarray(bin_index, dtype=int)
         weights = np.asarray(weights, dtype=float)
+        # Keep the generator's own weights: the scaling below folds in the bin width,
+        # which would otherwise show up as weight spread in the unweighting metrics.
+        raw_weights = weights.copy()
 
         # Cross-section normalisation, per the recipe that reproduces the published
         # results: take the flux-averaged total xsec *per atom* and divide by the
@@ -309,7 +397,8 @@ class Nuisance3Adapter:
         if bin_index.size:
             weights = weights * scale[bin_index]
 
-        return EventSample(bin_index=bin_index, weights=weights, nbins=nbins)
+        return EventSample(bin_index=bin_index, weights=weights, nbins=nbins,
+                           raw_weights=raw_weights)
 
     def data_table(self, measurement: dict) -> DataTable:
         pn = self._pn()
@@ -354,11 +443,58 @@ class Nuisance3Adapter:
                                                   if projections else "x"))
 
 
+def unweighting_cap(weights: np.ndarray, options: dict) -> Optional[float]:
+    """The weight cap an Achilles unweighting scheme settles on for ``weights``.
+
+    Mirrors ``SortedWeightUnweighter::ComputeCap`` for each registered scheme, so the
+    synthetic adapter's ``--dry-run`` scan behaves like the real one and the rules
+    have a reference implementation outside C++. ``None`` means "no cap" (``None``
+    unweighter: events keep their weights).
+    """
+    name = options.get("Name", "None")
+    if name == "None":
+        return None
+
+    w = np.sort(np.abs(np.asarray(weights, dtype=float)))
+    if w.size == 0:
+        return None
+    total = float(np.sum(w))
+
+    if name == "Percentile":
+        idx = min(int(w.size * float(options["percentile"]) / 100.0), w.size - 1)
+        return float(w[idx])
+
+    eps = float(options["epsilon"])
+    target = eps * total
+    # suffix[i] = sum of the i largest-or-equal weights, i.e. sum_{j>=i} w[j].
+    suffix = np.concatenate([np.cumsum(w[::-1])[::-1], [0.0]])
+
+    if name == "TailFraction":
+        # Smallest cap C with sum_{|w|>C} |w| <= eps*total.
+        i = int(np.argmax(suffix[:w.size] <= target)) if np.any(
+            suffix[:w.size] <= target) else w.size
+        return float(w[i - 1]) if i > 0 else float(w[0])
+
+    if name == "Excess":
+        # Smallest cap C with sum_j max(|w_j|-C, 0) <= eps*total. Between w[i-1] and
+        # w[i] the excess is suffix[i] - (N-i)*C, so solve that for the first i whose
+        # own weight already satisfies the bound.
+        n = w.size
+        excess_at = suffix[:n] - (n - np.arange(n)) * w
+        i = int(np.argmax(excess_at <= target)) if np.any(excess_at <= target) else n - 1
+        cap = (suffix[i] - target) / float(n - i)
+        return float(np.clip(cap, w[0], w[-1]))
+
+    raise KeyError(f"unknown unweighting scheme {name!r}")
+
+
 class SyntheticAdapter:
     """Dry-run/self-test stand-in: draws weighted events from a tunable Gaussian.
 
     ``experiment['dryrun']['feature_shift']`` shifts only the feature branch (a fake
     physics change); ``measurement['dryrun']['nbins']`` sets the histogram binning.
+    An ``unweighting`` block is applied for real (see ``unweighting_cap``), so the
+    scan's plumbing and its metrics can be checked without Achilles.
     """
 
     def __init__(self, base_seed: int = 0):
@@ -367,26 +503,67 @@ class SyntheticAdapter:
     def _nbins(self, measurement: dict) -> int:
         return int(measurement.get("dryrun", {}).get("nbins", 12))
 
-    def _draw(self, shift: float, n_events: int,
-              rng: np.random.Generator) -> GeneratedEvents:
+    # Every prediction is normalised to this total, mirroring the real adapter's
+    # flux-averaged cross-section scaling: a scheme that throws away events must not
+    # come out smaller, only noisier.
+    _TOTAL = 2.0e5
+
+    def _draw(self, shift: float, n_events: int, rng: np.random.Generator, *,
+              tail: bool = False) -> GeneratedEvents:
         x = np.clip(rng.normal(0.5 + shift, 0.18, size=n_events), 0.0, 0.999)
-        weights = rng.uniform(0.5, 1.5, size=n_events)
+        # A long overweight tail is what the schemes differ on, so the scan draws
+        # lognormal weights; the branch-comparison path keeps the mild uniform ones.
+        weights = (rng.lognormal(0.0, 0.9, size=n_events) if tail
+                   else rng.uniform(0.5, 1.5, size=n_events))
         return GeneratedEvents(x=x, weights=weights)
 
-    def generate(self, experiment: dict, branch: str, seed: int,
-                 n_events: int) -> GeneratedEvents:
-        rng = np.random.default_rng(
-            self.base_seed + seed + (0 if branch == "main" else 1))
+    @staticmethod
+    def _unweight(gen: GeneratedEvents, cap: float,
+                  rng: np.random.Generator) -> GeneratedEvents:
+        """Accept with probability |w|/cap; overweights keep their excess."""
+        prob = np.abs(gen.weights) / cap
+        keep = prob >= rng.uniform(0.0, 1.0, size=prob.size)
+        return GeneratedEvents(x=gen.x[keep], weights=np.maximum(prob[keep], 1.0))
+
+    def generate(self, experiment: dict, branch: str, seed: int, n_events: int, *,
+                 unweighting: Optional[dict] = None,
+                 seed_offset: Optional[int] = None) -> GeneratedEvents:
+        offset = (seed_offset if seed_offset is not None
+                  else (0 if branch == "main" else 1))
+        rng = np.random.default_rng(self.base_seed + seed + offset)
         shift = float(experiment.get("dryrun", {}).get("feature_shift", 0.0)) \
             if branch == "feature" else 0.0
-        return self._draw(shift, n_events, rng)
+
+        # One pilot draw stands in for Achilles' optimisation pass: it fixes the cap
+        # and, with it, the acceptance rate.
+        pilot = self._draw(shift, min(n_events, 100_000), rng, tail=True)
+        cap = (unweighting_cap(pilot.weights, unweighting)
+               if unweighting is not None else None)
+
+        if cap is None or not cap > 0.0:
+            gen = self._draw(shift, n_events, rng, tail=unweighting is not None)
+            eff = 1.0
+        else:
+            # Achilles generates until it has n_events *accepted*, so oversample by
+            # the acceptance rate rather than letting a harsher cap yield fewer
+            # events -- otherwise the schemes are compared at different statistics.
+            eff = float(np.mean(np.minimum(np.abs(pilot.weights) / cap, 1.0)))
+            trials = int(n_events / max(eff, 1e-3) * 1.15) + 1000
+            gen = self._unweight(self._draw(shift, trials, rng, tail=True), cap, rng)
+            gen = GeneratedEvents(x=gen.x[:n_events], weights=gen.weights[:n_events])
+
+        gen.run = RunStats(seconds=float(n_events) / 5e4 / max(eff, 1e-3),
+                           unweight_eff=eff)
+        return gen
 
     def histogram(self, generated: GeneratedEvents,
                   measurement: dict) -> EventSample:
         nbins = self._nbins(measurement)
         bin_index = np.digitize(generated.x, np.linspace(0.0, 1.0, nbins + 1)) - 1
-        return EventSample(bin_index=bin_index, weights=generated.weights,
-                           nbins=nbins)
+        total = float(np.sum(np.abs(generated.weights)))
+        scale = self._TOTAL / total if total > 0.0 else 1.0
+        return EventSample(bin_index=bin_index, weights=generated.weights * scale,
+                           nbins=nbins, raw_weights=generated.weights)
 
     def data_table(self, measurement: dict) -> DataTable:
         nbins = self._nbins(measurement)
@@ -394,6 +571,7 @@ class SyntheticAdapter:
         gen = self._draw(0.0, 200000, rng)  # data = the unshifted truth
         bin_index = np.digitize(gen.x, np.linspace(0.0, 1.0, nbins + 1)) - 1
         values = np.bincount(bin_index, weights=gen.weights, minlength=nbins)[:nbins]
+        values = values * (self._TOTAL / float(np.sum(values)))
         err = np.sqrt(np.maximum(values, 1.0)) * 0.05 + 0.02 * values
         return DataTable(values=values, covariance=np.diag(err ** 2),
                          edges=np.linspace(0.0, 1.0, nbins + 1), xlabel="x")
