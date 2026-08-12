@@ -26,20 +26,25 @@ void SortedWeightUnweighter::AddEvent(double weight) {
 
 void SortedWeightUnweighter::EnsureCap() {
     if(!m_dirty) return;
+    m_dirty = false;
 
-    if(m_weights.empty()) {
-        m_cap = (m_max_weight > 0.0) ? m_max_weight : 1.0;
-        m_dirty = false;
+    // Nothing this process was offered ever had a weight: it contributes no cross
+    // section, so its cap must stay zero. A non-zero fallback here would give a dead
+    // process a max weight comparable to a live one, and ProcessGroup would then
+    // spend nearly every trial on a channel that can only return zero.
+    if(!(m_max_weight > 0.0)) {
+        m_cap = 0;
         return;
     }
 
     // Sort in place
     std::sort(m_weights.begin(), m_weights.end());
-    double total = std::accumulate(m_weights.begin(), m_weights.end(), 0);
+    double total = std::accumulate(m_weights.begin(), m_weights.end(), 0.0);
 
     m_cap = ComputeCap(m_weights, total);
-    if(!(m_cap > 0.0)) m_cap = (m_max_weight > 0.0) ? m_max_weight : 1.0;
-    m_dirty = false;
+    // Cutting away all but a handful of weights can push the cap onto a zero entry,
+    // which would reject every event; fall back to the largest weight seen.
+    if(!(m_cap > 0.0)) m_cap = m_max_weight;
 }
 
 double SortedWeightUnweighter::MaxValue() {
