@@ -97,6 +97,17 @@ experiments:
     measurements:
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
+      # NOTE: this sample's χ²/ndof against data is not meaningful, and the ~0.4 GeV
+      # offset in its overlay plot is not an Achilles problem. NUISANCE mixes units
+      # in the δp_n reconstruction (MicroBooNE_CC1Mu1p_XSec_1D_nu.cxx:223, unchanged
+      # on main as of f5f79db): MA/MAPrime and the muon/proton energies are in GeV
+      # while the longitudinal momenta and |δp_T| stay in MeV, so
+      #   R = MA + pL_mu + pL_p - E_mu - E_p
+      # collapses to pL_mu + pL_p and δp_L to roughly half the longitudinal momentum
+      # — ~0.4 GeV for BNB kinematics, whatever generator is fed in. The published
+      # data is the real δp_n, so the two sides plot different quantities.
+      # main-vs-branch compatibility (what the flag uses) is unaffected: both
+      # predictions go through the same broken definition. Kept for that reason.
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
