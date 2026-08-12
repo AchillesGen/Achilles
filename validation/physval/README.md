@@ -74,10 +74,36 @@ while every capped scheme returns `weight/cap`, and `EventGen::GenerateSingleEve
 multiplies by the summed caps regardless. Fixing that would make `None` the natural
 reference, since it is unbiased by construction.
 
+### The null control is not optional
+
+`p_compat` is calibrated in `stats.py --selftest` on **i.i.d.** synthetic events,
+where the bootstrap is exact. Real Achilles runs are not i.i.d.: the events of a run
+share one adapted VEGAS grid and one weight cap, and the whole histogram is scaled by
+that run's flux-averaged cross section. The bootstrap resamples *within* a run, so it
+carries none of the run-to-run scatter in that overall scale — measured at up to ±5%
+between independent runs of the same setup, against per-bin bootstrap errors of ~1%.
+Two independent runs of the *identical* configuration therefore come out with
+p_compat ≈ 0, and every variant looks "biased".
+
+So the variant list carries a `null-control`: the reference's own options at
+`seed_offset: 1`. Its rows are draws from the null hypothesis, and the flagging
+thresholds are floored at whatever it scores (`min(alpha, null)`, so a well-behaved
+control leaves α alone and never tightens it). Nothing is called out for doing as
+well as an identical rerun. `p (shape only)` — the same χ² with the normalisation
+divided out and one dof given up for it — separates the two failure modes: a scheme
+that moved a distribution fails both columns, two runs that merely disagree on the
+total cross section fail only the first.
+
+The same caveat applies to the **branch comparison**, which also compares two
+independent runs (`main` at `seed`, feature at `seed + 1`) whenever there is no
+stored baseline. Its `p_compat` is anticonservative for the same reason.
+
 Reading the summary table:
 
-- **p (vs reference)** — Bonferroni over the setup's measurements. A flag here means
-  the scheme *changed the physics*, which is a bug rather than a trade-off.
+- **p (vs reference)** — Bonferroni over the setup's measurements, judged against the
+  null control. A flag here means the scheme *changed the physics*, which is a bug
+  rather than a trade-off.
+- **p (shape only)** — as above with the overall normalisation fitted out.
 - **ESS/event** — Kish effective sample size `(Σ|w|)²/(N Σw²)` on the raw generator
   weights, i.e. the statistical power the scheme delivers per accepted event
   (`1.0` = perfect unit weights). Computed pre-normalisation, so the bin-width

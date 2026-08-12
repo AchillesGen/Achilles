@@ -161,6 +161,37 @@ def compatibility(main: Prediction, feature: Prediction) -> ChiSquareResult:
     return ChiSquareResult(chi2=chi2, ndof=ndof, pvalue=pvalue)
 
 
+def shape_compatibility(main: Prediction, feature: Prediction) -> ChiSquareResult:
+    """Compatibility of two predictions' *shapes*, with the normalisation divided out.
+
+    ``compatibility`` folds the overall scale into the test, and the bootstrap
+    covariance does not carry the run-to-run scatter of that scale: it resamples
+    events inside one run, so a fully correlated normalisation offset between two
+    independent runs shows up as a large chi-square with nothing to absorb it. Here
+    the feature is rescaled to the reference's integral first (its covariance with
+    it, so the MC uncertainty is rescaled consistently), and one degree of freedom is
+    given up for the scale that was fitted.
+
+    Read the pair together: ``compatibility`` small but ``shape_compatibility`` fine
+    means the two runs disagree only on the overall scale.
+    """
+    total_main = float(np.sum(main.values))
+    total_feat = float(np.sum(feature.values))
+    if not total_feat:
+        return compatibility(main, feature)
+    scale = total_main / total_feat
+    scaled = Prediction(values=feature.values * scale,
+                        covariance=feature.covariance * scale * scale,
+                        n_boot=feature.n_boot)
+    delta = scaled.values - main.values
+    cov = main.covariance + scaled.covariance
+    n_eff = _combine_n_boot(main.n_boot, feature.n_boot)
+    chi2 = _chi2_quadratic_form(delta, cov, n_samples=n_eff)
+    ndof = max(delta.shape[0] - 1, 1)  # one dof spent on the fitted scale
+    pvalue = float(stats.chi2.sf(chi2, ndof))
+    return ChiSquareResult(chi2=chi2, ndof=ndof, pvalue=pvalue)
+
+
 def goodness_of_fit(pred: Prediction, data: np.ndarray,
                     data_cov: np.ndarray) -> ChiSquareResult:
     """Chi-square of a prediction against experimental ``data``.

@@ -44,8 +44,15 @@
 #               list is the right choice: it leaves the fewest events overweighted,
 #               so it is the closest thing to an uncapped answer that still goes
 #               through the normal normalisation path.
-#   variants    name     label used in tables, plots and event-file names
-#               options  the Options/Unweighting block, substituted verbatim
+#   variants    name         label used in tables, plots and event-file names
+#               options      the Options/Unweighting block, substituted verbatim
+#               seed_offset  added to the run seed; 0 (the default) means every
+#                            variant shares a stream so only the scheme differs
+#
+# Always keep `null-control`: it repeats the reference's options at a different
+# seed, so its rows are drawn from the null hypothesis and calibrate the test. Any
+# scheme flagged no harder than null-control is not distinguishable from the
+# generator's own run-to-run scatter, whatever its p-value says.
 #
 # `Name: None` is deliberately NOT the reference. It looks like the ideal one — keep
 # every event with its weight, no cap, no bias — but its events come out of the
@@ -58,6 +65,9 @@ unweighting:
   variants:
     - name: percentile-99.9
       options: {Name: Percentile, percentile: 99.9}
+    - name: null-control                                # the reference, reseeded
+      options: {Name: Percentile, percentile: 99.9}
+      seed_offset: 1
     - name: percentile-99
       options: {Name: Percentile, percentile: 99}       # the shipped default
     - name: excess-1e-2

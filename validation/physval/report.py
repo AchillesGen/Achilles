@@ -209,6 +209,7 @@ class VariantMeasurement:
     ndof: int
     chi2_ndof_data: float
     p_compat: float
+    p_shape: float          # as p_compat, with the overall normalisation divided out
     p_data: float
     norm_shift: float        # (Σ variant − Σ reference) / Σ reference
     ess_fraction: float
@@ -225,6 +226,8 @@ class VariantSummary:
     n_measurements: int
     p_worst: float
     p_overall: float          # Bonferroni over this variant's measurements
+    p_shape_worst: float
+    p_shape_overall: float
     n_flagged: int
     ess_fraction: float       # median across measurements
     mc_error_ratio: float     # median across measurements
@@ -232,6 +235,7 @@ class VariantSummary:
     seconds: Optional[float] = None
     unweight_eff: Optional[float] = None
     is_reference: bool = False
+    is_null_control: bool = False
 
 
 @dataclass
@@ -252,7 +256,8 @@ class ScanReport:
     def biased(self) -> List[VariantSummary]:
         """Variants whose distributions differ from the reference beyond MC noise."""
         return [s for s in self.summaries
-                if not s.is_reference and s.p_overall < self.alpha]
+                if not (s.is_reference or s.is_null_control)
+                and self._mark(s) == "🚩"]
 
     @staticmethod
     def _fmt(value: Optional[float], spec: str = ".3g", dash: str = "—") -> str:
@@ -262,36 +267,61 @@ class ScanReport:
 
     def _summary_table(self) -> List[str]:
         lines = [
-            "| Unweighting | p (vs reference) | worst p | ESS/event | "
+            "| Unweighting | p (vs reference) | p (shape only) | ESS/event | "
             "MC error | max Δnorm | Achilles eff | wall | |",
             "|---|---|---|---|---|---|---|---|---|",
         ]
         for s in self.summaries:
             if s.is_reference:
-                mark, pcell, wcell = "🎯", "_reference_", "_reference_"
+                mark, pcell, scell = "🎯", "_reference_", "_reference_"
             else:
-                mark = "🚩" if s.p_overall < self.alpha else "✅"
-                pcell, wcell = self._fmt(s.p_overall), self._fmt(s.p_worst)
+                mark = self._mark(s)
+                pcell, scell = (self._fmt(s.p_overall),
+                                self._fmt(s.p_shape_overall))
             wall = (f"{s.seconds / 60:.1f} min" if s.seconds else "—")
             lines.append(
-                f"| `{s.variant}` | {pcell} | {wcell} | "
+                f"| `{s.variant}` | {pcell} | {scell} | "
                 f"{self._fmt(s.ess_fraction, '.3f')} | "
                 f"×{self._fmt(s.mc_error_ratio, '.2f')} | "
                 f"{self._fmt(s.max_norm_shift, '+.2%')} | "
                 f"{self._fmt(s.unweight_eff, '.3g')} | {wall} | {mark} |")
         return lines
 
+    def _mark(self, s: "VariantSummary") -> str:
+        """🎯 reference · 🧪 null control · 🚩 worse than the null · ✅ otherwise."""
+        if s.is_null_control:
+            return "🧪"
+        p_thr, s_thr = self.thresholds()
+        return "🚩" if (s.p_overall < p_thr or s.p_shape_overall < s_thr) else "✅"
+
+    def thresholds(self) -> tuple:
+        """Flagging thresholds for (p_compat, p_shape), floored by the null control.
+
+        The null control is the reference scheme rerun at a different seed, so its
+        p-values are drawn from the null. Whatever it scores is what an *identical*
+        configuration costs, and no real scheme should be called out for doing at
+        least as well. The control can therefore only make the test more
+        conservative — ``min`` with ``alpha`` — never less, so a control that happens
+        to land at p ≈ 1 leaves the nominal threshold untouched.
+        """
+        for s in self.summaries:
+            if s.is_null_control:
+                p, q = s.p_overall, s.p_shape_overall
+                return (min(self.alpha, p if p == p else self.alpha),
+                        min(self.alpha, q if q == q else self.alpha))
+        return (self.alpha, self.alpha)
+
     def _detail_table(self, rows: List[VariantMeasurement]) -> List[str]:
         lines = [
             "| Measurement | Unweighting | ndof | χ²/ndof (data) | p (vs ref) | "
-            "Δnorm | ESS/event | max/mean w |",
-            "|---|---|---|---|---|---|---|---|",
+            "p (shape) | Δnorm | ESS/event | max/mean w |",
+            "|---|---|---|---|---|---|---|---|---|",
         ]
         for r in rows:
             lines.append(
                 f"| {r.measurement} | `{r.variant}` | {r.ndof} | "
                 f"{self._fmt(r.chi2_ndof_data, '.2f')} | {self._fmt(r.p_compat)} | "
-                f"{self._fmt(r.norm_shift, '+.2%')} | "
+                f"{self._fmt(r.p_shape)} | {self._fmt(r.norm_shift, '+.2%')} | "
                 f"{self._fmt(r.ess_fraction, '.3f')} | "
                 f"{self._fmt(r.max_over_mean, '.1f')} |")
         return lines
@@ -327,10 +357,26 @@ class ScanReport:
         lines.extend(self._detail_table(self.rows))
         lines.append("\n</details>")
         lines.append("")
+        null = next((x for x in self.summaries if x.is_null_control), None)
+        if null is not None:
+            p_thr, s_thr = self.thresholds()
+            lines.append(
+                f"🧪 **null control** — the reference scheme rerun at a different "
+                f"seed, so its rows are drawn from the null hypothesis. It scores "
+                f"p = {self._fmt(null.p_overall)} (shape "
+                f"{self._fmt(null.p_shape_overall)}), which is what two *identical* "
+                f"configurations cost: the bootstrap covariance is estimated inside a "
+                f"single run and so does not carry the generator's run-to-run scatter "
+                f"in the overall normalisation. Thresholds are floored at that value "
+                f"— {self._fmt(p_thr)} and {self._fmt(s_thr)} — so no scheme is "
+                f"flagged for doing as well as an identical rerun.")
+            lines.append("")
         lines.append(
             "Legend: **p (vs ref)** — correlated χ² against the reference variant's "
-            "histogram using both bootstrap covariances; small means the scheme "
-            "*biases* the distribution (🚩), which is a bug, not a cost. "
+            "histogram using both bootstrap covariances. **p (shape)** — the same "
+            "with the overall normalisation divided out and one dof given up for it; "
+            "the pair separates \"this scheme moved the distribution\" from "
+            "\"these two runs disagree on the total cross section\". "
             "**ESS/event** — Kish effective sample size per selected event "
             "(1.0 = unit weights); **MC error** — mean bootstrap error relative to "
             "the reference; **Δnorm** — change in the integrated cross section; "

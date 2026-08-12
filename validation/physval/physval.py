@@ -27,7 +27,7 @@ from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
 from report import (ALPHA, MeasurementResult, Report, ScanReport,
                     VariantMeasurement, VariantSummary)
 from stats import (Prediction, bonferroni, bootstrap_covariance, compatibility,
-                   goodness_of_fit)
+                   goodness_of_fit, shape_compatibility)
 
 
 # ---------------------------------------------------------------------------
@@ -223,8 +223,13 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
         # the setup so only a single event file is on disk at a time.
         for variant in variants:
             name = variant["name"]
+            # seed_offset is normally 0 so every variant shares a stream and only
+            # the scheme differs. A null-control variant repeats the reference's
+            # options at a different offset, which calibrates the test: its p-values
+            # are drawn from the null and should be uniform.
             gen = adapter.generate(exp, name, seed, n_events,
-                                   unweighting=variant["options"], seed_offset=0)
+                                   unweighting=variant["options"],
+                                   seed_offset=int(variant.get("seed_offset", 0)))
             preds[name], samples[name] = {}, {}
             for m in exp["measurements"]:
                 sample = adapter.histogram(gen, m)
@@ -251,6 +256,7 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
                 pred = preds[vname][mname]
                 sample = samples[vname][mname]
                 compat = compatibility(ref_pred, pred)
+                shape = shape_compatibility(ref_pred, pred)
                 gof = goodness_of_fit(pred, data[mname].values, data[mname].covariance)
                 total = float(np.sum(pred.values))
                 row = VariantMeasurement(
@@ -259,6 +265,7 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
                     # The reference has nothing to be compared against; NaN keeps it
                     # out of the flagged rows and renders as a dash.
                     p_compat=float("nan") if vname == reference else compat.pvalue,
+                    p_shape=float("nan") if vname == reference else shape.pvalue,
                     p_data=gof.pvalue,
                     norm_shift=(total - ref_total) / ref_total if ref_total else float("nan"),
                     ess_fraction=sample.ess_fraction(),
@@ -297,6 +304,11 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
     return report
 
 
+# The variant that repeats the reference at a different seed. Its p-values come
+# from the null hypothesis, so they set the floor any real scheme is judged against.
+NULL_CONTROL = "null-control"
+
+
 def _scan_summaries(variants, rows: List[VariantMeasurement], reference: str,
                     runtime: Dict[str, tuple]) -> List[VariantSummary]:
     """Roll the per-measurement scan rows up into one line per variant.
@@ -313,11 +325,14 @@ def _scan_summaries(variants, rows: List[VariantMeasurement], reference: str,
     for name, options in variants:
         mine = by_variant.get(name, [])
         pv = [r.p_compat for r in mine if r.p_compat == r.p_compat]  # drops the ref's NaN
+        ps = [r.p_shape for r in mine if r.p_shape == r.p_shape]
         seconds, effs = runtime.get(name, (0.0, []))
         summaries.append(VariantSummary(
             variant=name, options=dict(options), n_measurements=len(mine),
             p_worst=float(np.min(pv)) if pv else float("nan"),
             p_overall=bonferroni(pv) if pv else float("nan"),
+            p_shape_worst=float(np.min(ps)) if ps else float("nan"),
+            p_shape_overall=bonferroni(ps) if ps else float("nan"),
             n_flagged=sum(1 for p in pv if p < ALPHA),
             ess_fraction=float(np.nanmedian([r.ess_fraction for r in mine]))
             if mine else float("nan"),
@@ -327,7 +342,8 @@ def _scan_summaries(variants, rows: List[VariantMeasurement], reference: str,
             if mine else float("nan"),
             seconds=seconds or None,
             unweight_eff=float(np.min(effs)) if effs else None,
-            is_reference=name == reference))
+            is_reference=name == reference,
+            is_null_control=name == NULL_CONTROL))
     return summaries
 
 
