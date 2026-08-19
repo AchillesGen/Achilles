@@ -40,14 +40,34 @@ Event &Event::operator=(const Event &other) {
 }
 
 void Event::Finalize() {
+    spdlog::debug("Finalizing the event");
+
+    // Determine the PID of the remnant from the nucleons that stay bound. Only background
+    // (never struck) and captured (reabsorbed) nucleons remain; everything else either left
+    // the nucleus or is a cascade intermediate that Hadrons() still holds a copy of.
     size_t nA = 0, nZ = 0;
     for(const auto &part : m_hadrons) {
-        if(part.IsExternal()) continue;
+        if(!part.Info().IsNucleon()) continue;
+        if(part.Status() != ParticleStatus::background && part.Status() != ParticleStatus::captured)
+            continue;
         if(part.ID() == PID::proton()) nZ++;
         nA++;
     }
+    if(nA == 0) return;
 
-    m_remnant = NuclearRemnant(nA, nZ);
+    // The remnant carries whatever the initial nucleus did not give to the outgoing
+    // leptons and hadrons. Initial state hadrons are already part of the nucleus.
+    FourVector mom{};
+    if(m_nuc && !m_leptons.empty()) {
+        mom = m_leptons[0].Momentum() + m_nuc->InitParticle().Momentum();
+        for(size_t i = 1; i < m_leptons.size(); ++i) { mom -= m_leptons[i].Momentum(); }
+        for(const auto &part : m_hadrons) {
+            if(part.IsFinal()) mom -= part.Momentum();
+        }
+    }
+
+    m_remnant = MakeNuclearRemnant(nA, nZ, mom);
+    if(m_history.Target()) m_history.Target()->AddOutgoing(m_remnant);
 }
 
 void Event::Display() const {
@@ -142,4 +162,9 @@ achilles::refParticles Event::Pions(ParticleStatus status) {
 void Event::Rotate(const std::array<double, 9> &rot_mat) {
     for(auto &particle : m_hadrons) { particle.Rotate(rot_mat); }
     for(auto &particle : m_leptons) { particle.Rotate(rot_mat); }
+}
+
+achilles::Particle Event::MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const {
+    PID pid = PID::MakeNucleus(static_cast<int>(nZ), static_cast<int>(nA));
+    return Particle(pid, mom, {}, ParticleStatus::residue);
 }

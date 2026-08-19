@@ -326,6 +326,9 @@ bool achilles::EventGen::GenerateSingleEvent() {
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
 
+    // Add in the missing nuclear remnant to the event
+    event.Finalize();
+
     writer->Write(event);
     return true;
 }

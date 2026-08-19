@@ -5,6 +5,7 @@
 #include "mock_classes.hh"
 
 #include "Achilles/Event.hh"
+#include "Achilles/NuclearMass.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -58,8 +59,8 @@ TEST_CASE("Finalize Event", "[Event]") {
     achilles::Event event{};
     event.Hadrons() = final;
     event.Finalize();
-    CHECK(event.Remnant().PID() == 1000050110);
-    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
+    CHECK(event.Remnant().ID() == achilles::PID::MakeNucleus(5, 11));
+    CHECK(event.Remnant().Mass() == achilles::NuclearMass(5, 11));
 }
 
 TEST_CASE("Test Event Copy Constructor", "[Event]") {
