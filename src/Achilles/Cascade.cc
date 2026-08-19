@@ -735,10 +735,13 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         }
     }*/
 
-    // for(auto &part : event.Hadrons()) {
-    //     if(part.Status() == ParticleStatus::absorption_partner)
-    //         part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
-    // }
+    // Consume any nucleon absorbed alongside particle2, or release it if Pauli blocked. Its
+    // momentum is already folded into particles_out, so leaving it background would count it
+    // both as emitted and as still bound in the nuclear remnant.
+    for(auto &part : event.Hadrons()) {
+        if(part.Status() == ParticleStatus::absorption_partner)
+            part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
+    }
 
     if(hit) {
         Particles initial_part, final_part;
