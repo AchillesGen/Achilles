@@ -14,7 +14,6 @@ namespace achilles {
 using Particles = std::vector<Particle>;
 
 class Nucleus;
-class NuclearRemnant;
 
 struct compare_momentum {
     explicit compare_momentum(const Particle &particle, double _eps = 1e-10)

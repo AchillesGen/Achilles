@@ -389,6 +389,8 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "spectator({})", static_cast<int>(status));
         case achilles::ParticleStatus::interacted:
             return format_to(ctx.out(), "cascade({})", static_cast<int>(status));
+        case achilles::ParticleStatus::residue:
+            return format_to(ctx.out(), "residue({})", static_cast<int>(status));
         default:
             return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
                              static_cast<int>(status));

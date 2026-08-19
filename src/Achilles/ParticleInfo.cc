@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/NuclearMass.hh"
 #include "Achilles/System.hh"
 
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 
@@ -26,10 +28,28 @@ using achilles::PID;
 // }
 
 bool PID::valid_nucleus() const {
-    long int L = id / 10000000 - 100;
-    long int Z = (id % 10000000) / 10000;
-    long int A = (id % 10000) / 10;
-    return L + Z < A;
+    // Nuclear codes are +/- 10LZZZAAAI, so the leading two digits must be 10.
+    if(Abs_() / 1000000000 != 1) return false;
+    return NuclearA() >= 1 && NuclearL() + NuclearZ() <= NuclearA();
+}
+
+std::shared_ptr<ParticleInfoEntry> ParticleInfo::Lookup(PID id) {
+    auto it = particleDB.find(id);
+    if(it != particleDB.end()) return it->second;
+    if(id.valid_nucleus()) return BuildNucleusEntry(id);
+    throw std::runtime_error(fmt::format("Invalid PID: id={}", id.AsInt()));
+}
+
+std::shared_ptr<ParticleInfoEntry> ParticleInfo::BuildNucleusEntry(PID id) {
+    const int L = id.NuclearL(), Z = id.NuclearZ(), A = id.NuclearA(), I = id.NuclearI();
+    const std::string name = NuclearName(Z, A, L, I);
+
+    auto entry = std::make_shared<ParticleInfoEntry>(id, NuclearMass(Z, A), 0.0, 3 * Z, 0,
+                                                     std::abs(A - 2 * Z), A % 2, 1, 0, true, true,
+                                                     name, "anti-" + name);
+    particleDB.emplace(id, entry);
+    nameToPID.emplace(name, id);
+    return entry;
 }
 
 void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {

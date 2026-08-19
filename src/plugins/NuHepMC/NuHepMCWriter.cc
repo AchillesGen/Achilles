@@ -115,6 +115,8 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Captured, {"Captured", "Captured"}},
                  {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
                  {NuHepMC::ParticleStatus::Cascade, {"Cascade", "Cascade"}},
+                 {NuHepMC::ParticleStatus::UndecayedResidue,
+                  {"Undecayed residue", "Nuclear remnant left after the interaction"}},
              });
 
     // Signal conventions
@@ -163,6 +165,8 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Spectator;
     case achilles::ParticleStatus::interacted:
         return NuHepMC::ParticleStatus::Cascade;
+    case achilles::ParticleStatus::residue:
+        return NuHepMC::ParticleStatus::UndecayedResidue;
     }
     return -1;
 }

@@ -112,18 +112,7 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     nprotons = Z;
     nneutrons = A - Z;
 
-    // Based on PDG Monte-Carlo PIDs
-    // Nuclear codes are given as a 10 digit number:
-    // +/- 10LZZZAAAI
-    // L: number of strange baryons
-    // Z: number of protons
-    // A: number of nucleons
-    // I: excited state (0 is ground state)
-    static constexpr int IDBase = 1000000000;
-    static constexpr int ZBase = 10000;
-    static constexpr int ABase = 10;
-    int ID = IDBase + ZBase * static_cast<int>(Z) + ABase * static_cast<int>(A);
-    m_pid = PID{ID};
+    m_pid = PID::MakeNucleus(static_cast<int>(Z), static_cast<int>(A));
 
     // Set flag to handle special case of hydrogen or free neutron
     if(Z == 1 && A == 1) is_hydrogen = true;

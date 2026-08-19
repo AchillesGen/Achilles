@@ -87,14 +87,14 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
     achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
                                                       1.3242861369493605e2, 5.3473759747528429e3});
-    // TODO: Figure out how to handle remnant
-    // achilles::Particle remnant(achilles::PID(1000060110));
-    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -
-    // lepton.Momentum();
+    achilles::Particle remnant(achilles::PID::MakeNucleus(6, 11), {}, {},
+                               achilles::ParticleStatus::residue);
+    remnant.Momentum() =
+        target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+                      {target}, {nuc_in, remnant}, achilles::EventHistoryNode::StatusCode::target);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
@@ -183,14 +183,14 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
         {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
     achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
                                                       1.3242861369493605e2, 5.3473759747528429e3});
-    // TODO: Figure out how to handle remnant
-    // achilles::Particle remnant(achilles::PID(1000060110));
-    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -
-    // lepton.Momentum();
+    achilles::Particle remnant(achilles::PID::MakeNucleus(6, 11), {}, {},
+                               achilles::ParticleStatus::residue);
+    remnant.Momentum() =
+        target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+                      {target}, {nuc_in, remnant}, achilles::EventHistoryNode::StatusCode::target);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {beam}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
@@ -205,7 +205,7 @@ TEST_CASE("EventHistory Visitor", "[EventHistory]") {
         std::string expected1 =
             R"exp(Node(primary, {Particle[2112, 25, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[14, 25, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2212, 25, FourVector(9.63180946e+02, -1.87021024e+02, -4.70962283e+01, 1.03337393e+02), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[13, 25, FourVector(5.35316004e+03, 2.10606858e+02, 1.32428614e+02, 5.34737597e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
         std::string expected2 =
-            R"exp(Node(target, {Particle[1000060120, 25, FourVector(1.11880000e+04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2112, 25, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
+            R"exp(Node(target, {Particle[1000060120, 25, FourVector(1.11880000e+04, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[2112, 25, FourVector(9.18006610e+02, 2.35858336e+01, 8.53323854e+01, 5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)], Particle[1000060110, 27, FourVector(1.02699934e+04, -2.35858336e+01, -8.53323854e+01, -5.23789929e+01), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
         std::string expected3 =
             R"exp(Node(beam, {Particle[14, 25, FourVector(1.00000000e+04, 0.00000000e+00, 0.00000000e+00, 1.00000000e+04), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]} -> {Particle[14, 25, FourVector(5.39833437e+03, 0.00000000e+00, 0.00000000e+00, 5.39833437e+03), ThreeVector(0.00000000e+00, 0.00000000e+00, 0.00000000e+00)]}))exp";
 
