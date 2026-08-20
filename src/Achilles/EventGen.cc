@@ -272,12 +272,15 @@ bool achilles::EventGen::GenerateSingleEvent() {
         if(part.ID() == PID::proton()) rem_Z--;
         rem_A--;
     }
-    Particle remnant(PID::MakeNucleus(rem_Z, rem_A), rem_mom, init_parts[0].Position(),
-                     ParticleStatus::intermediate_residue);
-    event.SetRemnant(remnant);
-
+    // Hydrogen and free-neutron targets leave nothing behind, so there is no remnant to
+    // create or thread. The cascade's threading is all guarded on the remnant existing.
     auto target_out = init_parts;
-    target_out.push_back(remnant);
+    if(rem_A > 0) {
+        Particle remnant(PID::MakeNucleus(rem_Z, rem_A), rem_mom, init_parts[0].Position(),
+                         ParticleStatus::intermediate_residue);
+        event.SetRemnant(remnant);
+        target_out.push_back(remnant);
+    }
     // TODO: Handle multiple positions from MEC
     event.History().AddVertex(init_parts[0].Position(), {init_nuc}, target_out,
                               EventHistory::StatusCode::target);

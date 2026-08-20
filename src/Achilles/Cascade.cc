@@ -187,6 +187,10 @@ bool Cascade::MoveNucleon(Event &event, const Particle &nucleon, bool remove) {
     const auto &remnant = event.Remnant();
     if(remnant.ID() == PID::undefined()) return false;
 
+    // A fully dissolved nucleus is not a particle: refuse to go below one nucleon and let
+    // the caller record the vertex without threading.
+    if(remove && remnant.ID().NuclearA() <= 1) return false;
+
     const int sign = remove ? -1 : 1;
     const int dZ = nucleon.ID() == PID::proton() ? 1 : 0;
     const PID pid =
@@ -879,18 +883,27 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         // vertex balances: projectile + remnant_in -> products + remnant_out. Absorption
         // partners are consumed the same way, which is what makes those vertices conserve.
         // `consumed` was filled above, before the statuses below were rewritten.
-        bool threaded = event.Remnant().ID() != PID::undefined();
+        const auto &rem = event.Remnant();
+        const bool threaded = rem.ID() != PID::undefined() &&
+                              static_cast<size_t>(rem.ID().NuclearA()) > consumed.size();
         if(threaded) {
-            initial_part.push_back(event.Remnant());
+            initial_part.push_back(rem);
             for(const auto &part : consumed) MoveNucleon(event, part, true);
         }
 
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
         initial_part.push_back(particle1);
-        // Without a remnant to draw from (cascade-only test modes) the struck nucleon is
-        // still recorded as an incoming line of its own.
-        if(!threaded) initial_part.push_back(particle2);
+        // With no remnant to draw from (cascade-only test modes, or a nucleus down to its
+        // last nucleon) every consumed nucleon is recorded as an incoming line instead, so
+        // the vertex still balances.
+        if(!threaded) {
+            initial_part.push_back(particle2);
+            for(const auto &part : consumed) {
+                if(part.Status() == ParticleStatus::absorption_partner)
+                    initial_part.push_back(part);
+            }
+        }
 
         // Ensure outgoing particles are propagating and add to list of particles in event
         // and assign formation zone
