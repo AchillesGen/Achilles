@@ -16,6 +16,10 @@ double BindingEnergy(int Z, int A);
 /// Ground state nuclear (not atomic) mass in MeV for Z protons and A-Z neutrons.
 double NuclearMass(int Z, int A);
 
+/// Energy in MeV needed to remove one nucleon of the given species from (Z, A).
+/// Never negative: an unbound combination costs nothing to separate.
+double SeparationEnergy(int Z, int A, bool is_proton);
+
 /// Element symbol for a given proton number, "n" for Z == 0.
 std::string ElementSymbol(int Z);
 

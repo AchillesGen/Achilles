@@ -262,8 +262,24 @@ bool achilles::EventGen::GenerateSingleEvent() {
     for(const auto &nucleon : event.Hadrons()) {
         if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
     }
+    // The nucleus splits into the struck nucleon(s) and the remnant, which is then threaded
+    // through the cascade so every vertex conserves four-momentum and baryon number.
+    FourVector rem_mom = init_nuc.Momentum();
+    int rem_Z = static_cast<int>(group.GetNucleus()->NProtons());
+    int rem_A = static_cast<int>(group.GetNucleus()->NNucleons());
+    for(const auto &part : init_parts) {
+        rem_mom -= part.Momentum();
+        if(part.ID() == PID::proton()) rem_Z--;
+        rem_A--;
+    }
+    Particle remnant(PID::MakeNucleus(rem_Z, rem_A), rem_mom, init_parts[0].Position(),
+                     ParticleStatus::intermediate_residue);
+    event.SetRemnant(remnant);
+
+    auto target_out = init_parts;
+    target_out.push_back(remnant);
     // TODO: Handle multiple positions from MEC
-    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
+    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, target_out,
                               EventHistory::StatusCode::target);
     // Setup beam in history
     auto init_lep = event.Leptons()[0];

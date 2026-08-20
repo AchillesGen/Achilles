@@ -60,6 +60,12 @@ double achilles::NuclearMass(int Z, int A) {
     return Z * Constant::mp + (A - Z) * Constant::mn - BindingEnergy(Z, A);
 }
 
+double achilles::SeparationEnergy(int Z, int A, bool is_proton) {
+    const int dZ = is_proton ? 1 : 0;
+    const double nucleon = is_proton ? Constant::mp : Constant::mn;
+    return std::max(NuclearMass(Z - dZ, A - 1) + nucleon - NuclearMass(Z, A), 0.0);
+}
+
 std::string achilles::ElementSymbol(int Z) {
     if(Z < 0 || static_cast<size_t>(Z) >= symbols.size()) return fmt::format("Z{}", Z);
     return symbols[static_cast<size_t>(Z)];

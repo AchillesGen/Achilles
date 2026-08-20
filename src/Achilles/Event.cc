@@ -41,33 +41,26 @@ Event &Event::operator=(const Event &other) {
 
 void Event::Finalize() {
     spdlog::debug("Finalizing the event");
+    if(m_remnant.ID() == PID::undefined()) return;
 
-    // Determine the PID of the remnant from the nucleons that stay bound. Only background
-    // (never struck) and captured (reabsorbed) nucleons remain; everything else either left
-    // the nucleus or is a cascade intermediate that Hadrons() still holds a copy of.
-    size_t nA = 0, nZ = 0;
-    for(const auto &part : m_hadrons) {
-        if(!part.Info().IsNucleon()) continue;
-        if(part.Status() != ParticleStatus::background && part.Status() != ParticleStatus::captured)
-            continue;
-        if(part.ID() == PID::proton()) nZ++;
-        nA++;
-    }
-    if(nA == 0) return;
+    // Every residue is created as intermediate; the one still standing at the end is the
+    // actual remnant. Promoting it here is what lets a reader pick it out of the chain by
+    // status instead of walking the graph for an unconsumed residue.
+    m_remnant.Status() = ParticleStatus::residue;
+    m_history.UpdateStatuses({m_remnant});
 
-    // The remnant carries whatever the initial nucleus did not give to the outgoing
-    // leptons and hadrons. Initial state hadrons are already part of the nucleus.
-    FourVector mom{};
-    if(m_nuc && !m_leptons.empty()) {
-        mom = m_leptons[0].Momentum() + m_nuc->InitParticle().Momentum();
+    // The remnant is built up through the history rather than derived here. Cross-check it
+    // against global four-momentum balance, which must agree if every vertex conserved.
+    if(spdlog::get_level() <= spdlog::level::debug && m_nuc && !m_leptons.empty()) {
+        FourVector mom = m_leptons[0].Momentum() + m_nuc->InitParticle().Momentum();
         for(size_t i = 1; i < m_leptons.size(); ++i) { mom -= m_leptons[i].Momentum(); }
         for(const auto &part : m_hadrons) {
             if(part.IsFinal()) mom -= part.Momentum();
         }
+        const auto diff = mom - m_remnant.Momentum();
+        if(std::abs(diff.E()) > 1e-6 || diff.Vec3().Magnitude() > 1e-6)
+            spdlog::debug("Event: remnant disagrees with momentum balance by {}", diff);
     }
-
-    m_remnant = MakeNuclearRemnant(nA, nZ, mom);
-    if(m_history.Target()) m_history.Target()->AddOutgoing(m_remnant);
 }
 
 void Event::Display() const {
