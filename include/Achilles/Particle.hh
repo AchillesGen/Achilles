@@ -34,6 +34,9 @@ enum class ParticleStatus : int {
     residue = 27,
     spectator = 28,
     interacted = 29,
+    // A residue partway along the chain, already consumed by a later vertex. Only the
+    // final remnant of the event carries `residue`.
+    intermediate_residue = 30,
     absorption_partner = 99,
 };
 inline auto format_as(achilles::ParticleStatus s) {
@@ -391,6 +394,8 @@ template <> struct formatter<achilles::ParticleStatus> {
             return format_to(ctx.out(), "cascade({})", static_cast<int>(status));
         case achilles::ParticleStatus::residue:
             return format_to(ctx.out(), "residue({})", static_cast<int>(status));
+        case achilles::ParticleStatus::intermediate_residue:
+            return format_to(ctx.out(), "intermediate_residue({})", static_cast<int>(status));
         default:
             return format_to(ctx.out(), "Unknown achilles::ParticleStatus({}) ",
                              static_cast<int>(status));

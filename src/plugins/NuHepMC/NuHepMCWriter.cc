@@ -35,6 +35,8 @@ static constexpr int Cascade = 23;
 static constexpr int Beam = 24;
 static constexpr int Decay = 25;
 static constexpr int Shower = 26;
+static constexpr int Escape = 27;
+static constexpr int Capture = 28;
 } // namespace VertexStatus
 
 namespace ParticleStatus {
@@ -46,6 +48,7 @@ static constexpr int Captured = 26;
 static constexpr int UndecayedResidue = 27;
 static constexpr int Spectator = 28;
 static constexpr int Cascade = 29;
+static constexpr int IntermediateResidue = 30;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
@@ -90,6 +93,10 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::VertexStatus::NucleonSeparation,
                   {"Nucleus", "The vertex defining a nucleon in a nucleus"}},
                  {NuHepMC::VertexStatus::Decay, {"Decay", "A vertex used in a decay chain"}},
+                 {NuHepMC::VertexStatus::Escape,
+                  {"Escape", "A nucleon paying its removal energy to leave the nucleus"}},
+                 {NuHepMC::VertexStatus::Capture,
+                  {"Capture", "A nucleon reabsorbed into the nuclear remnant"}},
                  {NuHepMC::VertexStatus::Shower, {"Shower", "Vertex used in a shower"}},
                  {NuHepMC::VertexStatus::Propagation, {"Propagation", "Propagation"}},
                  {NuHepMC::VertexStatus::Cascade, {"Cascade", "Cascade"}},
@@ -117,6 +124,8 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Cascade, {"Cascade", "Cascade"}},
                  {NuHepMC::ParticleStatus::UndecayedResidue,
                   {"Undecayed residue", "Nuclear remnant left after the interaction"}},
+                 {NuHepMC::ParticleStatus::IntermediateResidue,
+                  {"Intermediate residue", "Nuclear remnant partway through the cascade"}},
              });
 
     // Signal conventions
@@ -167,6 +176,8 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Cascade;
     case achilles::ParticleStatus::residue:
         return NuHepMC::ParticleStatus::UndecayedResidue;
+    case achilles::ParticleStatus::intermediate_residue:
+        return NuHepMC::ParticleStatus::IntermediateResidue;
     }
     return -1;
 }
@@ -185,6 +196,10 @@ int ToNuHepMC(achilles::EventHistoryNode::StatusCode status) {
         return NuHepMC::VertexStatus::NucleonSeparation;
     case achilles::EventHistoryNode::StatusCode::decay:
         return NuHepMC::VertexStatus::Decay;
+    case achilles::EventHistoryNode::StatusCode::escape:
+        return NuHepMC::VertexStatus::Escape;
+    case achilles::EventHistoryNode::StatusCode::capture:
+        return NuHepMC::VertexStatus::Capture;
     case achilles::EventHistoryNode::StatusCode::shower:
         return NuHepMC::VertexStatus::Shower;
     }

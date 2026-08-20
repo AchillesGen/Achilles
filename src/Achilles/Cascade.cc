@@ -13,6 +13,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/NuclearMass.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
@@ -179,6 +180,68 @@ std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
 void Cascade::Reset() {
     kickedIdxs.clear();
     integrators.clear();
+    m_removal_debt.clear();
+}
+
+bool Cascade::MoveNucleon(Event &event, const Particle &nucleon, bool remove) {
+    const auto &remnant = event.Remnant();
+    if(remnant.ID() == PID::undefined()) return false;
+
+    const int sign = remove ? -1 : 1;
+    const int dZ = nucleon.ID() == PID::proton() ? 1 : 0;
+    const PID pid =
+        PID::MakeNucleus(remnant.ID().NuclearZ() + sign * dZ, remnant.ID().NuclearA() + sign);
+    FourVector mom = remnant.Momentum();
+    if(remove)
+        mom -= nucleon.Momentum();
+    else
+        mom += nucleon.Momentum();
+    event.SetRemnant(Particle(pid, mom, remnant.Position(), ParticleStatus::intermediate_residue));
+    return true;
+}
+
+void Cascade::RecoilRemnant(Event &event, const FourVector &mom) {
+    const auto &remnant = event.Remnant();
+    if(remnant.ID() == PID::undefined()) return;
+    event.SetRemnant(Particle(remnant.ID(), remnant.Momentum() + mom, remnant.Position(),
+                              ParticleStatus::intermediate_residue));
+}
+
+void Cascade::TransferDebt(std::size_t from, std::size_t to) {
+    auto it = m_removal_debt.find(from);
+    if(it == m_removal_debt.end()) return;
+    m_removal_debt[to] = it->second;
+    m_removal_debt.erase(it);
+}
+
+bool Cascade::PayRemovalEnergy(Particles &particles, std::size_t idx) {
+    auto it = m_removal_debt.find(idx);
+    if(it == m_removal_debt.end()) return true;
+
+    // Composition of the bound pool once this nucleon is gone, so that the separation
+    // energies charged over an event telescope to the total mass difference.
+    int nZ = 0, nA = 0;
+    for(const auto &part : particles) {
+        if(!part.Info().IsNucleon()) continue;
+        if(part.Status() != ParticleStatus::background && part.Status() != ParticleStatus::captured)
+            continue;
+        if(part.ID() == PID::proton()) nZ++;
+        nA++;
+    }
+
+    const bool is_proton = it->second.is_proton;
+    const double debit =
+        SeparationEnergy(nZ + (is_proton ? 1 : 0), nA + 1, is_proton) + it->second.kinetic;
+
+    auto &particle = particles[idx];
+    const double mass = particle.Info().Mass();
+    const double energy = particle.Momentum().E() - debit;
+    if(energy <= mass) return false;
+
+    const double momentum = std::sqrt(energy * energy - mass * mass);
+    particle.SetMomentum({particle.Momentum().Vec3().Unit() * momentum, energy});
+    m_removal_debt.erase(it);
+    return true;
 }
 
 std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
@@ -188,6 +251,7 @@ std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
                                    event.Hadrons()[idx].Momentum().P(),
                                    event.Hadrons()[idx].Position().P()) < Constant::mN) {
             event.Hadrons()[idx].Status() = ParticleStatus::captured;
+            m_removal_debt.erase(idx);
         } else {
             AddIntegrator(idx, event.Hadrons()[idx]);
             notCaptured.insert(idx);
@@ -204,6 +268,7 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
                m_nucleus->GetPotential()->Hamiltonian(
                    particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
                 particles[idx].Status() = ParticleStatus::captured;
+                m_removal_debt.erase(idx);
             } else {
                 spdlog::trace("Adding particle: {}", particles[idx]);
                 AddIntegrator(idx, particles[idx]);
@@ -246,6 +311,17 @@ void Cascade::Validate(Event &event) {
                 out.Status() = ParticleStatus::final_state;
                 out.Position() = event.Hadrons()[idx].Position();
                 event.Hadrons().push_back(out);
+                // This path bypasses Escaped, so settle here or the debt is never paid.
+                // The particle is already outside the nucleus, so it cannot be recaptured.
+                if(out.Info().IsBaryon()) {
+                    const auto iout = event.Hadrons().size() - 1;
+                    TransferDebt(idx, iout);
+                    if(!PayRemovalEnergy(event.Hadrons(), iout)) {
+                        spdlog::debug("Cascade: escaped resonance product cannot repay its "
+                                      "removal energy, releasing it unpaid");
+                        m_removal_debt.erase(iout);
+                    }
+                }
                 final.push_back(event.Hadrons().back());
             }
 
@@ -338,7 +414,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
         kickedIdxs = newKicked;
 
         // After step checks
-        Escaped(particles);
+        Escaped(event);
     }
 
     Validate(event);
@@ -533,27 +609,55 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
 }
 
 // TODO: Rewrite to have the logic built into the Nucleus class
-void Cascade::Escaped(Particles &particles) {
+void Cascade::Escaped(Event &event) {
+    auto &particles = event.Hadrons();
     const auto radius = m_nucleus->Radius();
-    for(auto &particle : particles) {
-        if(!particle.IsPropagating()) continue;
-        if(particle.Status() == ParticleStatus::external_test) {
-            if(particle.Position().Z() < radius) continue;
+    for(std::size_t idx = 0; idx < particles.size(); ++idx) {
+        if(!particles[idx].IsPropagating()) continue;
+        if(particles[idx].Status() == ParticleStatus::external_test) {
+            if(particles[idx].Position().Z() < radius) continue;
         }
-        // TODO: Use the code from src/Achilles/Nucleus.cc:108 to properly
-        // handle
-        //       escape vs. capture and mometum changes
-        constexpr double potential = 10.0;
-        const double energy = particle.Momentum().E() - Constant::mN - potential;
-        if(particle.Position().Magnitude2() > pow(radius, 2)) {
-            spdlog::debug("Particle: {} escaping", particle);
-            // TODO: Figure out how to appropriately handle escaping vs. capturing
-            // It should not be returned to the background, since this can lead to
-            // interactions with other particles again
-            if(energy > 0 || !particle.Info().IsNucleon())
-                particle.Status() = ParticleStatus::final_state;
-            else
-                particle.Status() = ParticleStatus::captured;
+        if(particles[idx].Position().Magnitude2() <= pow(radius, 2)) continue;
+
+        spdlog::debug("Particle: {} escaping", particles[idx]);
+        // Resonances leave carrying their debt, and are never captured for inability to
+        // pay: the remnant tracks nucleons, so absorbing a resonance would corrupt its
+        // composition. They settle through their decay products, in Decay or Validate.
+        if(!particles[idx].Info().IsNucleon()) {
+            particles[idx].Status() = ParticleStatus::final_state;
+            continue;
+        }
+
+        // A nucleon must repay the nucleus what it took to get free. If it cannot afford
+        // the separation energy plus the Fermi kinetic energy it was given, it stays bound.
+        const bool owes = m_removal_debt.count(idx) > 0;
+        const Particle before = particles[idx];
+        if(PayRemovalEnergy(particles, idx)) {
+            particles[idx].Status() = ParticleStatus::final_state;
+            // Losing the removal energy at the surface is a physical step, so record it as
+            // its own vertex. The remnant takes up the energy and momentum the nucleon gave
+            // back, which is what makes the vertex balance.
+            if(owes) {
+                const auto recoil = before.Momentum() - particles[idx].Momentum();
+                Particles in{before}, out{particles[idx]};
+                if(event.Remnant().ID() != PID::undefined()) {
+                    in.push_back(event.Remnant());
+                    RecoilRemnant(event, recoil);
+                    out.push_back(event.Remnant());
+                }
+                event.History().AddVertex(particles[idx].Position(), in, out,
+                                          EventHistory::StatusCode::escape);
+            }
+        } else {
+            // It cannot pay, so it rejoins the bound pool and owes nothing after all.
+            particles[idx].Status() = ParticleStatus::captured;
+            m_removal_debt.erase(idx);
+            if(event.Remnant().ID() != PID::undefined()) {
+                Particles in{before, event.Remnant()};
+                MoveNucleon(event, before, false);
+                event.History().AddVertex(before.Position(), in, {event.Remnant()},
+                                          EventHistory::StatusCode::capture);
+            }
         }
     }
 }
@@ -735,6 +839,31 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
         }
     }*/
 
+    // Collect the removal debts this vertex passes on, before any status is rewritten below.
+    // A participant already out of the bound pool forwards what it owed; one still in the
+    // background opens a new debt for the nucleon the nucleus is about to lose.
+    std::vector<RemovalDebt> debts;
+    Particles consumed;
+    if(hit) {
+        auto forward = [&](std::size_t idx) {
+            if(auto it = m_removal_debt.find(idx); it != m_removal_debt.end()) {
+                debts.push_back(it->second);
+                m_removal_debt.erase(it);
+            }
+        };
+        auto open = [&](const Particle &part) {
+            debts.push_back({part.Momentum().E() - part.Info().Mass(), part.ID() == PID::proton()});
+            consumed.push_back(part);
+        };
+        forward(idx1);
+        forward(idx2);
+        if(particle1.Status() == ParticleStatus::background) open(particle1);
+        if(particle2.Status() == ParticleStatus::background) open(particle2);
+        for(const auto &part : event.Hadrons()) {
+            if(part.Status() == ParticleStatus::absorption_partner) open(part);
+        }
+    }
+
     // Consume any nucleon absorbed alongside particle2, or release it if Pauli blocked. Its
     // momentum is already folded into particles_out, so leaving it background would count it
     // both as emitted and as still bound in the nuclear remnant.
@@ -745,18 +874,35 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
     if(hit) {
         Particles initial_part, final_part;
+
+        // Nucleons the cascade pulls out of the bound pool leave the remnant here, so the
+        // vertex balances: projectile + remnant_in -> products + remnant_out. Absorption
+        // partners are consumed the same way, which is what makes those vertices conserve.
+        // `consumed` was filled above, before the statuses below were rewritten.
+        bool threaded = event.Remnant().ID() != PID::undefined();
+        if(threaded) {
+            initial_part.push_back(event.Remnant());
+            for(const auto &part : consumed) MoveNucleon(event, part, true);
+        }
+
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
         initial_part.push_back(particle1);
-        initial_part.push_back(particle2);
+        // Without a remnant to draw from (cascade-only test modes) the struck nucleon is
+        // still recorded as an incoming line of its own.
+        if(!threaded) initial_part.push_back(particle2);
 
         // Ensure outgoing particles are propagating and add to list of particles in event
         // and assign formation zone
+        size_t idebt = 0;
         for(auto &part : particles_out) {
             part.Status() = ParticleStatus::propagating;
             if(part.Info().IsNucleon())
                 part.SetFormationZone(particle1.Momentum(), part.Momentum());
             particles.push_back(part);
+            // Baryon number is conserved, so there is always a baryon for every debt.
+            if(part.Info().IsBaryon() && idebt < debts.size())
+                m_removal_debt[particles.size() - 1] = debts[idebt++];
             final_part.push_back(particles.back());
 
             // TODO: Work out the queue to minimize number of calls to AllowedInteractions
@@ -772,7 +918,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
         // Add interaction to the event history
         // TODO: What do we use for the position? (How about average positions?)
-        // TODO: How to best include the absorp_partner
+        if(threaded) final_part.push_back(event.Remnant());
         auto average_position = (particle1.Position() + particle2.Position()) / 2.0;
         event.History().AddVertex(average_position, initial_part, final_part,
                                   EventHistory::StatusCode::cascade);
@@ -804,7 +950,7 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
                                                                position3);
 }
 
-bool Cascade::Decay(Event &event, size_t idx) const {
+bool Cascade::Decay(Event &event, size_t idx) {
     auto part = event.Hadrons()[idx];
     auto beta = part.Beta().Magnitude();
     auto gamma = 1. / sqrt(1. - beta * beta);
@@ -857,6 +1003,8 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());
         event.Hadrons().push_back(out);
+        // The baryon inherits whatever the resonance owed; mesons owe nothing.
+        if(out.Info().IsBaryon()) TransferDebt(idx, event.Hadrons().size() - 1);
         final.push_back(event.Hadrons().back());
     }
 

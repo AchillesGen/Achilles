@@ -57,3 +57,51 @@ TEST_CASE("Element symbols and nuclide names", "[NuclearMass]") {
     CHECK(achilles::NuclearName(6, 11, 0, 1) == "C11*");
     CHECK(achilles::NuclearName(6, 12, 1) == "LC12");
 }
+
+TEST_CASE("Separation energies", "[NuclearMass]") {
+    using achilles::NuclearMass;
+    using achilles::SeparationEnergy;
+
+    SECTION("Consistent with the mass difference it is derived from") {
+        CHECK_THAT(
+            SeparationEnergy(6, 12, true),
+            WithinAbs(NuclearMass(5, 11) + achilles::Constant::mp - NuclearMass(6, 12), 1e-9));
+        CHECK_THAT(
+            SeparationEnergy(6, 12, false),
+            WithinAbs(NuclearMass(6, 11) + achilles::Constant::mn - NuclearMass(6, 12), 1e-9));
+    }
+
+    SECTION("Physically sensible for the light nuclei Achilles uses") {
+        // AME2020 gives 15.96 and 18.72 MeV; the mass formula misses C-12 shell structure
+        // by a few MeV, which is the accuracy this model claims.
+        CHECK_THAT(SeparationEnergy(6, 12, true), WithinAbs(15.96, 6.0));
+        CHECK_THAT(SeparationEnergy(6, 12, false), WithinAbs(18.72, 6.0));
+    }
+
+    SECTION("Never negative, even for unbound combinations") {
+        for(int A = 1; A < 60; ++A) {
+            for(int Z = 0; Z <= A; ++Z) {
+                REQUIRE(SeparationEnergy(Z, A, true) >= 0.0);
+                REQUIRE(SeparationEnergy(Z, A, false) >= 0.0);
+            }
+        }
+    }
+
+    SECTION("Removing every nucleon telescopes to the total mass difference") {
+        // The cascade charges one separation energy per ejected nucleon, so the sum has to
+        // close the gap between the initial nucleus and the bare nucleons exactly.
+        int Z = 6, A = 12;
+        double total = 0.0;
+        while(A > 1) {
+            const bool proton = Z > 0;
+            total += SeparationEnergy(Z, A, proton);
+            if(proton) Z--;
+            A--;
+        }
+        // Stripping C-12 down to a single neutron costs exactly its total binding energy.
+        const double expected =
+            6 * achilles::Constant::mp + 6 * achilles::Constant::mn - NuclearMass(6, 12);
+        CHECK_THAT(total, WithinAbs(expected, 1e-6));
+        CHECK_THAT(total, WithinAbs(achilles::BindingEnergy(6, 12), 1e-6));
+    }
+}

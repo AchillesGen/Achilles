@@ -5,6 +5,7 @@
 #define CASCADE_HH
 
 #include <array>
+#include <map>
 #include <queue>
 #include <vector>
 
@@ -191,7 +192,7 @@ class Cascade {
     const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
     double GetXSec(Event &, size_t, size_t) const;
     std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
-    void Escaped(Particles &);
+    void Escaped(Event &);
     void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
     bool Absorption(Event &, Particle &, Particle &) noexcept;
@@ -206,7 +207,32 @@ class Cascade {
     double InMediumCorrection(const Particle &, const Particle &) const;
     void PropagateAll(Particles &, double) const;
     bool HasInteraction(Event &, size_t, size_t) const;
-    bool Decay(Event &, size_t) const;
+    bool Decay(Event &, size_t);
+
+    /// Removal energy a propagating baryon owes the nucleus if it leaves. Opened when the
+    /// cascade takes a nucleon out of the background pool, inherited through interactions
+    /// and decays, and settled when the descendant escapes.
+    struct RemovalDebt {
+        double kinetic; //< Fermi kinetic energy of the nucleon when it was consumed
+        bool is_proton; //< which species left the bound pool
+    };
+    /// Keyed by index into Event::Hadrons(); absent means nothing is owed. Indices are
+    /// stable because Hadrons() is only ever appended to.
+    std::map<std::size_t, RemovalDebt> m_removal_debt;
+
+    /// Move `nucleon` between the free state and the remnant, keeping four-momentum and
+    /// baryon number balanced. `remove` takes it out of the remnant, otherwise it is
+    /// absorbed back in. Returns false if the event has no remnant to thread (cascade-only
+    /// test modes), in which case the caller records the vertex the old way.
+    bool MoveNucleon(Event &, const Particle &nucleon, bool remove);
+    /// Transfer four-momentum to the remnant without changing its composition.
+    void RecoilRemnant(Event &, const FourVector &);
+
+    /// Move any debt on `from` to `to`, leaving `from` clear.
+    void TransferDebt(std::size_t from, std::size_t to);
+    /// Subtract the removal energy owed by the particle at `idx`, rescaling it on shell.
+    /// Returns false, leaving the particle untouched, if it cannot pay.
+    bool PayRemovalEnergy(Particles &, std::size_t idx);
 
     // Variables
     std::set<std::size_t> kickedIdxs;

@@ -36,6 +36,10 @@ class Event {
     void Finalize();
 
     MOCK const Particle &Remnant() const { return m_remnant; }
+    /// The remnant is threaded through the history: it is created at the target vertex and
+    /// updated at every vertex that moves a nucleon or energy between it and the cascade,
+    /// so that four-momentum and baryon number are conserved at each one.
+    void SetRemnant(Particle remnant) { m_remnant = std::move(remnant); }
 
     MOCK const vMomentum &Momentum() const { return m_mom; }
     MOCK vMomentum &Momentum() { return m_mom; }
