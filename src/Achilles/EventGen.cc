@@ -10,6 +10,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Profiler.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
 
@@ -215,6 +216,7 @@ void achilles::EventGen::Initialize() {
 }
 
 void achilles::EventGen::GenerateEvents(bool batchMode) {
+    ScopedTimer timer{ProfileSection::event_generation};
     outputEvents = true;
 
     const auto nevents = config["Main/NEvents"].as<size_t>();

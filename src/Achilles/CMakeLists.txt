@@ -24,6 +24,7 @@ add_library(utilities SHARED
     Unweighter.cc
     Settings.cc
     System.cc
+    Profiler.cc
     Legendre.cc
     ClebschGordan.cc
     ReferenceHandler.cc

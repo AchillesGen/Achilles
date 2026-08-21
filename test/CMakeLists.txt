@@ -12,6 +12,7 @@ add_executable(achilles-testsuite
     test_interp.cc
     test_vectors.cc
     test_utils.cc
+    test_profiler.cc
     test_particle_info.cc
     test_particle.cc
     test_nucleus.cc

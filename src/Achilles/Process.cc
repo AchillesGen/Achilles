@@ -7,6 +7,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Profiler.hh"
 #include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
@@ -385,6 +386,7 @@ void ProcessGroup::Optimize() {
             "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
             m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
             m_processes[0].Info().Multiplicity());
+        ScopedTimer timer{ProfileSection::integrator_optimization};
         m_integrator->Optimize(m_integrand);
     }
 
@@ -417,7 +419,10 @@ void ProcessGroup::CalculateMaxWeight() {
     // The integrator draws the unbiased samples (no adaptation); the per-sample evaluation
     // inside SampleForMaxWeight feeds the process-weight and cross-section accounting here.
     b_calc_weights = true;
-    m_integrator->SampleForMaxWeight(m_integrand, max_weight_samples);
+    {
+        ScopedTimer timer{ProfileSection::max_weight_scan};
+        m_integrator->SampleForMaxWeight(m_integrand, max_weight_samples);
+    }
     b_calc_weights = false;
 
     std::ofstream outFile("Results.txt");
