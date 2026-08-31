@@ -101,9 +101,9 @@ void achilles::Precomputed::RunCascade::RunAll() {
 void achilles::Precomputed::RunCascade::Run(Event &event) {
     cascade.Evolve(&event);
     std::vector<Particle> init_part, final_part;
-    for(const auto &part : event.Particles()) {
-        if(part.IsFinal()) final_part.push_back(part);
-        if(part.IsInitial()) init_part.push_back(part);
+    for(const auto &part : event.allParticles()) {
+        if(part.get().IsFinal()) final_part.push_back(part);
+        if(part.get().IsInitial()) init_part.push_back(part);
     }
     event.History().AddVertex(init_part[0].Position(), init_part, final_part,
                               EventHistory::StatusCode::primary);

@@ -25,6 +25,7 @@ class Event;
 class PID;
 
 using Particles = std::vector<Particle>;
+using refParticles = std::vector<std::reference_wrapper<Particle>>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
 
 /// The Cascade class performs a cascade of the nucleons inside the nucleus. The nucleons that
@@ -178,7 +179,7 @@ class Cascade {
     ///@}
   private:
     // Functions
-    std::size_t GetInter(Particles &, const Particle &, double &stepDistance);
+    std::size_t GetInter(Particles&, const Particle &, double &stepDistance);
     void AdaptiveStep(const Particles &, const double &) noexcept;
     bool BetweenPlanes(const ThreeVector &, const ThreeVector &, const ThreeVector &,
                        double) const noexcept;
@@ -190,7 +191,7 @@ class Cascade {
     void Escaped(Particles &);
     void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
-    bool Absorption(Event &, Particle &, Particle &) noexcept;
+    //bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *);
     void PropagateSpace(size_t, Particle *, double);

@@ -164,11 +164,11 @@ void NuclearModel::TransformFrame(Event &event, const Process &process, bool for
 
 void NuclearModel::TransformQZ(Event &event, const Process &process, bool forward) {
     if(forward) {
-        auto q = process.ExtractQ(event);
+        FourVector q = process.ExtractQ(event);
         rotation = q.AlignZ();
-        for(auto &mom : event.Momentum()) { mom = mom.Rotate(rotation); }
+        for(Particle& p:event.allParticles()) { p.Rotate(rotation); }
     } else {
-        for(auto &mom : event.Momentum()) { mom = mom.RotateBack(rotation); }
+        for(Particle& p:event.allParticles()) { p.RotateBack(rotation); }
     }
 }
 

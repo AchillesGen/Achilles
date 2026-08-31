@@ -41,7 +41,7 @@ TEST_CASE("Builtin", "[EventWriter]") {
 
         const MockEvent event{};
         double wgt = 1.0;
-        REQUIRE_CALL(event, Particles()).TIMES(1).LR_RETURN((particles));
+        REQUIRE_CALL(event, allParticles()).TIMES(1).LR_RETURN((particles));
         REQUIRE_CALL(event, Remnant()).TIMES(1).LR_RETURN((remnant));
         REQUIRE_CALL(event, Weight()).TIMES(1).LR_RETURN((wgt));
 

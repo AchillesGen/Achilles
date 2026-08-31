@@ -6,8 +6,8 @@
 using namespace achilles;
 
 InteractionResults NasaInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
-    const auto &particle2 = event.Hadrons()[part2];
+    const auto &particle1 = event.NucleusHadrons()[part1];
+    const auto &particle2 = event.NucleusHadrons()[part2];
 
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();

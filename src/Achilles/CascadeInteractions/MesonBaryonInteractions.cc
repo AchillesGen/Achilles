@@ -8,8 +8,8 @@ using namespace achilles;
 
 InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t part1,
                                                         size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
-    const auto &particle2 = event.Hadrons()[part2];
+    const auto &particle1 = event.NucleusHadrons()[part1];
+    const auto &particle2 = event.NucleusHadrons()[part2];
 
     int pidm = particle1.ID();
     int pidb = particle2.ID(); // Usually the case

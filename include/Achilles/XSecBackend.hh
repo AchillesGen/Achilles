@@ -79,7 +79,7 @@ class SherpaLeptonicBackend : public XSecBackend, RegistrableBackend<SherpaLepto
     static std::string Name() { return "SherpaLeptonic"; }
 
   private:
-    Currents CalcLeptonCurrents(const std::vector<FourVector> &, const ProcessInfo &) const;
+    Currents CalcLeptonCurrents(const crefParticles&, const ProcessInfo &) const;
     SherpaInterface *p_sherpa = nullptr;
 };
 

@@ -164,10 +164,11 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
 
 void achilles::EventGen::Initialize() {
     if(config.Exists("Backend/Options/DebugEvents")) {
-        auto &group = process_groups[0];
+        ProcessGroup& group = process_groups[0];
         DebugEvents events(config.GetAs<std::string>("Backend/Options/DebugEvents"),
                            group.Multiplicity());
-        for(const auto &evt : events.events) { group.SingleEvent(evt, 1); }
+		//TODO New debugging protocol that doesn't rely on a list of momenta
+        //for(const auto &evt : events.events) { group.SingleEvent(evt, 1); }
         exit(0);
     }
 
@@ -176,7 +177,7 @@ void achilles::EventGen::Initialize() {
     if(config.Exists("Cache/Path")) cache.Path() = config.GetAs<std::string>("Cache/Path");
 
     if(!config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load")) {
-        for(auto &group : process_groups) {
+        for(ProcessGroup& group : process_groups) {
             if(cache.FindCachedState(std::hash<ProcessGroup>{}(group))) {
                 spdlog::debug("Loading cached state for {}", group);
                 if(!cache.LoadState(group)) {
@@ -187,14 +188,14 @@ void achilles::EventGen::Initialize() {
     }
 
     spdlog::info("Starting optimization runs");
-    for(auto &group : process_groups) {
+    for(ProcessGroup& group : process_groups) {
         group.Optimize();
         m_group_weights.push_back(group.MaxWeight());
         m_max_weight += group.MaxWeight();
         spdlog::info("Group weights: {} / {}",
                      fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "), m_max_weight);
         std::cout << "Estimated unweighting eff for this group: ";
-        for(auto &process : group.Processes()) {
+        for(const Process& process : group.Processes()) {
             std::cout << process.UnweightEff() << " ";
             std::cout << std::endl;
         }
@@ -205,7 +206,7 @@ void achilles::EventGen::Initialize() {
             }
         }
     }
-    for(auto &wgt : m_group_weights) wgt /= m_max_weight;
+    for(double& wgt : m_group_weights) wgt /= m_max_weight;
     spdlog::info("Group weights: {}",
                  fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "));
     spdlog::info("Finished optimization");
@@ -214,7 +215,7 @@ void achilles::EventGen::Initialize() {
 void achilles::EventGen::GenerateEvents(bool batchMode) {
     outputEvents = true;
 
-    const auto nevents = config["Main/NEvents"].as<size_t>();
+    const size_t nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
     size_t statusUpdate = 1;
     size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
@@ -251,16 +252,16 @@ bool achilles::EventGen::GenerateSingleEvent() {
     }
     if(spdlog::get_level() == spdlog::level::trace) event.Display();
 
-    auto init_nuc = group.GetNucleus()->InitParticle();
+    Particle init_nuc = group.GetNucleus()->InitParticle();
     std::vector<Particle> init_parts;
-    for(const auto &nucleon : event.Hadrons()) {
+    for(const Particle& nucleon : event.HadronsIn()) {
         if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
     }
     // TODO: Handle multiple positions from MEC
     event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
                               EventHistory::StatusCode::target);
     // Setup beam in history
-    Particle init_lep = event.LeptonsIn()[0];
+    Particle& init_lep = event.LeptonsIn()[0];
     Particle init_beam = init_lep;
     init_beam.Status() = ParticleStatus::beam;
     const double max_energy = beam->MaxEnergy();
@@ -269,7 +270,7 @@ bool achilles::EventGen::GenerateSingleEvent() {
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays
     std::vector<Particle> primary_out, propagating;
-    for(const auto &part : event.Particles()) {
+    for(const Particle& part : event.allParticles()) {
         if(part.IsFinal()) primary_out.push_back(part);
         if(part.IsPropagating()) {
             primary_out.push_back(part);
@@ -302,10 +303,15 @@ bool achilles::EventGen::GenerateSingleEvent() {
 #ifdef ACHILLES_EVENT_DETAILS
         spdlog::trace("Hadrons (Post Cascade):");
         size_t idx = 0;
-        for(const auto &particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
+        for(const Particle& particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
 #endif
     } else {
-        for(auto &nucleon : event.Hadrons()) {
+        for(Particle& nucleon : event.HadronsIn()) {
+            if(nucleon.Status() == ParticleStatus::propagating) {
+                nucleon.Status() = ParticleStatus::final_state;
+            }
+        }
+        for(Particle& nucleon : event.HadronsOut()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
                 nucleon.Status() = ParticleStatus::final_state;
             }
@@ -313,7 +319,8 @@ bool achilles::EventGen::GenerateSingleEvent() {
     }
 
     // Update particle statuses in history to account for after the cascade
-    event.History().UpdateStatuses(event.Hadrons());
+    event.History().UpdateStatuses(event.HadronsIn());
+    event.History().UpdateStatuses(event.HadronsOut());
 
 #ifdef ACHILLES_SHERPA_INTERFACE
     // Running Sherpa interface if requested
@@ -325,7 +332,7 @@ bool achilles::EventGen::GenerateSingleEvent() {
 }
 
 bool achilles::EventGen::MakeCuts(Event &event) {
-    return hard_cuts.EvaluateCuts(event.Particles());
+    return hard_cuts.EvaluateCuts(event.allParticles());
 }
 
 // TODO: Create Analysis level cuts
@@ -336,7 +343,7 @@ bool achilles::EventGen::MakeEventCuts(Event &event) {
         auto pid = pair.first;
         auto cut = pair.second;
         bool pid_passed = false;
-        for (const auto& particle : event.Particles()){
+        for (const auto& particle : event.allParticles()){
             // Restrict to matching final-state particles
             if(particle.IsFinal() && particle.ID() == pid)
                 // Keep: at least one particle (of a given PID) survives the cut
@@ -355,7 +362,7 @@ bool achilles::EventGen::MakeEventCuts(Event &event) {
 void achilles::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron
     double phi = 0.0;
-    for(const auto &particle : event.Particles()) {
+    for(const Particle& particle : event.allParticles()) {
         if(particle.ID() == PID::electron() && particle.IsFinal()) {
             phi = particle.Momentum().Phi();
         }

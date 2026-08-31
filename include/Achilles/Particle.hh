@@ -275,6 +275,7 @@ class Particle {
     /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
     ///@param rot_mat: the 3x3 rotation matrix
     void Rotate(const std::array<double, 9> &) noexcept;
+    void RotateBack(const std::array<double, 9> &) noexcept;
 
     /// Return a string representation of the particle
     ///@return std::string: a string representation of the particle

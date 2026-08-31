@@ -3,6 +3,7 @@
 
 #include "Achilles/OneParticleCuts.hh"
 #include "Achilles/TwoParticleCuts.hh"
+#include "Achilles/Event.hh"
 
 namespace achilles {
 
@@ -47,7 +48,7 @@ class CombinedTwoParticleCut {
 
 class CutCollection {
   public:
-    bool EvaluateCuts(const std::vector<Particle> &);
+    bool EvaluateCuts(const refParticles&);
     double CutEfficiency() const;
     bool AddCut(const std::set<PID> &, std::unique_ptr<OneParticleCut>);
     bool AddCut(const std::set<PID> &, std::unique_ptr<TwoParticleCut>);

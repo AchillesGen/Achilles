@@ -54,44 +54,42 @@ double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
 achilles::DefaultBackend::DefaultBackend() {}
 
 double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
-    auto event = event_in;
+    Event event = event_in;
 
 	spdlog::debug("Pre-Transform:");
 	size_t np=0;
-    for(const auto &part : event.Momentum()) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  part[0], part[1], part[2], part[3]);
+	const refParticles allParticles=event.allParticles();
+    for(const Particle& p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
     m_model->TransformFrame(event, process, true);
 
 	spdlog::debug("Post-Transform:");
 	np=0;
-    for(const auto &part : event.Momentum()) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++, part[0], part[1], part[2], part[3]);
+    for(const Particle& p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
 
-    const auto &process_info = process.Info();
-    Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
-    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
+    const ProcessInfo& process_info = process.Info();
 
     std::pair<PID, PID> leptons{process_info.m_leptonic.first, process_info.m_leptonic.second[0]};
     auto lcurrent_calculator = m_currents.at(leptons);
 
     auto lepton_current =
-        lcurrent_calculator.CalcCurrents(lepton_in.Momentum(), lepton_out[0].Momentum());
+        lcurrent_calculator.CalcCurrents(event.LeptonsIn()[0].Momentum(), event.LeptonsOut()[0].Momentum());
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
     for(const auto &boson : lepton_current) {
         ff_info[boson.first] = form_factors.at({process_info.m_hadronic.first[0], boson.first});
     }
-    auto q = lepton_in.Momentum() - lepton_out[0].Momentum();
-    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
+    FourVector q = event.LeptonsIn()[0].Momentum() - event.LeptonsOut()[0].Momentum();
+    auto hadron_current = m_model->CalcCurrents(event.HadronsIn(), event.HadronsOut(), event.Spectators(), q, ff_info);
 
     double amps2 = 0;
 
     // TODO: Clean this up to look nicer
-    if(spect.size() == 0) {
+    if(event.Spectators().size() == 0) {
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
             if(hadron_current.find(boson) == hadron_current.end()) continue;
@@ -103,7 +101,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
             }
         }
     } else {
-        auto hadron_current2 = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
+        auto hadron_current2 = m_model->CalcCurrents(event.HadronsIn(), event.HadronsOut(), event.Spectators(), q, ff_info);
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
             if(hadron_current.find(boson) == hadron_current.end() ||
@@ -126,10 +124,10 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
     if(std::isnan(amps2)) amps2 = 0;
 
-    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
+    auto flux = FluxFactor(event.LeptonsIn()[0].Momentum(), event.HadronsIn()[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, event.HadronsIn(),event.Spectators());
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
     double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
@@ -209,23 +207,20 @@ void achilles::SherpaLeptonicBackend::AddProcess(Process &process) {
 
 double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
                                                      const Process &process) const {
-    auto event = event_in;
+    Event event = event_in;
     m_model->TransformFrame(event, process, true);
 
-    const auto &process_info = process.Info();
-    Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
-    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
-    auto lepton_current = CalcLeptonCurrents(event.Momentum(), process_info);
+    const ProcessInfo& process_info = process.Info();
+    auto lepton_current = CalcLeptonCurrents(event_in.allParticles(), process_info);
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
     for(const auto &boson : lepton_current) {
         ff_info[boson.first] = p_sherpa->FormFactors(process_info.m_hadronic.first[0], boson.first);
     }
-    auto q = lepton_in.Momentum();
-    for(const auto &part : lepton_out) q -= part.Momentum();
-    auto hadron_current = m_model->CalcCurrents(hadron_in, hadron_out, spect, q, ff_info);
+    FourVector q = event.LeptonsIn()[0].Momentum();
+    for(const Particle& part:event.LeptonsOut()) q -= part.Momentum();
+    auto hadron_current = m_model->CalcCurrents(event.HadronsIn(), event.HadronsOut(), event.Spectators(), q, ff_info);
 
     // Setup handling of spin decays
     const size_t nlep_spins = lepton_current.begin()->second.size();
@@ -256,30 +251,30 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
     }
     p_sherpa->FillAmplitudes(spin_amps);
 
-    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), process_info);
+    auto flux = FluxFactor(event.LeptonsIn()[0].Momentum(), event.HadronsIn()[0].Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, event.HadronsIn(), event.Spectators());
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}, ps_weight = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info), event.Weight());
     return amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
 }
 
 achilles::Currents
-achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const std::vector<FourVector> &p,
+achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const crefParticles& parts,
                                                     const ProcessInfo &info) const {
     spdlog::trace("Converting momenta to Sherpa format");
     // TODO: Move adapter code into Sherpa interface code
-    std::vector<std::array<double, 4>> mom(p.size());
+    std::vector<std::array<double, 4>> mom(parts.size());
     std::vector<long> pids(info.m_mom_map.size());
     // TODO: Somehow pass sorted information to momentum gen
     pids[0] = info.m_mom_map.at(0);
-    mom[0] = (p[1] / 1_GeV).Momentum();
+    mom[0] = (parts[1].get().Momentum() / 1_GeV).Momentum();
     pids[1] = info.m_mom_map.at(1);
-    mom[1] = (p[0] / 1_GeV).Momentum();
-    for(size_t i = 2; i < p.size(); ++i) {
+    mom[1] = (parts[0].get().Momentum() / 1_GeV).Momentum();
+    for(size_t i = 2; i < parts.size(); ++i) {
         pids[i] = info.m_mom_map.at(i);
-        mom[i] = (p[i] / 1_GeV).Momentum();
+        mom[i] = (parts[i].get().Momentum() / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
@@ -339,41 +334,38 @@ void achilles::SherpaFullBackend::AddProcess(Process &process) {
 }
 
 double achilles::SherpaFullBackend::CrossSection(const Event &event, const Process &process) const {
-    auto p = event.Momentum();
-    auto info = process.Info();
+	crefParticles parts=event.allParticles();
+    const ProcessInfo& info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
-    std::vector<std::array<double, 4>> mom(p.size());
-    std::vector<long> pids(p.size());
+    std::vector<std::array<double, 4>> mom(parts.size());
+    std::vector<long> pids(parts.size());
     // TODO: Somehow pass sorted information to momentum gen
     pids[0] = info.m_mom_map.at(0);
-    mom[0] = (p[1] / 1_GeV).Momentum();
+    mom[0] = (parts[1].get().Momentum() / 1_GeV).Momentum();
     pids[1] = info.m_mom_map.at(1);
-    mom[1] = (p[0] / 1_GeV).Momentum();
-    for(size_t i = 2; i < p.size(); ++i) {
+    mom[1] = (parts[0].get().Momentum() / 1_GeV).Momentum();
+    for(size_t i = 2; i < parts.size(); ++i) {
         pids[i] = info.m_mom_map.at(i);
-        mom[i] = (p[i] / 1_GeV).Momentum();
+        mom[i] = (parts[i].get().Momentum() / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 1;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
     // Convert the units of the matrix element from GeV^{-x} to MeV^{-x}
-    amps2 /= pow(1_GeV, 2 * (static_cast<int>(p.size()) - 4));
+    amps2 /= pow(1_GeV, 2 * (static_cast<int>(parts.size()) - 4));
     spdlog::trace("|M|^2 = {}", amps2);
     if(std::isnan(amps2)) amps2 = 0;
 
-    Particle lepton_in;
-    std::vector<Particle> hadron_in, hadron_out, lepton_out, spect;
-    process.ExtractParticles(event, lepton_in, hadron_in, lepton_out, hadron_out, spect);
-    if(std::abs((hadron_out[0].Momentum() + hadron_out[1].Momentum()).M() - 1232) < 100) {
+    if(std::abs((event.HadronsOut()[0].Momentum() + event.HadronsOut()[1].Momentum()).M() - 1232) < 100) {
         spdlog::debug("Hit Delta resonance");
     }
-    if(std::abs((hadron_out[0].Momentum() + hadron_out[1].Momentum()).M()) > 1500) {
+    if(std::abs((event.HadronsOut()[0].Momentum() + event.HadronsOut()[1].Momentum()).M()) > 1500) {
         spdlog::debug("Large mass");
     }
-    auto flux = FluxFactor(lepton_in.Momentum(), hadron_in[0].Momentum(), info);
+    auto flux = FluxFactor(event.LeptonsIn()[0].Momentum(), event.HadronsIn()[0].Momentum(), info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, event.HadronsIn(), event.Spectators());
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
     return amps2 * flux * initial_wgt * event.Weight();
 }

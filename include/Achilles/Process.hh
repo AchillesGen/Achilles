@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Achilles/CombinedCuts.hh"
+#include "Achilles/Event.hh"
 #include "Achilles/MultiChannel.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -44,6 +45,7 @@ class Process {
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
     MOCK const ProcessInfo &Info() const { return m_info; }
+	void SetupHadrons(Event&) const;
     MOCK void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
         m_xsec += weight;
@@ -65,9 +67,11 @@ class Process {
 
   private:
     // Helper functions
-    refParticles SelectParticles(const refParticles &, const refParticles &,
-                                 const std::vector<PID> &, const std::vector<FourVector> &,
-                                 ParticleStatus) const;
+
+	/// Takes all particles of the given PID from the given list of particles,
+	/// and assigns their Status and Momentum to randomly-selected particles of
+	/// the same type in the given event's "nucleus_hadrons" list.
+    void assignParticleDetails(Event&,vParticles&,PID) const;
 
     // Variables
     ProcessInfo m_info;

@@ -73,23 +73,23 @@ void Cascade::Kick(Event &event, const FourVector &energyTransfer,
 
     // Interact with protons or neutrons according to their total cross section
     auto ddSigma = {sigma[0], sigma[1]};
-    auto index = Random::Instance().SelectIndex(ddSigma);
+    size_t index = Random::Instance().SelectIndex(ddSigma);
 
-    auto interactPID = index == 0 ? PID::proton() : PID::neutron();
+    PID interactPID = index == 0 ? PID::proton() : PID::neutron();
 
     // Restrict to particles of chosen species
-    for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
-        if(event.Hadrons()[i].ID() == interactPID) indices.push_back(i);
+    for(std::size_t i = 0; i < event.NucleusHadrons().size(); ++i) {
+        if(event.NucleusHadrons()[i].ID() == interactPID) indices.push_back(i);
     }
 
     // Kick a single particle from the list
     kickedIdxs.insert(Random::Instance().Pick(indices));
-    auto kicked = &event.Hadrons()[*kickedIdxs.begin()];
+    Particle* kicked = &event.NucleusHadrons()[*kickedIdxs.begin()];
     kicked->Status() = ParticleStatus::propagating;
     kicked->SetMomentum(kicked->Momentum() + energyTransfer);
 }
 
-std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
+std::size_t Cascade::GetInter(Particles&, const Particle &, double &) {
     throw std::logic_error("Cascade: MFPAlgorithm is currently not working with pions");
     /*
         std::vector<std::size_t> index_same, index_diff;
@@ -177,13 +177,14 @@ void Cascade::Reset() {
 
 std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
     std::set<size_t> notCaptured{};
-    for(auto idx : kickedIdxs) {
+    for(size_t idx : kickedIdxs) {
+		Particle& part=event.NucleusHadrons()[idx];
         if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                                   event.Hadrons()[idx].Momentum().P(),
-                                   event.Hadrons()[idx].Position().P()) < Constant::mN) {
-            event.Hadrons()[idx].Status() = ParticleStatus::captured;
+                                   part.Momentum().P(),
+                                   part.Position().P()) < Constant::mN) {
+            part.Status() = ParticleStatus::captured;
         } else {
-            AddIntegrator(idx, event.Hadrons()[idx]);
+            AddIntegrator(idx, part);
             notCaptured.insert(idx);
         }
     }
@@ -193,14 +194,15 @@ std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
 
 void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     for(size_t idx = 0; idx < particles.size(); ++idx) {
-        if(particles[idx].IsPropagating()) {
+		Particle& part=particles[idx];
+        if(part.IsPropagating()) {
             if(m_potential_prop &&
                m_nucleus->GetPotential()->Hamiltonian(
-                   particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
-                particles[idx].Status() = ParticleStatus::captured;
+                   part.Momentum().P(), part.Position().P()) < Constant::mN) {
+                part.Status() = ParticleStatus::captured;
             } else {
-                spdlog::trace("Adding particle: {}", particles[idx]);
-                AddIntegrator(idx, particles[idx]);
+                spdlog::trace("Adding particle: {}", part);
+                AddIntegrator(idx, part);
                 newKicked.insert(idx);
             }
         }
@@ -209,10 +211,10 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
 
 void Cascade::Validate(Event &event) {
     spdlog::trace("End of Event Status:");
-    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
-        auto &particle = event.Hadrons()[idx];
+    for(size_t idx = 0; idx < event.NucleusHadrons().size(); ++idx) {
+        Particle& particle = event.NucleusHadrons()[idx];
         if(particle.Status() == ParticleStatus::propagating) {
-            for(auto p : event.Hadrons()) spdlog::error("{}", p);
+            for(Particle& p : event.NucleusHadrons()) spdlog::error("{}", p);
             achilles::PrintVisitor visitor;
             event.History().WalkHistory(visitor);
             spdlog::error("Event history: {}", visitor.data);
@@ -230,45 +232,45 @@ void Cascade::Validate(Event &event) {
             iwarns++;
 
             // Force decay
-            auto particles_out = m_decays.Decay(particle);
-            event.Hadrons()[idx].Status() = ParticleStatus::decayed;
+            Particles particles_out = m_decays.Decay(particle);
+            particle.Status() = ParticleStatus::decayed;
 
             // Ensure outgoing particles are propagating and add to list of particles in event
             // and assign formation zone
             std::vector<Particle> final;
-            for(auto &out : particles_out) {
+            for(Particle& out : particles_out) {
                 out.Status() = ParticleStatus::final_state;
-                out.Position() = event.Hadrons()[idx].Position();
-                event.Hadrons().push_back(out);
-                final.push_back(event.Hadrons().back());
+                out.Position() = particle.Position();
+                event.HadronsOut().push_back(out);
+                final.push_back(event.HadronsOut().back());
             }
 
             // Add decay to the event history
-            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
+            event.History().AddVertex(particle.Position(), {particle},
                                       final, EventHistory::StatusCode::decay);
         }
     }
 }
 
 void Cascade::PropagateAll(Particles &particles, double step) const {
-    for(auto &particle : particles) {
+    for(Particle &particle : particles) {
         if(particle.IsPropagating()) { particle.Propagate(step); }
     }
 }
 
 void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
                      [[maybe_unused]] const std::size_t &maxSteps) {
+    Particles particles = event.NucleusHadrons();
     // Set all propagating particles as kicked for the cascade
-    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
-        if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
+    for(size_t idx = 0; idx < particles.size(); ++idx) {
+        if(particles[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
     // Run the cascade
     currentTime = 0;
     m_nucleus = nucleus;
-    Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
-    for(const auto &kicked : kickedIdxs) {
+    for(const size_t &kicked : kickedIdxs) {
         for(size_t i = 0; i < particles.size(); ++i) {
             if(particles[i].Status() != ParticleStatus::background) continue;
             double closest = ClosestApproach(particles[kicked], particles[i]);
@@ -303,7 +305,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
 
         // Make local copy of kickedIdxs
         std::set<size_t> newKicked{};
-        for(auto idx : kickedIdxs) {
+        for(size_t idx : kickedIdxs) {
             Particle *kickNuc = &particles[idx];
             spdlog::trace("Kicked ID: {}, Particle: {}", idx, *kickNuc);
 
@@ -318,7 +320,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
                 continue;
             }
 
-            auto hitIdx = algorithm(this, idx, event);
+            size_t hitIdx = algorithm(this, idx, event);
             if(hitIdx == SIZE_MAX) { continue; }
             spdlog::trace("Kicked = {}", idx);
             spdlog::trace("Hit = {}", hitIdx);
@@ -341,7 +343,8 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
 
 size_t Cascade::BaseAlgorithm(size_t idx, Event &event) {
     // Get allowed interactions
-    auto dist2 = AllowedInteractions(event.Hadrons(), idx);
+	Particles particles=event.NucleusHadrons();
+    auto dist2 = AllowedInteractions(particles, idx);
     if(dist2.size() == 0) { return SIZE_MAX; }
 
     // Get interaction
@@ -350,8 +353,8 @@ size_t Cascade::BaseAlgorithm(size_t idx, Event &event) {
 
 size_t Cascade::MFPAlgorithm(size_t idx, Event &event) {
     double step_prop = distance;
-    Particle *kickNuc = &event.Hadrons()[idx];
-    auto hitIdx = GetInter(event.Hadrons(), *kickNuc, step_prop);
+    Particle *kickNuc = &event.NucleusHadrons()[idx];
+    size_t hitIdx = GetInter(event.NucleusHadrons(), *kickNuc, step_prop);
     PropagateSpace(idx, kickNuc, step_prop);
     return hitIdx;
 }
@@ -413,13 +416,13 @@ void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, double step) {
 // TODO: Switch to using reference_wrapper to reduce copying
 void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
     m_nucleus = nucleus;
-    Particles particles = event.Hadrons();
+    Particles particles = event.NucleusHadrons();
 
     if(kickedIdxs.size() != 1) {
         throw std::runtime_error("MeanFreePath: only one particle should be kicked.");
     }
 
-    auto idx = *kickedIdxs.begin();
+    size_t idx = *kickedIdxs.begin();
     Particle *kickNuc = &particles[idx];
 
     // Initialize symplectic integrator
@@ -427,7 +430,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
         kickNuc->Status() = ParticleStatus::captured;
-        event.Hadrons() = particles;
+        event.NucleusHadrons()=particles;
         Reset();
         return;
     }
@@ -465,7 +468,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         if(nearby_particles.size() == 0) continue;
 
         // Did we hit?
-        auto hitIdx = Interacted(event, idx, nearby_particles);
+        size_t hitIdx = Interacted(event, idx, nearby_particles);
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
@@ -473,20 +476,21 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
         // Stop as soon as we hit anything
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }
-    event.Hadrons() = particles;
+    event.NucleusHadrons()=particles;
     Reset();
 }
 
 // TODO: Switch to using reference_wrapper to reduce copying
 void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
+
     m_nucleus = nucleus;
-    Particles particles = event.Hadrons();
+    Particles particles = event.NucleusHadrons();
 
     if(kickedIdxs.size() != 1) {
-        std::runtime_error("MeanFreePath: only one particle should be kicked.");
+        throw std::runtime_error("MeanFreePath: only one particle should be kicked.");
     }
 
-    auto idx = *kickedIdxs.begin();
+    size_t idx = *kickedIdxs.begin();
     Particle *kickNuc = &particles[idx];
 
     // Initialize symplectic integrator
@@ -494,7 +498,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
         kickNuc->Status() = ParticleStatus::captured;
-        event.Hadrons() = particles;
+        event.NucleusHadrons()=particles;
         Reset();
         return;
     }
@@ -513,7 +517,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
         // AdaptiveStep(particles, distance);
         double step_prop = distance;
         // Did we hit?
-        auto hitIdx = GetInter(particles, *kickNuc, step_prop);
+        size_t hitIdx = GetInter(particles, *kickNuc, step_prop);
         PropagateSpace(idx, kickNuc, step_prop);
         if(hitIdx == SIZE_MAX) continue;
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
@@ -522,21 +526,20 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
         if(particles[idx].Status() == ParticleStatus::interacted) break;
     }
 
-    event.Hadrons() = particles;
+    event.NucleusHadrons()=particles;
     Reset();
 }
 
 // TODO: Rewrite to have the logic built into the Nucleus class
 void Cascade::Escaped(Particles &particles) {
-    const auto radius = m_nucleus->Radius();
-    for(auto &particle : particles) {
+    const double radius = m_nucleus->Radius();
+    for(Particle& particle : particles) {
         if(!particle.IsPropagating()) continue;
         if(particle.Status() == ParticleStatus::external_test) {
             if(particle.Position().Z() < radius) continue;
         }
         // TODO: Use the code from src/Achilles/Nucleus.cc:108 to properly
-        // handle
-        //       escape vs. capture and mometum changes
+        // handle escape vs. capture and mometum changes
         constexpr double potential = 10.0;
         const double energy = particle.Momentum().E() - Constant::mN - potential;
         if(particle.Position().Magnitude2() > pow(radius, 2)) {
@@ -557,7 +560,8 @@ void Cascade::Escaped(Particles &particles) {
 void Cascade::AdaptiveStep(const Particles &particles, const double &stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
-        if(particles[idx].Beta().Magnitude() > beta) beta = particles[idx].Beta().Magnitude();
+		const Particle& part=particles[idx];
+        if(part.Beta().Magnitude() > beta) beta = part.Beta().Magnitude();
     }
 
     timeStep = stepDistance / beta;
@@ -601,23 +605,25 @@ const ThreeVector Cascade::Project(const ThreeVector &position, const ThreeVecto
 const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
                                                         const std::size_t &idx) noexcept {
     InteractionDistances results;
+	Particle& part=particles[idx];
 
     // Build planes
-    const ThreeVector point1 = particles[idx].Position();
-    Propagate(idx, &particles[idx]);
-    const ThreeVector point2 = particles[idx].Position();
-    auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
+    const ThreeVector point1 = part.Position();
+    Propagate(idx, &part);
+    const ThreeVector point2 = part.Position();
+    auto normedMomentum = part.Momentum().Vec3().Unit();
     auto distance2 = (point2 - point1).Dot(normedMomentum);
 
     // Build results vector
     for(std::size_t i = 0; i < particles.size(); ++i) {
+		Particle& part_i=particles[i];
         // TODO: Should particles propagating be able to interact with
         //       other propagating particles?
-        if(particles[i].Status() != ParticleStatus::background) continue;
+        if(part_i.Status() != ParticleStatus::background) continue;
         // if(i == idx) continue;
         //  if(particles[i].InFormationZone()) continue;
-        if(!BetweenPlanes(particles[i].Position(), point1, normedMomentum, distance2)) continue;
-        auto projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
+        if(!BetweenPlanes(part_i.Position(), point1, normedMomentum, distance2)) continue;
+        auto projectedPosition = Project(part_i.Position(), point1, normedMomentum);
         // (Squared) distance in the direction orthogonal to the momentum
         double dist2 = (projectedPosition - point1).Magnitude2();
 
@@ -631,7 +637,7 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
 }
 
 bool Cascade::HasInteraction(Event &event, size_t kicked, size_t hit) const {
-    auto &particles = event.Hadrons();
+    Particles& particles = event.NucleusHadrons();
     if(!particles[kicked].IsPropagating() ||
        particles[hit].Status() != ParticleStatus::background || particles[kicked].InFormationZone())
         return false;
@@ -651,7 +657,7 @@ bool Cascade::HasInteraction(Event &event, size_t kicked, size_t hit) const {
 double Cascade::GetXSec(Event &event, size_t idx1, size_t idx2) const {
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
     // TODO: Handle the in-medium effects for different processes
-    auto fact = InMediumCorrection(event.Hadrons()[idx1], event.Hadrons()[idx2]);
+    auto fact = InMediumCorrection(event.NucleusHadrons()[idx1], event.NucleusHadrons()[idx2]);
     return m_interactions.TotalCrossSection(event, idx1, idx2) * fact;
 }
 
@@ -796,7 +802,7 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 }
 
 bool Cascade::Decay(Event &event, size_t idx) const {
-    auto part = event.Hadrons()[idx];
+    Particle& part = event.NucleusHadrons()[idx];
     auto beta = part.Beta().Magnitude();
     auto gamma = 1. / sqrt(1. - beta * beta);
     double lifetime = gamma * Constant::HBARC / part.Info().Width();
@@ -834,7 +840,7 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         if(PauliBlocking(out)) return false;
     }
 
-    event.Hadrons()[idx].Status() = ParticleStatus::decayed;
+    part.Status() = ParticleStatus::decayed;
 
     // Ensure outgoing particles are propagating and add to list of particles in event
     // and assign formation zone
@@ -847,12 +853,12 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         }
         out.Status() = ParticleStatus::propagating;
         out.SetFormationZone(out.Momentum(), part.Momentum());
-        event.Hadrons().push_back(out);
-        final.push_back(event.Hadrons().back());
+        event.HadronsOut().push_back(out);
+        final.push_back(event.HadronsOut().back());
     }
 
     // Add decay to the event history
-    event.History().AddVertex(part.Position(), {event.Hadrons()[idx]}, final,
+    event.History().AddVertex(part.Position(), {part}, final,
                               EventHistory::StatusCode::decay);
 
     return true;

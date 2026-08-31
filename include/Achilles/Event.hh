@@ -31,7 +31,9 @@ using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 class Event {
   public:
     Event() = default;
-    Event(ProcessInfo&,std::shared_ptr<Nucleus> =nullptr, double=0.0);
+	Event(const Event&);
+	Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc=nullptr,double vwgt=0.0):
+			m_processInfo{&pi}, m_nuc{nuc}, m_wgt{std::move(vwgt)} {}
     Event &operator=(const Event &);
     MOCK ~Event() = default;
 
@@ -39,17 +41,19 @@ class Event {
 
     MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
 
-	//MOCK const vMomentum &Momentum() const { return m_mom; }
-	//MOCK vMomentum &Momentum() { return m_mom; }
-
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
-	void setNucleus(std::shared_ptr<Nucleus> nucleus) { m_nuc=nucleus; }
-	ProcessInfo& processInfo() { return m_processInfo; }
+	ProcessInfo& processInfo() { return *m_processInfo; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
+    MOCK const double &Weight() const { return m_wgt; }
+    MOCK double &Weight() { return m_wgt; }
+    void Rotate(const std::array<double, 9> &);
+    void Display() const;
 
+    MOCK const vParticles &NucleusHadrons() const { return nucleus_hadrons; }
+    MOCK vParticles &NucleusHadrons() { return nucleus_hadrons; }
     MOCK const vParticles &LeptonsIn() const { return leptonsIn; }
     MOCK vParticles &LeptonsIn() { return leptonsIn; }
     MOCK const vParticles &LeptonsOut() const { return leptonsOut; }
@@ -60,41 +64,42 @@ class Event {
     MOCK vParticles &HadronsOut() { return hadronsOut; }
     MOCK const vParticles &Spectators() const { return spectators; }
     MOCK vParticles &Spectators() { return spectators; }
-    MOCK const double &Weight() const { return m_wgt; }
-    MOCK double &Weight() { return m_wgt; }
-    void Rotate(const std::array<double, 9> &);
-    void Display() const;
 
 	void addLeptonIn(FourVector momentum,ParticleStatus status=ParticleStatus::beam) {
-		leptonsIn.push_back(Particle(m_processInfo.m_leptonic.first,momentum,{},status));
+		leptonsIn.push_back(Particle(m_processInfo->m_leptonic.first,momentum,{},status));
 	}
 	void addLeptonOut(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
-		leptonsOut.push_back(Particle(m_processInfo.m_leptonic.second[leptonsOut.size()],momentum,{},status));
+		leptonsOut.push_back(Particle(m_processInfo->m_leptonic.second[leptonsOut.size()],momentum,{},status));
 	}
-	void addHadronIn(FourVector momentum,ParticleStatus status=ParticleStatus::decayed) {
-		hadronsIn.push_back(Particle(m_processInfo.m_hadronic.first[hadronsIn.size()],momentum,{},status));
+	void addHadronIn(FourVector momentum,ParticleStatus status=ParticleStatus::initial_state) {
+		hadronsIn.push_back(Particle(m_processInfo->m_hadronic.first[hadronsIn.size()],momentum,{},status));
 	}
 	void addHadronOut(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
-		hadronsOut.push_back(Particle(m_processInfo.m_hadronic.second[hadronsOut.size()],momentum,{},status));
+		hadronsOut.push_back(Particle(m_processInfo->m_hadronic.second[hadronsOut.size()],momentum,{},status));
 	}
 	void addSpectator(FourVector momentum,ParticleStatus status=ParticleStatus::spectator) {
-		spectators.push_back(Particle(m_processInfo.m_spectator[spectators.size()],momentum,{},status));
+		spectators.push_back(Particle(m_processInfo->m_spectator[spectators.size()],momentum,{},status));
+	}
+	void addAutoOutgoing(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
+		if(leptonsOut.size()<m_processInfo->m_leptonic.second.size())
+			addLeptonOut(momentum,status);
+		else
+			addHadronOut(momentum,status);
 	}
 
-    MOCK vParticles Particles() const;
-	vParticles allHadrons() const;
-    crefParticles Protons(ParticleStatus = ParticleStatus::any) const;
-    refParticles Protons(ParticleStatus = ParticleStatus::any);
-    crefParticles Pions(ParticleStatus = ParticleStatus::any) const;
-    refParticles Pions(ParticleStatus = ParticleStatus::any);
-    crefParticles Neutrons(ParticleStatus = ParticleStatus::any) const;
-    refParticles Neutrons(ParticleStatus = ParticleStatus::any);
+	refParticles getAllOfType(vParticles,PID,ParticleStatus=ParticleStatus::any);
+	refParticles getAllOfType(refParticles,PID,ParticleStatus=ParticleStatus::any);
+    crefParticles allParticles() const;
+	refParticles allParticles();
+	crefParticles allHadrons() const;
+	refParticles allHadrons();
 
     MOCK const EventHistory &History() const { return m_history; }
     EventHistory &History() { return m_history; }
 
     bool operator==(const Event &other) const {
         return m_nuc == other.m_nuc && m_remnant == other.m_remnant //&& m_mom == other.m_mom
+				&&nucleus_hadrons==other.nucleus_hadrons
 				&&leptonsIn==other.leptonsIn && leptonsOut==other.leptonsOut
 				&&hadronsIn==other.hadronsIn && hadronsOut==other.hadronsOut;
     }
@@ -115,14 +120,38 @@ class Event {
         std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
         return result;
     }
+    template <class UnaryPred>
+    crefParticles FilterParticles(const crefParticles& particles, UnaryPred pred) const {
+        crefParticles result;
+        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+        return result;
+    }
+    template <class UnaryPred> refParticles FilterParticles(refParticles& particles, UnaryPred pred) {
+        refParticles result;
+        std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
+        return result;
+    }
+
+	crefParticles concatenate(std::vector<vParticles> lists) const {
+		crefParticles result;
+		for(vParticles list:lists)
+			result.insert(result.end(),list.begin(),list.end());
+		return result;
+	}
+	refParticles concatenate(std::vector<vParticles> lists) {
+		refParticles result;
+		for(vParticles list:lists)
+			result.insert(result.end(),list.begin(),list.end());
+		return result;
+	}
 
     // Variables
-	ProcessInfo& m_processInfo;
+	ProcessInfo* m_processInfo;
     std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};
     //vMomentum m_mom{};
     double m_wgt{};
-    vParticles leptonsIn{}, leptonsOut{}, hadronsIn{}, hadronsOut{}, spectators{};
+    vParticles nucleus_hadrons{}, leptonsIn{}, leptonsOut{}, hadronsIn{}, hadronsOut{}, spectators{};
     EventHistory m_history{};
     double flux{};
     int m_process_id{};

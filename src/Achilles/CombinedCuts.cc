@@ -1,23 +1,26 @@
 #include "Achilles/CombinedCuts.hh"
 #include "Achilles/Particle.hh"
 
-bool achilles::CutCollection::EvaluateCuts(const std::vector<achilles::Particle> &parts) {
+bool achilles::CutCollection::EvaluateCuts(const refParticles& parts) {
     ntot++;
     bool result = true;
     spdlog::trace("Evaluating Cuts");
     for(size_t i = 0; i < parts.size(); ++i) {
-        if(!parts[i].IsFinal() && !parts[i].IsPropagating()) continue;
-        spdlog::trace("Making cut for {}", parts[i].ID());
+		Particle& part=parts[i].get();
+        if(!part.IsFinal() && !part.IsPropagating()) continue;
+		PID id=part.ID();
+        spdlog::trace("Making cut for {}", id);
         // Single Particle Cuts
         for(const auto &cut : one_part_cuts)
-            if(cut.Contains(parts[i].ID())) result &= cut.MakeCut(parts[i].Momentum());
+            if(cut.Contains(id)) result &= cut.MakeCut(part.Momentum());
 
         // Two Particle Cuts
         for(size_t j = i + 1; j < parts.size(); ++j) {
-            if(!parts[j].IsFinal() && !parts[i].IsPropagating()) continue;
+			Particle& part_j=parts[j].get();
+            if(!part_j.IsFinal() && !part.IsPropagating()) continue;
             for(const auto &cut : two_part_cuts)
-                if(cut.Contains(parts[i].ID(), parts[j].ID()))
-                    result &= cut.MakeCut(parts[i].Momentum(), parts[j].Momentum());
+                if(cut.Contains(part.ID(), part_j.ID()))
+                    result &= cut.MakeCut(part.Momentum(), part_j.Momentum());
         }
     }
 

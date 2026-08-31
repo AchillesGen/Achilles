@@ -22,105 +22,59 @@ class SherpaInterface {};
 } // namespace achilles
 #endif
 
+using achilles::Particle;
 using achilles::Process;
 using achilles::ProcessGroup;
 using achilles::refParticles;
 
-refParticles Process::SelectParticles(const refParticles &protons, const refParticles &neutrons,
-                                      const std::vector<PID> &ids,
-                                      const std::vector<FourVector> &momenta,
-                                      ParticleStatus status) const {
-    refParticles result;
-    for(size_t i = 0; i < ids.size(); ++i) {
-        if(ids[i] == PID::proton()) {
-            result.push_back(protons[i]);
-        } else {
-            result.push_back(neutrons[i]);
-        }
-
-        auto &part = result.back().get();
-        part.Momentum() = momenta[i];
-        part.Status() = status;
-    }
-
-    return result;
+void Process::assignParticleDetails(Event& event,vParticles& particleSource,PID pid) const {
+	if(particleSource.empty())
+		return;
+	refParticles sources=event.getAllOfType(particleSource,pid);
+	if(sources.empty())
+		return;
+	refParticles candidates=event.getAllOfType(event.NucleusHadrons(),pid,ParticleStatus::background);
+	refParticles targets=Random::Instance().Sample(sources.size(),candidates);
+	for(size_t i=0;i<sources.size();i++) {
+		// Target gets Status and Momentum of mapped initial state
+		targets[i].get().Status()=sources[i].get().Status();
+		targets[i].get().Momentum()=sources[i].get().Momentum();
+		// Initial state gets Position of target, for finalstate calc later
+		sources[i].get().Position()=targets[i].get().Position();
+	}
 }
 
-/*void Process::SetupHadrons(Event &event) const {
-    FourVector lep_in;
-    std::vector<FourVector> had_in, lep_out, had_out, spect;
-    ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
-    std::vector<Particle> leptons, hadrons;
-
-    // Setup hadrons
-    if(had_in.size() != m_info.m_hadronic.first.size() ||
-       had_out.size() != m_info.m_hadronic.second.size())
-        throw std::runtime_error(
-            "Process: Number of hadrons momenta does not match number of hadrons in event");
+void Process::SetupHadrons(Event &event) const {
 
     // Handle coherent scattering as a special case
     if(ParticleInfo(m_info.m_hadronic.first[0]).IsNucleus()) {
-        event.Hadrons().clear();
-        event.Hadrons().resize(2);
-        const auto id_in = m_info.m_hadronic.first[0];
-        const auto id_out = m_info.m_hadronic.second[0];
-
-        Particle initial(id_in, had_in[0]);
-        initial.Status() = ParticleStatus::initial_state;
-        event.Hadrons()[0] = initial;
-
-        Particle final(id_out, had_out[0]);
-        final.Status() = ParticleStatus::final_state;
-        event.Hadrons()[1] = final;
-
+		event.NucleusHadrons()={event.HadronsIn()[0]};
         return;
     }
 
-    // TODO: Handle hydrogen
+	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
 
-    // NOTE: The initial state and spectator have to be handled separately
-    //       to ensure that they aren't the same particle
-
-    // Select initial state nucleons
-    auto protons = event.Protons(ParticleStatus::background);
-    auto neutrons = event.Neutrons(ParticleStatus::background);
-    size_t nsamples = m_info.m_hadronic.first.size();
-    auto sampled_protons = Random::Instance().Sample(nsamples, protons);
-    auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
-
-    auto initial_states =
-        SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
-                        ParticleStatus::initial_state);
-    spdlog::debug("Selected initial states: {}", fmt::join(initial_states, ", "));
-
-    // Sample for spectators
-    protons = event.Protons(ParticleStatus::background);
-    neutrons = event.Neutrons(ParticleStatus::background);
-    nsamples = m_info.m_hadronic.first.size();
-    sampled_protons = Random::Instance().Sample(nsamples, protons);
-    sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
-    auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
-                                      ParticleStatus::spectator);
-    spdlog::debug("Selected spectators states: {}", fmt::join(initial_states, ", "));
+	assignParticleDetails(event,event.HadronsIn(),PID::proton());
+	assignParticleDetails(event,event.HadronsIn(),PID::neutron());
+	assignParticleDetails(event,event.Spectators(),PID::proton());
+	assignParticleDetails(event,event.Spectators(),PID::neutron());
 
     // Initialize final state hadrons
     // TODO: Handle propagating deltas
     // TODO: Handle selecting position for things like MEC+pion production
     size_t cur_idx = 0;
     ThreeVector position;
-    for(size_t i = 0; i < had_out.size(); ++i) {
-        Particle part(m_info.m_hadronic.second[i]);
-        if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
-            position = initial_states[cur_idx++].get().Position();
-        }
+    for(size_t i = 0; i < event.HadronsOut().size(); ++i) {
+        if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon())
+            position = event.HadronsIn()[cur_idx++].Position();
+        Particle& part=event.HadronsOut()[i];
         part.Status() = ParticleStatus::propagating;
-        part.Momentum() = had_out[i];
         part.Position() = position;
-        event.HadronsOut().push_back(part);
+		event.NucleusHadrons().push_back(part);
     }
 }
 
-void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
+/*void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
@@ -419,7 +373,7 @@ void ProcessGroup::Optimize() {
     b_optimize = true;
 
     auto func = [&](const Event& event, const double& wgt) {
-		Event clone(event); // because "event" is immutable. Is there a better way to do this?
+		Event clone=event; // because "event" is immutable. Is there a better way to do this?
 		clone.Weight()=wgt;
 		EventSetup(clone);
         return clone.Weight();
@@ -479,21 +433,23 @@ achilles::Event ProcessGroup::GenerateEvent() {
 	Event event(GroupProcessInfo(),m_nucleus);
 	m_integrator.GeneratePoint(m_integrand,event);
 	event.Weight()=m_integrator.GenerateWeight(m_integrand,event);
+	
 	EventSetup(event);
 	return event;
 }
 
 void ProcessGroup::EventSetup(Event& event) {
-    spdlog::debug("Event Phase Space:");
+    /*spdlog::debug("Event Phase Space:");
     size_t idx = 0;
-    /*for(const FourVector& momentum : event.Momentum()) {
+    for(const FourVector& momentum : event.Momentum()) {
         spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
     }*/
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
-    if(!m_cuts.EvaluateCuts(event.Particles())) {
+	const refParticles parts=event.allParticles();
+    if(!m_cuts.EvaluateCuts(parts)) {
         // Ensure process weights are tracked correctly
         if(b_calc_weights) {
-            for(auto &process : m_processes) process.AddWeight(0);
+            for(Process& process : m_processes) process.AddWeight(0);
             m_xsec += 0;
         }
         event.Weight() = 0;
@@ -507,9 +463,10 @@ void ProcessGroup::EventSetup(Event& event) {
     if(b_optimize || event.Weight() == 0) return;
 
     // Otherwise, we need to fill the event with the selected process
-    auto &process = m_processes[process_opt.value()];
+    Process& process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.LeptonsIn()[0].Momentum());
     event.ProcessId() = process.ID();
+	process.SetupHadrons(event);
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {

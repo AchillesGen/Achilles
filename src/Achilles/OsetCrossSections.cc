@@ -11,8 +11,8 @@ OsetCrossSection::OsetCrossSection() {}
 
 double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part2) const {
     // Get pion and nucleus information
-    const auto &pion = event.Hadrons()[part1];
-    const auto &nucleon = event.Hadrons()[part2];
+    const auto &pion = event.NucleusHadrons()[part1];
+    const auto &nucleon = event.NucleusHadrons()[part2];
     auto proton_density = event.CurrentNucleus()->ProtonRho(nucleon.Position().Magnitude());
     auto neutron_density = event.CurrentNucleus()->NeutronRho(nucleon.Position().Magnitude());
     auto total_density = proton_density + neutron_density;
@@ -75,8 +75,8 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
 
 double OsetCrossSection::SChannelAbsCrossSection(Event &event, size_t part1, size_t part2) const {
     // Get pion and nucleus information
-    const auto &pion = event.Hadrons()[part1];
-    const auto &nucleon = event.Hadrons()[part2];
+    const auto &pion = event.NucleusHadrons()[part1];
+    const auto &nucleon = event.NucleusHadrons()[part2];
     auto proton_density = event.CurrentNucleus()->ProtonRho(nucleon.Position().Magnitude());
     auto neutron_density = event.CurrentNucleus()->NeutronRho(nucleon.Position().Magnitude());
     auto total_density = proton_density + neutron_density;
@@ -100,8 +100,8 @@ double OsetCrossSection::SChannelAbsCrossSection(Event &event, size_t part1, siz
 std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &event, size_t part1,
                                                                        size_t part2) const {
     // Get pion and nucleus information
-    const auto &pion = event.Hadrons()[part1];
-    const auto &nucleon = event.Hadrons()[part2];
+    const auto &pion = event.NucleusHadrons()[part1];
+    const auto &nucleon = event.NucleusHadrons()[part2];
     auto density = event.CurrentNucleus()->Rho(nucleon.Position().Magnitude());
     auto fermi_momentum =
         event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude(), nucleon.ID());

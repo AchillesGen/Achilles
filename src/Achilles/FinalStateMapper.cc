@@ -380,24 +380,28 @@ void ThreeBodyMapper::Boost(int lflag, const FourVector &q, const FourVector &ph
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 void SherpaMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	std::vector<FourVector>& point=event.Momentum();
-    std::vector<Vec4D> mom(point.size());
-    mom[0] =
-        Vec4D(point[0][0] / 1_GeV, point[0][1] / 1_GeV, point[0][2] / 1_GeV, point[0][3] / 1_GeV);
-    mom[1] =
-        Vec4D(point[1][0] / 1_GeV, point[1][1] / 1_GeV, point[1][2] / 1_GeV, point[1][3] / 1_GeV);
-    sherpa_mapper->GeneratePoint(mom, rans);
-    for(size_t i = 2; i < point.size(); ++i) {
-        point[i] =
-            FourVector(mom[i][0] * 1_GeV, mom[i][1] * 1_GeV, mom[i][2] * 1_GeV, mom[i][3] * 1_GeV);
-    }
+	size_t inSize=event.LeptonsIn().size()+event.HadronsIn().size();
+	std::vector<Vec4D> mom(inSize);
+	size_t i=0;
+	for(Particle& part:event.LeptonsIn()) {
+		FourVector& p=part.Momentum();
+		mom[i++]=Vec4D(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
+	}
+	for(Particle& part:event.HadronsIn()) {
+		FourVector& p=part.Momentum();
+		mom[i++]=Vec4D(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
+	}
+	sherpa_mapper->GeneratePoint(mom, rans);
+	for(i = inSize; i < mom.size(); ++i)
+		event.addAutoOutgoing(FourVector(mom[i][0] * 1_GeV, mom[i][1] * 1_GeV, mom[i][2] * 1_GeV, mom[i][3] * 1_GeV));
 }
 
 double SherpaMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
-	const std::vector<FourVector>& point=event.Momentum();
     std::vector<Vec4D> mom{};
-    for(const auto &pt : point)
-        mom.emplace_back(pt[0] / 1_GeV, pt[1] / 1_GeV, pt[2] / 1_GeV, pt[3] / 1_GeV);
+    for(const Particle& part:event.allParticles()) {
+		const FourVector& p=part.Momentum();
+        mom.emplace_back(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
+	}
     return sherpa_mapper->GenerateWeight(mom, rans);
 }
 #endif

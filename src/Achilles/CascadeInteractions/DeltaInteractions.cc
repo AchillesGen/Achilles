@@ -76,8 +76,8 @@ std::vector<std::pair<PID, PID>> DeltaInteraction::InitialStates() const {
 
 // TODO: Separate out the resonance initial states from pion initial states
 InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
-    const auto &particle2 = event.Hadrons()[part2];
+    const auto &particle1 = event.NucleusHadrons()[part1];
+    const auto &particle2 = event.NucleusHadrons()[part2];
     InteractionResults results;
     double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
@@ -159,8 +159,8 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
             for(const auto &state : states) {
                 size_t abs_partner_idx = state.first;
                 if(abs_partner_idx == SIZE_MAX) continue;
-                absorption_partners.push_back(event.Hadrons()[abs_partner_idx]);
-                if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
+                absorption_partners.push_back(event.NucleusHadrons()[abs_partner_idx]);
+                if(event.NucleusHadrons()[abs_partner_idx].ID() == particle2.ID()) {
                     same_isospin_counter += 1;
                 } else {
                     opp_isospin_counter += 1;
@@ -172,15 +172,15 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
                 if(abs_partner_idx == SIZE_MAX) continue;
 
                 double abs_xsec = 0;
-                if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
+                if(event.NucleusHadrons()[abs_partner_idx].ID() == particle2.ID()) {
                     abs_xsec = same_isospin_xsec / same_isospin_counter;
                 } else {
                     abs_xsec = opposite_isospin_xsec / opp_isospin_counter;
                 }
                 results.push_back({state.second, abs_xsec});
                 spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}",
-                              event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID(),
-                              event.Hadrons()[abs_partner_idx].ID(), state.second[0],
+                              event.NucleusHadrons()[part1].ID(), event.NucleusHadrons()[part2].ID(),
+                              event.NucleusHadrons()[abs_partner_idx].ID(), state.second[0],
                               state.second[1], abs_xsec);
             }
         }
@@ -196,7 +196,7 @@ DeltaInteraction::absorption_states DeltaInteraction::AllowedAbsorption(Event &e
     std::vector<std::pair<size_t, std::vector<PID>>> states;
     // Closest is a pair denoting the closest proton and neutron
     auto closest = FindClosest(event, part1, part2);
-    auto modes = absorption_modes.at({event.Hadrons()[part1].ID(), event.Hadrons()[part2].ID()});
+    auto modes = absorption_modes.at({event.NucleusHadrons()[part1].ID(), event.NucleusHadrons()[part2].ID()});
     for(const auto &abs_mode : modes) {
         if(abs_mode.absorption_partner == PID::proton()) {
             states.push_back({closest.first, abs_mode.outgoing});
@@ -211,20 +211,20 @@ DeltaInteraction::absorption_states DeltaInteraction::AllowedAbsorption(Event &e
 std::pair<size_t, size_t> DeltaInteraction::FindClosest(Event &event, size_t part1,
                                                         size_t part2) const {
     // Particle 2 is the incoming nucleon
-    const auto &particle2 = event.Hadrons()[part2];
+    const auto &particle2 = event.NucleusHadrons()[part2];
 
     double shortest_p_distance = 10000; // fm^2
     double shortest_n_distance = 10000; // fm^2
     size_t closest_p_idx = SIZE_MAX, closest_n_idx = SIZE_MAX;
 
-    for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
+    for(std::size_t i = 0; i < event.NucleusHadrons().size(); ++i) {
         if(i == part1 || i == part2) continue;
-        if(!event.Hadrons()[i].IsBackground()) continue;
-        auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
-        if(distance < shortest_p_distance && event.Hadrons()[i].ID() == PID::proton()) {
+        if(!event.NucleusHadrons()[i].IsBackground()) continue;
+        auto distance = (event.NucleusHadrons()[i].Position() - particle2.Position()).Magnitude2();
+        if(distance < shortest_p_distance && event.NucleusHadrons()[i].ID() == PID::proton()) {
             shortest_p_distance = distance;
             closest_p_idx = i;
-        } else if(distance < shortest_n_distance && event.Hadrons()[i].ID() == PID::neutron()) {
+        } else if(distance < shortest_n_distance && event.NucleusHadrons()[i].ID() == PID::neutron()) {
             shortest_n_distance = distance;
             closest_n_idx = i;
         }

@@ -51,8 +51,8 @@ NucleonNucleon::AllowedResonanceStates(const Particle &particle1, const Particle
 }
 
 InteractionResults NucleonNucleon::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.Hadrons()[part1];
-    const auto &particle2 = event.Hadrons()[part2];
+    const auto &particle1 = event.NucleusHadrons()[part1];
+    const auto &particle2 = event.NucleusHadrons()[part2];
     InteractionResults results;
     double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
