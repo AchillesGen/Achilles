@@ -1,0 +1,243 @@
+name: CI
+
+# Build + unit tests on every supported toolchain, then a cross-section check of the
+# example run cards against their reference values.
+#
+# Build and test share one job on purpose: the test binaries need the build tree, and
+# shipping that tree between jobs as an artifact cost more than the tests themselves.
+# Only the (small) install tree crosses a job boundary, for the cross-section check.
+
+on:
+  # Pushes to the long-lived branches and tags. PR branches are covered by the
+  # pull_request trigger below -- listing branches here rather than bare `push`
+  # is what stops every in-repo PR from running this matrix twice.
+  push:
+    branches: [main, dev]
+    tags: ['v*.*.*']
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUILD_TYPE: Release
+  # Shared by the configure step and the cache; keep the two in sync.
+  CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+
+jobs:
+  build-test:
+    name: Build and Test - ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu GCC
+            os: ubuntu-26.04
+            cc: gcc
+            cxx: g++
+            fort: gfortran
+            coverage: true
+          - name: Ubuntu Clang
+            os: ubuntu-latest
+            cc: clang
+            cxx: clang++
+            fort: gfortran
+            coverage: false
+          - name: macOS 14 Clang
+            os: macos-14
+            cc: clang
+            cxx: clang++
+            fort: gfortran
+            coverage: false
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhdf5-dev cmake ${{ matrix.cc }}
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew update
+          brew install hdf5
+          brew install --force gcc
+          os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
+          # TODO: remove hardcoded gfortran major version
+          if (( "$os_ver" > 13 )); then
+            ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
+          else
+            ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
+          fi
+
+      # Keyed on the files that actually decide which sources CPM fetches. The old
+      # key used hashFiles('**/'), which matches nothing and so never varied.
+      - name: Cache CPM sources
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.CPM_SOURCE_CACHE }}
+          key: ${{ matrix.name }}-cpm-${{ hashFiles('CMakeLists.txt', 'CMake/**', '**/CMakeLists.txt') }}
+          restore-keys: ${{ matrix.name }}-cpm-
+
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          create-symlink: true
+          key: ${{ matrix.name }}-ccache-${{ github.sha }}
+          restore-keys: ${{ matrix.name }}-ccache-
+
+      - name: Configure CMake
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DACHILLES_ENABLE_TESTING=ON \
+            -DACHILLES_COVERAGE=${{ matrix.coverage && 'ON' || 'OFF' }} \
+            -DACHILLES_ENABLE_SHERPA=OFF \
+            -DCPM_SOURCE_CACHE="$CPM_SOURCE_CACHE" \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build
+        run: cmake --build build --config "$BUILD_TYPE" -j"$(getconf _NPROCESSORS_ONLN)"
+
+      # catch_discover_tests registers each Catch2 case individually and the Fortran
+      # suite is one entry (see test/CMakeLists.txt), so ctest parallelises the C++
+      # cases and reports failures per test instead of as one opaque binary exit code.
+      - name: Test
+        run: |
+          ctest --test-dir build \
+            --output-on-failure \
+            --parallel "$(getconf _NPROCESSORS_ONLN)"
+
+      # The build is instrumented with --coverage on this config only. Previously
+      # nothing ever turned the .gcda files into a report, so coverage.xml did not
+      # exist and the upload below was a silent no-op.
+      - name: Generate coverage report
+        if: matrix.coverage
+        run: |
+          pip install gcovr
+          gcovr --root . \
+            --exclude 'build/_deps/' \
+            --exclude 'test/' \
+            --exclude 'external/' \
+            --xml-pretty --output coverage.xml \
+            --print-summary
+
+      - name: Upload coverage to Codecov
+        if: matrix.coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Install
+        run: cmake --install build
+
+      # Only the install tree is published. The cross-section check runs on Ubuntu
+      # GCC alone -- cross sections are physics, not compiler behaviour -- so the
+      # other configs have no consumer and skip the upload entirely.
+      - name: Upload install tree
+        if: matrix.name == 'Ubuntu GCC'
+        uses: actions/upload-artifact@v5
+        with:
+          name: install-ubuntu-gcc
+          path: install
+          retention-days: 3
+
+  cross-section:
+    name: Cross Section - shard ${{ matrix.shard }}
+    needs: build-test
+    # Must match the image of the config that produced install-ubuntu-gcc: the
+    # artifact is a dynamically linked binary, so building on 26.04 and running
+    # on an older image risks a glibc/libstdc++ mismatch at load time.
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhdf5-dev
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: install-ubuntu-gcc
+          path: install
+
+      # Artifacts are zipped, which does not carry the executable bit, so everything
+      # under bin/ comes back non-executable. -R rather than naming achilles alone,
+      # so any other installed tool stays runnable. Kept as its own step: under the
+      # `set -uo pipefail` (no -e) of the check step below a failure here would be
+      # swallowed and resurface as 21 confusing card failures.
+      - name: Restore the executable bit
+        working-directory: ${{ github.workspace }}/install
+        run: |
+          set -euo pipefail
+          chmod -R +x bin
+          ./bin/achilles --version
+
+      - name: Run cross section checks
+        working-directory: ${{ github.workspace }}/install
+        env:
+          SHARD: ${{ matrix.shard }}
+          NSHARDS: 4
+        run: |
+          set -uo pipefail
+
+          # Deal the example cards round-robin across shards. Round-robin rather
+          # than contiguous blocks so a slow family of cards (say the 2000 MeV
+          # runs) spreads out instead of landing in one shard.
+          mapfile -t all < <(ls examples/*.yml | sort)
+          files=()
+          for i in "${!all[@]}"; do
+            if [ $(( i % NSHARDS )) -eq "$SHARD" ]; then files+=("${all[$i]}"); fi
+          done
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No examples in this shard."; exit 0
+          fi
+
+          # Run every card before failing, so one bad cross section does not hide
+          # the rest. The old loop aborted the whole job on the first mismatch.
+          failed=()
+          for file in "${files[@]}"; do
+            name=$(basename "$file" .yml)
+            echo "::group::$name"
+            if ./bin/achilles "$file" && \
+               python3 "$GITHUB_WORKSPACE/test/validate_xsec.py" achilles.log "$name"; then
+              echo "::endgroup::"
+            else
+              echo "::endgroup::"
+              echo "::error title=Cross section::$name failed"
+              failed+=("$name")
+            fi
+          done
+
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "Failed: ${failed[*]}"
+            exit 1
+          fi

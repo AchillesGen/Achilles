@@ -1,0 +1,310 @@
+name: Physics Validation (NUISANCE3)
+
+# Compares this branch against experimental data and the stored `main` baseline via
+# NUISANCE3, posting a Sherpa-style PR comment (flags p_compat < 0.05). Heavy +
+# on-demand; triggered by a commit marker, manual dispatch, or nightly.
+#
+# Commit markers:
+#   !physval            full run against the real NUISANCE3 path (hours)
+#   !physval(dry-run)   synthetic adapter only, for a quick plumbing check
+#
+# Runs inside the public ghcr.io/achillesgen/achilles-physval container (NUISANCE3 +
+# Achilles build deps): builds the current Achilles once, then shards by experimental
+# setup — each shard generates a setup's events once and reuses them across its
+# measurements. `dry_run: true` uses the synthetic adapter until Nuisance3Adapter lands.
+
+on:
+  push:
+    # Gated at the job level by the '!physval' commit-message marker.
+  workflow_dispatch:
+    inputs:
+      events:
+        description: 'Events per experimental setup'
+        default: '500000'
+      seed:
+        description: 'RNG seed (pinned for reproducibility)'
+        default: '42'
+      dry_run:
+        description: 'Use the synthetic adapter instead of the real NUISANCE3 path'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 6 * * *'
+
+concurrency:
+  group: physval-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write        # commit run plots to the physval-baselines branch
+  pull-requests: write   # post/update the summary comment
+  packages: read         # pull the achilles-physval container from GHCR
+
+env:
+  PHYSVAL_DIR: validation/physval
+  BASELINE_BRANCH: physval-baselines
+  # The physics-validation container (public): NUISANCE3 + ROOT + HepMC3 +
+  # ProSelecta + Achilles build deps. Pin to a digest/tag once it is versioned.
+  PHYSVAL_IMAGE: ghcr.io/achillesgen/achilles-physval:latest
+  BUILD_TYPE: Release
+  N_BOOT: '1000'   # must be >> max n_bins (Hartlap requirement; see README)
+
+jobs:
+  setup:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'push' &&
+       contains(join(github.event.commits.*.message, ' '), '!physval'))
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+      - id: mk
+        name: Build one-experiment-per-shard matrix from the config
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, yaml
+          cfg = yaml.safe_load(open('validation/physval/measurements.yml'))
+          names = [e['name'] for e in cfg['experiments']]
+          print('matrix=' + json.dumps({'experiment': names}))
+          PY
+      # Marker semantics: `!physval` runs the real NUISANCE3 path; `!physval(dry-run)`
+      # runs the synthetic adapter for a quick plumbing check. Dispatch uses its input;
+      # the nightly schedule runs for real.
+      - id: mode
+        env:
+          COMMIT_MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            DRY="${{ github.event.inputs.dry_run }}"
+          elif printf '%s' "$COMMIT_MESSAGES" | grep -qF '!physval(dry-run)'; then
+            DRY=true
+          else
+            DRY=false
+          fi
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
+          echo "dry_run=$DRY"
+
+  # Resolve the moving :latest tag to an immutable manifest digest, so every job in
+  # this run uses the identical image and the baseline key changes whenever any part
+  # of the toolchain (NUISANCE2/3, ROOT, HepMC3, ProSelecta) is rebuilt.
+  resolve-image:
+    needs: setup
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.r.outputs.ref }}
+      short: ${{ steps.r.outputs.short }}
+    steps:
+      - id: r
+        run: |
+          DIGEST=$(docker buildx imagetools inspect "$PHYSVAL_IMAGE" \
+                     --format '{{ .Manifest.Digest }}')
+          SHORT="${DIGEST#sha256:}"
+          echo "ref=${PHYSVAL_IMAGE%:*}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "short=${SHORT:0:12}" >> "$GITHUB_OUTPUT"
+          echo "Resolved $PHYSVAL_IMAGE -> $DIGEST"
+
+  # Build Achilles once in the container; share the install tree with the shards.
+  build:
+    needs: [setup, resolve-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ${{ needs.resolve-image.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure Achilles
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DACHILLES_ENABLE_SHERPA=OFF \
+            -DACHILLES_ENABLE_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build Achilles
+        run: cmake --build build --config "$BUILD_TYPE" -j"$(nproc)"
+
+      - name: Install Achilles
+        run: cmake --install build
+
+      # The image's LD_LIBRARY_PATH (/opt/nuisance2/lib) outranks the binary's
+      # RUNPATH, and NUISANCE2's spdlog is built against a different fmt than the one
+      # Achilles bundles -- mixing them segfaults with no output. Achilles' own lib
+      # must come first. Fail here rather than mid-generation if that ever regresses.
+      - name: Smoke-test the built binary
+        run: |
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH"
+          "$GITHUB_WORKSPACE/install/bin/achilles" --version
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: achilles-install
+          path: install
+          retention-days: 7
+
+  # One shard per experimental setup, in the same container.
+  generate:
+    needs: [setup, resolve-image, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ needs.resolve-image.outputs.ref }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # The image ships numpy/scipy/pyyaml/matplotlib and pyNUISANCE via apt, and is
+      # PEP-668 managed, so pip install would fail here. Just check they import.
+      - name: Check python deps from the image
+        run: python3 -c "import numpy, scipy, yaml, matplotlib, pyNUISANCE"
+
+      - name: Restore Achilles install tree
+        uses: actions/download-artifact@v4
+        with:
+          name: achilles-install
+          path: install
+
+      - name: Put Achilles on PATH
+        run: |
+          # Artifacts are zipped, which drops the executable bit, so the restored
+          # binaries come back non-executable (cmake.yml chmods for the same reason).
+          chmod -R +x "$GITHUB_WORKSPACE/install/bin"
+          echo "$GITHUB_WORKSPACE/install/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      # Fail here with a clear message rather than deep inside generation.
+      - name: Smoke-test the restored binary
+        run: achilles --version > /dev/null
+
+      # The image records its resolved component shas; surface NUISANCE3's in the report.
+      - name: Read toolchain versions from the image
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          v = json.load(open("/opt/achilles-physval/versions.json"))
+          print("NUISANCE_VERSION=" + v["nuisance3"]["sha"][:12])
+          PY
+
+      - name: Restore stored main baseline
+        run: |
+          # baselines/<key>.json on the baseline branch; if absent the driver
+          # computes main inline and notes it in the comment.
+          mkdir -p baseline
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          if git fetch origin "$BASELINE_BRANCH" --depth 1 2>/dev/null; then
+            git --work-tree=baseline checkout "origin/$BASELINE_BRANCH" -- baselines 2>/dev/null || true
+          else
+            echo "No $BASELINE_BRANCH branch yet."
+          fi
+
+      # achilles is on PATH and NUISANCE3 is in the container, so the driver defaults
+      # to the real path; --dry-run swaps in the synthetic adapter.
+      - name: Run physval for one experimental setup
+        run: |
+          cd "$PHYSVAL_DIR"
+          # Key on the image digest: any toolchain rebuild invalidates the baseline
+          # (the driver then recomputes main inline and says so in the comment).
+          KEY="${{ needs.resolve-image.outputs.short }}"
+          [ "${{ needs.setup.outputs.dry_run }}" = "true" ] && DRY_RUN="--dry-run" || DRY_RUN=""
+          python3 physval.py --config measurements.yml $DRY_RUN \
+            --only-experiment "${{ matrix.experiment }}" \
+            --key "$KEY" --baseline-dir "$GITHUB_WORKSPACE/baseline" \
+            --out-dir "out/${{ matrix.experiment }}" \
+            --events "${{ github.event.inputs.events || '500000' }}" \
+            --seed "${{ github.event.inputs.seed || '42' }}" \
+            --n-boot "$N_BOOT" \
+            --nuisance-version "$NUISANCE_VERSION" \
+            --feature-sha "$GITHUB_SHA"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shard-${{ matrix.experiment }}
+          path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.experiment }}
+          retention-days: 7
+
+  aggregate:
+    needs: [setup, generate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shard-*
+          path: shards
+
+      - name: Merge shards into the summary + comment
+        run: |
+          cd "$PHYSVAL_DIR"
+          python3 physval.py --merge "$GITHUB_WORKSPACE"/shards/shard-*/summary.json \
+            --out-dir final
+
+      # Publish plots to physval-baselines/plots/<sha>/ for inline thumbnails.
+      # Fork PRs lack a write token -> skipped (shard artifacts remain the fallback).
+      # Dry-run plots are synthetic, so they are kept out of the baseline branch.
+      - name: Publish plots to baseline branch
+        if: ${{ github.event.pull_request.head.repo.fork != true &&
+                needs.setup.outputs.dry_run != 'true' }}
+        run: |
+          set -e
+          SHA="${GITHUB_SHA}"
+          shopt -s nullglob
+          plots=("$GITHUB_WORKSPACE"/shards/shard-*/*.png)
+          if [ ${#plots[@]} -eq 0 ]; then echo "no plots produced (dry-run); skipping"; exit 0; fi
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git fetch origin "$BASELINE_BRANCH" 2>/dev/null || true
+          git worktree add -B "$BASELINE_BRANCH" bl "origin/$BASELINE_BRANCH" 2>/dev/null \
+            || git worktree add -B "$BASELINE_BRANCH" bl
+          mkdir -p "bl/plots/$SHA"
+          cp "${plots[@]}" "bl/plots/$SHA/"
+          # -f: the repo ignores plots/ (local build output), but on the baseline
+          # branch these plots are the payload. Without it `git add` finds every path
+          # ignored, exits non-zero, and fails the step.
+          git -C bl add -f "plots/$SHA"
+          git -C bl commit -m "physval plots for $SHA" || echo "nothing to commit"
+          git -C bl push origin "$BASELINE_BRANCH"
+
+      - name: Post or update the PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('${{ env.PHYSVAL_DIR }}/final/comment.md', 'utf8');
+            const marker = '<!-- achilles-physval-summary -->';
+            // Find the open PR for this branch (push/dispatch have no PR context).
+            const branch = context.ref.replace('refs/heads/', '');
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner, repo: context.repo.repo,
+              head: `${context.repo.owner}:${branch}`, state: 'open',
+            });
+            if (prs.length === 0) { core.info('No open PR for this branch; comment skipped.'); return; }
+            const issue_number = prs[0].number;
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo, issue_number,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo, issue_number, body });
+            }

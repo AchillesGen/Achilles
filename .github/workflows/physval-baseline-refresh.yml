@@ -1,0 +1,130 @@
+name: Physval Baseline Refresh
+
+# Recomputes and stores the `main` baseline (per-measurement histograms + bootstrap
+# covariance + data) on the physval-baselines branch, so PR runs compare against it
+# instead of regenerating `main`. Runs on push to main or manual dispatch.
+#
+# Mirrors physval.yml: builds Achilles in the achilles-physval container and
+# generates once per experimental setup. dry_run uses the synthetic adapter.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Refresh when physics, the measurement list, or the driver changes.
+      - 'src/**'
+      - 'data/**'
+      - 'validation/physval/**'
+  workflow_dispatch:
+    inputs:
+      events:
+        description: 'Events per experimental setup'
+        default: '2000000'
+      seed:
+        default: '42'
+      dry_run:
+        type: boolean
+        default: true
+
+concurrency:
+  group: physval-baseline
+  cancel-in-progress: false   # never interleave two baseline writers
+
+permissions:
+  contents: write
+  packages: read              # pull the achilles-physval container from GHCR
+
+env:
+  PHYSVAL_DIR: validation/physval
+  BASELINE_BRANCH: physval-baselines
+  PHYSVAL_IMAGE: ghcr.io/achillesgen/achilles-physval:latest
+  BUILD_TYPE: Release
+  # NUISANCE_VERSION is read from the image at runtime (see "Read toolchain versions").
+  N_BOOT: '1000'
+
+jobs:
+  # Must resolve the digest exactly as physval.yml does: the baseline key is derived
+  # from it, so the two workflows have to agree or no baseline would ever match.
+  resolve-image:
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.r.outputs.ref }}
+      short: ${{ steps.r.outputs.short }}
+    steps:
+      - id: r
+        run: |
+          DIGEST=$(docker buildx imagetools inspect "$PHYSVAL_IMAGE" \
+                     --format '{{ .Manifest.Digest }}')
+          SHORT="${DIGEST#sha256:}"
+          echo "ref=${PHYSVAL_IMAGE%:*}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "short=${SHORT:0:12}" >> "$GITHUB_OUTPUT"
+          echo "Resolved $PHYSVAL_IMAGE -> $DIGEST"
+
+  refresh:
+    needs: resolve-image
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ needs.resolve-image.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      # The image ships these via apt and is PEP-668 managed, so pip install fails.
+      - name: Check python deps from the image
+        run: python3 -c "import numpy, scipy, yaml, matplotlib, pyNUISANCE"
+
+      - name: Read toolchain versions from the image
+        run: |
+          python3 - <<'PY' >> "$GITHUB_ENV"
+          import json
+          v = json.load(open("/opt/achilles-physval/versions.json"))
+          print("NUISANCE_VERSION=" + v["nuisance3"]["sha"][:12])
+          PY
+
+      - name: Configure Achilles
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DACHILLES_ENABLE_SHERPA=OFF \
+            -DACHILLES_ENABLE_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+      - name: Build & install Achilles
+        if: ${{ github.event.inputs.dry_run == 'false' }}
+        run: |
+          cmake --build build --config "$BUILD_TYPE" -j"$(nproc)"
+          cmake --install build
+          echo "$GITHUB_WORKSPACE/install/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+
+      - name: Compute the baseline
+        run: |
+          cd "$PHYSVAL_DIR"
+          # Same derivation as physval.yml (image digest).
+          KEY="${{ needs.resolve-image.outputs.short }}"
+          [ "${{ github.event.inputs.dry_run || 'true' }}" = "true" ] && DRY_RUN="--dry-run" || DRY_RUN=""
+          mkdir -p "$GITHUB_WORKSPACE/baseline"
+          python3 physval.py --config measurements.yml $DRY_RUN --make-baseline \
+            --key "$KEY" --baseline-dir "$GITHUB_WORKSPACE/baseline" \
+            --events "${{ github.event.inputs.events || '2000000' }}" \
+            --seed "${{ github.event.inputs.seed || '42' }}" \
+            --n-boot "$N_BOOT" \
+            --nuisance-version "$NUISANCE_VERSION"
+
+      - name: Store baseline on the physval-baselines branch
+        run: |
+          set -e
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git fetch origin "$BASELINE_BRANCH" 2>/dev/null || true
+          git worktree add -B "$BASELINE_BRANCH" bl "origin/$BASELINE_BRANCH" 2>/dev/null \
+            || git worktree add -B "$BASELINE_BRANCH" bl
+          mkdir -p bl/baselines
+          cp -r "$GITHUB_WORKSPACE"/baseline/baselines/. bl/baselines/
+          git -C bl add baselines
+          git -C bl commit -m "refresh baseline @ ${GITHUB_SHA}" || echo "no baseline change"
+          git -C bl push origin "$BASELINE_BRANCH"
