@@ -5,10 +5,14 @@
 
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_string.hpp"
 
 #include "Achilles/Constants.hh"
+#include "Achilles/ParticleInfo.hh"
 #include "Achilles/Units.hh"
 #include "Achilles/UnitsFormat.hh"
+#include "Achilles/UnitsIO.hh"
+#include "Achilles/UnitsSchema.hh"
 
 #include <type_traits>
 
@@ -107,4 +111,126 @@ TEST_CASE("Quantity formats in canonical units by default", "[Units]") {
     CHECK(fmt::format("{:.3f}", in(1.2_fm, fm)) == "1.200 fm");
     CHECK(fmt::format("{:.3f}", in(2.2_GeV, GeV)) == "2.200 GeV");
     CHECK(fmt::format("{:.3f}", in(1.0_mb, nb)) == "1000000.000 nb");
+}
+
+// ---------------------------------------------------------------------------
+// File-boundary enforcement: a bare number becomes a Quantity in exactly one
+// place, and only by naming its unit.
+// ---------------------------------------------------------------------------
+
+TEST_CASE("Unit names are looked up per dimension", "[Units][IO]") {
+    namespace io = achilles::units::io;
+
+    CHECK(io::unit_from_string<1>("GeV").scale() == GeV.scale());
+    CHECK(io::unit_from_string<-1>("fm").scale() == fm.scale());
+    CHECK(io::unit_from_string<-2>("nb").scale() == nb.scale());
+
+    SECTION("A unit of the wrong dimension is simply not in the table") {
+        CHECK_THROWS_WITH(io::unit_from_string<1>("fm"),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+        CHECK_THROWS_WITH(io::unit_from_string<-1>("GeV"),
+                          Catch::Matchers::ContainsSubstring("not a known LENGTH unit"));
+        CHECK_THROWS_WITH(io::unit_from_string<-2>("MeV"),
+                          Catch::Matchers::ContainsSubstring("not a known CROSS-SECTION unit"));
+    }
+
+    SECTION("An unknown unit throws rather than defaulting") {
+        CHECK_THROWS_WITH(io::unit_from_string<1>("furlong"),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+        CHECK_THROWS_WITH(io::from_declared<1>(1.0, ""),
+                          Catch::Matchers::ContainsSubstring("refusing to guess"));
+    }
+}
+
+TEST_CASE("Declared, specified and range-checked values", "[Units][IO]") {
+    namespace io = achilles::units::io;
+
+    // (A) the file declares its unit
+    CHECK(io::from_declared<1>(2.2, "GeV") == 2200_MeV);
+    CHECK(io::from_declared<-1>(1.5, "fm") == 1.5_fm);
+
+    // (B) the format fixes the unit -- LHE energies are GeV by the accord
+    CHECK(io::from_lhe_energy(2.2) == 2.2_GeV);
+    STATIC_REQUIRE(std::is_same<decltype(io::from_lhe_energy(1.0)), Energy>::value);
+
+    // (C) range backstop
+    CHECK(io::expect_range<1>(500_MeV, 0_MeV, 1000_MeV, "test") == 500_MeV);
+    CHECK_THROWS_WITH(io::expect_range<1>(500_GeV, 0_MeV, 1000_MeV, "test"),
+                      Catch::Matchers::ContainsSubstring("outside its physical range"));
+}
+
+TEST_CASE("Config quantities must name their unit", "[Units][IO]") {
+    SECTION("A bare scalar is refused") {
+        auto node = YAML::Load("beam: 30");
+        CHECK_THROWS_WITH(node["beam"].as<Energy>(),
+                          Catch::Matchers::ContainsSubstring("is a bare number"));
+    }
+
+    SECTION("A declared unit is applied") {
+        auto node = YAML::Load("beam: { value: 30, unit: GeV }");
+        CHECK(node["beam"].as<Energy>() == 30_GeV);
+        CHECK(node["beam"].as<Energy>().in(MeV) == 30000.0);
+    }
+
+    SECTION("A wrong-dimension unit throws at load") {
+        auto node = YAML::Load("beam: { value: 30, unit: fm }");
+        CHECK_THROWS_WITH(node["beam"].as<Energy>(),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+        auto step = YAML::Load("step: { value: 0.04, unit: MeV }");
+        CHECK_THROWS_WITH(step["step"].as<Length>(),
+                          Catch::Matchers::ContainsSubstring("not a known LENGTH unit"));
+    }
+
+    SECTION("A half-written quantity throws") {
+        auto no_unit = YAML::Load("beam: { value: 30 }");
+        CHECK_THROWS(no_unit["beam"].as<Energy>());
+        auto no_value = YAML::Load("beam: { unit: GeV }");
+        CHECK_THROWS(no_value["beam"].as<Energy>());
+    }
+
+    SECTION("Round-trips through canonical units") {
+        YAML::Node out;
+        out["beam"] = 2.2_GeV;
+        CHECK(out["beam"]["unit"].as<std::string>() == "MeV");
+        CHECK(out["beam"].as<Energy>() == 2.2_GeV);
+    }
+}
+
+TEST_CASE("Particle table columns declare their units once", "[Units][IO]") {
+    namespace io = achilles::units::io;
+
+    SECTION("An absent block means the documented MeV convention") {
+        auto u = io::resolve_particle_units(YAML::Node());
+        CHECK(io::particle_mass(938.27, u) == 938.27_MeV);
+        CHECK(io::particle_width(0.0, u) == 0_MeV);
+    }
+
+    SECTION("A declared block overrides it and is dimension-checked") {
+        auto node = YAML::Load("units: { mass: GeV, width: MeV }");
+        auto u = io::resolve_particle_units(node["units"]);
+        CHECK(io::particle_mass(0.93827, u).in(MeV) == Approx(938.27));
+        CHECK(io::particle_width(1.0, u) == 1_MeV);
+
+        auto bad = YAML::Load("units: { mass: fm }");
+        CHECK_THROWS_WITH(io::resolve_particle_units(bad["units"]),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+    }
+
+    SECTION("Range backstop catches an implausible mass") {
+        auto node = YAML::Load("units: { mass: TeV }");
+        auto u = io::resolve_particle_units(node["units"]);
+        CHECK_THROWS_WITH(io::particle_mass(938.27, u),
+                          Catch::Matchers::ContainsSubstring("outside its physical range"));
+    }
+}
+
+TEST_CASE("The shipped Particles.yml loads in MeV", "[Units][IO]") {
+    const achilles::ParticleInfo proton(achilles::PID::proton());
+    const achilles::ParticleInfo muon(achilles::PID::muon());
+
+    STATIC_REQUIRE(std::is_same<decltype(proton.Mass()), Energy>::value);
+    CHECK(proton.Mass().in(MeV) == Approx(938.27).epsilon(1e-9));
+    CHECK(muon.Mass().in(MeV) == Approx(105.7).epsilon(1e-3));
+    CHECK(proton.Mass().in(GeV) == Approx(0.93827).epsilon(1e-9));
+    CHECK(proton.Width() == 0_MeV);
 }

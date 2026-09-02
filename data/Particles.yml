@@ -1,3 +1,7 @@
+# Units for the mass and width columns. Optional: if omitted, the documented
+# Achilles convention of MeV applies. A wrong-dimension unit throws at load.
+units: { mass: MeV, width: MeV }
+
 Particles:
     # [pid, mass, width, icharge, strong, isospin, spin, stable, majorana, masive, hadron, name, antiname]
     # Baryons

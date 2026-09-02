@@ -20,6 +20,9 @@ using achilles::Spectrum;
 
 Spectrum::Spectrum(const YAML::Node &node) {
     spdlog::debug("Loading spectrum flux");
+    // The unit the file writes its energies in. Resolved here, once, and
+    // applied to the bin edges; everything after this works in MeV.
+    units::Unit<1> file_unit = units::MeV;
     if(node["Histogram"]) {
         std::string filename = Filesystem::FindFlux(node["Histogram"].as<std::string>(), "Beam");
         std::ifstream hist(filename.c_str());
@@ -40,7 +43,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
             flux_token = 2;
             AchillesHeader(hist);
         } else if(line.find("MiniBooNE") != std::string::npos) {
-            m_energy_units = 1.0 / 1.0_GeV;
+            file_unit = units::GeV;
             m_format = FluxFormat::MiniBooNE;
             elo_token = 0;
             ehi_token = 1;
@@ -51,7 +54,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
             }
             MiniBooNEHeader(hist);
         } else if(line.find("ND280") != std::string::npos) {
-            m_energy_units = 1.0 / 1.0_GeV;
+            file_unit = units::GeV;
             m_format = FluxFormat::T2K;
             T2KHeader(hist);
             elo_token = 1;
@@ -83,7 +86,7 @@ Spectrum::Spectrum(const YAML::Node &node) {
         bool use_width{};
         switch(m_units) {
         case flux_units::v_m2_POT_500MeV:
-            m_energy_units = 1.0 / 1.0_GeV;
+            file_unit = units::GeV;
             use_width = true;
             break;
         case flux_units::v_cm2_POT_100MeV:
@@ -99,6 +102,9 @@ Spectrum::Spectrum(const YAML::Node &node) {
             use_width = false;
             break;
         }
+
+        // Apply the file's unit to the bin edges; from here everything is MeV.
+        for(auto &edge : edges) edge = (edge * file_unit).in(units::MeV);
 
         for(size_t i = 0; i < heights.size(); ++i) {
             double width = use_width ? edges[i + 1] - edges[i] : 1;
@@ -119,8 +125,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
         interp.SetPolyOrder(1);
 
         m_flux = [=](double x) { return interp(x); };
-        m_min_energy = edges.front();
-        m_max_energy = edges.back();
+        m_min_energy = edges.front() * units::MeV;
+        m_max_energy = edges.back() * units::MeV;
         m_delta_energy = m_max_energy - m_min_energy;
     } else if(node["HepData"]) {
         spdlog::debug("Reading from HepData yaml file");
@@ -132,15 +138,18 @@ Spectrum::Spectrum(const YAML::Node &node) {
             heights.push_back(value["value"].as<double>());
         }
 
+        // The file names its own unit; an unknown or non-energy one throws.
         auto energy_units = root["independent_variables"][0]["header"]["units"].as<std::string>();
-        if(energy_units == "GeV") { m_energy_units = 1.0 / 1_GeV; }
+        file_unit = units::io::unit_from_string<1>(energy_units);
         size_t nbins = root["independent_variables"][0]["values"].size();
         std::vector<double> bin_centers, low, high;
-        m_min_energy = root["independent_variables"][0]["values"][0]["low"].as<double>();
-        m_max_energy = root["independent_variables"][0]["values"][nbins - 1]["high"].as<double>();
+        m_min_energy =
+            root["independent_variables"][0]["values"][0]["low"].as<double>() * file_unit;
+        m_max_energy =
+            root["independent_variables"][0]["values"][nbins - 1]["high"].as<double>() * file_unit;
         for(const auto &bin : root["independent_variables"][0]["values"]) {
-            low.push_back(bin["low"].as<double>());
-            high.push_back(bin["high"].as<double>());
+            low.push_back((bin["low"].as<double>() * file_unit).in(units::MeV));
+            high.push_back((bin["high"].as<double>() * file_unit).in(units::MeV));
             bin_centers.push_back((low.back() + high.back()) / 2);
         }
 
@@ -153,9 +162,9 @@ Spectrum::Spectrum(const YAML::Node &node) {
         spdlog::trace("Flux integral = {}", m_flux_integral);
 
         // Create interpolation function
-        bin_centers.insert(bin_centers.begin(), m_min_energy);
+        bin_centers.insert(bin_centers.begin(), m_min_energy.in(units::MeV));
         heights.insert(heights.begin(), heights[0]);
-        bin_centers.push_back(m_max_energy);
+        bin_centers.push_back(m_max_energy.in(units::MeV));
         heights.push_back(heights.back());
 
         Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
@@ -171,6 +180,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
         TFile *file = new TFile(filename.c_str());
         TH1D *hist =
             static_cast<TH1D *>(file->Get(node["ROOTHist"]["HistName"].as<std::string>().c_str()));
+        // ROOT flux histograms are written with a GeV axis.
+        file_unit = units::GeV;
         bool use_width = node["ROOTHist"]["UseWidth"].as<bool>();
         double norm = node["ROOTHist"]["Norm"].as<double>();
         hist->Scale(norm);
@@ -191,16 +202,17 @@ Spectrum::Spectrum(const YAML::Node &node) {
                               hist->GetBinWidth(static_cast<int>(i)));
         heights.push_back(heights.back());
 
+        for(auto &center : bin_centers) center = (center * file_unit).in(units::MeV);
+
         Interp1D interp(bin_centers, heights, InterpolationType::Polynomial);
         interp.SetPolyOrder(1);
         m_flux_integral = interp.Integrate();
         spdlog::trace("Flux Integral = {}", m_flux_integral);
 
         m_flux = [=](double x) { return interp(x); };
-        m_min_energy = bin_centers.front();
-        m_max_energy = bin_centers.back();
+        m_min_energy = bin_centers.front() * units::MeV;
+        m_max_energy = bin_centers.back() * units::MeV;
         m_delta_energy = m_max_energy - m_min_energy;
-        m_energy_units = 1.0 / 1.0_GeV;
         spdlog::debug("Flux energy range: [{}, {}]", m_min_energy, m_max_energy);
         spdlog::trace("Flux histogram:");
         for(size_t j = 0; j < bin_centers.size(); ++j) {
@@ -285,35 +297,37 @@ std::string Spectrum::Format() const {
     return "Undefined";
 }
 
-achilles::FourVector Spectrum::Flux(const std::vector<double> &ran, double min_energy) const {
-    min_energy = std::max(min_energy * m_energy_units, m_min_energy);
-    double delta_energy = m_max_energy - min_energy;
-    double energy = (ran[0] * delta_energy + min_energy) / m_energy_units;
-    return {energy, 0, 0, energy};
+achilles::FourVector Spectrum::Flux(const std::vector<double> &ran,
+                                    units::Energy min_energy) const {
+    min_energy = std::max(min_energy, m_min_energy);
+    const units::Energy delta_energy = m_max_energy - min_energy;
+    const units::Energy energy = ran[0] * delta_energy + min_energy;
+    return {energy, units::Energy{}, units::Energy{}, energy};
 }
 
 double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran,
-                                double min_energy) const {
-    min_energy = std::max(min_energy * m_energy_units, m_min_energy);
-    double delta_energy = m_max_energy - min_energy;
-    ran[0] = (beam.E() * m_energy_units - min_energy) / delta_energy;
-    return (delta_energy * m_flux(beam.E() * m_energy_units)) / m_flux_integral;
+                                units::Energy min_energy) const {
+    min_energy = std::max(min_energy, m_min_energy);
+    const units::Energy delta_energy = m_max_energy - min_energy;
+    ran[0] = ((beam.E() - min_energy) / delta_energy).native();
+    // The flux and its integral are both per MeV, so this ratio is a pure number.
+    return (delta_energy.in(units::MeV)*m_flux(beam.E().in(units::MeV))) / m_flux_integral;
 }
 
 double Spectrum::EvaluateFlux(const FourVector &beam) const {
-    return m_flux(beam.E() * m_energy_units);
+    return m_flux(beam.E().in(units::MeV));
 }
 
 PDFBeam::PDFBeam(const YAML::Node &) {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
 }
 
-achilles::FourVector PDFBeam::Flux(const std::vector<double> &, double) const {
+achilles::FourVector PDFBeam::Flux(const std::vector<double> &, units::Energy) const {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
     return {};
 }
 
-double PDFBeam::GenerateWeight(const FourVector &, std::vector<double> &, double) const {
+double PDFBeam::GenerateWeight(const FourVector &, std::vector<double> &, units::Energy) const {
     throw std::runtime_error("PDFBeam: Not implemented yet!");
     return {};
 }
@@ -325,10 +339,10 @@ double PDFBeam::EvaluateFlux(const FourVector &) const {
 
 FlatFlux::FlatFlux(const YAML::Node &node) {
     if(node["MinEnergy"] && node["MaxEnergy"] && !node["Range"]) {
-        m_min_energy = node["MinEnergy"].as<double>();
-        m_max_energy = node["MaxEnergy"].as<double>();
+        m_min_energy = node["MinEnergy"].as<units::Energy>();
+        m_max_energy = node["MaxEnergy"].as<units::Energy>();
     } else if(node["Range"] && !(node["MinEnergy"] || node["MaxEnergy"])) {
-        auto range = node["Range"].as<std::pair<double, double>>();
+        auto range = node["Range"].as<std::pair<units::Energy, units::Energy>>();
         m_min_energy = range.first;
         m_max_energy = range.second;
     } else {
@@ -337,19 +351,20 @@ FlatFlux::FlatFlux(const YAML::Node &node) {
     }
 }
 
-achilles::FourVector FlatFlux::Flux(const std::vector<double> &ran, double min_energy) const {
-    min_energy = std::max(min_energy, m_min_energy);
-    double delta_energy = m_max_energy - min_energy;
-    double energy = ran[0] * delta_energy + min_energy;
-    return {energy, 0, 0, energy};
+achilles::FourVector FlatFlux::Flux(const std::vector<double> &ran,
+                                    units::Energy min_energy_in) const {
+    const units::Energy min_energy = std::max(min_energy_in, m_min_energy);
+    const units::Energy delta_energy = m_max_energy - min_energy;
+    const units::Energy energy = ran[0] * delta_energy + min_energy;
+    return {energy, units::Energy{}, units::Energy{}, energy};
 }
 
 double FlatFlux::GenerateWeight(const FourVector &beam, std::vector<double> &ran,
-                                double min_energy) const {
-    min_energy = std::max(min_energy, m_min_energy);
-    double delta_energy = m_max_energy - min_energy;
-    ran[0] = (beam.E() - min_energy) / delta_energy;
-    return delta_energy;
+                                units::Energy min_energy_in) const {
+    const units::Energy min_energy = std::max(min_energy_in, m_min_energy);
+    const units::Energy delta_energy = m_max_energy - min_energy;
+    ran[0] = ((beam.E() - min_energy) / delta_energy).native();
+    return delta_energy.in(units::MeV);
 }
 
 achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
@@ -372,8 +387,8 @@ achilles::Beam::Beam(BeamMap beams) : m_beams{std::move(beams)} {
     }
 }
 
-double achilles::Beam::MaxEnergy() const {
-    double max = 0;
+achilles::units::Energy achilles::Beam::MaxEnergy() const {
+    units::Energy max{};
     for(const auto &beam : m_beams) {
         if(beam.second->MaxEnergy() > max) max = beam.second->MaxEnergy();
     }

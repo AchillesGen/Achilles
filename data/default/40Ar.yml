@@ -1,6 +1,6 @@
 Name: 40Ar
-Binding: 8.6
-Fermi Momentum: 250
+Binding: { value: 8.6, unit: MeV }
+Fermi Momentum: { value: 250, unit: MeV }
 Density:
   ProtonFile: data/densities/rho_Ar_p.txt
   NeutronFile: data/densities/rho_Ar_n.txt

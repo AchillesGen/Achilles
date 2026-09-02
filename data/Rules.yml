@@ -49,6 +49,7 @@ Rules:
     ErrorMessage: "The cascade step size must be greater than 0."
     Path: Cascade/Step
     Optional: False
+    Unit: fm
     Min: 1e-8
 
   - Type: RangeConstraint
