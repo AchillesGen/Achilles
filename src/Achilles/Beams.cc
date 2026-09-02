@@ -311,7 +311,7 @@ double Spectrum::GenerateWeight(const FourVector &beam, std::vector<double> &ran
     const units::Energy delta_energy = m_max_energy - min_energy;
     ran[0] = ((beam.E() - min_energy) / delta_energy).native();
     // The flux and its integral are both per MeV, so this ratio is a pure number.
-    return (delta_energy.in(units::MeV)*m_flux(beam.E().in(units::MeV))) / m_flux_integral;
+    return (delta_energy.in(units::MeV) * m_flux(beam.E().in(units::MeV))) / m_flux_integral;
 }
 
 double Spectrum::EvaluateFlux(const FourVector &beam) const {
