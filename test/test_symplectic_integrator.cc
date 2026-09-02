@@ -13,7 +13,10 @@
 
 #include <complex>
 
-using achilles::ThreeVector;
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
+using achilles::PSVector;
 
 double Rho(double r) {
     static constexpr double a = 0.09320982;
@@ -70,38 +73,37 @@ double dPotential_dr(double p, double r, double rho0) {
     return (term1 + term2 + term3 - term4) * dRho(r);
 }
 
-double Hamiltonian(const achilles::ThreeVector &q, const achilles::ThreeVector &p,
+double Hamiltonian(const achilles::PSVector &q, const achilles::PSVector &p,
                    std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
+    auto vals = potential->operator()(p.P().native(), q.P().native());
     auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    return sqrt(p.P2() + pow(mass_eff, 2)).real() + vals.rvector;
+        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+    return sqrt(p.P2().native() + pow(mass_eff, 2)).real() + vals.rvector;
 }
 
-achilles::ThreeVector dHamiltonian_dp(const achilles::ThreeVector &q,
-                                      const achilles::ThreeVector &p,
-                                      std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
-    auto dpot_dp = potential->derivative_p(p.P(), q.P());
+achilles::PSVector dHamiltonian_dp(const achilles::PSVector &q, const achilles::PSVector &p,
+                                   std::shared_ptr<achilles::Potential> potential) {
+    auto vals = potential->operator()(p.P().native(), q.P().native());
+    auto dpot_dp = potential->derivative_p(p.P().native(), q.P().native());
 
     auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-    return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
+        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+    double numerator =
+        (vals.rscalar + achilles::Constant::mN.native()) * dpot_dp.rscalar + p.P().native();
+    double denominator = sqrt(pow(mass_eff, 2) + p.P2().native()).real();
+    return numerator / denominator * p / p.P().native() + dpot_dp.rvector * p / p.P().native();
 }
 
-achilles::ThreeVector dHamiltonian_dr(const achilles::ThreeVector &q,
-                                      const achilles::ThreeVector &p,
-                                      std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
-    auto dpot_dr = potential->derivative_r(p.P(), q.P());
+achilles::PSVector dHamiltonian_dr(const achilles::PSVector &q, const achilles::PSVector &p,
+                                   std::shared_ptr<achilles::Potential> potential) {
+    auto vals = potential->operator()(p.P().native(), q.P().native());
+    auto dpot_dr = potential->derivative_r(p.P().native(), q.P().native());
 
     auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dr.rscalar;
-    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-    return numerator / denominator * q / q.P() + dpot_dr.rvector * q / q.P();
+        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+    double numerator = (vals.rscalar + achilles::Constant::mN.native()) * dpot_dr.rscalar;
+    double denominator = sqrt(pow(mass_eff, 2) + p.P2().native()).real();
+    return numerator / denominator * q / q.P().native() + dpot_dr.rvector * q / q.P().native();
 }
 
 template <typename T> std::shared_ptr<T> MakePotential(std::shared_ptr<achilles::Nucleus> nuc) {
@@ -112,8 +114,10 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
                    achilles::WiringaPotential) {
     constexpr double r0 = -1;
     constexpr double pmag = 275;
-    achilles::ThreeVector q{r0, 0, 0};
-    achilles::ThreeVector p{0, pmag, 0};
+    achilles::PSVector q{units::Dimensionless{r0}, units::Dimensionless{0},
+                         units::Dimensionless{0}};
+    achilles::PSVector p{units::Dimensionless{0}, units::Dimensionless{pmag},
+                         units::Dimensionless{0}};
     constexpr size_t nsteps = 10000;
     constexpr double step_size = 0.01;
     constexpr double omega = 20;
@@ -121,16 +125,16 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
 
     auto nucleus = std::make_shared<MockNucleus>();
     ALLOW_CALL(*nucleus, NNucleons()).LR_RETURN((AA));
-    ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(0))).LR_RETURN((Rho(_1)));
+    ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(units::Length{}))).LR_RETURN((Rho(_1.in(units::fm))));
     auto potential = MakePotential<TestType>(nucleus);
 
-    auto dHamiltonian_dr_func = [&](const ThreeVector &p_, const ThreeVector &q_,
-                                    std::shared_ptr<achilles::Potential> pot_) -> ThreeVector {
+    auto dHamiltonian_dr_func = [&](const PSVector &p_, const PSVector &q_,
+                                    std::shared_ptr<achilles::Potential> pot_) -> PSVector {
         return dHamiltonian_dr(p_, q_, pot_);
     };
 
-    auto dHamiltonian_dp_func = [&](const ThreeVector &p_, const ThreeVector &q_,
-                                    std::shared_ptr<achilles::Potential> pot_) -> ThreeVector {
+    auto dHamiltonian_dp_func = [&](const PSVector &p_, const PSVector &q_,
+                                    std::shared_ptr<achilles::Potential> pot_) -> PSVector {
         return dHamiltonian_dp(p_, q_, pot_);
     };
 

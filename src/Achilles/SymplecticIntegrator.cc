@@ -5,7 +5,7 @@
 
 using SI = achilles::SymplecticIntegrator;
 
-void SI::Initialize(const ThreeVector &q, const ThreeVector &p) {
+void SI::Initialize(const PSVector &q, const PSVector &p) {
     m_state = PSState(q, p);
 }
 

@@ -26,6 +26,8 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
+#include "Achilles/Units.hh"
+
 namespace achilles {
 class ParticleInfoEntry;
 // class ParticleInfo;
@@ -254,8 +256,9 @@ class ParticleInfo {
     int Stable() const noexcept { return info->stable; }
     bool IsStable() const noexcept;
     bool IsMassive() const noexcept { return info->mass != 0 ? info->massive : false; }
-    double Mass() const noexcept { return info->massive ? info->mass : 0.0; }
-    double Width() const noexcept { return info->width; }
+    /// Mass and width are stored in the documented Particles.yml convention of MeV
+    units::Energy Mass() const noexcept { return units::Energy{info->massive ? info->mass : 0.0}; }
+    units::Energy Width() const noexcept { return units::Energy{info->width}; }
     double IsoSpin() const noexcept { return info->isospin / 2.0; }
     // Q = Y/2 + I_3, Y = B+S+C => I_3 = Q - (B + S + C)/2
     double IsoSpinZ() const noexcept {
@@ -265,7 +268,7 @@ class ParticleInfo {
     bool HasStrange() const noexcept { return IsSHadron(); }
     bool HasCharm() const noexcept { return IsCHadron(); }
 
-    double GenerateLifeTime() const;
+    units::Time GenerateLifeTime() const;
 
     bool operator==(const ParticleInfo &other) const noexcept {
         return info == other.info && anti == other.anti;

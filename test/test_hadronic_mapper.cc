@@ -10,6 +10,9 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/ProcessInfo.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 TEST_CASE("HadronicMapper", "[PhaseSpace]") {
     achilles::ProcessInfo info({achilles::PID::electron(), {achilles::PID::electron()}});
 
@@ -28,7 +31,7 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
         SECTION("QESpectral") {
             info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
             auto mapper = achilles::QESpectralMapper::Construct(info, 1);
-            std::vector<achilles::FourVector> mom = {{1000, 0, 0, 1000}, {}};
+            std::vector<achilles::FourVector> mom = {{1000_MeV, 0_MeV, 0_MeV, 1000_MeV}, {}};
             std::vector<double> ran = {0.5, 0.5, 0.5, 0.5};
             mapper->SetMasses({0, 0, 0, 0});
             mapper->GeneratePoint(mom, ran);
@@ -44,7 +47,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             info.m_hadronic = {{achilles::PID::carbon()}, {achilles::PID::carbon()}};
             auto mapper = achilles::CoherentMapper::Construct(info, 0);
             std::vector<achilles::FourVector> mom = {
-                {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0}};
+                {units::Energy{achilles::ParticleInfo(achilles::PID::carbon()).Mass().native()},
+                 0_MeV, 0_MeV, 0_MeV}};
             std::vector<double> ran(mapper->NDims());
             mapper->GenerateWeight(mom, ran);
             std::vector<achilles::FourVector> mom2(1);
@@ -55,9 +59,10 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
             auto mapper = achilles::QESpectralMapper::Construct(info, 1);
             std::vector<achilles::FourVector> mom = {
-                {1000, 0, 0, 1000},
-                {achilles::Constant::mN - 20, 400 * sin(M_PI / 4) * cos(M_PI / 6),
-                 400 * sin(M_PI / 4) * sin(M_PI / 6), 400 * cos(M_PI / 4)},
+                {1000_MeV, 0_MeV, 0_MeV, 1000_MeV},
+                {achilles::Constant::mN - 20_MeV, 400 * sin(M_PI / 4) * cos(M_PI / 6) * units::MeV,
+                 400 * sin(M_PI / 4) * sin(M_PI / 6) * units::MeV,
+                 400 * cos(M_PI / 4) * units::MeV},
             };
             std::vector<double> ran(4);
             mapper->SetMasses({0, 0, 0, 0});
@@ -65,10 +70,10 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             std::vector<achilles::FourVector> mom2(2);
             mom2[0] = mom[0];
             mapper->GeneratePoint(mom2, ran);
-            CHECK(mom[1].Px() == Catch::Approx(mom2[1].Px()));
-            CHECK(mom[1].Py() == Catch::Approx(mom2[1].Py()));
-            CHECK(mom[1].Pz() == Catch::Approx(mom2[1].Pz()));
-            CHECK(mom[1].E() == Catch::Approx(mom2[1].E()));
+            CHECK(mom[1].Px().native() == Catch::Approx(mom2[1].Px().native()));
+            CHECK(mom[1].Py().native() == Catch::Approx(mom2[1].Py().native()));
+            CHECK(mom[1].Pz().native() == Catch::Approx(mom2[1].Pz().native()));
+            CHECK(mom[1].E().native() == Catch::Approx(mom2[1].E().native()));
         }
     }
 }

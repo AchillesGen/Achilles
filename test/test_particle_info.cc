@@ -77,8 +77,8 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
         CHECK(info.Stable() == 1);
         CHECK(info.IsStable() == true);
         CHECK(info.IsMassive() == true);
-        CHECK(info.Mass() == 10);
-        CHECK(info.Width() == 1);
+        CHECK(info.Mass().native() == 10);
+        CHECK(info.Width().native() == 1);
     }
 
     SECTION("Equality of two particles") {

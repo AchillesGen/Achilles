@@ -40,10 +40,10 @@ double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_i
     // TODO: Correct this flux
     // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2)
     //                      -
-    //                      event.Momentum()[0].M2()*event.Momentum()[1].M2());
+    //                      event.Momentum()[0].M2().native()*event.Momentum()[1].M2().native());
     // TODO: Handle multiple hadron initial states
-    double mass = ParticleInfo(process_info.m_hadronic.first[0]).Mass();
-    double flux = 2 * lep_in.E() * 2 * sqrt(had_in.P2() + mass * mass);
+    double mass = ParticleInfo(process_info.m_hadronic.first[0]).Mass().native();
+    double flux = 2 * lep_in.E().native() * 2 * sqrt(had_in.P2().native() + mass * mass);
     static constexpr double to_nb = 1e6;
     return Constant::HBARC2 / flux * to_nb;
 }
@@ -120,7 +120,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         }
         // For interference amplitude
         // we need a factor of V = rho/A
-        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(), 3) / (1.5 * pow(M_PI, 2)) /
+        amps2 *= pow(event.CurrentNucleus()->FermiMomentum().native(), 3) / (1.5 * pow(M_PI, 2)) /
                  static_cast<double>(event.CurrentNucleus()->NNucleons());
     }
 
@@ -265,7 +265,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
     spdlog::debug("mom map: {}", info.m_mom_map.size());
     for(const auto &elm : info.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
-        mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
+        mom[elm.first] = p[elm.first].ToArray(units::GeV);
         spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(), mom[elm.first][0],
                       mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]);
     }
@@ -277,7 +277,8 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
         spdlog::trace("Current for {}", current.first);
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
-                current.second[i][j] /= pow(1_GeV, static_cast<double>(mom.size()) - 3);
+                current.second[i][j] /=
+                    pow((1.0_GeV).native(), static_cast<double>(mom.size()) - 3);
                 spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
@@ -329,7 +330,7 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<long> pids = process.Info().Ids();
-    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = (p[i] / 1_GeV).Momentum(); }
+    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = p[i].ToArray(units::GeV); }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);

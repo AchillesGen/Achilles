@@ -40,11 +40,11 @@ class WeylSpinor {
     WeylSpinor operator-() const { return {m_type, -m_u1, -m_u2}; }
 
   private:
-    static inline Complex PT(const FourVector &p) { return {p[1], p[2]}; }
+    static inline Complex PT(const FourVector &p) { return {p[1].native(), p[2].native()}; }
 
-    static inline Complex PPlus(const FourVector &p) { return {p[0] + p[3], 0}; }
+    static inline Complex PPlus(const FourVector &p) { return {(p[0] + p[3]).native(), 0}; }
 
-    static inline Complex PMinus(const FourVector &p) { return {p[0] - p[3], 0}; }
+    static inline Complex PMinus(const FourVector &p) { return {(p[0] - p[3]).native(), 0}; }
 
     bool m_type{};
     Complex m_u1, m_u2;

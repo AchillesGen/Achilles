@@ -21,45 +21,49 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     auto total_density = proton_density + neutron_density;
     auto fermi_momentum =
         event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude(), nucleon.ID());
-    // spdlog::debug("Density = {}, PionE = {}, fermimom = {}", density, pion.E(), fermi_momentum);
+    // spdlog::debug("Density = {}, PionE = {}, fermimom = {}", density, pion.E().native(),
+    // fermi_momentum.native());
 
-    auto pion_kinetic_energy = pion.E() - pion.Mass();
-    auto pion_momentum = pion.Momentum().P();
+    auto pion_kinetic_energy = pion.E().native() - pion.Mass().native();
+    auto pion_momentum = pion.Momentum().P().native();
 
     // Actual nucleon kinematics included
     // auto delta_fourvector = pion.Momentum() + nucleon.Momentum();
-    // auto s = delta_fourvector.M2();
+    // auto s = delta_fourvector.M2().native();
     // auto sqrts = sqrt(s);
 
     // Let's consider an average nucleon
-    double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum, 2);
-    double deltaE = pion.E() + sqrt(0.6 * pow(fermi_momentum, 2) + pow(Constant::mN, 2));
+    double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum.native(), 2);
+    double deltaE = pion.E().native() +
+                    sqrt(0.6 * pow(fermi_momentum.native(), 2) + pow(Constant::mN.native(), 2));
     double s = deltaE * deltaE - deltamomsq;
     double sqrts = sqrt(s);
 
     // assumes nucleon at rest?
     /*auto sqrts =
-        sqrt(pion.Mass() * pion.Mass() + 2.0 * Constant::mN * pion.E() + pow(Constant::mN, 2));
-    auto cms_mom = pion_momentum * Constant::mN / sqrts;
+        sqrt(pion.Mass().native() * pion.Mass().native() + 2.0 * Constant::mN.native() *
+    pion.E().native() + pow(Constant::mN.native(), 2)); auto cms_mom = pion_momentum *
+    Constant::mN.native() / sqrts;
     */
 
-    double wcm = (s - pow(Constant::mN, 2) + pow(pion.Mass(), 2)) / (2. * sqrts);
-    double cms_mom2 = wcm * wcm - pow(pion.Mass(), 2);
+    double wcm = (s - pow(Constant::mN.native(), 2) + pow(pion.Mass().native(), 2)) / (2. * sqrts);
+    double cms_mom2 = wcm * wcm - pow(pion.Mass().native(), 2);
     double cms_mom = sqrt(cms_mom2);
 
     // ----- ABSORPTION ----- //
-    auto pXsecCommon = PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum,
-                                   sqrts, total_density);
+    auto pXsecCommon = PXSecCommon(nucleon.E().native(), pion.E().native(), pion.Mass().native(),
+                                   cms_mom, fermi_momentum.native(), sqrts, total_density);
 
-    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E();
-    auto vpi = pion.Momentum().Vec3() / pion.E();
-    auto vrel = (vpi - vnuc).Magnitude();
+    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E().native();
+    auto vpi = pion.Momentum().Vec3() / pion.E().native();
+    auto vrel = (vpi - vnuc).Magnitude().native();
 
     // constant factor for p-wave absorption cross section
     static const double pAbsorptionFactor = 4.0 / 9.0;
 
-    auto self_energy_absorption = SelfEnergyAbsNN(pion_kinetic_energy, pion.Mass(), total_density) +
-                                  SelfEnergyAbsNNN(pion_kinetic_energy, pion.Mass(), total_density);
+    auto self_energy_absorption =
+        SelfEnergyAbsNN(pion_kinetic_energy, pion.Mass().native(), total_density) +
+        SelfEnergyAbsNNN(pion_kinetic_energy, pion.Mass().native(), total_density);
 
     // absorption p-wave cross section (see eq. 2.24 and eq. 2.21)
     const double pXsecAbsorption = pAbsorptionFactor * pXsecCommon * self_energy_absorption / vrel;
@@ -68,9 +72,9 @@ double OsetCrossSection::AbsCrossSection(Event &event, size_t part1, size_t part
     static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
 
     // absorption s-wave cross section (see sec. 3.3)
-    const double sXsecAbsorption = sAbsorptionFactor / pion.E() * total_density *
-                                   (1.0 + pion.E() / 2.0 / Constant::mN) /
-                                   pow(pion.Mass() / Constant::HBARC, 4.0) / vrel;
+    const double sXsecAbsorption = sAbsorptionFactor / pion.E().native() * total_density *
+                                   (1.0 + pion.E().native() / 2.0 / Constant::mN.native()) /
+                                   pow(pion.Mass().native() / Constant::HBARC, 4.0) / vrel;
 
     // total absorption cross section coming from both s- and p-waves
     return pXsecAbsorption + sXsecAbsorption;
@@ -85,17 +89,17 @@ double OsetCrossSection::SChannelAbsCrossSection(Event &event, size_t part1, siz
     auto total_density = proton_density + neutron_density;
 
     // ----- ABSORPTION ----- //
-    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E();
-    auto vpi = pion.Momentum().Vec3() / pion.E();
-    auto vrel = (vpi - vnuc).Magnitude();
+    auto vnuc = nucleon.Momentum().Vec3() / nucleon.E().native();
+    auto vpi = pion.Momentum().Vec3() / pion.E().native();
+    auto vrel = (vpi - vnuc).Magnitude().native();
 
     // constant factor for s-wave absorption cross section
     static const double sAbsorptionFactor = 4.0 * M_PI * Constant::HBARC * 10.0 * ImB0;
 
     // absorption s-wave cross section (see sec. 3.3)
-    const double sXsecAbsorption = sAbsorptionFactor / pion.E() * total_density *
-                                   (1.0 + pion.E() / 2.0 / Constant::mN) /
-                                   pow(pion.Mass() / Constant::HBARC, 4.0) / vrel;
+    const double sXsecAbsorption = sAbsorptionFactor / pion.E().native() * total_density *
+                                   (1.0 + pion.E().native() / 2.0 / Constant::mN.native()) /
+                                   pow(pion.Mass().native() / Constant::HBARC, 4.0) / vrel;
 
     return sXsecAbsorption;
 }
@@ -108,28 +112,30 @@ std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &ev
     auto density = event.CurrentNucleus()->Rho(nucleon.Position().Magnitude());
     auto fermi_momentum =
         event.CurrentNucleus()->FermiMomentum(nucleon.Position().Magnitude(), nucleon.ID());
-    auto pion_momentum = pion.Momentum().P();
+    auto pion_momentum = pion.Momentum().P().native();
 
     double protfrac = static_cast<double>(event.CurrentNucleus()->NNeutrons() -
                                           event.CurrentNucleus()->NProtons()) /
                       static_cast<double>(event.CurrentNucleus()->NNucleons());
 
     // Let's consider an average nucleon with <P^2> = (3/5)kf^2
-    double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum, 2);
-    double deltaE = pion.E() + sqrt(0.6 * pow(fermi_momentum, 2) + pow(Constant::mN, 2));
+    double deltamomsq = pow(pion_momentum, 2) + 0.6 * pow(fermi_momentum.native(), 2);
+    double deltaE = pion.E().native() +
+                    sqrt(0.6 * pow(fermi_momentum.native(), 2) + pow(Constant::mN.native(), 2));
     double s = deltaE * deltaE - deltamomsq;
     double sqrts = sqrt(s);
 
-    double wcm = (s - pow(Constant::mN, 2) + pow(pion.Mass(), 2)) / (2. * sqrts);
-    double cms_mom2 = wcm * wcm - pow(pion.Mass(), 2);
+    double wcm = (s - pow(Constant::mN.native(), 2) + pow(pion.Mass().native(), 2)) / (2. * sqrts);
+    double cms_mom2 = wcm * wcm - pow(pion.Mass().native(), 2);
     double cms_mom = sqrt(cms_mom2);
 
     // Compute cms quantities
     // assumes nucleon at rest?
     /*
     auto sqrts =
-        sqrt(pion.Mass() * pion.Mass() + 2.0 * Constant::mN * pion.E() + pow(Constant::mN, 2));
-    auto cms_mom = pion_momentum * Constant::mN / sqrts;
+        sqrt(pion.Mass().native() * pion.Mass().native() + 2.0 * Constant::mN.native() *
+    pion.E().native() + pow(Constant::mN.native(), 2)); auto cms_mom = pion_momentum *
+    Constant::mN.native() / sqrts;
     */
 
     // constant factor for p-wave absorption cross section
@@ -137,13 +143,16 @@ std::map<std::pair<PID, PID>, double> OsetCrossSection::QECrossSection(Event &ev
 
     double pXsecTotalQel =
         pAbsorptionFactor *
-        PXSecCommon(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts, density) *
-        ReducedHalfWidth(nucleon.E(), pion.E(), pion.Mass(), cms_mom, fermi_momentum, sqrts);
+        PXSecCommon(nucleon.E().native(), pion.E().native(), pion.Mass().native(), cms_mom,
+                    fermi_momentum.native(), sqrts, density) *
+        ReducedHalfWidth(nucleon.E().native(), pion.E().native(), pion.Mass().native(), cms_mom,
+                         fermi_momentum.native(), sqrts);
 
-    const double ksi = (sqrts - Constant::mN - pion.Mass()) / pion.Mass();
+    const double ksi =
+        (sqrts - Constant::mN.native() - pion.Mass().native()) / pion.Mass().native();
 
     const double sXsecTotalQel =
-        QuadraticFunction(ksi, fCoefSigma) / pow(pion.Mass(), 2) * fNormFactor;
+        QuadraticFunction(ksi, fCoefSigma) / pow(pion.Mass().native(), 2) * fNormFactor;
 
     const double B = QuadraticFunction(ksi, fCoefB);
     const double D = QuadraticFunction(ksi, fCoefD);
@@ -209,7 +218,7 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
     // auto pion_momentum = sqrt(pionE * pionE - pion_mass * pion_mass);
     auto reduced_halfwidth = ReducedHalfWidth(nucE, pionE, pion_mass, cms_mom, fermimom, sqrts);
     // real and imaginary part of delta denominator (see eq. 2.23)
-    const double re_delta = sqrts - Constant::mdelta;
+    const double re_delta = sqrts - Constant::mdelta.native();
     const double im_delta = reduced_halfwidth + SelfEnergyAbsNN(pionKE, pion_mass, density) +
                             SelfEnergyAbsNNN(pionKE, pion_mass, density) +
                             SelfEnergyQE(pionKE, pion_mass, density);
@@ -226,22 +235,22 @@ double OsetCrossSection::PXSecCommon(const double nucE, const double pionE, cons
 double OsetCrossSection::ReducedHalfWidth(const double, const double pionE, const double pion_mass,
                                           const double cms_mom, const double fermimom,
                                           const double sqrts) const {
-    auto fermi_energy = sqrt(pow(fermimom, 2) + pow(Constant::mN, 2));
+    auto fermi_energy = sqrt(pow(fermimom, 2) + pow(Constant::mN.native(), 2));
 
     auto coupling_factor = CouplingFactor(pion_mass);
 
     // Use average nucleon momentumsq
-    auto deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN, 2));
+    auto deltaE = pionE + sqrt(0.6 * pow(fermimom, 2) + pow(Constant::mN.native(), 2));
 
     // real nucleon kinematics
     // auto deltaE = pionE + nucE;
 
     // nucleon at rest
-    // auto deltaEnergy = pionE + Constant::mN;
+    // auto deltaEnergy = pionE + Constant::mN.native();
 
     auto pion_mom = sqrt(pionE * pionE - pion_mass * pion_mass);
     auto deltamom = sqrt(pow(pion_mom, 2) + 0.6 * pow(fermimom, 2));
-    auto n_energy_cms = sqrt(cms_mom * cms_mom + pow(Constant::mN, 2));
+    auto n_energy_cms = sqrt(cms_mom * cms_mom + pow(Constant::mN.native(), 2));
     auto mu0 = (deltaE * n_energy_cms - fermi_energy * sqrts) / deltamom / cms_mom;
 
     double delta_reduction;
@@ -252,8 +261,8 @@ double OsetCrossSection::ReducedHalfWidth(const double, const double pionE, cons
     else
         delta_reduction = (mu0 * mu0 * mu0 + mu0 + 2.) / 4.0;
 
-    auto reduced_halfwidth = fConstFactor * coupling_factor * Constant::mN * cms_mom * cms_mom *
-                             cms_mom / sqrts * delta_reduction;
+    auto reduced_halfwidth = fConstFactor * coupling_factor * Constant::mN.native() * cms_mom *
+                             cms_mom * cms_mom / sqrts * delta_reduction;
 
     return reduced_halfwidth;
 }
@@ -264,8 +273,8 @@ double avgrelvelocity(const double pion_mom, const double pionE, const double kf
     auto c = pion_mom / pionE;
 
     auto integral = (2. / 3.) * c * (-6 + c * c) * pow(mpi, 3) +
-                    (2. / 3.) * c * sqrt(kf * kf + pow(Constant::mN, 2)) *
-                        ((3 + c * c) * kf * kf + (-6 + c * c) * pow(Constant::mN, 2));
+                    (2. / 3.) * c * sqrt(kf * kf + pow(Constant::mN.native(), 2)) *
+                        ((3 + c * c) * kf * kf + (-6 + c * c) * pow(Constant::mN.native(), 2));
 
     return (pow(Constant::HBARC, 3) / rho) * 4. / pow((2 * M_PI), 3) * 2 * M_PI / 3. * pow(c, -1) *
            integral;

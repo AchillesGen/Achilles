@@ -8,7 +8,8 @@
 
 namespace achilles {
 
-class ThreeVector;
+template <int D> class ThreeVectorT;
+using ThreeVector = ThreeVectorT<1>;
 
 class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteraction> {
   public:

@@ -5,10 +5,8 @@ set(achilles_targets "")
 
 add_library(utilities SHARED
     Constants.cc
-    FourVector.cc
     Interpolation.cc
     Particle.cc
-    ThreeVector.cc
     Utilities.cc
     ParticleInfo.cc
     Vegas.cc

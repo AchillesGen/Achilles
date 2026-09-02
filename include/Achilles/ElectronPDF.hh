@@ -36,8 +36,8 @@ class ElectronPDF : public PDFBase {
     static constexpr double m_xmin = 1e-6;
     static constexpr double m_xmax = 0.999999;
     static constexpr double m_xlarge = 0.9999;
-    static constexpr double m_q2min = 0.25_GeV * 1.0_GeV;
-    static constexpr double m_q2max = 1e14_GeV * 1.0_GeV;
+    static constexpr units::Energy2 m_q2min = 0.25_GeV * 1.0_GeV;
+    static constexpr units::Energy2 m_q2max = 1e14_GeV * 1.0_GeV;
     const Scheme m_scheme;
     const PID m_bunch;
     std::vector<PID> m_partons;

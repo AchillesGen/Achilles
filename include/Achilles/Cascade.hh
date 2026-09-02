@@ -15,6 +15,7 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
+#include "Achilles/UnitsIO.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
@@ -89,7 +90,7 @@ class Cascade {
     Cascade() = default;
     Cascade(InteractionHandler, const ProbabilityType &, Algorithm, const InMedium &,
             std::string_view decay_file = default_decay_file, bool potential_prob = false,
-            double dist = 0.03);
+            units::Length dist = 0.03 * units::fm);
     Cascade(Cascade &&) = default;
     Cascade &operator=(Cascade &&) = default;
 
@@ -133,7 +134,7 @@ class Cascade {
 
     /// Get step size
     ///@return double: default step size
-    double StepSize() const { return distance; }
+    units::Length StepSize() const { return distance; }
 
     /// @name Functions
     ///@{
@@ -182,12 +183,12 @@ class Cascade {
     ///@}
   private:
     // Functions
-    std::size_t GetInter(Particles &, const Particle &, double &stepDistance);
-    void AdaptiveStep(const Particles &, const double &) noexcept;
-    bool BetweenPlanes(const ThreeVector &, const ThreeVector &, const ThreeVector &,
-                       double) const noexcept;
-    const ThreeVector Project(const ThreeVector &, const ThreeVector &,
-                              const ThreeVector &) const noexcept;
+    std::size_t GetInter(Particles &, const Particle &, units::Length &stepDistance);
+    void AdaptiveStep(const Particles &, units::Length) noexcept;
+    bool BetweenPlanes(const ThreePosition &, const ThreePosition &, const ThreeBoost &,
+                       units::Length) const noexcept;
+    ThreePosition Project(const ThreePosition &, const ThreePosition &,
+                          const ThreeBoost &) const noexcept;
     const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
     double GetXSec(Event &, size_t, size_t) const;
     std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
@@ -197,20 +198,21 @@ class Cascade {
     bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *);
-    void PropagateSpace(size_t, Particle *, double);
+    void PropagateSpace(size_t, Particle *, units::Length);
     std::set<size_t> InitializeIntegrator(Event &);
     void UpdateKicked(Particles &, std::set<size_t> &);
     void Validate(Event &);
     size_t BaseAlgorithm(size_t, Event &);
     size_t MFPAlgorithm(size_t, Event &);
     double InMediumCorrection(const Particle &, const Particle &) const;
-    void PropagateAll(Particles &, double) const;
+    void PropagateAll(Particles &, units::Time) const;
     bool HasInteraction(Event &, size_t, size_t) const;
     bool Decay(Event &, size_t) const;
 
     // Variables
     std::set<std::size_t> kickedIdxs;
-    double distance{}, timeStep{}, currentTime{};
+    units::Length distance{};
+    units::Time timeStep{}, currentTime{};
     InteractionHandler m_interactions{};
     DecayHandler m_decays;
     std::function<double(double, double)> probability;
@@ -222,7 +224,7 @@ class Cascade {
     std::string m_probability_name;
 
     struct queue_entry {
-        double time;
+        units::Time time;
         std::pair<size_t, size_t> idxs;
         bool operator>(const queue_entry &rhs) const { return time > rhs.time; }
     };
@@ -240,7 +242,7 @@ template <> struct convert<achilles::Cascade> {
         auto probType = node["Probability"].as<achilles::Cascade::ProbabilityType>();
         auto mediumType = node["InMedium"].as<achilles::Cascade::InMedium>();
         auto potentialProp = node["PotentialProp"].as<bool>();
-        auto distance = node["Step"].as<double>();
+        const auto distance = node["Step"].as<achilles::units::Length>();
         auto algorithm = node["Algorithm"].as<achilles::Cascade::Algorithm>();
         std::string_view decay_file = achilles::default_decay_file;
         if(node["DecayFile"]) decay_file = node["DecayFile"].as<std::string_view>();

@@ -9,13 +9,16 @@
 #include <iostream>
 #include <sstream>
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 using achilles::SpinMatrix;
 
 TEST_CASE("Spinors", "[Spinors]") {
     SECTION("Spinor Inner product") {
-        achilles::FourVector mom{1000, 0, 0, 100};
+        achilles::FourVector mom{1000_MeV, 0_MeV, 0_MeV, 100_MeV};
         double mass = 100;
-        achilles::FourVector mom2{mass, 0, 0, 0};
+        achilles::FourVector mom2{units::Energy{mass}, 0_MeV, 0_MeV, 0_MeV};
         for(int i = -1; i < 2; i += 2) {
             for(int j = -1; j < 2; j += 2) {
                 auto s1 = USpinor(i, mom);
@@ -23,11 +26,11 @@ TEST_CASE("Spinors", "[Spinors]") {
                 auto s3 = USpinor(i, mom2);
                 auto s4 = UBarSpinor(j, mom2);
                 if(i == j)
-                    CHECK((s2 * s1).real() == Catch::Approx(2.0 * mom.M()));
+                    CHECK((s2 * s1).real() == Catch::Approx(2.0 * mom.M().native()));
                 else
                     CHECK(s2 * s1 == std::complex<double>());
                 if(i == j)
-                    CHECK((s4 * s3).real() == Catch::Approx(2.0 * mom2.M()));
+                    CHECK((s4 * s3).real() == Catch::Approx(2.0 * mom2.M().native()));
                 else
                     CHECK(s4 * s3 == std::complex<double>());
             }
@@ -58,43 +61,47 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
     }
 
     SECTION("Spinor inner product (massless)") {
-        achilles::FourVector mom{500, 0, 300, 400};
+        achilles::FourVector mom{500_MeV, 0_MeV, 300_MeV, 400_MeV};
         {
             auto s1 = USpinor(1, mom);
             auto s2 = UBarSpinor(1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() ==
+                      Catch::Approx(2 * mom[i].native()));
             }
         }
         {
             auto s1 = USpinor(-1, mom);
             auto s2 = UBarSpinor(-1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() ==
+                      Catch::Approx(2 * mom[i].native()));
             }
         }
     }
 
     SECTION("Spinor inner product (massless)") {
-        achilles::FourVector mom{500, 0, 300, 400};
+        achilles::FourVector mom{500_MeV, 0_MeV, 300_MeV, 400_MeV};
         {
             auto s1 = USpinor(1, mom);
             auto s2 = UBarSpinor(1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() ==
+                      Catch::Approx(2 * mom[i].native()));
             }
         }
         {
             auto s1 = USpinor(-1, mom);
             auto s2 = UBarSpinor(-1, mom);
             for(size_t i = 0; i < 4; ++i) {
-                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() == Catch::Approx(2 * mom[i]));
+                CHECK((s2 * SpinMatrix::GammaMu(i) * s1).real() ==
+                      Catch::Approx(2 * mom[i].native()));
             }
         }
     }
 
     SECTION("Spinor outer product (massless)") {
-        achilles::FourVector mom{1000, 0, 0, 1000};
+        achilles::FourVector mom{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
         SpinMatrix result;
         for(int i = -1; i < 2; i += 2) {
             for(int j = -1; j < 2; j += 2) {
@@ -115,7 +122,7 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
         const double p = 1000;
         const double mass = 1000;
         const double energy = sqrt(mass * mass + p * p);
-        achilles::FourVector mom{energy, 0, 0, p};
+        achilles::FourVector mom{units::Energy{energy}, 0_MeV, 0_MeV, units::Energy{p}};
         SpinMatrix result;
         for(int i = -1; i < 2; i += 2) {
             for(int j = -1; j < 2; j += 2) {
@@ -145,7 +152,7 @@ TEST_CASE("GammaMatrix", "[Spinors]") {
     }
 
     SECTION("SpinMatrix * Spinor") {
-        achilles::FourVector mom{1000, 0, 0, 1000};
+        achilles::FourVector mom{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
         for(int i = -1; i < 2; i += 2) {
             auto s1 = USpinor(i, mom);
             auto result = SpinMatrix::Identity() * s1;

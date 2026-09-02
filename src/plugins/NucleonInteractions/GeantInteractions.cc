@@ -109,7 +109,7 @@ void GeantInteractions::LoadData(bool samePID, const Group &group) {
 
 double GeantInteractions::CrossSection(const Particle &particle1, const Particle &particle2) const {
     bool samePID = particle1.ID() == particle2.ID();
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
     // Generate outgoing momentum
@@ -117,14 +117,14 @@ double GeantInteractions::CrossSection(const Particle &particle1, const Particle
 
     try {
         if(samePID) {
-            return m_crossSectionPP(pcm / 1_GeV);
+            return m_crossSectionPP(pcm.in(units::GeV));
         } else {
-            return m_crossSectionNP(pcm / 1_GeV);
+            return m_crossSectionNP(pcm.in(units::GeV));
         }
     } catch(std::domain_error &e) {
         spdlog::debug("Using Nasa Interaction");
         double s = (p1Lab + p2Lab).M2();
-        double plab = sqrt(pow(s, 2) / (4 * pow(Constant::mN, 2)) - s);
+        double plab = sqrt(pow(s, 2) / (4 * pow(Constant::mN.native(), 2)) - s);
         return Interactions::CrossSectionLab(samePID, plab);
     }
 }
@@ -132,10 +132,10 @@ double GeantInteractions::CrossSection(const Particle &particle1, const Particle
 ThreeVector GeantInteractions::MakeMomentum(bool samePID, const double &pcm,
                                             const std::array<double, 2> &rans) const {
     double pR = pcm;
-    double pTheta = CrossSectionAngle(samePID, pcm / 1_GeV, rans[0]);
+    double pTheta = CrossSectionAngle(samePID, pcm.in(units::GeV), rans[0]);
     double pPhi = 2 * M_PI * rans[1];
 
-    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector::FromNative(ToCartesian({pR, pTheta, pPhi}));
 }
 
 double GeantInteractions::CrossSectionAngle(bool samePID, const double &energy,

@@ -20,23 +20,31 @@ bool achilles::pid_compare::operator()(const std::pair<PID, PID> &lhs,
     return std::tie(a1, a2) < std::tie(b1, b2);
 }
 
-const std::map<std::string, double> HZETRN = {{"a", 5.0_MeV},
-                                              {"b", 0.199 / sqrt(1_MeV)},
-                                              {"c", 0.451 * pow(1_MeV, -0.258)},
-                                              {"d", 25.0_MeV},
-                                              {"e", 134.0_MeV},
-                                              {"f", 1.187 * pow(1_MeV, -0.35)},
-                                              {"g", 0.1_MeV},
-                                              {"h", 0.282_MeV}};
+// Fit parameters; the values are those of the fit, in the MeV powers noted.
+const std::map<std::string, double> HZETRN = {{"a", (5.0_MeV).native()},
+                                              {"b", 0.199 / sqrt((1_MeV).native())},
+                                              {"c", 0.451 * pow((1_MeV).native(), -0.258)},
+                                              {"d", (25.0_MeV).native()},
+                                              {"e", (134.0_MeV).native()},
+                                              {"f", 1.187 * pow((1_MeV).native(), -0.35)},
+                                              {"g", (0.1_MeV).native()},
+                                              {"h", (0.282_MeV).native()}};
 
-const std::map<std::string, double> PDG = {
-    {"Zpp", 33.45_mb},        {"Zpn", 35.80_mb},  {"Y1pp", 42.53_mb}, {"Y1pn", 40.15_mb},
-    {"Y2pp", 33.34_mb},       {"Y2pn", 30.00_mb}, {"B", 0.308_mb},    {"s1", 1.0 * pow(1_GeV, 2)},
-    {"s0", pow(5.38_GeV, 2)}, {"n1", 0.458},      {"n2", 0.545}};
+const std::map<std::string, double> PDG = {{"Zpp", (33.45_mb).in(units::mb)},
+                                           {"Zpn", (35.80_mb).in(units::mb)},
+                                           {"Y1pp", (42.53_mb).in(units::mb)},
+                                           {"Y1pn", (40.15_mb).in(units::mb)},
+                                           {"Y2pp", (33.34_mb).in(units::mb)},
+                                           {"Y2pn", (30.00_mb).in(units::mb)},
+                                           {"B", (0.308_mb).in(units::mb)},
+                                           {"s1", 1.0 * pow((1.0_GeV).native(), 2)},
+                                           {"s0", pow((5.38_GeV).native(), 2)},
+                                           {"n1", 0.458},
+                                           {"n2", 0.545}};
 
-const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, // mb
-                                           {"alpha", 0.00369 / 1_MeV},
-                                           {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
+const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow((1.0_GeV).native(), 0.16)}, // mb
+                                           {"alpha", 0.00369 / (1_MeV).native()},
+                                           {"beta", 0.00895741 * pow((1_MeV).native(), -0.8)}};
 
 double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
     auto cross_sections = CrossSection(event, part1, part2);
@@ -48,36 +56,38 @@ double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) 
 }
 
 double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
-    const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN, 2)) - Constant::mN;
+    const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)) - Constant::mN.native();
     if(samePID) {
-        if(pLab < 1.8_GeV) {
-            if(tLab >= 25_MeV)
+        if(pLab < (1.8_GeV).native()) {
+            if(tLab >= (25_MeV).native())
                 return (1.0 + HZETRN.at("a") / tLab) *
                        (40 + 109.0 * std::cos(HZETRN.at("b") * sqrt(tLab)) *
                                  exp(-HZETRN.at("c") * pow(tLab - HZETRN.at("d"), 0.258)));
             else
                 return exp(6.51 * exp(-pow(tLab / HZETRN.at("e"), 0.7)));
-        } else if(pLab <= 4.7_GeV) {
+        } else if(pLab <= (4.7_GeV).native()) {
             return JWN.at("gamma") / pow(pLab, 0.16);
         } else {
             double ecm2 =
-                2 * Constant::mN * (Constant::mN + sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
+                2 * Constant::mN.native() *
+                (Constant::mN.native() + sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)));
             return PDG.at("Zpp") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
                    PDG.at("Y1pp") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
                    PDG.at("Y2pp") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));
         }
     } else {
-        if(pLab < 0.5_GeV) {
-            if(tLab >= 0.1_MeV)
+        if(pLab < (0.5_GeV).native()) {
+            if(tLab >= (0.1_MeV).native())
                 return 38.0 + 12500.0 * exp(-HZETRN.at("f") * pow(tLab - HZETRN.at("g"), 0.35));
             else
                 return 26000 * exp(-pow(tLab / HZETRN.at("h"), 0.3));
-        } else if(pLab <= 2.0_GeV) {
+        } else if(pLab <= (2.0_GeV).native()) {
             return 40 + 10 * cos(JWN.at("alpha") * pLab - 0.943) *
                             exp(-JWN.at("beta") * pow(pLab, 0.8) + 2);
         } else {
             double ecm2 =
-                2 * Constant::mN * (Constant::mN + sqrt(pow(pLab, 2) + pow(Constant::mN, 2)));
+                2 * Constant::mN.native() *
+                (Constant::mN.native() + sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)));
             return PDG.at("Zpn") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
                    PDG.at("Y1pn") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
                    PDG.at("Y2pn") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));

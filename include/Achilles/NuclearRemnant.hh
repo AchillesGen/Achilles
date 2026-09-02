@@ -21,7 +21,7 @@ class NuclearRemnant {
     }
 
     int PID() const { return std::stoi(fmt::format("100{:03}{:03}0", m_nZ, m_nA)); }
-    double Mass() const { return static_cast<double>(m_nA) * Constant::mN; }
+    double Mass() const { return static_cast<double>(m_nA) * Constant::mN.native(); }
     bool operator==(const NuclearRemnant &other) const {
         return m_nA == other.m_nA && m_nZ == other.m_nZ;
     }

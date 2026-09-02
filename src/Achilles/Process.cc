@@ -110,7 +110,7 @@ void Process::SetupHadrons(Event &event) const {
     // TODO: Handle propagating deltas
     // TODO: Handle selecting position for things like MEC+pion production
     size_t cur_idx = 0;
-    ThreeVector position;
+    ThreePosition position;
     for(size_t i = 0; i < had_out.size(); ++i) {
         Particle part(m_info.m_hadronic.second[i]);
         if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
@@ -446,7 +446,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
     for(const auto &momentum : event.Momentum()) {
-        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
+        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2().native());
     }
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());

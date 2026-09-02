@@ -53,8 +53,8 @@ achilles::DensityConfiguration::DensityConfiguration(std::string filename) {
             config.nucleons.emplace_back(is_proton, pos);
 #else
             const auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
-            const ThreeVector position{std::stod(tokens[1]), std::stod(tokens[2]),
-                                       std::stod(tokens[3])};
+            const ThreePosition position = ThreePosition::FromNative(
+                {std::stod(tokens[1]), std::stod(tokens[2]), std::stod(tokens[3])});
             config.nucleons.emplace_back(pid, FourVector{}, position);
 #endif
         }

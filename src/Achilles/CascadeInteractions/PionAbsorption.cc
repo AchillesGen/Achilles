@@ -71,7 +71,8 @@ std::pair<size_t, size_t> PionAbsorptionOneStep::FindClosest(Event &event, size_
     for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(i == part1 || i == part2) continue;
         if(!event.Hadrons()[i].IsBackground()) continue;
-        auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
+        auto distance =
+            (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2().in(units::fm2);
         // spdlog::debug("distance = {}", distance);
         if(distance < shortest_p_distance && event.Hadrons()[i].ID() == PID::proton()) {
             shortest_p_distance = distance;
@@ -160,7 +161,7 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     spdlog::debug("We chose pion absorption!");
     // Boost to center of mass
-    ThreeVector boostCM =
+    ThreeBoost boostCM =
         (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
     spdlog::debug("{}: {}", particle2.ID(), particle2.Momentum());
@@ -172,11 +173,11 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
 
     FourVector pTotalCM = p1CM + p2CM + p3CM;
 
-    auto s = pTotalCM.M2();
+    auto s = pTotalCM.M2().native();
     auto sqrts = sqrt(s);
 
-    auto ma = ParticleInfo(out_pids[0]).Mass();
-    auto mb = ParticleInfo(out_pids[1]).Mass();
+    auto ma = ParticleInfo(out_pids[0]).Mass().native();
+    auto mb = ParticleInfo(out_pids[1]).Mass().native();
 
     const double Eacms = sqrts / 2 * (1 + ma * ma / s - mb * mb / s);
     const double Ebcms = sqrts / 2 * (1 + mb * mb / s - ma * ma / s);
@@ -192,16 +193,16 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
     double cosphi_cms = cos(phi_cms);
     double sinphi_cms = sin(phi_cms);
 
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
-                                  pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
-                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
+    FourVector paOut = FourVector::FromNative(
+        {Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms});
+    FourVector pbOut = FourVector::FromNative(
+        {Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms});
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
 
-    spdlog::debug("out1: {}, {}", out_pids[0], paOut.Momentum());
-    spdlog::debug("out2: {}, {}", out_pids[1], pbOut.Momentum());
+    spdlog::debug("out1: {}, {}", out_pids[0], paOut);
+    spdlog::debug("out2: {}, {}", out_pids[1], pbOut);
 
     return {Particle{out_pids[0], paOut, particle1.Position()},
             Particle{out_pids[1], pbOut, particle2.Position()}};

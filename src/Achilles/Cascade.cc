@@ -24,7 +24,7 @@ using namespace achilles;
 
 Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, Algorithm alg,
                  const InMedium &medium, std::string_view decay_file, bool potential_prop,
-                 double dist)
+                 units::Length dist)
     : distance(dist), m_interactions(std::move(interactions)),
       m_decays(Filesystem::FindFile(std::string(decay_file), "Cascade")), m_medium(medium),
       m_potential_prop(potential_prop) {
@@ -95,7 +95,7 @@ void Cascade::Kick(Event &event, const FourVector &energyTransfer,
     kicked->SetMomentum(kicked->Momentum() + energyTransfer);
 }
 
-std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
+std::size_t Cascade::GetInter(Particles &, const Particle &, units::Length &) {
     throw std::logic_error("Cascade: MFPAlgorithm is currently not working with pions");
     /*
         std::vector<std::size_t> index_same, index_diff;
@@ -121,7 +121,8 @@ std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
         double xsecSame = 0;
         if(index_same.size() != 0) {
             idxSame = Random::Instance().Pick(index_same);
-            particles[idxSame].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+            particles[idxSame].SetMomentum(FourVector::FromNative({mom[0], mom[1], mom[2],
+       sqrt(energy)}));
 
             auto p2 = particles[idxSame].Momentum();
             double fact = 1.0;
@@ -139,7 +140,8 @@ std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
         double xsecDiff = 0;
         if(index_diff.size() != 0) {
             idxDiff = Random::Instance().Pick(index_diff);
-            particles[idxDiff].SetMomentum(FourVector(mom[0], mom[1], mom[2], sqrt(energy)));
+            particles[idxDiff].SetMomentum(FourVector::FromNative({mom[0], mom[1], mom[2],
+       sqrt(energy)}));
 
             auto p2 = particles[idxSame].Momentum();
             double fact = 1.0;
@@ -184,9 +186,10 @@ void Cascade::Reset() {
 std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
     std::set<size_t> notCaptured{};
     for(auto idx : kickedIdxs) {
-        if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                                   event.Hadrons()[idx].Momentum().P(),
-                                   event.Hadrons()[idx].Position().P()) < Constant::mN) {
+        if(m_potential_prop &&
+           m_nucleus->GetPotential()->Hamiltonian(
+               event.Hadrons()[idx].Momentum().P().native(),
+               event.Hadrons()[idx].Position().P().in(units::fm)) < Constant::mN.native()) {
             event.Hadrons()[idx].Status() = ParticleStatus::captured;
         } else {
             AddIntegrator(idx, event.Hadrons()[idx]);
@@ -201,8 +204,9 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     for(size_t idx = 0; idx < particles.size(); ++idx) {
         if(particles[idx].IsPropagating()) {
             if(m_potential_prop &&
-               m_nucleus->GetPotential()->Hamiltonian(
-                   particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
+               m_nucleus->GetPotential()->Hamiltonian(particles[idx].Momentum().P().native(),
+                                                      particles[idx].Position().P().in(units::fm)) <
+                   Constant::mN.native()) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
                 spdlog::trace("Adding particle: {}", particles[idx]);
@@ -256,7 +260,7 @@ void Cascade::Validate(Event &event) {
     }
 }
 
-void Cascade::PropagateAll(Particles &particles, double step) const {
+void Cascade::PropagateAll(Particles &particles, units::Time step) const {
     for(auto &particle : particles) {
         if(particle.IsPropagating()) { particle.Propagate(step); }
     }
@@ -270,16 +274,16 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
     }
 
     // Run the cascade
-    currentTime = 0;
+    currentTime = units::Time{};
     m_nucleus = nucleus;
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
     for(const auto &kicked : kickedIdxs) {
         for(size_t i = 0; i < particles.size(); ++i) {
             if(particles[i].Status() != ParticleStatus::background) continue;
-            double closest = ClosestApproach(particles[kicked], particles[i]);
+            units::Time closest = ClosestApproach(particles[kicked], particles[i]);
             spdlog::debug("Closest approach time({}, {}) = {}", kicked, i, closest);
-            if(closest > 0) { m_time_steps.push({closest, {kicked, i}}); }
+            if(closest > units::Time{}) { m_time_steps.push({closest, {kicked, i}}); }
         }
     }
 
@@ -355,7 +359,7 @@ size_t Cascade::BaseAlgorithm(size_t idx, Event &event) {
 }
 
 size_t Cascade::MFPAlgorithm(size_t idx, Event &event) {
-    double step_prop = distance;
+    units::Length step_prop = distance;
     Particle *kickNuc = &event.Hadrons()[idx];
     auto hitIdx = GetInter(event.Hadrons(), *kickNuc, step_prop);
     PropagateSpace(idx, kickNuc, step_prop);
@@ -366,43 +370,41 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
     // Only add if not already there
     if(integrators.find(idx) != integrators.end()) return;
 
-    // Otherwise setup integrator
+    // Otherwise setup integrator. The integrator carries plain numbers (q in
+    // fm, p in MeV) -- see PSVector -- so unwrap here and re-wrap in Propagate.
     static constexpr double omega = 20;
-    auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p,
-                               std::shared_ptr<Potential> potential) {
-        auto vals = potential->operator()(p.P(), q.P());
-        auto dpot_dp = potential->derivative_p(p.P(), q.P());
+    auto dHamiltonian = [&](const PSVector &q, const PSVector &p,
+                            std::shared_ptr<Potential> potential) {
+        const double pmag = p.Magnitude().native();
+        auto vals = potential->operator()(pmag, q.Magnitude().native());
+        auto dpot_dp = potential->derivative_p(pmag, q.Magnitude().native());
 
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-        double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-        double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-        return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
-    };
-    auto dHamiltonian_dp = [&](const ThreeVector &q, const ThreeVector &p,
-                               std::shared_ptr<Potential> potential) {
-        auto vals = potential->operator()(p.P(), q.P());
-        auto dpot_dp = potential->derivative_p(p.P(), q.P());
-
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-        double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-        double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-        return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
+        auto mass_eff = achilles::Constant::mN.native() + vals.rscalar +
+                        std::complex<double>(0, 1) * vals.iscalar;
+        double numerator =
+            (vals.rscalar + achilles::Constant::mN.native()) * dpot_dp.rscalar + pmag;
+        double denominator = sqrt(pow(mass_eff, 2) + pmag * pmag).real();
+        return numerator / denominator * p / pmag + dpot_dp.rvector * p / pmag;
     };
     integrators[idx] =
-        SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), m_nucleus->GetPotential(),
-                             dHamiltonian_dr, dHamiltonian_dp, omega);
+        SymplecticIntegrator(PSVector::FromNative(part.Position().ToArray(units::fm)),
+                             PSVector::FromNative(part.Momentum().Vec3().ToArray(units::MeV)),
+                             m_nucleus->GetPotential(), dHamiltonian, dHamiltonian, omega);
 }
 
 void Cascade::Propagate(size_t idx, Particle *kickNuc) {
     if(m_potential_prop) {
-        integrators[idx].Step<2>(timeStep);
-        double energy = sqrt(pow(kickNuc->Info().Mass(), 2) + integrators[idx].P().P2());
-        FourVector mom{integrators[idx].P(), energy};
-        kickNuc->SetMomentum(mom);
+        integrators[idx].Step<2>(timeStep.in(units::fm));
+        const auto pnew = integrators[idx].P().Native();
+        const double pmag2 = (integrators[idx].P() * integrators[idx].P()).native();
+        const double energy =
+            sqrt((kickNuc->Info().Mass() * kickNuc->Info().Mass()).native() + pmag2);
+        kickNuc->SetMomentum(
+            FourVector::FromNative({energy, pnew[0].native(), pnew[1].native(), pnew[2].native()}));
         auto pos_old = kickNuc->Position();
-        kickNuc->SetPosition(integrators[idx].Q());
+        const auto qnew = integrators[idx].Q().Native();
+        kickNuc->SetPosition({qnew[0].native() * units::fm, qnew[1].native() * units::fm,
+                              qnew[2].native() * units::fm});
         auto pos_new = kickNuc->Position();
         kickNuc->DistanceTraveled() += (pos_new - pos_old).Magnitude();
     } else {
@@ -410,8 +412,8 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc) {
     }
 }
 
-void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, double step) {
-    auto beta = kickNuc->Beta().Magnitude();
+void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, units::Length step) {
+    const double beta = kickNuc->Beta().Magnitude().native();
     timeStep = step / beta;
     Propagate(idx, kickNuc);
 }
@@ -431,7 +433,8 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
     // Initialize symplectic integrator
     AddIntegrator(idx, particles[idx]);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                               kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
+                               kickNuc->Momentum().P().native(),
+                               kickNuc->Position().P().in(units::fm)) < Constant::mN.native()) {
         kickNuc->Status() = ParticleStatus::captured;
         event.Hadrons() = particles;
         Reset();
@@ -498,7 +501,8 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
     // Initialize symplectic integrator
     AddIntegrator(idx, particles[idx]);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                               kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
+                               kickNuc->Momentum().P().native(),
+                               kickNuc->Position().P().in(units::fm)) < Constant::mN.native()) {
         kickNuc->Status() = ParticleStatus::captured;
         event.Hadrons() = particles;
         Reset();
@@ -517,7 +521,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
             break;
         }
         // AdaptiveStep(particles, distance);
-        double step_prop = distance;
+        units::Length step_prop = distance;
         // Did we hit?
         auto hitIdx = GetInter(particles, *kickNuc, step_prop);
         PropagateSpace(idx, kickNuc, step_prop);
@@ -544,8 +548,8 @@ void Cascade::Escaped(Particles &particles) {
         // handle
         //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
-        const double energy = particle.Momentum().E() - Constant::mN - potential;
-        if(particle.Position().Magnitude2() > pow(radius, 2)) {
+        const double energy = particle.Momentum().E().native() - Constant::mN.native() - potential;
+        if(particle.Position().Magnitude2() > radius * radius) {
             spdlog::debug("Particle: {} escaping", particle);
             // TODO: Figure out how to appropriately handle escaping vs. capturing
             // It should not be returned to the background, since this can lead to
@@ -560,10 +564,11 @@ void Cascade::Escaped(Particles &particles) {
 
 /// Convert a time step in [fm] to [1/MeV].
 /// timeStep = distance / max("betas of all kicked particles") / hbarc
-void Cascade::AdaptiveStep(const Particles &particles, const double &stepDistance) noexcept {
+void Cascade::AdaptiveStep(const Particles &particles, units::Length stepDistance) noexcept {
     double beta = 0;
     for(auto idx : kickedIdxs) {
-        if(particles[idx].Beta().Magnitude() > beta) beta = particles[idx].Beta().Magnitude();
+        const double b = particles[idx].Beta().Magnitude().native();
+        if(b > beta) beta = b;
     }
 
     timeStep = stepDistance / beta;
@@ -572,22 +577,22 @@ void Cascade::AdaptiveStep(const Particles &particles, const double &stepDistanc
 /// Determine whether "test_point" is between two parallel planes defined by
 /// the normal vector "plane_normal". With the point "on_plane" on the closer plane
 /// and dist the distance from the start plane to the end plane.
-bool Cascade::BetweenPlanes(const ThreeVector &test_point, const ThreeVector &on_plane,
-                            const ThreeVector &plane_normal, double dist) const noexcept {
+bool Cascade::BetweenPlanes(const ThreePosition &test_point, const ThreePosition &on_plane,
+                            const ThreeBoost &plane_normal, units::Length dist) const noexcept {
     // Get signed distance to plane
     auto signed_dist = plane_normal.Dot(test_point - on_plane);
 
     // Determine if point is between planes
-    return signed_dist > 0 && signed_dist < dist;
+    return signed_dist > units::Length{} && signed_dist < dist;
 }
 
 /// Project the vector "position" onto the plane containing the point "planePt"
 /// and orthogonal to the vector "planeVec" by subtracting off the projection
 /// of "position - planePt" onto the normal vector "planeVec".
-const ThreeVector Cascade::Project(const ThreeVector &position, const ThreeVector &planePt,
-                                   const ThreeVector &planeVec) const noexcept {
+ThreePosition Cascade::Project(const ThreePosition &position, const ThreePosition &planePt,
+                               const ThreeBoost &planeVec) const noexcept {
     // Project point onto a plane
-    const ThreeVector projection = (position - planePt).Dot(planeVec) * planeVec;
+    const ThreePosition projection = (position - planePt).Dot(planeVec) * planeVec;
     return position - projection;
 }
 
@@ -609,9 +614,9 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
     InteractionDistances results;
 
     // Build planes
-    const ThreeVector point1 = particles[idx].Position();
+    const ThreePosition point1 = particles[idx].Position();
     Propagate(idx, &particles[idx]);
-    const ThreeVector point2 = particles[idx].Position();
+    const ThreePosition point2 = particles[idx].Position();
     auto normedMomentum = particles[idx].Momentum().Vec3().Unit();
     auto distance2 = (point2 - point1).Dot(normedMomentum);
 
@@ -625,7 +630,8 @@ const InteractionDistances Cascade::AllowedInteractions(Particles &particles,
         if(!BetweenPlanes(particles[i].Position(), point1, normedMomentum, distance2)) continue;
         auto projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
         // (Squared) distance in the direction orthogonal to the momentum
-        double dist2 = (projectedPosition - point1).Magnitude2();
+        // Interaction distances stay in fm^2, alongside the mb cross sections.
+        double dist2 = (projectedPosition - point1).Magnitude2().in(units::fm2);
 
         results.push_back(std::make_pair(i, dist2));
     }
@@ -642,7 +648,8 @@ bool Cascade::HasInteraction(Event &event, size_t kicked, size_t hit) const {
        particles[hit].Status() != ParticleStatus::background || particles[kicked].InFormationZone())
         return false;
     // Get distance between points
-    const auto distance2 = (particles[kicked].Position() - particles[hit].Position()).Magnitude2();
+    const auto distance2 =
+        (particles[kicked].Position() - particles[hit].Position()).Magnitude2().in(units::fm2);
     const auto xsec = GetXSec(event, kicked, hit);
     spdlog::trace("dist2[{}, {}] = {}", kicked, hit, distance2);
     const double prob = probability(distance2, xsec / 10);
@@ -779,7 +786,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
     if(!particle.Info().IsNucleon()) return false;
-    double position = particle.Position().Magnitude();
+    const units::Length position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() <
            m_nucleus->FermiMomentum(position, particle.ID());
 }
@@ -791,41 +798,45 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
 
     auto p1 = particle1.Momentum();
     auto p2 = particle2.Momentum();
-    double mass = particle1.Info().Mass();
+    double mass = particle1.Info().Mass().native();
     auto pos_p1 = particle1.Position();
     auto pos_p2 = particle2.Position();
-    double position1 = pos_p1.Magnitude();
-    double position2 = pos_p2.Magnitude();
-    double position3 = (pos_p1 + pos_p2).Magnitude();
+    double position1 = pos_p1.Magnitude().in(units::fm);
+    double position2 = pos_p2.Magnitude().in(units::fm);
+    double position3 = (pos_p1 + pos_p2).Magnitude().in(units::fm);
     return m_nucleus->GetPotential()->InMediumCorrectionNonRel(p1, p2, mass, position1, position2,
                                                                position3);
 }
 
 bool Cascade::Decay(Event &event, size_t idx) const {
     auto part = event.Hadrons()[idx];
-    auto beta = part.Beta().Magnitude();
-    auto gamma = 1. / sqrt(1. - beta * beta);
-    double lifetime = gamma * Constant::HBARC / part.Info().Width();
-    double survival_prob = exp(-timeStep / lifetime);
+    const double beta = part.Beta().Magnitude().native();
+    const double gamma = 1. / sqrt(1. - beta * beta);
+    // gamma / width is a time; hbar*c is 1 in natural units.
+    const units::Time lifetime = gamma / part.Info().Width();
+    double survival_prob = exp(-(timeStep / lifetime).native());
 
     if(part.Info().IsDelta()) {
         const double mn =
-            (ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2 / 1_GeV;
+            ((ParticleInfo(PID::proton()).Mass() + ParticleInfo(PID::neutron()).Mass()) / 2)
+                .in(units::GeV);
         const double mpi =
-            (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
+            ((2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3)
+                .in(units::GeV);
 
-        auto running_width = resonance::GetEffectiveWidth(part.Info().ID(),
-                                                          part.Momentum().M() / 1_GeV, mpi, mn, 1) *
-                             1_GeV;
-        auto running_lifetime = gamma * Constant::HBARC / running_width;
+        const units::Energy running_width =
+            resonance::GetEffectiveWidth(part.Info().ID(), part.Momentum().M().in(units::GeV), mpi,
+                                         mn, 1) *
+            units::GeV;
+        const units::Time running_lifetime = gamma / running_width;
 
         spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}", part.Momentum().M(),
                       part.Info().Mass(), part.Info().Width());
         spdlog::debug("Running width = {}", running_width);
-        spdlog::debug("Running survival prob = {}", exp(-timeStep / running_lifetime));
-        spdlog::debug("Fixed survival prob = {}", exp(-timeStep / lifetime));
+        spdlog::debug("Running survival prob = {}", exp(-(timeStep / running_lifetime).native()));
+        spdlog::debug("Fixed survival prob = {}", exp(-(timeStep / lifetime).native()));
 
-        survival_prob = exp(-timeStep / running_lifetime);
+        survival_prob = exp(-(timeStep / running_lifetime).native());
     }
 
     // Should we attempt a decay in this time step
@@ -846,7 +857,7 @@ bool Cascade::Decay(Event &event, size_t idx) const {
     // and assign formation zone
     std::vector<Particle> final;
     for(auto &out : particles_out) {
-        if(std::isnan(out.Momentum()[0])) {
+        if(std::isnan(out.Momentum()[0].native())) {
             spdlog::error("Nan momentum in decay");
             spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
             throw AchillesCascadeError("Nan momentum in decay");

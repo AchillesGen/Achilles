@@ -98,9 +98,9 @@ YAML::Node&) { return std::make_unique<SquareWellPotential>(nuc);
 }
 
 PotentialVals achilles::SquareWellPotential::operator()(double, double &r) const { PotentialVals
-result; constexpr double potential_shift = 8; result.rvector = -(sqrt(Constant::mN*Constant::mN +
-pow(m_nucleus->FermiMomentum(r), 2))
-        - Constant::mN + potential_shift);
+result; constexpr double potential_shift = 8; result.rvector =
+-(sqrt(Constant::mN.native()*Constant::mN.native() + pow(m_nucleus->FermiMomentum(r), 2))
+        - Constant::mN.native() + potential_shift);
 
     return result;
 }
@@ -113,7 +113,7 @@ std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr
 }
 
 PotentialVals achilles::WiringaPotential::operator()(double plab, double radius) const {
-    const double rho = m_nucleus->Rho(radius);
+    const double rho = m_nucleus->Rho(radius * units::fm);
     const double rho_ratio = rho / m_rho0;
     const double alpha = 15.52 * rho_ratio + 24.93 * pow(rho_ratio, 2);
     const double beta = -116 * rho_ratio;
@@ -130,9 +130,10 @@ std::unique_ptr<Potential> CooperPotential::Construct(std::shared_ptr<Nucleus> &
 }
 
 PotentialVals CooperPotential::evaluate(const double &plab, const double &radius) const {
-    const auto tplab = sqrt(plab * plab + pow(achilles::Constant::mN, 2)) - achilles::Constant::mN;
+    const auto tplab =
+        sqrt(plab * plab + achilles::Constant::mN2.native()) - achilles::Constant::mN.native();
     const auto aa = static_cast<double>(m_nucleus->NNucleons());
-    const auto wt = aa * achilles::Constant::AMU;
+    const auto wt = aa * achilles::Constant::AMU.native();
     const auto ee = tplab;
     const auto acb = cbrt(aa);
     const auto caa = aa / (aa + 20);
@@ -242,9 +243,10 @@ achilles::PotentialVals SchroedingerPotential::operator()(double plab, double ra
     const double wd2 = potential[1].ivector;
     const double wdd2 = potential[2].ivector;
 
-    const auto tplab = sqrt(plab * plab + pow(achilles::Constant::mN, 2)) - achilles::Constant::mN;
+    const auto tplab =
+        sqrt(plab * plab + achilles::Constant::mN2.native()) - achilles::Constant::mN.native();
     const auto aa = static_cast<double>(m_nucleus->NNucleons());
-    const auto wt = aa * achilles::Constant::AMU;
+    const auto wt = aa * achilles::Constant::AMU.native();
     const auto ee = tplab;
     const auto el = ee + wp;
     const auto wp2 = wp * wp;
