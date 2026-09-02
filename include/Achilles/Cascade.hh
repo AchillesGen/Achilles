@@ -13,6 +13,7 @@
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/UnitsIO.hh"

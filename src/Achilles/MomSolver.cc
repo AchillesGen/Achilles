@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/MomSolver.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
@@ -38,10 +38,10 @@ std::pair<double, double> achilles::FindMomentumRange(const achilles::FourVector
     std::pair<double, double> range;
     const double m2 = q_free.M2().native();
     const double detM =
-        sqrt((m2 - 4 * achilles::Constant::mN2.native()) * (m2 + q_free.P2().native()) / m2);
+        sqrt((m2 - 4 * achilles::Constant::mN2().native()) * (m2 + q_free.P2().native()) / m2);
     const double p = q_free.P().native();
     range.first =
-        q_free.M2() > 2 * achilles::Constant::mN * q_free.E() ? (detM - p) / 2 : (p - detM) / 2;
+        q_free.M2() > 2 * achilles::Constant::mN() * q_free.E() ? (detM - p) / 2 : (p - detM) / 2;
     range.second = (p + detM) / 2;
     range.first /= rangeExtend;
     range.second *= rangeExtend;

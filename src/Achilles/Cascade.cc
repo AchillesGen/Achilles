@@ -9,12 +9,12 @@
 #include "spdlog/spdlog.h"
 
 #include "Achilles/Cascade.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Exception.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ThreeVector.hh"
@@ -189,7 +189,7 @@ std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
         if(m_potential_prop &&
            m_nucleus->GetPotential()->Hamiltonian(
                event.Hadrons()[idx].Momentum().P().native(),
-               event.Hadrons()[idx].Position().P().in(units::fm)) < Constant::mN.native()) {
+               event.Hadrons()[idx].Position().P().in(units::fm)) < Constant::mN().native()) {
             event.Hadrons()[idx].Status() = ParticleStatus::captured;
         } else {
             AddIntegrator(idx, event.Hadrons()[idx]);
@@ -206,7 +206,7 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
             if(m_potential_prop &&
                m_nucleus->GetPotential()->Hamiltonian(particles[idx].Momentum().P().native(),
                                                       particles[idx].Position().P().in(units::fm)) <
-                   Constant::mN.native()) {
+                   Constant::mN().native()) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
                 spdlog::trace("Adding particle: {}", particles[idx]);
@@ -379,10 +379,10 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
         auto vals = potential->operator()(pmag, q.Magnitude().native());
         auto dpot_dp = potential->derivative_p(pmag, q.Magnitude().native());
 
-        auto mass_eff = achilles::Constant::mN.native() + vals.rscalar +
+        auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
                         std::complex<double>(0, 1) * vals.iscalar;
         double numerator =
-            (vals.rscalar + achilles::Constant::mN.native()) * dpot_dp.rscalar + pmag;
+            (vals.rscalar + achilles::Constant::mN().native()) * dpot_dp.rscalar + pmag;
         double denominator = sqrt(pow(mass_eff, 2) + pmag * pmag).real();
         return numerator / denominator * p / pmag + dpot_dp.rvector * p / pmag;
     };
@@ -434,7 +434,7 @@ void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &ma
     AddIntegrator(idx, particles[idx]);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P().native(),
-                               kickNuc->Position().P().in(units::fm)) < Constant::mN.native()) {
+                               kickNuc->Position().P().in(units::fm)) < Constant::mN().native()) {
         kickNuc->Status() = ParticleStatus::captured;
         event.Hadrons() = particles;
         Reset();
@@ -502,7 +502,7 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
     AddIntegrator(idx, particles[idx]);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
                                kickNuc->Momentum().P().native(),
-                               kickNuc->Position().P().in(units::fm)) < Constant::mN.native()) {
+                               kickNuc->Position().P().in(units::fm)) < Constant::mN().native()) {
         kickNuc->Status() = ParticleStatus::captured;
         event.Hadrons() = particles;
         Reset();
@@ -548,7 +548,8 @@ void Cascade::Escaped(Particles &particles) {
         // handle
         //       escape vs. capture and mometum changes
         constexpr double potential = 10.0;
-        const double energy = particle.Momentum().E().native() - Constant::mN.native() - potential;
+        const double energy =
+            particle.Momentum().E().native() - Constant::mN().native() - potential;
         if(particle.Position().Magnitude2() > radius * radius) {
             spdlog::debug("Particle: {} escaping", particle);
             // TODO: Figure out how to appropriately handle escaping vs. capturing

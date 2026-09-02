@@ -7,8 +7,8 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Approx.hh"
 
 using achilles::FourVector;

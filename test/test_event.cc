@@ -67,7 +67,7 @@ TEST_CASE("Finalize Event", "[Event]") {
     event.Hadrons() = final;
     event.Finalize();
     CHECK(event.Remnant().PID() == 1000050110);
-    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN.native());
+    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN().native());
 }
 
 TEST_CASE("Test Event Copy Constructor", "[Event]") {

@@ -12,7 +12,7 @@
 #include <string>
 #include <type_traits>
 
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/UnitsFormat.hh"
 #include "spdlog/fmt/ostr.h"
 

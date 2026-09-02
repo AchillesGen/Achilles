@@ -3,9 +3,9 @@
 
 #include <map>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 using namespace achilles;
 
@@ -56,7 +56,8 @@ double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) 
 }
 
 double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noexcept {
-    const double tLab = sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)) - Constant::mN.native();
+    const double tLab =
+        sqrt(pow(pLab, 2) + pow(Constant::mN().native(), 2)) - Constant::mN().native();
     if(samePID) {
         if(pLab < (1.8_GeV).native()) {
             if(tLab >= (25_MeV).native())
@@ -69,8 +70,8 @@ double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noex
             return JWN.at("gamma") / pow(pLab, 0.16);
         } else {
             double ecm2 =
-                2 * Constant::mN.native() *
-                (Constant::mN.native() + sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)));
+                2 * Constant::mN().native() *
+                (Constant::mN().native() + sqrt(pow(pLab, 2) + pow(Constant::mN().native(), 2)));
             return PDG.at("Zpp") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
                    PDG.at("Y1pp") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
                    PDG.at("Y2pp") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));
@@ -86,8 +87,8 @@ double Interaction::CrossSectionLab(bool samePID, const double &pLab) const noex
                             exp(-JWN.at("beta") * pow(pLab, 0.8) + 2);
         } else {
             double ecm2 =
-                2 * Constant::mN.native() *
-                (Constant::mN.native() + sqrt(pow(pLab, 2) + pow(Constant::mN.native(), 2)));
+                2 * Constant::mN().native() *
+                (Constant::mN().native() + sqrt(pow(pLab, 2) + pow(Constant::mN().native(), 2)));
             return PDG.at("Zpn") + PDG.at("B") * pow(log(ecm2 / PDG.at("s0")), 2) +
                    PDG.at("Y1pn") * pow(PDG.at("s1") / ecm2, PDG.at("n1")) -
                    PDG.at("Y2pn") * pow(PDG.at("s1") / ecm2, PDG.at("n2"));

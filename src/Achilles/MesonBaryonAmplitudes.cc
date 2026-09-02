@@ -7,6 +7,7 @@
 #include "Achilles/Legendre.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Utilities.hh"
 #include "Achilles/f_polynomial.hh"
 

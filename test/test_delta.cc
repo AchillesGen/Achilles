@@ -7,7 +7,7 @@
 
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
 #include "Achilles/ParticleInfo.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Utilities.hh"
 
 #include <algorithm>
@@ -43,7 +43,9 @@ size_t ArgMax(const std::vector<double> &xsecs) {
 TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
     achilles::DeltaInteraction delta;
 
-    double expected = 0.1946713104;
+    // Regression pin. sqrt(s) = 2.041 GeV sits ~10 MeV above the N-Delta
+    // threshold, so this is very sensitive to the nucleon mass in Particles.yml.
+    double expected = 0.1948178294;
     auto result = delta.TestDeltaDSigmaDOmegaDM(-0.81, 2.041, 1.093, achilles::PID::delta0());
     CHECK_THAT(result, Catch::Matchers::WithinAbs(expected, 1e-6));
 

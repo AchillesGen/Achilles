@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/FormFactor.hh"
-#include "Achilles/Constants.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #include "Achilles/ParticleInfo.hh"
 #include "fmt/format.h"
@@ -68,12 +68,12 @@ achilles::VectorDipole::Construct(achilles::FFType type, const YAML::Node &node)
 
 void achilles::VectorDipole::Evaluate(double Q2, FormFactor::Values &result) const {
     result.Gep = 1.0 / pow(1.0 + Q2 / lambda / lambda, 2);
-    result.Gen = -muN * Q2 * result.Gep / (1 + 5.6 * Q2 / pow(Constant::mp.in(units::GeV), 2)) /
-                 (4 * pow(Constant::mp.in(units::GeV), 2));
+    result.Gen = -muN * Q2 * result.Gep / (1 + 5.6 * Q2 / pow(Constant::mp().in(units::GeV), 2)) /
+                 (4 * pow(Constant::mp().in(units::GeV), 2));
     result.Gmp = muP * result.Gep;
     result.Gmn = muN * result.Gep;
 
-    double tau = Q2 / 4 / pow(Constant::mp.in(units::GeV), 2);
+    double tau = Q2 / 4 / pow(Constant::mp().in(units::GeV), 2);
     Fill(tau, result);
 }
 
@@ -94,7 +94,7 @@ void achilles::AxialDipole::Evaluate(double Q2, FormFactor::Values &result) cons
     result.FA = -gan1 / pow(1.0 + Q2 / MA / MA, 2);
     result.FAs = -gans / pow(1.0 + Q2 / MA / MA, 2);
     result.FAP =
-        2.0 * Constant::mN2.native() /
+        2.0 * Constant::mN2().native() /
         (Q2 * 1000 * 1000 + (ParticleInfo(211).Mass() * ParticleInfo(211).Mass()).native()) *
         result.FA;
 }
@@ -128,7 +128,7 @@ void achilles::AxialZExpansion::Evaluate(double Q2, FormFactor::Values &result) 
     result.FAs = ZExpand(strange_params, z);
     // Pseudo-axial form factor
     result.FAP =
-        2.0 * Constant::mN2.native() /
+        2.0 * Constant::mN2().native() /
         (Q2 * 1000 * 1000 + (ParticleInfo(211).Mass() * ParticleInfo(211).Mass()).native()) *
         result.FA;
 }
@@ -151,7 +151,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::Kelly::Construct(achilles::F
 }
 
 void achilles::Kelly::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2 / 4 / pow(Constant::mp.in(units::GeV), 2);
+    double tau = Q2 / 4 / pow(Constant::mp().in(units::GeV), 2);
 
     result.Gep = Parameterization(termsEp, tau);
     result.Gen = 1.0 / pow(1 + Q2 / lambdasq, 2) * termsEn[0] * tau / (1 + termsEn[1] * tau);
@@ -183,7 +183,7 @@ std::unique_ptr<achilles::FormFactorImpl> achilles::BBBA::Construct(achilles::FF
 }
 
 void achilles::BBBA::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2 / 4 / pow(Constant::mp.in(units::GeV), 2);
+    double tau = Q2 / 4 / pow(Constant::mp().in(units::GeV), 2);
 
     result.Gep = Numerator(numEp, tau) / Denominator(denEp, tau);
     result.Gen = Numerator(numEn, tau) / Denominator(denEn, tau);
@@ -214,7 +214,7 @@ achilles::ArringtonHill::Construct(achilles::FFType type, const YAML::Node &node
 }
 
 void achilles::ArringtonHill::Evaluate(double Q2, FormFactor::Values &result) const {
-    double tau = Q2 / 4 / pow(Constant::mp.in(units::GeV), 2);
+    double tau = Q2 / 4 / pow(Constant::mp().in(units::GeV), 2);
 
     double z = (sqrt(tcut + Q2) - sqrt(tcut - t0)) / (sqrt(tcut + Q2) + sqrt(tcut - t0));
 
@@ -380,11 +380,11 @@ void achilles::HyperonFormFactor::Evaluate(double Q2, FormFactor::Values &result
 
     double x = 0.73;
     double lambda_ratio =
-        Constant::mlambda.native() / (Constant::mlambda.native() + Constant::mn.native());
+        Constant::mlambda().native() / (Constant::mlambda().native() + Constant::mn().native());
     double sigmam_ratio =
-        Constant::msigmam.native() / (Constant::msigmam.native() + Constant::mn.native());
+        Constant::msigmam().native() / (Constant::msigmam().native() + Constant::mn().native());
     double sigma0_ratio =
-        Constant::msigma0.native() / (Constant::msigma0.native() + Constant::mn.native());
+        Constant::msigma0().native() / (Constant::msigma0().native() + Constant::mn().native());
 
     result.F1lam = -sqrt(3. / 2.) * result.F1p;
     result.F2lam = -sqrt(3. / 2.) * lambda_ratio * result.F2p;

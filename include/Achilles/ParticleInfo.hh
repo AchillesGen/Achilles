@@ -26,7 +26,7 @@
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 namespace achilles {
 class ParticleInfoEntry;
@@ -295,6 +295,47 @@ static constexpr auto Particle = ParticleInfo::Database;
 static constexpr auto InitParticle = ParticleInfo::InitDatabase;
 static constexpr auto PrintParticle = ParticleInfo::PrintDatabase;
 } // namespace Database
+
+// ---------------------------------------------------------------------------
+// Masses are read from data/Particles.yml, not hard-coded, so retuning one in
+// the particle file retunes it everywhere. Each is cached on first call; the
+// database loads lazily, so none of these may be used before main().
+// ---------------------------------------------------------------------------
+namespace Constant {
+
+inline units::Energy mp() {
+    static const units::Energy value = ParticleInfo(PID::proton()).Mass();
+    return value;
+}
+inline units::Energy mn() {
+    static const units::Energy value = ParticleInfo(PID::neutron()).Mass();
+    return value;
+}
+/// Isoscalar nucleon mass: the average of the proton and neutron entries.
+inline units::Energy mN() {
+    static const units::Energy value = (mp() + mn()) / 2.0;
+    return value;
+}
+inline units::Energy2 mN2() {
+    static const units::Energy2 value = mN() * mN();
+    return value;
+}
+inline units::Energy mlambda() {
+    static const units::Energy value = ParticleInfo(PID::lambda0()).Mass();
+    return value;
+}
+/// Sigma^- (3112). Note PID::sigmam() is 3222, which Particles.yml lists as
+/// sigma+; the hyperon form factors have always used the 3112 mass.
+inline units::Energy msigmam() {
+    static const units::Energy value = ParticleInfo(PID{3112}).Mass();
+    return value;
+}
+inline units::Energy msigma0() {
+    static const units::Energy value = ParticleInfo(PID::sigma0()).Mass();
+    return value;
+}
+
+} // namespace Constant
 
 } // namespace achilles
 

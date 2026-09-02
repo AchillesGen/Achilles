@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Strong-typed natural units for Achilles (single mass-dimension axis).
+// The natural-unit system and the physical constants that define it.
 //
 // In natural units (hbar = c = 1) every dimensionful quantity is a power of
 // energy. We store ONE canonical unit -- MeV -- and tag each quantity with its
@@ -19,12 +19,17 @@
 //     the SAME type and interconvert with no explicit hbar*c in user code.
 //   * hbar*c = 197.3269804 MeV*fm is the ONE bridge constant. It is not a
 //     dimensionful multiplier here -- it is dimensionless (= 1), so it appears
-//     only inside the fm/barn unit *scales*, defined once below.
+//     only inside the fm/barn unit scales, which is why the units and the
+//     constants share this header: they cannot be defined apart.
 //   * A Quantity<-1> cannot know whether it is a length or a lifetime, so it
 //     stores and prints as MeV^-1; ask for .in(fm) or .in(s) to choose.
+//
+// Particle masses are NOT here. They come from data/Particles.yml through
+// ParticleInfo, so a run card that retunes a mass retunes it everywhere; see
+// Constant::mN() and friends in ParticleInfo.hh.
 
-#ifndef UNITS_HH
-#define UNITS_HH
+#ifndef PHYSICAL_UNITS_HH
+#define PHYSICAL_UNITS_HH
 
 #include <cmath>
 #include <string_view>
@@ -184,23 +189,9 @@ using Area = Quantity<-2>; // == CrossSection
 using CrossSection = Quantity<-2>;
 
 // ---------------------------------------------------------------------------
-// The single bridge constant. Everything on the length/area axes derives from
-// it, so fm, barn, and HBARC2 can never fall out of sync.
-//   hbar*c = 197.32698045930246 MeV*fm = 1  =>  1 fm = (1/hbar c) MeV^-1
-//
-// hbar*c is not written down as a literal: it is built from the SI-exact 2019
-// values of c and h exactly as Constants.hh has always built it, so every
-// number the generator produces is unchanged. Constant::C / H / HBAR / HBARC /
-// HBARC2 are aliases of these.
+// Units whose scale is a pure power of ten. The length/area units (fm, barn,
+// ...) are fixed by hbar*c, so they follow the constants further down.
 // ---------------------------------------------------------------------------
-inline constexpr double kSpeedOfLight = 2.99792458e8 * 1.0e15;      // fm / s (exact)
-inline constexpr double kPlanck = 6.62607015e-34 / 1.602176634e-13; // MeV s  (exact)
-inline constexpr double kHbar = kPlanck / (2 * M_PI);               // MeV s
-inline constexpr double kHbarC = kHbar * kSpeedOfLight;             // MeV fm
-inline constexpr double kHbarC2_MeV2mb = kHbarC * kHbarC * 10;      // mb MeV^2
-inline constexpr double kFm = 1.0 / kHbarC;                         // MeV^-1 per fm
-inline constexpr double kBarn = 100.0 * kFm * kFm; // MeV^-2 per barn (1 b = 100 fm^2)
-
 // Energy units (D = +1), canonical MeV -- the MeV/GeV fix.
 inline constexpr Unit<1> eV{1.0e-6, "eV"};
 inline constexpr Unit<1> keV{1.0e-3, "keV"};
@@ -210,24 +201,13 @@ inline constexpr Unit<1> TeV{1.0e6, "TeV"};
 inline constexpr Unit<2> MeV2{1.0, "MeV^2"};
 inline constexpr Unit<2> GeV2{1.0e6, "GeV^2"};
 
-// Length / time units (D = -1), canonical MeV^-1. hbar*c lives in the scale.
+// Length / time units (D = -1), canonical MeV^-1.
 inline constexpr Unit<-1> iMeV{1.0, "MeV^-1"};
 inline constexpr Unit<-1> iGeV{1.0e-3, "GeV^-1"}; // 1 GeV^-1 = 1e-3 MeV^-1
-inline constexpr Unit<-1> fm{kFm, "fm"};
-inline constexpr Unit<-1> nm{kFm * 1.0e6, "nm"};
-inline constexpr Unit<-1> m{kFm * 1.0e15, "m"};
 
-// Area / cross-section units (D = -2), canonical MeV^-2. Barn family derives
-// from the fm scale, so MeV^-2 <-> nb <-> fm^2 are automatically consistent.
+// Area / cross-section units (D = -2), canonical MeV^-2.
 inline constexpr Unit<-2> iMeV2{1.0, "MeV^-2"};
 inline constexpr Unit<-2> iGeV2{1.0e-6, "GeV^-2"}; // 1 GeV^-2 = 1e-6 MeV^-2
-inline constexpr Unit<-2> fm2{kFm * kFm, "fm^2"};
-inline constexpr Unit<-2> b{kBarn, "b"};
-inline constexpr Unit<-2> mb{kBarn * 1.0e-3, "mb"};
-inline constexpr Unit<-2> ub{kBarn * 1.0e-6, "ub"};
-inline constexpr Unit<-2> nb{kBarn * 1.0e-9, "nb"};
-inline constexpr Unit<-2> pb{kBarn * 1.0e-12, "pb"};
-inline constexpr Unit<-2> fb{kBarn * 1.0e-15, "fb"};
 
 // ---------------------------------------------------------------------------
 // User-defined literals (strongly typed).
@@ -244,21 +224,6 @@ constexpr Energy operator"" _GeV(long double x) {
 }
 constexpr Energy operator"" _GeV(unsigned long long x) {
     return static_cast<double>(x) * GeV;
-}
-constexpr Length operator"" _fm(long double x) {
-    return static_cast<double>(x) * fm;
-}
-constexpr Length operator"" _fm(unsigned long long x) {
-    return static_cast<double>(x) * fm;
-}
-constexpr Length operator"" _m(long double x) {
-    return static_cast<double>(x) * m;
-}
-constexpr CrossSection operator"" _nb(long double x) {
-    return static_cast<double>(x) * nb;
-}
-constexpr CrossSection operator"" _mb(long double x) {
-    return static_cast<double>(x) * mb;
 }
 } // namespace literals
 
@@ -278,10 +243,90 @@ constexpr double operator"" _deg(long double x) {
 }
 
 // The strong literals (_MeV, _GeV, _fm, _m, _mb, _nb) are visible unqualified
-// inside namespace achilles, which is where nearly all of the code lives. Unit
-// *names* are deliberately not pulled in -- `m`, `b` and `fm` are far too
-// common as local variable names -- so spell those units::MeV, units::fm, ...
+// inside namespace achilles, which is where nearly all of the code lives. Unit *names* are
+// deliberately not pulled in -- `m`, `b` and `fm` are far too common as local variable names -- so
+// spell those units::MeV, units::fm, ...
 using namespace units::literals;
+
+// ---------------------------------------------------------------------------
+// Physical constants. Everything hard-coded in Achilles lives here.
+// ---------------------------------------------------------------------------
+namespace Constant {
+// Fundamental constants (Exact as of pdg2019).
+static constexpr double C = 2.99792458e8 * 1.0e15;            // fm s^-1
+static constexpr double H = 6.62607015e-34 / 1.602176634e-13; // MeV s
+static constexpr double HBAR = H / (2 * M_PI);                // MeV s
+static constexpr double HBARC = HBAR * C;                     // MeV fm
+static constexpr double HBARC2 = HBARC * HBARC * 10;          // mb MeV^2
+static constexpr double NAVOGADRO = 6.02214076e23;            // mol^-1
+static constexpr double GAMMA_E = 0.5772156649015328606;
+
+// The atomic mass unit is a unit, not a particle, so it is not in
+// Particles.yml; it is also needed at constexpr time (see Potential.hh).
+static constexpr units::Energy AMU = 931.49410248_MeV;
+
+// EW parameters
+static constexpr double alpha = 1. / 137.035999084;
+static constexpr units::Quantity<-2> GF = 1.1663787e-5 / 1.0_GeV / 1.0_GeV;
+static constexpr double sin2w = 0.23129;
+static constexpr double cos2w = 1 - sin2w;
+const units::Energy MZ = units::sqrt((M_PI * alpha) / (std::sqrt(2) * GF * cos2w * sin2w));
+const units::Energy MW = MZ * std::sqrt(cos2w);
+static constexpr units::Energy GAMZ = 2.4952_GeV;
+static constexpr units::Energy GAMW = 2.0895_GeV;
+static constexpr double Vud = 0.97367;
+static constexpr double Vus = 0.225;
+const double ee = std::sqrt(4 * M_PI * alpha);
+const double cw = std::sqrt(cos2w);
+const double sw = std::sqrt(sin2w);
+
+// Nuclear physics constants
+// Nuclear densities are still carried as plain fm^-3 numbers alongside the mb
+// cross sections they are used with.
+static constexpr double rho0 = 0.17; // fm^-3
+
+} // namespace Constant
+
+// ---------------------------------------------------------------------------
+// The units hbar*c defines. In natural units hbar*c = 1, so 1 fm is just
+// (1/hbar c) MeV^-1 and the barn family follows from the fm scale -- MeV^-2,
+// nb and fm^2 therefore can never drift apart, nor from Constant::HBARC.
+// ---------------------------------------------------------------------------
+namespace units {
+
+// Length / time units (D = -1), canonical MeV^-1.
+inline constexpr Unit<-1> fm{1.0 / Constant::HBARC, "fm"};
+inline constexpr Unit<-1> nm{1.0e6 * fm.scale(), "nm"};
+inline constexpr Unit<-1> m{1.0e15 * fm.scale(), "m"};
+
+// Area / cross-section units (D = -2), canonical MeV^-2. 1 b = 100 fm^2.
+inline constexpr Unit<-2> fm2{fm.scale() * fm.scale(), "fm^2"};
+inline constexpr Unit<-2> b{100.0 * fm.scale() * fm.scale(), "b"};
+inline constexpr Unit<-2> mb{1.0e-3 * b.scale(), "mb"};
+inline constexpr Unit<-2> ub{1.0e-6 * b.scale(), "ub"};
+inline constexpr Unit<-2> nb{1.0e-9 * b.scale(), "nb"};
+inline constexpr Unit<-2> pb{1.0e-12 * b.scale(), "pb"};
+inline constexpr Unit<-2> fb{1.0e-15 * b.scale(), "fb"};
+
+namespace literals {
+constexpr Length operator"" _fm(long double x) {
+    return static_cast<double>(x) * fm;
+}
+constexpr Length operator"" _fm(unsigned long long x) {
+    return static_cast<double>(x) * fm;
+}
+constexpr Length operator"" _m(long double x) {
+    return static_cast<double>(x) * m;
+}
+constexpr CrossSection operator"" _nb(long double x) {
+    return static_cast<double>(x) * nb;
+}
+constexpr CrossSection operator"" _mb(long double x) {
+    return static_cast<double>(x) * mb;
+}
+} // namespace literals
+
+} // namespace units
 
 } // namespace achilles
 

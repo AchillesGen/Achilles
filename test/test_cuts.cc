@@ -10,8 +10,8 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/OneParticleCuts.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/TwoParticleCuts.hh"
-#include "Achilles/Units.hh"
 
 #include "catch_utils.hh"
 

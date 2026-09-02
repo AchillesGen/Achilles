@@ -562,7 +562,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2.native());
+    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2().native());
     auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
     auto omega = qVec.E().native();
     qVec.E() = units::Energy{qVec.E().native() + pIn.E().native() - free_energy};
@@ -615,7 +615,7 @@ double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
                                       size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     if(is_free_neutron) return nucleons[0].ID() == PID::neutron() ? 1 : 0;
-    const double removal_energy = Constant::mN.native() - nucleons[0].E().native();
+    const double removal_energy = Constant::mN().native() - nucleons[0].E().native();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *
                      spectral_proton(nucleons[0].Momentum().P().native(), removal_energy)
@@ -632,13 +632,13 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
         gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
-        gamma[mu] +=
-            ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu].native() / Constant::mN.native();
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu].native() /
+                     Constant::mN().native();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
             gamma[mu] += std::complex<double>(0, 1) *
                          (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) * sign *
-                          qVec[nu].native() / (2 * Constant::mN.native()));
+                          qVec[nu].native() / (2 * Constant::mN().native()));
             sign = -1;
         }
     }
@@ -681,7 +681,7 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2.native());
+    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2().native());
     auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
     auto omega = qVec.E().native();
     qVec.E() = units::Energy{qVec.E().native() + pIn.E().native() - free_energy};
@@ -732,7 +732,7 @@ double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons
                                            size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     if(is_free_neutron) return nucleons[0].ID() == PID::neutron() ? 1 : 0;
-    const double removal_energy = Constant::mN.native() - nucleons[0].E().native();
+    const double removal_energy = Constant::mN().native() - nucleons[0].E().native();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *
                      spectral_proton(nucleons[0].Momentum().P().native(), removal_energy)

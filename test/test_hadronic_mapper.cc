@@ -4,10 +4,10 @@
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/HadronicMapper.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ProcessInfo.hh"
 
 namespace units = achilles::units;
@@ -60,7 +60,8 @@ TEST_CASE("HadronicMapper", "[PhaseSpace]") {
             auto mapper = achilles::QESpectralMapper::Construct(info, 1);
             std::vector<achilles::FourVector> mom = {
                 {1000_MeV, 0_MeV, 0_MeV, 1000_MeV},
-                {achilles::Constant::mN - 20_MeV, 400 * sin(M_PI / 4) * cos(M_PI / 6) * units::MeV,
+                {achilles::Constant::mN() - 20_MeV,
+                 400 * sin(M_PI / 4) * cos(M_PI / 6) * units::MeV,
                  400 * sin(M_PI / 4) * sin(M_PI / 6) * units::MeV,
                  400 * cos(M_PI / 4) * units::MeV},
             };

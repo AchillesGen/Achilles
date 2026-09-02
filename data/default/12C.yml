@@ -1,6 +1,6 @@
 Name: 12C
-Binding: { value: 8.6, unit: MeV }
-Fermi Momentum: { value: 225, unit: MeV }
+Binding: 8.6 MeV
+Fermi Momentum: 225 MeV
 Density:
   ProtonFile: data/densities/c12.prova.txt
   NeutronFile: data/densities/c12.prova.txt

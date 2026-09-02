@@ -3,6 +3,7 @@
 
 #include "Achilles/CascadeInteractions/PionAbsorption.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
 

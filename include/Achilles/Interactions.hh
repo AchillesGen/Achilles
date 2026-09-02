@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Achilles/Factory.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"

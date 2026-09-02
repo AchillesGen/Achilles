@@ -12,6 +12,7 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Version.hh"
 #include "Plugins/HepMC3/HepMC3Units.hh"
 #include "spdlog/spdlog.h"

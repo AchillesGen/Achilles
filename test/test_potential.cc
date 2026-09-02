@@ -36,8 +36,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 
 #ifdef AUTODIFF
         autodiff::real r = 0.15;
-        autodiff::real plab = sqrt(pow(tplab + achilles::Constant::mN.native(), 2) -
-                                   pow(achilles::Constant::mN.native(), 2));
+        autodiff::real plab = sqrt(pow(tplab + achilles::Constant::mN().native(), 2) -
+                                   pow(achilles::Constant::mN().native(), 2));
 
         auto func_rv = [&](const autodiff::real &x, const autodiff::real &y) {
             return potential.evaluate<autodiff::real>(x, y).rvector;
@@ -73,8 +73,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         CHECK(disdr == Catch::Approx(stencilr.iscalar));
 #else
         double r = 0.15;
-        double plab = sqrt(pow(tplab + achilles::Constant::mN.native(), 2) -
-                           pow(achilles::Constant::mN.native(), 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN().native(), 2) -
+                           pow(achilles::Constant::mN().native(), 2));
 
 #endif
         auto vals = potential(plab, r);
@@ -135,8 +135,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
         achilles::CooperPotential potential(nucleus);
-        autodiff::dual plab = sqrt(pow(tplab + achilles::Constant::mN.native(), 2) -
-                                   pow(achilles::Constant::mN.native(), 2));
+        autodiff::dual plab = sqrt(pow(tplab + achilles::Constant::mN().native(), 2) -
+                                   pow(achilles::Constant::mN().native(), 2));
 
         auto func_rv = [&](const autodiff::dual &x, const autodiff::dual &y) {
             return potential.evaluate<autodiff::dual>(x, y).rvector;
@@ -167,8 +167,8 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 
     BENCHMARK_ADVANCED("Stencil")(Catch::Benchmark::Chronometer meter) {
         double r = 0.15;
-        double plab = sqrt(pow(tplab + achilles::Constant::mN.native(), 2) -
-                           pow(achilles::Constant::mN.native(), 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN().native(), 2) -
+                           pow(achilles::Constant::mN().native(), 2));
         auto nucleus = std::make_shared<MockNucleus>();
         REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
         achilles::CooperPotential potential(nucleus);
@@ -196,8 +196,8 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         achilles::SchroedingerPotential potential(nucleus, 5);
 
         double r = 0.15;
-        double plab = sqrt(pow(tplab + achilles::Constant::mN.native(), 2) -
-                           pow(achilles::Constant::mN.native(), 2));
+        double plab = sqrt(pow(tplab + achilles::Constant::mN().native(), 2) -
+                           pow(achilles::Constant::mN().native(), 2));
 
         auto vals = potential(plab, r);
 

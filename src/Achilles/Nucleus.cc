@@ -12,9 +12,9 @@
 
 #include "spdlog/spdlog.h"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -151,7 +151,7 @@ Particles Nucleus::GenerateConfig() {
         // Set momentum for each nucleon
         auto mom3 = GenerateMomentum(particle.Position().Magnitude(), particle.ID());
         double energy2 =
-            (particle.Info().Mass() * particle.Info().Mass()).native(); // Constant::mN2.native()
+            (particle.Info().Mass() * particle.Info().Mass()).native(); // Constant::mN2().native()
         for(auto mom : mom3) energy2 += mom * mom;
         particle.Momentum() = FourVector::FromNative({sqrt(energy2), mom3[0], mom3[1], mom3[2]});
 

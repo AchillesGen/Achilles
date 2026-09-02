@@ -4,8 +4,8 @@
 #include <cmath>
 #include <iostream>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 using namespace achilles;
 
@@ -23,7 +23,7 @@ achilles::ThreePosition PropagationStep(const achilles::FourVector &momentum,
 void Particle::SetFormationZone(const FourVector &p1, const FourVector &p2) noexcept {
     // E / |m_N^2 - p1.p2| is already an inverse energy, i.e. a time: in natural
     // units the hbar*c the old expression carried is 1.
-    formationZone = p1.E() / units::abs(Constant::mN2 - p1 * p2);
+    formationZone = p1.E() / units::abs(Constant::mN2() - p1 * p2);
 }
 
 void Particle::Propagate(units::Time time) noexcept {

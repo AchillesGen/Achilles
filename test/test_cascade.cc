@@ -11,6 +11,7 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 namespace units = achilles::units;
 using namespace achilles::units::literals;
@@ -145,11 +146,11 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
                  {0_fm, 0_fm, 0_fm},
                  achilles::ParticleStatus::propagating},
         Particle{achilles::PID::proton(),
-                 {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV, 0_MeV},
+                 {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV},
                  {0.5_fm, 0_fm, 0_fm},
                  achilles::ParticleStatus::background},
         Particle{achilles::PID::neutron(),
-                 {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV, 0_MeV},
+                 {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV},
                  {3_fm, 0_fm, 0_fm},
                  achilles::ParticleStatus::background}};
     constexpr double radius = 4;

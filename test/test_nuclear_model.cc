@@ -7,7 +7,7 @@
 
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #include "Approx.hh"
 #include "mock_classes.hh"

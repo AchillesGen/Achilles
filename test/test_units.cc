@@ -1,15 +1,14 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
-// Tests for the strong-typed natural-units layer (Achilles/Units.hh).
+// Tests for the strong-typed natural-units layer (Achilles/PhysicalUnits.hh).
 
 #include "catch2/catch_approx.hpp"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_string.hpp"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/ParticleInfo.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/UnitsFormat.hh"
 #include "Achilles/UnitsIO.hh"
 #include "Achilles/UnitsSchema.hh"
@@ -22,21 +21,20 @@ using Catch::Approx;
 
 // Physics anchors: constants that, if silently changed, shift every result.
 TEST_CASE("Unit anchors match PDG / legacy constants", "[Units]") {
-    // hbar*c is built from the SI-exact c and h, exactly as Constants.hh always has;
-    // the PDG's rounded 197.3269804 agrees to 3e-10.
-    CHECK(kHbarC == Approx(197.32698045930246).epsilon(1e-15));
-    CHECK(kHbarC == Approx(197.3269804).epsilon(1e-9));
-    CHECK(kHbarC2_MeV2mb == Approx(389379.37).epsilon(1e-8));          // old Constants::HBARC2
+    // hbar*c is built from the SI-exact c and h; the PDG's rounded 197.3269804
+    // agrees to 3e-10.
+    CHECK(achilles::Constant::HBARC == Approx(197.32698045930246).epsilon(1e-15));
+    CHECK(achilles::Constant::HBARC == Approx(197.3269804).epsilon(1e-9));
+    CHECK(achilles::Constant::HBARC2 == Approx(389379.37).epsilon(1e-8));
+    CHECK(achilles::Constant::HBARC * achilles::Constant::HBARC * 10 ==
+          Approx(achilles::Constant::HBARC2).epsilon(1e-12));
     CHECK((1.0 * iGeV2).in(mb) == Approx(0.3893793721).epsilon(1e-7)); // PDG
     CHECK((1.0 * fm2).in(mb) == Approx(10.0).epsilon(1e-12));          // barn definition
     CHECK((1.0 * b).in(fm2) == Approx(100.0).epsilon(1e-12));
 
-    // Constants.hh must be a view onto the same bridge constant, not a copy.
-    CHECK(achilles::Constant::HBARC == kHbarC);
-    CHECK(achilles::Constant::HBARC2 == kHbarC2_MeV2mb);
-    CHECK(achilles::Constant::HBARC2 == Approx(389379.37).epsilon(1e-8));
-    CHECK(achilles::Constant::HBARC * achilles::Constant::HBARC * 10 ==
-          Approx(achilles::Constant::HBARC2).epsilon(1e-12));
+    // The fm/barn scales must derive from that same constant, not copy it.
+    CHECK(1.0 / (1.0_fm).native() == Approx(achilles::Constant::HBARC).epsilon(1e-15));
+    CHECK(1.0 / (1.0_mb).in(iMeV2) == Approx(achilles::Constant::HBARC2).epsilon(1e-12));
 }
 
 TEST_CASE("Unit round-trips are exact", "[Units]") {
@@ -44,12 +42,12 @@ TEST_CASE("Unit round-trips are exact", "[Units]") {
     CHECK((2.2_GeV).in(MeV) == Approx(2200.0));
     CHECK((1.2_fm).in(fm) == Approx(1.2));
     CHECK((3.0e-11 * iMeV2).in(iMeV2) == Approx(3.0e-11));
-    CHECK((1.0_fm).native() == Approx(1.0 / kHbarC).epsilon(1e-15));
+    CHECK((1.0_fm).native() == Approx(1.0 / achilles::Constant::HBARC).epsilon(1e-15));
 
     SECTION("Cross-section units interconvert through the same barn scale") {
         CHECK((1.0_mb).in(nb) == Approx(1.0e6));
         CHECK((2.5_nb).in(nb) == Approx(2.5));
-        CHECK((1.0_mb).in(iMeV2) == Approx(1.0 / kHbarC2_MeV2mb).epsilon(1e-12));
+        CHECK((1.0_mb).in(iMeV2) == Approx(1.0 / achilles::Constant::HBARC2).epsilon(1e-12));
         CHECK((1.0 * iGeV2).in(iMeV2) == Approx(1.0e-6));
     }
 
@@ -72,8 +70,8 @@ TEST_CASE("Quantity algebra tracks mass dimension", "[Units]") {
 
     CHECK((e * e).in(GeV2) == Approx(4.0));
     CHECK(sqrt(e * e).in(GeV) == Approx(2.0));
-    CHECK((e * r).native() == Approx(2000.0 / kHbarC));
-    CHECK((1.0 / e).in(fm) == Approx(kHbarC / 2000.0));
+    CHECK((e * r).native() == Approx(2000.0 / achilles::Constant::HBARC));
+    CHECK((1.0 / e).in(fm) == Approx(achilles::Constant::HBARC / 2000.0));
     CHECK((-e).in(GeV) == Approx(-2.0));
     CHECK(abs(-e) == e);
     CHECK(e + e == 4.0_GeV);
@@ -188,10 +186,33 @@ TEST_CASE("Config quantities must name their unit", "[Units][IO]") {
         CHECK_THROWS(no_value["beam"].as<Energy>());
     }
 
+    SECTION("A literal names the unit inline") {
+        CHECK(YAML::Load("beam: 30 GeV")["beam"].as<Energy>() == 30.0_GeV);
+        CHECK(YAML::Load("beam: 2.2GeV")["beam"].as<Energy>() == 2.2_GeV);
+        CHECK(YAML::Load("beam: -5 MeV")["beam"].as<Energy>() == -5.0_MeV);
+        CHECK(YAML::Load("beam: 1.5e3 MeV")["beam"].as<Energy>() == 1.5_GeV);
+        CHECK(YAML::Load("step: 0.04 fm")["step"].as<Length>() == 0.04_fm);
+        CHECK(YAML::Load("xsec: 2.5 nb")["xsec"].as<CrossSection>() == 2.5_nb);
+    }
+
+    SECTION("A literal is dimension-checked like the map form") {
+        auto wrong = YAML::Load("beam: 30 fm");
+        CHECK_THROWS_WITH(wrong["beam"].as<Energy>(),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+
+        auto unknown = YAML::Load("beam: 30 furlongs");
+        CHECK_THROWS_WITH(unknown["beam"].as<Energy>(),
+                          Catch::Matchers::ContainsSubstring("not a known ENERGY unit"));
+
+        auto no_number = YAML::Load("beam: GeV");
+        CHECK_THROWS_WITH(no_number["beam"].as<Energy>(),
+                          Catch::Matchers::ContainsSubstring("does not start with a number"));
+    }
+
     SECTION("Round-trips through canonical units") {
         YAML::Node out;
         out["beam"] = 2.2_GeV;
-        CHECK(out["beam"]["unit"].as<std::string>() == "MeV");
+        CHECK(out["beam"].as<std::string>() == "2200.000000 MeV");
         CHECK(out["beam"].as<Energy>() == 2.2_GeV);
     }
 }
@@ -229,8 +250,8 @@ TEST_CASE("The shipped Particles.yml loads in MeV", "[Units][IO]") {
     const achilles::ParticleInfo muon(achilles::PID::muon());
 
     STATIC_REQUIRE(std::is_same<decltype(proton.Mass()), Energy>::value);
-    CHECK(proton.Mass().in(MeV) == Approx(938.27).epsilon(1e-9));
+    CHECK(proton.Mass().in(MeV) == Approx(938.27208816).epsilon(1e-9));
     CHECK(muon.Mass().in(MeV) == Approx(105.7).epsilon(1e-3));
-    CHECK(proton.Mass().in(GeV) == Approx(0.93827).epsilon(1e-9));
+    CHECK(proton.Mass().in(GeV) == Approx(0.93827208816).epsilon(1e-9));
     CHECK(proton.Width() == 0_MeV);
 }

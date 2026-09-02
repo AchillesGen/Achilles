@@ -8,9 +8,9 @@
 #include "catch2/matchers/catch_matchers.hpp"
 #include "mock_classes.hh"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/MomSolver.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Approx.hh"
@@ -23,13 +23,13 @@ using namespace achilles::units::literals;
 
 TEST_CASE("CM Momentum Delta solver", "[DeltaFunctions]") {
     achilles::FourVector p1 = achilles::FourVector::FromNative(
-        {sqrt(pow(achilles::Constant::mN.native(), 2) + 100 * 100), 0, 0, 100});
+        {sqrt(pow(achilles::Constant::mN().native(), 2) + 100 * 100), 0, 0, 100});
     achilles::FourVector p2 = achilles::FourVector::FromNative(
-        {sqrt(pow(achilles::Constant::mN.native(), 2) + 100 * 100), 0, 0, -100});
+        {sqrt(pow(achilles::Constant::mN().native(), 2) + 100 * 100), 0, 0, -100});
     double cosTheta = 0.5;
     double phi = 0;
-    auto p3 = achilles::SolveDelta(p1, p2, achilles::Constant::mN.native(),
-                                   achilles::Constant::mN.native(), cosTheta, phi);
+    auto p3 = achilles::SolveDelta(p1, p2, achilles::Constant::mN().native(),
+                                   achilles::Constant::mN().native(), cosTheta, phi);
     auto p4 = p1 + p2 - p3;
 
     double sinTheta = sqrt(0.75);
@@ -43,13 +43,13 @@ TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {
     std::mt19937 m_rand{std::random_device{}()};
     std::uniform_real_distribution<double> m_dist;
 
-    auto p1 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN.native())));
-    auto p2 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN.native())));
+    auto p1 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN().native())));
+    auto p2 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN().native())));
     double cosTheta = 2 * m_dist(m_rand) - 1;
     double phi = 2 * M_PI * m_dist(m_rand);
 
-    auto p3 = achilles::SolveDelta(p1, p2, achilles::Constant::mN.native(),
-                                   achilles::Constant::mN.native(), cosTheta, phi);
+    auto p3 = achilles::SolveDelta(p1, p2, achilles::Constant::mN().native(),
+                                   achilles::Constant::mN().native(), cosTheta, phi);
     auto p4 = p1 + p2 - p3;
     auto pcm1 = p1 + p2;
     auto pcm2 = p3 + p4;
@@ -57,16 +57,16 @@ TEST_CASE("Arbitrary Frame Delta solver", "[DeltaFunctions]") {
            pcm1.Px().native() == Catch::Approx(pcm2.Px().native()) &&
            pcm1.Py().native() == Catch::Approx(pcm2.Py().native()) &&
            pcm1.Pz().native() == Catch::Approx(pcm2.Pz().native())));
-    CHECK(p3.M().native() == Catch::Approx(achilles::Constant::mN.native()));
-    CHECK(p4.M().native() == Catch::Approx(achilles::Constant::mN.native()));
+    CHECK(p3.M().native() == Catch::Approx(achilles::Constant::mN().native()));
+    CHECK(p4.M().native() == Catch::Approx(achilles::Constant::mN().native()));
 }
 
 TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
     std::mt19937 m_rand{std::random_device{}()};
     std::uniform_real_distribution<double> m_dist;
     constexpr double rmin = 0.0, rmax = 6.0;
-    auto p1 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN.native())));
-    auto p2 = GENERATE(take(10, randomMomentum(225, achilles::Constant::mN.native())));
+    auto p1 = GENERATE(take(10, randomMomentum(1000, achilles::Constant::mN().native())));
+    auto p2 = GENERATE(take(10, randomMomentum(225, achilles::Constant::mN().native())));
     auto r1 = GENERATE(take(3, random(rmin, rmax)));
     auto r2 = GENERATE(take(3, random(rmin, rmax)));
     auto q_free = p1 + p2;
@@ -105,8 +105,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
                 // Solve for p3 and rotate back and calculate p4
                 p3 = achilles::SolveDeltaWithPotential(
-                    q, potential, achilles::Constant::mN.native(), achilles::Constant::mN.native(),
-                    p3Mag, phi, r1, r2);
+                    q, potential, achilles::Constant::mN().native(),
+                    achilles::Constant::mN().native(), p3Mag, phi, r1, r2);
                 break;
             } catch(const std::domain_error &e) { continue; }
         }
@@ -152,8 +152,8 @@ TEST_CASE("Potential Delta solver", "[DeltaFunctions]") {
 
                 // Solve for p3 and rotate back and calculate p4
                 p3 = achilles::SolveDeltaWithPotential(
-                    q, potential, achilles::Constant::mN.native(), achilles::Constant::mN.native(),
-                    p3Mag, phi, 1, 1);
+                    q, potential, achilles::Constant::mN().native(),
+                    achilles::Constant::mN().native(), p3Mag, phi, 1, 1);
                 break;
             } catch(const std::domain_error &e) { continue; }
         }

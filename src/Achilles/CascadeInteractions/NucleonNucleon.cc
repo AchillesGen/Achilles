@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/CascadeInteractions/NucleonNucleon.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ResonanceHelper.hh"
 

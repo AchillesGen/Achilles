@@ -4,7 +4,9 @@
 // Enforcing units at the file boundary.
 //
 // Rule: a bare number from a file becomes a Quantity in exactly ONE place --
-// here -- and only by naming the unit. Three enforcement levels:
+// here -- and only by naming the unit. A config writes the unit either as a
+// plain literal, `Energy: 30 GeV`, or as `{ value: 30, unit: GeV }`; both go
+// through the same check. Three enforcement levels:
 //   (A) file DECLARES its unit  -> parse the string, check its dimension, apply.
 //   (B) format FIXES the unit by spec (LHE=GeV, ...) -> one cited constant.
 //   (C) range backstop          -> catches a 1000x MeV/GeV swap that slips (A)/(B).
@@ -13,8 +15,9 @@
 #ifndef UNITS_IO_HH
 #define UNITS_IO_HH
 
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
+#include <cstdlib>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -44,6 +47,11 @@ inline const std::unordered_map<std::string, Unit<-2>> &xsec_units() {
         {"MeV^-2", iMeV2}, {"GeV^-2", iGeV2}, {"fm^2", fm2}, {"b", b},  {"mb", mb},
         {"ub", ub},        {"nb", nb},        {"pb", pb},    {"fb", fb}};
     return t;
+}
+
+/// The canonical unit name for dimension D, used when writing values back out.
+template <int D> constexpr const char *canonical_unit_name() {
+    return D == 1 ? "MeV" : D == 2 ? "MeV^2" : D == -1 ? "MeV^-1" : D == -2 ? "MeV^-2" : "MeV^?";
 }
 
 /// Names of the units accepted for dimension D, for error messages.
@@ -87,11 +95,6 @@ template <> inline Unit<-2> unit_from_string<-2>(const std::string &name) {
     return it->second;
 }
 
-/// The canonical unit name for dimension D, used when writing values back out.
-template <int D> constexpr const char *canonical_unit_name() {
-    return D == 1 ? "MeV" : D == 2 ? "MeV^2" : D == -1 ? "MeV^-1" : D == -2 ? "MeV^-2" : "MeV^?";
-}
-
 // (A) File declares its unit as a string. Build the typed quantity, checking
 //     that the declared unit actually has the dimension the caller expects.
 template <int D> Quantity<D> from_declared(double value, const std::string &unit_name) {
@@ -99,6 +102,29 @@ template <int D> Quantity<D> from_declared(double value, const std::string &unit
         throw std::runtime_error("Units: missing unit, refusing to guess (expected one of " +
                                  known_units<D>() + ")");
     return value * unit_from_string<D>(unit_name); // wrong dimension -> throws
+}
+
+// (A') The same declaration written the way a physicist writes it by hand:
+//      one string, "30 GeV" or "0.04fm". Whitespace between the two is
+//      optional; a number with nothing after it is still a missing unit.
+template <int D> Quantity<D> from_literal(const std::string &text) {
+    const char *begin = text.c_str();
+    char *end = nullptr;
+    const double value = std::strtod(begin, &end);
+    if(end == begin)
+        throw std::runtime_error("Units: '" + text +
+                                 "' does not start with a number (expected e.g. '30 GeV')");
+
+    std::string unit_name(end);
+    const auto first = unit_name.find_first_not_of(" \t");
+    const auto last = unit_name.find_last_not_of(" \t");
+    unit_name = first == std::string::npos ? "" : unit_name.substr(first, last - first + 1);
+
+    if(unit_name.empty())
+        throw std::runtime_error("Units: '" + text + "' is a bare number; name the unit, e.g. '" +
+                                 text + " " + canonical_unit_name<D>() + "' (expected one of " +
+                                 known_units<D>() + ")");
+    return from_declared<D>(value, unit_name);
 }
 
 // (B) Format fixes the unit by specification. The unit is a compile-time arg,
@@ -139,31 +165,34 @@ inline double value_in_declared_unit(const YAML::Node &node, const std::string &
 } // namespace achilles::units::io
 
 // ---------------------------------------------------------------------------
-// YAML config. Every quantity in a config is written as
+// YAML config. Every quantity in a config names its unit, either as a literal
+//     Energy: 30 GeV
+// or, equivalently, as an explicit map
 //     Energy: { value: 30, unit: GeV }
-// The converter refuses a bare scalar, so a unit can never be forgotten, and
-// unit_from_string<D> rejects a wrong-dimension unit at load time.
+// A number on its own is still refused, so a unit can never be forgotten, and
+// unit_from_string<D> rejects a wrong-dimension unit at load time. Quantities
+// are written back out as literals in canonical units.
 // ---------------------------------------------------------------------------
 namespace YAML {
 template <int D> struct convert<achilles::units::Quantity<D>> {
     static bool decode(const Node &node, achilles::units::Quantity<D> &out) {
         namespace io = achilles::units::io;
-        if(node.IsScalar())
-            throw std::runtime_error("Units: '" + node.as<std::string>() +
-                                     "' is a bare number; write it as { value: <number>, unit: <" +
-                                     io::known_units<D>() + "> }");
+        if(node.IsScalar()) {
+            out = io::from_literal<D>(node.Scalar());
+            return true;
+        }
         if(!node.IsMap() || !node["value"] || !node["unit"])
-            throw std::runtime_error("Units: expected { value: <number>, unit: <" +
+            throw std::runtime_error("Units: expected <number> <unit> or { value: <number>, "
+                                     "unit: <" +
                                      io::known_units<D>() + "> }");
         out = io::from_declared<D>(node["value"].as<double>(), node["unit"].as<std::string>());
         return true;
     }
 
     static Node encode(const achilles::units::Quantity<D> &q) {
-        Node n; // written in canonical units, self-describing on the way out
-        n["value"] = q.native();
-        n["unit"] = achilles::units::io::canonical_unit_name<D>();
-        return n;
+        // Written as a literal in canonical units, self-describing on the way out.
+        return Node(std::to_string(q.native()) + " " +
+                    achilles::units::io::canonical_unit_name<D>());
     }
 };
 } // namespace YAML

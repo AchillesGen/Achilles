@@ -7,9 +7,9 @@
 
 #include <iostream>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FormFactor.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -85,7 +85,7 @@ TEST_CASE("Vector", "[FormFactor]") {
         auto ff = achilles::Kelly::Construct(achilles::FFType::vector, node);
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
-        const double tau = 1.0 / (4 * pow(achilles::Constant::mp.in(units::GeV), 2));
+        const double tau = 1.0 / (4 * pow(achilles::Constant::mp().in(units::GeV), 2));
         CHECK(vals.Gep == Catch::Approx((1 + tau) / (1 + tau + tau * tau + tau * tau * tau)));
         CHECK(vals.Gen == Catch::Approx(0.25 * tau / (1 + tau)));
         CHECK(vals.Gmp == vals.Gep);
@@ -110,7 +110,7 @@ TEST_CASE("Vector", "[FormFactor]") {
         auto ff = achilles::BBBA::Construct(achilles::FFType::vector, node);
         achilles::FormFactor::Values vals;
         ff->Evaluate(1, vals);
-        const double tau = 1.0 / (4 * pow(achilles::Constant::mp.in(units::GeV), 2));
+        const double tau = 1.0 / (4 * pow(achilles::Constant::mp().in(units::GeV), 2));
         const double num = 1 + tau + tau * tau + tau * tau * tau;
         const double den = 1 + tau + tau * tau + tau * tau * tau + tau * tau * tau * tau;
         CHECK(vals.Gep == Catch::Approx(num / den));

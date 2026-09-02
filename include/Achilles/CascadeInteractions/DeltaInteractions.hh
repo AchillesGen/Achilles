@@ -7,7 +7,7 @@
 #include "Achilles/DecayHandler.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Interpolation.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 namespace achilles {
 

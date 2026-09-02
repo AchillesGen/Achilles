@@ -10,9 +10,9 @@
 #include <string>
 #include <utility>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Utilities.hh"
 
@@ -104,23 +104,23 @@ class Potential {
 
     virtual double Hamiltonian(double p, double q) const {
         auto vals = this->operator()(p, q);
-        auto mass_eff = achilles::Constant::mN.native() + vals.rscalar +
+        auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
                         std::complex<double>(0, 1) * vals.iscalar;
         return sqrt(p * p + pow(mass_eff, 2)).real() + vals.rvector;
     }
 
     double BindingMomentum(double r) const {
-        auto func = [&](double p) { return Hamiltonian(p, r) - Constant::mN.native(); };
+        auto func = [&](double p) { return Hamiltonian(p, r) - Constant::mN().native(); };
         Brent brent(func);
         return brent.CalcRoot(0, 1000);
     }
 
     double EnergySpectrum(double r, double p) const {
-        return Hamiltonian(p, r) - Constant::mN.native();
+        return Hamiltonian(p, r) - Constant::mN().native();
     }
 
     bool IsCaptured(double r, double mom) const {
-        return Hamiltonian(mom, r) <= Constant::mN.native();
+        return Hamiltonian(mom, r) <= Constant::mN().native();
     }
 
     virtual bool IsRelativistic() const { return false; }
@@ -187,7 +187,7 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);
-        return Constant::mN.native() + p * p / (2 * Constant::mN.native()) + vals.rvector;
+        return Constant::mN().native() + p * p / (2 * Constant::mN().native()) + vals.rvector;
     }
 
     double Rho0() const { return m_rho0; }
@@ -297,7 +297,7 @@ class SchroedingerPotential : public CooperPotential, RegistrablePotential<Schro
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);
-        return Constant::mN.native() + p * p / (2 * Constant::mN.native()) + vals.rvector;
+        return Constant::mN().native() + p * p / (2 * Constant::mN().native()) + vals.rvector;
     }
 
   private:

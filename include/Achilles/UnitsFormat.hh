@@ -19,7 +19,7 @@
 #ifndef UNITS_FORMAT_HH
 #define UNITS_FORMAT_HH
 
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #include <fmt/format.h>
 #include <string_view>

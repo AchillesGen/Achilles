@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/HadronicMapper.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "spdlog/spdlog.h"
 
@@ -34,8 +34,8 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
                                      const std::vector<double> &rans) {
     // Generate inital nucleon state
     double radical = pow(point[0].E().native(), 2) +
-                     2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                     Smin();
+                     2 * point[0].E().native() * Constant::mN().native() +
+                     Constant::mN2().native() - Smin();
     if(radical < 0) radical = 0;
     double pmin = point[0].E().native() - sqrt(radical);
     double pmax = point[0].E().native() + sqrt(radical);
@@ -43,8 +43,8 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     const double mom = dp * rans[0] + pmin;
-    double cosT_max = (2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                       mom * mom - Smin()) /
+    double cosT_max = (2 * point[0].E().native() * Constant::mN().native() +
+                       Constant::mN2().native() - mom * mom - Smin()) /
                       (2 * point[0].E().native() * mom);
     cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     const double cosT = (cosT_max + 1) * rans[1] - 1;
@@ -55,21 +55,22 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     const double det =
         pow(point[0].E().native(), 2) + mom * mom + 2 * (pmom * point[0].Vec3()).native() + Smin();
-    double emax = Constant::mN.native() + point[0].E().native() - sqrt(det);
-    emax = std::min(emax, Constant::mN.native() - mom);
+    double emax = Constant::mN().native() + point[0].E().native() - sqrt(det);
+    emax = std::min(emax, Constant::mN().native() - mom);
     emax = emax > 400 ? 400 : emax;
     const double energy = emax * rans[3] - 1e-8;
     // if(emax < 0) energy = emax - 1;
     // const double energy = dE*rans[3];
 
-    // double cosT_max = (Constant::mN2.native() + energy*energy - 2*Constant::mN.native()*energy
-    // - mom*mom + 2*point[1].E().native()*Constant::mN.native() - 2*point[1].E().native()*energy -
-    // Smin())/(2*mom*point[1].P().native()); cosT_max = cosT_max > 1 ? 1 : cosT_max;
-    // const double cosT = (cosT_max + 1) * rans[1] - 1;
-    // const double sinT = sqrt(1 - cosT*cosT);
+    // double cosT_max = (Constant::mN2().native() + energy*energy -
+    // 2*Constant::mN().native()*energy
+    // - mom*mom + 2*point[1].E().native()*Constant::mN().native() - 2*point[1].E().native()*energy
+    // - Smin())/(2*mom*point[1].P().native()); cosT_max = cosT_max > 1 ? 1 : cosT_max; const double
+    // cosT = (cosT_max + 1) * rans[1] - 1; const double sinT = sqrt(1 - cosT*cosT);
 
-    point[HadronIdx()] = FourVector::FromNative(
-        {Constant::mN.native() - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT});
+    point[HadronIdx()] =
+        FourVector::FromNative({Constant::mN().native() - energy, mom * sinT * cos(phi),
+                                mom * sinT * sin(phi), mom * cosT});
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
@@ -87,8 +88,8 @@ void QESpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
                                         std::vector<double> &rans) {
     double radical = pow(point[0].E().native(), 2) +
-                     2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                     Smin();
+                     2 * point[0].E().native() * Constant::mN().native() +
+                     Constant::mN2().native() - Smin();
     if(radical < 0) radical = 0;
     double pmin = point[0].E().native() - sqrt(radical);
     double pmax = point[0].E().native() + sqrt(radical);
@@ -96,8 +97,8 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     rans[0] = (point[HadronIdx()].P().native() - pmin) / dp;
-    double cosT_max = (2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                       point[1].P2().native() - Smin()) /
+    double cosT_max = (2 * point[0].E().native() * Constant::mN().native() +
+                       Constant::mN2().native() - point[1].P2().native() - Smin()) /
                       (2 * point[0].E().native() * point[1].P().native());
     cosT_max = cosT_max > 1 ? 1 : cosT_max < -1 ? -1 : cosT_max;
     double dCos = (cosT_max + 1);
@@ -106,14 +107,14 @@ double QESpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 
     const double det = pow(point[0].E().native(), 2) + point[1].P2().native() +
                        2 * (point[1].Vec3() * point[0].Vec3()).native() + Smin();
-    double emax = Constant::mN.native() + point[0].E().native() - sqrt(det);
-    emax = std::min(emax, Constant::mN.native() - point[1].P().native());
+    double emax = Constant::mN().native() + point[0].E().native() - sqrt(det);
+    emax = std::min(emax, Constant::mN().native() - point[1].P().native());
     emax = emax > 400 ? 400 : emax;
-    const double energy = Constant::mN.native() - point[HadronIdx()].E().native();
+    const double energy = Constant::mN().native() - point[HadronIdx()].E().native();
     // if(energy < 0) return std::numeric_limits<double>::infinity();
     const double dE = emax;
     rans[3] = (energy + 1e-8) / emax;
-    // rans[3] = (Constant::mN.native() - point[HadronIdx()].E().native())/dE;
+    // rans[3] = (Constant::mN().native() - point[HadronIdx()].E().native())/dE;
 
     // double cosT_max = (point[HadronIdx()].M2().native() +
     // 2*point[1].E().native()*point[HadronIdx()].E().native() -
@@ -149,23 +150,23 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     ThreeVector pmom2 =
         ThreeVector::FromNative({p2 * sinT2 * cos(phi2), p2 * sinT2 * sin(phi2), p2 * cosT2});
-    double E2 = sqrt(p2 * p2 + Constant::mN2.native());
+    double E2 = sqrt(p2 * p2 + Constant::mN2().native());
 
     point.back() = FourVector{units::Energy{E2}, pmom2[0], pmom2[1], pmom2[2]};
 
     // Generate inital nucleon state
     double pmin = point[0].E().native() - sqrt(pow(point[0].E().native(), 2) +
-                                               2 * point[0].E().native() * Constant::mN.native() +
-                                               Constant::mN2.native() - Smin());
+                                               2 * point[0].E().native() * Constant::mN().native() +
+                                               Constant::mN2().native() - Smin());
     double pmax = point[0].E().native() + sqrt(pow(point[0].E().native(), 2) +
-                                               2 * point[0].E().native() * Constant::mN.native() +
-                                               Constant::mN2.native() - Smin());
+                                               2 * point[0].E().native() * Constant::mN().native() +
+                                               Constant::mN2().native() - Smin());
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     const double mom = dp * rans[0] + pmin;
-    double cosT_max = (2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                       mom * mom - Smin()) /
+    double cosT_max = (2 * point[0].E().native() * Constant::mN().native() +
+                       Constant::mN2().native() - mom * mom - Smin()) /
                       (2 * point[0].E().native() * mom);
     cosT_max = cosT_max > 1 ? 1 : cosT_max;
     const double cosT = (cosT_max + 1) * rans[1] - 1;
@@ -176,21 +177,22 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 
     const double det =
         pow(point[0].E().native(), 2) + mom * mom + 2 * (pmom * point[0].Vec3()).native() + Smin();
-    double emax = Constant::mN.native() + point[0].E().native() - sqrt(det);
-    emax = std::min(emax, Constant::mN.native() - mom);
+    double emax = Constant::mN().native() + point[0].E().native() - sqrt(det);
+    emax = std::min(emax, Constant::mN().native() - mom);
     emax = emax > 400 ? 400 : emax;
     const double energy = emax * rans[3] - 1e-8;
     // if(emax < 0) energy = emax - 1;
     // const double energy = dE*rans[3];
 
-    // double cosT_max = (Constant::mN2.native() + energy*energy - 2*Constant::mN.native()*energy
-    // - mom*mom + 2*point[1].E().native()*Constant::mN.native() - 2*point[1].E().native()*energy -
-    // Smin())/(2*mom*point[1].P().native()); cosT_max = cosT_max > 1 ? 1 : cosT_max;
-    // const double cosT = (cosT_max + 1) * rans[1] - 1;
-    // const double sinT = sqrt(1 - cosT*cosT);
+    // double cosT_max = (Constant::mN2().native() + energy*energy -
+    // 2*Constant::mN().native()*energy
+    // - mom*mom + 2*point[1].E().native()*Constant::mN().native() - 2*point[1].E().native()*energy
+    // - Smin())/(2*mom*point[1].P().native()); cosT_max = cosT_max > 1 ? 1 : cosT_max; const double
+    // cosT = (cosT_max + 1) * rans[1] - 1; const double sinT = sqrt(1 - cosT*cosT);
 
-    point[HadronIdx()] = FourVector::FromNative(
-        {Constant::mN.native() - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT});
+    point[HadronIdx()] =
+        FourVector::FromNative({Constant::mN().native() - energy, mom * sinT * cos(phi),
+                                mom * sinT * sin(phi), mom * cosT});
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  point[0] = {}", point[0]);
@@ -209,17 +211,17 @@ void IntfSpectralMapper::GeneratePoint(std::vector<FourVector> &point,
 double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
                                           std::vector<double> &rans) {
     double pmin = point[0].E().native() - sqrt(pow(point[0].E().native(), 2) +
-                                               2 * point[0].E().native() * Constant::mN.native() +
-                                               Constant::mN2.native() - Smin());
+                                               2 * point[0].E().native() * Constant::mN().native() +
+                                               Constant::mN2().native() - Smin());
     double pmax = point[0].E().native() + sqrt(pow(point[0].E().native(), 2) +
-                                               2 * point[0].E().native() * Constant::mN.native() +
-                                               Constant::mN2.native() - Smin());
+                                               2 * point[0].E().native() * Constant::mN().native() +
+                                               Constant::mN2().native() - Smin());
     pmin = pmin < 0 ? 0 : pmin;
     pmax = pmax > 800 ? 800 : pmax;
     double dp = pmax - pmin;
     rans[0] = (point[HadronIdx()].P().native() - pmin) / dp;
-    double cosT_max = (2 * point[0].E().native() * Constant::mN.native() + Constant::mN2.native() -
-                       point[1].P2().native() - Smin()) /
+    double cosT_max = (2 * point[0].E().native() * Constant::mN().native() +
+                       Constant::mN2().native() - point[1].P2().native() - Smin()) /
                       (2 * point[0].E().native() * point[1].P().native());
     cosT_max = cosT_max > 1 ? 1 : cosT_max;
     double dCos = (cosT_max + 1);
@@ -228,10 +230,10 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 
     const double det = pow(point[0].E().native(), 2) + point[1].P2().native() +
                        2 * (point[1].Vec3() * point[0].Vec3()).native() + Smin();
-    double emax = Constant::mN.native() + point[0].E().native() - sqrt(det);
-    emax = std::min(emax, Constant::mN.native() - point[1].P().native());
+    double emax = Constant::mN().native() + point[0].E().native() - sqrt(det);
+    emax = std::min(emax, Constant::mN().native() - point[1].P().native());
     emax = emax > 400 ? 400 : emax;
-    const double energy = Constant::mN.native() - point[HadronIdx()].E().native();
+    const double energy = Constant::mN().native() - point[HadronIdx()].E().native();
     // if(energy < 0) return std::numeric_limits<double>::infinity();
     const double dE = emax;
     rans[3] = (energy + 1e-8) / emax;
@@ -241,7 +243,7 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
     rans[5] = (point.back().CosTheta() + 1) / dCos2;
     rans[6] = point.back().Phi() / dPhi;
 
-    // rans[3] = (Constant::mN.native() - point[HadronIdx()].E().native())/dE;
+    // rans[3] = (Constant::mN().native() - point[HadronIdx()].E().native())/dE;
 
     // double cosT_max = (point[HadronIdx()].M2().native() +
     // 2*point[1].E().native()*point[HadronIdx()].E().native() -

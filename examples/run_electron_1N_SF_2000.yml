@@ -26,14 +26,14 @@ Beams:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: { value: 2000, unit: MeV }
+        Energy: 2000 MeV
 
 Cascade:
   Run: False
   Interaction:
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
-  Step: { value: 0.04, unit: fm }
+  Step: 0.04 fm
   Probability: Cylinder
 
 HardCuts:
@@ -54,8 +54,8 @@ NuclearModels:
 Nuclei:
   - Nucleus:
       Name: 1N
-      Binding: { value: 8.6, unit: MeV }
-      Fermi Momentum: { value: 225, unit: MeV }
+      Binding: 8.6 MeV
+      Fermi Momentum: 225 MeV
       Density:
         ProtonFile: data/densities/c12.prova.txt
         NeutronFile: data/densities/c12.prova.txt

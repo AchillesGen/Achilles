@@ -6,7 +6,7 @@
 
 #include "Achilles/PDFBase.hh"
 #include "Achilles/ParticleInfo.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 namespace achilles {
 

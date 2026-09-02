@@ -6,8 +6,8 @@
 #include "catch2/matchers/catch_matchers_vector.hpp"
 #include "catch2/trompeloeil.hpp"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/EventHistory.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include <string>
 
 namespace units = achilles::units;
@@ -20,9 +20,9 @@ class MockVisitor : public trompeloeil::mock_interface<achilles::HistoryVisitor>
 TEST_CASE("EventHistoryNode", "[EventHistory]") {
     achilles::EventHistoryNode node(0);
     achilles::Particle part1(achilles::PID::proton(),
-                             {achilles::Constant::mN, 0_MeV, 0_MeV, 0_MeV});
+                             {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV});
     achilles::Particle part2(achilles::PID::neutron(),
-                             {achilles::Constant::mN, 0_MeV, 0_MeV, 0_MeV});
+                             {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV});
     node.AddIncoming(part1);
     node.AddOutgoing(part2);
 
@@ -64,9 +64,9 @@ TEST_CASE("EventHistory", "[EventHistory]") {
         history.AddVertex({});
 
         achilles::Particle part1(achilles::PID::proton(),
-                                 {achilles::Constant::mN, 0_MeV, 0_MeV, 0_MeV});
+                                 {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV});
         achilles::Particle part2(achilles::PID::neutron(),
-                                 {achilles::Constant::mN, 0_MeV, 0_MeV, 0_MeV});
+                                 {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV});
         history.AddParticleIn(0, part1);
         history.AddParticleOut(0, part2);
 

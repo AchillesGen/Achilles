@@ -46,7 +46,7 @@ function(achilles_check_units_guards)
     set(CMAKE_REQUIRED_FLAGS "-std=c++17 -DSPDLOG_FMT_EXTERNAL")
     set(CMAKE_REQUIRED_INCLUDES "${ACHILLES_UNITS_INCLUDE_DIRS}")
     check_cxx_source_compiles([=[
-        #include "Achilles/Units.hh"
+        #include "Achilles/PhysicalUnits.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ Energy e = 2.2_GeV; return e.in(GeV) > 0 ? 0 : 1; }
     ]=] ACHILLES_GUARD_positive_control)
@@ -80,31 +80,26 @@ function(achilles_check_units_guards)
     endif()
 
     _achilles_expect_fail(add_energy_length [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ auto bad = 2.2_GeV + 1.0_fm; (void)bad; }
     ]=])
 
     _achilles_expect_fail(assign_bare_double [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units;
         int main(){ Energy e = 3.0; (void)e; }
     ]=])
 
     _achilles_expect_fail(energy_in_fm [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ double x = (2.2_GeV).in(fm); (void)x; }
     ]=])
 
     _achilles_expect_fail(mix_length_energy [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ Energy e = 1.0_fm; (void)e; }
     ]=])
 
     _achilles_expect_fail(energy_to_double [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ double x = 2.2_GeV; (void)x; }
     ]=])
@@ -132,7 +127,6 @@ function(achilles_check_units_guards)
     ]=])
 
     _achilles_expect_fail(sqrt_odd_dimension [=[
-        #include "Achilles/Units.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
         int main(){ auto bad = sqrt(2.2_GeV); (void)bad; }
     ]=])

@@ -5,7 +5,7 @@
 #include "catch2/catch_template_test_macros.hpp"
 #include "catch2/catch_test_macros.hpp"
 
-#include "Achilles/Constants.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
@@ -76,8 +76,8 @@ double dPotential_dr(double p, double r, double rho0) {
 double Hamiltonian(const achilles::PSVector &q, const achilles::PSVector &p,
                    std::shared_ptr<achilles::Potential> potential) {
     auto vals = potential->operator()(p.P().native(), q.P().native());
-    auto mass_eff =
-        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
     return sqrt(p.P2().native() + pow(mass_eff, 2)).real() + vals.rvector;
 }
 
@@ -86,10 +86,10 @@ achilles::PSVector dHamiltonian_dp(const achilles::PSVector &q, const achilles::
     auto vals = potential->operator()(p.P().native(), q.P().native());
     auto dpot_dp = potential->derivative_p(p.P().native(), q.P().native());
 
-    auto mass_eff =
-        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
     double numerator =
-        (vals.rscalar + achilles::Constant::mN.native()) * dpot_dp.rscalar + p.P().native();
+        (vals.rscalar + achilles::Constant::mN().native()) * dpot_dp.rscalar + p.P().native();
     double denominator = sqrt(pow(mass_eff, 2) + p.P2().native()).real();
     return numerator / denominator * p / p.P().native() + dpot_dp.rvector * p / p.P().native();
 }
@@ -99,9 +99,9 @@ achilles::PSVector dHamiltonian_dr(const achilles::PSVector &q, const achilles::
     auto vals = potential->operator()(p.P().native(), q.P().native());
     auto dpot_dr = potential->derivative_r(p.P().native(), q.P().native());
 
-    auto mass_eff =
-        achilles::Constant::mN.native() + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    double numerator = (vals.rscalar + achilles::Constant::mN.native()) * dpot_dr.rscalar;
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
+    double numerator = (vals.rscalar + achilles::Constant::mN().native()) * dpot_dr.rscalar;
     double denominator = sqrt(pow(mass_eff, 2) + p.P2().native()).real();
     return numerator / denominator * q / q.P().native() + dpot_dr.rvector * q / q.P().native();
 }

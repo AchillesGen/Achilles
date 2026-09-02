@@ -6,10 +6,10 @@
 
 #include "spdlog/spdlog.h"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/GeantInteractions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -124,7 +124,7 @@ double GeantInteractions::CrossSection(const Particle &particle1, const Particle
     } catch(std::domain_error &e) {
         spdlog::debug("Using Nasa Interaction");
         double s = (p1Lab + p2Lab).M2();
-        double plab = sqrt(pow(s, 2) / (4 * pow(Constant::mN.native(), 2)) - s);
+        double plab = sqrt(pow(s, 2) / (4 * pow(Constant::mN().native(), 2)) - s);
         return Interactions::CrossSectionLab(samePID, plab);
     }
 }

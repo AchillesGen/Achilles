@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 extern "C" {
 

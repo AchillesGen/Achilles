@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ResonanceHelper.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/Distributions.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Random.hh"
-#include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
 
 double achilles::resonance::BreitWignerSpectral(PID pid, double mass) {

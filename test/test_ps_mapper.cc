@@ -26,7 +26,7 @@ class DummyHadron : public achilles::HadronicBeamMapper,
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[HadronIdx()] = {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV, 0_MeV};
+        p[HadronIdx()] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
     }
     double GenerateWeight(const std::vector<achilles::FourVector> &,
                           std::vector<double> &) override {
@@ -45,8 +45,8 @@ class DummyFS : public achilles::FinalStateMapper,
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[2] = {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV, 0_MeV};
-        p[3] = {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV, 0_MeV};
+        p[2] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
+        p[3] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
     }
     double GenerateWeight(const std::vector<achilles::FourVector> &,
                           std::vector<double> &) override {
@@ -59,7 +59,7 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
 
     auto beam = std::make_shared<MockBeam>();
-    achilles::FourVector beam_mom = {units::Energy{achilles::Constant::mN.native()}, 0_MeV, 0_MeV,
+    achilles::FourVector beam_mom = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV,
                                      0_MeV};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
@@ -83,7 +83,7 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
     auto beam_map = std::make_shared<MockMapper>();
     auto hadron_map = std::make_shared<MockMapper>();
     auto final_state_map = std::make_unique<MockMapper>();
-    std::vector<double> masses{0, achilles::Constant::mN2.native()};
+    std::vector<double> masses{0, achilles::Constant::mN2().native()};
     size_t beam_dims = 0, hadron_dims = 4, final_state_dims = 2;
     static constexpr double sqrts = 200;
     achilles::FourVector beam_mom = {100_MeV, 0_MeV, 0_MeV, -100_MeV};

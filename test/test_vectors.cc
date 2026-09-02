@@ -9,6 +9,7 @@
 #include "matchers.hh"
 
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "spdlog/spdlog.h"
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ElectronPDF.hh"
-#include "Achilles/Constants.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Utilities.hh"
 
 using achilles::AlphaQED;

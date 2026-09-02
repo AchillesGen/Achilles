@@ -110,7 +110,7 @@ set_tests_properties(achilles-fortran-testsuite PROPERTIES
     FAIL_REGULAR_EXPRESSION "failed with reason"
 )
 
-# Negative compile tests: code that must never compile against Achilles/Units.hh
+# Negative compile tests: code that must never compile against Achilles/PhysicalUnits.hh
 # (energy + length, bare double -> Energy, energy.in(fm), ...). Checked at
 # configure time; a regression is a hard error, not a skipped test.
 include(${CMAKE_SOURCE_DIR}/CMake/UnitsGuards.cmake)

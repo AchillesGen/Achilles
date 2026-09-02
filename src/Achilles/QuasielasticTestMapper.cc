@@ -3,11 +3,10 @@
 
 #include <utility>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
 #include "Achilles/ThreeVector.hh"
-#include "Achilles/Units.hh"
 
 using achilles::QuasielasticTestMapper;
 
@@ -79,9 +78,9 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom,
         {p_h * sinT_h * cos(phi_h), p_h * sinT_h * sin(phi_h), p_h * cosT_h});
     auto tmp2 = tmp + Q.Vec3();
 
-    double Epp = sqrt(pow(Constant::mN.native(), 2) + tmp2.P2().native());
-    double Ep = Constant::mN.native() + Q.E().native() - Epp;
-    mom[0] = FourVector(tmp, units::Energy{Constant::mN.native() - Ep});
+    double Epp = sqrt(pow(Constant::mN().native(), 2) + tmp2.P2().native());
+    double Ep = Constant::mN().native() + Q.E().native() - Epp;
+    mom[0] = FourVector(tmp, units::Energy{Constant::mN().native() - Ep});
     mom[2] = FourVector(tmp2, units::Energy{Epp});
 
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
@@ -119,7 +118,7 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     wgt /= (dCos * dPhi * dp * mom[0].P2().native() * mom[3].E().native() / (mom[2].E().native()));
     wgt *= 16 * M_PI * M_PI;
 
-    if(mom[0].E().native() > Constant::mN.native()) wgt = std::numeric_limits<double>::infinity();
+    if(mom[0].E().native() > Constant::mN().native()) wgt = std::numeric_limits<double>::infinity();
 
     beamRans.insert(beamRans.end(), std::make_move_iterator(momRans.begin()),
                     std::make_move_iterator(momRans.end()));
