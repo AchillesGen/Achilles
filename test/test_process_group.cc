@@ -123,12 +123,11 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         const MockEvent &cevent = event;
         double weight;
         static constexpr double expected_weight = 10;
-        static constexpr auto expected_xsec = expected_weight * achilles::units::nb;
         REQUIRE_CALL(event, Weight()).TIMES(1).LR_RETURN(weight);
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .LR_WITH(_1 == cevent)
             .TIMES(1)
-            .RETURN(expected_xsec);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
 
@@ -191,10 +190,9 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         group.SetOptimize(optimize);
 
         static constexpr double expected_weight = 10;
-        static constexpr auto expected_xsec = expected_weight * achilles::units::nb;
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
-            .RETURN(expected_xsec);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
@@ -215,11 +213,10 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         group.SetOptimize(optimize);
 
         static constexpr double expected_weight = 10;
-        static constexpr auto expected_xsec = expected_weight * achilles::units::nb;
         group.MaxWeight() = 1; // Hack to ensure weight is not rescaled by 0
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
-            .RETURN(expected_xsec);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
