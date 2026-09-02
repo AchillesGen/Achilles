@@ -288,10 +288,13 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
 }
 
 void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
+    // The backend hands back a typed cross section; event weights, the
+    // integrand and the unweighter all carry nb, so this is the one place the
+    // unit is applied.
     if(!process_idx) {
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
-            auto process_weight = m_backend->CrossSection(event, m_processes[i]);
+            auto process_weight = m_backend->CrossSection(event, m_processes[i]).in(units::nb);
             if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
         }
@@ -299,7 +302,7 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
         if(b_calc_weights) m_xsec += weight;
     } else {
         auto &process = m_processes[process_idx.value()];
-        auto weight = m_backend->CrossSection(event, process);
+        auto weight = m_backend->CrossSection(event, process).in(units::nb);
         event.Weight() = process.Unweight(weight);
     }
 }
