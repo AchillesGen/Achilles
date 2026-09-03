@@ -100,6 +100,18 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
                                  "of protons or neutrons.");
 }
 
+void Nucleus::SetDensityProfile(const std::vector<double> &radii,
+                                const std::vector<double> &proton_density,
+                                const std::vector<double> &neutron_density) {
+    if(radii.size() != proton_density.size() || radii.size() != neutron_density.size())
+        throw std::runtime_error("Nucleus: density profile sizes do not match the radii");
+
+    protonrhoInterp.SetData(radii, proton_density);
+    protonrhoInterp.CubicSpline();
+    neutronrhoInterp.SetData(radii, neutron_density);
+    neutronrhoInterp.CubicSpline();
+}
+
 void Nucleus::Initialize(size_t Z, size_t A) {
     if(Z > A) {
         std::string errorMsg = "Requires the number of protons to be less than the total";
