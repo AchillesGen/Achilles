@@ -1,0 +1,103 @@
+name: Build and Deploy site
+
+on:
+  push:
+    branches:
+      - main
+      - '**' # All branches
+  release:
+    types: [published]
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Python dependencies
+        run: pip install -r docs/requirements.txt
+
+      - name: Install CMake and Doxygen
+        run: sudo apt-get update && sudo apt-get install -y cmake doxygen graphviz libhdf5-dev gfortran
+
+      - name: Configure CMake
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DACHILLES_BUILD_DOCS=ON
+        working-directory: .
+
+      - name: Determine docs version
+        id: docs-version
+        run: |
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "version=latest" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build documentation
+        run: |
+          cd build
+          cmake --build . --target achilles-docs
+        working-directory: .
+        env:
+          DOCS_VERSION: ${{ steps.docs-version.outputs.version }}
+
+      - name: Mark timestamp for branch builds
+        if: github.event_name == 'push'
+        run: date -u +"%Y-%m-%dT%H:%M:%SZ" > build/docs/sphinx/.last_updated
+
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Copy docs
+        run: |
+          DEST="${{ steps.docs-version.outputs.version }}"
+          mkdir -p gh-pages/$DEST
+          rsync -a --delete build/docs/sphinx/ gh-pages/$DEST/
+
+      - name: Update versions.json and switcher.json
+        run: |
+          cd gh-pages
+          BASE_URL="https://achillesgen.github.io/Achilles"
+          # Include all version directories (including 'latest')
+          ls -d */ | cut -f1 -d'/' | grep -vE '^_' \
+            | jq -R . | jq -s . > versions.json
+          echo "Generated versions.json:"
+          cat versions.json
+
+          # Generate switcher.json for pydata-sphinx-theme version switcher
+          jq '[.[] | {name: ., version: ., url: ("'"$BASE_URL"'/" + . + "/")}]' \
+            versions.json > switcher.json
+          echo "Generated switcher.json:"
+          cat switcher.json
+
+      - name: Deploy docs
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: gh-pages
+          publish_branch: gh-pages
+          keep_files: true
+
+  rebuild-landing:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger landing page rebuild
+        run: |
+          gh api repos/${{ github.repository }}/dispatches \
+            -f event_type=rebuild-landing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,93 @@
+name: Docs reminder
+
+# Soft, non-blocking reminder: if a PR changes user-facing code or the
+# run-card / config schema but does not touch docs/, leave (or update) a
+# single comment nudging the author to consider a docs update. This check
+# never fails the build -- it is a nudge, not a gate.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            source:
+              - 'src/**'
+              - 'include/**'
+            runcard:
+              - '*.yml'
+              - 'data/**'
+            docs:
+              - 'docs/**'
+
+      - name: Post or update reminder
+        uses: actions/github-script@v7
+        env:
+          SOURCE: ${{ steps.filter.outputs.source }}
+          RUNCARD: ${{ steps.filter.outputs.runcard }}
+          DOCS: ${{ steps.filter.outputs.docs }}
+        with:
+          script: |
+            const marker = '<!-- docs-reminder -->';
+            const codeChanged =
+              process.env.SOURCE === 'true' || process.env.RUNCARD === 'true';
+            const docsChanged = process.env.DOCS === 'true';
+            const needsReminder = codeChanged && !docsChanged;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            // Find an existing reminder comment authored by the bot.
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 }
+            );
+            const existing = comments.find(
+              c => c.body && c.body.includes(marker)
+            );
+
+            if (needsReminder) {
+              const body = [
+                marker,
+                "### 📝 Documentation reminder",
+                "",
+                "This PR changes source code and/or the run-card / config " +
+                  "schema, but doesn't touch `docs/`.",
+                "",
+                "If these changes affect behavior, configuration options, or " +
+                  "the public API, please update the docs. If no docs change " +
+                  "is needed, you can ignore this comment.",
+              ].join("\n");
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner, repo, comment_id: existing.id, body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number, body,
+                });
+              }
+            } else if (existing) {
+              // Docs were updated (or relevant code no longer changed):
+              // mark the prior reminder as resolved.
+              await github.rest.issues.updateComment({
+                owner, repo, comment_id: existing.id,
+                body: marker + "\n### ✅ Documentation reminder resolved\n\n" +
+                  "Docs were updated (or no relevant code changes remain). " +
+                  "Thanks!",
+              });
+            }
