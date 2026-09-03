@@ -14,7 +14,6 @@ namespace achilles {
 using Particles = std::vector<Particle>;
 
 class Nucleus;
-class NuclearRemnant;
 
 struct compare_momentum {
     explicit compare_momentum(const Particle &particle, double _eps = 1e-10)
@@ -36,6 +35,8 @@ class EventHistoryNode {
         target = 3,
         decay = 4,
         shower = 5,
+        escape = 6,
+        capture = 7,
     };
 
     EventHistoryNode(size_t idx, StatusCode status = StatusCode::cascade)
@@ -100,6 +101,10 @@ inline std::string ToString(EventHistoryNode::StatusCode code) {
         return "decay";
     case StatusCode::shower:
         return "shower";
+    case StatusCode::escape:
+        return "escape";
+    case StatusCode::capture:
+        return "capture";
     }
     return "UNKOWN";
 }

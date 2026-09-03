@@ -23,14 +23,14 @@ TEST_CASE("Passes Validator", "[NuHepMC]") {
         {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
     achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
                                                       1.3242861369493605e2, 5.3473759747528429e3});
-    // TODO: Figure out how to handle remnant
-    // achilles::Particle remnant(achilles::PID(1000060110));
-    // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -
-    // lepton.Momentum();
+    achilles::Particle remnant(achilles::PID::MakeNucleus(6, 11), {}, {},
+                               achilles::ParticleStatus::residue);
+    remnant.Momentum() =
+        target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() - lepton.Momentum();
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+                      {target}, {nuc_in, remnant}, achilles::EventHistoryNode::StatusCode::target);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {beam_part}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},

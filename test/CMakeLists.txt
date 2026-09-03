@@ -11,6 +11,7 @@ add_executable(achilles-testsuite
     test_vectors.cc
     test_utils.cc
     test_particle_info.cc
+    test_nuclear_mass.cc
     test_particle.cc
     test_nucleus.cc
     test_form_factor.cc
