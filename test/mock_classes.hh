@@ -38,6 +38,9 @@
 #include <map>
 #include <vector>
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 namespace achilles {
 
 struct FormFactorInfo;
@@ -81,8 +84,8 @@ class MockNucleus : public trompeloeil::mock_interface<achilles::Nucleus> {
     static constexpr bool trompeloeil_movable_mock = true;
     IMPLEMENT_MOCK0(GenerateConfig);
     IMPLEMENT_CONST_MOCK0(ID);
-    MAKE_CONST_MOCK0(Radius, const double &(), noexcept override);
-    MAKE_CONST_MOCK1(Rho, double(const double &), noexcept override);
+    MAKE_CONST_MOCK0(Radius, achilles::units::Length(), noexcept override);
+    MAKE_CONST_MOCK1(Rho, double(achilles::units::Length), noexcept override);
     MAKE_CONST_MOCK0(NNucleons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(NProtons, size_t(), noexcept override);
     MAKE_CONST_MOCK0(NNeutrons, size_t(), noexcept override);

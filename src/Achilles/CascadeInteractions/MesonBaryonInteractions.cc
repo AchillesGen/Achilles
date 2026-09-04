@@ -31,7 +31,7 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
     // return empty interaction list, no initial channel matches
     if(ichan == std::numeric_limits<size_t>::max()) { return results; }
 
-    double W = (particle1.Momentum() + particle2.Momentum()).M();
+    double W = (particle1.Momentum() + particle2.Momentum()).M().native();
 
     auto CS_fchan = m_amps.GetAllCSW(ichan, W);
 
@@ -92,7 +92,7 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     // Channel out
     size_t fchan = m_amps.GetCchannel(fpidm, fpidb);
 
-    double W = (particle1.Momentum() + particle2.Momentum()).M();
+    double W = (particle1.Momentum() + particle2.Momentum()).M().native();
 
     // Get angular distribution
     f_Polynomial poly_angles = m_amps.Get_CSpoly_W(W, ichan, fchan);
@@ -159,8 +159,8 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
 
     // Masses of final-state particles
     // Use particleInfo
-    double mM = ParticleInfo(fpidm).Mass();
-    double mB = ParticleInfo(fpidb).Mass();
+    double mM = ParticleInfo(fpidm).Mass().native();
+    double mB = ParticleInfo(fpidb).Mass().native();
 
     // CMS momenta and energy of final-state particles
     // double s = W * W;
@@ -170,11 +170,11 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     //     1. / 4 / s * (s * s + mM2 * mM2 + mB2 * mB2 - 2 * s * (mM2 + mB2) - 2 * mM2 * mB2);
     // double pfCMS = sqrt(pfCMS2);
     auto p01 = (particle1.Momentum() + particle2.Momentum());
-    auto s = p01.M2();
+    auto s = p01.M2().native();
     auto sqrts = sqrt(s);
     auto boostVec = p01.BoostVector();
     auto mom0 = particle1.Momentum().Boost(-boostVec);
-    Poincare zax(mom0, FourVector(1., 0., 0., 1.));
+    Poincare zax(mom0, FourVector::FromNative({1., 0., 0., 1.}));
 
     double EmCMS = sqrts / 2 * (1 + mM * mM / s - mB * mB / s);
     double EbCMS = sqrts / 2 * (1 - mM * mM / s + mB * mB / s);
@@ -182,17 +182,17 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     auto pfCMS = lambda / 2 / sqrts;
 
     // Generate outgoing momentum
-    FourVector p1Out =
-        FourVector(EmCMS, pfCMS * sin_CMS * cosphi, pfCMS * sin_CMS * sinphi, pfCMS * cos_CMS);
-    FourVector p2Out =
-        FourVector(EbCMS, -pfCMS * sin_CMS * cosphi, -pfCMS * sin_CMS * sinphi, -pfCMS * cos_CMS);
+    FourVector p1Out = FourVector::FromNative(
+        {EmCMS, pfCMS * sin_CMS * cosphi, pfCMS * sin_CMS * sinphi, pfCMS * cos_CMS});
+    FourVector p2Out = FourVector::FromNative(
+        {EbCMS, -pfCMS * sin_CMS * cosphi, -pfCMS * sin_CMS * sinphi, -pfCMS * cos_CMS});
 
     // Rotate back
     zax.RotateBack(p1Out);
     zax.RotateBack(p2Out);
 
     // // Boost
-    // ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    // ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     // FourVector p1Lab = particle1.Momentum();
     // FourVector p1CM = p1Lab.Boost(-boostCM);
 
@@ -201,14 +201,14 @@ std::vector<Particle> MesonBaryonInteraction::GenerateMomentum(const Particle &p
     // ThreeVector p_axis = p1CM.Vec3().Unit();
     // ThreeVector p_perp;
 
-    // if(p_axis.Py() == 0.) {
+    // if(p_axis.Py().native() == 0.) {
     //     // An arbitrary orthogonal vector is y
     //     p_perp = {0., 1., 0.};
-    // } else if(p_axis.Px() == 0) {
+    // } else if(p_axis.Px().native() == 0) {
     //     // An arbitrary orthogonal vector is x
     //     p_perp = {1., 0., 0.};
     // } else {
-    //     double norm = sqrt(1. - p_axis.Pz() * p_axis.Pz());
+    //     double norm = sqrt(1. - p_axis.Pz().native() * p_axis.Pz().native());
     //     // An arbitrary orthonormal vector is
     //     p_perp = {p_axis[1] / norm, -p_axis[0] / norm, 0.};
     // }

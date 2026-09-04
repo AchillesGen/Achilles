@@ -13,8 +13,8 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ReferenceHandler.hh"
-#include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -269,8 +269,8 @@ bool achilles::EventGen::GenerateSingleEvent() {
     auto init_lep = event.Leptons()[0];
     auto init_beam = init_lep;
     init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
+    const units::Energy max_energy{beam->MaxEnergy()};
+    init_beam.Momentum() = {max_energy, units::Energy{}, units::Energy{}, max_energy};
     event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays

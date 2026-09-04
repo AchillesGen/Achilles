@@ -6,9 +6,11 @@
 #include <vector>
 
 #include "Achilles/Factory.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
+#include "Achilles/UnitsIO.hh"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -98,7 +100,9 @@ namespace YAML {
 template <> struct convert<achilles::InteractionResult> {
     static bool decode(const Node &node, achilles::InteractionResult &result) {
         result.particles = node["Outgoing"].as<std::vector<achilles::PID>>();
-        result.cross_section = node["CrossSection"].as<double>();
+        // The interaction layer still carries cross sections as mb numbers.
+        result.cross_section =
+            node["CrossSection"].as<achilles::units::CrossSection>().in(achilles::units::mb);
         return true;
     }
 };

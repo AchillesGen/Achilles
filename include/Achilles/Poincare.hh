@@ -5,18 +5,25 @@
 
 #include "Achilles/FourVector.hh"
 
+#include <array>
 #include <vector>
 
 namespace achilles {
 
+/// Poincare transformations are pure geometry: depending on the mode its
+/// reference vectors are either momenta or dimensionless directions, so it
+/// works on canonical component values (MeV) and converts at its FourVector
+/// interface rather than carrying a mass dimension of its own.
 class Poincare {
   private:
+    using Vec4 = std::array<double, 4>;
+
     int m_type;
-    FourVector m_l, m_t;
-    double m_rsq, m_omct, m_st;
+    Vec4 m_l{}, m_t{};
+    double m_rsq, m_omct{}, m_st{};
 
   public:
-    Poincare(const FourVector &v = FourVector(0., 0., 0., 0.), const double &rsq = -1.);
+    Poincare(const FourVector &v = FourVector(), const double &rsq = -1.);
     Poincare(const FourVector &v1, const FourVector &v2, int mode = 0);
 
     void Boost(FourVector &v) const;
@@ -38,8 +45,8 @@ class Poincare {
         return v;
     }
 
-    inline const FourVector &PL() const { return m_l; }
-    inline const FourVector &PT() const { return m_t; }
+    inline FourVector PL() const { return FourVector::FromNative(m_l); }
+    inline FourVector PT() const { return FourVector::FromNative(m_t); }
 
     inline double OMCTheta() const { return m_omct; }
     inline double SinTheta() const { return m_st; }

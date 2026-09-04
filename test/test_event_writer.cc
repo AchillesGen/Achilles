@@ -10,6 +10,9 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 using achilles::Particle;
 
 TEST_CASE("Builtin", "[EventWriter]") {
@@ -35,8 +38,10 @@ TEST_CASE("Builtin", "[EventWriter]") {
         std::stringstream ss;
         achilles::AchillesWriter writer(&ss);
 
-        static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-        static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+        static constexpr achilles::FourVector hadron0{65.4247_MeV, 26.8702_MeV, -30.5306_MeV,
+                                                      -10.9449_MeV};
+        static constexpr achilles::FourVector hadron1{1560.42_MeV, -78.4858_MeV, -204.738_MeV,
+                                                      1226.89_MeV};
         achilles::Particles particles = {
             Particle{achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
             Particle{achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};

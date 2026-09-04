@@ -24,16 +24,14 @@ TEST_CASE("Parsing database", "[DecayHandler]") {
 TEST_CASE("Two body decay", "[DecayHandler]") {
     achilles::DecayHandler decay("data/decays.yml");
 
-    auto mom =
-        GENERATE(take(30, randomMomentum(1000, achilles::ParticleInfo(PID::deltapp()).Mass())));
+    auto mom = GENERATE(
+        take(30, randomMomentum(1000, achilles::ParticleInfo(PID::deltapp()).Mass().native())));
     achilles::Particle delta{PID::deltapp(), mom};
 
     auto outgoing = decay.Decay(delta);
 
     CHECK(outgoing.size() == 2);
     auto mom2 = outgoing[0].Momentum() + outgoing[1].Momentum();
-    CHECK_THAT(mom2[0], Catch::Matchers::WithinAbs(mom[0], 1e-8));
-    CHECK_THAT(mom2[1], Catch::Matchers::WithinAbs(mom[1], 1e-8));
-    CHECK_THAT(mom2[2], Catch::Matchers::WithinAbs(mom[2], 1e-8));
-    CHECK_THAT(mom2[3], Catch::Matchers::WithinAbs(mom[3], 1e-8));
+    for(size_t i = 0; i < 4; ++i)
+        CHECK_THAT(mom2[i].native(), Catch::Matchers::WithinAbs(mom[i].native(), 1e-8));
 }

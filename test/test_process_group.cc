@@ -9,6 +9,9 @@
 #include "Achilles/XSecBackend.hh"
 #include "mock_classes.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 using achilles::Particle;
 using achilles::RegistrableBackend;
 
@@ -29,10 +32,10 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         achilles::ProcessGroup group(beam, nucleus);
         group.AddProcess(std::move(process));
         const std::vector<achilles::FourVector> momentum = {
-            {1.3e+03, 0.0, 0.0, 1.3e+03},
-            {1.1188e+04, 0.0, 0.0, 0.0},
-            {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03},
-            {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}};
+            {1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV},
+            {1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV},
+            {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV},
+            {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}};
 
         std::vector<achilles::Particle> leptons;
         std::vector<achilles::Particle> expected_leptons;
@@ -124,7 +127,7 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .LR_WITH(_1 == cevent)
             .TIMES(1)
-            .RETURN(expected_weight);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
 
@@ -142,10 +145,10 @@ TEST_CASE("Process Grouping CrossSection", "[Process]") {
 
 TEST_CASE("Process Grouping Single Event", "[Process]") {
     const std::vector<achilles::FourVector> momentum = {
-        {1.3e+03, 0.0, 0.0, 1.3e+03},
-        {1.1188e+04, 0.0, 0.0, 0.0},
-        {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03},
-        {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}};
+        {1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV},
+        {1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV},
+        {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV},
+        {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}};
     constexpr double ps_wgt = 1;
     constexpr double flux = 1;
 
@@ -189,7 +192,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         static constexpr double expected_weight = 10;
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
-            .RETURN(expected_weight);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);
@@ -213,7 +216,7 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         group.MaxWeight() = 1; // Hack to ensure weight is not rescaled by 0
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
-            .RETURN(expected_weight);
+            .RETURN(expected_weight * achilles::units::nb);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);

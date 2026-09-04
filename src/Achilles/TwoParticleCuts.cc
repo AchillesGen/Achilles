@@ -3,7 +3,7 @@
 
 #include "Achilles/TwoParticleCuts.hh"
 #include "Achilles/FourVector.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 bool achilles::DeltaThetaCut::MakeCut(const FourVector &p1, const FourVector &p2) const {
     return CheckCut(std::acos(p1.CosAngle(p2)) / 1.0_deg);

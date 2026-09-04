@@ -40,7 +40,7 @@ class EventHistoryNode {
 
     EventHistoryNode(size_t idx, StatusCode status = StatusCode::cascade)
         : m_idx{idx}, m_status{status} {}
-    EventHistoryNode(size_t idx, ThreeVector position, StatusCode status = StatusCode::cascade)
+    EventHistoryNode(size_t idx, ThreePosition position, StatusCode status = StatusCode::cascade)
         : m_idx{idx}, m_position{position}, m_status{status} {}
     EventHistoryNode(const EventHistoryNode &) = default;
     void AddIncoming(const Particle &part) { m_particles_in.push_back(part); }
@@ -49,7 +49,7 @@ class EventHistoryNode {
         m_particles_in.clear();
         m_particles_out.clear();
     }
-    void SetPosition(const ThreeVector &position) { m_position = position; }
+    void SetPosition(const ThreePosition &position) { m_position = position; }
 
     // Status functions
     StatusCode &Status() { return m_status; }
@@ -74,12 +74,12 @@ class EventHistoryNode {
     Particles &ParticlesIn() { return m_particles_in; }
     const Particles &ParticlesOut() const { return m_particles_out; }
     Particles &ParticlesOut() { return m_particles_out; }
-    const ThreeVector &Position() const { return m_position; }
+    const ThreePosition &Position() const { return m_position; }
 
   private:
     Particles m_particles_in{}, m_particles_out{};
     size_t m_idx{};
-    ThreeVector m_position{};
+    ThreePosition m_position{};
     StatusCode m_status;
 };
 
@@ -116,11 +116,11 @@ class EventHistory {
     EventHistory() = default;
     EventHistory(const EventHistory &);
     EventHistory &operator=(const EventHistory &);
-    void AddVertex(ThreeVector position, const Particles &in = {}, const Particles &out = {},
+    void AddVertex(ThreePosition position, const Particles &in = {}, const Particles &out = {},
                    StatusCode status = StatusCode::cascade);
     void AddParticleIn(size_t idx, const Particle &part);
     void AddParticleOut(size_t idx, const Particle &part);
-    void InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,
+    void InsertShowerVert(ThreePosition position, const Particle &org, const Particle &in,
                           const Particle &out_org, const Particles &other);
 
     // Update particle statuses

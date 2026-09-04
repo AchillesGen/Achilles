@@ -7,12 +7,15 @@
 
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
 #include "Achilles/ParticleInfo.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Utilities.hh"
 
 #include <algorithm>
 #include <cmath>
 #include <vector>
+
+namespace units = achilles::units;
+using namespace achilles::units::literals;
 
 using achilles::operator""_GeV;
 
@@ -40,7 +43,9 @@ size_t ArgMax(const std::vector<double> &xsecs) {
 TEST_CASE("NN -> NDelta vs. NDelta -> NN", "[Delta]") {
     achilles::DeltaInteraction delta;
 
-    double expected = 0.1946713104;
+    // Regression pin. sqrt(s) = 2.041 GeV sits ~10 MeV above the N-Delta
+    // threshold, so this is very sensitive to the nucleon mass in Particles.yml.
+    double expected = 0.1948178294;
     auto result = delta.TestDeltaDSigmaDOmegaDM(-0.81, 2.041, 1.093, achilles::PID::delta0());
     CHECK_THAT(result, Catch::Matchers::WithinAbs(expected, 1e-6));
 
@@ -67,12 +72,14 @@ TEST_CASE("P Pi+ -> Delta++", "[Delta]") {
     auto plab_vec = achilles::Linspace(0.0, 2.0, 201);
     achilles::DeltaInteraction delta;
 
-    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0, 0, 0});
+    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0_MeV, 0_MeV, 0_MeV});
     achilles::Particle p2(211);
     achilles::PID delta_id(2224);
     std::vector<double> sigma;
     for(const auto &plab : plab_vec) {
-        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
+        p2.Momentum() = {
+            units::Energy{sqrt(pow(plab * (1.0_GeV).native(), 2) + pow(p2.Mass().native(), 2))},
+            0_MeV, 0_MeV, units::Energy{plab * (1.0_GeV).native()}};
         sigma.push_back(delta.TestNPiSigma(p1, p2, delta_id));
     }
 
@@ -85,12 +92,14 @@ TEST_CASE("P Pi0 -> Delta+", "[Delta]") {
     auto plab_vec = achilles::Linspace(0.0, 2.0, 201);
     achilles::DeltaInteraction delta;
 
-    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0, 0, 0});
+    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0_MeV, 0_MeV, 0_MeV});
     achilles::Particle p2(111);
     achilles::PID delta_id(2214);
     std::vector<double> sigma;
     for(const auto &plab : plab_vec) {
-        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
+        p2.Momentum() = {
+            units::Energy{sqrt(pow(plab * (1.0_GeV).native(), 2) + pow(p2.Mass().native(), 2))},
+            0_MeV, 0_MeV, units::Energy{plab * (1.0_GeV).native()}};
         sigma.push_back(delta.TestNPiSigma(p1, p2, delta_id));
     }
 
@@ -102,12 +111,14 @@ TEST_CASE("P Pi- -> Delta0", "[Delta]") {
     auto plab_vec = achilles::Linspace(0.0, 2.0, 201);
     achilles::DeltaInteraction delta;
 
-    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0, 0, 0});
+    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0_MeV, 0_MeV, 0_MeV});
     achilles::Particle p2(-211);
     achilles::PID delta_id(2114);
     std::vector<double> sigma;
     for(const auto &plab : plab_vec) {
-        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
+        p2.Momentum() = {
+            units::Energy{sqrt(pow(plab * (1.0_GeV).native(), 2) + pow(p2.Mass().native(), 2))},
+            0_MeV, 0_MeV, units::Energy{plab * (1.0_GeV).native()}};
         sigma.push_back(delta.TestNPiSigma(p1, p2, delta_id));
     }
 
@@ -119,13 +130,15 @@ TEST_CASE("P D+ -> N D", "[Delta2]") {
     auto plab_vec = achilles::Linspace(0.01, 2.0, 201);
     achilles::DeltaInteraction delta;
 
-    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0, 0, 0});
+    achilles::Particle p1(2212, {achilles::ParticleInfo(2212).Mass(), 0_MeV, 0_MeV, 0_MeV});
     achilles::Particle p2(2214);
     achilles::PID delta_id1(2214), delta_id2(2224);
     achilles::PID nucleon_id1(2212), nucleon_id2(2112);
     std::vector<double> sigma1, sigma2;
     for(const auto &plab : plab_vec) {
-        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(p2.Mass(), 2)), 0, 0, plab * 1_GeV};
+        p2.Momentum() = {
+            units::Energy{sqrt(pow(plab * (1.0_GeV).native(), 2) + pow(p2.Mass().native(), 2))},
+            0_MeV, 0_MeV, units::Energy{plab * (1.0_GeV).native()}};
         sigma1.push_back(delta.TestNDelta2NDelta(p2, p1, delta_id1, nucleon_id1));
         sigma2.push_back(delta.TestNDelta2NDelta(p2, p1, delta_id2, nucleon_id2));
     }
@@ -136,7 +149,9 @@ TEST_CASE("P D+ -> N D", "[Delta2]") {
     double plab = 1.0;
     std::vector<double> sigma1_vs_mass, sigma2_vs_mass;
     for(const auto &mass : mass_vec) {
-        p2.Momentum() = {sqrt(pow(plab * 1_GeV, 2) + pow(mass * 1_GeV, 2)), 0, 0, plab * 1_GeV};
+        p2.Momentum() = {units::Energy{sqrt(pow(plab * (1.0_GeV).native(), 2) +
+                                            pow(mass * (1.0_GeV).native(), 2))},
+                         0_MeV, 0_MeV, units::Energy{plab * (1.0_GeV).native()}};
         sigma1_vs_mass.push_back(delta.TestNDelta2NDelta(p2, p1, delta_id1, nucleon_id1));
         sigma2_vs_mass.push_back(delta.TestNDelta2NDelta(p2, p1, delta_id2, nucleon_id2));
     }

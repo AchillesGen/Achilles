@@ -3,13 +3,13 @@
 
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
 #include "Achilles/ClebschGordan.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/OsetCrossSections.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ResonanceHelper.hh"
 #include "Achilles/Utilities.hh"
@@ -82,9 +82,9 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     const auto &particle1 = event.Hadrons()[part1];
     const auto &particle2 = event.Hadrons()[part2];
     InteractionResults results;
-    double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    double p1CM = particle1.Momentum().Boost(-boostCM).P();
+    double sqrts = (particle1.Momentum() + particle2.Momentum()).M().in(units::GeV);
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    double p1CM = particle1.Momentum().Boost(-boostCM).P().native();
 
     auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) +
                event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
@@ -96,7 +96,7 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     if(particle1.Info().IsResonance()) {
         // NDelta -> NN
         double xsec = suppression * SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(),
-                                                   particle1.Momentum().M());
+                                                   particle1.Momentum().M().native());
 
         spdlog::debug("NDelta -> NN: sigma = {}", xsec);
         // TODO: Clean up this logic
@@ -223,7 +223,8 @@ std::pair<size_t, size_t> DeltaInteraction::FindClosest(Event &event, size_t par
     for(std::size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(i == part1 || i == part2) continue;
         if(!event.Hadrons()[i].IsBackground()) continue;
-        auto distance = (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2();
+        auto distance =
+            (event.Hadrons()[i].Position() - particle2.Position()).Magnitude2().in(units::fm2);
         if(distance < shortest_p_distance && event.Hadrons()[i].ID() == PID::proton()) {
             shortest_p_distance = distance;
             closest_p_idx = i;
@@ -243,7 +244,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     if(out_ids.size() == 1) {
         auto mom = particle1.Momentum() + particle2.Momentum();
         auto position = particle2.Position();
-        if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
+        if(std::isnan(mom[0].native())) { spdlog::error("Nan momenutm in Npi -> Delta"); }
         auto resonance = Particle{out_ids[0], mom, position, ParticleStatus::propagating};
         resonance.AddMother(particle1);
         resonance.AddMother(particle2);
@@ -256,12 +257,12 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     }
 
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1CM = particle1.Momentum().Boost(-boostCM);
     FourVector p2CM = particle2.Momentum().Boost(-boostCM);
 
     FourVector pTotalCM = p1CM + p2CM;
-    auto s = pTotalCM.M2();
+    auto s = pTotalCM.M2().native();
     auto sqrts = sqrt(s);
 
     ParticleInfo info_a(out_ids[0]);
@@ -270,7 +271,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         ma = resonance::GenerateMass(particle1, particle2, out_ids[0], out_ids[1], ran, sqrts);
         spdlog::trace("ma = {}, pid = {}", ma, out_ids[0]);
     } else {
-        ma = info_a.Mass();
+        ma = info_a.Mass().native();
     }
 
     ParticleInfo info_b(out_ids[1]);
@@ -279,7 +280,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
         mb = resonance::GenerateMass(particle1, particle2, out_ids[1], out_ids[0], ran, sqrts);
         spdlog::trace("mb = {}, pid = {}", mb, out_ids[1]);
     } else {
-        mb = info_b.Mass();
+        mb = info_b.Mass().native();
     }
 
     const double Eacms = sqrts / 2. * (1. + ma * ma / s - mb * mb / s);
@@ -296,13 +297,13 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
     double cosphi_cms = cos(phi_cms);
     double sinphi_cms = sin(phi_cms);
 
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
-                                  pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
-                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
+    FourVector paOut = FourVector::FromNative(
+        {Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms});
+    FourVector pbOut = FourVector::FromNative(
+        {Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms});
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
-    if(std::isnan(paOut.Momentum()[0])) {
+    if(std::isnan(paOut[0].native())) {
         spdlog::error("Nan momenutm for paOut");
         spdlog::error("boost = {}", boostCM);
         spdlog::error("paOut = {}", paOut);
@@ -310,7 +311,7 @@ std::vector<Particle> DeltaInteraction::GenerateMomentum(const Particle &particl
                       Ebcms, lambda, pfCMS);
         spdlog::error("{}, {}", s, pow(ma + mb, 2));
     }
-    if(std::isnan(pbOut.Momentum()[0])) {
+    if(std::isnan(pbOut[0].native())) {
         spdlog::error("Nan momenutm for pbOut");
         spdlog::error("boost = {}", boostCM);
         spdlog::error("pbOut = {}", pbOut);
@@ -340,7 +341,7 @@ std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particl
     absorption_partner.Status() = ParticleStatus::absorption_partner;
 
     // Boost to center of mass
-    ThreeVector boostCM =
+    ThreeBoost boostCM =
         (particle1.Momentum() + particle2.Momentum() + absorption_partner.Momentum()).BoostVector();
     spdlog::debug("Absorption initial states:");
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
@@ -353,11 +354,11 @@ std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particl
 
     FourVector pTotalCM = p1CM + p2CM + p3CM;
 
-    auto s = pTotalCM.M2();
+    auto s = pTotalCM.M2().native();
     auto sqrts = sqrt(s);
 
-    auto ma = ParticleInfo(out_pids[0]).Mass();
-    auto mb = ParticleInfo(out_pids[1]).Mass();
+    auto ma = ParticleInfo(out_pids[0]).Mass().native();
+    auto mb = ParticleInfo(out_pids[1]).Mass().native();
 
     const double Eacms = sqrts / 2 * (1 + ma * ma / s - mb * mb / s);
     const double Ebcms = sqrts / 2 * (1 + mb * mb / s - ma * ma / s);
@@ -373,16 +374,16 @@ std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particl
     double cosphi_cms = cos(phi_cms);
     double sinphi_cms = sin(phi_cms);
 
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
-                                  pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
-                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
+    FourVector paOut = FourVector::FromNative(
+        {Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms});
+    FourVector pbOut = FourVector::FromNative(
+        {Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms});
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
 
-    spdlog::debug("out1: {}, {}", out_pids[0], paOut.Momentum());
-    spdlog::debug("out2: {}, {}", out_pids[1], pbOut.Momentum());
+    spdlog::debug("out1: {}, {}", out_pids[0], paOut);
+    spdlog::debug("out2: {}, {}", out_pids[1], pbOut);
 
     return {Particle{out_pids[0], paOut, particle1.Position()},
             Particle{out_pids[1], pbOut, particle2.Position()}};
@@ -408,15 +409,15 @@ double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, 
                          static_cast<double>(p1.Info().NSpins()) /
                          static_cast<double>(p2.Info().NSpins());
 
-    double res_mass = (p1.Momentum() + p2.Momentum()).M() / 1_GeV;
-    double pcm2 = resonance::Pcm2(pow(res_mass, 2), pow(p1.Info().Mass() / 1_GeV, 2),
-                                  pow(p2.Info().Mass() / 1_GeV, 2));
+    double res_mass = (p1.Momentum() + p2.Momentum()).M().in(units::GeV);
+    double pcm2 = resonance::Pcm2(pow(res_mass, 2), pow(p1.Info().Mass().in(units::GeV), 2),
+                                  pow(p2.Info().Mass().in(units::GeV), 2));
 
     spdlog::trace("pcm2 = {}", pcm2);
     if(pcm2 <= 0) return 0;
 
-    double gamma_tot =
-        resonance::GetEffectiveWidth(res, res_mass, p1.Mass() / 1_GeV, p2.Mass() / 1_GeV, 1);
+    double gamma_tot = resonance::GetEffectiveWidth(res, res_mass, p1.Mass().in(units::GeV),
+                                                    p2.Mass().in(units::GeV), 1);
     double gamma_in = decay_handler.BranchingRatio(res, {p1.ID(), p2.ID()}) * gamma_tot;
 
     spdlog::trace("gamma_in = {}, gamma_tot = {}", gamma_in, gamma_tot);
@@ -424,9 +425,9 @@ double DeltaInteraction::SigmaNPi2Delta(const Particle &p1, const Particle &p2, 
 
     // Old Effenberger ansatz from GiBUU
     return iso_factor * spin_factor * 4 * M_PI / pcm2 * pow(res_mass, 2) * gamma_in * gamma_tot /
-           (pow(pow(res_mass, 2) - pow(res_info.Mass() / 1_GeV, 2), 2) +
-            gamma_tot * gamma_tot * pow(res_info.Mass() / 1_GeV, 2)) *
-           Constant::HBARC2 / 1_GeV / 1_GeV;
+           (pow(pow(res_mass, 2) - pow(res_info.Mass().in(units::GeV), 2), 2) +
+            gamma_tot * gamma_tot * pow(res_info.Mass().in(units::GeV), 2)) *
+           Constant::HBARC2 / 1000 / 1000;
 }
 
 double DeltaInteraction::SigmaNPi2N(const Particle &p1, const Particle &p2, PID res) const {
@@ -449,16 +450,16 @@ double DeltaInteraction::SigmaNPi2N(const Particle &p1, const Particle &p2, PID 
                          static_cast<double>(p1.Info().NSpins()) /
                          static_cast<double>(p2.Info().NSpins());
 
-    double res_mass = (p1.Momentum() + p2.Momentum()).M() / 1_GeV;
-    double pcm2 = resonance::Pcm2(pow(res_mass, 2), pow(p1.Info().Mass() / 1_GeV, 2),
-                                  pow(p2.Info().Mass() / 1_GeV, 2));
+    double res_mass = (p1.Momentum() + p2.Momentum()).M().in(units::GeV);
+    double pcm2 = resonance::Pcm2(pow(res_mass, 2), pow(p1.Info().Mass().in(units::GeV), 2),
+                                  pow(p2.Info().Mass().in(units::GeV), 2));
 
     spdlog::trace("pcm2 = {}", pcm2);
     if(pcm2 <= 0) return 0;
 
     return iso_factor * spin_factor * 4 * M_PI / pcm2 * pow(res_mass, 2) /
-           pow(pow(res_mass, 2) - pow(res_info.Mass() / 1_GeV, 2), 2) * Constant::HBARC2 / 1_GeV /
-           1_GeV;
+           pow(pow(res_mass, 2) - pow(res_info.Mass().in(units::GeV), 2), 2) * Constant::HBARC2 /
+           1000 / 1000;
 }
 
 // Testing functions
@@ -487,8 +488,8 @@ double DeltaInteraction::TestDeltaDSigmaDOmegaDM(double cost, double sqrts, doub
                                                  PID delta_id) {
     // NOTE: We just assume the maximum possible mass final state.
     //       This will underestimate the cross section, but it should be small enough for now.
-    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
-    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
+    const double mn = ParticleInfo(PID::neutron()).Mass().in(units::GeV);
+    const double mpi = ParticleInfo(PID::pionp()).Mass().in(units::GeV);
     if(sqrts < 2 * mn + mpi || sqrts < mdelta + mn) return 0;
 
     double pin2 = sqrts * sqrts / 4 - mn * mn;
@@ -503,7 +504,7 @@ double DeltaInteraction::TestDeltaDSigmaDOmegaDM(double cost, double sqrts, doub
 
     double prop = 0;
     if(mdelta > mn + mpi) {
-        double mdel = ParticleInfo(delta_id).Mass() / 1_GeV;
+        double mdel = ParticleInfo(delta_id).Mass().in(units::GeV);
         double width = resonance::GetEffectiveWidth(delta_id, mdelta, mn, mpi, 1);
         spdlog::trace("width = {}", width);
         prop = 1 / M_PI * mdelta * width /
@@ -516,7 +517,7 @@ double DeltaInteraction::TestDeltaDSigmaDOmegaDM(double cost, double sqrts, doub
 
     double mat = 1. / (32 * M_PI * sqrts * sqrts) *
                  resonance::MatNN2NDelta(t, u, mdelta * mdelta, delta_id) * Constant::HBARC2 /
-                 1_GeV / 1_GeV;
+                 1000 / 1000;
     spdlog::trace("{}, {}, {}", mat, pout2, prop);
     return mat * sqrt(pout2) * 2 * mdelta * prop;
 }
@@ -576,26 +577,26 @@ double DeltaInteraction::SigmaNDelta2NN(double sqrts, double pcm, PID delta_id, 
     else if(delta_id == PID::deltam() && nucleon == PID::proton())
         isofactor = 3.0 / 8.0;
 
-    return resonance::DSigmaDM(true, sqrts, mass / 1_GeV, delta_id) * 8.0 / 3.0 * isofactor /
-           (pcm / 1_GeV);
+    return resonance::DSigmaDM(true, sqrts, units::Energy{mass}.in(units::GeV), delta_id) * 8.0 /
+           3.0 * isofactor / (units::Energy{pcm}.in(units::GeV));
 }
 
 double DeltaInteraction::SigmaNDelta2NDelta(const Particle &p1, const Particle &p2, PID delta_out,
                                             PID nucleon_out) const {
-    double sqrts = (p1.Momentum() + p2.Momentum()).M() / 1_GeV;
-    double mn2 = ParticleInfo(nucleon_out).Mass() / 1_GeV;
+    double sqrts = (p1.Momentum() + p2.Momentum()).M().in(units::GeV);
+    double mn2 = ParticleInfo(nucleon_out).Mass().in(units::GeV);
 
     // Integrate over outgoing mass
     auto dsigmadm = [&](double mu2) {
         double spectral = resonance::BreitWignerSpectral(delta_out, mu2);
-        return resonance::DSigmaND2ND(sqrts, p2.Momentum().M() / 1_GeV, mn2,
-                                      p1.Momentum().M() / 1_GeV, mu2, spectral);
+        return resonance::DSigmaND2ND(sqrts, p2.Momentum().M().in(units::GeV), mn2,
+                                      p1.Momentum().M().in(units::GeV), mu2, spectral);
     };
 
     Integrator::DoubleExponential integrator(dsigmadm);
     // TODO: Figure out a better way to handle this,
     // we always choose the heavier particles to ensure that it is always kinematically allowed
-    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
-    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
+    const double mn = ParticleInfo(PID::neutron()).Mass().in(units::GeV);
+    const double mpi = ParticleInfo(PID::pionp()).Mass().in(units::GeV);
     return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4);
 }

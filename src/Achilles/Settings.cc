@@ -3,6 +3,7 @@
 
 #include "Achilles/Settings.hh"
 #include "Achilles/System.hh"
+#include "Achilles/UnitsIO.hh"
 #include "Achilles/Utilities.hh"
 #include "fmt/ranges.h"
 #include "spdlog/spdlog.h"
@@ -239,13 +240,16 @@ bool SettingsValidator::ValidateRangeConstraintList(const Settings &settings,
             return false;
         }
 
+        const bool has_unit = rule.options.find("Unit") != rule.options.end();
         for(const auto &param_node : value_nodes) {
-            if(!param_node.IsScalar()) {
+            if(!has_unit && !param_node.IsScalar()) {
                 spdlog::error("Settings: Parameter {} at index {} is not a scalar", param_path, i);
                 return false;
             }
 
-            double value = param_node.as<double>();
+            double value = has_unit ? units::io::value_in_declared_unit(
+                                          param_node, rule.options.at("Unit").as<std::string>())
+                                    : param_node.as<double>();
             if(!ValidateRange(value, rule,
                               list_path + "[" + std::to_string(i) + "]/" + param_path)) {
                 return false;
@@ -271,7 +275,15 @@ bool SettingsValidator::ValidateRangeConstraintScalar(const Settings &settings,
         }
     }
 
-    double value = settings.GetAs<double>(param_path);
+    // A rule may state the unit its bounds are written in; the configured value
+    // is then converted into that unit before being compared.
+    double value;
+    if(rule.options.find("Unit") != rule.options.end()) {
+        value = units::io::value_in_declared_unit(settings[param_path],
+                                                  rule.options.at("Unit").as<std::string>());
+    } else {
+        value = settings.GetAs<double>(param_path);
+    }
     return ValidateRange(value, rule, param_path);
 }
 
