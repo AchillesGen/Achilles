@@ -1,5 +1,23 @@
+// SPDX-FileCopyrightText: 2003-2025 The GENIE Collaboration
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
+//
+// Adapted from GENIE's INukeOsetFormula
+// (src/Physics/HadronTransport/INukeOsetFormula.{h,cxx}), written by Tomasz
+// Golan (2015) and distributed by the GENIE Collaboration under GPLv3 together
+// with the MCnet Guidelines for Fair Academic Usage.
+//
+// Retained from that implementation: the Oset parametrisation coefficients, the
+// Delta self-energy and propagator construction, and the delta-reduction factor.
+//
+// Modified by the Achilles Developers: average-nucleon kinematics
+// (<p^2> = 0.6 k_F^2) in place of the nucleon-at-rest approximation; the
+// nine-channel quasi-elastic isospin map; s-wave absorption; and integration
+// with the Achilles Event and Nucleus interfaces.
+//
+// Physics: E. Oset and L. L. Salcedo, Nucl. Phys. A468 (1987) 631;
+//          E. Oset, D. Strottman, H. Toki, J. Navarro, Nucl. Phys. A484 (1988) 557.
+// Software: see CREDITS.md and CITATIONS.bib.
 
 #include "Achilles/OsetCrossSections.hh"
 #include "Achilles/Constants.hh"
