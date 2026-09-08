@@ -7,16 +7,21 @@
 // Golan (2015) and distributed by the GENIE Collaboration under GPLv3 together
 // with the MCnet Guidelines for Fair Academic Usage.
 //
-// Retained from that implementation: the Oset parametrisation coefficients, the
-// Delta self-energy and propagator construction, and the delta-reduction factor.
+// The parametrisation coefficients below are published results of Oset et al.,
+// taken from the papers cited under "Physics"; they are not GENIE's, and are
+// reproduced here as the physics they are.  What follows GENIE's implementation
+// is the code: the arrangement of the Delta self-energy and propagator, the
+// delta-reduction factor, and the naming and commentary of this file.
 //
 // Modified by the Achilles Developers: average-nucleon kinematics
 // (<p^2> = 0.6 k_F^2) in place of the nucleon-at-rest approximation; the
 // nine-channel quasi-elastic isospin map; s-wave absorption; and integration
 // with the Achilles Event and Nucleus interfaces.
 //
-// Physics: E. Oset and L. L. Salcedo, Nucl. Phys. A468 (1987) 631;
-//          E. Oset, D. Strottman, H. Toki, J. Navarro, Nucl. Phys. A484 (1988) 557.
+// Physics: E. Oset, Y. Futami and H. Toki, Nucl. Phys. A448 (1986) 597;
+//          E. Oset and L. L. Salcedo, Nucl. Phys. A468 (1987) 631;
+//          L. L. Salcedo, E. Oset, M. J. Vicente-Vacas and C. Garcia-Recio,
+//          Nucl. Phys. A484 (1988) 557.
 // Software: see CREDITS.md and CITATIONS.bib.
 
 #pragma once

@@ -17,8 +17,10 @@ Copyright (c) 2003-2025, The GENIE Collaboration.  Distributed under GPLv3 with
 the MCnet Guidelines for Fair Academic Usage.
 <https://github.com/GENIE-MC/Generator>
 
-Retained from that implementation: the Oset parametrisation coefficients, the
-Delta self-energy and propagator construction, and the delta-reduction factor.
+The Oset parametrisation coefficients are published results of Oset et al. (see
+`CITATIONS.bib`) rather than GENIE's contribution.  What follows GENIE's
+implementation is the code: the arrangement of the Delta self-energy and
+propagator, the delta-reduction factor, and this file's naming and commentary.
 Modified by the Achilles Developers: average-nucleon kinematics
 (<p^2> = 0.6 k_F^2) in place of the nucleon-at-rest approximation, the
 nine-channel quasi-elastic isospin map, s-wave absorption, and integration with
