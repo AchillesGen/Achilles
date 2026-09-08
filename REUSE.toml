@@ -4,7 +4,7 @@ SPDX-PackageSupplier = "Achilles Developers <isaacson@fnal.gov>"
 SPDX-PackageDownloadLocation = "https://github.com/AchillesGen/Achilles"
 
 [[annotations]]
-path = ["AUTHORS", "CITATIONS.bib", "README.md", "assets/**"]
+path = ["AUTHORS", "CITATIONS.bib", "CREDITS.md", "README.md", "assets/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "CC0-1.0"
@@ -56,3 +56,15 @@ path = ["src/gzstream/CMakeLists.txt", "src/gzstream/Makefile", "src/gzstream/RE
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2001 Deepak Bandyopadhyay, Lutz Kettner"
 SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+[[annotations]]
+path = ["include/Achilles/OsetCrossSections.hh", "src/Achilles/OsetCrossSections.cc"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2003-2025 The GENIE Collaboration", "2018-2026 Achilles Developers"]
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = ["src/Achilles/fortran/amp_dcc_sl.f", "src/Achilles/fortran/currents_pi_dcc.f90"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = ["2015-2026 S. X. Nakamura, H. Kamano and T. Sato", "2018-2026 Achilles Developers"]
+SPDX-License-Identifier = "GPL-3.0-or-later"
