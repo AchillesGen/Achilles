@@ -7,6 +7,7 @@ add_library(AchillesCascadeInteractions SHARED
     ConstantInteractions.cc
     MesonBaryonInteractions.cc
     OsetMesonBaryonInteractions.cc
+    OsetPiNModel.cc
     PionAbsorption.cc
     PionInteractions.cc
     DeltaInteractions.cc

@@ -17,11 +17,14 @@ namespace achilles {
 
 enum class InterpolationType { NearestNeighbor, Polynomial, CubicSpline };
 
-double Polint(const std::vector<double> &, const std::vector<double> &, size_t, double);
+/// Evaluate the interpolating polynomial through `count` nodes at a point, by Neville's
+/// algorithm.  Independent implementation from the published recurrence.
+double NevilleInterpolate(const std::vector<double> &nodes, const std::vector<double> &values,
+                          size_t count, double x);
 
 /// Class to perform one-dimensional interpolations of data. Currently, only Cubic Splines are
-/// implemented as an interpolator. The Cubic Spline is based off of the algorithm provided by
-/// Numerical Recipes.
+/// implemented as an interpolator. The cubic spline solves the standard tridiagonal system for
+/// the knot second derivatives by the Thomas algorithm.
 class Interp1D {
   public:
     /// @name Constructor and Destructor
@@ -87,8 +90,8 @@ class Interp1D {
 };
 
 /// Class to perform two-dimensional interpolations of data. Currently, only Bicubic Splines are
-/// implemented as an interpolator. The Bicubic Spline is based off of the algorithm provided by
-/// Numerical Recipes.
+/// implemented as an interpolator. The bicubic spline is composed from the one-dimensional
+/// cubic splines of Interp1D.
 class Interp2D {
   public:
     /// @name Constructor and Destructor
