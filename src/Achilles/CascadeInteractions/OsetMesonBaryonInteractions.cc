@@ -37,7 +37,7 @@ InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t
 
     InteractionResults results;
 
-    auto QECrossSections = Oset.QECrossSection(event, part1, part2);
+    auto QECrossSections = Oset.QECrossSections(event, part1, part2);
 
     spdlog::debug("Incoming:");
     spdlog::debug("{}", particle1);

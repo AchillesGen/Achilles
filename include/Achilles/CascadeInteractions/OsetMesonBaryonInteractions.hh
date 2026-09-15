@@ -4,8 +4,8 @@
 #ifndef ACHILLES_CASCADEINTERACTIONS_OsetMESONBARYONINTERACTIONS
 #define ACHILLES_CASCADEINTERACTIONS_OsetMESONBARYONINTERACTIONS
 
+#include "Achilles/CascadeInteractions/OsetPiNModel.hh"
 #include "Achilles/Interactions.hh"
-#include "Achilles/OsetCrossSections.hh"
 #include "Achilles/Particle.hh"
 
 namespace achilles {
@@ -49,7 +49,7 @@ class OsetMesonBaryonInteraction : public Interaction,
     std::map<std::pair<PID, PID>, std::vector<std::pair<PID, PID>>> in_out_states;
 
   protected:
-    OsetCrossSection Oset; // Contains Oset absorption cross sections
+    OsetPiNModel Oset; // Contains Oset quasielastic cross sections
 };
 
 } // namespace achilles

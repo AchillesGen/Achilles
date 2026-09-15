@@ -94,7 +94,7 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
     // Fills m_states which is a vector of <absorption partner idx, <out PID1, outPID2>>
     if(!AllowedAbsorption(event, part1, part2)) return results;
 
-    auto oset_abs_xsec = Oset.AbsCrossSection(event, part1, part2);
+    auto oset_abs_xsec = Oset.AbsorptionCrossSection(event, part1, part2);
 
     // Nuclear Physics A568 (1994) 855-872 Table 1
     auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
