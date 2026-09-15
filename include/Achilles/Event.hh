@@ -79,7 +79,7 @@ class Event {
 		spectators.clear();
 		hadrons_setup=false;
 	}
-	void addLeptonIn(FourVector momentum,ParticleStatus status=ParticleStatus::beam) {
+	void addLeptonIn(FourVector momentum,ParticleStatus status=ParticleStatus::initial_state) {
 		if(leptonsIn.size()>=1)
 			throw std::runtime_error("Event::addLeptonIn(): Particle count exceeds process specifications");
 		spdlog::trace("Creating Lepton-In ({}, {})",m_processInfo->m_leptonic.first,status);
