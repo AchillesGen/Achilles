@@ -221,15 +221,15 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
     size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
                            // (would happen when events were rejected)
 
-    auto spdlog_info = [](size_t acc, size_t nEv) {
+    static auto spdlog_info = [](size_t acc, size_t nEv) {
         spdlog::info("Generated {} / {} events", acc, nEv);
     };
-    auto fmt_print = [](size_t acc, size_t nEv) {
+    static auto fmt_print = [](size_t acc, size_t nEv) {
         fmt::print("Generated {} / {} events\r", acc, nEv);
     };
     auto printFormat = batchMode ? spdlog_info : fmt_print;
 
-    printFormat(0, nevents);
+	printFormat(0, nevents);
     while(accepted < nevents) {
         if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
             printFormat(accepted, nevents);
@@ -250,11 +250,14 @@ bool achilles::EventGen::GenerateSingleEvent() {
         writer->Write(event);
         return false;
     }
-    if(spdlog::get_level() == spdlog::level::trace) event.Display();
+    if(spdlog::get_level() == spdlog::level::trace) {
+		spdlog::trace("Initialized New Event:");
+		event.Display();
+	}
 
     Particle init_nuc = group.GetNucleus()->InitParticle();
     std::vector<Particle> init_parts;
-    for(const Particle& nucleon : event.HadronsIn()) {
+    for(const Particle& nucleon:event.NucleusHadrons()) {
         if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
     }
     // TODO: Handle multiple positions from MEC
@@ -269,14 +272,11 @@ bool achilles::EventGen::GenerateSingleEvent() {
     event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays
-    std::vector<Particle> primary_out, propagating;
-    for(const Particle& part : event.allParticles()) {
-        if(part.IsFinal()) primary_out.push_back(part);
-        if(part.IsPropagating()) {
-            primary_out.push_back(part);
-            propagating.push_back(part);
-        }
-    }
+    std::vector<Particle> primary_out;
+    //std::vector<Particle> propagating; // Seems to be unused
+	for(const Particle& part:event.allParticlesCopy())
+		if(part.IsFinal()||part.IsPropagating())
+			primary_out.push_back(part);
     init_parts.push_back(init_lep);
     event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
                               EventHistory::StatusCode::primary);
@@ -286,25 +286,21 @@ bool achilles::EventGen::GenerateSingleEvent() {
     size_t ntrials = 10;
     if(runCascade) {
         spdlog::debug("Runnning cascade");
-        for(size_t itrial = 1; itrial <= ntrials; itrial++) {
-            try {
-                auto tmp_event = event;
-                cascade->Evolve(tmp_event, group.GetNucleus());
-                event = tmp_event;
-                spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
-                break;
-            } catch(const AchillesCascadeError &e) {
-                // Handle rare (~1:1e7) failures from threshold mismatches.
-                spdlog::trace("Skipping AchillesCascadeError");
-                continue;
-            }
-            throw AchillesCascadeError("Cascade trials limit reached.");
+        for(size_t itrial = 1;;itrial++) {
+			if(itrial>ntrials)
+				throw AchillesCascadeError("Cascade trials limit reached.");
+			try {
+			    Event tmp_event = event;
+			    cascade->Evolve(tmp_event, group.GetNucleus());
+			    event = tmp_event;
+			    spdlog::debug("Achilles cascade succeeded after {} trials", itrial);
+			    break;
+			} catch(const AchillesCascadeError &e) {
+			    // Handle rare (~1:1e7) failures from threshold mismatches.
+			    spdlog::trace("Skipping AchillesCascadeError");
+			    continue;
+			}
         }
-#ifdef ACHILLES_EVENT_DETAILS
-        spdlog::trace("Hadrons (Post Cascade):");
-        size_t idx = 0;
-        for(const Particle& particle : event.Hadrons()) { spdlog::trace("\t{}: {}", ++idx, particle); }
-#endif
     } else {
         for(Particle& nucleon : event.HadronsIn()) {
             if(nucleon.Status() == ParticleStatus::propagating) {
@@ -316,23 +312,32 @@ bool achilles::EventGen::GenerateSingleEvent() {
                 nucleon.Status() = ParticleStatus::final_state;
             }
         }
+        for(Particle& nucleon : event.NucleusHadrons()) {
+            if(nucleon.Status() == ParticleStatus::propagating) {
+                nucleon.Status() = ParticleStatus::final_state;
+            }
+        }
     }
 
     // Update particle statuses in history to account for after the cascade
-    event.History().UpdateStatuses(event.HadronsIn());
-    event.History().UpdateStatuses(event.HadronsOut());
+    event.History().UpdateStatuses(event.NucleusHadrons());
 
 #ifdef ACHILLES_SHERPA_INTERFACE
     // Running Sherpa interface if requested
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
 
+    if(spdlog::get_level() == spdlog::level::trace) {
+		spdlog::trace("Finalized Event:");
+		event.Display();
+	}
+
     writer->Write(event);
     return true;
 }
 
 bool achilles::EventGen::MakeCuts(Event &event) {
-    return hard_cuts.EvaluateCuts(event.allParticles());
+    return hard_cuts.EvaluateCuts(event);
 }
 
 // TODO: Create Analysis level cuts
@@ -362,9 +367,9 @@ bool achilles::EventGen::MakeEventCuts(Event &event) {
 void achilles::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron
     double phi = 0.0;
-    for(const Particle& particle : event.allParticles()) {
-        if(particle.ID() == PID::electron() && particle.IsFinal()) {
-            phi = particle.Momentum().Phi();
+    for(const Particle* particle:event.allParticles()) {
+        if(particle->ID() == PID::electron() && particle->IsFinal()) {
+            phi = particle->Momentum().Phi();
         }
     }
     // Rotate the coordiantes of particles so that all azimuthal angles phi are

@@ -166,9 +166,9 @@ void NuclearModel::TransformQZ(Event &event, const Process &process, bool forwar
     if(forward) {
         FourVector q = process.ExtractQ(event);
         rotation = q.AlignZ();
-        for(Particle& p:event.allParticles()) { p.Rotate(rotation); }
+        for(Particle* p:event.allParticles()) { p->Rotate(rotation); }
     } else {
-        for(Particle& p:event.allParticles()) { p.RotateBack(rotation); }
+        for(Particle* p:event.allParticles()) { p->RotateBack(rotation); }
     }
 }
 

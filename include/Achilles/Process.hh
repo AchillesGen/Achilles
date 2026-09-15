@@ -45,7 +45,6 @@ class Process {
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
     MOCK const ProcessInfo &Info() const { return m_info; }
-	void SetupHadrons(Event&) const;
     MOCK void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
         m_xsec += weight;
@@ -66,13 +65,6 @@ class Process {
     bool LoadState(std::istream &);
 
   private:
-    // Helper functions
-
-	/// Takes all particles of the given PID from the given list of particles,
-	/// and assigns their Status and Momentum to randomly-selected particles of
-	/// the same type in the given event's "nucleus_hadrons" list.
-    void assignParticleDetails(Event&,vParticles&,PID) const;
-
     // Variables
     ProcessInfo m_info;
     StatsData m_xsec{};
@@ -125,6 +117,7 @@ class ProcessGroup {
 	ProcessInfo& GroupProcessInfo() {
 		/// TODO: Once Particle Containers are done, this method should
 		/// return a separate ProcessInfo object that's owned by the group
+		spdlog::trace("Using Group Process Info");
 		return m_processes[0].Info();
 	}
 

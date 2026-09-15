@@ -203,12 +203,14 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     std::vector<GenParticlePtr> beamparticles;
     NuHepMCVisitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
     void visit(achilles::EventHistoryNode *node) {
-        auto position = node->Position();
+		spdlog::trace("Visiting node {}",node->Index());
+        const achilles::ThreeVector& position = node->Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
         vertex_pos *= to_mm;
         GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
         vertex->set_status(ToNuHepMC(node->Status()));
         for(const auto &part : node->ParticlesIn()) {
+			spdlog::trace("Particle In: {}",part);
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -224,6 +226,7 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
             vertex->add_particle_in(particle);
         }
         for(const auto &part : node->ParticlesOut()) {
+			spdlog::trace("Particle Out: {}",part);
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -243,9 +246,9 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
-    results += event.Weight() * nb_to_pb;
     spdlog::trace("Event weight = {}", event.Weight());
     if(event.Weight() == 0) { return; }
+    results += event.Weight() * nb_to_pb;
 
     // Setup event units
     spdlog::trace("Setting up units");
@@ -276,5 +279,7 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     // Walk the history and add to file
     event.History().WalkHistory(visitor);
     // visitor.evt.add_tree(visitor.beamparticles);
+    spdlog::trace("Writing Event");
     file->write_event(visitor.evt);
+    spdlog::trace("Event Written");
 }

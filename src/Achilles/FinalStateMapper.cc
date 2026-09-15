@@ -398,8 +398,8 @@ void SherpaMapper::GeneratePoint(Event& event, const std::vector<double> &rans) 
 
 double SherpaMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
     std::vector<Vec4D> mom{};
-    for(const Particle& part:event.allParticles()) {
-		const FourVector& p=part.Momentum();
+    for(const Particle* part:event.allParticles()) {
+		const FourVector& p=part->Momentum();
         mom.emplace_back(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
 	}
     return sherpa_mapper->GenerateWeight(mom, rans);

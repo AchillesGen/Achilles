@@ -1,22 +1,23 @@
 #include "Achilles/CombinedCuts.hh"
 #include "Achilles/Particle.hh"
 
-bool achilles::CutCollection::EvaluateCuts(const refParticles& parts) {
+bool achilles::CutCollection::EvaluateCuts(const Event& event) {
+	vParticles parts=event.allParticlesCopy();
     ntot++;
     bool result = true;
-    spdlog::trace("Evaluating Cuts");
+    spdlog::debug("Evaluating Cuts");
     for(size_t i = 0; i < parts.size(); ++i) {
-		Particle& part=parts[i].get();
+		const Particle& part=parts[i];
         if(!part.IsFinal() && !part.IsPropagating()) continue;
 		PID id=part.ID();
-        spdlog::trace("Making cut for {}", id);
+        spdlog::trace("Making cut for particle {} (PID {})",i,id);
         // Single Particle Cuts
         for(const auto &cut : one_part_cuts)
             if(cut.Contains(id)) result &= cut.MakeCut(part.Momentum());
 
         // Two Particle Cuts
         for(size_t j = i + 1; j < parts.size(); ++j) {
-			Particle& part_j=parts[j].get();
+			const Particle part_j=parts[j];
             if(!part_j.IsFinal() && !part.IsPropagating()) continue;
             for(const auto &cut : two_part_cuts)
                 if(cut.Contains(part.ID(), part_j.ID()))

@@ -27,53 +27,6 @@ using achilles::Process;
 using achilles::ProcessGroup;
 using achilles::refParticles;
 
-void Process::assignParticleDetails(Event& event,vParticles& particleSource,PID pid) const {
-	if(particleSource.empty())
-		return;
-	refParticles sources=event.getAllOfType(particleSource,pid);
-	if(sources.empty())
-		return;
-	refParticles candidates=event.getAllOfType(event.NucleusHadrons(),pid,ParticleStatus::background);
-	refParticles targets=Random::Instance().Sample(sources.size(),candidates);
-	for(size_t i=0;i<sources.size();i++) {
-		// Target gets Status and Momentum of mapped initial state
-		targets[i].get().Status()=sources[i].get().Status();
-		targets[i].get().Momentum()=sources[i].get().Momentum();
-		// Initial state gets Position of target, for finalstate calc later
-		sources[i].get().Position()=targets[i].get().Position();
-	}
-}
-
-void Process::SetupHadrons(Event &event) const {
-
-    // Handle coherent scattering as a special case
-    if(ParticleInfo(m_info.m_hadronic.first[0]).IsNucleus()) {
-		event.NucleusHadrons()={event.HadronsIn()[0]};
-        return;
-    }
-
-	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
-
-	assignParticleDetails(event,event.HadronsIn(),PID::proton());
-	assignParticleDetails(event,event.HadronsIn(),PID::neutron());
-	assignParticleDetails(event,event.Spectators(),PID::proton());
-	assignParticleDetails(event,event.Spectators(),PID::neutron());
-
-    // Initialize final state hadrons
-    // TODO: Handle propagating deltas
-    // TODO: Handle selecting position for things like MEC+pion production
-    size_t cur_idx = 0;
-    ThreeVector position;
-    for(size_t i = 0; i < event.HadronsOut().size(); ++i) {
-        if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon())
-            position = event.HadronsIn()[cur_idx++].Position();
-        Particle& part=event.HadronsOut()[i];
-        part.Status() = ParticleStatus::propagating;
-        part.Position() = position;
-		event.NucleusHadrons().push_back(part);
-    }
-}
-
 /*void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
@@ -373,6 +326,7 @@ void ProcessGroup::Optimize() {
     b_optimize = true;
 
     auto func = [&](const Event& event, const double& wgt) {
+		spdlog::trace("Cloning event...");
 		Event clone=event; // because "event" is immutable. Is there a better way to do this?
 		clone.Weight()=wgt;
 		EventSetup(clone);
@@ -433,20 +387,13 @@ achilles::Event ProcessGroup::GenerateEvent() {
 	Event event(GroupProcessInfo(),m_nucleus);
 	m_integrator.GeneratePoint(m_integrand,event);
 	event.Weight()=m_integrator.GenerateWeight(m_integrand,event);
-	
 	EventSetup(event);
 	return event;
 }
 
 void ProcessGroup::EventSetup(Event& event) {
-    /*spdlog::debug("Event Phase Space:");
-    size_t idx = 0;
-    for(const FourVector& momentum : event.Momentum()) {
-        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
-    }*/
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
-	const refParticles parts=event.allParticles();
-    if(!m_cuts.EvaluateCuts(parts)) {
+    if(!m_cuts.EvaluateCuts(event)) {
         // Ensure process weights are tracked correctly
         if(b_calc_weights) {
             for(Process& process : m_processes) process.AddWeight(0);
@@ -466,7 +413,7 @@ void ProcessGroup::EventSetup(Event& event) {
     Process& process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.LeptonsIn()[0].Momentum());
     event.ProcessId() = process.ID();
-	process.SetupHadrons(event);
+	event.SetupHadrons();
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {

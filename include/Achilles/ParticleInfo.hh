@@ -184,7 +184,7 @@ class ParticleInfo {
         if(it != particleDB.end())
             info = it->second;
         else
-            throw std::runtime_error(fmt::format("Invalid PID: id={}", id));
+            throw std::runtime_error(fmt::format("Invalid numeric PID: id={}", id));
         if(id < 0 && info->majorana == 0) anti = true;
     }
 

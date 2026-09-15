@@ -58,16 +58,16 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
 	spdlog::debug("Pre-Transform:");
 	size_t np=0;
-	const refParticles allParticles=event.allParticles();
-    for(const Particle& p:allParticles) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
+	ptrParticles allParticles=event.allParticles();
+    for(const Particle* p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p->Momentum()[0], p->Momentum()[1], p->Momentum()[2], p->Momentum()[3]);
     }
     m_model->TransformFrame(event, process, true);
 
 	spdlog::debug("Post-Transform:");
 	np=0;
-    for(const Particle& p:allParticles) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
+    for(const Particle* p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p->Momentum()[0], p->Momentum()[1], p->Momentum()[2], p->Momentum()[3]);
     }
 
     const ProcessInfo& process_info = process.Info();
@@ -211,7 +211,8 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
     m_model->TransformFrame(event, process, true);
 
     const ProcessInfo& process_info = process.Info();
-    auto lepton_current = CalcLeptonCurrents(event_in.allParticles(), process_info);
+	vParticles parts=event_in.allParticlesCopy();
+    auto lepton_current = CalcLeptonCurrents(parts, process_info);
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
@@ -261,7 +262,7 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
 }
 
 achilles::Currents
-achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const crefParticles& parts,
+achilles::SherpaLeptonicBackend::CalcLeptonCurrents(vParticles& parts,
                                                     const ProcessInfo &info) const {
     spdlog::trace("Converting momenta to Sherpa format");
     // TODO: Move adapter code into Sherpa interface code
@@ -269,12 +270,12 @@ achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const crefParticles& parts,
     std::vector<long> pids(info.m_mom_map.size());
     // TODO: Somehow pass sorted information to momentum gen
     pids[0] = info.m_mom_map.at(0);
-    mom[0] = (parts[1].get().Momentum() / 1_GeV).Momentum();
+    mom[0] = (parts[1].Momentum() / 1_GeV).Momentum();
     pids[1] = info.m_mom_map.at(1);
-    mom[1] = (parts[0].get().Momentum() / 1_GeV).Momentum();
+    mom[1] = (parts[0].Momentum() / 1_GeV).Momentum();
     for(size_t i = 2; i < parts.size(); ++i) {
         pids[i] = info.m_mom_map.at(i);
-        mom[i] = (parts[i].get().Momentum() / 1_GeV).Momentum();
+        mom[i] = (parts[i].Momentum() / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
@@ -334,19 +335,19 @@ void achilles::SherpaFullBackend::AddProcess(Process &process) {
 }
 
 double achilles::SherpaFullBackend::CrossSection(const Event &event, const Process &process) const {
-	crefParticles parts=event.allParticles();
+	ptrParticles parts=event.allParticles();
     const ProcessInfo& info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(parts.size());
     std::vector<long> pids(parts.size());
     // TODO: Somehow pass sorted information to momentum gen
     pids[0] = info.m_mom_map.at(0);
-    mom[0] = (parts[1].get().Momentum() / 1_GeV).Momentum();
+    mom[0] = (parts[1]->Momentum() / 1_GeV).Momentum();
     pids[1] = info.m_mom_map.at(1);
-    mom[1] = (parts[0].get().Momentum() / 1_GeV).Momentum();
+    mom[1] = (parts[0]->Momentum() / 1_GeV).Momentum();
     for(size_t i = 2; i < parts.size(); ++i) {
         pids[i] = info.m_mom_map.at(i);
-        mom[i] = (parts[i].get().Momentum() / 1_GeV).Momentum();
+        mom[i] = (parts[i]->Momentum() / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 1;

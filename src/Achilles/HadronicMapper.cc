@@ -18,6 +18,7 @@ CoherentMapper::CoherentMapper(const ProcessInfo &info)
 
 void CoherentMapper::GeneratePoint(Event& event, const std::vector<double> &) {
     event.addHadronIn({m_mass,0,0,0},ParticleStatus::target);
+	event.NucleusHadrons()={event.HadronsIn()[0]};
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, {});
 }
 
@@ -33,6 +34,7 @@ QESpectralMapper::QESpectralMapper(const ProcessInfo &info)
 
 void QESpectralMapper::GeneratePoint(Event& event,
                                      const std::vector<double> &rans) {
+	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
 	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
 	// Generate inital nucleon state
 	double radical =
@@ -137,6 +139,7 @@ IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info)
 
 void IntfSpectralMapper::GeneratePoint(Event& event,
                                        const std::vector<double> &rans) {
+	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
 	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
     // Generate spectator momentum from a flat distribution
     double p2 = dp2 * rans[4];
@@ -292,6 +295,7 @@ DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info): Hadroni
 }
 
 void DISSingleNucleonMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
+	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
 	// Generate initial quark state
 	double x=xMin*pow(xMax/xMin,rans[0]);
 	event.addHadronIn(getQuarkMomentum(event.LeptonsIn()[0].Momentum(),pHadron,x));
@@ -310,6 +314,7 @@ DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info): HadronicBeamMapper(
 }
 
 void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
+	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
 	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
 	// Generate inital nucleon state
 	double radical =

@@ -52,46 +52,82 @@ void Event::Finalize() {
 void Event::Display() const {
     spdlog::trace("Leptons:");
     size_t idx = 0;
-    for(const auto &particle: leptonsIn) { spdlog::trace("\t{}: {}", ++idx, particle); }
-    for(const auto &particle: leptonsOut) { spdlog::trace("\t{}: {}", ++idx, particle); }
-    spdlog::trace("Hadrons:");
+    for(const Particle& particle: leptonsIn) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    for(const Particle& particle: leptonsOut) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    spdlog::trace("Mapper Hadrons:");
     idx = 0;
-    for(const auto &particle: hadronsIn) { spdlog::trace("\t{}: {}", ++idx, particle); }
-    for(const auto &particle: hadronsOut) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    for(const Particle& particle: hadronsIn) { spdlog::trace("\t{}: {}", ++idx, particle); }
+    for(const Particle& particle: hadronsOut) { spdlog::trace("\t{}: {}", ++idx, particle); }
+	spdlog::trace("Cascade Hadrons:");
+    idx = 0;
+    for(const Particle& particle: nucleus_hadrons) { spdlog::trace("\t{}: {}", ++idx, particle); }
     spdlog::trace("Weight: {}", Weight());
 }
 
-achilles::refParticles Event::getAllOfType(vParticles list,PID pid,ParticleStatus status) {
+achilles::ptrParticles Event::getAllOfType(vParticles& list,PID pid,ParticleStatus status) {
     if(status == ParticleStatus::any) {
 		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(list,func);
+		return FilterPointers(list,func);
 	}
 	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(list,func);
-}
-achilles::refParticles Event::getAllOfType(refParticles list,PID pid,ParticleStatus status) {
-    if(status == ParticleStatus::any) {
-		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(list,func);
-	}
-	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(list,func);
+	return FilterPointers(list,func);
 }
 
-achilles::crefParticles Event::allParticles() const {
-	return concatenate({nucleus_hadrons,leptonsIn,leptonsOut,hadronsIn,hadronsOut,spectators});
-}
-achilles::refParticles Event::allParticles() {
-	return concatenate({nucleus_hadrons,leptonsIn,leptonsOut,hadronsIn,hadronsOut,spectators});
+achilles::ptrParticles Event::allParticles() const {
+	if(hadrons_setup)
+		return getAllPtrs({leptonsIn,leptonsOut,nucleus_hadrons});
+	return getAllPtrs({leptonsIn,hadronsIn,leptonsOut,hadronsOut,spectators});
 }
 
-achilles::crefParticles Event::allHadrons() const {
-	return concatenate({nucleus_hadrons,hadronsIn,hadronsOut});
-}
-achilles::refParticles Event::allHadrons() {
-	return concatenate({nucleus_hadrons,hadronsIn,hadronsOut});
+achilles::vParticles Event::allParticlesCopy() const {
+	if(hadrons_setup)
+		return concatenate({leptonsIn,leptonsOut,nucleus_hadrons});
+	return concatenate({leptonsIn,hadronsIn,leptonsOut,hadronsOut,spectators});
 }
 
 void Event::Rotate(const std::array<double, 9> &rot_mat) {
-    for(Particle& particle:allParticles()) { particle.Rotate(rot_mat); }
+    for(Particle* particle:allParticles()) { particle->Rotate(rot_mat); }
+}
+
+void Event::assignParticleDetails(vParticles& particleSource,PID pid) {
+	if(particleSource.empty())
+		return;
+	ptrParticles sources=getAllOfType(particleSource,pid);
+	if(sources.empty())
+		return;
+	ptrParticles candidates=getAllOfType(nucleus_hadrons,pid,ParticleStatus::background);
+	std::vector<size_t> targets=Random::Instance().SampleIndices(candidates.size(),sources.size());
+	for(size_t i=0;i<sources.size();i++) {
+		// Target gets Status and Momentum of mapped initial state
+		candidates[targets[i]]->Status()=sources[i]->Status();
+		candidates[targets[i]]->Momentum()=sources[i]->Momentum();
+		// Initial state gets Position of target, for finalstate calc later
+		sources[i]->Position()=candidates[targets[i]]->Position();
+	}
+}
+
+void Event::SetupHadrons() {
+	// In Coherent Scattering case, nucleus target needs no setup
+	if(ParticleInfo(m_processInfo->m_hadronic.first[0]).IsNucleus())
+		return;
+
+	assignParticleDetails(hadronsIn,PID::proton());
+	assignParticleDetails(hadronsIn,PID::neutron());
+	assignParticleDetails(spectators,PID::proton());
+	assignParticleDetails(spectators,PID::neutron());
+
+    // Initialize final state hadrons
+    // TODO: Handle propagating deltas
+    // TODO: Handle selecting position for things like MEC+pion production
+    size_t cur_idx = 0;
+    ThreeVector position;
+    for(size_t i = 0; i < hadronsOut.size(); ++i) {
+        if(ParticleInfo(m_processInfo->m_hadronic.second[i]).IsBaryon())
+            position = hadronsIn[cur_idx++].Position();
+        Particle& part=hadronsOut[i];
+        part.Status() = ParticleStatus::propagating;
+        part.Position() = position;
+		nucleus_hadrons.push_back(part);
+    }
+	hadrons_setup=true;
 }

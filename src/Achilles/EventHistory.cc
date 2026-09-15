@@ -130,17 +130,17 @@ EventHistoryNode *EventHistory::FindNode(bool incoming, const Particle &part) co
 }
 
 void EventHistory::UpdateStatuses(const Particles &particles) {
-    for(auto &part : particles) {
+    for(const Particle& part:particles) {
         compare_momentum comp(part);
-        auto node = FindNodeOut(part);
+        EventHistoryNode* node = FindNodeOut(part);
         if(node) {
-            for(auto &outgoing : node->ParticlesOut()) {
+            for(Particle& outgoing : node->ParticlesOut()) {
                 if(comp(outgoing)) outgoing.Status() = part.Status();
             }
         }
         node = FindNodeIn(part);
         if(node) {
-            for(auto &incoming : node->ParticlesIn()) {
+            for(Particle& incoming : node->ParticlesIn()) {
                 if(comp(incoming) && incoming.Status() != ParticleStatus::target)
                     incoming.Status() = part.Status();
             }
@@ -159,7 +159,7 @@ void EventHistory::UpdatePrevNode(const Particle &part) {
 
 void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {
     // Start at primary interaction
-    auto *primary = Primary();
+    EventHistoryNode* primary = Primary();
 
     std::vector<size_t> visited;
     size_t current = primary->Index();
@@ -174,7 +174,7 @@ void EventHistory::WalkHistory(achilles::HistoryVisitor &visitor) const {
         // Ensure it hasn't been visited
         if(std::find(visited.begin(), visited.end(), current) != visited.end()) continue;
 
-        auto *node = Node(current);
+        EventHistoryNode* node = Node(current);
         visitor.visit(node);
 
         for(const auto &child : Children(node)) to_visit.push(child->Index());

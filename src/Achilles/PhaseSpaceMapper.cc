@@ -15,12 +15,7 @@ void achilles::PSMapper::GeneratePoint(Event& event, const std::vector<double> &
     const std::vector<double> mainRans(rans.end() - mainVars, rans.end());
 
     // Generate the phase space
-    // The momentum are given in the following order:
-    // 1. Momentum of the initial lepton(s)
-    // 2. Momentum of the initial hadron(s)
-    // 3. Momentum of all outgoing parts of the leptonic tensor
-    // 4. Momentum of all outgoing hadrons
-    // 5. Momentum of all spectators
+	event.reset();
     lbeam->GeneratePoint(event, lbeamRans);
     hbeam->GeneratePoint(event, hbeamRans);
     finalstate->GeneratePoint(event, mainRans);

@@ -4,7 +4,7 @@
 
 TEST_CASE("ParticleInfo", "[ParticleInfo]") {
     SECTION("Must be a valid particle") {
-        CHECK_THROWS_WITH(achilles::ParticleInfo(23413), "Invalid PID: id=23413");
+        CHECK_THROWS_WITH(achilles::ParticleInfo(23413), "Invalid numeric PID: id=23413");
 
         CHECK_THROWS_WITH(achilles::ParticleInfo(achilles::PID(23413)), "Invalid PID: id=23413");
 

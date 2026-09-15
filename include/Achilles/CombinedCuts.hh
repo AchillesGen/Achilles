@@ -48,7 +48,7 @@ class CombinedTwoParticleCut {
 
 class CutCollection {
   public:
-    bool EvaluateCuts(const refParticles&);
+    bool EvaluateCuts(const Event&);
     double CutEfficiency() const;
     bool AddCut(const std::set<PID> &, std::unique_ptr<OneParticleCut>);
     bool AddCut(const std::set<PID> &, std::unique_ptr<TwoParticleCut>);

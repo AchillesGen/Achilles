@@ -52,6 +52,13 @@ class Random {
         return result;
     }
 
+	std::vector<size_t> SampleIndices(size_t arraySize,size_t nSamples) {
+		std::vector<size_t> candidates(arraySize);
+		for(size_t i=0;i<arraySize;i++)
+			candidates[i]=i;
+		return Sample(nSamples,candidates);
+	}
+
     // Cache functions
     void SaveState(std::ostream &os) { os << m_rng->engine(); }
     void LoadState(std::istream &is) { is >> m_rng->engine(); }
