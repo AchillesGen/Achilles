@@ -3,6 +3,8 @@
 
 #include "Achilles/NuclearModel.hh"
 
+#include <cstdlib>
+
 extern "C" {
 void RegisterAll();
 void ListModels();
@@ -42,10 +44,10 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
     static std::string Name() { return "FortranModel"; }
-    std::string PSName() const override { return ModelPS(m_model); }
+    std::string PSName() const override { return TakeString(ModelPS(m_model)); }
 
-    std::string GetName() const override { return ModelName(m_model); }
-    std::string InspireHEP() const override { return GetInspireHEP(m_model); }
+    std::string GetName() const override { return TakeString(ModelName(m_model)); }
+    std::string InspireHEP() const override { return TakeString(GetInspireHEP(m_model)); }
 
     // Method needed to register fortran models at start-up
     static void RegisterModels() { RegisterAll(); }
@@ -55,6 +57,13 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     }
 
   private:
+    // Fortran returns strings malloc'd by f2cstring; copy and release them.
+    static std::string TakeString(char *str) {
+        std::string result = str ? str : "";
+        std::free(str);
+        return result;
+    }
+
     mutable bool is_hydrogen{false};
     mutable bool is_free_neutron{false};
     const WardGauge m_ward;
