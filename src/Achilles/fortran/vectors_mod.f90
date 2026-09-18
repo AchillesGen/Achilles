@@ -21,6 +21,7 @@ module libvectors
         procedure :: get => get4
         procedure :: print => print4
         procedure :: to_array => array4
+        procedure :: delete => delete_fourvector
     end type fourvector
 
     ! This will act as constructor
@@ -88,10 +89,12 @@ contains ! Implementation of functions
         copy_constructor4%ptr = other
     end function
 
+    ! No final procedure: assignment copies ptr, so owners must call delete explicitly.
     subroutine delete_fourvector(this)
         implicit none
-        type(fourvector) :: this
+        class(fourvector), intent(inout) :: this
         call delete_fourvector_c(this%ptr)
+        this%ptr = c_null_ptr
     end subroutine
 
     function get_ptr4(this)

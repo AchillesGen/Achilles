@@ -270,6 +270,17 @@ contains
         ff_dict = complex_map(ff)
         cur_model = models%get_model(idx)
         call cur_model%model_ptr%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvector, ff_dict, cur, nspin, nlorentz)
+
+        do i=1,nin
+            call mom_in(i)%delete()
+        enddo
+        do i=1,nout
+            call mom_out(i)%delete()
+        enddo
+        do i=1,nspect
+            call mom_spect(i)%delete()
+        enddo
+        call qvector%delete()
     end subroutine
 
     function get_init_wgt(idx, pids_in, pids_spect, pmom, nin, nspect, nproton, nneutron) result(wgt) bind(c, name="GetInitialStateWeight")
@@ -298,6 +309,13 @@ contains
 
         cur_model = models%get_model(idx)
         wgt = cur_model%model_ptr%init_wgt(pids_in, mom_in, nin, pids_spect, mom_spect, nspect, nproton, nneutron)
+
+        do i=1,nin
+            call mom_in(i)%delete()
+        enddo
+        do i=1,nspect
+            call mom_spect(i)%delete()
+        enddo
     end function get_init_wgt
 
     function get_inspirehep(idx) bind(C, name="GetInspireHEP")

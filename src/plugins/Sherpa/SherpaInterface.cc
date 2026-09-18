@@ -231,6 +231,7 @@ bool SherpaInterface::InitializeProcess(const ProcessInfo &info) {
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
     if(pm->find(name) == pm->end()) getProcess(ampl);
+    ampl->Delete();
     Process_Base *proc(pm->find(name)->second);
     if(proc == nullptr) return false;
     proc->SetShower(
@@ -250,6 +251,7 @@ std::vector<long> SherpaInterface::MomentumMap(const std::vector<long> &_fl) con
     Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
+    ampl->Delete();
     if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);
     Process_Base *proc(pm->find(name)->second);
     auto *singleProcess = proc->Get<COMIX::Single_Process>();
@@ -275,6 +277,7 @@ SherpaInterface::GenerateChannels(const std::vector<long> &_fl) const {
     Process_Base::SortFlavours(ampl);
     StringProcess_Map *pm(m_pmap[nlo_type::lo]);
     std::string name(Process_Base::GenerateName(ampl));
+    ampl->Delete();
     spdlog::info("Looking for process");
     if(pm->find(name) == pm->end()) THROW(fatal_error, "Process not found: " + name);
     Process_Base *proc(pm->find(name)->second);
@@ -391,6 +394,8 @@ SherpaInterface::CalcCurrent(const std::vector<long> &_fl,
     // return only nominal differntial xs for now
     double res(
         proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight());
+    reader->SetAmpl(nullptr);
+    ampl->Delete();
     p_sherpa->GetInitHandler()->GetMatrixElementHandler()->SetAllProcesses(Process_Vector{proc});
 
     singleProcess = proc->Get<COMIX::Single_Process>();
@@ -418,7 +423,11 @@ double SherpaInterface::CalcDifferential(const std::vector<long> &_fl,
     auto reader = dynamic_cast<Achilles_Reader *>(proc->EventReader());
     reader->SetAmpl(ampl);
     // return only nominal differntial xs for now
-    return proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight();
+    const double result =
+        proc->Differential(*ampl, ATOOLS::Variations_Mode::nominal_only, 1 | 2 | 4).BaseWeight();
+    reader->SetAmpl(nullptr);
+    ampl->Delete();
+    return result;
 }
 
 void SherpaInterface::FillAmplitudes(std::vector<Spin_Amplitudes> &amps) {

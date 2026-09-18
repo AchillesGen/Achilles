@@ -64,14 +64,10 @@ void cmap_insert(std::map<std::string, std::complex<double>> *map, const char *k
     map->insert({std::string(key), value});
 }
 
-complex *cmap_lookup(std::map<std::string, std::complex<double>> *map, const char *key) {
-    std::string skey(key);
-    if(map->find(skey) == map->end()) {
-        complex *c = new complex();
-        return c;
-    } else {
-        return new complex((*map)[skey]);
-    }
+void cmap_lookup(std::map<std::string, std::complex<double>> *map, const char *key,
+                 std::complex<double> *val) {
+    const auto it = map->find(std::string(key));
+    *val = it == map->end() ? std::complex<double>() : it->second;
 }
 
 bool cmap_contains(std::map<std::string, std::complex<double>> *map, const char *key) {
