@@ -25,6 +25,7 @@ class NuclearModel;
 
 using vParticles = std::vector<Particle>;
 using ptrParticles = std::vector<Particle*>;
+using cptrParticles = std::vector<const Particle*>;
 using vMomentum = std::vector<FourVector>;
 using refParticles = std::vector<std::reference_wrapper<Particle>>;
 using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
@@ -116,15 +117,11 @@ class Event {
 			addHadronOut(momentum,status);
 	}
 
-	/// Takes all particles of the given PID from the given list of particles,
-	/// and assigns their Status and Momentum to randomly-selected particles of
-	/// the same type in the given event's "nucleus_hadrons" list.
-    void assignParticleDetails(vParticles&,PID);
 	void SetupHadrons();
 
 	ptrParticles getAllOfType(vParticles&,PID,ParticleStatus=ParticleStatus::any);
-	ptrParticles allParticles() const;
-	vParticles allParticlesCopy() const;
+	ptrParticles allParticles();
+	cptrParticles allParticles() const;
 
     MOCK const EventHistory &History() const { return m_history; }
     EventHistory &History() { return m_history; }
@@ -166,13 +163,10 @@ class Event {
 			std::copy(list.begin(), list.end(), std::back_inserter(result));
 		return result;
 	}
-	ptrParticles getAllPtrs(std::vector<vParticles> lists) const {
-		ptrParticles result;
-		for(vParticles list:lists)
-			for(Particle& part:list)
-				result.push_back(&part);
-		return result;
-	}
+	/// Takes all particles of the given PID from the given list of particles,
+	/// and assigns their Status and Momentum to randomly-selected particles of
+	/// the same type in the given event's "nucleus_hadrons" list.
+    void assignParticleDetails(vParticles&,PID);
 
     // Variables
 	std::shared_ptr<ProcessInfo> m_processInfo;

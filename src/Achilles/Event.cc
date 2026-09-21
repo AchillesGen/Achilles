@@ -73,16 +73,43 @@ achilles::ptrParticles Event::getAllOfType(vParticles& list,PID pid,ParticleStat
 	return FilterPointers(list,func);
 }
 
-achilles::ptrParticles Event::allParticles() const {
-	if(hadrons_setup)
-		return getAllPtrs({leptonsIn,leptonsOut,nucleus_hadrons});
-	return getAllPtrs({leptonsIn,hadronsIn,leptonsOut,hadronsOut,spectators});
+achilles::ptrParticles Event::allParticles() {
+	ptrParticles result;
+	for(Particle& p:leptonsIn)
+		result.push_back(&p);
+	for(Particle& p:leptonsOut)
+		result.push_back(&p);
+	if(hadrons_setup) {
+		for(Particle& p:nucleus_hadrons)
+			result.push_back(&p);
+	} else {
+		for(Particle& p:hadronsIn)
+			result.push_back(&p);
+		for(Particle& p:hadronsOut)
+			result.push_back(&p);
+		for(Particle& p:spectators)
+			result.push_back(&p);
+	}
+	return result;
 }
-
-achilles::vParticles Event::allParticlesCopy() const {
-	if(hadrons_setup)
-		return concatenate({leptonsIn,leptonsOut,nucleus_hadrons});
-	return concatenate({leptonsIn,hadronsIn,leptonsOut,hadronsOut,spectators});
+achilles::cptrParticles Event::allParticles() const {
+	cptrParticles result;
+	for(const Particle& p:leptonsIn)
+		result.push_back(&p);
+	for(const Particle& p:leptonsOut)
+		result.push_back(&p);
+	if(hadrons_setup) {
+		for(const Particle& p:nucleus_hadrons)
+			result.push_back(&p);
+	} else {
+		for(const Particle& p:hadronsIn)
+			result.push_back(&p);
+		for(const Particle& p:hadronsOut)
+			result.push_back(&p);
+		for(const Particle& p:spectators)
+			result.push_back(&p);
+	}
+	return result;
 }
 
 void Event::Rotate(const std::array<double, 9> &rot_mat) {
@@ -107,7 +134,7 @@ void Event::assignParticleDetails(vParticles& particleSource,PID pid) {
 }
 
 void Event::SetupHadrons() {
-	// In Coherent Scattering case, nucleus target needs no setup
+	// Coherent Scattering case
 	if(ParticleInfo(m_processInfo->m_hadronic.first[0]).IsNucleus())
 		return;
 

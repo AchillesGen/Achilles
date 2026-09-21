@@ -211,8 +211,7 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
     m_model->TransformFrame(event, process, true);
 
     const ProcessInfo& process_info = process.Info();
-	vParticles parts=event_in.allParticlesCopy();
-    auto lepton_current = CalcLeptonCurrents(parts, process_info);
+    auto lepton_current = CalcLeptonCurrents(event_in, process_info);
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
@@ -262,20 +261,21 @@ double achilles::SherpaLeptonicBackend::CrossSection(const Event &event_in,
 }
 
 achilles::Currents
-achilles::SherpaLeptonicBackend::CalcLeptonCurrents(vParticles& parts,
+achilles::SherpaLeptonicBackend::CalcLeptonCurrents(const Event& event,
                                                     const ProcessInfo &info) const {
     spdlog::trace("Converting momenta to Sherpa format");
+	cptrParticles parts=event.allParticles();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(parts.size());
     std::vector<long> pids(info.m_mom_map.size());
     // TODO: Somehow pass sorted information to momentum gen
     pids[0] = info.m_mom_map.at(0);
-    mom[0] = (parts[1].Momentum() / 1_GeV).Momentum();
+    mom[0] = (parts[1]->Momentum() / 1_GeV).Momentum();
     pids[1] = info.m_mom_map.at(1);
-    mom[1] = (parts[0].Momentum() / 1_GeV).Momentum();
+    mom[1] = (parts[0]->Momentum() / 1_GeV).Momentum();
     for(size_t i = 2; i < parts.size(); ++i) {
         pids[i] = info.m_mom_map.at(i);
-        mom[i] = (parts[i].Momentum() / 1_GeV).Momentum();
+        mom[i] = (parts[i]->Momentum() / 1_GeV).Momentum();
     }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
@@ -335,7 +335,7 @@ void achilles::SherpaFullBackend::AddProcess(Process &process) {
 }
 
 double achilles::SherpaFullBackend::CrossSection(const Event &event, const Process &process) const {
-	ptrParticles parts=event.allParticles();
+	cptrParticles parts=event.allParticles();
     const ProcessInfo& info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(parts.size());

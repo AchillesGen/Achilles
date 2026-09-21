@@ -274,9 +274,9 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // TODO: Figure out how to best handle tracking this with the cascade and decays
     std::vector<Particle> primary_out;
     //std::vector<Particle> propagating; // Seems to be unused
-	for(const Particle& part:event.allParticlesCopy())
-		if(part.IsFinal()||part.IsPropagating())
-			primary_out.push_back(part);
+	for(Particle* part:event.allParticles())
+		if(part->IsFinal()||part->IsPropagating())
+			primary_out.push_back(*part);
     init_parts.push_back(init_lep);
     event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
                               EventHistory::StatusCode::primary);
