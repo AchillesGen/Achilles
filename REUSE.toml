@@ -56,3 +56,9 @@ path = ["src/gzstream/CMakeLists.txt", "src/gzstream/Makefile", "src/gzstream/RE
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2001 Deepak Bandyopadhyay, Lutz Kettner"
 SPDX-License-Identifier = "LGPL-2.1-or-later"
+
+[[annotations]]
+path = ["validation/**/*.md", "validation/**/*.yml", "validation/**/*.yaml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"

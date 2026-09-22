@@ -1,0 +1,146 @@
+Main:
+  NEvents: 7500000
+  HardCuts: false
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: Achilles_NC_RES_uB_pi0_PropResonances.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [14, [14]]
+  - Leptons: [12, [12]]
+  - Leptons: [-14, [-14]]
+  - Leptons: [-12, [-12]]
+
+Beams:
+  - Beam:
+      PID: 14
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/microboone_NCpi0_numu.dat
+  - Beam:
+      PID: -14
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/microboone_NCpi0_numubar.dat
+  - Beam:
+      PID: 12
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/microboone_NCpi0_nue.dat
+  - Beam:
+      PID: -12
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/microboone_NCpi0_nuebar.dat
+
+Cascade:
+  Run: True
+  Interactions:
+    - Name: NucleonNucleon
+      Options:
+        Mode: GiBUU
+        ResonanceMode: Propagate
+        ExpSup: 0.0
+    - Name: DeltaInteraction
+      Options:
+        Mode: GiBUU
+        ExpSup: 0.0
+    - Name: ConstantInteraction
+      Options:
+        InitialStates:
+          - Incoming: [22, 2112]
+            Outgoing:
+              - Outgoing: [22, 2112]
+                CrossSection: 0
+          - Incoming: [22, 2212]
+            Outgoing:
+              - Outgoing: [22, 2212]
+                CrossSection: 0
+          - Incoming: [3112, 2212]
+            Outgoing:
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [321, 2212]
+            Outgoing:
+              - Outgoing: [321, 2212]
+                CrossSection: 0
+          - Incoming: [321, 2112]
+            Outgoing:
+              - Outgoing: [321, 2112]
+                CrossSection: 0
+          - Incoming: [3122, 2212]
+            Outgoing:
+              - Outgoing: [3122, 2212]
+                CrossSection: 0
+          - Incoming: [3122, 2112]
+            Outgoing:
+              - Outgoing: [3122, 2112]
+                CrossSection: 0
+          - Incoming: [3212, 2212]
+            Outgoing:
+              - Outgoing: [3212, 2212]
+                CrossSection: 0
+          - Incoming: [3212, 2112]
+            Outgoing:
+              - Outgoing: [3212, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2112]
+            Outgoing:
+              - Outgoing: [3222, 2112]
+                CrossSection: 0
+          - Incoming: [3222, 2212]
+            Outgoing:
+              - Outgoing: [3222, 2212]
+                CrossSection: 0
+          - Incoming: [311, 2112]
+            Outgoing:
+              - Outgoing: [311, 2112]
+                CrossSection: 0
+          - Incoming: [311, 2212]
+            Outgoing:
+              - Outgoing: [311, 2212]
+                CrossSection: 0
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+
+NuclearModels:
+ - NuclearModel:
+    Model: FortranModel
+    Name: QE_Spectral_Func
+    ConfigFile: data/info_Ar40_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+ - NuclearModel:
+    Model: FortranModel
+    Name: RES_Spectral_Func
+    ConfigFile: data/info_Ar40_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/40Ar.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 13
+    range: [0, 180]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []

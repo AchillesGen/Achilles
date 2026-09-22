@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Achilles physics-validation config.
+#
+# Measurements are grouped under the *experimental setup* they share. Achilles
+# events are generated ONCE per experiment (one run card / beam+target) and reused
+# across every measurement in that setup — only the NUISANCE3 processing differs
+# per measurement. CI shards one job per experiment (the expensive, generation-bound
+# axis); adding a measurement to an existing setup costs no extra generation.
+#
+# Experiment fields:
+#   name          Identifier for the setup — the common prefix of its sample names;
+#                 also the CI shard/job name.
+#   achilles_run  Achilles run card for this setup, path relative to the repo root.
+#                 Flux/data files referenced inside the card (flux/..., data/...) need
+#                 no fixups here: Achilles' loader searches the CWD, $ACHILLES_PATH,
+#                 $ACHILLES_DATA_DIR and the install tree's share/Achilles (see
+#                 Filesystem::FindFile / FindFlux), so a flux file shipped in flux/
+#                 resolves both from a source checkout and from an install.
+#   data_per      Convention the published data uses: 'nucleon' or 'atom'. Achilles
+#                 reports per ATOM, so a per-nucleon measurement is divided by
+#                 target_nucleons and a per-atom one is left alone. Do not use
+#                 NUISANCE's PerNucleon conversion: for a composite target it divides
+#                 by the struck nucleus' A (12 for CH), not the 13 the data uses.
+#   target_nucleons  Nucleons per target atom; required when data_per: nucleon.
+#   dryrun        SyntheticAdapter generation params (--dry-run / self-test):
+#                 feature_shift simulates a physics change; ignored by nuisance3.
+#   measurements  Full NUISANCE3 sample names, run verbatim. A bare name is enough;
+#                 use a mapping ({name: ..., dryrun: {nbins: N}}) only to override
+#                 synthetic-adapter binning.
+
+experiments:
+  - name: MINERvA_CC0pinp_STV_XSec
+    achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"
+    data_per: nucleon          # published as cm^2/nucleon
+    target_nucleons: 13        # CH
+    dryrun:
+      feature_shift: 0.0        # synthetic: physics shift applied to feature events
+    measurements:
+      - MINERvA_CC0pinp_STV_XSec_1Ddalphat_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddphit_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddpt_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpnreco_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpprot_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthprot_nu
+
+  # CC1Mu1p / CC1Mu2p / CC1MuNp share MicroBooNE's numu+Ar beam+target, so one
+  # generation serves all three sample families.
+  - name: MicroBooNE_CC1Mu
+    achilles_run: "examples/Microboone/run_uB_1mu_virtresonances.yml"
+    data_per: atom             # published as cm^2/argon atom, NOT per nucleon
+    target_nucleons: 40        # 40Ar (documented; not used when data_per: atom)
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPty_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DECal_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonCosTheta_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonMomentum_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DProtonCosTheta_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Mu_Both_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Protons_Lab_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosp_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPp_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dthetamup_nu
+
+  # CC0pinp / CC1pipNp share T2K's numu+CH beam+target.
+  - name: T2K_CC
+    achilles_run: "examples/T2K/run_T2K_virtresonances.yml"
+    data_per: nucleon          # published as cm^2/nucleon
+    target_nucleons: 13        # CH
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - T2K_CC0pinp_STV_XSec_1Ddat_nu
+      - T2K_CC0pinp_STV_XSec_1Ddphit_nu
+      - T2K_CC0pinp_STV_XSec_1Ddpt_nu
+      - T2K_CC1pipNp_CH_XSec_1DdaT_nu
+      - T2K_CC1pipNp_CH_XSec_1DdpTT_nu
+      - T2K_CC1pipNp_CH_XSec_1DpN_nu

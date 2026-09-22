@@ -1,0 +1,23 @@
+version: 2
+
+# Keeps the `uses:` pins in .github/workflows/ current, the same way pre-commit.ci
+# keeps .pre-commit-config.yaml current. Without it these versions only get looked
+# at when someone happens to notice a deprecation warning in a run log -- which is
+# how the whole tree ended up a major version behind on the Node 20 deadline.
+#
+# Note this file only takes effect once it is on the default branch.
+updates:
+  - package-ecosystem: "github-actions"
+    # "/" means .github/workflows/ for this ecosystem, not the repo root.
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # One PR for everything rather than one per action. Ungrouped, a quiet week
+    # across ~10 distinct actions is still a fistful of near-identical PRs, and
+    # the noise is what makes people start ignoring them.
+    groups:
+      github-actions:
+        patterns: ["*"]
+    labels: ["ci", "dependencies"]
+    commit-message:
+      prefix: "ci"

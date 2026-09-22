@@ -11,10 +11,22 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Image builds are slow; a rapid series of pushes to main should not queue a
+# build per commit when only the last one will be tagged :main anyway.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker:
     name: Build and Push Docker image to DockerHub
     runs-on: ubuntu-latest
+    # Pushing to ghcr.io needs packages:write. This worked only because the repo
+    # still grants the default token read/write; it breaks silently the moment
+    # default workflow permissions are tightened to read-only.
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Docker meta
         id: meta

@@ -1,0 +1,56 @@
+name: Physval Plot Pruning
+
+# Time-based retention for physval run plots. Deletes plots/<sha>/ folders on the
+# physval-baselines branch older than a fixed window so image blobs don't grow the
+# repo without bound. The tiny baselines/*.json summaries are kept indefinitely.
+#
+# NOTE: this removes folders at HEAD. To actually reclaim pack space the branch
+# history must be rewritten/squashed periodically (see RETENTION_DAYS note); this
+# workflow keeps HEAD clean and can be extended to squash on a longer cadence.
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # weekly, Sundays 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Delete plots/<sha>/ folders older than this many days'
+        default: '45'
+
+permissions:
+  contents: write
+
+env:
+  BASELINE_BRANCH: physval-baselines
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prune old plot folders
+        run: |
+          set -e
+          RETENTION_DAYS="${{ github.event.inputs.retention_days || '45' }}"
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git clone --branch "$BASELINE_BRANCH" --single-branch \
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" bl \
+            || { echo "no $BASELINE_BRANCH branch; nothing to prune"; exit 0; }
+          cd bl
+          [ -d plots ] || { echo "no plots/ dir; nothing to prune"; exit 0; }
+          cutoff=$(( $(date +%s) - RETENTION_DAYS*86400 ))
+          removed=0
+          for d in plots/*/; do
+            # Age a folder by its last commit time on the branch.
+            ts=$(git log -1 --format=%ct -- "$d" 2>/dev/null || echo 0)
+            if [ "$ts" -gt 0 ] && [ "$ts" -lt "$cutoff" ]; then
+              git rm -r --quiet "$d"
+              removed=$((removed+1))
+            fi
+          done
+          if [ "$removed" -gt 0 ]; then
+            git commit -m "prune $removed physval plot folder(s) older than ${RETENTION_DAYS}d"
+            git push origin "$BASELINE_BRANCH"
+          else
+            echo "nothing older than ${RETENTION_DAYS}d"
+          fi
