@@ -27,19 +27,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=4418a689" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/css/s5defs-roles.css?v=04af0cc0" />
   
   <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
     <script src="../_static/documentation_options.js?v=83a61292"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -48,26 +48,33 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/physics';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
-
+  <body data-default-mode="">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -93,7 +100,51 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
     </header>
   
 
@@ -312,11 +363,18 @@
 
 
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div>
 
 
 <button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -344,11 +402,9 @@
                 <h2> Contents </h2>
             </div>
             <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
+                <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::ThreeVector</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEv"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectoraSERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
@@ -408,9 +464,6 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::FourVector</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEv"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
@@ -569,8 +622,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE">
-<span id="_CPPv3N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"></span><span id="_CPPv2N8achilles11ThreeVector11ThreeVectorENSt5arrayIdX3EEE"></span><span id="achilles::ThreeVector::ThreeVector__std::array:double.3:CE"></span><span class="target" id="classachilles_1_1ThreeVector_1a2baf27ffc13d80ec122e04f0e87227bf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ThreeVector</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">3</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp">
+<span class="target" id="classachilles_1_1ThreeVector_1a2baf27ffc13d80ec122e04f0e87227bf"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">ThreeVector</span> <span class="pre">(std::array&lt;</span> <span class="pre">double,</span> <span class="pre">3</span> <span class="pre">&gt;</span> <span class="pre">p)</span> <span class="pre">noexcept</span></span></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values given by p </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -580,8 +633,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8achilles11ThreeVector11ThreeVectorEddd">
-<span id="_CPPv3N8achilles11ThreeVector11ThreeVectorEddd"></span><span id="_CPPv2N8achilles11ThreeVector11ThreeVectorEddd"></span><span id="achilles::ThreeVector::ThreeVector__double.double.doubleCE"></span><span class="target" id="classachilles_1_1ThreeVector_1a8bbd2ab5f4f634ba593239d60f5aebf2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ThreeVector</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pX</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pY</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pZ</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp">
+<span class="target" id="classachilles_1_1ThreeVector_1a8bbd2ab5f4f634ba593239d60f5aebf2"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">ThreeVector</span> <span class="pre">(double</span> <span class="pre">pX,</span> <span class="pre">double</span> <span class="pre">pY,</span> <span class="pre">double</span> <span class="pre">pZ)</span> <span class="pre">noexcept</span></span></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values pX, pY, and pZ </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1312,14 +1365,14 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-constructors-and-destructors">Constructors and Destructors</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorEv">
-<span id="_CPPv3N8achilles10FourVector10FourVectorEv"></span><span id="_CPPv2N8achilles10FourVector10FourVectorEv"></span><span id="achilles::FourVector::FourVectorCE"></span><span class="target" id="classachilles_1_1FourVector_1ab368573f210f556bb0c56e7f1bf03566"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorEv" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp">
+<span class="target" id="classachilles_1_1FourVector_1ab368573f210f556bb0c56e7f1bf03566"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">()</span> <span class="pre">noexcept</span></span></dt>
 <dd><p>Create an empty <a class="reference internal" href="#classachilles_1_1FourVector"><span class="std std-ref">FourVector</span></a> object. </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE">
-<span id="_CPPv3N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"></span><span id="_CPPv2N8achilles10FourVector10FourVectorENSt5arrayIdX4EEE"></span><span id="achilles::FourVector::FourVector__std::array:double.4:CE"></span><span class="target" id="classachilles_1_1FourVector_1a9cd4b2270706af0285e37fd09b9cc760"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">4</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp">
+<span class="target" id="classachilles_1_1FourVector_1a9cd4b2270706af0285e37fd09b9cc760"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">(std::array&lt;</span> <span class="pre">double,</span> <span class="pre">4</span> <span class="pre">&gt;</span> <span class="pre">p)</span> <span class="pre">noexcept</span></span></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values given by p </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1329,8 +1382,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorEdddd">
-<span id="_CPPv3N8achilles10FourVector10FourVectorEdddd"></span><span id="_CPPv2N8achilles10FourVector10FourVectorEdddd"></span><span id="achilles::FourVector::FourVector__double.double.double.doubleCE"></span><span class="target" id="classachilles_1_1FourVector_1a118824eee3772766ddece0ce022a0ff9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">E</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pX</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pY</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pZ</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd" title="Link to this definition">#</a><br /></dt>
+<dt class="sig sig-object cpp">
+<span class="target" id="classachilles_1_1FourVector_1a118824eee3772766ddece0ce022a0ff9"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">(double</span> <span class="pre">E,</span> <span class="pre">double</span> <span class="pre">pX,</span> <span class="pre">double</span> <span class="pre">pY,</span> <span class="pre">double</span> <span class="pre">pZ)</span> <span class="pre">noexcept</span></span></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1FourVector"><span class="std std-ref">FourVector</span></a> object with values pX, pY, pZ, and E </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2206,7 +2259,7 @@
 <span id="_CPPv3N8achilles8ParticleE"></span><span id="_CPPv2N8achilles8ParticleE"></span><span id="achilles::Particle"></span><span class="target" id="classachilles_1_1Particle"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Particle</span></span></span><a class="headerlink" href="#_CPPv4N8achilles8ParticleE" title="Link to this definition">#</a><br /></dt>
 <dd><p>The <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> class provides a container to handle information about the particle. The information includes the particle identification (PID), the momentum of the particle, the position of the particle, the status code associated with the particle, the particle’s mother particles, the particle’s daughter particles, and any other needed information. Currently, the status codes are as follows:</p>
 <p>&#64;rst</p>
-<p>+———-&amp;#8212;+——————–&amp;#8212;+ | Status Code | Meaning | +=============+=======================+ | -1 | Propagating <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+ | 0 | Background <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+ | 1 | Escaped <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-&amp;#8212;+——————–&amp;#8212;+</p>
+<p>+———-—+——————–—+ | Status Code | Meaning | +=============+=======================+ | -1 | Propagating <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-—+——————–—+ | 0 | Background <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-—+——————–—+ | 1 | Escaped <a class="reference internal" href="#classachilles_1_1Particle"><span class="std std-ref">Particle</span></a> | +———-—+——————–—+</p>
 <p>&#64;endrst </p>
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-constructors-and-destructors">Constructors and Destructors</p>
@@ -2988,7 +3041,7 @@
 <span id="_CPPv3N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE"></span><span id="_CPPv2N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE"></span><span id="achilles::Nucleus::MakeNucleus__ssCR.doubleCR.doubleCR.ssCR.ssCR.FermiGasCR.std::unique_ptr:Density:"></span><span class="target" id="classachilles_1_1Nucleus_1aa1317ea3392986c4b268c205d013bbde"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N8achilles7NucleusE" title="achilles::Nucleus"><span class="n"><span class="pre">Nucleus</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">MakeNucleus</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&amp;</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&amp;</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">&amp;</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&amp;</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">&amp;</span></span>, <span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N8achilles7Nucleus8FermiGasE" title="achilles::Nucleus::FermiGas"><span class="n"><span class="pre">FermiGas</span></span></a><span class="p"><span class="pre">&amp;</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Density</span></span><span class="p"><span class="pre">&gt;</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE" title="Link to this definition">#</a><br /></dt>
 <dd><p>Generate a nucleus based on an input string, a binding energy, a Fermi Momentum, and a density function. The format of the string has to be of the form, AX, where A represents the number of nucleons, and X represents the chemical symbol for the element. Currently, the following elements are available in the code:</p>
 <p>&#64;rst</p>
-<p>+–&amp;#8212;+–&amp;#8212;+ | Z | X | +=====+=====+ | 1 | H | +–&amp;#8212;+–&amp;#8212;+ | 2 | He | +–&amp;#8212;+–&amp;#8212;+ | 3 | Li | +–&amp;#8212;+–&amp;#8212;+ | 6 | C | +–&amp;#8212;+–&amp;#8212;+ | 8 | O | +–&amp;#8212;+–&amp;#8212;+ | 13 | Al | +–&amp;#8212;+–&amp;#8212;+ | 18 | Ar | +–&amp;#8212;+–&amp;#8212;+ | 20 | Ca | +–&amp;#8212;+–&amp;#8212;+ | 26 | Fe | +–&amp;#8212;+–&amp;#8212;+</p>
+<p>+–—+–—+ | Z | X | +=====+=====+ | 1 | H | +–—+–—+ | 2 | He | +–—+–—+ | 3 | Li | +–—+–—+ | 6 | C | +–—+–—+ | 8 | O | +–—+–—+ | 13 | Al | +–—+–—+ | 18 | Ar | +–—+–—+ | 20 | Ca | +–—+–—+ | 26 | Fe | +–—+–—+</p>
 <p>&#64;endrst </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -3040,11 +3093,9 @@
     <i class="fa-solid fa-list"></i> Contents
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::ThreeVector</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEv"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectoraSERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
@@ -3104,9 +3155,6 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::FourVector</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEv"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
@@ -3286,8 +3334,8 @@ By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Picke
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
 
   <footer class="bd-footer">
   </footer>

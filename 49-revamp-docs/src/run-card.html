@@ -27,19 +27,19 @@
   </noscript>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+  <link href="../_static/styles/theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=90905a2f556bf617f1a9" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
-    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=3c74b3bc" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=4418a689" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../_static/css/s5defs-roles.css?v=04af0cc0" />
   
   <!-- So that users can add custom icons -->
-  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../_static/scripts/fontawesome.js?digest=90905a2f556bf617f1a9"></script>
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
-<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9" />
 
     <script src="../_static/documentation_options.js?v=83a61292"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
@@ -48,6 +48,7 @@
     <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/run-card';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -56,20 +57,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
   </head>
-  
-  
-  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
-
+  <body data-default-mode="">
   
   
   <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
   
   <div id="pst-scroll-pixel-helper"></div>
   
   <button type="button" class="btn rounded-pill" id="pst-back-to-top">
     <i class="fa-solid fa-arrow-up"></i>Back to top</button>
-
+  
+  
+  
   
   <dialog id="pst-search-dialog">
     
@@ -95,7 +102,51 @@
 </div>
 
   
-    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
     </header>
   
 
@@ -312,11 +363,18 @@
 
 
 
-<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
-  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
-  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
-  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
-</button>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div>
 
 
 <button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
@@ -344,7 +402,7 @@
                 <h2> Contents </h2>
             </div>
             <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
+                <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#including-external-files">3.1. Including External Files</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.2. Main Settings</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.3. Processes</a></li>
@@ -439,7 +497,7 @@ of Achilles.</p>
 <h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">3.1. </span>Including External Files</a><a class="headerlink" href="#including-external-files" title="Link to this heading">#</a></h2>
 <p>Any value in the run card can be replaced by the contents of a separate YAML file using the
 custom <code class="docutils literal notranslate"><span class="pre">!include</span></code> tag:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SomeKey</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;path/to/file.yml&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SomeKey</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"path/to/file.yml"</span>
 </pre></div>
 </div>
 <p>When Achilles loads the run card it replaces every <code class="docutils literal notranslate"><span class="pre">!include</span></code> scalar with the fully parsed
@@ -451,12 +509,12 @@ interaction tables, form factor files, and option defaults across multiple run c
 duplicating their contents. The pre-supplied defaults under <code class="docutils literal notranslate"><span class="pre">data/default/</span></code> make
 extensive use of this mechanism:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/12C.yml&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/12C.yml"</span>
 
 <span class="nt">Cascade</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/VirtResInteractions.yml&quot;</span>
+<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/VirtResInteractions.yml"</span>
 
-<span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/OptionDefaults.yml&quot;</span>
+<span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/OptionDefaults.yml"</span>
 </pre></div>
 </div>
 </section>
@@ -645,7 +703,7 @@ format is auto-detected from its header line; supported formats are <code class=
 hadronic final-state particles through the nucleus after the hard interaction.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Cascade</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">Run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/VirtResInteractions.yml&quot;</span>
+<span class="w">  </span><span class="nt">Interactions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/VirtResInteractions.yml"</span>
 <span class="w">  </span><span class="nt">Step</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.04</span>
 <span class="w">  </span><span class="nt">Probability</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Cylinder</span>
 <span class="w">  </span><span class="nt">InMedium</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
@@ -808,13 +866,13 @@ with the option <code class="docutils literal notranslate"><span class="pre">--d
 <span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QESpectral</span>
 <span class="w">      </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12p_tot.data</span>
 <span class="w">      </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12n_tot.data</span>
-<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">"FormFactors.yml"</span>
 <span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">NuclearModel</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
 <span class="w">      </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RES_Spectral_Func</span>
 <span class="w">      </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
-<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">      </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">"FormFactors.yml"</span>
 <span class="w">      </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
@@ -856,7 +914,7 @@ current. Accepted values: <code class="docutils literal notranslate"><span class
 <span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">QESpectral</span>
 <span class="w">  </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12p_tot.data</span>
 <span class="w">  </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/Spectral_Functions/pke12n_tot.data</span>
-<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">"FormFactors.yml"</span>
 <span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
@@ -889,7 +947,7 @@ are identical to <code class="docutils literal notranslate"><span class="pre">QE
 <span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HyperonSpectral</span>
 <span class="w">  </span><span class="nt">SpectralP</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/pke12_tot.data</span>
 <span class="w">  </span><span class="nt">SpectralN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/pke12_tot.data</span>
-<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">"FormFactors.yml"</span>
 <span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
@@ -902,7 +960,7 @@ are identical to <code class="docutils literal notranslate"><span class="pre">QE
 <span class="w">  </span><span class="nt">Model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">FortranModel</span>
 <span class="w">  </span><span class="nt">Name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">RES_Spectral_Func</span>
 <span class="w">  </span><span class="nt">ConfigFile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/info_C12_pke.data</span>
-<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;FormFactors.yml&quot;</span>
+<span class="w">  </span><span class="nt">FormFactorFile</span><span class="p">:</span><span class="w"> </span><span class="s">"FormFactors.yml"</span>
 <span class="w">  </span><span class="nt">Ward</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
 </pre></div>
 </div>
@@ -961,7 +1019,7 @@ in the corresponding form factor implementation.</p>
 <code class="docutils literal notranslate"><span class="pre">Nucleus:</span></code> node that can be written inline or loaded from a file with <code class="docutils literal notranslate"><span class="pre">!include</span></code>.
 The pre-supplied nucleus files are located in <code class="docutils literal notranslate"><span class="pre">data/default/</span></code>.</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Nuclei</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/12C.yml&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Nucleus</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/12C.yml"</span>
 </pre></div>
 </div>
 <p>Currently provided nucleus files: <code class="docutils literal notranslate"><span class="pre">1H.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">1N.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">12C.yml</span></code>, <code class="docutils literal notranslate"><span class="pre">16O.yml</span></code>,
@@ -1147,7 +1205,7 @@ list of integers is accepted.</p></td>
 <h2><a class="toc-backref" href="#id18" role="doc-backlink"><span class="section-number">3.9. </span>Options</a><a class="headerlink" href="#options" title="Link to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">Options</span></code> section controls the numerical integration and unweighting settings.
 It is most conveniently loaded from a shared defaults file:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/OptionDefaults.yml&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Options</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/OptionDefaults.yml"</span>
 </pre></div>
 </div>
 <p>The full inline form is:</p>
@@ -1246,7 +1304,7 @@ accepts an empty list.</p></td>
 <h2><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">3.11. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
 <p>When the <code class="docutils literal notranslate"><span class="pre">Sherpa</span></code> or <code class="docutils literal notranslate"><span class="pre">BSM</span></code> backend is selected, Achilles requires a top-level
 <code class="docutils literal notranslate"><span class="pre">SherpaOptions</span></code> section. This is most conveniently provided via <code class="docutils literal notranslate"><span class="pre">!include</span></code>:</p>
-<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SherpaOptions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">&quot;data/default/SherpaOptions.yml&quot;</span>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SherpaOptions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/SherpaOptions.yml"</span>
 </pre></div>
 </div>
 <p>The inline form is:</p>
@@ -1345,7 +1403,7 @@ internal debugging and post-processing within the Achilles framework.</p>
     <i class="fa-solid fa-list"></i> Contents
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
-    <ul class="visible nav section-nav flex-column">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#including-external-files">3.1. Including External Files</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#main-settings">3.2. Main Settings</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#processes">3.3. Processes</a></li>
@@ -1422,8 +1480,8 @@ By Joshua Isaacson, William Jay, Alessandro Lovato, Pedro A. Machado, Luke Picke
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
-<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+  <script defer src="../_static/scripts/bootstrap.js?digest=90905a2f556bf617f1a9"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=90905a2f556bf617f1a9"></script>
 
   <footer class="bd-footer">
   </footer>
