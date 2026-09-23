@@ -7,6 +7,11 @@
 
 using achilles::ReferenceHandler;
 
+ReferenceHandler &ReferenceHandler::Handle() {
+    static ReferenceHandler handle;
+    return handle;
+}
+
 void ReferenceHandler::WriteReferences() const {
     fmt::print("Writing out references from current run.\n");
     fmt::print("References can be found in \"References.txt\".\n");

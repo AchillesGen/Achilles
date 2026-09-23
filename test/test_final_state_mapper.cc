@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/FourVector.hh"
@@ -23,8 +25,8 @@ TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
             mapper->GeneratePoint(mom, ran);
             std::vector<double> ran2(2);
             mapper->GenerateWeight(mom, ran2);
-            CHECK(ran[0] == Approx(ran2[0]));
-            CHECK(ran[1] == Approx(ran2[1]));
+            CHECK(ran[0] == Catch::Approx(ran2[0]));
+            CHECK(ran[1] == Catch::Approx(ran2[1]));
             // TODO: Validate wgt
         }
     }
@@ -43,14 +45,14 @@ TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
             mom2[0] = mom[0];
             mom2[1] = mom[1];
             mapper->GeneratePoint(mom2, ran);
-            CHECK(mom[2].Px() == Approx(mom2[2].Px()));
-            CHECK(mom[2].Py() == Approx(mom2[2].Py()));
-            CHECK(mom[2].Pz() == Approx(mom2[2].Pz()));
-            CHECK(mom[2].E() == Approx(mom2[2].E()));
-            CHECK(mom[3].Px() == Approx(mom2[3].Px()));
-            CHECK(mom[3].Py() == Approx(mom2[3].Py()));
-            CHECK(mom[3].Pz() == Approx(mom2[3].Pz()));
-            CHECK(mom[3].E() == Approx(mom2[3].E()));
+            CHECK(mom[2].Px() == Catch::Approx(mom2[2].Px()));
+            CHECK(mom[2].Py() == Catch::Approx(mom2[2].Py()));
+            CHECK(mom[2].Pz() == Catch::Approx(mom2[2].Pz()));
+            CHECK(mom[2].E() == Catch::Approx(mom2[2].E()));
+            CHECK(mom[3].Px() == Catch::Approx(mom2[3].Px()));
+            CHECK(mom[3].Py() == Catch::Approx(mom2[3].Py()));
+            CHECK(mom[3].Pz() == Catch::Approx(mom2[3].Pz()));
+            CHECK(mom[3].E() == Catch::Approx(mom2[3].E()));
         }
     }
 }

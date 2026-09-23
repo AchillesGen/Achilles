@@ -3,7 +3,9 @@
 
 #include <sstream>
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers.hpp"
 
 #include "Achilles/Constants.hh"
 #include "Achilles/Particle.hh"
@@ -94,7 +96,7 @@ TEST_CASE("Closest Approach", "[Particle]") {
     achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
 
     auto time = achilles::ClosestApproach(part1, part2);
-    CHECK(time == Approx(achilles::Constant::HBARC));
+    CHECK(time == Catch::Approx(achilles::Constant::HBARC));
 
     part1.Propagate(time);
     CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});

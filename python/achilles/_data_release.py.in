@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# Generated at CMake configure time from _data_release.py.in — do not edit.
+# The canonical value lives in CMakeLists.txt (ACHILLES_DATA_RELEASE).
+DATA_RELEASE = "@ACHILLES_DATA_RELEASE@"

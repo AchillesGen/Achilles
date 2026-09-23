@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/matchers/catch_matchers_floating_point.hpp"
 
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Utilities.hh"
@@ -101,7 +102,7 @@ TEST_CASE("One Dimensional", "[Interp]") {
                 std::distance(x.begin(), std::upper_bound(x.begin(), x.end(), xi)));
             auto idxLow = idxHigh - 1;
             double val = xi - x[idxLow] < x[idxHigh] - xi ? x[idxLow] : x[idxHigh];
-            CHECK(interp(xi) == Approx(TestFunc(val, 1)).epsilon(acc));
+            CHECK_THAT(interp(xi), Catch::Matchers::WithinRel(TestFunc(val, 1), acc));
         }
 
         CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 1), 1e-4));
@@ -113,7 +114,9 @@ TEST_CASE("One Dimensional", "[Interp]") {
         achilles::Interp1D interp(x, y, achilles::InterpolationType::Polynomial);
         interp.SetPolyOrder(1);
 
-        for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 1)).epsilon(acc)); }
+        for(const auto &xi : x_) {
+            CHECK_THAT(interp(xi), Catch::Matchers::WithinRel(TestFunc(xi, 1), acc));
+        }
         CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 1), 1e-4));
     }
 
@@ -123,7 +126,9 @@ TEST_CASE("One Dimensional", "[Interp]") {
         achilles::Interp1D interp(x, y, achilles::InterpolationType::Polynomial);
         interp.SetPolyOrder(2);
 
-        for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 2)).epsilon(acc)); }
+        for(const auto &xi : x_) {
+            CHECK_THAT(interp(xi), Catch::Matchers::WithinRel(TestFunc(xi, 2), acc));
+        }
         CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 2), 1e-4));
     }
 
@@ -133,7 +138,9 @@ TEST_CASE("One Dimensional", "[Interp]") {
         achilles::Interp1D interp(x, y, achilles::InterpolationType::Polynomial);
         interp.SetPolyOrder(3);
 
-        for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 3)).epsilon(acc)); }
+        for(const auto &xi : x_) {
+            CHECK_THAT(interp(xi), Catch::Matchers::WithinRel(TestFunc(xi, 3), acc));
+        }
     }
 
     SECTION("Cubic Spline") {
@@ -143,7 +150,9 @@ TEST_CASE("One Dimensional", "[Interp]") {
         CHECK_THROWS_WITH(interp(1), "Interpolation is not initialized!");
         interp.CubicSpline();
 
-        for(const auto &xi : x_) { CHECK(interp(xi) == Approx(TestFunc(xi, 3)).epsilon(acc)); }
+        for(const auto &xi : x_) {
+            CHECK_THAT(interp(xi), Catch::Matchers::WithinRel(TestFunc(xi, 3), acc));
+        }
         CHECK_THAT(interp.Integrate(), Catch::Matchers::WithinRel(TestFuncInt(0, 10, 3), 1e-4));
     }
 }
@@ -170,7 +179,8 @@ TEST_CASE("Two Dimensional", "[Interp]") {
                     std::distance(y.begin(), std::upper_bound(y.begin(), y.end(), yi)));
                 auto idxLowY = idxHighY - 1;
                 double valy = yi - y[idxLowY] < y[idxHighY] - yi ? y[idxLowY] : y[idxHighY];
-                CHECK(interp(xi, yi) == Approx(TestFunc(valx, valy, 1)).epsilon(acc));
+                CHECK_THAT(interp(xi, yi),
+                           Catch::Matchers::WithinRel(TestFunc(valx, valy, 1), acc));
             }
         }
     }
@@ -184,7 +194,7 @@ TEST_CASE("Two Dimensional", "[Interp]") {
 
         for(const auto &xi : x_) {
             for(const auto &yi : y_) {
-                CHECK(interp(xi, yi) == Approx(TestFunc(xi, yi, 1)).epsilon(acc));
+                CHECK_THAT(interp(xi, yi), Catch::Matchers::WithinRel(TestFunc(xi, yi, 1), acc));
             }
         }
     }
@@ -198,7 +208,7 @@ TEST_CASE("Two Dimensional", "[Interp]") {
 
         for(const auto &xi : x_) {
             for(const auto &yi : y_) {
-                CHECK(interp(xi, yi) == Approx(TestFunc(xi, yi, 2)).epsilon(acc));
+                CHECK_THAT(interp(xi, yi), Catch::Matchers::WithinRel(TestFunc(xi, yi, 2), acc));
             }
         }
     }
@@ -212,7 +222,7 @@ TEST_CASE("Two Dimensional", "[Interp]") {
 
         for(const auto &xi : x_) {
             for(const auto &yi : y_) {
-                CHECK(interp(xi, yi) == Approx(TestFunc(xi, yi, 3)).epsilon(acc));
+                CHECK_THAT(interp(xi, yi), Catch::Matchers::WithinRel(TestFunc(xi, yi, 3), acc));
             }
         }
     }
@@ -226,7 +236,7 @@ TEST_CASE("Two Dimensional", "[Interp]") {
 
         for(const auto &xi : x_) {
             for(const auto &yi : y_) {
-                CHECK(interp(xi, yi) == Approx(TestFunc(xi, yi, 3)).epsilon(acc));
+                CHECK_THAT(interp(xi, yi), Catch::Matchers::WithinRel(TestFunc(xi, yi, 3), acc));
             }
         }
     }

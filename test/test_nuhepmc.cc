@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/Process.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 #include "mock_classes.hh"
 
 #include "Achilles/Particle.hh"

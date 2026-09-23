@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
 
 #include "Achilles/Statistics.hh"
 
@@ -26,9 +28,9 @@ TEST_CASE("Statistics class", "[vegas]") {
         CHECK(data.FiniteCalls() == vals.size());
         CHECK(data.Min() == min);
         CHECK(data.Max() == max);
-        CHECK(data.Mean() == Approx(mean));
+        CHECK(data.Mean() == Catch::Approx(mean));
         CHECK(data.Variance() ==
-              Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
+              Catch::Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
     }
 
     SECTION("Adding multiple StatsData together") {
@@ -55,9 +57,9 @@ TEST_CASE("Statistics class", "[vegas]") {
         CHECK(data.FiniteCalls() == vals.size());
         CHECK(data.Min() == min);
         CHECK(data.Max() == max);
-        CHECK(data.Mean() == Approx(mean));
+        CHECK(data.Mean() == Catch::Approx(mean));
         CHECK(data.Variance() ==
-              Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
+              Catch::Approx((mean2 - mean * mean) / static_cast<double>(vals.size() - 1)));
     }
 }
 

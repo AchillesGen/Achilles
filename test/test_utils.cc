@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_approx.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 #include "Achilles/Utilities.hh"
 
@@ -65,14 +66,14 @@ TEST_CASE("Brent", "[Utilities]") {
     SECTION("Find Roots") {
         achilles::Brent brent(func);
 
-        CHECK(brent.CalcRoot(1, 3) == Approx(2));
-        CHECK(brent.CalcRoot(-2, 0) == Approx(-1));
+        CHECK(brent.CalcRoot(1, 3) == Catch::Approx(2));
+        CHECK(brent.CalcRoot(-2, 0) == Catch::Approx(-1));
         CHECK_THROWS_AS(brent.CalcRoot(3, 4), std::domain_error);
     }
 
     SECTION("Minimize") {
         achilles::Brent brent(func);
-        CHECK(brent.Minimize(-2, 1) == Approx(0.5));
+        CHECK(brent.Minimize(-2, 1) == Catch::Approx(0.5));
     }
 }
 

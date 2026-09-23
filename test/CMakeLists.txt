@@ -4,11 +4,6 @@
 # Load Catch2 information into variables
 include(FetchContent)
 FetchContent_GetProperties(catch2)
-include(${catch2_SOURCE_DIR}/contrib/Catch.cmake)
-
-add_library(catch_main STATIC catch_main.cpp)
-target_link_libraries(catch_main PUBLIC Catch2::Catch2 trompeloeil)
-target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 
 # TODO: Fix commented out test files
 add_executable(achilles-testsuite 
@@ -58,11 +53,15 @@ add_executable(achilles-testsuite
     test_delta.cc
     test_clebsch_gordan.cc
 )
-target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings catch_main 
+target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings
     PUBLIC physics mappers event_gen)
 if(ENABLE_BSM)
-    target_link_libraries(achilles-testsuite PUBLIC -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
+    target_link_libraries(achilles-testsuite PRIVATE -L${SHERPA_ROOT_DIR}/lib/SHERPA-MC -lToolsOrg -lMEToolsMain -lToolsPhys)
 endif()
+target_link_libraries(achilles-testsuite PRIVATE Catch2::Catch2WithMain trompeloeil)
+target_compile_definitions(achilles-testsuite PRIVATE CATCH_CONFIG_ENABLE_BENCHMARKING)
+# Turn off false positive in GCC as an error
+target_compile_options(achilles-testsuite PRIVATE -Wno-error=null-dereference)
 
 set_target_properties(NuHepMCReferenceWriter NuHepMCReferenceValidator PROPERTIES
   ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib
@@ -87,9 +86,25 @@ target_include_directories(achilles-fortran-testsuite PUBLIC ${CMAKE_Fortran_MOD
 target_link_libraries(achilles-fortran-testsuite PRIVATE project_options
     PUBLIC physics fortran_interface FUT::FUT)
 
+list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(CTest)
-# add_test(NAME fortran-testsuite
-#          COMMAND achilles-fortran-testsuite)
+include(Catch)
+
+# Register the C++ Catch2 cases (one CTest entry per test case) ...
 catch_discover_tests(achilles-testsuite
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    PROPERTIES LABELS "cpp"
+)
+
+# ... and the Fortran suite as a single CTest entry so a single `ctest` call
+# runs both. The Fortran program returns a non-zero exit code on failure (see
+# test_fortran.f90); FAIL_REGULAR_EXPRESSION backstops that against the FUT
+# framework's default of always exiting 0.
+add_test(NAME achilles-fortran-testsuite
+    COMMAND achilles-fortran-testsuite
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+)
+set_tests_properties(achilles-fortran-testsuite PROPERTIES
+    LABELS "fortran"
+    FAIL_REGULAR_EXPRESSION "failed with reason"
 )
