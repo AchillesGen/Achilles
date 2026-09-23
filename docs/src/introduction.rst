@@ -73,11 +73,11 @@ on different aspects of event generation within the neutrino community and beyon
 for those interested in seeing the current state and future goals of event generators in the community
 is the white paper written for Snowmass :cite:`Campbell:2022qmc`.
 
-The remainder of this manual is organized as follows: in :ref:`Basic Structure` the modular structure
-is highlighted. :ref:`Getting Started` contains information and instructions on obtaining, building,
-installing, and running the event generator. The :ref:`Run Configuration` is discussed, and the ability
-to control the parameters and physics within the generator are euclidated. Finally, the :ref:`Interfaces`
-for extending the code or to external tools are explained.
+The remainder of this manual is organized as follows: :ref:`Getting Started` contains information
+and instructions on obtaining, building, installing, and running the event generator. The
+:ref:`Run Card Structure` is discussed, and the ability to control the parameters and physics within
+the generator are elucidated. Finally, the :ref:`Interfaces` for extending the code or to external
+tools are explained.
 
 **Note**: The construction of Monte Carlo event generators requires several assumptions, approximations,
 and simplifications. It is therefore imperative that the results of event generators should be verified and

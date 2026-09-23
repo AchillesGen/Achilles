@@ -1,8 +1,8 @@
 .. _cascade-physics:
 
-***************************
+****************************
 Intranuclear Cascade Physics
-***************************
+****************************
 
 After the hard interaction the struck nucleon — and any mesons or resonances
 produced — must traverse the nuclear medium before being detected. The

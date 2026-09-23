@@ -21,7 +21,7 @@ bibtex_bibfiles = ["src/references.bib"]
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 rst_prolog = """
-.. include:: <s5defs.rst>
+.. include:: /s5defs.rst
 """
 
 # -- Options for HTML output -------------------------------------------------
@@ -57,7 +57,12 @@ html_css_files = ['css/s5defs-roles.css']
 # -- Breathe configuration ---------------------------------------------------
 breathe_default_project = "Achilles"
 
-import subprocess, os
+import re, subprocess, os
+from breathe.renderer import sphinxrenderer
+
+# Doxygen emits a bare "constexpr" type for constexpr constructors, which breathe's
+# regex (requiring a trailing space) misses, producing "constexpr constexpr".
+sphinxrenderer.QUALIFIERS_TO_REMOVE = re.compile(r"\b(static|friend|constexpr|consteval|constinit)\b ?")
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :

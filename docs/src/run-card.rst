@@ -23,9 +23,9 @@ to the physics where appropriate.
    :local:
 
 
-***********************
+************************
 Including External Files
-***********************
+************************
 
 Any value in the run card can be replaced by the contents of a separate YAML file using the
 custom ``!include`` tag:
@@ -55,6 +55,8 @@ extensive use of this mechanism:
    Options: !include "data/default/OptionDefaults.yml"
 
 
+.. _run-card-main:
+
 *************
 Main Settings
 *************
@@ -74,7 +76,7 @@ The first section in the run card is the ``Main`` section. This section contains
       gzip library or not.
 
 
-Additional discussion on the output formats are discussed in detail in the `Output Formats`_ section.
+Additional discussion on the output formats are discussed in detail in the :ref:`Output Formats <run-card-output-formats>` section.
 
 Example:
 
@@ -90,13 +92,15 @@ Example:
        Zipped: true
 
 
+.. _run-card-processes:
+
 *********
 Processes
 *********
 
 The processes section is where the set of incoming and outgoing leptons are listed.
 Each line in this section denotes a process to calculate. Achilles will combine this information
-with the list of nuclear models to consider listed in `NuclearModels`_.
+with the list of nuclear models to consider listed in :ref:`NuclearModels <run-card-nuclear-models>`.
 
 An example setup for running both neutral current and charged current is given below:
 
@@ -122,7 +126,7 @@ This section is designed to be flexible enough to define arbitrary processes tha
 would be interested in studying through the use of the Achilles event generator.
 The extension to Beyond the Standard Model particles is also supported in this section
 through the use of the :ref:`Sherpa interface <sherpa-interface>`. For details on
-defining the physics model to be used, please see the discussion in `Sherpa Options`_.
+defining the physics model to be used, please see the discussion in :ref:`Sherpa Options <run-card-sherpa-options>`.
 
 *****
 Beams
@@ -369,12 +373,14 @@ zero-cross-section placeholders to hyperon and photon channels:
 Each entry under ``InitialStates`` maps a pair of incoming PIDs to one or more
 outgoing channels, each with a constant ``CrossSection`` in mb.
 
+.. _run-card-nuclear-models:
+
 *************
 NuclearModels
 *************
 
 The ``NuclearModels`` section is a list of nuclear model configurations. Achilles
-evaluates every listed model for each process defined in `Processes`_, so multiple
+evaluates every listed model for each process defined in :ref:`Processes <run-card-processes>`, so multiple
 models can be run simultaneously within a single job.
 
 Each entry begins with a ``NuclearModel:`` key whose sub-node contains at minimum a
@@ -635,7 +641,7 @@ HardCuts
 
 The ``HardCuts`` section defines kinematic selection cuts applied to the hard-scattering
 final state before event weighting. Cuts are only active when ``HardCuts: true`` is set
-in `Main Settings`_. Each entry in the list specifies one cut:
+in :ref:`Main Settings <run-card-main>`. Each entry in the list specifies one cut:
 
 .. code-block:: yaml
 
@@ -743,6 +749,8 @@ The ``Backend`` section selects the cross-section calculation backend.
      - Backend-specific options passed as a YAML sequence. The ``Default`` backend
        accepts an empty list.
 
+.. _run-card-sherpa-options:
+
 **************
 Sherpa Options
 **************
@@ -777,12 +785,14 @@ The inline form is:
      - Path to the Sherpa parameter card file that sets coupling constants and particle
        masses for the selected model.
 
+.. _run-card-output-formats:
+
 **************
 Output Formats
 **************
 
 The output format is set by the ``Format`` key in the ``Output`` sub-node of
-`Main Settings`_.
+:ref:`Main Settings <run-card-main>`.
 
 ``NuHepMC``
    The recommended output format. Events are written in the `NuHepMC

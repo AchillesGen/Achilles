@@ -44,7 +44,7 @@ list(APPEND ACHILLES_DOC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/index.rst ${CMAKE_CUR
 # - The Sphinx config has been updated
 add_custom_command(OUTPUT ${SPHINX_INDEX_FILE}
                    COMMAND 
-                     ${SPHINX_EXECUTABLE} -b html
+                     ${SPHINX_EXECUTABLE} -W --keep-going -b html
                      # Tell Breathe where to find the Doxygen output
                      -Dbreathe_projects.Achilles=${DOXYGEN_OUTPUT_DIR}/xml
                    ${SPHINX_SOURCE} ${SPHINX_BUILD}
