@@ -225,6 +225,8 @@
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics Objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerics.html">Monte Carlo Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
@@ -519,7 +521,7 @@ extensive use of this mechanism:</p>
 </div>
 </section>
 <section id="main-settings">
-<h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Main Settings</a><a class="headerlink" href="#main-settings" title="Link to this heading">#</a></h2>
+<span id="run-card-main"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">3.2. </span>Main Settings</a><a class="headerlink" href="#main-settings" title="Link to this heading">#</a></h2>
 <p>The first section in the run card is the <code class="docutils literal notranslate"><span class="pre">Main</span></code> section. This section contains information about the basic options for running Achilles. These include:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">NEvents</span></code> (integer): Number of unweighted events to generate</p></li>
@@ -539,7 +541,7 @@ gzip library or not.</p></li>
 </dl>
 </li>
 </ul>
-<p>Additional discussion on the output formats are discussed in detail in the <a class="reference internal" href="#output-formats">Output Formats</a> section.</p>
+<p>Additional discussion on the output formats are discussed in detail in the <a class="reference internal" href="#run-card-output-formats"><span class="std std-ref">Output Formats</span></a> section.</p>
 <p>Example:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Main</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">NEvents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50000</span>
@@ -553,10 +555,10 @@ gzip library or not.</p></li>
 </div>
 </section>
 <section id="processes">
-<h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
+<span id="run-card-processes"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">3.3. </span>Processes</a><a class="headerlink" href="#processes" title="Link to this heading">#</a></h2>
 <p>The processes section is where the set of incoming and outgoing leptons are listed.
 Each line in this section denotes a process to calculate. Achilles will combine this information
-with the list of nuclear models to consider listed in <a class="reference internal" href="#nuclearmodels">NuclearModels</a>.</p>
+with the list of nuclear models to consider listed in <a class="reference internal" href="#run-card-nuclear-models"><span class="std std-ref">NuclearModels</span></a>.</p>
 <p>An example setup for running both neutral current and charged current is given below:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">Processes</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Leptons</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">14</span><span class="p p-Indicator">]]</span>
@@ -578,7 +580,7 @@ This section is designed to be flexible enough to define arbitrary processes tha
 would be interested in studying through the use of the Achilles event generator.
 The extension to Beyond the Standard Model particles is also supported in this section
 through the use of the <a class="reference internal" href="interfaces.html#sherpa-interface"><span class="std std-ref">Sherpa interface</span></a>. For details on
-defining the physics model to be used, please see the discussion in <a class="reference internal" href="#sherpa-options">Sherpa Options</a>.</p>
+defining the physics model to be used, please see the discussion in <a class="reference internal" href="#run-card-sherpa-options"><span class="std std-ref">Sherpa Options</span></a>.</p>
 </section>
 <section id="beams">
 <h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">3.4. </span>Beams</a><a class="headerlink" href="#beams" title="Link to this heading">#</a></h2>
@@ -853,9 +855,9 @@ outgoing channels, each with a constant <code class="docutils literal notranslat
 </section>
 </section>
 <section id="nuclearmodels">
-<h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">3.6. </span>NuclearModels</a><a class="headerlink" href="#nuclearmodels" title="Link to this heading">#</a></h2>
+<span id="run-card-nuclear-models"></span><h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">3.6. </span>NuclearModels</a><a class="headerlink" href="#nuclearmodels" title="Link to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">NuclearModels</span></code> section is a list of nuclear model configurations. Achilles
-evaluates every listed model for each process defined in <a class="reference internal" href="#processes">Processes</a>, so multiple
+evaluates every listed model for each process defined in <a class="reference internal" href="#run-card-processes"><span class="std std-ref">Processes</span></a>, so multiple
 models can be run simultaneously within a single job.</p>
 <p>Each entry begins with a <code class="docutils literal notranslate"><span class="pre">NuclearModel:</span></code> key whose sub-node contains at minimum a
 <code class="docutils literal notranslate"><span class="pre">Model</span></code> field identifying the model type, along with model-specific options described
@@ -1167,7 +1169,7 @@ optical potential), <code class="docutils literal notranslate"><span class="pre"
 <h2><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">3.8. </span>HardCuts</a><a class="headerlink" href="#hardcuts" title="Link to this heading">#</a></h2>
 <p>The <code class="docutils literal notranslate"><span class="pre">HardCuts</span></code> section defines kinematic selection cuts applied to the hard-scattering
 final state before event weighting. Cuts are only active when <code class="docutils literal notranslate"><span class="pre">HardCuts:</span> <span class="pre">true</span></code> is set
-in <a class="reference internal" href="#main-settings">Main Settings</a>. Each entry in the list specifies one cut:</p>
+in <a class="reference internal" href="#run-card-main"><span class="std std-ref">Main Settings</span></a>. Each entry in the list specifies one cut:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">HardCuts</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AngleTheta</span>
 <span class="w">    </span><span class="nt">PIDs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">11</span>
@@ -1301,7 +1303,7 @@ accepts an empty list.</p></td>
 </div>
 </section>
 <section id="sherpa-options">
-<h2><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">3.11. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
+<span id="run-card-sherpa-options"></span><h2><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">3.11. </span>Sherpa Options</a><a class="headerlink" href="#sherpa-options" title="Link to this heading">#</a></h2>
 <p>When the <code class="docutils literal notranslate"><span class="pre">Sherpa</span></code> or <code class="docutils literal notranslate"><span class="pre">BSM</span></code> backend is selected, Achilles requires a top-level
 <code class="docutils literal notranslate"><span class="pre">SherpaOptions</span></code> section. This is most conveniently provided via <code class="docutils literal notranslate"><span class="pre">!include</span></code>:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">SherpaOptions</span><span class="p">:</span><span class="w"> </span><span class="kt">!include</span><span class="w"> </span><span class="s">"data/default/SherpaOptions.yml"</span>
@@ -1339,9 +1341,9 @@ masses for the selected model.</p></td>
 </div>
 </section>
 <section id="output-formats">
-<h2><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">3.12. </span>Output Formats</a><a class="headerlink" href="#output-formats" title="Link to this heading">#</a></h2>
+<span id="run-card-output-formats"></span><h2><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">3.12. </span>Output Formats</a><a class="headerlink" href="#output-formats" title="Link to this heading">#</a></h2>
 <p>The output format is set by the <code class="docutils literal notranslate"><span class="pre">Format</span></code> key in the <code class="docutils literal notranslate"><span class="pre">Output</span></code> sub-node of
-<a class="reference internal" href="#main-settings">Main Settings</a>.</p>
+<a class="reference internal" href="#run-card-main"><span class="std std-ref">Main Settings</span></a>.</p>
 <dl class="simple">
 <dt><code class="docutils literal notranslate"><span class="pre">NuHepMC</span></code></dt><dd><p>The recommended output format. Events are written in the <a class="reference external" href="https://github.com/NuHepMC/Spec">NuHepMC</a> convention on top of the HepMC3 library.
 NuHepMC files are readable by standard HepMC3 analysis tools and carry

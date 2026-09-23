@@ -224,6 +224,8 @@
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="physics.html">Physics Objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerics.html">Monte Carlo Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
@@ -637,12 +639,16 @@ launching the <code class="docutils literal notranslate"><span class="pre">achil
 <code class="docutils literal notranslate"><span class="pre">bin</span></code> directory of the build directory, or in the <code class="docutils literal notranslate"><span class="pre">bin</span></code> directory of the install directory.
 Launching the code with no command line arguments, attempts to find a run card file named <code class="docutils literal notranslate"><span class="pre">run.yml</span></code> that
 specifies the setup for the desired run. For a detailed description on the run card can be found
-<span class="xref std std-ref">here</span>.</p>
+<a class="reference internal" href="run-card.html#run-card-structure"><span class="std std-ref">here</span></a>.</p>
 <p>If you wish to run with a different run card, then Achilles can be launched as</p>
+<div class="highlight-shell-session notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./achilles<span class="w"> </span>&lt;run_card&gt;
+</pre></div>
+</div>
 <p>In which the <code class="docutils literal notranslate"><span class="pre">&lt;run_card&gt;</span></code> is the desired <a class="reference external" href="https://yaml.org/">YAML</a> configuration file to be used.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>To run Achilles in other run mode configurations please see <span class="xref std std-ref">Alternate Run Modes</span>.</p>
+<p>Additional executables for other run modes (cascade-only, potential tests, and pre-computed
+events) are enabled through the options listed in <a class="reference internal" href="#build-options"><span class="std std-ref">Build Options</span></a>.</p>
 </div>
 <details class="sd-sphinx-override sd-dropdown sd-card sd-mb-3" open="open">
 <summary class="sd-summary-title sd-card-header">

@@ -183,17 +183,19 @@ launching the ``achilles`` executable, which can either be found in the
 ``bin`` directory of the build directory, or in the ``bin`` directory of the install directory.
 Launching the code with no command line arguments, attempts to find a run card file named ``run.yml`` that
 specifies the setup for the desired run. For a detailed description on the run card can be found
-:ref:`here <Run Card>`.
+:ref:`here <Run Card Structure>`.
 
 If you wish to run with a different run card, then Achilles can be launched as
 
 .. code-block:: shell-session
+
    $ ./achilles <run_card>
 
 In which the ``<run_card>`` is the desired `YAML <https://yaml.org/>`_ configuration file to be used.
 
 .. note::
-   To run Achilles in other run mode configurations please see :ref:`Alternate Run Modes`.
+   Additional executables for other run modes (cascade-only, potential tests, and pre-computed
+   events) are enabled through the options listed in :ref:`Build Options`.
 
 .. dropdown:: Runtime Options
    :open:

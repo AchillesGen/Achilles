@@ -52,6 +52,8 @@
     <link rel="icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Monte Carlo Methods" href="numerics.html" />
+    <link rel="prev" title="Troubleshooting &amp; FAQ" href="faq.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   <meta name="docsearch:version" content="" />
@@ -153,8 +155,6 @@
       
       
       
-        
-      
       <dialog id="pst-primary-sidebar-modal"></dialog>
       <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
         
@@ -223,8 +223,10 @@
 <li class="toctree-l1"><a class="reference internal" href="physics/cascade.html">Intranuclear Cascade Physics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="physics/ward-identity.html">Ward Identity and Gauge Corrections</a></li>
 </ul>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="faq.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Physics Objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="numerics.html">Monte Carlo Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
 </ul>
 
@@ -405,6 +407,8 @@
                 <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::ThreeVector</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEv"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectoraSERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
@@ -464,6 +468,9 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::FourVector</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEv"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
@@ -583,13 +590,23 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus16SetFermiMomentumERKd"><code class="docutils literal notranslate"><span class="pre">SetFermiMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus10SetDensityENSt10unique_ptrI7DensityEE"><code class="docutils literal notranslate"><span class="pre">SetDensity()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus12SetPotentialENSt10unique_ptrI9PotentialEE"><code class="docutils literal notranslate"><span class="pre">SetPotential()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus2IDEv"><code class="docutils literal notranslate"><span class="pre">ID()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus12InitParticleEv"><code class="docutils literal notranslate"><span class="pre">InitParticle()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9NNucleonsEv"><code class="docutils literal notranslate"><span class="pre">NNucleons()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus8NProtonsEv"><code class="docutils literal notranslate"><span class="pre">NProtons()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9NNeutronsEv"><code class="docutils literal notranslate"><span class="pre">NNeutrons()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13BindingEnergyEv"><code class="docutils literal notranslate"><span class="pre">BindingEnergy()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13FermiMomentumEv"><code class="docutils literal notranslate"><span class="pre">FermiMomentum()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus12GetPotentialEv"><code class="docutils literal notranslate"><span class="pre">GetPotential()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus6RadiusEv"><code class="docutils literal notranslate"><span class="pre">Radius()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus3RhoERKd"><code class="docutils literal notranslate"><span class="pre">Rho()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus14GenerateConfigEv"><code class="docutils literal notranslate"><span class="pre">GenerateConfig()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus16GenerateMomentumERKdRK3PID"><code class="docutils literal notranslate"><span class="pre">GenerateMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus8ToStringEv"><code class="docutils literal notranslate"><span class="pre">ToString()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus9SetRadiusERKd"><code class="docutils literal notranslate"><span class="pre">SetRadius()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus10InitializeE6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">Initialize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9ProtonRhoERKd"><code class="docutils literal notranslate"><span class="pre">ProtonRho()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus10NeutronRhoERKd"><code class="docutils literal notranslate"><span class="pre">NeutronRho()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13FermiMomentumERKdRK3PID"><code class="docutils literal notranslate"><span class="pre">FermiMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE"><code class="docutils literal notranslate"><span class="pre">MakeNucleus()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus8FermiGasE"><code class="docutils literal notranslate"><span class="pre">achilles::Nucleus::FermiGas</span></code></a></li>
@@ -622,8 +639,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1ThreeVector_1a2baf27ffc13d80ec122e04f0e87227bf"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">ThreeVector</span> <span class="pre">(std::array&lt;</span> <span class="pre">double,</span> <span class="pre">3</span> <span class="pre">&gt;</span> <span class="pre">p)</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE">
+<span id="_CPPv3N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"></span><span id="_CPPv2N8achilles11ThreeVector11ThreeVectorENSt5arrayIdX3EEE"></span><span id="achilles::ThreeVector::ThreeVector__std::array:double.3:CE"></span><span class="target" id="classachilles_1_1ThreeVector_1a2baf27ffc13d80ec122e04f0e87227bf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ThreeVector</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">3</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE" title="Link to this definition">#</a><br /></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values given by p </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -633,8 +650,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1ThreeVector_1a8bbd2ab5f4f634ba593239d60f5aebf2"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">ThreeVector</span> <span class="pre">(double</span> <span class="pre">pX,</span> <span class="pre">double</span> <span class="pre">pY,</span> <span class="pre">double</span> <span class="pre">pZ)</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles11ThreeVector11ThreeVectorEddd">
+<span id="_CPPv3N8achilles11ThreeVector11ThreeVectorEddd"></span><span id="_CPPv2N8achilles11ThreeVector11ThreeVectorEddd"></span><span id="achilles::ThreeVector::ThreeVector__double.double.doubleCE"></span><span class="target" id="classachilles_1_1ThreeVector_1a8bbd2ab5f4f634ba593239d60f5aebf2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ThreeVector</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pX</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pY</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pZ</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd" title="Link to this definition">#</a><br /></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values pX, pY, and pZ </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1365,14 +1382,14 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-constructors-and-destructors">Constructors and Destructors</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1FourVector_1ab368573f210f556bb0c56e7f1bf03566"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">()</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorEv">
+<span id="_CPPv3N8achilles10FourVector10FourVectorEv"></span><span id="_CPPv2N8achilles10FourVector10FourVectorEv"></span><span id="achilles::FourVector::FourVectorCE"></span><span class="target" id="classachilles_1_1FourVector_1ab368573f210f556bb0c56e7f1bf03566"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Create an empty <a class="reference internal" href="#classachilles_1_1FourVector"><span class="std std-ref">FourVector</span></a> object. </p>
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1FourVector_1a9cd4b2270706af0285e37fd09b9cc760"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">(std::array&lt;</span> <span class="pre">double,</span> <span class="pre">4</span> <span class="pre">&gt;</span> <span class="pre">p)</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE">
+<span id="_CPPv3N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"></span><span id="_CPPv2N8achilles10FourVector10FourVectorENSt5arrayIdX4EEE"></span><span id="achilles::FourVector::FourVector__std::array:double.4:CE"></span><span class="target" id="classachilles_1_1FourVector_1a9cd4b2270706af0285e37fd09b9cc760"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">array</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">double</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="m"><span class="pre">4</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">p</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE" title="Link to this definition">#</a><br /></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1ThreeVector"><span class="std std-ref">ThreeVector</span></a> object with values given by p </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1382,8 +1399,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1FourVector_1a118824eee3772766ddece0ce022a0ff9"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">constexpr</span> <span class="pre">constexpr</span> <span class="pre">FourVector</span> <span class="pre">(double</span> <span class="pre">E,</span> <span class="pre">double</span> <span class="pre">pX,</span> <span class="pre">double</span> <span class="pre">pY,</span> <span class="pre">double</span> <span class="pre">pZ)</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles10FourVector10FourVectorEdddd">
+<span id="_CPPv3N8achilles10FourVector10FourVectorEdddd"></span><span id="_CPPv2N8achilles10FourVector10FourVectorEdddd"></span><span id="achilles::FourVector::FourVector__double.double.double.doubleCE"></span><span class="target" id="classachilles_1_1FourVector_1a118824eee3772766ddece0ce022a0ff9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">FourVector</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">E</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pX</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pY</span></span>, <span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">pZ</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd" title="Link to this definition">#</a><br /></dt>
 <dd><p>Create a <a class="reference internal" href="#classachilles_1_1FourVector"><span class="std std-ref">FourVector</span></a> object with values pX, pY, pZ, and E </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2762,7 +2779,7 @@
 
 <dl class="cpp function">
 <dt class="sig sig-object cpp" id="_CPPv4N8achilles7NucleusD0Ev">
-<span id="_CPPv3N8achilles7NucleusD0Ev"></span><span id="_CPPv2N8achilles7NucleusD0Ev"></span><span id="achilles::Nucleus::~Nucleus"></span><span class="target" id="classachilles_1_1Nucleus_1a0caadb197216f5d9125265a71d8db733"></span><span class="n"><span class="pre">MOCK</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~Nucleus</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N8achilles7NucleusD0Ev" title="Link to this definition">#</a><br /></dt>
+<span id="_CPPv3N8achilles7NucleusD0Ev"></span><span id="_CPPv2N8achilles7NucleusD0Ev"></span><span id="achilles::Nucleus::~Nucleus"></span><span class="target" id="classachilles_1_1Nucleus_1aa7a56a57b75d86872ef48681f62d0966"></span><span class="sig-name descname"><span class="n"><span class="pre">~Nucleus</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N8achilles7NucleusD0Ev" title="Link to this definition">#</a><br /></dt>
 <dd><p>Default destructor. </p>
 </dd></dl>
 
@@ -2819,8 +2836,8 @@
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-getters">Getters</p>
 <p>These functions provide get specific features from the <a class="reference internal" href="#classachilles_1_1Nucleus"><span class="std std-ref">Nucleus</span></a> object </p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a71d6ffecac9553f34a5f6e1a225033a9"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">PID</span> <span class="pre">ID</span> <span class="pre">()</span> <span class="pre">const</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus2IDEv">
+<span id="_CPPv3NK8achilles7Nucleus2IDEv"></span><span id="_CPPv2NK8achilles7Nucleus2IDEv"></span><span id="achilles::Nucleus::IDC"></span><span class="target" id="classachilles_1_1Nucleus_1a7ef35df6e152ae29873bc22ab1598a41"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">PID</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ID</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus2IDEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the nuclear PID </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2841,8 +2858,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a65d62500f1e7b9bdc753fd0061f15ece"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">std::size_t</span> <span class="pre">NNucleons</span> <span class="pre">()</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus9NNucleonsEv">
+<span id="_CPPv3NK8achilles7Nucleus9NNucleonsEv"></span><span id="_CPPv2NK8achilles7Nucleus9NNucleonsEv"></span><span id="achilles::Nucleus::NNucleonsC"></span><span class="target" id="classachilles_1_1Nucleus_1ab0b873072acddc2e784e672e1d6223bf"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">NNucleons</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus9NNucleonsEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the number of nucleons in the nucleus </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2852,8 +2869,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a6f124ec9552b703572ac7f8f51ea5c21"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">std::size_t</span> <span class="pre">NProtons</span> <span class="pre">()</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus8NProtonsEv">
+<span id="_CPPv3NK8achilles7Nucleus8NProtonsEv"></span><span id="_CPPv2NK8achilles7Nucleus8NProtonsEv"></span><span id="achilles::Nucleus::NProtonsC"></span><span class="target" id="classachilles_1_1Nucleus_1a4ef48241aaccaa17a1007d90dc04026a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">NProtons</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus8NProtonsEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the number of protons in the nucleus </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2863,8 +2880,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1ae4619bf0731e6753d80f35a2a8554471"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">std::size_t</span> <span class="pre">NNeutrons</span> <span class="pre">()</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus9NNeutronsEv">
+<span id="_CPPv3NK8achilles7Nucleus9NNeutronsEv"></span><span id="_CPPv2NK8achilles7Nucleus9NNeutronsEv"></span><span id="achilles::Nucleus::NNeutronsC"></span><span class="target" id="classachilles_1_1Nucleus_1a45d7877cf80949ffd80131d2ac5e9dfb"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">NNeutrons</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus9NNeutronsEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the number of neutrons in the nucleus </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2896,8 +2913,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1aa1839a7c832e12552522c6d885fa4942"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">std::shared_ptr&lt;</span> <span class="pre">Potential</span> <span class="pre">&gt;</span> <span class="pre">GetPotential</span> <span class="pre">()</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus12GetPotentialEv">
+<span id="_CPPv3NK8achilles7Nucleus12GetPotentialEv"></span><span id="_CPPv2NK8achilles7Nucleus12GetPotentialEv"></span><span id="achilles::Nucleus::GetPotentialC"></span><span class="target" id="classachilles_1_1Nucleus_1ac3a012ac6166e22dbfa5bf8db11c62a7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">shared_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">Potential</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GetPotential</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus12GetPotentialEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the phenomenological potential </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2907,8 +2924,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a326d56cf0a27d3e54f83189989f7030d"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">const</span> <span class="pre">double</span> <span class="pre">&amp;</span> <span class="pre">Radius</span> <span class="pre">()</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus6RadiusEv">
+<span id="_CPPv3NK8achilles7Nucleus6RadiusEv"></span><span id="_CPPv2NK8achilles7Nucleus6RadiusEv"></span><span id="achilles::Nucleus::RadiusC"></span><span class="target" id="classachilles_1_1Nucleus_1a7fc3a1192d9b6d9cc120dccbe5416651"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">Radius</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus6RadiusEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the radius cutoff of the nucleus used for the cascade </p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -2918,8 +2935,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a5b2bc00bfaf02148bbebb5c3e7842f72"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">double</span> <span class="pre">Rho</span> <span class="pre">(const</span> <span class="pre">double</span> <span class="pre">&amp;position)</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus3RhoERKd">
+<span id="_CPPv3NK8achilles7Nucleus3RhoERKd"></span><span id="_CPPv2NK8achilles7Nucleus3RhoERKd"></span><span id="achilles::Nucleus::Rho__doubleCRC"></span><span class="target" id="classachilles_1_1Nucleus_1a6d27b7ac9a681064d492b8dc8fb1dc7e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Rho</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">position</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus3RhoERKd" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the density of the nucleus at a given location </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -2935,8 +2952,8 @@
 <div class="breathe-sectiondef docutils container">
 <p class="breathe-sectiondef-title rubric" id="breathe-section-title-functions">Functions</p>
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1ad2e6cf2d6e4090ae95150900a7e30c1f"></span><span class="sig-name descname"><span class="pre">MOCK</span> <span class="pre">Particles</span> <span class="pre">GenerateConfig</span> <span class="pre">()</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4N8achilles7Nucleus14GenerateConfigEv">
+<span id="_CPPv3N8achilles7Nucleus14GenerateConfigEv"></span><span id="_CPPv2N8achilles7Nucleus14GenerateConfigEv"></span><span id="achilles::Nucleus::GenerateConfig"></span><span class="target" id="classachilles_1_1Nucleus_1a32255fc5a97e2f1ac5e9596b4c318a60"></span><span class="n"><span class="pre">Particles</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">GenerateConfig</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N8achilles7Nucleus14GenerateConfigEv" title="Link to this definition">#</a><br /></dt>
 <dd><p>Generate a configuration of the nucleus based on the density function. </p>
 </dd></dl>
 
@@ -2995,8 +3012,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1aed682c622e2db15b019ede3bbe08892f"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">double</span> <span class="pre">ProtonRho</span> <span class="pre">(const</span> <span class="pre">double</span> <span class="pre">&amp;position)</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus9ProtonRhoERKd">
+<span id="_CPPv3NK8achilles7Nucleus9ProtonRhoERKd"></span><span id="_CPPv2NK8achilles7Nucleus9ProtonRhoERKd"></span><span id="achilles::Nucleus::ProtonRho__doubleCRC"></span><span class="target" id="classachilles_1_1Nucleus_1a758cf9a79a843374c4c9fbe66d6526b1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">ProtonRho</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">position</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus9ProtonRhoERKd" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the density of the nucleus at a given location </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -3009,8 +3026,8 @@
 </dd></dl>
 
 <dl class="cpp function">
-<dt class="sig sig-object cpp">
-<span class="target" id="classachilles_1_1Nucleus_1a540fa1daf06ed3f97684d30c79789137"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">MOCK</span> <span class="pre">double</span> <span class="pre">NeutronRho</span> <span class="pre">(const</span> <span class="pre">double</span> <span class="pre">&amp;position)</span> <span class="pre">const</span> <span class="pre">noexcept</span></span></dt>
+<dt class="sig sig-object cpp" id="_CPPv4NK8achilles7Nucleus10NeutronRhoERKd">
+<span id="_CPPv3NK8achilles7Nucleus10NeutronRhoERKd"></span><span id="_CPPv2NK8achilles7Nucleus10NeutronRhoERKd"></span><span id="achilles::Nucleus::NeutronRho__doubleCRC"></span><span class="target" id="classachilles_1_1Nucleus_1a8d7ce0a921959350b3c82be596b2db53"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">NeutronRho</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">double</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">position</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK8achilles7Nucleus10NeutronRhoERKd" title="Link to this definition">#</a><br /></dt>
 <dd><p>Return the density of the nucleus at a given location </p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -3076,6 +3093,24 @@
                 <footer class="prev-next-footer d-print-none">
                   
 <div class="prev-next-area">
+    <a class="left-prev"
+       href="faq.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Troubleshooting &amp; FAQ</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="numerics.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Monte Carlo Methods</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
 </div>
                 </footer>
               
@@ -3096,6 +3131,8 @@
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::ThreeVector</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEv"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector"><code class="docutils literal notranslate"><span class="pre">ThreeVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles11ThreeVectoraSERK11ThreeVector"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
@@ -3155,6 +3192,9 @@
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVectorE"><code class="docutils literal notranslate"><span class="pre">achilles::FourVector</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEv"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorEdddd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector"><code class="docutils literal notranslate"><span class="pre">FourVector()</span></code></a></li>
@@ -3274,13 +3314,23 @@
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus16SetFermiMomentumERKd"><code class="docutils literal notranslate"><span class="pre">SetFermiMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus10SetDensityENSt10unique_ptrI7DensityEE"><code class="docutils literal notranslate"><span class="pre">SetDensity()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus12SetPotentialENSt10unique_ptrI9PotentialEE"><code class="docutils literal notranslate"><span class="pre">SetPotential()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus2IDEv"><code class="docutils literal notranslate"><span class="pre">ID()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus12InitParticleEv"><code class="docutils literal notranslate"><span class="pre">InitParticle()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9NNucleonsEv"><code class="docutils literal notranslate"><span class="pre">NNucleons()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus8NProtonsEv"><code class="docutils literal notranslate"><span class="pre">NProtons()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9NNeutronsEv"><code class="docutils literal notranslate"><span class="pre">NNeutrons()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13BindingEnergyEv"><code class="docutils literal notranslate"><span class="pre">BindingEnergy()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13FermiMomentumEv"><code class="docutils literal notranslate"><span class="pre">FermiMomentum()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus12GetPotentialEv"><code class="docutils literal notranslate"><span class="pre">GetPotential()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus6RadiusEv"><code class="docutils literal notranslate"><span class="pre">Radius()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus3RhoERKd"><code class="docutils literal notranslate"><span class="pre">Rho()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus14GenerateConfigEv"><code class="docutils literal notranslate"><span class="pre">GenerateConfig()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus16GenerateMomentumERKdRK3PID"><code class="docutils literal notranslate"><span class="pre">GenerateMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus8ToStringEv"><code class="docutils literal notranslate"><span class="pre">ToString()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus9SetRadiusERKd"><code class="docutils literal notranslate"><span class="pre">SetRadius()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus10InitializeE6size_t6size_t"><code class="docutils literal notranslate"><span class="pre">Initialize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus9ProtonRhoERKd"><code class="docutils literal notranslate"><span class="pre">ProtonRho()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus10NeutronRhoERKd"><code class="docutils literal notranslate"><span class="pre">NeutronRho()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK8achilles7Nucleus13FermiMomentumERKdRK3PID"><code class="docutils literal notranslate"><span class="pre">FermiMomentum()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE"><code class="docutils literal notranslate"><span class="pre">MakeNucleus()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N8achilles7Nucleus8FermiGasE"><code class="docutils literal notranslate"><span class="pre">achilles::Nucleus::FermiGas</span></code></a></li>

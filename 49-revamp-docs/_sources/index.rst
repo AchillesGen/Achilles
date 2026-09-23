@@ -42,6 +42,8 @@ Appendices
    :maxdepth: 2
 
    src/faq
+   src/physics
+   src/numerics
    src/references
 
 * :ref:`genindex`

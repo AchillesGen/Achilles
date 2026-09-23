@@ -219,6 +219,8 @@
 </ul>
 <ul class="nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="src/faq.html">Troubleshooting &amp; FAQ</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/physics.html">Physics Objects</a></li>
+<li class="toctree-l1"><a class="reference internal" href="src/numerics.html">Monte Carlo Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="src/references.html">References</a></li>
 </ul>
 
@@ -389,7 +391,7 @@
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles10FourVector1EEv">achilles::FourVector::E (C++ function)</a>
 </li>
-      <li><a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector">achilles::FourVector::FourVector (C++ function)</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd">[1]</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector">[2]</a>
+      <li><a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorENSt5arrayIdXL4EEEE">achilles::FourVector::FourVector (C++ function)</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERK10FourVector">[1]</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERK11ThreeVectorRKd">[2]</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorERR10FourVector">[3]</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorEdddd">[4]</a>, <a href="src/physics.html#_CPPv4N8achilles10FourVector10FourVectorEv">[5]</a>
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles10FourVector1MEv">achilles::FourVector::M (C++ function)</a>
 </li>
@@ -493,7 +495,13 @@
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus13FermiMomentumERKdRK3PID">achilles::Nucleus::FermiMomentum (C++ function)</a>, <a href="src/physics.html#_CPPv4NK8achilles7Nucleus13FermiMomentumEv">[1]</a>
 </li>
+      <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus14GenerateConfigEv">achilles::Nucleus::GenerateConfig (C++ function)</a>
+</li>
       <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus16GenerateMomentumERKdRK3PID">achilles::Nucleus::GenerateMomentum (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus12GetPotentialEv">achilles::Nucleus::GetPotential (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus2IDEv">achilles::Nucleus::ID (C++ function)</a>
 </li>
       <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus10InitializeE6size_t6size_t">achilles::Nucleus::Initialize (C++ function)</a>
 </li>
@@ -501,7 +509,21 @@
 </li>
       <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus11MakeNucleusERKNSt6stringERKdRKdRKNSt6stringERKNSt6stringERK8FermiGasNSt10unique_ptrI7DensityEE">achilles::Nucleus::MakeNucleus (C++ function)</a>
 </li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus10NeutronRhoERKd">achilles::Nucleus::NeutronRho (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus9NNeutronsEv">achilles::Nucleus::NNeutrons (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus9NNucleonsEv">achilles::Nucleus::NNucleons (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus8NProtonsEv">achilles::Nucleus::NProtons (C++ function)</a>
+</li>
       <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus7NucleusEv">achilles::Nucleus::Nucleus (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus9ProtonRhoERKd">achilles::Nucleus::ProtonRho (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus6RadiusEv">achilles::Nucleus::Radius (C++ function)</a>
+</li>
+      <li><a href="src/physics.html#_CPPv4NK8achilles7Nucleus3RhoERKd">achilles::Nucleus::Rho (C++ function)</a>
 </li>
       <li><a href="src/physics.html#_CPPv4N8achilles7Nucleus16SetBindingEnergyERKd">achilles::Nucleus::SetBindingEnergy (C++ function)</a>
 </li>
@@ -517,6 +539,8 @@
 </li>
       <li><a href="src/physics.html#_CPPv4N8achilles7NucleusD0Ev">achilles::Nucleus::~Nucleus (C++ function)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="src/physics.html#_CPPv4N8achilles8ParticleE">achilles::Particle (C++ class)</a>
 </li>
       <li><a href="src/physics.html#_CPPv4N8achilles8Particle11AddDaughterERK8Particle">achilles::Particle::AddDaughter (C++ function)</a>
@@ -527,8 +551,6 @@
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles8Particle4BetaEv">achilles::Particle::Beta (C++ function)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="src/physics.html#_CPPv4NK8achilles8Particle9DaughtersEv">achilles::Particle::Daughters (C++ function)</a>
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles8Particle1EEv">achilles::Particle::E (C++ function)</a>
@@ -681,7 +703,7 @@
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles11ThreeVector5ThetaEv">achilles::ThreeVector::Theta (C++ function)</a>
 </li>
-      <li><a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector">achilles::ThreeVector::ThreeVector (C++ function)</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector">[1]</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorEv">[2]</a>
+      <li><a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorENSt5arrayIdXL3EEEE">achilles::ThreeVector::ThreeVector (C++ function)</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorERK11ThreeVector">[1]</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorERR11ThreeVector">[2]</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorEddd">[3]</a>, <a href="src/physics.html#_CPPv4N8achilles11ThreeVector11ThreeVectorEv">[4]</a>
 </li>
       <li><a href="src/physics.html#_CPPv4NK8achilles11ThreeVector8ToStringEv">achilles::ThreeVector::ToString (C++ function)</a>
 </li>
