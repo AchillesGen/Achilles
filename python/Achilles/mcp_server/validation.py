@@ -396,3 +396,9 @@ def _validate_parameter_ranges(config: dict) -> None:
                 raise ValidationError(
                     "Unweighting percentile must be between 0 and 100."
                 )
+
+        # Options/Unweighting/epsilon
+        epsilon = unweight.get("epsilon")
+        if epsilon is not None:
+            if epsilon <= 0 or epsilon > 1:
+                raise ValidationError("Unweighting epsilon must be between 0 and 1.")

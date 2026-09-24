@@ -4,8 +4,9 @@
 The total cross section is a physical quantity: every integrator (Vegas-based
 ``MultiChannel`` or any normalizing-flow backend) is an *unbiased* Monte Carlo estimator
 of the same integral, so they must all agree within their statistical errors -- regardless
-of how well a flow is trained. This script runs the same physics (the default run card)
-with each integrator and checks that:
+of how well a flow is trained. This script runs the same physics -- a 40Ar run card, with
+``--mode`` selecting quasielastic or resonance production and ``--beam`` selecting a
+monochromatic or MicroBooNE-flux neutrino -- with each integrator and checks that:
 
   * every backend's cross section agrees with the C++ ``MultiChannel`` baseline within
     ``--nsigma`` combined statistical errors, and
@@ -21,6 +22,8 @@ Usage (after ``pip install -e .[flow]`` from the repo root)::
     python validation/validate_integrators.py                 # all available backends
     python validation/validate_integrators.py --only uniform normflow
     python validation/validate_integrators.py --nevents 2000 --nsigma 5
+    python validation/validate_integrators.py --unweighter eps1   # unweight, 1% tail
+    python validation/validate_integrators.py --mode res --beam microboone
 
 Each backend runs in its own subprocess (isolating RNG/interpreter state); generated run
 cards, logs and output land under ``validation/{cards,logs,out}/``.
@@ -40,8 +43,9 @@ CARDS_DIR = VALID_DIR / "cards"
 LOGS_DIR = VALID_DIR / "logs"
 OUT_DIR = VALID_DIR / "out"
 
-# Physics copied verbatim from data/default/run.yml, with Options inlined so the integrator
-# can be varied per card. Placeholders: {nevents}, {output}, {seed}, {integrator}.
+# Physics copied from data/default/run.yml, with Options inlined so the integrator can be
+# varied per card. Placeholders: {nevents}, {output}, {seed}, {integrator}, {unweighting},
+# {beam}, {nuclear_model}.
 CARD_TEMPLATE = """\
 Main:
   NEvents: {nevents}
@@ -63,8 +67,7 @@ Beams:
   - Beam:
       PID: 14
       Beam Params:
-        Type: Monochromatic
-        Energy: 1108
+{beam}
 
 Cascade:
   Run: False
@@ -76,16 +79,10 @@ Cascade:
   Algorithm: Base
 
 NuclearModels:
-- NuclearModel:
-   Model: QESpectral
-   ConfigFile: data/info_C12_pke.data
-   SpectralP: data/Spectral_Functions/pke12p_tot.data
-   SpectralN: data/Spectral_Functions/pke12n_tot.data
-   FormFactorFile: "FormFactors.yml"
-   Ward: None
+{nuclear_model}
 
 Nuclei:
-  - Nucleus: !include "data/default/12C.yml"
+  - Nucleus: !include "data/default/40Ar.yml"
 
 HardCuts:
   - Type: AngleTheta
@@ -99,7 +96,7 @@ Options:
     BatchSize: 1024
 {integrator}
   Unweighting:
-    Name: None
+{unweighting}
 
 Backend:
   Name: Default
@@ -117,6 +114,45 @@ Cache:
 TRAIN_PROFILES = {
     "fast": {"Epochs": 15, "NIterations": 3, "NCalls": 2000},
     "quality": {"Epochs": 1000, "NIterations": 50, "NCalls": 20000},
+}
+
+# Argon-40 spectral-function inputs, shared by both physics modes (data/info_Ar40_pke.data
+# just names the two pke files, which is all the Fortran RES model needs).
+AR40_CONFIG = "data/info_Ar40_pke.data"
+
+# Options/NuclearModels body per --mode choice: quasielastic (the C++ spectral-function
+# model) or resonance production (the Fortran RES spectral-function model).
+MODES = {
+    "qe": f"""- NuclearModel:
+   Model: QESpectral
+   ConfigFile: {AR40_CONFIG}
+   SpectralP: data/Spectral_Functions/pke40p_tot.data
+   SpectralN: data/Spectral_Functions/pke40n_tot.data
+   FormFactorFile: "FormFactors.yml"
+   Ward: None""",
+    "res": f"""- NuclearModel:
+   Model: FortranModel
+   Name: RES_Spectral_Func
+   ConfigFile: {AR40_CONFIG}
+   FormFactorFile: "FormFactors.yml"
+   Ward: None""",
+}
+
+# Beams/Beam/Beam Params body per --beam choice.
+BEAMS = {
+    "monochromatic": """        Type: Monochromatic
+        Energy: 1108""",
+    "microboone": """        Type: Spectrum
+        HepData: flux/microboone_flux_numu.yaml""",
+}
+
+# Options/Unweighting body per --unweighter choice. "weighted" keeps every event with its
+# weight; the "eps*" choices unweight against a cap that leaves the given fraction of the
+# summed weight in the over-cap tail (TailFractionUnweighter).
+UNWEIGHTERS = {
+    "weighted": "    Name: None",
+    "eps1": "    Name: TailFraction\n    epsilon: 0.01",
+    "eps0.1": "    Name: TailFraction\n    epsilon: 0.001",
 }
 
 # name -> dict(kind=MultiChannel|Flow, params={...}, needs=[modules], runner=python|cpp).
@@ -159,7 +195,7 @@ def have_modules(mods):
     return all(importlib.util.find_spec(m) is not None for m in mods)
 
 
-def write_card(name, cfg, nevents, seed, profile):
+def write_card(name, cfg, nevents, seed, profile, unweighter, mode, beam):
     CARDS_DIR.mkdir(parents=True, exist_ok=True)
     card = CARDS_DIR / f"run_{name}.yml"
     card.write_text(
@@ -168,6 +204,9 @@ def write_card(name, cfg, nevents, seed, profile):
             output=f"validation/out/{name}.hepmc",  # relative to the repo root (the run cwd)
             seed=seed,
             integrator=integrator_yaml(cfg, profile).rstrip("\n"),
+            unweighting=UNWEIGHTERS[unweighter],
+            nuclear_model=MODES[mode],
+            beam=BEAMS[beam],
         )
     )
     return card
@@ -207,10 +246,10 @@ def run_cpp(card, logfile):
     )
 
 
-def run_one(name, cfg, nevents, seed, profile):
+def run_one(name, cfg, nevents, seed, profile, unweighter, mode, beam):
     LOGS_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    card = write_card(name, cfg, nevents, seed, profile)
+    card = write_card(name, cfg, nevents, seed, profile, unweighter, mode, beam)
     logfile = LOGS_DIR / f"{name}.log"
     if logfile.exists():
         logfile.unlink()
@@ -242,6 +281,17 @@ def main():
     ap.add_argument("--seed", type=int, default=123456)
     ap.add_argument("--nsigma", type=float, default=5.0)
     ap.add_argument("--only", nargs="*", help="restrict to these config names")
+    ap.add_argument("--mode", choices=list(MODES), default="qe",
+                    help="physics to integrate: 'qe' quasielastic (QESpectral) or 'res' "
+                         "resonance production (Fortran RES_Spectral_Func) (default: qe)")
+    ap.add_argument("--beam", choices=list(BEAMS), default="monochromatic",
+                    help="incoming numu beam: 'monochromatic' at 1108 MeV or the "
+                         "'microboone' numu flux (default: monochromatic)")
+    ap.add_argument("--unweighter", choices=list(UNWEIGHTERS), default="weighted",
+                    help="how the events are unweighted: 'weighted' keeps the weights "
+                         "(no unweighting), 'eps1'/'eps0.1' unweight against a maximum "
+                         "weight whose over-cap tail holds 1%%/0.1%% of the summed weight "
+                         "(default: weighted)")
     ap.add_argument("--also-cpp-binary", action="store_true",
                     help="also run the standalone C++ binary for MultiChannel as an "
                          "extra C++-only cross-check")
@@ -262,6 +312,8 @@ def main():
         print(f"Overriding default ncalls to {args.ncalls}")
         profile["NCalls"] = args.ncalls
     print(f"Flow training profile: {'quality' if args.quality else 'fast'} {profile}")
+    print(f"Unweighter: {args.unweighter}")
+    print(f"Physics: mode={args.mode}, beam={args.beam}, nucleus=40Ar")
 
     if importlib.util.find_spec("Achilles") is None:
         sys.exit("Achilles is not importable. Run `pip install -e .[flow]` from the repo root.")
@@ -284,7 +336,8 @@ def main():
             print(f"[skip] {name}: missing {', '.join(cfg['needs'])}")
             continue
         print(f"[run ] {name} ...", flush=True)
-        results[name] = run_one(name, cfg, args.nevents, args.seed, profile)
+        results[name] = run_one(name, cfg, args.nevents, args.seed, profile, args.unweighter,
+                                args.mode, args.beam)
 
     # Baseline: the C++ MultiChannel integrator (run through the Python entry point, i.e.
     # the same C++ engine). The optional standalone-binary result is checked against it too.

@@ -84,3 +84,11 @@ Rules:
     Optional: True
     Min: 0.0
     Max: 100.0
+
+  - Type: RangeConstraint
+    Description: Unweighting epsilon must be between 0 and 1.
+    ErrorMessage: "Unweighting epsilon must be between 0 and 1."
+    Path: Options/Unweighting/epsilon
+    Optional: True
+    Min: 0.0
+    Max: 1.0
