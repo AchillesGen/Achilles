@@ -6,10 +6,10 @@
 
 #include "spdlog/spdlog.h"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/NasaInteractions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -22,7 +22,7 @@ double NasaInteractions::CrossSection(const Particle &particle1, const Particle 
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
     double s = (p1Lab + p2Lab).M2();
-    double plab = sqrt(pow(s, 2) / (4.0 * pow(Constant::mN, 2)) - s);
+    double plab = sqrt(pow(s, 2) / (4.0 * pow(Constant::mN().native(), 2)) - s);
     return CrossSectionLab(samePID, plab);
 }
 
@@ -32,5 +32,5 @@ ThreeVector NasaInteractions::MakeMomentum(bool, const double &pcm,
     double pTheta = acos(2 * rans[0] - 1);
     double pPhi = 2 * M_PI * rans[1];
 
-    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector::FromNative(ToCartesian({pR, pTheta, pPhi}));
 }

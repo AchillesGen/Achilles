@@ -9,10 +9,13 @@
 #include "Approx.hh"
 #include "mock_classes.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 TEST_CASE("BeamMapper", "[PhaseSpace]") {
     static constexpr auto electron = achilles::PID::electron();
     const std::set<achilles::PID> beam_ids{electron};
-    const achilles::FourVector beam_mom{1000, 0, 0, 1000};
+    const achilles::FourVector beam_mom{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
     const std::vector<double> beam_rans{0.5};
     std::vector<double> new_rans(1);
     static constexpr int nvars = 1;
@@ -27,17 +30,18 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
     SECTION("Forward and Backward pass") {
         auto beam = std::make_shared<MockBeam>();
         REQUIRE_CALL(*beam, BeamIDs()).TIMES(2).LR_RETURN((beam_ids));
-        REQUIRE_CALL(*beam, Flux(electron, beam_rans, trompeloeil::ge(0)))
+        REQUIRE_CALL(*beam, Flux(electron, beam_rans, trompeloeil::ge(units::Energy{})))
             .TIMES(1)
             .LR_RETURN((beam_mom));
-        REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_, trompeloeil::ge(0)))
+        REQUIRE_CALL(*beam, GenerateWeight(electron, beam_mom, trompeloeil::_,
+                                           trompeloeil::ge(units::Energy{})))
             .LR_SIDE_EFFECT(_3[0] = 0.5)
             .TIMES(1)
             .RETURN(1.0);
 
         SECTION("Forward") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({0, achilles::Constant::mN2});
+            mapper.SetMasses({0, achilles::Constant::mN2().native()});
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, beam_rans);
             double wgt = mapper.GenerateWeight(mom, new_rans);
@@ -48,7 +52,7 @@ TEST_CASE("BeamMapper", "[PhaseSpace]") {
 
         SECTION("Reverse") {
             achilles::BeamMapper mapper(0, beam);
-            mapper.SetMasses({0, achilles::Constant::mN2});
+            mapper.SetMasses({0, achilles::Constant::mN2().native()});
             double wgt = mapper.GenerateWeight({beam_mom}, new_rans);
             std::vector<achilles::FourVector> mom(1);
             mapper.GeneratePoint(mom, new_rans);

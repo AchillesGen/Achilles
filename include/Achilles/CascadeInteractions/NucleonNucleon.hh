@@ -7,7 +7,7 @@
 #include "Achilles/DecayHandler.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Interpolation.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 namespace achilles {
 
@@ -56,8 +56,8 @@ class NucleonNucleon : public Interaction, RegistrableInteraction<NucleonNucleon
     double exp_sup = 0.;
 
     // Functions to cache integrals to speed up code
-    double sqrts_min = 1800 / 1_GeV, sqrts_max = 6000 / 1_GeV;
-    double mass_min = 1000 / 1_GeV, mass_max = 4000 / 1_GeV;
+    double sqrts_min = (1800_MeV).in(units::GeV), sqrts_max = (6000_MeV).in(units::GeV);
+    double mass_min = (1000_MeV).in(units::GeV), mass_max = (4000_MeV).in(units::GeV);
     static constexpr size_t nsqrts = 101, nmass = 101;
     void InitializeInterpolators();
     double SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) const;

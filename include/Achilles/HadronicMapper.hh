@@ -12,7 +12,8 @@
 
 namespace achilles {
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 
 class HadronicBeamMapper : public Mapper<FourVector> {
   public:

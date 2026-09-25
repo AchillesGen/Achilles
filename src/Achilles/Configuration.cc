@@ -53,8 +53,10 @@ achilles::DensityConfiguration::DensityConfiguration(std::string filename) {
             config.nucleons.emplace_back(is_proton, pos);
 #else
             const auto pid = tokens[0] == "1" ? PID::proton() : PID::neutron();
-            const ThreeVector position{std::stod(tokens[1]), std::stod(tokens[2]),
-                                       std::stod(tokens[3])};
+            // Configuration files store the nucleon coordinates in fm.
+            const ThreePosition position{std::stod(tokens[1]) * units::fm,
+                                         std::stod(tokens[2]) * units::fm,
+                                         std::stod(tokens[3]) * units::fm};
             config.nucleons.emplace_back(pid, FourVector{}, position);
 #endif
         }
@@ -83,7 +85,10 @@ std::vector<achilles::Particle> achilles::DensityConfiguration::GetConfiguration
 #ifdef ACHILLES_LOW_MEMORY
             for(auto &part : config.nucleons) {
                 const auto pid = part.is_proton ? PID::proton() : PID::neutron();
-                const auto position = ThreeVector(part.position).Rotate(angles);
+                const auto position =
+                    ThreePosition{part.position[0] * units::fm, part.position[1] * units::fm,
+                                  part.position[2] * units::fm}
+                        .Rotate(angles);
                 particles.emplace_back(pid, FourVector{}, position);
             }
 

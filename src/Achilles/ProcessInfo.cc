@@ -16,12 +16,12 @@ std::vector<double> achilles::ProcessInfo::Masses() const {
 
     // Get Leptonic current masses
     for(const auto &part : m_leptonic.second) {
-        masses.push_back(pow(ParticleInfo(part).Mass(), 2));
+        masses.push_back((ParticleInfo(part).Mass() * ParticleInfo(part).Mass()).native());
     }
 
     // Get Hadronic current masses
     for(const auto &part : m_hadronic.second) {
-        masses.push_back(pow(ParticleInfo(part).Mass(), 2));
+        masses.push_back((ParticleInfo(part).Mass() * ParticleInfo(part).Mass()).native());
     }
 
     return masses;

@@ -22,7 +22,8 @@ template <typename T> class IsVectorApprox : public Catch::Matchers::MatcherBase
     bool match(const T &t) const override {
         bool result = true;
         for(size_t i = 0; i < t.Size(); ++i) {
-            result &= (t[i] == Catch::Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
+            result &= (t[i].native() ==
+                       Catch::Approx(_vec[i].native()).epsilon(_epsilon).margin(_margin));
         }
         return result;
     }
@@ -95,7 +96,8 @@ class FourVectorApprox : public Catch::Matchers::MatcherBase<achilles::FourVecto
     bool match(const achilles::FourVector &t) const override {
         bool result = true;
         for(size_t i = 0; i < 4; ++i) {
-            result &= (t[i] == Catch::Approx(_vec[i]).epsilon(_epsilon).margin(_margin));
+            result &= (t[i].native() ==
+                       Catch::Approx(_vec[i].native()).epsilon(_epsilon).margin(_margin));
         }
         return result;
     }

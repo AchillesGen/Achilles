@@ -1,6 +1,6 @@
 Name: 16O
-Binding: 8.6
-Fermi Momentum: 228
+Binding: 8.6 MeV
+Fermi Momentum: 228 MeV
 Density:
   ProtonFile: data/densities/rho_O_P_IAFDMC.txt
   NeutronFile: data/densities/rho_O_n_IAFDMC.txt

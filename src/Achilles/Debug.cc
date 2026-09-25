@@ -21,7 +21,8 @@ achilles::DebugEvents::DebugEvents(const std::string &filename, size_t multiplic
             throw std::runtime_error(msg);
         }
         for(auto &p : mom) {
-            for(size_t i = 0; i < 4; ++i) { p[i] = std::stod(tokens[index++]); }
+            // Debug event files carry momenta in MeV.
+            for(size_t i = 0; i < 4; ++i) { p[i] = std::stod(tokens[index++]) * units::MeV; }
         }
         events.push_back(mom);
     }

@@ -72,34 +72,34 @@ class Particle {
     ///@param mothers: The mother particles of the particle (default = Empty)
     ///@param daughters: The daughter particles of the particle (default = Empty)
     explicit Particle(const PID &pid = PID{0}, FourVector mom = FourVector(),
-                      ThreeVector pos = ThreeVector(),
+                      ThreePosition pos = ThreePosition(),
                       const ParticleStatus &_status = ParticleStatus::background,
                       std::vector<Particle> _mothers = std::vector<Particle>(),
                       std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(std::move(mom)), position(std::move(pos)), status(_status),
           mothers(std::move(_mothers)), daughters(std::move(_daughters)) {
-        formationZone = 0;
+        formationZone = units::Time{};
     }
 
     explicit Particle(const long int &pid, const FourVector &mom = FourVector(),
-                      ThreeVector pos = ThreeVector(), const int &_status = 0,
+                      ThreePosition pos = ThreePosition(), const int &_status = 0,
                       std::vector<Particle> _mothers = std::vector<Particle>(),
                       std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(pid), momentum(mom), position(std::move(pos)),
           status(static_cast<ParticleStatus>(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
-        formationZone = 0;
+        formationZone = units::Time{};
     }
 
     explicit Particle(ParticleInfo _info, const FourVector &mom = FourVector(),
-                      ThreeVector pos = ThreeVector(),
+                      ThreePosition pos = ThreePosition(),
                       ParticleStatus _status = ParticleStatus::background,
                       std::vector<Particle> _mothers = std::vector<Particle>(),
                       std::vector<Particle> _daughters = std::vector<Particle>()) noexcept
         : info(std::move(_info)), momentum(std::move(mom)), position(std::move(pos)),
           status(std::move(_status)), mothers(std::move(_mothers)),
           daughters(std::move(_daughters)) {
-        formationZone = 0;
+        formationZone = units::Time{};
     }
 
     Particle(const Particle &other)
@@ -120,7 +120,7 @@ class Particle {
 
     /// Set the position of the particle
     ///@param ThreeVector: The position to be set
-    void SetPosition(const ThreeVector &pos) noexcept { position = pos; }
+    void SetPosition(const ThreePosition &pos) noexcept { position = pos; }
 
     /// Set the momentum of the particle
     ///@param FourVector: The momentum to be set
@@ -160,7 +160,7 @@ class Particle {
 
     /// Update the formation zone time by a given time step
     ///@param timeStep: The time step to update the formation zone by
-    void UpdateFormationZone(const double &timeStep) noexcept { formationZone -= timeStep; }
+    void UpdateFormationZone(units::Time timeStep) noexcept { formationZone -= timeStep; }
     ///@}
 
     /// @name Getters
@@ -175,8 +175,8 @@ class Particle {
 
     /// Returns the position of the particle
     ///@return ThreeVector: The position of the particle
-    ThreeVector &Position() noexcept { return position; }
-    const ThreeVector &Position() const noexcept { return position; }
+    ThreePosition &Position() noexcept { return position; }
+    const ThreePosition &Position() const noexcept { return position; }
 
     /// Returns the momentum of the particle
     ///@return FourVector: The momentum of the particle
@@ -185,7 +185,7 @@ class Particle {
 
     /// Gets the velocity / boost vector of a given particle
     ///@return ThreeVector: Velocity of the particle in units of c
-    const ThreeVector Beta() const noexcept { return momentum.BoostVector(); }
+    ThreeBoost Beta() const noexcept { return momentum.BoostVector(); }
 
     /// Gets the current particle status
     ///@return int: The status of the particle
@@ -205,28 +205,28 @@ class Particle {
 
     /// Return the current time remaining in the formation zone
     ///@return double: Time left in formation zone
-    const double &FormationZone() const noexcept { return formationZone; }
+    units::Time FormationZone() const noexcept { return formationZone; }
 
     /// Return the mass of the given particle
-    ///@return double: The mass of the particle
-    double Mass() const noexcept { return info.Mass(); }
+    ///@return units::Energy: The mass of the particle
+    units::Energy Mass() const noexcept { return info.Mass(); }
 
     /// Return the momentum in the x-direction
     ///@return double: Value of momentum in x-direction
-    double Px() const noexcept { return momentum.Px(); }
+    units::Energy Px() const noexcept { return momentum.Px(); }
 
     /// Return the momentum in the y-direction
     ///@return double: Value of momentum in y-direction
-    double Py() const noexcept { return momentum.Py(); }
+    units::Energy Py() const noexcept { return momentum.Py(); }
 
     /// Return the momentum in the z-direction
     ///@return double: Value of momentum in z-direction
-    double Pz() const noexcept { return momentum.Pz(); }
+    units::Energy Pz() const noexcept { return momentum.Pz(); }
 
     /// Return the energy
     ///@return double: Value of energy
-    double E() const noexcept { return momentum.E(); }
-    double Radius() const noexcept { return position.Magnitude(); }
+    units::Energy E() const noexcept { return momentum.E(); }
+    units::Length Radius() const noexcept { return position.Magnitude(); }
     ///@}
 
     /// @name Functions
@@ -234,7 +234,7 @@ class Particle {
 
     /// Check to see if the particle is in the formation zone
     ///@return bool: True if in formation zone, False otherwise
-    bool InFormationZone() const noexcept { return formationZone > 0; }
+    bool InFormationZone() const noexcept { return formationZone > units::Time{}; }
 
     /// Check to see if the particle is a background particle
     ///@return bool: True if a background particle, False otherwise
@@ -261,19 +261,19 @@ class Particle {
 
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
-    void Propagate(const double &) noexcept;
+    void Propagate(units::Time) noexcept;
 
-    void SpacePropagate(const double &) noexcept;
+    void SpacePropagate(units::Length) noexcept;
 
-    double &DistanceTraveled() { return distanceTraveled; }
+    units::Length &DistanceTraveled() { return distanceTraveled; }
 
     /// Returns the distance travelled by the particle
     /// @return double: the distance travelled by the particle
-    double GetDistanceTraveled() const { return distanceTraveled; }
+    units::Length GetDistanceTraveled() const { return distanceTraveled; }
 
     /// Propagate a particle back in time. Useful for testing purposes
     ///@param timeStep: The amount of time to propagate a particle back in time for
-    void BackPropagate(const double &) noexcept;
+    void BackPropagate(units::Time) noexcept;
 
     /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
     ///@param rot_mat: the 3x3 rotation matrix
@@ -316,18 +316,18 @@ class Particle {
   private:
     ParticleInfo info;
     FourVector momentum;
-    ThreeVector position;
+    ThreePosition position;
     ParticleStatus status;
     std::vector<Particle> mothers, daughters;
-    double formationZone;
-    double distanceTraveled = 0.0;
+    units::Time formationZone;
+    units::Length distanceTraveled{};
 };
 
 /// Find the time to closest approach between two particles
 /// @param p1: The first particle
 /// @param p2: The second particle
-/// @return double: The time to closest approach between the two particles
-double ClosestApproach(const Particle &, const Particle &);
+/// @return units::Time: The time to closest approach between the two particles
+units::Time ClosestApproach(const Particle &, const Particle &);
 
 // Comparisons for std::reference_wrapper<Particle> with Particle
 bool operator==(const std::reference_wrapper<Particle> &, const Particle &);

@@ -7,6 +7,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Process.hh"
+#include "Achilles/UnitsFormat.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -35,17 +36,18 @@ double XSecBackend::SpinAvg(const ProcessInfo &process_info) const {
     return 1.0 / spin_avg;
 }
 
-double XSecBackend::FluxFactor(const FourVector &lep_in, const FourVector &had_in,
-                               const ProcessInfo &process_info) const {
+achilles::units::CrossSection XSecBackend::FluxFactor(const FourVector &lep_in,
+                                                      const FourVector &had_in,
+                                                      const ProcessInfo &process_info) const {
     // TODO: Correct this flux
-    // double flux = 4*sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2)
-    //                      -
-    //                      event.Momentum()[0].M2()*event.Momentum()[1].M2());
+    // auto flux = 4*units::sqrt(pow(event.Momentum()[0]*event.Momentum()[1], 2)
+    //                           - event.Momentum()[0].M2()*event.Momentum()[1].M2());
     // TODO: Handle multiple hadron initial states
-    double mass = ParticleInfo(process_info.m_hadronic.first[0]).Mass();
-    double flux = 2 * lep_in.E() * 2 * sqrt(had_in.P2() + mass * mass);
-    static constexpr double to_nb = 1e6;
-    return Constant::HBARC2 / flux * to_nb;
+    const auto mass = ParticleInfo(process_info.m_hadronic.first[0]).Mass();
+    const units::Energy2 flux = 4 * lep_in.E() * units::sqrt(had_in.P2() + mass * mass);
+    // 1/flux is already an area in natural units: hbar^2 c^2 and the choice of
+    // barn live in the unit scales, not here.
+    return 1.0 / flux;
 }
 
 double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
@@ -57,7 +59,8 @@ double XSecBackend::InitialStateFactor(size_t nprotons, size_t nneutrons,
 
 achilles::DefaultBackend::DefaultBackend() {}
 
-double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
+achilles::units::CrossSection achilles::DefaultBackend::CrossSection(const Event &event_in,
+                                                                     const Process &process) const {
     auto event = event_in;
 
     for(const auto &part : event.Momentum()) {
@@ -120,7 +123,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
         }
         // For interference amplitude
         // we need a factor of V = rho/A
-        amps2 *= pow(event.CurrentNucleus()->FermiMomentum(), 3) / (1.5 * pow(M_PI, 2)) /
+        amps2 *= pow(event.CurrentNucleus()->FermiMomentum().native(), 3) / (1.5 * pow(M_PI, 2)) /
                  static_cast<double>(event.CurrentNucleus()->NNucleons());
     }
 
@@ -130,12 +133,12 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
-    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
-                  amps2 * SpinAvg(process_info));
-    double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
-    if(std::isnan(xsec)) {
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", units::in(flux, units::nb),
+                  initial_wgt, amps2 * SpinAvg(process_info));
+    units::CrossSection xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();
+    if(std::isnan(xsec.native())) {
         spdlog::warn("Got nan for xsec, setting to 0");
-        xsec = 0;
+        xsec = units::CrossSection{};
     }
     return xsec;
 }
@@ -206,7 +209,8 @@ void achilles::BSMBackend::AddProcess(Process &process) {
     process_info.m_mom_map = p_sherpa->MomentumMap(process_info.Ids());
 }
 
-double achilles::BSMBackend::CrossSection(const Event &event_in, const Process &process) const {
+achilles::units::CrossSection achilles::BSMBackend::CrossSection(const Event &event_in,
+                                                                 const Process &process) const {
     auto event = event_in;
     m_model->TransformFrame(event, process, true);
 
@@ -265,7 +269,7 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
     spdlog::debug("mom map: {}", info.m_mom_map.size());
     for(const auto &elm : info.m_mom_map) {
         pids.push_back(static_cast<int>(elm.second));
-        mom[elm.first] = (p[elm.first] / 1_GeV).Momentum();
+        mom[elm.first] = p[elm.first].ToArray(units::GeV);
         spdlog::debug("PID: {}, Momentum: ({}, {}, {}, {})", pids.back(), mom[elm.first][0],
                       mom[elm.first][1], mom[elm.first][2], mom[elm.first][3]);
     }
@@ -277,7 +281,8 @@ achilles::Currents achilles::BSMBackend::CalcLeptonCurrents(const std::vector<Fo
         spdlog::trace("Current for {}", current.first);
         for(size_t i = 0; i < current.second.size(); ++i) {
             for(size_t j = 0; j < current.second[0].size(); ++j) {
-                current.second[i][j] /= pow(1_GeV, static_cast<double>(mom.size()) - 3);
+                current.second[i][j] /=
+                    pow((1.0_GeV).native(), static_cast<double>(mom.size()) - 3);
                 spdlog::trace("Current[{}][{}] = {}", i, j, current.second[i][j]);
             }
         }
@@ -323,13 +328,14 @@ void achilles::SherpaBackend::AddProcess(Process &process) {
     }
 }
 
-double achilles::SherpaBackend::CrossSection(const Event &event, const Process &process) const {
+achilles::units::CrossSection achilles::SherpaBackend::CrossSection(const Event &event,
+                                                                    const Process &process) const {
     auto p = event.Momentum();
     auto info = process.Info();
     // TODO: Move adapter code into Sherpa interface code
     std::vector<std::array<double, 4>> mom(p.size());
     std::vector<long> pids = process.Info().Ids();
-    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = (p[i] / 1_GeV).Momentum(); }
+    for(size_t i = 0; i < event.Momentum().size(); ++i) { mom[i] = p[i].ToArray(units::GeV); }
     // TODO: Figure out if we want to have a scale dependence (Maybe for DIS??)
     static constexpr double mu2 = 100;
     auto amps2 = p_sherpa->CalcDifferential(pids, mom, mu2);
@@ -343,7 +349,8 @@ double achilles::SherpaBackend::CrossSection(const Event &event, const Process &
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
     auto initial_wgt = InitialStateFactor(nprotons, nneutrons, hadron_in, spect);
-    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt, amps2);
+    spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", units::in(flux, units::nb),
+                  initial_wgt, amps2);
     return amps2 * flux * initial_wgt * event.Weight();
 }
 

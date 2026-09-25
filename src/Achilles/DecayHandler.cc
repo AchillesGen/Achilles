@@ -37,7 +37,7 @@ DecayHandler::DecayHandler(const std::string &filename, double tolerance) {
 std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const {
     spdlog::debug("Decaying: {}", part);
     auto boost = part.Momentum().BoostVector();
-    double m2 = part.Momentum().M2();
+    double m2 = part.Momentum().M2().native();
 
     // Select decay channel
     auto ratios = BranchingRatios(part);
@@ -47,10 +47,10 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
     for(const auto &mode : m_decays.at(part.ID())) {
         if(mode.out_ids.size() == 2) {
             spdlog::trace("Checking decay {} ({}) -> {} ({}) + {} ({})", part.ID(), sqrt(m2),
-                          mode.out_ids[0], ParticleInfo(mode.out_ids[0]).Mass(), mode.out_ids[1],
-                          ParticleInfo(mode.out_ids[1]).Mass());
-            auto mass1 = ParticleInfo(mode.out_ids[0]).Mass();
-            auto mass2 = ParticleInfo(mode.out_ids[1]).Mass();
+                          mode.out_ids[0], ParticleInfo(mode.out_ids[0]).Mass().native(),
+                          mode.out_ids[1], ParticleInfo(mode.out_ids[1]).Mass().native());
+            auto mass1 = ParticleInfo(mode.out_ids[0]).Mass().native();
+            auto mass2 = ParticleInfo(mode.out_ids[1]).Mass().native();
             if(mass1 + mass2 > sqrt(m2)) {
                 spdlog::debug("Removing decay {} ({}) -> {} ({}) + {} ({})", part.ID(), sqrt(m2),
                               mode.out_ids[0], mass1, mode.out_ids[1], mass2);
@@ -73,11 +73,11 @@ std::vector<achilles::Particle> DecayHandler::Decay(const Particle &part) const 
     if(!part.Mothers().empty()) {
         // Rotate to have z-axis along the mother particle's momentum direction
         auto mom0 = part.Mothers()[0].Momentum().Boost(-boost);
-        Poincare zax(mom0, FourVector{1.0, 0.0, 0.0, 1.0});
+        Poincare zax(mom0, FourVector::FromNative({1.0, 0.0, 0.0, 1.0}));
         for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
     } else {
         // Rotate to have z-axis along the decaying particle's momentum direction
-        Poincare zax(part.Momentum(), FourVector{1.0, 0.0, 0.0, 1.0});
+        Poincare zax(part.Momentum(), FourVector::FromNative({1.0, 0.0, 0.0, 1.0}));
         for(auto &particle : outgoing) { zax.RotateBack(particle.Momentum()); }
     }
 
@@ -114,8 +114,8 @@ DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t an
     // TODO: Add in angular momentum (i.e. learn more about how Sherpa handles this)
     double sqrts = sqrt(mass2);
 
-    auto ma = ParticleInfo(pids[0]).Mass();
-    auto mb = ParticleInfo(pids[1]).Mass();
+    auto ma = ParticleInfo(pids[0]).Mass().native();
+    auto mb = ParticleInfo(pids[1]).Mass().native();
 
     const double Ea = sqrts / 2. * (1 + ma * ma / mass2 - mb * mb / mass2);
     const double Eb = sqrts / 2. * (1 + mb * mb / mass2 - ma * ma / mass2);
@@ -137,8 +137,10 @@ DecayHandler::TwoBodyDecay(double mass2, const std::vector<PID> &pids, size_t an
     double sint = sqrt(1 - cost * cost);
     double phi = 2 * M_PI * rans[1];
 
-    Particle part1{pids[0], {Ea, pf * sint * cos(phi), pf * sint * sin(phi), pf * cost}};
-    Particle part2{pids[1], {Eb, -pf * sint * cos(phi), -pf * sint * sin(phi), -pf * cost}};
+    Particle part1{pids[0], FourVector::FromNative(
+                                {Ea, pf * sint * cos(phi), pf * sint * sin(phi), pf * cost})};
+    Particle part2{pids[1], FourVector::FromNative(
+                                {Eb, -pf * sint * cos(phi), -pf * sint * sin(phi), -pf * cost})};
 
     return {part1, part2};
 }

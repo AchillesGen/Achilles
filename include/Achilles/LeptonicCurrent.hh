@@ -11,7 +11,8 @@
 
 namespace achilles {
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 class Particle;
 class Nucleus;
 class Event;

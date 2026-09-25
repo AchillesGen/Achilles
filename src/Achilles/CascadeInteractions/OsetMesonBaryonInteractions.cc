@@ -33,7 +33,7 @@ InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t
     const auto &particle1 = event.Hadrons()[part1];
     const auto &particle2 = event.Hadrons()[part2];
 
-    auto sqrts = (particle1.Momentum() + particle2.Momentum()).M();
+    auto sqrts = (particle1.Momentum() + particle2.Momentum()).M().native();
 
     InteractionResults results;
 
@@ -49,8 +49,8 @@ InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t
         spdlog::debug("{} + {}", state.first, state.second);
         PID outgoing_pi_PID = state.first;
 
-        auto outgoing_masses =
-            ParticleInfo(outgoing_pi_PID).Mass() + ParticleInfo(state.second).Mass();
+        auto outgoing_masses = ParticleInfo(outgoing_pi_PID).Mass().native() +
+                               ParticleInfo(state.second).Mass().native();
         if(sqrts < outgoing_masses) continue;
 
         double CS = QECrossSections[{particle1.ID(), outgoing_pi_PID}];
@@ -75,7 +75,7 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
 
     spdlog::debug("We chose pion QE scattering");
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     spdlog::debug("{}: {}", particle1.ID(), particle1.Momentum());
     spdlog::debug("{}: {}", particle2.ID(), particle2.Momentum());
 
@@ -84,11 +84,11 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
 
     FourVector pTotalCM = p1CM + p2CM;
 
-    auto s = pTotalCM.M2();
+    auto s = pTotalCM.M2().native();
     auto sqrts = sqrt(s);
 
-    auto ma = ParticleInfo(out_pids[0]).Mass();
-    auto mb = ParticleInfo(out_pids[1]).Mass();
+    auto ma = ParticleInfo(out_pids[0]).Mass().native();
+    auto mb = ParticleInfo(out_pids[1]).Mass().native();
     spdlog::debug("out 1 mass = {}", ma);
     spdlog::debug("out 2 mass = {}", mb);
 
@@ -106,16 +106,16 @@ std::vector<Particle> OsetMesonBaryonInteraction::GenerateMomentum(const Particl
     double cosphi_cms = cos(phi_cms);
     double sinphi_cms = sin(phi_cms);
 
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
-                                  pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
-                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
+    FourVector paOut = FourVector::FromNative(
+        {Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms});
+    FourVector pbOut = FourVector::FromNative(
+        {Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms});
 
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
 
-    spdlog::debug("out1: {}, {}", out_pids[0], paOut.Momentum());
-    spdlog::debug("out2: {}, {}", out_pids[1], pbOut.Momentum());
+    spdlog::debug("out1: {}, {}", out_pids[0], paOut);
+    spdlog::debug("out2: {}, {}", out_pids[1], pbOut);
 
     return {Particle{out_pids[0], paOut, particle1.Position()},
             Particle{out_pids[1], pbOut, particle2.Position()}};

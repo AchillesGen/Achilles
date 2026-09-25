@@ -4,370 +4,328 @@
 #ifndef FOURVECTOR_HH
 #define FOURVECTOR_HH
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <iosfwd>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
+#include "Achilles/PhysicalUnits.hh"
+#include "Achilles/ThreeVector.hh"
 #include "fmt/format.h"
 #include "spdlog/fmt/ostr.h"
 
 namespace achilles {
 
-class ThreeVector;
-
-/// @brief FourVector is a container for dealing with four vectors
+/// @brief FourVectorT is a container for dealing with four vectors
 ///
-/// The FourVector class provides an easy to use container to handle four
-/// component vectors, such as four-position and four-momentum
-class FourVector {
+/// Templated on the mass dimension D of its components, so that one body serves
+/// both a four-momentum (D = 1, MeV) and a four-position (D = -1, MeV^-1 --
+/// ask for .in(units::fm)). Adding one to the other is a compile error.
+template <int D> class FourVectorT {
   public:
     using RotMat = std::array<double, 9>;
+    /// Component type: MeV^D
+    using Q = units::Quantity<D>;
+    /// Type of a product of two components: MeV^2D
+    using Q2 = units::Quantity<2 * D>;
 
     /// @name Constructors and Destructors
     ///@{
 
-    /// Create an empty FourVector object
-    constexpr FourVector() noexcept : vec({0, 0, 0, 0}) {}
-    /// Create a ThreeVector object with values given by p
-    ///@param p: A std::array<double, 4> containing the values for the vector
-    constexpr FourVector(std::array<double, 4> p) noexcept : vec(p) {}
-    /// Create a FourVector object with values pX, pY, pZ, and E
-    ///@param pX: The px value of the vector
-    ///@param pY: The py value of the vector
-    ///@param pZ: The pz value of the vector
-    ///@param E: The E value of the vector
-    constexpr FourVector(double E, double pX, double pY, double pZ) noexcept
-        : vec({E, pX, pY, pZ}) {}
-    /// Create a FourVector object from a ThreeVector and an energy
-    ///@param other: ThreeVector object containing 3-momentum information
-    ///@param E: Energy for the given vector
-    FourVector(const ThreeVector &other, const double &E) noexcept;
-    /// Create a copy of a FourVector object
-    ///@param other: The vector to be copied
-    FourVector(const FourVector &other) noexcept = default;
-    /// Move a FourVector object to another
-    ///@param other: The vector to be moved
-    FourVector(FourVector &&) noexcept = default;
+    /// Create an empty FourVectorT object
+    constexpr FourVectorT() noexcept : vec({Q{}, Q{}, Q{}, Q{}}) {}
+    /// Create a FourVectorT object with values given by p
+    ///@param p: A std::array<Q, 4> containing the values for the vector
+    constexpr explicit FourVectorT(std::array<Q, 4> p) noexcept : vec(p) {}
+    /// Create a FourVectorT object with values E, pX, pY, and pZ
+    constexpr FourVectorT(Q E, Q pX, Q pY, Q pZ) noexcept : vec({E, pX, pY, pZ}) {}
+    /// Create a FourVectorT object from a ThreeVectorT and an energy
+    constexpr FourVectorT(const ThreeVectorT<D> &other, Q E) noexcept
+        : vec({E, other[0], other[1], other[2]}) {}
+    FourVectorT(const FourVectorT &other) noexcept = default;
+    FourVectorT(FourVectorT &&) noexcept = default;
 
-    /// Default destructor
-    ~FourVector() = default;
+    ~FourVectorT() = default;
     ///@}
+
+    /// @name Interop boundary
+    /// @{
+    /// Raw canonical components (MeV^D), ordered {E, px, py, pz}. For a position
+    /// this is MeV^-1, NOT fm; use ToArray(units::fm) at any fm-facing boundary.
+    constexpr const std::array<Q, 4> &Native() const noexcept { return vec; }
+    constexpr std::array<Q, 4> &Native() noexcept { return vec; }
+
+    /// Build from raw canonical components (MeV^D)
+    static constexpr FourVectorT FromNative(const std::array<double, 4> &p) noexcept {
+        return FourVectorT{Q{p[0]}, Q{p[1]}, Q{p[2]}, Q{p[3]}};
+    }
+
+    /// Components expressed in the given unit
+    std::array<double, 4> ToArray(units::Unit<D> u) const noexcept {
+        return {vec[0].in(u), vec[1].in(u), vec[2].in(u), vec[3].in(u)};
+    }
+    /// @}
 
     /// @name Setters
     /// @{
-    /// These functions provide access to setting the parameters of the FourVector
 
-    /// Set momentum variable based on pased in array
-    ///@param p: momentum to be stored
-    void SetPxPyPzE(const std::array<double, 4> p) noexcept { vec = p; }
+    void SetPxPyPzE(const std::array<Q, 4> &p) noexcept { vec = p; }
+    void SetPxPyPzE(Q pX, Q pY, Q pZ, Q E) noexcept { vec = std::array<Q, 4>{E, pX, pY, pZ}; }
 
-    /// Set momentum variable based on pased in array
-    ///@param pX: momentum in the x-direction to be stored
-    ///@param pY: momentum in the y-direction to be stored
-    ///@param pZ: momentum in the z-direction to be stored
-    ///@param E: energy to be stored
-    void SetPxPyPzE(const double &pX, const double &pY, const double &pZ,
-                    const double &E) noexcept {
-        vec = std::array<double, 4>{E, pX, pY, pZ};
+    /// Set the four vector given a three vector and an invariant mass
+    void SetVectM(const ThreeVectorT<D> &p, Q mass) noexcept {
+        Px() = p.Px();
+        Py() = p.Py();
+        Pz() = p.Pz();
+        E() = Q{std::sqrt((mass * mass + p * p).native())};
     }
 
-    /// Set the four momentum variable given a three momentum and a mass
-    ///@param p: The three momentum to use
-    ///@param mass: The invariant mass of the object
-    void SetVectM(const ThreeVector &p, const double &mass) noexcept;
-
-    /// Set only the x momentum
-    ///@param pX: momentum in the x-direction to be stored
-    void SetPx(const double &pX) noexcept { vec[1] = pX; }
-
-    /// Set only the y momentum
-    ///@param pY: momentum in the y-direction to be stored
-    void SetPy(const double &pY) noexcept { vec[2] = pY; }
-
-    /// Set only the z momentum
-    ///@param pZ: momentum in the z-direction to be stored
-    void SetPz(const double &pZ) noexcept { vec[3] = pZ; }
-
-    /// Set only the energy
-    ///@param E: the energy
-    void SetE(const double &E) noexcept { vec[0] = E; }
+    void SetPx(Q pX) noexcept { vec[1] = pX; }
+    void SetPy(Q pY) noexcept { vec[2] = pY; }
+    void SetPz(Q pZ) noexcept { vec[3] = pZ; }
+    void SetE(Q E) noexcept { vec[0] = E; }
     ///@}
 
     /// @name Getters
     /// @{
-    /// These functions provide get specific features from the FourVector object
 
     constexpr size_t Size() const noexcept { return 4; }
 
-    /// Return the momentum as an array
-    ///@return std::array<double, 4>: An array containing the four momentum
-    const std::array<double, 4> &Momentum() const noexcept { return vec; }
+    constexpr Q X() const noexcept { return vec[1]; }
+    constexpr Q Y() const noexcept { return vec[2]; }
+    constexpr Q Z() const noexcept { return vec[3]; }
+    constexpr Q T() const noexcept { return vec[0]; }
 
-    /// Return the x-coordinate
-    ///@return double: the x-coordinate
-    const double &X() const noexcept { return vec[1]; }
+    constexpr Q Px() const noexcept { return vec[1]; }
+    constexpr Q &Px() noexcept { return vec[1]; }
+    constexpr Q Py() const noexcept { return vec[2]; }
+    constexpr Q &Py() noexcept { return vec[2]; }
+    constexpr Q Pz() const noexcept { return vec[3]; }
+    constexpr Q &Pz() noexcept { return vec[3]; }
+    constexpr Q E() const noexcept { return vec[0]; }
+    constexpr Q &E() noexcept { return vec[0]; }
 
-    /// Return the y-coordinate
-    ///@return double: the y-coordinate
-    const double &Y() const noexcept { return vec[2]; }
+    /// Transverse momentum squared
+    constexpr Q2 Pt2() const noexcept { return Px() * Px() + Py() * Py(); }
+    /// Transverse momentum
+    Q Pt() const noexcept { return Q{std::sqrt(Pt2().native())}; }
+    /// Three momentum squared
+    constexpr Q2 P2() const noexcept { return Pt2() + Pz() * Pz(); }
+    /// Three momentum
+    Q P() const noexcept { return Q{std::sqrt(P2().native())}; }
 
-    /// Return the z-coordinate
-    ///@return double: the z-coordinate
-    const double &Z() const noexcept { return vec[3]; }
+    /// Invariant mass squared
+    constexpr Q2 M2() const noexcept { return (*this) * (*this); }
 
-    /// Return the time
-    ///@return double: the time
-    const double &T() const noexcept { return vec[0]; }
+    /// Invariant mass
+    Q M() const noexcept {
+        const double mass2 = M2().native();
+        if(std::abs(mass2) < tolerance) return Q{0.0};
+        return Q{std::sqrt(mass2)};
+    }
 
-    /// Return the momentum in the x-direction
-    ///@return double: the momentum in the x-direction
-    const double &Px() const noexcept { return vec[1]; }
-    double &Px() noexcept { return vec[1]; }
+    constexpr Q2 Magnitude2() const noexcept { return M2(); }
+    Q Magnitude() const noexcept { return M(); }
 
-    /// Return the momentum in the y-direction
-    ///@return double: the momentum in the y-direction
-    const double &Py() const noexcept { return vec[2]; }
-    double &Py() noexcept { return vec[2]; }
+    /// Angle between the z-axis and the transverse plane (radians)
+    double Theta() const noexcept { return std::atan2(Pt().native(), Pz().native()); }
+    double CosTheta() const noexcept { return std::cos(Theta()); }
 
-    /// Return the momentum in the z-direction
-    ///@return double: the momentum in the z-direction
-    const double &Pz() const noexcept { return vec[3]; }
-    double &Pz() noexcept { return vec[3]; }
+    /// Angle in the transverse plane (radians)
+    double Phi() const noexcept {
+        const double phi = std::atan2(Py().native(), Px().native());
+        if(phi < 0) return phi + 2 * M_PI;
+        return phi;
+    }
 
-    /// Return the energy
-    ///@return double: the energy
-    const double &E() const noexcept { return vec[0]; }
-    double &E() noexcept { return vec[0]; }
+    /// Rapidity (dimensionless)
+    double Rapidity() const noexcept {
+        return std::log(((E() + Pz()) / (E() - Pz())).native()) / 2;
+    }
 
-    /// Return the transverse momentum squared
-    ///@return double: Transverse momentum squared
-    double Pt2() const noexcept { return pow(Px(), 2) + pow(Py(), 2); }
+    /// Distance in the Eta-Phi plane between two four vectors
+    double DeltaR(const FourVectorT &other) const noexcept {
+        const double DEta = Rapidity() - other.Rapidity();
+        const double DPhi = Phi() - other.Phi();
+        return std::sqrt(DEta * DEta + DPhi * DPhi);
+    }
 
-    /// Return the transverse momentum
-    ///@return double: Transverse momentum
-    double Pt() const noexcept { return sqrt(Pt2()); }
-
-    /// Return the three momentum squared
-    ///@return double: Three momentum squared
-    double P2() const noexcept { return Pt2() + pow(Pz(), 2); }
-
-    /// Return the three momentum
-    ///@return double: Three momentum
-    double P() const noexcept { return sqrt(P2()); }
-
-    /// Return the invariant mass squared
-    ///@return double: The invariant mass squared
-    double M2() const noexcept { return (*this) * (*this); }
-
-    /// Return the invariant mass
-    ///@return double: The invariant mass
-    double M() const noexcept;
-
-    /// Return the Minkowski magnitude squared
-    ///@return double: The magnitude squared
-    double Magnitude2() const noexcept { return M2(); }
-
-    /// Return the Minkowski magnitude
-    ///@return double: The magnitude
-    double Magnitude() const noexcept { return M(); }
-
-    /// Return the angle between the z-axis and the transverse plane
-    ///@return double: Angle between z-axis and transverse plane
-    double Theta() const noexcept;
-
-    /// Return cosine of the angle between the z-axis and the transverse plane
-    ///@return double: Angle between z-axis and transverse plane
-    double CosTheta() const noexcept { return cos(Theta()); }
-
-    /// Return the angle in the transverse plane
-    ///@return double: The angle in the transverse plane
-    double Phi() const noexcept;
-
-    /// Return the rapidity of the momentum
-    ///@return double: The rapidity associated with the momentum
-    double Rapidity() const noexcept;
-
-    /// Return the distance in the Eta-Phi plane between two four vectors
-    ///@return double: Distance between two four vectors in Eta-Phi plane
-    double DeltaR(const FourVector &) const noexcept;
-
-    /// Return the three momentum component
-    ///@return ThreeVector: The three momentum component
-    ThreeVector Vec3() const noexcept;
+    /// The spatial component
+    ThreeVectorT<D> Vec3() const noexcept { return {Px(), Py(), Pz()}; }
     ///@}
 
     /// @name Functions
     /// @{
 
-    double SmallOMCT(const FourVector &v) const noexcept;
-    double SmallMLDP(const FourVector &v) const noexcept;
+    /// 1 - cos(theta) evaluated without cancellation for small angles
+    double SmallOMCT(const FourVectorT &v) const noexcept {
+        const double mag = std::sqrt((P2() * v.P2()).native());
+        const double pq = (vec[1] * v[1] + vec[2] * v[2] + vec[3] * v[3]).native();
+        const double ct = std::min(std::max(pq / mag, -1.), 1.);
+        if(ct < 0.) return 1. - ct;
+        const double st = Vec3().Cross(v.Vec3()).P().native() / mag;
+        const double st2 = st / (2. * std::sqrt((ct + 1) / 2.));
+        return 2. * st2 * st2;
+    }
 
-    /// Boost the four vector to the frame given by the three vector velocities
-    ///@param beta: The boost vector to determine the frame
-    ///@return FourVector: The vector in the corresponding frame
-    FourVector Boost(const ThreeVector &) const noexcept;
+    Q2 SmallMLDP(const FourVectorT &v) const noexcept { return vec[0] * v[0] * SmallOMCT(v); }
 
-    /// Boost the four vector to the frame given by the three vector velocities
-    ///@param beta_x: The boost in the x-direction
-    ///@param beta_y: The boost in the y-direction
-    ///@param beta_z: The boost in the z-direction
-    ///@return FourVector: The vector in the corresponding frame
-    FourVector Boost(const double &, const double &, const double &) const noexcept;
+    /// Boost by a dimensionless velocity. Passing a momentum here will not compile.
+    FourVectorT Boost(const ThreeVectorT<0> &beta) const noexcept {
+        const double beta2 = (beta * beta).native();
+        const double gamma = 1.0 / std::sqrt(1.0 - beta2);
+        const Q betap = beta[0] * Px() + beta[1] * Py() + beta[2] * Pz();
+        const double gamma2 = beta2 > 0 ? (gamma - 1.0) / beta2 : 0.0;
 
-    /// Rotate the four vector to the frame given by the 3 angles
-    ///@param mat: The rotation matrix
-    ///@return FourVector: The vector in the corresponding frame
-    FourVector Rotate(const RotMat &) const noexcept;
+        return {gamma * (E() + betap), Px() + gamma2 * betap * beta[0] + gamma * beta[0] * E(),
+                Py() + gamma2 * betap * beta[1] + gamma * beta[1] * E(),
+                Pz() + gamma2 * betap * beta[2] + gamma * beta[2] * E()};
+    }
 
-    /// Rotate the four vector to the frame given by the 3 angles
-    ///@param mat: The rotation matrix
-    ///@return FourVector: The vector in the corresponding frame
-    FourVector RotateBack(const RotMat &) const noexcept;
+    FourVectorT Boost(double beta_x, double beta_y, double beta_z) const noexcept {
+        return Boost(ThreeVectorT<0>{units::Dimensionless{beta_x}, units::Dimensionless{beta_y},
+                                     units::Dimensionless{beta_z}});
+    }
 
-    /// Obtain the rotation matrix to align the vector with a given axis
-    ///@param axis: The axis to rotate to align with
-    ///@return std::array<double, 9>: The rotation matrix to align the vector
-    ///                               with the given axis
-    RotMat Align(const ThreeVector &) const noexcept;
+    /// Rotate the spatial part by a rotation matrix
+    FourVectorT Rotate(const RotMat &mat) const noexcept {
+        return {E(), mat[0] * Px() + mat[1] * Py() + mat[2] * Pz(),
+                mat[3] * Px() + mat[4] * Py() + mat[5] * Pz(),
+                mat[6] * Px() + mat[7] * Py() + mat[8] * Pz()};
+    }
 
-    /// Get the rotation matrix to align the vector with the z-axis
-    ///@return std::array<double, 9>: The matrix needed to define the rotation
-    RotMat AlignZ() const noexcept;
+    FourVectorT RotateBack(const RotMat &mat) const noexcept {
+        return {E(), mat[0] * Px() + mat[3] * Py() + mat[6] * Pz(),
+                mat[1] * Px() + mat[4] * Py() + mat[7] * Pz(),
+                mat[2] * Px() + mat[5] * Py() + mat[8] * Pz()};
+    }
 
-    /// Calculate the cross product between two four vectors
-    ///@param other: The vector to take the cross product with respect to
-    ///@return FourVector: The vector perpendicular to the two inputs
-    FourVector Cross(const FourVector &) const noexcept;
+    /// Rotation matrix aligning the spatial part with the given (unit) axis
+    RotMat Align(const ThreeVectorT<0> &axis) const noexcept { return Vec3().Align(axis); }
 
-    /// Return the the boost vector required to boost to the rest frame of a given
-    /// four vector
-    ///@return ThreeVector: Boost vector
-    ThreeVector BoostVector() const noexcept;
+    /// Rotation matrix aligning the spatial part with the z-axis
+    RotMat AlignZ() const noexcept { return Vec3().AlignZ(); }
 
-    /// Calculate the dot product between two four vectors
-    ///@param other: four vector to take dot product with
-    ///@return double: the value of the dot product
-    double Dot(const FourVector &other) const noexcept { return (*this) * other; }
+    /// Cross product of the spatial parts; the dimensions add
+    template <int B> FourVectorT<D + B> Cross(const FourVectorT<B> &other) const noexcept {
+        return {Vec3().Cross(other.Vec3()), units::Quantity<D + B>{0}};
+    }
 
-    /// Calculate the cosine of the angle between two four vectors
-    ///@param other: four vector to take angle between
-    ///@return double: cos(angle) between the two four vectors in radians
-    double CosAngle(const FourVector &) const noexcept;
+    /// The boost required to reach the rest frame of this vector. Dimensionless.
+    ThreeVectorT<0> BoostVector() const noexcept { return {Px() / E(), Py() / E(), Pz() / E()}; }
 
-    /// Calculate the angle between two four vectors
-    ///@param other: four vector to take angle between
-    ///@return double: angle between the two four vectors in radians
-    double Angle(const FourVector &) const noexcept;
+    /// Minkowski dot product; the dimensions add
+    template <int B>
+    constexpr units::Quantity<D + B> Dot(const FourVectorT<B> &other) const noexcept {
+        return (*this) * other;
+    }
 
-    /// Return a string representation of the vector
-    ///@return std::string: a string representation of the vector
-    std::string ToString() const noexcept;
+    /// Cosine of the angle between the spatial parts
+    double CosAngle(const FourVectorT &other) const noexcept {
+        auto p1 = Vec3(), p2 = other.Vec3();
+        return std::max(std::min(((p1 * p2) / (p1.P() * p2.P())).native(), 1.0), -1.0);
+    }
+
+    double Angle(const FourVectorT &other) const noexcept { return std::acos(CosAngle(other)); }
+
+    std::string ToString() const noexcept {
+        return "FourVector(" + std::to_string(vec[0].native()) + ", " +
+               std::to_string(vec[1].native()) + ", " + std::to_string(vec[2].native()) + ", " +
+               std::to_string(vec[3].native()) + ")";
+    }
     ///@}
 
     /// @name Operator Overloads
     /// @{
-    /// Operator overloads of math functions for ease of use
 
-    /// Assign a vector to another vector object
-    ///@param other: four vector to be assigned
-    ///@return FourVector: assigned new vector
-    FourVector &operator=(const FourVector &) noexcept = default;
-    FourVector &operator=(FourVector &&) noexcept = default;
+    FourVectorT &operator=(const FourVectorT &) noexcept = default;
+    FourVectorT &operator=(FourVectorT &&) noexcept = default;
 
-    /// Add two four vectors together
-    ///@param other: four vector to add to this one
-    ///@return FourVector: The sum of the two four vectors
-    FourVector &operator+=(const FourVector &) noexcept;
+    FourVectorT &operator+=(const FourVectorT &other) noexcept {
+        vec[0] += other.vec[0];
+        vec[1] += other.vec[1];
+        vec[2] += other.vec[2];
+        vec[3] += other.vec[3];
+        return *this;
+    }
 
-    /// Subtract two four vectors together
-    ///@param other: four vector to subtract from this one
-    ///@return FourVector: The difference of the two four vectors
-    FourVector &operator-=(const FourVector &) noexcept;
+    FourVectorT &operator-=(const FourVectorT &other) noexcept {
+        vec[0] -= other.vec[0];
+        vec[1] -= other.vec[1];
+        vec[2] -= other.vec[2];
+        vec[3] -= other.vec[3];
+        return *this;
+    }
 
-    /// Scale a four vector by a constant
-    ///@param scale: value to scale four vector by
-    ///@return FourVector: The scaled four vector
-    FourVector &operator*=(const double &) noexcept;
+    FourVectorT &operator*=(double scale) noexcept {
+        vec[0] *= scale;
+        vec[1] *= scale;
+        vec[2] *= scale;
+        vec[3] *= scale;
+        return *this;
+    }
 
-    /// Reduce the magnitude of a four vector by a constant
-    ///@param scale: value to scale four vector by
-    ///@return FourVector: The scaled four vector
-    FourVector &operator/=(const double &);
+    FourVectorT &operator/=(double scale) {
+        vec[0] /= scale;
+        vec[1] /= scale;
+        vec[2] /= scale;
+        vec[3] /= scale;
+        return *this;
+    }
 
-    /// Calculate dot product of two vectors
-    ///@param other: The other vector to take the dot product with
-    ///@return double: The value of the dot product
-    double operator*(const FourVector &) const noexcept;
+    /// Minkowski dot product; the dimensions add
+    template <int B>
+    constexpr units::Quantity<D + B> operator*(const FourVectorT<B> &other) const noexcept {
+        return vec[0] * other[0] - (vec[1] * other[1] + vec[2] * other[2] + vec[3] * other[3]);
+    }
 
-    /// Negate a given vector
-    ///@return FourVector: The negative of the input vector
-    FourVector operator-() const noexcept;
+    FourVectorT operator-() const noexcept { return {-vec[0], -vec[1], -vec[2], -vec[3]}; }
+    FourVectorT operator+() const noexcept { return *this; }
 
-    /// Unary plus operator
-    ///@return FourVector: The input vector
-    FourVector operator+() const noexcept;
+    FourVectorT operator*(double scale) const noexcept { return FourVectorT(*this) *= scale; }
+    FourVectorT operator/(double scale) const { return FourVectorT(*this) /= scale; }
 
-    /// Scale a four vector by a constant
-    ///@param scale: value to scale four vector by
-    ///@return FourVector: The scaled four vector
-    FourVector operator*(const double &) const noexcept;
+    /// Scale by a quantity; the dimensions add
+    template <int B>
+    constexpr FourVectorT<D + B> operator*(units::Quantity<B> scale) const noexcept {
+        return {vec[0] * scale, vec[1] * scale, vec[2] * scale, vec[3] * scale};
+    }
 
-    /// Reduce the magnitude of a four vector by a constant
-    ///@param scale: value to scale four vector by
-    ///@return FourVector: The scaled four vector
-    FourVector operator/(const double &) const;
+    /// Divide by a quantity; the dimensions subtract
+    template <int B>
+    constexpr FourVectorT<D - B> operator/(units::Quantity<B> scale) const noexcept {
+        return {vec[0] / scale, vec[1] / scale, vec[2] / scale, vec[3] / scale};
+    }
 
-    /// Calculate difference of two vectors
-    ///@param other: The other vector to take the difference with
-    ///@return FourVector: The resulting difference vector
-    FourVector operator-(const FourVector &) const noexcept;
+    FourVectorT operator-(const FourVectorT &other) const noexcept {
+        return FourVectorT(*this) -= other;
+    }
+    FourVectorT operator+(const FourVectorT &other) const noexcept {
+        return FourVectorT(*this) += other;
+    }
 
-    /// Calculate sum of two vectors
-    ///@param other: The other vector to take the sum with
-    ///@return FourVector: The resulting sum vector
-    FourVector operator+(const FourVector &) const noexcept;
+    bool operator==(const FourVectorT &other) const noexcept { return vec == other.vec; }
+    bool operator!=(const FourVectorT &other) const noexcept { return !(*this == other); }
 
-    // Comparison Operators
+    /// Approximate equality, with the tolerance given in canonical units (MeV^D)
+    bool Approx(const FourVectorT &other, double eps = 1e-8) const noexcept {
+        for(size_t i = 0; i < vec.size(); ++i) {
+            if(std::abs(vec[i].native() - other.vec[i].native()) > eps) return false;
+        }
+        return true;
+    }
 
-    /// Determine if two four vectors are equivalent
-    ///@param other: The vector to compare against
-    ///@return bool: True, if the vectors are equal otherwise False
-    bool operator==(const FourVector &) const noexcept;
+    constexpr Q &operator[](const std::size_t &idx) { return vec[idx]; }
+    constexpr const Q &operator[](const std::size_t &idx) const { return vec[idx]; }
 
-    /// Determine if two four vectors are not equivalent
-    ///@param other: The vector to compare against
-    ///@return bool: False, if the vectors are equal otherwise True
-    bool operator!=(const FourVector &other) const noexcept { return !(*this == other); }
-
-    // Determine if two four vectors are approximately equal
-    ///@param other: The vector to compare against
-    ///@return bool: True, if the vectors are equal otherwise False
-    bool Approx(const FourVector &, double eps = 1e-8) const noexcept;
-
-    // Access Operators
-
-    /// Access a given index from the vector
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    double &operator[](const std::size_t &idx) { return vec[idx]; }
-
-    /// Access a given index from the vector
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    const double &operator[](const std::size_t &idx) const { return vec[idx]; }
-
-    /// Access a given index from the vector with range checks
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    double &at(const std::size_t &idx) {
+    Q &at(const std::size_t &idx) {
         if(idx > 3) throw std::range_error("Max value is 3.");
         return vec[idx];
     }
-
-    /// Access a given index from the vector with range checks
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    const double &at(const std::size_t &idx) const {
+    const Q &at(const std::size_t &idx) const {
         if(idx > 3) throw std::range_error("Max value is 3.");
         return vec[idx];
     }
@@ -375,53 +333,73 @@ class FourVector {
 
     ///@name Stream Operators
     /// @{
-    /// Stream operators for writing to and reading from streams
-
-    /// Write out a vector to an output stream
-    ///@param ostr: Output stream to write to
-    ///@param vec: The four vector to be written out
-    template <typename OStream> friend OStream &operator<<(OStream &os, const FourVector &vec4) {
-        os << "FourVector(" << vec4.E() << ", " << vec4.Px() << ", " << vec4.Py() << ", "
-           << vec4.Pz() << ")";
+    template <typename OStream> friend OStream &operator<<(OStream &os, const FourVectorT &vec4) {
+        os << "FourVector(" << vec4.E().native() << ", " << vec4.Px().native() << ", "
+           << vec4.Py().native() << ", " << vec4.Pz().native() << ")";
         return os;
     }
-
-    /// Write in a vector to an input stream
-    ///@param istr: Input stream to read from
-    ///@param vec: The four vector to be read into
-    friend std::istream &operator>>(std::istream &, FourVector &);
     /// @}
 
   private:
-    std::array<double, 4> vec;
+    std::array<Q, 4> vec;
     static constexpr double tolerance = 1e-12;
 };
 
-FourVector operator*(const double &, const FourVector &) noexcept;
+/// The storage is bit-compatible with the legacy double[4] layout, so ROOT,
+/// HepMC3 and Fortran buffers are unaffected.
+static_assert(sizeof(FourVectorT<1>) == 4 * sizeof(double));
+static_assert(std::is_trivially_copyable_v<FourVectorT<1>>);
+static_assert(std::is_standard_layout_v<FourVectorT<1>>);
+
+template <int D> FourVectorT<D> operator*(double s, const FourVectorT<D> &v) noexcept {
+    return v * s;
+}
+
+template <int B, int D>
+constexpr FourVectorT<B + D> operator*(units::Quantity<B> s, const FourVectorT<D> &v) noexcept {
+    return v * s;
+}
+
+template <int D> std::istream &operator>>(std::istream &is, FourVectorT<D> &vec) {
+    std::string head_name = "FourVector(";
+    std::string head(head_name.size(), ' '), sep1(1, ' '), sep2(1, ' '), sep3(1, ' '), tail(1, ' ');
+    double e{}, px{}, py{}, pz{};
+    is.read(&head[0], 11);
+    is >> e;
+    is.read(&sep1[0], 1);
+    is >> px;
+    is.read(&sep2[0], 1);
+    is >> py;
+    is.read(&sep3[0], 1);
+    is >> pz;
+    is.read(&tail[0], 1);
+    if(head == head_name && sep1 == "," && sep2 == "," && sep3 == "," && tail == ")")
+        vec = FourVectorT<D>::FromNative({e, px, py, pz});
+    return is;
+}
+
+/// Four-momentum, canonical MeV
+using FourVector = FourVectorT<1>;
+/// Four-position, canonical MeV^-1 -- .in(units::fm) at any fm-facing boundary
+using FourPosition = FourVectorT<-1>;
 
 } // namespace achilles
 
-template <> struct fmt::formatter<achilles::FourVector> {
+template <int D> struct fmt::formatter<achilles::FourVectorT<D>> {
     char presentation = 'e';
     constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
-        // Parse the presentation format and store it in the formatter:
         auto it = ctx.begin(), end = ctx.end();
         if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-        // Check if reached the end of the range:
         if(it != end && *it != '}') throw format_error("Invalid format");
-
-        // Return an iterator past the end of the parsed range:
         return it;
     }
 
-    auto format(const achilles::FourVector &p, format_context &ctx) const
+    auto format(const achilles::FourVectorT<D> &p, format_context &ctx) const
         -> format_context::iterator {
-        // ctx.out() is an output iterator to write to
         return format_to(ctx.out(),
                          presentation == 'f' ? "FourVector({:.8f}, {:.8f}, {:.8f}, {:.8f})"
                                              : "FourVector({:.8e}, {:.8e}, {:.8e}, {:.8e})",
-                         p.E(), p.Px(), p.Py(), p.Pz());
+                         p.E().native(), p.Px().native(), p.Py().native(), p.Pz().native());
     }
 };
 

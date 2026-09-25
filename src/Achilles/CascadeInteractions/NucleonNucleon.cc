@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/CascadeInteractions/NucleonNucleon.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ResonanceHelper.hh"
 
@@ -57,9 +57,9 @@ InteractionResults NucleonNucleon::CrossSection(Event &event, size_t part1, size
     const auto &particle1 = event.Hadrons()[part1];
     const auto &particle2 = event.Hadrons()[part2];
     InteractionResults results;
-    double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    double p1CM = particle1.Momentum().Boost(-boostCM).P();
+    double sqrts = (particle1.Momentum() + particle2.Momentum()).M().in(units::GeV);
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    double p1CM = particle1.Momentum().Boost(-boostCM).P().native();
 
     // Elastic component
     double elastic_xsec = NNElastic(sqrts, particle1.ID(), particle2.ID());
@@ -92,17 +92,17 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
     if(out_ids.size() == 1) {
         auto mom = particle1.Momentum() + particle2.Momentum();
         auto position = ran.Uniform(0.0, 1.0) < 0.5 ? particle1.Position() : particle2.Position();
-        if(std::isnan(mom.Momentum()[0])) { spdlog::error("Nan momenutm in Npi -> Delta"); }
+        if(std::isnan(mom[0].native())) { spdlog::error("Nan momenutm in Npi -> Delta"); }
         return {Particle{out_ids[0], mom, position, ParticleStatus::propagating}};
     }
 
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1CM = particle1.Momentum().Boost(-boostCM);
     FourVector p2CM = particle2.Momentum().Boost(-boostCM);
 
     FourVector pTotalCM = p1CM + p2CM;
-    auto s = pTotalCM.M2();
+    auto s = pTotalCM.M2().native();
     auto sqrts = sqrt(s);
 
     ParticleInfo info_a(out_ids[0]);
@@ -111,7 +111,7 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
         ma = resonance::GenerateMass(particle1, particle2, out_ids[0], out_ids[1], ran, sqrts);
         spdlog::trace("ma = {}, pid = {}", ma, out_ids[0]);
     } else {
-        ma = info_a.Mass();
+        ma = info_a.Mass().native();
     }
 
     ParticleInfo info_b(out_ids[1]);
@@ -120,7 +120,7 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
         mb = resonance::GenerateMass(particle1, particle2, out_ids[1], out_ids[0], ran, sqrts);
         spdlog::trace("mb = {}, pid = {}", mb, out_ids[1]);
     } else {
-        mb = info_b.Mass();
+        mb = info_b.Mass().native();
     }
 
     const double Eacms = sqrts / 2. * (1. + ma * ma / s - mb * mb / s);
@@ -137,13 +137,13 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
     double cosphi_cms = cos(phi_cms);
     double sinphi_cms = sin(phi_cms);
 
-    FourVector paOut = FourVector(Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms,
-                                  pfCMS * cos_cms);
-    FourVector pbOut = FourVector(Ebcms, -pfCMS * sin_cms * cosphi_cms,
-                                  -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms);
+    FourVector paOut = FourVector::FromNative(
+        {Eacms, pfCMS * sin_cms * cosphi_cms, pfCMS * sin_cms * sinphi_cms, pfCMS * cos_cms});
+    FourVector pbOut = FourVector::FromNative(
+        {Ebcms, -pfCMS * sin_cms * cosphi_cms, -pfCMS * sin_cms * sinphi_cms, -pfCMS * cos_cms});
     paOut = paOut.Boost(boostCM);
     pbOut = pbOut.Boost(boostCM);
-    if(std::isnan(paOut.Momentum()[0])) {
+    if(std::isnan(paOut[0].native())) {
         spdlog::error("Nan momenutm for paOut");
         spdlog::error("boost = {}", boostCM);
         spdlog::error("paOut = {}", paOut);
@@ -151,7 +151,7 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
                       Ebcms, lambda, pfCMS);
         spdlog::error("{}, {}", s, pow(ma + mb, 2));
     }
-    if(std::isnan(pbOut.Momentum()[0])) {
+    if(std::isnan(pbOut[0].native())) {
         spdlog::error("Nan momenutm for pbOut");
         spdlog::error("boost = {}", boostCM);
         spdlog::error("pbOut = {}", pbOut);
@@ -184,7 +184,8 @@ std::vector<Particle> NucleonNucleon::GenerateMomentum(const Particle &particle1
 // NOTE: All units are in GeV to ensure cross sections have right units
 double NucleonNucleon::NNElastic(double sqrts, PID id1, PID id2) const {
     bool same_iso = id1 == id2;
-    double mn = (ParticleInfo(id1).Mass() + ParticleInfo(id2).Mass()) / 2 / 1.0_GeV;
+    double mn = (ParticleInfo(id1).Mass().native() + ParticleInfo(id2).Mass().native()) / 2 /
+                (1.0_GeV).native();
     double threshold = sqrts * sqrts - 4 * mn * mn;
     if(threshold < 0) return 0;
     double plab = sqrts / (2 * mn) * sqrt(threshold);
@@ -241,15 +242,16 @@ double NucleonNucleon::SigmaNN2NDelta(double sqrts, double pcm, PID delta_id) co
 
     // TODO: Figure out a better way to handle this,
     // we always choose the heavier particles to ensure that it is always kinematically allowed
-    const double mn = ParticleInfo(PID::neutron()).Mass() / 1_GeV;
-    const double mpi = ParticleInfo(PID::pionp()).Mass() / 1_GeV;
-    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4) * isofactor / (pcm / 1_GeV);
+    const double mn = ParticleInfo(PID::neutron()).Mass().in(units::GeV);
+    const double mpi = ParticleInfo(PID::pionp()).Mass().in(units::GeV);
+    return integrator.Integrate(mn + mpi, sqrts - mn, 1e-6, 1e-4) * isofactor /
+           (units::Energy{pcm}.in(units::GeV));
 }
 
 // Testing functions
 std::pair<double, double> NucleonNucleon::TestNNElastic(double sqrts) const {
-    return {NNElastic(sqrts / 1_GeV, PID::proton(), PID::proton()),
-            NNElastic(sqrts / 1_GeV, PID::neutron(), PID::proton())};
+    return {NNElastic(units::Energy{sqrts}.in(units::GeV), PID::proton(), PID::proton()),
+            NNElastic(units::Energy{sqrts}.in(units::GeV), PID::neutron(), PID::proton())};
 }
 
 void NucleonNucleon::InitializeInterpolators() {
@@ -258,7 +260,7 @@ void NucleonNucleon::InitializeInterpolators() {
     std::vector<double> sqrts_valid;
     std::vector<double> dsigma; //, dsigma_dm(nsqrts * nmass), res(nsqrts * nmass);
     for(const auto &sqrts : sqrts_vec) {
-        double result = SigmaNN2NDelta(sqrts, 1_GeV, PID::deltapp());
+        double result = SigmaNN2NDelta(sqrts, (1.0_GeV).native(), PID::deltapp());
         if(result == 0) continue;
         sqrts_valid.push_back(sqrts);
         dsigma.push_back(result);
@@ -301,5 +303,5 @@ double NucleonNucleon::SigmaNN2NDeltaInterp(double sqrts, double pcm, PID delta_
         isofactor = 1;
     else
         isofactor = 1.0 / 3.0;
-    return sigma * isofactor / (pcm / 1_GeV);
+    return sigma * isofactor / (units::Energy{pcm}.in(units::GeV));
 }

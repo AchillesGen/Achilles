@@ -62,9 +62,9 @@ NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &h
     const size_t nout = had_out.size();
     const size_t nspect = had_spect.size();
 
-    auto omega = qVec[0];
+    const double omega = qVec[0].native();
 
-    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
+    auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
     std::vector<long> pids_in;
     std::vector<long> pids_out;
     std::vector<long> pids_spect;

@@ -8,6 +8,8 @@
 
 #include "Achilles/Factory.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/UnitsFormat.hh"
+#include "Achilles/UnitsIO.hh"
 #include "fmt/ranges.h"
 
 #pragma GCC diagnostic push
@@ -17,7 +19,19 @@
 
 namespace achilles {
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
+
+/// Widest representable cut bound, for both plain numbers and Quantities.
+template <class T, bool = std::is_arithmetic<T>::value> struct CutLimits;
+template <class T> struct CutLimits<T, true> {
+    static T lowest() { return std::numeric_limits<T>::lowest(); }
+    static T max() { return std::numeric_limits<T>::max(); }
+};
+template <class T> struct CutLimits<T, false> {
+    static T lowest() { return T{std::numeric_limits<double>::lowest()}; }
+    static T max() { return T{std::numeric_limits<double>::max()}; }
+};
 
 template <class T> class CutBase {
   public:
@@ -29,14 +43,18 @@ template <class T> class CutBase {
         if(node["min"] && node["max"] && node["range"]) {
             throw std::runtime_error("CutRange: Invalid syntax. Got min, max, and range");
         } else if(node["min"] || node["max"]) {
-            T min = std::numeric_limits<T>::lowest();
-            T max = std::numeric_limits<T>::max();
+            T min = CutLimits<T>::lowest();
+            T max = CutLimits<T>::max();
+            // A dimensionful bound is a { value:, unit: } map, so only a plain
+            // number is required to be a scalar here.
             if(node["min"]) {
-                if(!node["min"].IsScalar()) throw std::runtime_error("CutRange: Invalid min value");
+                if(std::is_arithmetic<T>::value && !node["min"].IsScalar())
+                    throw std::runtime_error("CutRange: Invalid min value");
                 min = node["min"].as<T>();
             }
             if(node["max"]) {
-                if(!node["max"].IsScalar()) throw std::runtime_error("CutRange: Invalid max value");
+                if(std::is_arithmetic<T>::value && !node["max"].IsScalar())
+                    throw std::runtime_error("CutRange: Invalid max value");
                 max = node["max"].as<T>();
             }
             m_range = {{min, max}};
@@ -80,9 +98,11 @@ template <class Base> using CutFactory = Factory<Base, const YAML::Node &>;
 
 namespace YAML {
 
+// A bound is either a plain number or a { value:, unit: } map, so these check
+// the shape of the sequence and leave the element conversion to convert<T>.
 template <typename T> struct convert<std::pair<T, T>> {
     static bool decode(const Node &node, std::pair<T, T> &range) {
-        if(node[0].IsScalar() && node[1].IsScalar() && node.size() == 2) {
+        if(node.IsSequence() && node.size() == 2) {
             range = {node[0].as<T>(), node[1].as<T>()};
             return true;
         }
@@ -93,8 +113,8 @@ template <typename T> struct convert<std::pair<T, T>> {
 template <typename T> struct convert<std::vector<std::pair<T, T>>> {
     static bool decode(const Node &node, std::vector<std::pair<T, T>> &cutRange) {
         if(!node.IsSequence()) return false;
-        if(node[0].IsScalar() && node[1].IsScalar() && node.size() == 2) {
-            cutRange = {{node[0].as<double>(), node[1].as<T>()}};
+        if(node.size() == 2 && !node[0].IsSequence()) {
+            cutRange = {{node[0].as<T>(), node[1].as<T>()}};
         } else {
             for(const auto &subNode : node) { cutRange.push_back(subNode.as<std::pair<T, T>>()); }
         }

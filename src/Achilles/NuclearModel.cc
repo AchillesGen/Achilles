@@ -441,40 +441,45 @@ size_t NuclearModel::NSpins() const {
 }
 
 void NuclearModel::CoulombGauge(VCurrent &cur, const FourVector &q, double omega) const {
-    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
-    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
-    FourVector ref{0, 0, 0, 1};
+    FourVector cur4_real =
+        FourVector::FromNative({cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()});
+    FourVector cur4_imag =
+        FourVector::FromNative({cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()});
+    FourVector ref = FourVector::FromNative({0, 0, 0, 1});
     Poincare poincare(q, ref, 0);
     poincare.Rotate(cur4_real);
     poincare.Rotate(cur4_imag);
 
-    cur4_real[3] = omega / q.P() * cur[0].real();
-    cur4_imag[3] = omega / q.P() * cur[0].imag();
+    cur4_real[3] = units::Energy{omega / q.P().native() * cur[0].real()};
+    cur4_imag[3] = units::Energy{omega / q.P().native() * cur[0].imag()};
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i].native(), cur4_imag[i].native()};
 }
 
 void NuclearModel::WeylGauge(VCurrent &cur, const FourVector &q, double omega) const {
-    FourVector cur4_real{cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()};
-    FourVector cur4_imag{cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()};
-    FourVector ref{0, 0, 0, 1};
+    FourVector cur4_real =
+        FourVector::FromNative({cur[0].real(), cur[1].real(), cur[2].real(), cur[3].real()});
+    FourVector cur4_imag =
+        FourVector::FromNative({cur[0].imag(), cur[1].imag(), cur[2].imag(), cur[3].imag()});
+    FourVector ref = FourVector::FromNative({0, 0, 0, 1});
     Poincare poincare(q, ref, 0);
 
     poincare.Rotate(cur4_real);
     poincare.Rotate(cur4_imag);
 
-    cur4_real[0] = q.P() / omega * cur4_real[3];
-    cur4_imag[0] = q.P() / omega * cur4_imag[3];
+    cur4_real[0] = q.P().native() / omega * cur4_real[3];
+    cur4_imag[0] = q.P().native() / omega * cur4_imag[3];
     poincare.RotateBack(cur4_real);
     poincare.RotateBack(cur4_imag);
-    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i], cur4_imag[i]};
+    for(size_t i = 0; i < 4; ++i) cur[i] = {cur4_real[i].native(), cur4_imag[i].native()};
 }
 
 void NuclearModel::LandauGauge(VCurrent &cur, const FourVector &q) const {
-    auto jdotq = cur[0] * q[0] - cur[1] * q[1] - cur[2] * q[2] - cur[3] * q[3];
-    auto Q2 = -q.M2();
-    for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i];
+    auto jdotq = cur[0] * q[0].native() - cur[1] * q[1].native() - cur[2] * q[2].native() -
+                 cur[3] * q[3].native();
+    auto Q2 = -q.M2().native();
+    for(size_t i = 0; i < 4; ++i) cur[i] += jdotq / Q2 * q[i].native();
 }
 
 // TODO: Clean this up such that the nucleus isn't loaded twice, and that it works with multiple
@@ -492,7 +497,7 @@ achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<Partic
                                                         const FFInfoMap &ff) const {
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
-    auto ffVals = EvalFormFactor(-qVec.M2());
+    auto ffVals = EvalFormFactor(-qVec.M2().native());
 
     // Calculate coherent contributions
     Currents results;
@@ -503,7 +508,7 @@ achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<Partic
         Current current;
         VCurrent subcur;
         for(size_t i = 0; i < subcur.size(); ++i) {
-            subcur[i] = (pIn[i] + pOut[i]) * ffVal[Type::FCoh];
+            subcur[i] = (pIn[i] + pOut[i]).native() * ffVal[Type::FCoh];
         }
         current.push_back(subcur);
         results[formFactor.first] = current;
@@ -557,15 +562,15 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
-    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
-    auto omega = qVec.E();
-    qVec.E() = qVec.E() + pIn.E() - free_energy;
+    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2().native());
+    auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
+    auto omega = qVec.E().native();
+    qVec.E() = units::Energy{qVec.E().native() + pIn.E().native() - free_energy};
 
     Currents results;
 
     // Setup spinors
-    pIn.E() = free_energy;
+    pIn.E() = units::Energy{free_energy};
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pOut);
     ubar[1] = UBarSpinor(1, pOut);
@@ -610,12 +615,12 @@ double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
                                       size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     if(is_free_neutron) return nucleons[0].ID() == PID::neutron() ? 1 : 0;
-    const double removal_energy = Constant::mN - nucleons[0].E();
+    const double removal_energy = Constant::mN().native() - nucleons[0].E().native();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *
-                     spectral_proton(nucleons[0].Momentum().P(), removal_energy)
+                     spectral_proton(nucleons[0].Momentum().P().native(), removal_energy)
                : static_cast<double>(nneutrons) *
-                     spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
+                     spectral_neutron(nucleons[0].Momentum().P().native(), removal_energy);
 }
 
 NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
@@ -627,12 +632,13 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
     for(size_t mu = 0; mu < 4; ++mu) {
         gamma[mu] = ffVal.at(Type::F1) * SpinMatrix::GammaMu(mu);
         gamma[mu] += ffVal.at(Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
-        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
+        gamma[mu] += ffVal.at(Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu].native() /
+                     Constant::mN().native();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
-            gamma[mu] +=
-                std::complex<double>(0, 1) * (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
-                                              sign * qVec[nu] / (2 * Constant::mN));
+            gamma[mu] += std::complex<double>(0, 1) *
+                         (ffVal.at(Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) * sign *
+                          qVec[nu].native() / (2 * Constant::mN().native()));
             sign = -1;
         }
     }
@@ -675,15 +681,15 @@ NuclearModel::Currents HyperonSpectral::CalcCurrents(const std::vector<Particle>
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;
-    auto free_energy = sqrt(pIn.P2() + Constant::mN2);
-    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
-    auto omega = qVec.E();
-    qVec.E() = qVec.E() + pIn.E() - free_energy;
+    auto free_energy = sqrt(pIn.P2().native() + Constant::mN2().native());
+    auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
+    auto omega = qVec.E().native();
+    qVec.E() = units::Energy{qVec.E().native() + pIn.E().native() - free_energy};
 
     Currents results;
 
     // Setup spinors
-    pIn.E() = free_energy;
+    pIn.E() = units::Energy{free_energy};
     std::array<Spinor, 2> ubar, u;
     ubar[0] = UBarSpinor(-1, pOut);
     ubar[1] = UBarSpinor(1, pOut);
@@ -726,12 +732,12 @@ double HyperonSpectral::InitialStateWeight(const std::vector<Particle> &nucleons
                                            size_t nneutrons) const {
     if(is_hydrogen) return nucleons[0].ID() == PID::proton() ? 1 : 0;
     if(is_free_neutron) return nucleons[0].ID() == PID::neutron() ? 1 : 0;
-    const double removal_energy = Constant::mN - nucleons[0].E();
+    const double removal_energy = Constant::mN().native() - nucleons[0].E().native();
     return nucleons[0].ID() == PID::proton()
                ? static_cast<double>(nprotons) *
-                     spectral_proton(nucleons[0].Momentum().P(), removal_energy)
+                     spectral_proton(nucleons[0].Momentum().P().native(), removal_energy)
                : static_cast<double>(nneutrons) *
-                     spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
+                     spectral_neutron(nucleons[0].Momentum().P().native(), removal_energy);
 }
 
 NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
@@ -761,8 +767,9 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         gamma[mu] += FAhyp * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
         double sign = 1;
         for(size_t nu = 0; nu < 4; ++nu) {
-            gamma[mu] += std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) *
-                                                       sign * qVec[nu] / (hyperon.Mass()));
+            gamma[mu] +=
+                std::complex<double>(0, 1) * (F2hyp * SpinMatrix::SigmaMuNu(mu, nu) * sign *
+                                              qVec[nu].native() / (hyperon.Mass().native()));
             sign = -1;
         }
     }
