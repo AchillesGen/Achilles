@@ -14,8 +14,10 @@ name: Physics Validation (NUISANCE3)
 #                             not twenty
 #   !physval(dry-run,<setup>) combine them; order does not matter
 #
-# An unknown scope fails the setup job with the list of valid setup names rather than
-# silently running everything, which would cost twenty generations nobody asked for.
+# Markers are read from commit SUBJECT lines only, so a body that documents the syntax
+# (this workflow's own history does) neither scopes a run nor triggers one. An unknown
+# scope fails the setup job with the list of valid setup names rather than silently
+# running everything, which would cost twenty generations nobody asked for.
 #
 # Runs inside the public ghcr.io/achillesgen/achilles-physval container (NUISANCE3 +
 # Achilles build deps): builds the current Achilles once, then shards by experimental
@@ -73,6 +75,7 @@ jobs:
       matrix: ${{ steps.scope.outputs.matrix }}
       dry_run: ${{ steps.scope.outputs.dry_run }}
       only: ${{ steps.scope.outputs.only }}
+      skip: ${{ steps.scope.outputs.skip }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -86,7 +89,7 @@ jobs:
         name: Resolve the run's scope from the marker or the dispatch inputs
         env:
           EVENT: ${{ github.event_name }}
-          COMMIT_MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
+          COMMIT_MESSAGES_JSON: ${{ toJson(github.event.commits.*.message) }}
           IN_DRY: ${{ github.event.inputs.dry_run }}
           IN_ONLY: ${{ github.event.inputs.only_experiment }}
         run: |
@@ -96,15 +99,25 @@ jobs:
           names = [e['name'] for e in cfg['experiments']]
 
           event = os.environ.get('EVENT', '')
-          dry, only = False, []
+          dry, only, skip = False, [], False
           scopes = []
           if event == 'workflow_dispatch':
               dry = (os.environ.get('IN_DRY', '') or '').lower() == 'true'
               scopes = [os.environ.get('IN_ONLY', '') or '']
           elif event == 'push':
-              # Every marker in the push, so a scope set in any commit is honoured.
-              scopes = re.findall(r'!physval\(([^)]*)\)',
-                                  os.environ.get('COMMIT_MESSAGES', ''))
+              # Subject lines only. A commit body that documents the syntax -- this
+              # workflow's own history does -- must not be read as a request, and must
+              # not launch the whole suite either.
+              subjects = [m.split('\n', 1)[0]
+                          for m in json.loads(os.environ.get('COMMIT_MESSAGES_JSON')
+                                              or '[]')]
+              marked = [subj for subj in subjects if '!physval' in subj]
+              if not marked:
+                  print("physval marker appears only in a commit body, not in any "
+                        "subject line; nothing to run.", file=sys.stderr)
+                  skip = True
+              for subj in marked:
+                  scopes += re.findall(r'!physval\(([^)]*)\)', subj)
           for scope in scopes:
               for tok in (t.strip() for t in scope.split(',')):
                   if not tok:
@@ -122,6 +135,7 @@ jobs:
               # Config order, not the order they were typed, so shards read predictably.
               names = [n for n in names if n in only]
 
+          print('skip=' + ('true' if skip else 'false'))
           print('dry_run=' + ('true' if dry else 'false'))
           print('only=' + ','.join(only))
           print('matrix=' + json.dumps({'experiment': names}))
@@ -134,6 +148,7 @@ jobs:
   # of the toolchain (NUISANCE2/3, ROOT, HepMC3, ProSelecta) is rebuilt.
   resolve-image:
     needs: setup
+    if: needs.setup.outputs.skip != 'true'
     runs-on: ubuntu-latest
     outputs:
       ref: ${{ steps.r.outputs.ref }}
@@ -151,6 +166,7 @@ jobs:
   # Build Achilles once in the container; share the install tree with the shards.
   build:
     needs: [setup, resolve-image]
+    if: needs.setup.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     container:
@@ -193,6 +209,7 @@ jobs:
   # One shard per experimental setup, in the same container.
   generate:
     needs: [setup, resolve-image, build]
+    if: needs.setup.outputs.skip != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 360
     container:
@@ -278,7 +295,8 @@ jobs:
   # end if anything was missing, so the run stays red.
   aggregate:
     needs: [setup, generate]
-    if: ${{ always() && needs.setup.result == 'success' }}
+    if: ${{ always() && needs.setup.result == 'success' &&
+            needs.setup.outputs.skip != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

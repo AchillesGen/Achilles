@@ -240,6 +240,9 @@ so a regression fails early instead of mid-generation.
 | `workflow_dispatch` | same, via the `events` / `seed` / `dry_run` / `only_experiment` inputs (`only_experiment` takes a comma-separated list) |
 | nightly `schedule` | the whole suite, for real |
 
+Markers are read from commit **subject lines only**. A body that documents the syntax —
+this repo's own history does — neither scopes a run nor triggers one; if a push mentions
+`!physval` only in a body, the setup job says so and the rest of the workflow is skipped.
 Scopes from every marker in the push are unioned, and shards run in config order
 whatever order they were typed. Any name that is not a setup fails the `setup` job with
 the list of valid names, rather than quietly running all twenty. The scope reaches the
