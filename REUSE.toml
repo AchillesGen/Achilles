@@ -62,3 +62,12 @@ path = ["validation/**/*.md", "validation/**/*.yml", "validation/**/*.yaml"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Numeric inputs to the validation suite, licensed like the rest of the repo's data:
+# validation/physval/smearing holds the Wiener-SVD A_C blocks read out of the published
+# MicroBooNE data releases.
+[[annotations]]
+path = "validation/**/*.csv"
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
+SPDX-License-Identifier = "CC0-1.0"
