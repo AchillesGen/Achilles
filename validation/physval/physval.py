@@ -80,6 +80,18 @@ def _predict(adapter, generated: GeneratedEvents, measurement: dict, sample,
                                 n_boot=n_boot, rng=rng, response=response)
 
 
+def _estimator_used(predictions) -> str:
+    """Which estimator built these covariances, read off the predictions themselves.
+
+    `trial_covariance` leaves `n_boot` unset because it is not a finite-sample
+    estimate, so this reports what `_predict` actually did rather than what it meant
+    to do -- the fallback is silent, and a summary that cannot be audited was how the
+    old covariance survived so long.
+    """
+    kinds = {"trial" if p.n_boot is None else "bootstrap" for p in predictions}
+    return "+".join(sorted(kinds)) if kinds else "unknown"
+
+
 def predict_all(adapter, generated: GeneratedEvents, measurements,
                 n_boot: int, rng: np.random.Generator) -> Dict[str, Prediction]:
     """Bin a setup's shared events onto all of its measurements, then add errors.
@@ -114,9 +126,11 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
                   n_events: int, n_boot: int, out_dir: str) -> str:
     rng = np.random.default_rng(seed)
     measurements: Dict[str, dict] = {}
+    estimators = set()
     for exp in config["experiments"]:
         gen_main = adapter.generate(exp, "main", seed, n_events)  # once per setup
         mains, _ = predict_all(adapter, gen_main, exp["measurements"], n_boot, rng)
+        estimators.add(_estimator_used(mains.values()))
         for m in exp["measurements"]:
             name = m["name"]
             main = mains[name]
@@ -132,7 +146,7 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
         "seed": seed,
         "events_per_measurement": n_events,
         "n_boot": n_boot,
-        "estimator": ESTIMATOR,
+        "estimator": "+".join(sorted(estimators)) or "unknown",
         "measurements": measurements,
     }
     path = baseline_path(out_dir, key)
@@ -157,6 +171,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
     rng = np.random.default_rng(seed + 101)
     results = []
     warnings = []
+    estimators = set()
 
     for exp in config["experiments"]:
         # Feature events: once per setup, reused by every measurement. Main events
@@ -164,6 +179,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         gen_feature = adapter.generate(exp, "feature", seed, n_events)
         features, n_selected = predict_all(adapter, gen_feature, exp["measurements"],
                                            n_boot, rng)
+        estimators.add(_estimator_used(features.values()))
 
         # Measurements with no stored baseline need main computed inline. Collect them
         # first so that generation, and the pass over its events, happens once.
@@ -180,6 +196,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
             warnings.extend(m["name"] for m in stale)
             gen_main = adapter.generate(exp, "main", seed, n_events)
             mains, _ = predict_all(adapter, gen_main, stale, n_boot, rng)
+            estimators.add(_estimator_used(mains.values()))
 
         for m in exp["measurements"]:
             name = m["name"]
@@ -230,7 +247,8 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
     report = Report(results=results, repo=repo, feature_sha=feature_sha,
                     nuisance_version=nuisance_version,
                     seed=seed, events_per_measurement=n_events,
-                    extra_header=extra_header)
+                    extra_header=extra_header,
+                    estimator="+".join(sorted(estimators)) or "unknown")
 
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
@@ -270,6 +288,7 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
 
     rng = np.random.default_rng(seed + 202)
     rows: List[VariantMeasurement] = []
+    estimators = set()
     # variant -> per-measurement pieces, rolled up once every setup has been seen.
     per_variant: Dict[str, dict] = {v["name"]: {"pvalues": [], "ess": [], "err": [],
                                                 "norm": [], "seconds": 0.0,
@@ -298,6 +317,7 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
                 preds[name][m["name"]] = _predict(adapter, gen, m, sample,
                                                   n_boot, rng)
                 samples[name][m["name"]] = sample
+            estimators.add(_estimator_used(preds[name].values()))
             if gen.run is not None:
                 if gen.run.seconds:
                     per_variant[name]["seconds"] += gen.run.seconds
@@ -358,7 +378,8 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
             {name: (agg["seconds"], agg["eff"]) for name, agg in per_variant.items()}),
         rows=rows, reference=reference, repo=repo, feature_sha=feature_sha,
         nuisance_version=nuisance_version, seed=seed,
-        events_per_measurement=n_events)
+        events_per_measurement=n_events,
+        estimator="+".join(sorted(estimators)) or "unknown")
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
@@ -442,7 +463,9 @@ def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
         rows=rows, reference=head["reference"], repo=head["repo"],
         feature_sha=head["feature_sha"],
         nuisance_version=head["nuisance_version"], seed=head["seed"],
-        events_per_measurement=head["events_per_measurement"])
+        events_per_measurement=head["events_per_measurement"],
+        estimator="+".join(sorted(
+            {s.get("estimator", "unknown") for s in shards})) or "unknown")
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
@@ -586,7 +609,9 @@ def merge_shards(shard_paths, out_dir: str,
                     nuisance_version=head["nuisance_version"],
                     seed=head["seed"],
                     events_per_measurement=head["events_per_measurement"],
-                    did_not_run=did_not_run)
+                    did_not_run=did_not_run,
+                    estimator="+".join(sorted(
+                        {s.get("estimator", "unknown") for s in shards})) or "unknown")
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))

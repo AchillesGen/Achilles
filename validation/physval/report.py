@@ -106,6 +106,10 @@ class Report:
     alpha: float = ALPHA
     extra_header: List[str] = field(default_factory=list)
     did_not_run: List[MissingMeasurement] = field(default_factory=list)
+    # How the MC covariances were built, so a summary can be audited after the fact
+    # ("trial" = from the generator's trial counts, "bootstrap" = by resampling; a
+    # "+"-joined value means different setups used different ones).
+    estimator: str = "unknown"
 
     # -- derived quantities ---------------------------------------------------
 
@@ -374,6 +378,7 @@ class Report:
             "seed": self.seed,
             "events_per_measurement": self.events_per_measurement,
             "alpha": self.alpha,
+            "estimator": self.estimator,
             "p_overall": self.p_overall(),
             "overall_ok": self.overall_ok(),
             "n_flagged": self.n_flagged(),
@@ -455,6 +460,7 @@ class ScanReport:
     alpha: float = ALPHA
     extra_header: List[str] = field(default_factory=list)
     did_not_run: List[MissingMeasurement] = field(default_factory=list)
+    estimator: str = "unknown"   # see Report.estimator
 
     def biased(self) -> List[VariantSummary]:
         """Variants whose distributions differ from the reference beyond MC noise."""
@@ -637,6 +643,7 @@ class ScanReport:
             "seed": self.seed,
             "events_per_measurement": self.events_per_measurement,
             "alpha": self.alpha,
+            "estimator": self.estimator,
             "biased_variants": [s.variant for s in self.biased()],
             "variants": [asdict(s) for s in self.summaries],
             "rows": [asdict(r) for r in self.rows],
@@ -697,6 +704,7 @@ def _selftest() -> int:
     checks = {
         "marker present": COMMENT_MARKER in md,
         "bonferroni p = min(1, 4*0.008)=0.032": abs(summary["p_overall"] - 0.032) < 1e-9,
+        "summary records the estimator": summary["estimator"] == "unknown",
         "overall flagged": summary["overall_ok"] is False,
         "two flagged rows": summary["n_flagged"] == 2,
         "regression labelled": next(m for m in summary["measurements"]
