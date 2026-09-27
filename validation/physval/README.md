@@ -18,7 +18,7 @@ the move is a path change.
 |------|------|
 | `stats.py` | Bootstrap covariance, correlated-χ² compatibility (`p_compat`), goodness-of-fit vs data, Bonferroni overall p. Hartlap-corrected. **No external deps beyond numpy/scipy.** |
 | `report.py` | Renders the Sherpa-style `comment.md` table + `summary.json`. |
-| `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path; `SyntheticAdapter` backs `--dry-run` and the self-tests. |
+| `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per setup) + `histogram_many` (all of a setup's measurements in one pass). `Nuisance3Adapter` is the real path; `SyntheticAdapter` backs `--dry-run` and the self-tests. |
 | `plots.py` | Publication-style data/main/branch overlay + ratio panel, one PNG per measurement. |
 | `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline` and `--unweighter-scan`. |
 | `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events, the per-sample override maps (`data_scale`, `bin_edges`, `solid_angle`, `smearing`), plus the `unweighting:` variant list. |
@@ -30,9 +30,10 @@ the move is a path change.
 pip install numpy scipy pyyaml
 
 # Unit self-tests (no external tools):
-python3 stats.py  --selftest      # bootstrap calibration + power + Bonferroni
-python3 report.py --selftest      # table rendering / flagging / sorting
-python3 physval.py --selftest     # end-to-end w/ an injected regression
+python3 stats.py    --selftest    # bootstrap calibration + power + Bonferroni
+python3 report.py   --selftest    # comment rendering / grouping / flagging / sorting
+python3 adapters.py --selftest    # the batched frame walk, against a fake pyNUISANCE
+python3 physval.py  --selftest    # end-to-end w/ an injected regression
 
 # Full synthetic dry-run from the config:
 python3 physval.py --config measurements.yml --dry-run --make-baseline \
@@ -149,9 +150,17 @@ PATH. The adapter has two stages so the expensive step runs once per setup:
   output path (`!include`s are round-tripped, and the `Options` include is expanded so
   `Initialize.Seed` can be set), runs `achilles <card>` with `cwd` = repo root, and
   returns the NuHepMC file. It is deleted once the setup's last measurement is binned.
-* `histogram(generated, measurement)` opens the file with `pn.EventSource`, lets
-  `IAnalysis.add_to_framegen` register the sample's selection + projections, and walks
-  the frame to get each selected event's bin (`Binning.find_bin`) and weight.
+* `histogram_many(generated, measurements)` opens the file once with `pn.EventSource`
+  and puts **every** sample of the setup on one `EventFrameGen` — one `add_int_column`
+  for each selection, one `add_double_column` per projection — then walks the frame in
+  blocks, reading each sample's own columns to get its selected events' bins
+  (`Binning.find_bin`) and weights. This is the notebook's "lots of projections"
+  pattern (`nuisance3/notebooks/nuisance2.ipynb`), and it is why a setup with eighteen
+  measurements costs one pass over its event file instead of eighteen: the file is
+  opened, parsed and walked once. Blocks (250k events) keep peak memory flat in the
+  run length, and the `fatx_per_sumw` estimate is taken from the last block, where it
+  has seen the whole file. `histogram(generated, measurement)` is a one-measurement
+  wrapper over the same code.
 
 Normalisation is **not** reimplemented here: `IAnalysis.process` yields the
 cross-section-scaled, bin-width-divided prediction, and the per-event weights are
@@ -201,6 +210,26 @@ nothing at all** (the splash is lost to stdout buffering, so it looks like an in
 silent crash). Putting Achilles' own `lib` first fixes it. `Nuisance3Adapter` does this
 itself when it spawns achilles, and the CI build job smoke-tests `achilles --version`
 so a regression fails early instead of mid-generation.
+
+## The PR comment
+
+`report.py` renders one comment per run, updated in place via `COMMENT_MARKER`. It is
+built to stay readable as the suite grows:
+
+* a verdict line first — Bonferroni p, how many measurements are flagged, how many
+  setups they are spread over;
+* **Needs attention**: every flagged measurement, whatever setup it came from, with the
+  setup named per row, and thumbnails for the first `MAX_INLINE_PLOTS` of them. A
+  comment with fifty embedded PNGs is unreadable, so the rest are one click away;
+* then one `<details>` per experimental setup, worst setup first. The `<summary>` line
+  carries the setup's status, its measurement count, how many are flagged and its
+  lowest `p_compat`, so a setup can be judged without expanding it;
+* plot links are reference-style (`[name][p12]`, definitions at the end) and names are
+  stripped of the prefix their setup shares, which keeps rows short in the raw
+  markdown; the untruncated name is the link's title;
+* past `MAX_COMMENT_CHARS` the tables of setups with nothing flagged collapse to a
+  single line each, so the comment cannot exceed GitHub's 65536-character limit. The
+  full numbers are always in `summary.json`.
 
 ## `physval-baselines` branch
 

@@ -54,14 +54,29 @@ def _measurement_baseline(baseline: dict, name: str):
     return main, data
 
 
+def predict_all(adapter, generated: GeneratedEvents, measurements,
+                n_boot: int, rng: np.random.Generator) -> Dict[str, Prediction]:
+    """Bin a setup's shared events onto all of its measurements, then bootstrap.
+
+    One call into the adapter for the whole setup: the real one walks the event file
+    once with every sample's columns on the same frame, so this is where the batching
+    pays off.
+    """
+    samples = adapter.histogram_many(generated, measurements)
+    out = {}
+    for m in measurements:
+        sample = samples[m["name"]]
+        out[m["name"]] = bootstrap_covariance(
+            sample.bin_index, sample.weights, sample.nbins, n_boot=n_boot, rng=rng,
+            response=adapter.response_matrix(m, sample.nbins))
+    return out
+
+
 def predict(adapter, generated: GeneratedEvents, measurement: dict,
             n_boot: int, rng: np.random.Generator) -> Prediction:
-    """Histogram shared per-experiment events onto one measurement and bootstrap."""
-    sample = adapter.histogram(generated, measurement)
-    return bootstrap_covariance(sample.bin_index, sample.weights, sample.nbins,
-                                n_boot=n_boot, rng=rng,
-                                response=adapter.response_matrix(measurement,
-                                                                 sample.nbins))
+    """One measurement, for callers that do not have the whole setup in hand."""
+    return predict_all(adapter, generated, [measurement], n_boot, rng)[
+        measurement["name"]]
 
 
 # ---------------------------------------------------------------------------
@@ -74,9 +89,10 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
     measurements: Dict[str, dict] = {}
     for exp in config["experiments"]:
         gen_main = adapter.generate(exp, "main", seed, n_events)  # once per setup
+        mains = predict_all(adapter, gen_main, exp["measurements"], n_boot, rng)
         for m in exp["measurements"]:
             name = m["name"]
-            main = predict(adapter, gen_main, m, n_boot, rng)
+            main = mains[name]
             data = adapter.data_table(m)
             measurements[name] = {
                 "prediction": main.to_dict(),
@@ -118,20 +134,28 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         # Feature events: once per setup, reused by every measurement. Main events
         # are generated (also once) only for measurements with no stored baseline.
         gen_feature = adapter.generate(exp, "feature", seed, n_events)
+        features = predict_all(adapter, gen_feature, exp["measurements"], n_boot, rng)
+
+        # Measurements with no stored baseline need main computed inline. Collect them
+        # first so that generation, and the pass over its events, happens once.
+        stale = [m for m in exp["measurements"]
+                 if baseline is None
+                 or m["name"] not in baseline.get("measurements", {})]
+        mains = {}
         gen_main = None
+        if stale:
+            warnings.extend(m["name"] for m in stale)
+            gen_main = adapter.generate(exp, "main", seed, n_events)
+            mains = predict_all(adapter, gen_main, stale, n_boot, rng)
 
         for m in exp["measurements"]:
             name = m["name"]
-            feature = predict(adapter, gen_feature, m, n_boot, rng)
+            feature = features[name]
 
-            if baseline is not None and name in baseline.get("measurements", {}):
-                main, data = _measurement_baseline(baseline, name)
+            if name in mains:
+                main, data = mains[name], adapter.data_table(m)
             else:
-                warnings.append(name)
-                if gen_main is None:
-                    gen_main = adapter.generate(exp, "main", seed, n_events)
-                main = predict(adapter, gen_main, m, n_boot, rng)
-                data = adapter.data_table(m)
+                main, data = _measurement_baseline(baseline, name)
 
             compat = compatibility(main, feature)
             gof_pr = goodness_of_fit(feature, data.values, data.covariance)
@@ -156,6 +180,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
                 p_compat=compat.pvalue,
                 p_data=gof_pr.pvalue,
                 plot=f"{name}.png",
+                experiment=exp["name"],
             ))
 
         gen_feature.cleanup()  # event files can be many GB; drop once binned
@@ -233,8 +258,9 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
                                    unweighting=variant["options"],
                                    seed_offset=int(variant.get("seed_offset", 0)))
             preds[name], samples[name] = {}, {}
+            binned = adapter.histogram_many(gen, exp["measurements"])
             for m in exp["measurements"]:
-                sample = adapter.histogram(gen, m)
+                sample = binned[m["name"]]
                 preds[name][m["name"]] = bootstrap_covariance(
                     sample.bin_index, sample.weights, sample.nbins,
                     n_boot=n_boot, rng=rng,
@@ -495,7 +521,8 @@ def merge_shards(shard_paths, out_dir: str) -> Report:
                 name=m["name"], ndof=m["ndof"],
                 chi2_ndof_main=m["chi2_ndof_main"], chi2_ndof_pr=m["chi2_ndof_pr"],
                 delta_chi2=m["delta_chi2"], p_compat=m["p_compat"],
-                p_data=m["p_data"], plot=m.get("plot")))
+                p_data=m["p_data"], plot=m.get("plot"),
+                experiment=m.get("experiment", "")))
 
     report = Report(results=results, repo=head["repo"],
                     feature_sha=head["feature_sha"],

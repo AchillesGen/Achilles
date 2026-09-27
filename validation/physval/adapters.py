@@ -18,6 +18,7 @@ import os
 import re
 import shutil
 import subprocess
+import types
 from dataclasses import dataclass
 from typing import Optional
 
@@ -357,58 +358,112 @@ class Nuisance3Adapter:
 
     def histogram(self, generated: GeneratedEvents,
                   measurement: dict) -> EventSample:
+        """One measurement; a thin wrapper over the batched pass."""
+        return self.histogram_many(generated, [measurement])[measurement["name"]]
+
+    def histogram_many(self, generated: GeneratedEvents, measurements,
+                       block_size: int = 250_000) -> "dict[str, EventSample]":
+        """Bin every measurement of a setup in a single pass over the event file.
+
+        The legacy record evaluates one sample's selection and projections per column,
+        so a frame can carry all of a setup's samples at once (this is the notebook's
+        "lots of projections" pattern): the file is opened, parsed and walked once
+        instead of once per measurement, which is where the time goes for a setup with
+        eighteen of them. Events are pulled in blocks rather than with ``all()`` so
+        peak memory stays independent of the run length.
+        """
         pn = self._pn()
-        analysis = self._analysis(measurement["name"])
+        measurements = list(measurements)
+        if not measurements:
+            return {}
 
         evs = pn.EventSource(generated.path)
         if not evs:
             raise RuntimeError(f"could not open event file {generated.path}")
 
-        # The legacy NUISANCE2 record's add_to_framegen does not register the sample's
-        # columns, so add the selection and projection operators explicitly.
-        selection = analysis.get_selection()
-        projections = analysis.get_projections()
-        fg = pn.EventFrameGen(evs)
-        fg.add_int_column(selection.fname, selection.op)
-        for projection in projections:
-            fg.add_double_column(projection.fname, projection.op)
-        frame = fg.all()
+        fg = pn.EventFrameGen(evs, block_size)
+        specs = []
+        for i, measurement in enumerate(measurements):
+            analysis = self._analysis(measurement["name"])
+            # The legacy NUISANCE2 record's add_to_framegen does not register the
+            # sample's columns, so add the selection and projection operators
+            # explicitly. The names are ours: a sample's own fname would collide with
+            # another's in a shared frame.
+            selection = analysis.get_selection()
+            projections = analysis.get_projections()
+            sel_col = f"sel{i}"
+            proj_cols = [f"proj{i}_{j}" for j in range(len(projections))]
+            fg.add_int_column(sel_col, selection.op)
+            for name, projection in zip(proj_cols, projections):
+                fg.add_double_column(name, projection.op)
 
-        cols = {n: i for i, n in enumerate(frame.column_names)}
-        missing = [n for n in [selection.fname, "weight.cv"] +
-                   [p.fname for p in projections] if n not in cols]
-        if missing:
-            raise RuntimeError(f"event frame is missing columns {missing}; "
-                               f"got {list(cols)}")
+            binned = analysis.get_data()[0]
+            nbins = int(np.asarray(binned.values).reshape(-1).shape[0])
+            specs.append({
+                "measurement": measurement,
+                "binning": binned.binning,
+                "nbins": nbins,
+                "sel": sel_col,
+                "projs": proj_cols,
+                "bins": [],
+                "weights": [],
+            })
 
-        binned = analysis.get_data()[0]
-        binning = binned.binning
-        nbins = int(np.asarray(binned.values).reshape(-1).shape[0])
+        fatx_per_sumw = None
+        block = fg.first()
+        while block is not None:
+            table = np.asarray(block.table, dtype=float)
+            if table.size == 0:
+                break
+            cols = {n: i for i, n in enumerate(block.column_names)}
+            missing = [c for c in ["weight.cv"] +
+                       [c for s in specs for c in [s["sel"], *s["projs"]]]
+                       if c not in cols]
+            if missing:
+                raise RuntimeError(f"event frame is missing columns {missing}; "
+                                   f"got {list(cols)}")
+            fatx_col = cols.get("fatx_per_sumw.pb_per_target.estimate")
+            if fatx_col is None:
+                raise RuntimeError("event frame carries no per-target fatx estimate; "
+                                   f"got {list(cols)}")
+            # A running estimate over the file, so the newest block's last row is the
+            # one to keep.
+            fatx_per_sumw = float(table[-1, fatx_col])
 
-        table = np.asarray(frame.table, dtype=float)
-        if table.size == 0:
-            return EventSample(bin_index=np.empty(0, int),
-                               weights=np.empty(0, float), nbins=nbins,
-                               raw_weights=np.empty(0, float))
+            weight_col = cols["weight.cv"]
+            for spec in specs:
+                selected = table[table[:, cols[spec["sel"]]] != 0]
+                if not selected.size:
+                    continue
+                proj_cols = [cols[c] for c in spec["projs"]]
+                binning, nbins = spec["binning"], spec["nbins"]
+                for row in selected:
+                    values = [float(row[c]) for c in proj_cols]
+                    b = (binning.find_bin(values[0]) if len(values) == 1
+                         else binning.find_bin(pn.Vector_double(values)))
+                    if b is None or b < 0 or b >= nbins:
+                        continue  # under/overflow: outside the published binning
+                    spec["bins"].append(int(b))
+                    spec["weights"].append(float(row[weight_col]))
+            block = fg.next()
 
-        proj_cols = [cols[p.fname] for p in projections]
-        selected = table[table[:, cols[selection.fname]] != 0]
+        return {spec["measurement"]["name"]: self._finish(spec, generated,
+                                                          fatx_per_sumw)
+                for spec in specs}
 
-        bin_index, weights = [], []
-        for row in selected:
-            values = [float(row[c]) for c in proj_cols]
-            b = (binning.find_bin(values[0]) if len(values) == 1
-                 else binning.find_bin(pn.Vector_double(values)))
-            if b is None or b < 0 or b >= nbins:
-                continue  # under/overflow: outside the published binning
-            bin_index.append(int(b))
-            weights.append(float(row[cols["weight.cv"]]))
-
-        bin_index = np.asarray(bin_index, dtype=int)
-        weights = np.asarray(weights, dtype=float)
+    def _finish(self, spec: dict, generated: GeneratedEvents,
+                fatx_per_sumw: Optional[float]) -> EventSample:
+        """Scale one measurement's binned events into the published cross section."""
+        nbins = spec["nbins"]
+        bin_index = np.asarray(spec["bins"], dtype=int)
+        weights = np.asarray(spec["weights"], dtype=float)
         # Keep the generator's own weights: the scaling below folds in the bin width,
         # which would otherwise show up as weight spread in the unweighting metrics.
         raw_weights = weights.copy()
+
+        if not bin_index.size:
+            return EventSample(bin_index=bin_index, weights=weights, nbins=nbins,
+                               raw_weights=raw_weights)
 
         # Cross-section normalisation, per the recipe that reproduces the published
         # results: take the flux-averaged total xsec *per atom* and divide by the
@@ -421,26 +476,21 @@ class Nuisance3Adapter:
         if generated.xsec_divisor is None:
             raise ValueError("GeneratedEvents.xsec_divisor is required to normalise; "
                              "set data_per (and target_nucleons) on the experiment")
-        fatx_col = cols.get("fatx_per_sumw.pb_per_target.estimate")
-        if fatx_col is None:
-            raise RuntimeError("event frame carries no per-target fatx estimate; "
-                               f"got {list(cols)}")
+        if fatx_per_sumw is None:
+            raise RuntimeError("no per-target fatx estimate was seen in any block")
         # Use the frame's own per-TARGET estimate: it is normalised against the same
         # weight.cv column used above. (EventSource.norm_info reports a differently
         # normalised sumweights -- 0.45 where the frame's weights sum to ~92000 --
         # so mixing the two overstates the prediction by ~4 orders of magnitude.)
-        fatx_per_sumw = float(table[-1, fatx_col])
-
-        widths = np.asarray(list(binning.bin_sizes()), dtype=float).reshape(-1)[:nbins]
+        widths = np.asarray(list(spec["binning"].bin_sizes()),
+                            dtype=float).reshape(-1)[:nbins]
         scale = np.divide(
             fatx_per_sumw * self._PB_TO_CM2 / generated.xsec_divisor, widths,
             out=np.zeros(nbins), where=widths != 0)
-        scale = scale * self._extra_bin_scale(measurement, nbins)
-        if bin_index.size:
-            weights = weights * scale[bin_index]
+        scale = scale * self._extra_bin_scale(spec["measurement"], nbins)
 
-        return EventSample(bin_index=bin_index, weights=weights, nbins=nbins,
-                           raw_weights=raw_weights)
+        return EventSample(bin_index=bin_index, weights=weights * scale[bin_index],
+                           nbins=nbins, raw_weights=raw_weights)
 
     def data_table(self, measurement: dict) -> DataTable:
         pn = self._pn()
@@ -621,6 +671,12 @@ class SyntheticAdapter:
         return EventSample(bin_index=bin_index, weights=generated.weights * scale,
                            nbins=nbins, raw_weights=generated.weights)
 
+    def histogram_many(self, generated: GeneratedEvents, measurements,
+                       block_size: int = 250_000) -> "dict[str, EventSample]":
+        # In-memory events: nothing to save by sharing a pass, but the driver calls
+        # only this.
+        return {m["name"]: self.histogram(generated, m) for m in measurements}
+
     @staticmethod
     def response_matrix(measurement: dict, nbins: int) -> Optional[np.ndarray]:
         return None  # the synthetic path has no smeared measurements
@@ -635,3 +691,114 @@ class SyntheticAdapter:
         err = np.sqrt(np.maximum(values, 1.0)) * 0.05 + 0.02 * values
         return DataTable(values=values, covariance=np.diag(err ** 2),
                          edges=np.linspace(0.0, 1.0, nbins + 1), xlabel="x")
+
+
+# ---------------------------------------------------------------------------
+# Self-test: the batched frame walk, against a stand-in for pyNUISANCE
+# ---------------------------------------------------------------------------
+
+def _selftest() -> int:
+    """Check histogram_many over a fake pyNUISANCE, since the real one needs the image.
+
+    What is worth pinning down here is the frame bookkeeping: that each sample reads
+    its own selection and projection columns out of a shared frame, that blocks are
+    stitched together, and that the fatx estimate comes from the last block.
+    """
+    class Binning:
+        def __init__(self, edges):
+            self.edges = np.asarray(edges, dtype=float)
+        def find_bin(self, value):
+            b = int(np.digitize([value], self.edges)[0]) - 1
+            return b if 0 <= b < self.edges.size - 1 else -1
+        def bin_sizes(self):
+            return list(np.diff(self.edges))
+
+    class Binned:
+        def __init__(self, edges):
+            self.binning = Binning(edges)
+            self.values = np.zeros(len(edges) - 1)
+
+    def column(tag):
+        """Stand-in for a sample's selection/projection handle (.fname, .op)."""
+        return types.SimpleNamespace(fname=tag, op=object(), prettyname=tag, units="")
+
+    class Analysis:
+        def __init__(self, edges):
+            self._binned = Binned(edges)
+        def get_selection(self): return column("sel")
+        def get_projections(self): return [column("proj")]
+        def get_data(self): return [self._binned]
+
+    class Frame:
+        def __init__(self, names, table):
+            self.column_names = names
+            self.table = table
+
+    class FrameGen:
+        """Serves pre-baked blocks; column order follows the add_* call order."""
+        def __init__(self, blocks): self.blocks, self.i, self.names = blocks, 0, []
+        def add_int_column(self, name, op): self.names.append(name)
+        def add_double_column(self, name, op): self.names.append(name)
+        def first(self): self.i = 0; return self.next()
+        def next(self):
+            if self.i >= len(self.blocks):
+                return Frame(self._names(), np.empty((0, len(self._names()))))
+            block = self.blocks[self.i]; self.i += 1
+            return Frame(self._names(), block)
+        def _names(self):
+            return ["weight.cv", "fatx_per_sumw.pb_per_target.estimate"] + self.names
+
+    # Two samples on one frame: [weight, fatx, sel0, proj0, sel1, proj1].
+    # Bin edges are 0,1,2,3 for both, so a projection value is its own bin.
+    blocks = [np.array([
+        # w    fatx  sel0 proj0  sel1 proj1
+        [2.0,  10.0,  1,   0.5,   1,   2.5],   # both select, different bins
+        [3.0,  10.0,  0,   9.9,   1,   1.5],   # only the second selects
+        [1.0,  10.0,  1,   7.0,   0,   0.5],   # first selects, out of range
+    ]), np.array([
+        [4.0,  20.0,  1,   2.5,   0,   0.5],   # second block; fatx has moved
+    ])]
+
+    adapter = Nuisance3Adapter.__new__(Nuisance3Adapter)
+    fake_pn = types.SimpleNamespace(
+        EventSource=lambda path: object(),
+        EventFrameGen=lambda evs, block: FrameGen(blocks),
+        Vector_double=list)
+    adapter._pn = lambda: fake_pn
+    adapter._analysis = lambda name: Analysis([0.0, 1.0, 2.0, 3.0])
+
+    gen = GeneratedEvents(path="fake.hepmc", xsec_divisor=2.0)
+    got = adapter.histogram_many(gen, [{"name": "A"}, {"name": "B"}])
+
+    # fatx from the LAST block (20), per-atom divisor 2, unit bin widths, pb->cm^2.
+    scale = 20.0 * Nuisance3Adapter._PB_TO_CM2 / 2.0
+    checks = {
+        "both samples returned": sorted(got) == ["A", "B"],
+        "A took its own rows": list(got["A"].bin_index) == [0, 2],
+        "A skipped the out-of-range row": got["A"].bin_index.size == 2,
+        "A weights scaled": np.allclose(got["A"].weights, np.array([2.0, 4.0]) * scale),
+        "A raw weights untouched": np.allclose(got["A"].raw_weights, [2.0, 4.0]),
+        "B took its own rows": list(got["B"].bin_index) == [2, 1],
+        "B weights scaled": np.allclose(got["B"].weights, np.array([2.0, 3.0]) * scale),
+        "nbins from the binning": got["A"].nbins == 3 and got["B"].nbins == 3,
+    }
+
+    # solid_angle/bin_edges ride on top of the same scaling.
+    wide = adapter.histogram_many(gen, [{"name": "A", "solid_angle": 4.0}])["A"]
+    checks["solid_angle divides"] = np.allclose(
+        wide.weights, np.array([2.0, 4.0]) * scale / 4.0)
+    single = adapter.histogram(gen, {"name": "A"})
+    checks["histogram() matches the batch"] = np.allclose(single.weights,
+                                                          got["A"].weights)
+    for name, ok in checks.items():
+        print(f"[{'ok' if ok else 'FAIL'}] {name}")
+    ok = all(checks.values())
+    print("SELFTEST:", "PASS" if ok else "FAIL")
+    return 0 if ok else 1
+
+
+if __name__ == "__main__":
+    import sys
+    if "--selftest" in sys.argv:
+        raise SystemExit(_selftest())
+    print(__doc__)

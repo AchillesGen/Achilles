@@ -15,6 +15,7 @@ No plotting or NUISANCE dependency here, so it is unit-testable on synthetic row
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict, dataclass, field
 from typing import List, Optional
 
@@ -31,6 +32,15 @@ RAW_URL_TEMPLATE = (
     "plots/{sha}/{measurement}.png"
 )
 
+# Thumbnails are only inlined for flagged rows, and only this many: a comment with
+# fifty embedded PNGs is unreadable and slow to load. Everything else is one click
+# away behind its measurement name.
+MAX_INLINE_PLOTS = 6
+
+# GitHub rejects a comment body over 65536 characters. Past this, the renderer drops
+# the tables of setups that have nothing flagged.
+MAX_COMMENT_CHARS = 60000
+
 
 @dataclass
 class MeasurementResult:
@@ -42,6 +52,7 @@ class MeasurementResult:
     p_compat: float            # main vs feature compatibility p-value (drives flag)
     p_data: float              # PR vs data goodness-of-fit p-value (context only)
     plot: Optional[str] = None  # basename of the overlay plot, e.g. "<name>.png"
+    experiment: str = ""        # the setup it was generated with; groups the comment
 
     def status(self, alpha: float = ALPHA) -> str:
         """One of 'regression', 'improvement', 'compatible'."""
@@ -86,84 +97,205 @@ class Report:
 
     # -- rendering ------------------------------------------------------------
 
-    def _row(self, r: MeasurementResult) -> str:
-        st = r.status(self.alpha)
-        emoji = _EMOJI[st]
+    def _link(self, r: MeasurementResult, text: str) -> str:
+        """A reference-style link to the overlay plot, so table rows stay short.
+
+        The definitions are emitted once at the end of the comment. Inline URLs make
+        every row ~180 characters of raw markdown, which is unreadable in a diff or in
+        the edit box once there are fifty of them.
+        """
         url = self._plot_url(r)
-        name_cell = f"[{r.name}]({url})" if url else r.name
-        return (f"| {name_cell} | {r.ndof} | {r.chi2_ndof_main:.2f} | "
-                f"{r.chi2_ndof_pr:.2f} | {r.delta_chi2:+.1f} | {r.p_compat:.3g} | "
-                f"{r.p_data:.3g} | {emoji} |")
+        if not url:
+            return text
+        ref = self._ref_ids.get(url)
+        if ref is None:
+            ref = f"p{len(self._refs) + 1}"
+            self._ref_ids[url] = ref
+            self._refs.append((ref, url, r.name))
+        return f"[{text}][{ref}]"
 
     @staticmethod
-    def _table_header() -> str:
-        return ("| Measurement | ndof | χ²/ndof (main) | χ²/ndof (PR) | Δχ² | "
-                "p_compat | p (PR vs data) | |\n"
-                "|---|---|---|---|---|---|---|---|")
+    def _short(name: str, prefix: str) -> str:
+        """Drop the part of a name every row in its setup shares, plus the `_nu` tail."""
+        short = name[len(prefix):] if prefix and name.startswith(prefix) else name
+        short = short[:-3] if short.endswith("_nu") else short
+        return short.strip("_") or name
+
+    @staticmethod
+    def _common_prefix(names: "List[str]") -> str:
+        """The shared leading text of a setup's sample names, cut at a separator."""
+        if len(names) < 2:
+            return ""
+        prefix = os.path.commonprefix(names)
+        cut = max(prefix.rfind("_"), prefix.rfind("1D"))
+        return prefix[:cut + 1] if cut > 0 else ""
+
+    def _row(self, r: MeasurementResult, *, setup: bool = False,
+             prefix: str = "") -> str:
+        """One table row. ``χ²/ndof`` is written main → PR to keep the table narrow."""
+        st = r.status(self.alpha)
+        name_cell = self._link(r, self._short(r.name, prefix))
+        cells = [_EMOJI[st], name_cell]
+        if setup:
+            cells.append(f"`{r.experiment}`" if r.experiment else "")
+        cells += [str(r.ndof),
+                  f"{r.chi2_ndof_main:.2f} → {r.chi2_ndof_pr:.2f}",
+                  f"{r.delta_chi2:+.1f}",
+                  f"{r.p_compat:.3g}",
+                  f"{r.p_data:.3g}"]
+        return "| " + " | ".join(cells) + " |"
+
+    @staticmethod
+    def _table_header(setup: bool = False) -> str:
+        cols = ["", "Measurement"] + (["Setup"] if setup else []) + [
+            "ndof", "χ²/ndof main → PR", "Δχ²", "p_cmp", "p_data"]
+        return ("| " + " | ".join(cols) + " |\n"
+                "|" + "|".join([":-:", "---"] + (["---"] if setup else []) +
+                               ["--:", ":-:", "--:", "--:", "--:"]) + "|")
+
+    def _ordered(self, results: List[MeasurementResult]) -> List[MeasurementResult]:
+        """Flagged first (regression, then improvement), then by how big the move was."""
+        return sorted(results, key=lambda r: (_SORT_RANK[r.status(self.alpha)],
+                                              -abs(r.delta_chi2)))
+
+    def by_experiment(self) -> "List[tuple]":
+        """(setup, its results) with the setups that need attention first."""
+        groups: dict = {}
+        for r in self.results:
+            groups.setdefault(r.experiment or "ungrouped", []).append(r)
+
+        def rank(item):
+            name, rows = item
+            worst = min((_SORT_RANK[r.status(self.alpha)] for r in rows), default=2)
+            return (worst, name)
+
+        return [(name, self._ordered(rows)) for name, rows in sorted(groups.items(),
+                                                                     key=rank)]
+
+    def _setup_summary(self, name: str, rows: List[MeasurementResult]) -> str:
+        """The one line you read without expanding a setup."""
+        flagged = [r for r in rows if r.status(self.alpha) != "compatible"]
+        emoji = _EMOJI["compatible"]
+        if flagged:
+            emoji = _EMOJI[min((r.status(self.alpha) for r in flagged),
+                               key=lambda st: _SORT_RANK[st])]
+        worst_p = min((r.p_compat for r in rows), default=float("nan"))
+        note = (f"{len(flagged)} flagged" if flagged else "all compatible")
+        return (f"{emoji} <b>{name}</b> — {len(rows)} measurement"
+                f"{'s' if len(rows) != 1 else ''}, {note} "
+                f"<i>(lowest p_compat {worst_p:.3g})</i>")
 
     def to_markdown(self) -> str:
+        """The comment, trimmed if the full one would not fit in a PR comment."""
+        full = self._render(compact=False)
+        if len(full) <= MAX_COMMENT_CHARS:
+            return full
+        return self._render(compact=True)
+
+    def _render(self, compact: bool) -> str:
+        self._refs: List[tuple] = []
+        self._ref_ids: dict = {}
         po = self.p_overall()
         n = len(self.results)
-        ordered = sorted(self.results,
-                         key=lambda r: (_SORT_RANK[r.status(self.alpha)], -abs(r.delta_chi2)))
-        flagged = [r for r in ordered if r.status(self.alpha) != "compatible"]
-        compatible = [r for r in ordered if r.status(self.alpha) == "compatible"]
+        groups = self.by_experiment()
+        flagged = [r for r in self._ordered(self.results)
+                   if r.status(self.alpha) != "compatible"]
 
         verdict = ("✅ no significant change" if self.overall_ok()
                    else "⚠️ significant change")
         lines: List[str] = [COMMENT_MARKER, "## 🔬 Physics validation (NUISANCE3)", ""]
-        lines.append(
-            f"**Overall compatibility (Bonferroni, N={n}): p = {po:.3g} → {verdict}**")
+        lines.append(f"**{verdict}** — Bonferroni p = `{po:.3g}` · "
+                     f"**{len(flagged)}** flagged of **{n}** measurements in "
+                     f"**{len(groups)}** setups")
         lines.append("")
-        lines.append(
-            f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
-            f"{self.events_per_measurement:,} events/measurement "
-            f"· feature `{self.feature_sha[:8]}`")
+        meta = (f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
+                f"{self.events_per_measurement:,} events/setup · "
+                f"feature `{self.feature_sha[:8]}`")
+        lines.append(meta)
         for extra in self.extra_header:
             lines.append(extra)
         lines.append("")
 
-        # Flagged rows (with inline plot thumbnails) shown up front.
-        lines.append(self._table_header())
-        for r in flagged:
-            lines.append(self._row(r))
-        if not flagged:
-            lines.append("| _all measurements compatible_ | | | | | | | ✅ |")
-        lines.append("")
-
+        # What needs attention, across every setup, with the setup named per row.
         if flagged:
-            lines.append("### Flagged distributions")
+            lines.append(f"### Needs attention ({len(flagged)})")
+            lines.append("")
+            lines.append(self._table_header(setup=True))
             for r in flagged:
-                url = self._plot_url(r)
-                if url:
-                    lines.append(f"**{r.name}** — {_EMOJI[r.status(self.alpha)]} "
-                                 f"{r.status(self.alpha)}")
-                    lines.append(f"![{r.name}]({url})")
+                lines.append(self._row(r, setup=True))
+            lines.append("")
+            shown = [r for r in flagged if self._plot_url(r)][:MAX_INLINE_PLOTS]
+            if shown:
+                for r in shown:
+                    lines.append(f"<b>{r.name}</b> — {r.status(self.alpha)}<br>")
+                    lines.append(f'<img src="{self._plot_url(r)}" width="420">')
+                    lines.append("")
+                hidden = len([r for r in flagged if self._plot_url(r)]) - len(shown)
+                if hidden > 0:
+                    lines.append(f"_{hidden} further flagged plot"
+                                 f"{'s' if hidden != 1 else ''} are linked from the "
+                                 f"table above._")
+                    lines.append("")
+        else:
+            lines.append("Every measurement is compatible with the stored `main` "
+                         "baseline.")
             lines.append("")
 
-        # Compatible rows collapsed to keep the comment scannable.
-        if compatible:
-            lines.append("<details><summary>"
-                         f"{len(compatible)} compatible measurements</summary>\n")
+        # One collapsible per setup: the comment stays the same length whether the
+        # suite has three setups or thirty.
+        lines.append(f"### All {n} measurements by setup")
+        lines.append("")
+        for name, rows in groups:
+            quiet = all(r.status(self.alpha) == "compatible" for r in rows)
+            if compact and quiet:
+                # Too many measurements to print every table: a quiet setup is one
+                # line, and its numbers stay in summary.json.
+                lines.append(f"* {self._setup_summary(name, rows)}")
+                continue
+            lines.append("<details>")
+            lines.append(f"<summary>{self._setup_summary(name, rows)}</summary>")
+            lines.append("")
             lines.append(self._table_header())
-            for r in compatible:
-                lines.append(self._row(r))
-            lines.append("\n</details>")
+            prefix = self._common_prefix([r.name for r in rows])
+            for r in rows:
+                lines.append(self._row(r, prefix=prefix))
+            lines.append("")
+            lines.append("</details>")
+        lines.append("")
+        if compact:
+            lines.append("_Trimmed to fit a PR comment: setups with nothing flagged "
+                         "are summarised rather than tabulated. Every measurement is "
+                         "in `summary.json`._")
             lines.append("")
 
-        # Legend + multiple-comparison footer.
+        # Legend and the multiple-comparison arithmetic, out of the way.
         thr = bonferroni_threshold(n, self.alpha)
         expected_false = self.alpha * n
-        lines.append(
-            "Legend: 🚩 regression (p_compat < {a}, Δχ² > 0) · "
-            "⭐ significant improvement (p_compat < {a}, Δχ² < 0) · "
-            "✅ compatible (p_compat ≥ {a}). Flag driven only by p_compat; Δχ² sign "
-            "labels direction.".format(a=self.alpha))
+        lines.append("<details><summary>How to read this</summary>")
         lines.append("")
-        lines.append(
-            f"_At uncorrected α={self.alpha} across N={n} measurements, "
-            f"~{expected_false:.1f} false flags are expected by chance; the "
-            f"Bonferroni per-measurement threshold is α/N = {thr:.4g}._")
+        lines.append(f"* {_EMOJI['regression']} **regression** — p_compat < "
+                     f"{self.alpha} and Δχ² > 0 (agreement with data got worse)")
+        lines.append(f"* {_EMOJI['improvement']} **improvement** — p_compat < "
+                     f"{self.alpha} and Δχ² < 0")
+        lines.append(f"* {_EMOJI['compatible']} **compatible** — p_compat ≥ "
+                     f"{self.alpha}")
+        lines.append("")
+        lines.append("The flag is driven *only* by `p_compat`, the main-vs-PR "
+                     "compatibility; the sign of Δχ² only labels its direction. "
+                     "`p (data)` is the PR's goodness of fit to the published data, "
+                     "for context — a sample can disagree with data and still be "
+                     "perfectly compatible with `main`.")
+        lines.append("")
+        lines.append(f"At uncorrected α={self.alpha} across N={n} measurements, "
+                     f"~{expected_false:.1f} false flags are expected by chance; the "
+                     f"Bonferroni per-measurement threshold is α/N = {thr:.4g}.")
+        lines.append("")
+        lines.append("</details>")
+
+        if self._refs:
+            lines.append("")
+            for ref, url, name in self._refs:
+                lines.append(f"[{ref}]: {url} \"{name}\"")
         return "\n".join(lines)
 
     def to_summary_dict(self) -> dict:
@@ -446,14 +578,27 @@ class ScanReport:
             json.dump(self.to_summary_dict(), fh, indent=2)
 
 
+def _selftest_guard() -> bool:
+    """A suite far larger than today's must still fit in one PR comment."""
+    rows = [MeasurementResult(f"Exp{s}_XSec_1DVar{i}_nu", 12, 1.1, 1.2, 0.4, 0.5, 0.4,
+                              plot=f"Exp{s}_XSec_1DVar{i}_nu.png",
+                              experiment=f"Exp{s}")
+            for s in range(40) for i in range(15)]
+    md = Report(rows, feature_sha="abc123def456", seed=1,
+                events_per_measurement=500000).to_markdown()
+    return len(md) <= MAX_COMMENT_CHARS and "Trimmed to fit" in md
+
+
 def _selftest() -> int:
     results = [
         MeasurementResult("MINERvA_CC0pi_Tp", 38, 1.11, 1.10, -0.4, 0.62, 0.31,
-                          plot="MINERvA_CC0pi_Tp.png"),
+                          plot="MINERvA_CC0pi_Tp.png", experiment="MINERvA_CC"),
+        MeasurementResult("MINERvA_CC0pi_pmu", 21, 1.02, 1.04, +0.2, 0.55, 0.44,
+                          plot="MINERvA_CC0pi_pmu.png", experiment="MINERvA_CC"),
         MeasurementResult("MiniBooNE_CC1pip_Q2", 40, 1.38, 1.53, +6.1, 0.013, 0.04,
-                          plot="MiniBooNE_CC1pip_Q2.png"),
+                          plot="MiniBooNE_CC1pip_Q2.png", experiment="MiniBooNE_CC1pi"),
         MeasurementResult("T2K_CC0pi_cosTheta", 58, 0.98, 0.79, -11.0, 0.008, 0.71,
-                          plot="T2K_CC0pi_cosTheta.png"),
+                          plot="T2K_CC0pi_cosTheta.png", experiment="T2K_CC"),
     ]
     rep = Report(results, feature_sha="abcdef1234567890", nuisance_version="v3.0.1",
                  seed=42, events_per_measurement=500000)
@@ -462,7 +607,7 @@ def _selftest() -> int:
 
     checks = {
         "marker present": COMMENT_MARKER in md,
-        "bonferroni p = min(1, 3*0.008)=0.024": abs(summary["p_overall"] - 0.024) < 1e-9,
+        "bonferroni p = min(1, 4*0.008)=0.032": abs(summary["p_overall"] - 0.032) < 1e-9,
         "overall flagged": summary["overall_ok"] is False,
         "two flagged rows": summary["n_flagged"] == 2,
         "regression labelled": next(m for m in summary["measurements"]
@@ -471,6 +616,22 @@ def _selftest() -> int:
                                      if m["name"].startswith("T2K"))["status"] == "improvement",
         "compatible collapsed": "<details>" in md,
         "raw url embedded": "raw.githubusercontent.com" in md,
+        # grouping: one collapsible per setup, worst setup first
+        "one details per setup": md.count("<summary>") == 4,  # 3 setups + the legend
+        "setups named in summaries": all(f"<b>{s}</b>" in md for s in
+                                         ("MINERvA_CC", "MiniBooNE_CC1pi", "T2K_CC")),
+        "flagged setup listed first": (md.index("<b>MiniBooNE_CC1pi</b>")
+                                       < md.index("<b>MINERvA_CC</b>")),
+        "quiet setup says so": "all compatible" in md,
+        # rows are reference links, with the definitions emitted once each
+        "reference links used": "][p1]" in md and "\n[p1]: http" in md,
+        "no inline urls in rows": "| [" in md and "](http" not in md,
+        # inside a setup the shared prefix goes; the full name stays in the link title
+        "names shortened per setup": "| [Tp][" in md and "| [pmu][" in md,
+        "full name kept in the link": '"MINERvA_CC0pi_Tp"' in md,
+        "flagged table keeps full names": "[MiniBooNE_CC1pip_Q2][" in md,
+        # the size guard trims instead of producing an over-long comment
+        "guard trims a huge suite": _selftest_guard(),
     }
     for name, ok in checks.items():
         print(f"[{'ok' if ok else 'FAIL'}] {name}")
