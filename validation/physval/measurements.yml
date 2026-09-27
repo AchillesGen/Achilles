@@ -176,11 +176,12 @@ experiments:
       - MicroBooNE_CC1MuNp_XSec_1DPmu_nu
       - MicroBooNE_CC1MuNp_XSec_1DPp_nu
       - MicroBooNE_CC1MuNp_XSec_1Dthetamup_nu
-      - MicroBooNE_CC1Mu1p_XSec_1DProtonMomentum_nu
-      # MicroBooNE_CC1Mu1p_XSec_1DEQE_nu is missing: SampleList.cxx offers the name and
-      # the class handles kEQE when filling, but its constructor has no branch for it,
-      # so CreateSample hits NUIS_ABORT and takes the whole shard down with it. Fixed by
-      # patch 0004 in the physval image; re-add this line once the image carries it.
+      # MicroBooNE_CC1Mu1p_XSec_1DProtonMomentum_nu and ..._1DEQE_nu are missing:
+      # SampleList.cxx offers both names and the class handles kProtonMomentum and kEQE
+      # when filling, but its constructor's name chain covers only ten of the twelve, so
+      # either one makes CreateSample hit NUIS_ABORT and abort the process -- taking the
+      # other 28 measurements of this setup with it. Patch 0004 adds both branches; put
+      # these two back once the image carries it.
       # The WireCell 0p/Np analysis, on the same events. Its histogram is indexed by
       # bin number: the single-block distributions get real edges below, and the ones
       # that stack a 0p block on an Np block get per-bin widths instead. Needs the
