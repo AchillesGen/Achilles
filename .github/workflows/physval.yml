@@ -7,9 +7,12 @@ name: Physics Validation (NUISANCE3)
 # Commit markers:
 #   !physval                  full run against the real NUISANCE3 path (hours)
 #   !physval(dry-run)         synthetic adapter only, for a quick plumbing check
-#   !physval(<setup>)         real run of one experimental setup only, e.g.
-#                             !physval(MiniBooNE_CC1pi) -- one generation, not twenty
-#   !physval(dry-run,<setup>) both, comma-separated in either order
+#   !physval(<setup>[,<setup>...])
+#                             real run of just those experimental setups, e.g.
+#                             !physval(MiniBooNE_CC1pi) or
+#                             !physval(MiniBooNE_CC1pi,T2K_CC) -- one generation each,
+#                             not twenty
+#   !physval(dry-run,<setup>) combine them; order does not matter
 #
 # An unknown scope fails the setup job with the list of valid setup names rather than
 # silently running everything, which would cost twenty generations nobody asked for.
@@ -35,7 +38,7 @@ on:
         type: boolean
         default: false
       only_experiment:
-        description: 'Re-run a single setup by name (blank = the whole suite)'
+        description: 'Setups to run, comma-separated (blank = the whole suite)'
         default: ''
   schedule:
     - cron: '0 6 * * *'
@@ -93,32 +96,36 @@ jobs:
           names = [e['name'] for e in cfg['experiments']]
 
           event = os.environ.get('EVENT', '')
-          dry, only = False, ''
+          dry, only = False, []
+          scopes = []
           if event == 'workflow_dispatch':
               dry = (os.environ.get('IN_DRY', '') or '').lower() == 'true'
-              only = (os.environ.get('IN_ONLY', '') or '').strip()
+              scopes = [os.environ.get('IN_ONLY', '') or '']
           elif event == 'push':
               # Every marker in the push, so a scope set in any commit is honoured.
-              for scope in re.findall(r'!physval\(([^)]*)\)',
-                                      os.environ.get('COMMIT_MESSAGES', '')):
-                  for tok in (t.strip() for t in scope.split(',')):
-                      if not tok:
-                          continue
-                      if tok == 'dry-run':
-                          dry = True
-                      else:
-                          only = tok
+              scopes = re.findall(r'!physval\(([^)]*)\)',
+                                  os.environ.get('COMMIT_MESSAGES', ''))
+          for scope in scopes:
+              for tok in (t.strip() for t in scope.split(',')):
+                  if not tok:
+                      continue
+                  if tok == 'dry-run':
+                      dry = True
+                  elif tok not in only:
+                      only.append(tok)
 
           if only:
-              if only not in names:
-                  sys.exit(f"::error::physval scope {only!r} is not a setup in "
-                           f"measurements.yml. Valid names: {', '.join(names)}")
-              names = [only]
+              unknown = [o for o in only if o not in names]
+              if unknown:
+                  sys.exit(f"::error::physval scope names not in measurements.yml: "
+                           f"{', '.join(unknown)}. Valid names: {', '.join(names)}")
+              # Config order, not the order they were typed, so shards read predictably.
+              names = [n for n in names if n in only]
 
           print('dry_run=' + ('true' if dry else 'false'))
-          print('only=' + only)
+          print('only=' + ','.join(only))
           print('matrix=' + json.dumps({'experiment': names}))
-          print(f"scope: dry_run={dry} only={only or '(whole suite)'} "
+          print(f"scope: dry_run={dry} only={','.join(only) or '(whole suite)'} "
                 f"shards={len(names)}", file=sys.stderr)
           PY
 
@@ -295,8 +302,11 @@ jobs:
           # shards at all it still writes a comment saying the whole run failed. A
           # scoped run passes that scope too, so the setups it never asked for are not
           # reported as missing (which would fail the job for no reason).
-          ONLY="${{ needs.setup.outputs.only }}"
-          [ -n "$ONLY" ] && SCOPE=(--only-experiment "$ONLY") || SCOPE=()
+          SCOPE=()
+          IFS=',' read -ra WANTED <<< "${{ needs.setup.outputs.only }}"
+          for e in "${WANTED[@]}"; do
+            [ -n "$e" ] && SCOPE+=(--only-experiment "$e")
+          done
           python3 physval.py --merge "${shards[@]}" \
             --config measurements.yml "${SCOPE[@]}" --out-dir final
 

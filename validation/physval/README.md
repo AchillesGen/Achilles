@@ -235,15 +235,16 @@ so a regression fails early instead of mid-generation.
 |---|---|
 | `!physval` in a pushed commit message | the whole suite, real NUISANCE3 path |
 | `!physval(dry-run)` | the whole suite through the synthetic adapter |
-| `!physval(<setup>)` | **one** setup, e.g. `!physval(MiniBooNE_CC1pi)` — one generation instead of twenty |
-| `!physval(dry-run,<setup>)` | both, comma-separated in either order |
-| `workflow_dispatch` | same choices as `events` / `seed` / `dry_run` / `only_experiment` inputs |
+| `!physval(<setup>[,<setup>...])` | just those setups, e.g. `!physval(MiniBooNE_CC1pi)` or `!physval(MiniBooNE_CC1pi,T2K_CC)` — one generation each instead of twenty |
+| `!physval(dry-run,<setup>)` | both; order does not matter, and duplicates collapse |
+| `workflow_dispatch` | same, via the `events` / `seed` / `dry_run` / `only_experiment` inputs (`only_experiment` takes a comma-separated list) |
 | nightly `schedule` | the whole suite, for real |
 
-A scope that is not a setup name fails the `setup` job with the list of valid names,
-rather than quietly running all twenty. The scope reaches the aggregate too, so a
-single-setup run expects only that setup and does not report the other nineteen as
-missing.
+Scopes from every marker in the push are unioned, and shards run in config order
+whatever order they were typed. Any name that is not a setup fails the `setup` job with
+the list of valid names, rather than quietly running all twenty. The scope reaches the
+aggregate too, so a scoped run expects only the setups it asked for and does not report
+the rest as missing.
 
 ## The PR comment
 
