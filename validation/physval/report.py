@@ -69,6 +69,7 @@ class MeasurementResult:
     p_data: float              # PR vs data goodness-of-fit p-value (context only)
     plot: Optional[str] = None  # basename of the overlay plot, e.g. "<name>.png"
     experiment: str = ""        # the setup it was generated with; groups the comment
+    selected_events: int = 0    # events this sample selected and binned, for the PR side
 
     def status(self, alpha: float = ALPHA) -> str:
         """One of 'regression', 'improvement', 'compatible'."""

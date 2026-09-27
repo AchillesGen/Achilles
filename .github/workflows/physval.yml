@@ -5,8 +5,14 @@ name: Physics Validation (NUISANCE3)
 # on-demand; triggered by a commit marker, manual dispatch, or nightly.
 #
 # Commit markers:
-#   !physval            full run against the real NUISANCE3 path (hours)
-#   !physval(dry-run)   synthetic adapter only, for a quick plumbing check
+#   !physval                  full run against the real NUISANCE3 path (hours)
+#   !physval(dry-run)         synthetic adapter only, for a quick plumbing check
+#   !physval(<setup>)         real run of one experimental setup only, e.g.
+#                             !physval(MiniBooNE_CC1pi) -- one generation, not twenty
+#   !physval(dry-run,<setup>) both, comma-separated in either order
+#
+# An unknown scope fails the setup job with the list of valid setup names rather than
+# silently running everything, which would cost twenty generations nobody asked for.
 #
 # Runs inside the public ghcr.io/achillesgen/achilles-physval container (NUISANCE3 +
 # Achilles build deps): builds the current Achilles once, then shards by experimental
@@ -28,6 +34,9 @@ on:
         description: 'Use the synthetic adapter instead of the real NUISANCE3 path'
         type: boolean
         default: false
+      only_experiment:
+        description: 'Re-run a single setup by name (blank = the whole suite)'
+        default: ''
   schedule:
     - cron: '0 6 * * *'
 
@@ -58,39 +67,60 @@ jobs:
        contains(join(github.event.commits.*.message, ' '), '!physval'))
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.mk.outputs.matrix }}
-      dry_run: ${{ steps.mode.outputs.dry_run }}
+      matrix: ${{ steps.scope.outputs.matrix }}
+      dry_run: ${{ steps.scope.outputs.dry_run }}
+      only: ${{ steps.scope.outputs.only }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: pip install pyyaml
-      - id: mk
-        name: Build one-experiment-per-shard matrix from the config
+      # Scope and mode come from the same place, because they are one decision: a
+      # dispatch states them as inputs, a push states them inside the marker's
+      # parentheses, and the nightly schedule runs the whole suite for real.
+      - id: scope
+        name: Resolve the run's scope from the marker or the dispatch inputs
+        env:
+          EVENT: ${{ github.event_name }}
+          COMMIT_MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
+          IN_DRY: ${{ github.event.inputs.dry_run }}
+          IN_ONLY: ${{ github.event.inputs.only_experiment }}
         run: |
           python3 - <<'PY' >> "$GITHUB_OUTPUT"
-          import json, yaml
+          import json, os, re, sys, yaml
           cfg = yaml.safe_load(open('validation/physval/measurements.yml'))
           names = [e['name'] for e in cfg['experiments']]
+
+          event = os.environ.get('EVENT', '')
+          dry, only = False, ''
+          if event == 'workflow_dispatch':
+              dry = (os.environ.get('IN_DRY', '') or '').lower() == 'true'
+              only = (os.environ.get('IN_ONLY', '') or '').strip()
+          elif event == 'push':
+              # Every marker in the push, so a scope set in any commit is honoured.
+              for scope in re.findall(r'!physval\(([^)]*)\)',
+                                      os.environ.get('COMMIT_MESSAGES', '')):
+                  for tok in (t.strip() for t in scope.split(',')):
+                      if not tok:
+                          continue
+                      if tok == 'dry-run':
+                          dry = True
+                      else:
+                          only = tok
+
+          if only:
+              if only not in names:
+                  sys.exit(f"::error::physval scope {only!r} is not a setup in "
+                           f"measurements.yml. Valid names: {', '.join(names)}")
+              names = [only]
+
+          print('dry_run=' + ('true' if dry else 'false'))
+          print('only=' + only)
           print('matrix=' + json.dumps({'experiment': names}))
+          print(f"scope: dry_run={dry} only={only or '(whole suite)'} "
+                f"shards={len(names)}", file=sys.stderr)
           PY
-      # Marker semantics: `!physval` runs the real NUISANCE3 path; `!physval(dry-run)`
-      # runs the synthetic adapter for a quick plumbing check. Dispatch uses its input;
-      # the nightly schedule runs for real.
-      - id: mode
-        env:
-          COMMIT_MESSAGES: ${{ join(github.event.commits.*.message, ' ') }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            DRY="${{ github.event.inputs.dry_run }}"
-          elif printf '%s' "$COMMIT_MESSAGES" | grep -qF '!physval(dry-run)'; then
-            DRY=true
-          else
-            DRY=false
-          fi
-          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
-          echo "dry_run=$DRY"
 
   # Resolve the moving :latest tag to an immutable manifest digest, so every job in
   # this run uses the identical image and the baseline key changes whenever any part
@@ -262,9 +292,13 @@ jobs:
           shards=("$GITHUB_WORKSPACE"/shards/shard-*/summary.json)
           echo "merging ${#shards[@]} shard summar(y/ies)"
           # --config lets the merge report which measurements never arrived; with no
-          # shards at all it still writes a comment saying the whole run failed.
+          # shards at all it still writes a comment saying the whole run failed. A
+          # scoped run passes that scope too, so the setups it never asked for are not
+          # reported as missing (which would fail the job for no reason).
+          ONLY="${{ needs.setup.outputs.only }}"
+          [ -n "$ONLY" ] && SCOPE=(--only-experiment "$ONLY") || SCOPE=()
           python3 physval.py --merge "${shards[@]}" \
-            --config measurements.yml --out-dir final
+            --config measurements.yml "${SCOPE[@]}" --out-dir final
 
       # Publish plots to physval-baselines/plots/<sha>/ for inline thumbnails.
       # Fork PRs lack a write token -> skipped (shard artifacts remain the fallback).

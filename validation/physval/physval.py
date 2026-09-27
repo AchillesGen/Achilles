@@ -64,19 +64,22 @@ def predict_all(adapter, generated: GeneratedEvents, measurements,
     pays off.
     """
     samples = adapter.histogram_many(generated, measurements)
-    out = {}
+    out, counts = {}, {}
     for m in measurements:
         sample = samples[m["name"]]
         out[m["name"]] = bootstrap_covariance(
             sample.bin_index, sample.weights, sample.nbins, n_boot=n_boot, rng=rng,
             response=adapter.response_matrix(m, sample.nbins))
-    return out
+        # Two samples that share a selection must bin the same number of events; when
+        # one of them comes out empty, this is the column that says so.
+        counts[m["name"]] = int(sample.bin_index.size)
+    return out, counts
 
 
 def predict(adapter, generated: GeneratedEvents, measurement: dict,
             n_boot: int, rng: np.random.Generator) -> Prediction:
     """One measurement, for callers that do not have the whole setup in hand."""
-    return predict_all(adapter, generated, [measurement], n_boot, rng)[
+    return predict_all(adapter, generated, [measurement], n_boot, rng)[0][
         measurement["name"]]
 
 
@@ -90,7 +93,7 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
     measurements: Dict[str, dict] = {}
     for exp in config["experiments"]:
         gen_main = adapter.generate(exp, "main", seed, n_events)  # once per setup
-        mains = predict_all(adapter, gen_main, exp["measurements"], n_boot, rng)
+        mains, _ = predict_all(adapter, gen_main, exp["measurements"], n_boot, rng)
         for m in exp["measurements"]:
             name = m["name"]
             main = mains[name]
@@ -135,7 +138,8 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         # Feature events: once per setup, reused by every measurement. Main events
         # are generated (also once) only for measurements with no stored baseline.
         gen_feature = adapter.generate(exp, "feature", seed, n_events)
-        features = predict_all(adapter, gen_feature, exp["measurements"], n_boot, rng)
+        features, n_selected = predict_all(adapter, gen_feature, exp["measurements"],
+                                           n_boot, rng)
 
         # Measurements with no stored baseline need main computed inline. Collect them
         # first so that generation, and the pass over its events, happens once.
@@ -147,7 +151,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
         if stale:
             warnings.extend(m["name"] for m in stale)
             gen_main = adapter.generate(exp, "main", seed, n_events)
-            mains = predict_all(adapter, gen_main, stale, n_boot, rng)
+            mains, _ = predict_all(adapter, gen_main, stale, n_boot, rng)
 
         for m in exp["measurements"]:
             name = m["name"]
@@ -182,6 +186,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
                 p_data=gof_pr.pvalue,
                 plot=plot_basename(name),
                 experiment=exp["name"],
+                selected_events=n_selected.get(name, 0),
             ))
 
         gen_feature.cleanup()  # event files can be many GB; drop once binned
@@ -543,7 +548,8 @@ def merge_shards(shard_paths, out_dir: str,
                 chi2_ndof_main=m["chi2_ndof_main"], chi2_ndof_pr=m["chi2_ndof_pr"],
                 delta_chi2=m["delta_chi2"], p_compat=m["p_compat"],
                 p_data=m["p_data"], plot=m.get("plot"),
-                experiment=m.get("experiment", "")))
+                experiment=m.get("experiment", ""),
+                selected_events=m.get("selected_events", 0)))
 
     reported = {r.name for r in results}
     did_not_run = [MissingMeasurement(name=name, experiment=exp)
@@ -623,9 +629,13 @@ def main(argv=None) -> int:
             print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
             return 0
         # The config is what says which measurements were expected, so a shard whose
-        # job failed can be named in the comment rather than quietly dropped.
+        # job failed can be named in the comment rather than quietly dropped. A scoped
+        # run narrows that expectation: the setups nobody asked for are not missing.
         merge_config = (_load_config(args.config)
                         if os.path.exists(args.config) else None)
+        if merge_config and (args.only_experiments or args.only_measurements):
+            merge_config = _filter_config(merge_config, args.only_experiments,
+                                          args.only_measurements)
         report = merge_shards(args.merge, out_dir=args.out_dir, config=merge_config)
         print(f"merged {len(report.results)} measurement(s): "
               f"p_overall={report.p_overall():.4g} "

@@ -229,6 +229,22 @@ silent crash). Putting Achilles' own `lib` first fixes it. `Nuisance3Adapter` do
 itself when it spawns achilles, and the CI build job smoke-tests `achilles --version`
 so a regression fails early instead of mid-generation.
 
+## Triggering a run
+
+| trigger | effect |
+|---|---|
+| `!physval` in a pushed commit message | the whole suite, real NUISANCE3 path |
+| `!physval(dry-run)` | the whole suite through the synthetic adapter |
+| `!physval(<setup>)` | **one** setup, e.g. `!physval(MiniBooNE_CC1pi)` — one generation instead of twenty |
+| `!physval(dry-run,<setup>)` | both, comma-separated in either order |
+| `workflow_dispatch` | same choices as `events` / `seed` / `dry_run` / `only_experiment` inputs |
+| nightly `schedule` | the whole suite, for real |
+
+A scope that is not a setup name fails the `setup` job with the list of valid names,
+rather than quietly running all twenty. The scope reaches the aggregate too, so a
+single-setup run expects only that setup and does not report the other nineteen as
+missing.
+
 ## The PR comment
 
 `report.py` renders one comment per run, updated in place via `COMMENT_MARKER`. It is
@@ -248,6 +264,10 @@ built to stay readable as the suite grows:
 * past `MAX_COMMENT_CHARS` the tables of setups with nothing flagged collapse to a
   single line each, so the comment cannot exceed GitHub's 65536-character limit. The
   full numbers are always in `summary.json`;
+* `summary.json` carries `selected_events` per measurement — the count each sample
+  actually binned. Samples that share a selection must agree; when one of them comes
+  out empty, that column says so immediately (this is what identified the beam-particle
+  bug, where `Q2` binned 8 events against `Tpi`'s 2547 from the same selection);
 * a setup whose job crashed is reported, not dropped. `aggregate` runs with `always()`,
   the merge takes `--config` to learn what was expected, and anything no shard reported
   is listed under **Did not run** with the verdict forced to *incomplete* — then the job

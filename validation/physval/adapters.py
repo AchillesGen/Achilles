@@ -193,6 +193,13 @@ class Nuisance3Adapter:
                 options = yaml.load(fh, Loader=_CardLoader)
         card["Options"] = options or {}
         card["Options"].setdefault("Initialize", {})["Seed"] = int(seed)
+        # Pin the integrator cache off for every pass, whatever the card says.
+        # EventGen defaults Cache/Load and Cache/Save to true when the keys are absent,
+        # and Optimize() runs whether or not a cached state was loaded -- so a pass that
+        # loads grids leaves the RNG stream somewhere else than one that optimizes from
+        # scratch. Two passes of the same setup would then generate different events
+        # from the same seed, and the difference would surface as a physics regression.
+        card["Cache"] = {"Save": False, "Load": False}
         # The unweighting scan swaps this whole block per variant. Replace rather than
         # merge: the schemes take different keys (percentile vs epsilon), so a leftover
         # key from the card's default would silently apply to the wrong scheme.
