@@ -24,7 +24,8 @@ import yaml
 
 from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
                       SyntheticAdapter)
-from report import (ALPHA, MeasurementResult, Report, ScanReport,
+from report import (ALPHA, MeasurementResult, MissingMeasurement, Report,
+                    ScanReport, plot_basename,
                     VariantMeasurement, VariantSummary)
 from stats import (Prediction, bonferroni, bootstrap_covariance, compatibility,
                    goodness_of_fit, shape_compatibility)
@@ -163,7 +164,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
 
             os.makedirs(out_dir, exist_ok=True)
             plot_measurement(
-                os.path.join(out_dir, f"{name}.png"), name,
+                os.path.join(out_dir, plot_basename(name)), name,
                 data=data.values, data_cov=data.covariance,
                 main=main.values, main_cov=main.covariance,
                 feature=feature.values, feature_cov=feature.covariance,
@@ -179,7 +180,7 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
                 delta_chi2=gof_pr.chi2 - gof_main.chi2,
                 p_compat=compat.pvalue,
                 p_data=gof_pr.pvalue,
-                plot=f"{name}.png",
+                plot=plot_basename(name),
                 experiment=exp["name"],
             ))
 
@@ -501,20 +502,39 @@ def _filter_config(config: dict, only_experiments, only_measurements,
     return config
 
 
-def merge_shards(shard_paths, out_dir: str) -> Report:
-    """Combine per-measurement shard ``summary.json`` files into one Report.
+def merge_shards(shard_paths, out_dir: str,
+                 config: Optional[dict] = None) -> Report:
+    """Combine per-shard ``summary.json`` files into one Report.
 
-    Each shard is a summary.json emitted by a sharded ``run`` (typically one
-    measurement). Run-level metadata is taken from the first shard.
+    A shard whose job failed leaves no summary behind, and the aggregate still has to
+    run: reporting the setups that did report, with the rest marked as not run, beats
+    producing nothing at all. Paths that do not exist are therefore skipped (the caller
+    passes a glob), and ``config`` — when given — says which measurements were expected,
+    so the ones nobody reported can be named instead of silently vanishing.
     """
     shards = []
     for p in shard_paths:
+        if not os.path.exists(p):
+            continue  # that shard's job failed, or the glob matched nothing
         with open(p) as fh:
             shards.append(json.load(fh))
-    if not shards:
-        raise SystemExit("merge_shards: no shard summaries given")
 
-    head = shards[0]
+    expected = ([(m["name"], exp["name"])
+                 for exp in config["experiments"] for m in exp["measurements"]]
+                if config else [])
+    if not shards:
+        if not expected:
+            raise SystemExit("merge_shards: no shard summaries and no config to "
+                             "say what was expected")
+        # Every shard failed. Still emit a comment, so the run says what happened.
+        head = {"repo": os.environ.get("GITHUB_REPOSITORY", "AchillesGen/Achilles"),
+                "feature_sha": os.environ.get("GITHUB_SHA", "unknown"),
+                "nuisance_version": "unknown", "seed": 0,
+                "events_per_measurement": 0}
+        shards = []
+    else:
+        head = shards[0]
+
     results = []
     for s in shards:
         for m in s["measurements"]:
@@ -525,11 +545,16 @@ def merge_shards(shard_paths, out_dir: str) -> Report:
                 p_data=m["p_data"], plot=m.get("plot"),
                 experiment=m.get("experiment", "")))
 
+    reported = {r.name for r in results}
+    did_not_run = [MissingMeasurement(name=name, experiment=exp)
+                   for name, exp in expected if name not in reported]
+
     report = Report(results=results, repo=head["repo"],
                     feature_sha=head["feature_sha"],
                     nuisance_version=head["nuisance_version"],
                     seed=head["seed"],
-                    events_per_measurement=head["events_per_measurement"])
+                    events_per_measurement=head["events_per_measurement"],
+                    did_not_run=did_not_run)
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
@@ -597,9 +622,18 @@ def main(argv=None) -> int:
                   f"biased={[s.variant for s in scan.biased()] or 'none'}")
             print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
             return 0
-        report = merge_shards(args.merge, out_dir=args.out_dir)
-        print(f"merged {len(args.merge)} shard(s): p_overall={report.p_overall():.4g} "
+        # The config is what says which measurements were expected, so a shard whose
+        # job failed can be named in the comment rather than quietly dropped.
+        merge_config = (_load_config(args.config)
+                        if os.path.exists(args.config) else None)
+        report = merge_shards(args.merge, out_dir=args.out_dir, config=merge_config)
+        print(f"merged {len(report.results)} measurement(s): "
+              f"p_overall={report.p_overall():.4g} "
               f"flagged={report.n_flagged()}/{len(report.results)}")
+        if report.did_not_run:
+            print(f"did not report: {len(report.did_not_run)} measurement(s) in "
+                  f"{len(report.failed_setups())} setup(s): "
+                  f"{', '.join(report.failed_setups())}")
         print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
         return 0
 

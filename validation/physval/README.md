@@ -247,7 +247,18 @@ built to stay readable as the suite grows:
   markdown; the untruncated name is the link's title;
 * past `MAX_COMMENT_CHARS` the tables of setups with nothing flagged collapse to a
   single line each, so the comment cannot exceed GitHub's 65536-character limit. The
-  full numbers are always in `summary.json`.
+  full numbers are always in `summary.json`;
+* a setup whose job crashed is reported, not dropped. `aggregate` runs with `always()`,
+  the merge takes `--config` to learn what was expected, and anything no shard reported
+  is listed under **Did not run** with the verdict forced to *incomplete* — then the job
+  fails, so the run still goes red. `summary.json` carries `did_not_run` and
+  `failed_setups`.
+
+Plot files are named by `plot_basename()`, not by the measurement: `upload-artifact`
+rejects a path containing `:`, and the Durham samples carry their reference in the name
+(`..._Barreau:1983ht`). Only the file name is sanitised; the measurement keeps its
+published name everywhere it is displayed or looked up, and the plot URL is built from
+the stored basename.
 
 ## `physval-baselines` branch
 

@@ -29,8 +29,24 @@ COMMENT_MARKER = "<!-- achilles-physval-summary -->"
 
 RAW_URL_TEMPLATE = (
     "https://raw.githubusercontent.com/{repo}/physval-baselines/"
-    "plots/{sha}/{measurement}.png"
+    "plots/{sha}/{plot}"
 )
+
+# actions/upload-artifact rejects these outright in a *path* inside the artifact, and
+# they are no better in a git tree or a Windows checkout. Sample names are not free of
+# them: the Durham electron samples carry their reference as
+# ElectronData_6_12_0.560_36.000_Barreau:1983ht.
+_UNSAFE_IN_FILENAMES = '":<>|*?\r\n'
+
+
+def plot_basename(measurement: str) -> str:
+    """The on-disk name of a measurement's overlay plot.
+
+    Only the file name is sanitised: the measurement keeps its published name
+    everywhere it is displayed, compared or looked up.
+    """
+    return "".join("_" if c in _UNSAFE_IN_FILENAMES else c
+                   for c in measurement) + ".png"
 
 # Thumbnails are only inlined for flagged rows, and only this many: a comment with
 # fifty embedded PNGs is unreadable and slow to load. Everything else is one click
@@ -67,6 +83,18 @@ _SORT_RANK = {"regression": 0, "improvement": 1, "compatible": 2}
 
 
 @dataclass
+class MissingMeasurement:
+    """A measurement the config asked for that no shard reported.
+
+    Its setup's job crashed or timed out. Kept in the report rather than dropped: a
+    comment that silently omits a third of the suite reads like a pass.
+    """
+
+    name: str
+    experiment: str = ""
+
+
+@dataclass
 class Report:
     results: List[MeasurementResult]
     repo: str = "AchillesGen/Achilles"
@@ -76,6 +104,7 @@ class Report:
     events_per_measurement: int = 0
     alpha: float = ALPHA
     extra_header: List[str] = field(default_factory=list)
+    did_not_run: List[MissingMeasurement] = field(default_factory=list)
 
     # -- derived quantities ---------------------------------------------------
 
@@ -86,14 +115,22 @@ class Report:
         return sum(1 for r in self.results if r.status(self.alpha) != "compatible")
 
     def overall_ok(self) -> bool:
+        if self.did_not_run:
+            return False  # part of the suite never reported; nothing to be ok about
         po = self.p_overall()
         return not (po == po and po < self.alpha)  # NaN-safe: ok if not < alpha
+
+    def failed_setups(self) -> "List[str]":
+        """Setups with at least one measurement that never reported."""
+        return sorted({m.experiment or "ungrouped" for m in self.did_not_run})
 
     def _plot_url(self, r: MeasurementResult) -> Optional[str]:
         if not r.plot:
             return None
+        # Built from the stored basename, not the measurement name: the two differ
+        # wherever the name carries a character a file path cannot.
         return RAW_URL_TEMPLATE.format(repo=self.repo, sha=self.feature_sha,
-                                       measurement=r.name)
+                                       plot=r.plot)
 
     # -- rendering ------------------------------------------------------------
 
@@ -201,12 +238,22 @@ class Report:
         flagged = [r for r in self._ordered(self.results)
                    if r.status(self.alpha) != "compatible"]
 
-        verdict = ("✅ no significant change" if self.overall_ok()
-                   else "⚠️ significant change")
+        if self.did_not_run:
+            verdict = "⚠️ incomplete run"
+        elif self.overall_ok():
+            verdict = "✅ no significant change"
+        else:
+            verdict = "⚠️ significant change"
         lines: List[str] = [COMMENT_MARKER, "## 🔬 Physics validation (NUISANCE3)", ""]
-        lines.append(f"**{verdict}** — Bonferroni p = `{po:.3g}` · "
-                     f"**{len(flagged)}** flagged of **{n}** measurements in "
-                     f"**{len(groups)}** setups")
+        summary = (f"**{verdict}** — Bonferroni p = `{po:.3g}` · "
+                   f"**{len(flagged)}** flagged of **{n}** measurements in "
+                   f"**{len(groups)}** setups")
+        if self.did_not_run:
+            setups = self.failed_setups()
+            summary += (f" · ❌ **{len(self.did_not_run)}** measurements in "
+                        f"**{len(setups)}** setup{'s' if len(setups) != 1 else ''} "
+                        f"did not report")
+        lines.append(summary)
         lines.append("")
         meta = (f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
                 f"{self.events_per_measurement:,} events/setup · "
@@ -215,6 +262,23 @@ class Report:
         for extra in self.extra_header:
             lines.append(extra)
         lines.append("")
+
+        # Setups whose job died. Their numbers are absent, not compatible, so they get
+        # their own block above everything else.
+        if self.did_not_run:
+            by_setup: dict = {}
+            for m in self.did_not_run:
+                by_setup.setdefault(m.experiment or "ungrouped", []).append(m.name)
+            lines.append(f"### ❌ Did not run ({len(self.did_not_run)})")
+            lines.append("")
+            lines.append("These setups' jobs failed, so the suite is incomplete and the "
+                         "verdict above covers only what reported. Check the run's job "
+                         "logs.")
+            lines.append("")
+            for setup, names in sorted(by_setup.items()):
+                lines.append(f"* **{setup}** — {len(names)} measurement"
+                             f"{'s' if len(names) != 1 else ''}")
+            lines.append("")
 
         # What needs attention, across every setup, with the setup named per row.
         if flagged:
@@ -236,9 +300,12 @@ class Report:
                                  f"{'s' if hidden != 1 else ''} are linked from the "
                                  f"table above._")
                     lines.append("")
-        else:
+        elif not self.did_not_run:
             lines.append("Every measurement is compatible with the stored `main` "
                          "baseline.")
+            lines.append("")
+        else:
+            lines.append("Nothing that reported is flagged.")
             lines.append("")
 
         # One collapsible per setup: the comment stays the same length whether the
@@ -309,6 +376,8 @@ class Report:
             "p_overall": self.p_overall(),
             "overall_ok": self.overall_ok(),
             "n_flagged": self.n_flagged(),
+            "did_not_run": [asdict(m) for m in self.did_not_run],
+            "failed_setups": self.failed_setups(),
             "measurements": [
                 {**asdict(r), "status": r.status(self.alpha)} for r in self.results
             ],
@@ -384,6 +453,7 @@ class ScanReport:
     events_per_measurement: int = 0
     alpha: float = ALPHA
     extra_header: List[str] = field(default_factory=list)
+    did_not_run: List[MissingMeasurement] = field(default_factory=list)
 
     def biased(self) -> List[VariantSummary]:
         """Variants whose distributions differ from the reference beyond MC noise."""
@@ -578,6 +648,24 @@ class ScanReport:
             json.dump(self.to_summary_dict(), fh, indent=2)
 
 
+def _selftest_incomplete() -> bool:
+    """A report missing a setup says so, and cannot come out green."""
+    rows = [MeasurementResult("A_XSec_1DVar_nu", 12, 1.1, 1.1, 0.0, 0.8, 0.5,
+                              plot="A_XSec_1DVar_nu.png", experiment="ExpA")]
+    rep = Report(rows, feature_sha="abc",
+                 did_not_run=[MissingMeasurement("B_XSec_1DVar_nu", "ExpB"),
+                              MissingMeasurement("B_XSec_1DOther_nu", "ExpB")])
+    md = rep.to_markdown()
+    summary = rep.to_summary_dict()
+    return (not rep.overall_ok()                     # cannot be green
+            and "incomplete run" in md               # verdict says so
+            and "Did not run (2)" in md              # and lists them
+            and "**ExpB** — 2 measurements" in md
+            and rep.failed_setups() == ["ExpB"]
+            and len(summary["did_not_run"]) == 2
+            and summary["failed_setups"] == ["ExpB"])
+
+
 def _selftest_guard() -> bool:
     """A suite far larger than today's must still fit in one PR comment."""
     rows = [MeasurementResult(f"Exp{s}_XSec_1DVar{i}_nu", 12, 1.1, 1.2, 0.4, 0.5, 0.4,
@@ -632,6 +720,14 @@ def _selftest() -> int:
         "flagged table keeps full names": "[MiniBooNE_CC1pip_Q2][" in md,
         # the size guard trims instead of producing an over-long comment
         "guard trims a huge suite": _selftest_guard(),
+        # a name that cannot be a file path still gets a usable plot file + url
+        "colon stripped from plot name":
+            plot_basename("ElectronData_6_12_0.560_36.000_Barreau:1983ht")
+            == "ElectronData_6_12_0.560_36.000_Barreau_1983ht.png",
+        "plot name keeps the rest verbatim":
+            plot_basename("MINERvA_CC0pi_Tp") == "MINERvA_CC0pi_Tp.png",
+        # an incomplete run is reported, not silently shrunk
+        "incomplete run marked": _selftest_incomplete(),
     }
     for name, ok in checks.items():
         print(f"[{'ok' if ok else 'FAIL'}] {name}")

@@ -235,8 +235,13 @@ jobs:
           path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.experiment }}
           retention-days: 7
 
+  # always(): a setup whose generation crashes must not take the whole report with it.
+  # The merge names the measurements no shard reported and the comment marks the run
+  # incomplete, which is more useful than no comment at all. The job still fails at the
+  # end if anything was missing, so the run stays red.
   aggregate:
     needs: [setup, generate]
+    if: ${{ always() && needs.setup.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -245,6 +250,7 @@ jobs:
           python-version: '3.12'
       - run: pip install numpy scipy pyyaml
       - uses: actions/download-artifact@v4
+        continue-on-error: true   # no shard succeeded -> nothing to download
         with:
           pattern: shard-*
           path: shards
@@ -252,8 +258,13 @@ jobs:
       - name: Merge shards into the summary + comment
         run: |
           cd "$PHYSVAL_DIR"
-          python3 physval.py --merge "$GITHUB_WORKSPACE"/shards/shard-*/summary.json \
-            --out-dir final
+          shopt -s nullglob
+          shards=("$GITHUB_WORKSPACE"/shards/shard-*/summary.json)
+          echo "merging ${#shards[@]} shard summar(y/ies)"
+          # --config lets the merge report which measurements never arrived; with no
+          # shards at all it still writes a comment saying the whole run failed.
+          python3 physval.py --merge "${shards[@]}" \
+            --config measurements.yml --out-dir final
 
       # Publish plots to physval-baselines/plots/<sha>/ for inline thumbnails.
       # Fork PRs lack a write token -> skipped (shard artifacts remain the fallback).
@@ -261,6 +272,7 @@ jobs:
       - name: Publish plots to baseline branch
         if: ${{ github.event.pull_request.head.repo.fork != true &&
                 needs.setup.outputs.dry_run != 'true' }}
+        continue-on-error: true   # never lose the comment over a plot push
         run: |
           set -e
           SHA="${GITHUB_SHA}"
@@ -308,3 +320,20 @@ jobs:
               await github.rest.issues.createComment({
                 owner: context.repo.owner, repo: context.repo.repo, issue_number, body });
             }
+
+      # The comment is posted first, then the job fails: an incomplete suite has to
+      # leave the run red, but not before it has said which setups went missing.
+      - name: Fail if any setup did not report
+        run: |
+          cd "$PHYSVAL_DIR"
+          python3 - <<'PY'
+          import json, sys
+          s = json.load(open("final/summary.json"))
+          missing = s.get("did_not_run") or []
+          if missing:
+              setups = s.get("failed_setups") or []
+              print(f"::error::{len(missing)} measurement(s) in {len(setups)} setup(s) "
+                    f"did not report: {', '.join(setups)}")
+              sys.exit(1)
+          print(f"all {len(s['measurements'])} measurements reported")
+          PY
