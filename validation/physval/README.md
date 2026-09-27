@@ -177,9 +177,12 @@ Four things the legacy record does not do for us are declared per sample in
 `measurements.yml` and applied in the adapter, because the record calls neither the
 sample's `ConvertEventRates` nor its normalisation:
 
-* `bin_edges` — the sample's histogram is indexed by bin *number* (NCπ⁰ stacks several
-  blocks), so the widths from the NUISANCE binning are 1 and the prediction has to be
-  divided by the real ones.
+* `bin_edges` — the sample's histogram is indexed by bin *number* (the WireCell
+  analyses stack several blocks), so the widths from the NUISANCE binning are 1 and the
+  prediction has to be divided by the real ones.
+* `bin_widths` — the same thing for an axis that stacks channels (a 0p block followed by
+  an Np block). There is no monotonic edge list to give, but the per-bin widths are
+  still defined, so they are listed directly and the plot runs against bin number.
 * `solid_angle` — the Durham electron data is published per steradian while the
   selection integrates over its ±4° acceptance window.
 * `smearing` — a Wiener-SVD unfolded measurement is only comparable to `A_C ×
@@ -191,14 +194,29 @@ sample's `ConvertEventRates` nor its normalisation:
 
 ### Samples that need patched NUISANCE2
 
-`MicroBooNE_NCpi0_*` and `ElectronData_*` do not work against NUISANCE2 as shipped:
-NCπ⁰ sets its bin index only in `FillHistograms`, which the legacy record never calls,
-and the Durham samples cut on variables the record fills *after* `isSignal`. Both fail
-silently — an empty prediction, not an error. The fixes are upstream as
-NUISANCEMC/nuisance#115 and #116 and are carried as patches in the physval image on top
-of its pinned NUISANCE2 sha; `versions.json`'s `nuisance2.patches` records them. The
-δp_n unit mixing that used to make `MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu` incomparable
-to data is fixed upstream (#114) and needs NUISANCE2 ≥ `86c64b44` in the image.
+`MicroBooNE_NCpi0_*`, `MicroBooNE_CC1Mu0pNp_*` and `ElectronData_*` do not work against
+NUISANCE2 as shipped: the two WireCell families set their bin index only in
+`FillHistograms`, which the legacy record never calls, and the Durham samples cut on
+variables the record fills *after* `isSignal`. All of them fail silently — an empty
+prediction, not an error. The fixes are upstream as NUISANCEMC/nuisance#115, #116 and
+the CC1Mu0pNp one, and are carried as patches in the physval image on top of its pinned
+NUISANCE2 sha; `versions.json`'s `nuisance2.patches` records them. The δp_n unit mixing
+that used to make `MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu` incomparable to data is fixed
+upstream (#114) and needs NUISANCE2 ≥ `86c64b44` in the image.
+
+### Samples deliberately left out
+
+* anything named `*_XSec_1DEnu*` — NUISANCE scales those **flux-integrated, not
+  flux-averaged** (`fIsEnu1D`, `Measurement1D.cxx`), which the adapter does not
+  implement, so they would come out silently mis-normalised;
+* MiniBooNE `CCQE`/`CCQELike` — the published denominator is per *neutron* via a
+  14.08/6.0 factor in the sample's own scaling, which is a convention call rather than
+  something to guess, and getting it wrong is a factor of six;
+* the bubble-chamber sets (ANL, BNL, BEBC, FNAL, GGM) — they need a deuteron initial
+  state;
+* Fe/Pb nuclear-target ratios (no spectral function), coherent pion and DIS/inclusive
+  samples (not in the model), and the 3D/`multidif` samples, whose global-bin-number
+  binning the record's own docs call out as snowflakes.
 
 ### Achilles' libraries must precede the image's
 

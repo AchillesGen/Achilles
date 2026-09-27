@@ -423,7 +423,8 @@ def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
 
 # Per-sample overrides declared as top-level maps in the config, folded onto the
 # measurement they name so the adapter sees them next to the sample.
-_MEASUREMENT_KEYS = ("data_scale", "bin_edges", "solid_angle", "smearing")
+_MEASUREMENT_KEYS = ("data_scale", "bin_edges", "bin_widths", "solid_angle",
+                     "smearing")
 
 
 def _load_config(path: str) -> dict:

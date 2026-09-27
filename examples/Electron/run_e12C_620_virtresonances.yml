@@ -1,0 +1,70 @@
+# Inclusive e-12C at 620 MeV (Barreau:1983ht), 36 deg and 60 deg. One generation
+# serves both angles: the cut below spans the two acceptance windows.
+#
+# NUISANCE's Durham samples accept |theta_e - theta_0| < Electron_NThetaBins *
+# Electron_ThetaWidth = 4 deg, so the cut below is that window with a 1 deg margin. It
+# is deliberately tight: the EM cross section grows like 1/sin^4(theta/2), and opening
+# it up would spend the run forward of the measured angles.
+Main:
+  NEvents: 7500000
+  HardCuts: True
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: e12C_620_QE_RES_VirtResonances.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [11, [11]]
+
+Beams:
+  - Beam:
+      PID: 11
+      Beam Params:
+        Type: Monochromatic
+        Energy: 620
+
+Cascade:
+  Run: True
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+ - NuclearModel:
+    Model: FortranModel
+    Name: QE_Spectral_Func
+    ConfigFile: data/info_C12_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+ - NuclearModel:
+    Model: FortranModel
+    Name: RES_Spectral_Func
+    ConfigFile: data/info_C12_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 11
+    range: [31., 65.]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []

@@ -327,12 +327,24 @@ class Nuisance3Adapter:
         """
         scale = np.ones(nbins)
         edges = measurement.get("bin_edges")
-        if edges is not None:
-            widths = np.diff(np.asarray(edges, dtype=float))
+        explicit = measurement.get("bin_widths")
+        if edges is not None and explicit is not None:
+            raise ValueError(f"{measurement['name']}: give bin_edges or bin_widths, "
+                             "not both")
+        # A sample whose axis stacks several channels (a 0p block then an Np block,
+        # say) has no monotonic edge list, but its per-bin widths are still defined --
+        # bin_widths carries them for exactly that case.
+        widths = (np.diff(np.asarray(edges, dtype=float)) if edges is not None
+                  else np.asarray(explicit, dtype=float)
+                  if explicit is not None else None)
+        if widths is not None:
             if widths.size != nbins:
+                key = "bin_edges" if edges is not None else "bin_widths"
                 raise ValueError(
-                    f"{measurement['name']}: bin_edges gives {widths.size} bins, "
+                    f"{measurement['name']}: {key} gives {widths.size} bins, "
                     f"NUISANCE reports {nbins}")
+            if np.any(widths <= 0):
+                raise ValueError(f"{measurement['name']}: non-positive bin width")
             scale = scale / widths
         omega = measurement.get("solid_angle")
         if omega:
