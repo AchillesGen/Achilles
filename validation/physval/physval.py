@@ -28,7 +28,7 @@ from report import (ALPHA, MeasurementResult, MissingMeasurement, Report,
                     ScanReport, plot_basename,
                     VariantMeasurement, VariantSummary)
 from stats import (Prediction, bonferroni, bootstrap_covariance, compatibility,
-                   goodness_of_fit, shape_compatibility)
+                   goodness_of_fit, shape_compatibility, trial_covariance)
 
 
 # ---------------------------------------------------------------------------
@@ -55,9 +55,34 @@ def _measurement_baseline(baseline: dict, name: str):
     return main, data
 
 
+# Name of the estimator the covariances are built with, recorded in a stored
+# baseline: a baseline built with a different one cannot be mixed with fresh feature
+# predictions, so `run` treats it as stale and recomputes main inline.
+ESTIMATOR = "trial"
+
+
+def _predict(adapter, generated: GeneratedEvents, measurement: dict, sample,
+             n_boot: int, rng: np.random.Generator) -> Prediction:
+    """One measurement's prediction and MC covariance.
+
+    Uses the generator's trial counts and cross-section uncertainty when the events
+    carry them (`stats.trial_covariance`, which says why that is the correct
+    normalisation), and falls back to resampling when they do not -- an event sample
+    from some other source, or one written before the counters were recorded.
+    """
+    response = adapter.response_matrix(measurement, sample.nbins)
+    if generated.n_nonzero_trials:
+        return trial_covariance(sample.bin_index, sample.weights, sample.nbins,
+                                generated.n_nonzero_trials,
+                                rel_xsec_err=generated.rel_xsec_err or 0.0,
+                                response=response)
+    return bootstrap_covariance(sample.bin_index, sample.weights, sample.nbins,
+                                n_boot=n_boot, rng=rng, response=response)
+
+
 def predict_all(adapter, generated: GeneratedEvents, measurements,
                 n_boot: int, rng: np.random.Generator) -> Dict[str, Prediction]:
-    """Bin a setup's shared events onto all of its measurements, then bootstrap.
+    """Bin a setup's shared events onto all of its measurements, then add errors.
 
     One call into the adapter for the whole setup: the real one walks the event file
     once with every sample's columns on the same frame, so this is where the batching
@@ -67,9 +92,7 @@ def predict_all(adapter, generated: GeneratedEvents, measurements,
     out, counts = {}, {}
     for m in measurements:
         sample = samples[m["name"]]
-        out[m["name"]] = bootstrap_covariance(
-            sample.bin_index, sample.weights, sample.nbins, n_boot=n_boot, rng=rng,
-            response=adapter.response_matrix(m, sample.nbins))
+        out[m["name"]] = _predict(adapter, generated, m, sample, n_boot, rng)
         # Two samples that share a selection must bin the same number of events; when
         # one of them comes out empty, this is the column that says so.
         counts[m["name"]] = int(sample.bin_index.size)
@@ -109,6 +132,7 @@ def make_baseline(adapter, config: dict, key: str, seed: int,
         "seed": seed,
         "events_per_measurement": n_events,
         "n_boot": n_boot,
+        "estimator": ESTIMATOR,
         "measurements": measurements,
     }
     path = baseline_path(out_dir, key)
@@ -143,8 +167,12 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
 
         # Measurements with no stored baseline need main computed inline. Collect them
         # first so that generation, and the pass over its events, happens once.
+        # A baseline whose covariances came from a different estimator cannot be
+        # compared against fresh predictions -- the two would carry different
+        # uncertainties for the same thing -- so recompute main inline instead.
+        usable = baseline is not None and baseline.get("estimator") == ESTIMATOR
         stale = [m for m in exp["measurements"]
-                 if baseline is None
+                 if not usable
                  or m["name"] not in baseline.get("measurements", {})]
         mains = {}
         gen_main = None
@@ -267,10 +295,8 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
             binned = adapter.histogram_many(gen, exp["measurements"])
             for m in exp["measurements"]:
                 sample = binned[m["name"]]
-                preds[name][m["name"]] = bootstrap_covariance(
-                    sample.bin_index, sample.weights, sample.nbins,
-                    n_boot=n_boot, rng=rng,
-                    response=adapter.response_matrix(m, sample.nbins))
+                preds[name][m["name"]] = _predict(adapter, gen, m, sample,
+                                                  n_boot, rng)
                 samples[name][m["name"]] = sample
             if gen.run is not None:
                 if gen.run.seconds:

@@ -78,27 +78,45 @@ reference, since it is unbiased by construction.
 
 ### The null control is not optional
 
-`p_compat` is calibrated in `stats.py --selftest` on **i.i.d.** synthetic events,
-where the bootstrap is exact. Real Achilles runs are not i.i.d.: the events of a run
-share one adapted VEGAS grid and one weight cap, and the whole histogram is scaled by
-that run's flux-averaged cross section. The bootstrap resamples *within* a run, so it
-carries none of the run-to-run scatter in that overall scale — measured at up to ±5%
-between independent runs of the same setup, against per-bin bootstrap errors of ~1%.
-Two independent runs of the *identical* configuration therefore come out with
-p_compat ≈ 0, and every variant looks "biased".
+The variant list carries a `null-control`: the reference's own options at
+`seed_offset: 1`, i.e. two runs of one configuration that differ only by seed. Its
+rows are draws from the null hypothesis and must be uniform. The flagging thresholds
+are floored at whatever it scores (`min(alpha, null)`, so a well-behaved control
+leaves α alone and never tightens it), and with a correct covariance that floor is
+inert — it is a guard, not a calibration.
 
-So the variant list carries a `null-control`: the reference's own options at
-`seed_offset: 1`. Its rows are draws from the null hypothesis, and the flagging
-thresholds are floored at whatever it scores (`min(alpha, null)`, so a well-behaved
-control leaves α alone and never tightens it). Nothing is called out for doing as
-well as an identical rerun. `p (shape only)` — the same χ² with the normalisation
-divided out and one dof given up for it — separates the two failure modes: a scheme
-that moved a distribution fails both columns, two runs that merely disagree on the
-total cross section fail only the first.
+It is worth knowing what this control caught, because the same trap is easy to walk
+back into. `p_compat` used to come out at ~1e-150 for the control — two runs of the
+identical configuration, judged incompatible — while every individual bin agreed
+within its error (empirical run-to-run scatter / bootstrap σ = 0.9 per bin). The cause
+was the resampling, not the physics: `bootstrap_covariance` drew a fixed number of the
+**selected** events, which holds their count exact and so denies the acceptance
+fluctuation. On `MINERvA_CC0pinp_STV_XSec` (19% acceptance) it claimed the
+normalisation was known to 0.11% where five independent runs actually scatter by
+0.41%, and a correlated χ² divides that real difference by a near-null eigenvalue.
+Measured over 5 runs x 8 measurements = 80 seed pairs: **67/80 flagged before, 5/80
+after** (median p 0.57). `e12C_1108` never showed it because its 72% acceptance leaves
+the selected count nearly deterministic, which is the regime where fixed-count
+resampling is accidentally right.
 
-The same caveat applies to the **branch comparison**, which also compares two
-independent runs (`main` at `seed`, feature at `seed + 1`) whenever there is no
-stored baseline. Its `p_compat` is anticonservative for the same reason.
+Two things follow. `stats.py --selftest` carries a `[trial-null]`/`[trial-cover]`
+regression test that simulates runs the way a generator delivers them and asserts the
+flag rate sits at α and that the reported normalisation uncertainty matches the runs'
+actual scatter — the second is what the bootstrap failed. And the **branch
+comparison** is covered by the same fix: it also compares two independent runs
+(`main` at `seed`, feature at `seed + 1`) whenever there is no stored baseline.
+
+`p (shape only)` — the same χ² with the normalisation fitted out and one dof given up
+for it — is now a diagnostic rather than a crutch: a scheme that moved a distribution
+fails both columns, two runs that merely disagree on the total cross section fail only
+the first. The scale is fitted in the covariance metric, not as a ratio of plain bin
+sums, because the weakly-constrained direction is the bin-content one and the two
+differ once bin widths are unequal (that mismatch is why the old control reported a
+broken *shape* for `dphit`, width CV 1.4, while `thmu`, width CV 0.2, looked fine).
+
+A stored baseline records which estimator built its covariances; a baseline from a
+different one is treated as stale and `main` is recomputed inline, since mixing the
+two would compare a prediction against an uncertainty that was never meant for it.
 
 Reading the summary table:
 
@@ -110,7 +128,7 @@ Reading the summary table:
   weights, i.e. the statistical power the scheme delivers per accepted event
   (`1.0` = perfect unit weights). Computed pre-normalisation, so the bin-width
   division does not masquerade as weight spread.
-- **MC error** — mean bootstrap σ relative to the reference's. At a fixed accepted-
+- **MC error** — mean MC σ relative to the reference's. At a fixed accepted-
   event count, a harsher cap buys precision here and pays for it in **wall**.
 - **Δnorm** — change in the integrated cross section, which no scheme should move.
 - **max/mean w** — the heaviest surviving overweight, the tail the cap left behind.
@@ -120,16 +138,32 @@ is a real test of the scan (and a second opinion on the C++).
 
 ## The statistics
 
-- **Bootstrap covariance** (`bootstrap_covariance`): the feature (and stored `main`)
-  prediction's MC uncertainty is estimated by resampling its **weighted events with
-  replacement**. No re-generation, works with weighted / negative-weight events.
+- **Trial-count covariance** (`trial_covariance`, what the table is built from): the
+  MC uncertainty is written down analytically from the generator's own counters, which
+  NuHepMC carries in each event's `GenCrossSection` (total xsec, its uncertainty,
+  non-zero trials, total trials — the last event's copy has seen the whole file):
+
+      C_jk = δ_jk Σ_{i∈k} w_i²  −  S_j S_k / N_nonzero  +  (δσ/σ)² S_j S_k
+
+  The first two terms are the multinomial structure over **all** `N_nonzero` events
+  the generator produced, so a selection's acceptance is free to fluctuate; the third
+  is the cross-section uncertainty, which scales every bin together. Exact for
+  weighted and negative-weight events, exact under a response matrix (`R C Rᵀ`),
+  deterministic, and free.
+- **Bootstrap covariance** (`bootstrap_covariance`): the same quantity by resampling
+  the weighted events with replacement. Kept as a cross-check and as the fallback for
+  events that carry no trial counters. It must **not** be used on a selected
+  subsample: resampling a fixed number of selected events asserts that the number
+  passing the selection is exact, which under-covers the normalisation by ~3x at a
+  19% acceptance.
 - **Compatibility** (`compatibility`, drives the flag): a correlated χ²
   `Δᵀ (C_main + C_feature)⁻¹ Δ`, `Δ = h_feature − h_main`; `p_compat` from the χ²
   survival function. **Flag when `p_compat < 0.05`.**
-- **Hartlap correction** (`hartlap_factor`): the inverse of a bootstrap covariance
-  is biased high, inflating χ². The Hartlap factor `(N−p−2)/(N−1)` debiases it.
-  **Requirement: `n_boot ≫ n_bins`** (need `n_boot > n_bins + 2` at minimum). The
-  self-tests confirm the false-flag rate sits at ~0.05 once this holds.
+- **Hartlap correction** (`hartlap_factor`): applies only to the bootstrap fallback,
+  whose inverse covariance is biased high (`(N−p−2)/(N−1)` debiases it, requiring
+  `n_boot ≫ n_bins`). `trial_covariance` is not a finite-sample estimate, carries
+  `n_boot = None`, and is left uncorrected — so `N_BOOT` no longer constrains how many
+  bins a measurement may have.
 - **Goodness-of-fit** (`goodness_of_fit`): χ² of each prediction vs data, reported
   per row for context; does **not** drive the flag.
 - **Bonferroni** (`bonferroni`): overall family-wise p `min(1, N·min_i p_i)` in the

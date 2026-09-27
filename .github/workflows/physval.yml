@@ -61,7 +61,7 @@ env:
   # ProSelecta + Achilles build deps. Pin to a digest/tag once it is versioned.
   PHYSVAL_IMAGE: ghcr.io/achillesgen/achilles-physval:latest
   BUILD_TYPE: Release
-  N_BOOT: '1000'   # must be >> max n_bins (Hartlap requirement; see README)
+  N_BOOT: '1000'   # bootstrap fallback only; the trial-count covariance is analytic
 
 jobs:
   setup:

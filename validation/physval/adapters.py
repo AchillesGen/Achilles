@@ -56,6 +56,38 @@ _CardDumper.add_representer(
     _Include, lambda dumper, data: dumper.represent_scalar("!include", data.value))
 
 
+def read_gen_cross_section(path: str, window: int = 1 << 16,
+                           max_window: int = 1 << 24) -> "tuple[float, float, int, int]":
+    """``(xsec, xsec_err, n_nonzero_trials, n_total_trials)`` from the file's last event.
+
+    HepMC3 writes a ``GenCrossSection`` attribute on every event carrying the
+    generator's running estimate and its trial counters, so the last one in the file
+    has seen every event -- the same choice the fatx estimate in ``histogram_many``
+    makes. The file is read backwards from the end in growing windows rather than
+    walked: this is needed once per run, and a walk costs minutes.
+
+    Raises if no such attribute is found, which is what a compressed event file looks
+    like from here (the physval cards always write ``Zipped: False``).
+    """
+    size = os.path.getsize(path)
+    while window <= max_window:
+        with open(path, "rb") as fh:
+            fh.seek(max(0, size - window))
+            tail = fh.read().decode("utf-8", errors="replace")
+        lines = [l for l in tail.splitlines() if l.startswith("A 0 GenCrossSection")]
+        if lines:
+            fields = lines[-1].split()[3:7]
+            xsec, err, nonzero, total = fields
+            return float(xsec), float(err), int(nonzero), int(total)
+        if window >= size:
+            break
+        window *= 4
+    raise RuntimeError(
+        f"no GenCrossSection attribute in the last {window} bytes of {path}; the MC "
+        "uncertainty cannot be built from trial counts. A compressed event file looks "
+        "like this -- generate with Main.Output.Zipped: false.")
+
+
 @dataclass
 class GeneratedEvents:
     """Events for one experimental setup, reused across its measurements."""
@@ -65,6 +97,11 @@ class GeneratedEvents:
     path: Optional[str] = None            # nuisance3: NuHepMC-v1.0 event file
     xsec_divisor: Optional[float] = None  # per-atom xsec / this = published convention
     run: Optional["RunStats"] = None      # generator-side cost of this sample
+    # The two numbers stats.trial_covariance needs: how many non-zero trials the
+    # generator produced (the events in the file, a count fixed by construction) and
+    # its own relative uncertainty on the total cross section.
+    n_nonzero_trials: Optional[int] = None
+    rel_xsec_err: Optional[float] = None
 
     def cleanup(self) -> None:
         """Drop the on-disk event file once every measurement has been histogrammed."""
@@ -265,9 +302,12 @@ class Nuisance3Adapter:
         if not os.path.exists(out_path):
             raise RuntimeError(
                 f"achilles produced no event file at {out_path} for {experiment['name']}")
+        xsec, xsec_err, n_nonzero, n_total = read_gen_cross_section(out_path)
         return GeneratedEvents(path=out_path,
                                xsec_divisor=self._xsec_divisor(experiment),
-                               run=self._run_stats(log_path))
+                               run=self._run_stats(log_path),
+                               n_nonzero_trials=n_nonzero,
+                               rel_xsec_err=(xsec_err / xsec) if xsec else None)
 
     # Achilles' own end-of-run numbers. Both are printed rather than written to a
     # machine-readable file, so they are scraped; a miss just leaves the field blank.
@@ -679,6 +719,11 @@ class SyntheticAdapter:
 
         gen.run = RunStats(seconds=float(n_events) / 5e4 / max(eff, 1e-3),
                            unweight_eff=eff)
+        # Mirror what Achilles reports so --dry-run exercises the same estimator.
+        # The synthetic sample's total is forced to _TOTAL in `histogram`, so its
+        # normalisation is exact and trial_covariance is mildly conservative here.
+        gen.n_nonzero_trials = int(gen.weights.size)
+        gen.rel_xsec_err = 0.0
         return gen
 
     def histogram(self, generated: GeneratedEvents,
