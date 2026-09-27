@@ -65,13 +65,19 @@ class Prediction:
 
 def bootstrap_covariance(bin_index: np.ndarray, weights: np.ndarray, nbins: int,
                          n_boot: int = 200,
-                         rng: Optional[np.random.Generator] = None) -> Prediction:
+                         rng: Optional[np.random.Generator] = None,
+                         response: Optional[np.ndarray] = None) -> Prediction:
     """Central histogram and bootstrap covariance for a weighted event sample.
 
     The events (``bin_index``/``weights`` pairs) are resampled with replacement
     ``n_boot`` times; the covariance is estimated across the resulting ensemble of
     histograms.  This captures the prediction's MC statistical uncertainty without
     any re-generation, and works for weighted (including negative-weight) events.
+
+    ``response`` is an (nbins, nbins) matrix applied to every histogram, for a
+    measurement whose unfolded data is only comparable to A_C * prediction. Applying
+    it per replica rather than to the central values alone carries it into the MC
+    covariance as A cov A^T, which is what the chi-square then uses.
     """
     if rng is None:
         rng = np.random.default_rng()
@@ -79,12 +85,22 @@ def bootstrap_covariance(bin_index: np.ndarray, weights: np.ndarray, nbins: int,
     weights = np.asarray(weights, dtype=float)
     n_events = bin_index.shape[0]
 
-    central = weighted_histogram(bin_index, weights, nbins)
+    if response is not None:
+        response = np.asarray(response, dtype=float)
+        if response.shape != (nbins, nbins):
+            raise ValueError(f"response matrix is {response.shape}, expected "
+                             f"({nbins}, {nbins})")
+
+    def histogram(idx, w):
+        h = weighted_histogram(idx, w, nbins)
+        return h if response is None else response @ h
+
+    central = histogram(bin_index, weights)
 
     ensemble = np.empty((n_boot, nbins), dtype=float)
     for b in range(n_boot):
         pick = rng.integers(0, n_events, size=n_events)
-        ensemble[b] = weighted_histogram(bin_index[pick], weights[pick], nbins)
+        ensemble[b] = histogram(bin_index[pick], weights[pick])
 
     # rowvar=False: each column is a bin, each row a bootstrap replica.
     cov = np.cov(ensemble, rowvar=False)

@@ -314,6 +314,47 @@ class Nuisance3Adapter:
     # 1 pb in cm^2: the frame reports fatx/sumw in pb, the published data is in cm^2.
     _PB_TO_CM2 = 1e-36
 
+    @staticmethod
+    def _extra_bin_scale(measurement: dict, nbins: int) -> np.ndarray:
+        """Per-bin factors the NUISANCE binning does not already account for.
+
+        Dividing by the widths of the NUISANCE binning is all a sample with a physical
+        axis needs. Two cases are not: a histogram indexed by bin *number*, whose real
+        widths come from ``bin_edges`` (the sample divides by them in its own
+        ConvertEventRates, which the legacy record never calls), and a cross section
+        published per steradian, whose ``solid_angle`` the selection integrates over.
+        """
+        scale = np.ones(nbins)
+        edges = measurement.get("bin_edges")
+        if edges is not None:
+            widths = np.diff(np.asarray(edges, dtype=float))
+            if widths.size != nbins:
+                raise ValueError(
+                    f"{measurement['name']}: bin_edges gives {widths.size} bins, "
+                    f"NUISANCE reports {nbins}")
+            scale = scale / widths
+        omega = measurement.get("solid_angle")
+        if omega:
+            scale = scale / float(omega)
+        return scale
+
+    @staticmethod
+    def response_matrix(measurement: dict, nbins: int) -> Optional[np.ndarray]:
+        """The regularisation matrix A_C for ``measurement``, or None.
+
+        A Wiener-SVD unfolded measurement is only comparable to A_C * prediction, so
+        the matrix is applied to the prediction (in stats.bootstrap_covariance, which
+        carries it into the MC covariance too), never to the data.
+        """
+        path = measurement.get("smearing")
+        if not path:
+            return None
+        matrix = np.loadtxt(path, delimiter=",", ndmin=2)
+        if matrix.shape != (nbins, nbins):
+            raise ValueError(f"{measurement['name']}: smearing matrix is "
+                             f"{matrix.shape}, NUISANCE reports {nbins} bins")
+        return matrix
+
     def histogram(self, generated: GeneratedEvents,
                   measurement: dict) -> EventSample:
         pn = self._pn()
@@ -394,6 +435,7 @@ class Nuisance3Adapter:
         scale = np.divide(
             fatx_per_sumw * self._PB_TO_CM2 / generated.xsec_divisor, widths,
             out=np.zeros(nbins), where=widths != 0)
+        scale = scale * self._extra_bin_scale(measurement, nbins)
         if bin_index.size:
             weights = weights * scale[bin_index]
 
@@ -409,6 +451,14 @@ class Nuisance3Adapter:
         errors = np.asarray(binned.errors, dtype=float).reshape(-1)
         covariance = np.asarray(analysis.get_covariance_matrix(), dtype=float)
 
+        # A shipped data table in the wrong units, put back on the prediction's
+        # footing before anything reads it (see data_scale in the config).
+        data_scale = float(measurement.get("data_scale", 1.0))
+        if data_scale != 1.0:
+            values = values * data_scale
+            errors = errors * data_scale
+            covariance = covariance * data_scale ** 2
+
         if covariance.shape != (values.size, values.size):
             # No published covariance: fall back to the per-bin errors.
             covariance = np.diag(errors ** 2)
@@ -423,11 +473,17 @@ class Nuisance3Adapter:
             if usable.any():
                 covariance = covariance * float(np.median(errors[usable] / sd[usable])) ** 2
 
-        try:
-            edges = np.asarray(pn.Binning.get_bin_edges1D(binned.binning.bins),
-                               dtype=float)
-        except Exception:
-            edges = None  # multi-dimensional binning: plot against bin number
+        configured = measurement.get("bin_edges")
+        if configured is not None:
+            # A bin-number histogram carries no usable edges of its own; these are the
+            # real ones, and what the prediction has been made differential in.
+            edges = np.asarray(configured, dtype=float)
+        else:
+            try:
+                edges = np.asarray(pn.Binning.get_bin_edges1D(binned.binning.bins),
+                                   dtype=float)
+            except Exception:
+                edges = None  # multi-dimensional binning: plot against bin number
 
         projections = analysis.get_projections()
         xlabel = "bin"
@@ -564,6 +620,10 @@ class SyntheticAdapter:
         scale = self._TOTAL / total if total > 0.0 else 1.0
         return EventSample(bin_index=bin_index, weights=generated.weights * scale,
                            nbins=nbins, raw_weights=generated.weights)
+
+    @staticmethod
+    def response_matrix(measurement: dict, nbins: int) -> Optional[np.ndarray]:
+        return None  # the synthetic path has no smeared measurements
 
     def data_table(self, measurement: dict) -> DataTable:
         nbins = self._nbins(measurement)

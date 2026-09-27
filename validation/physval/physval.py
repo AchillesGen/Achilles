@@ -59,7 +59,9 @@ def predict(adapter, generated: GeneratedEvents, measurement: dict,
     """Histogram shared per-experiment events onto one measurement and bootstrap."""
     sample = adapter.histogram(generated, measurement)
     return bootstrap_covariance(sample.bin_index, sample.weights, sample.nbins,
-                                n_boot=n_boot, rng=rng)
+                                n_boot=n_boot, rng=rng,
+                                response=adapter.response_matrix(measurement,
+                                                                 sample.nbins))
 
 
 # ---------------------------------------------------------------------------
@@ -235,7 +237,8 @@ def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
                 sample = adapter.histogram(gen, m)
                 preds[name][m["name"]] = bootstrap_covariance(
                     sample.bin_index, sample.weights, sample.nbins,
-                    n_boot=n_boot, rng=rng)
+                    n_boot=n_boot, rng=rng,
+                    response=adapter.response_matrix(m, sample.nbins))
                 samples[name][m["name"]] = sample
             if gen.run is not None:
                 if gen.run.seconds:
@@ -392,6 +395,11 @@ def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
 # CLI
 # ---------------------------------------------------------------------------
 
+# Per-sample overrides declared as top-level maps in the config, folded onto the
+# measurement they name so the adapter sees them next to the sample.
+_MEASUREMENT_KEYS = ("data_scale", "bin_edges", "solid_angle", "smearing")
+
+
 def _load_config(path: str) -> dict:
     with open(path) as fh:
         config = yaml.safe_load(fh)
@@ -400,6 +408,22 @@ def _load_config(path: str) -> dict:
     for exp in config["experiments"]:
         exp["measurements"] = [m if isinstance(m, dict) else {"name": m}
                                for m in exp["measurements"]]
+
+    known = {m["name"] for exp in config["experiments"] for m in exp["measurements"]}
+    for key in _MEASUREMENT_KEYS:
+        entries = config.get(key) or {}
+        unknown = set(entries) - known
+        if unknown:
+            raise SystemExit(f"{key}: no such measurement(s) {sorted(unknown)}")
+        for exp in config["experiments"]:
+            for m in exp["measurements"]:
+                if m["name"] in entries:
+                    value = entries[m["name"]]
+                    # smearing names a csv, relative to the config it is declared in.
+                    if key == "smearing":
+                        value = os.path.join(os.path.dirname(os.path.abspath(path)),
+                                             value)
+                    m[key] = value
     return config
 
 

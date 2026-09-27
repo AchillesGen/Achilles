@@ -29,6 +29,29 @@
 #   measurements  Full NUISANCE3 sample names, run verbatim. A bare name is enough;
 #                 use a mapping ({name: ..., dryrun: {nbins: N}}) only to override
 #                 synthetic-adapter binning.
+#
+# Per-sample overrides live in the maps at the bottom of this file, keyed by sample
+# name, and are folded onto the measurement at load time:
+#   data_scale    factor applied to the shipped NUISANCE data table and its
+#                 covariance. Only for a table that is in the wrong units.
+#   bin_edges     physical edges for a sample whose NUISANCE histogram is indexed by
+#                 bin *number*. The prediction is divided by the widths they imply
+#                 (the sample does that in its own ConvertEventRates, which the legacy
+#                 record never calls) and plots get a real x axis.
+#   solid_angle   sr the prediction is divided by, for a cross section published
+#                 doubly differential in solid angle while the selection integrates
+#                 over an angular acceptance window.
+#   smearing      csv (relative to this file) holding a regularisation matrix A_C
+#                 applied to the prediction as v -> A_C v, the way a Wiener-SVD
+#                 unfolded measurement has to be compared. Never applied to the data.
+#
+# NUISANCE2 requirements. The MicroBooNE_NCpi0 and ElectronData samples need two
+# NUISANCE2 fixes that are not on its main branch yet (NUISANCEMC/nuisance#115, #116):
+# NCpi0 sets its bin index only in FillHistograms, which the legacy record never
+# calls, and the Durham samples cut on variables the record fills after isSignal. Both
+# fail silently, with an empty prediction. The physval image carries them as patches on
+# top of its pinned NUISANCE2 sha; if a rebuild ever drops them, those samples go quiet
+# rather than red, so check versions.json's nuisance2.patches when they do.
 
 # Unweighting scan (`physval.py --unweighter-scan`).
 #
@@ -95,6 +118,17 @@ experiments:
       - MINERvA_CC0pinp_STV_XSec_1Dpprot_nu
       - MINERvA_CC0pinp_STV_XSec_1Dthmu_nu
       - MINERvA_CC0pinp_STV_XSec_1Dthprot_nu
+      # Single-pion samples on the same beam+target: this card already runs the
+      # CC1pi0 flux and cuts muons at 30 deg, which contains the CC0pi STV (20 deg),
+      # CC1pi0 (25 deg) and CC1pi+ 2017 (20 deg) selections. NUISANCE applies the
+      # published cuts itself.
+      - MINERvA_CC1pi0_XSec_1DWexp_nu
+      - MINERvA_CC1pi0_XSec_1DPPi0Mass_nu
+      - MINERvA_CC1pi0_XSec_1DPPi0MassDelta_nu
+      - MINERvA_CC1pi0_XSec_1DTpi_nu
+      - MINERvA_CC1pi0_XSec_1DQ2_nu
+      - MINERvA_CC1pip_XSec_1DTpi_nu_2017
+      - MINERvA_CC1pip_XSec_1DQ2_nu_2017
 
   # CC1Mu1p / CC1Mu2p / CC1MuNp share MicroBooNE's numu+Ar beam+target, so one
   # generation serves all three sample families.
@@ -107,17 +141,12 @@ experiments:
     measurements:
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
-      # NOTE: this sample's χ²/ndof against data is not meaningful, and the ~0.4 GeV
-      # offset in its overlay plot is not an Achilles problem. NUISANCE mixes units
-      # in the δp_n reconstruction (MicroBooNE_CC1Mu1p_XSec_1D_nu.cxx:223, unchanged
-      # on main as of f5f79db): MA/MAPrime and the muon/proton energies are in GeV
-      # while the longitudinal momenta and |δp_T| stay in MeV, so
-      #   R = MA + pL_mu + pL_p - E_mu - E_p
-      # collapses to pL_mu + pL_p and δp_L to roughly half the longitudinal momentum
-      # — ~0.4 GeV for BNB kinematics, whatever generator is fed in. The published
-      # data is the real δp_n, so the two sides plot different quantities.
-      # main-vs-branch compatibility (what the flag uses) is unaffected: both
-      # predictions go through the same broken definition. Kept for that reason.
+      # This sample's comparison to data used to be meaningless: NUISANCE mixed GeV
+      # and MeV in the δp_n reconstruction, so it plotted roughly half the
+      # longitudinal momentum — a ~0.4 GeV offset for BNB kinematics, whatever
+      # generator was fed in. Fixed upstream (NUISANCEMC/nuisance#114), so the
+      # comparison is a real one from NUISANCE2 86c64b44 on. A baseline taken with an
+      # image older than that is not comparable for this sample alone.
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
@@ -149,3 +178,113 @@ experiments:
       - T2K_CC1pipNp_CH_XSec_1DdaT_nu
       - T2K_CC1pipNp_CH_XSec_1DdpTT_nu
       - T2K_CC1pipNp_CH_XSec_1DpN_nu
+      - T2K_CC1pip_CH_XSec_1Dppi_nu
+      - T2K_CC1pip_CH_XSec_1DQ2_nu
+
+  # MiniBooNE numu on mineral oil. The published cross sections are per CH2 molecule,
+  # so the run card lists 1H twice and nothing is divided out here.
+  - name: MiniBooNE_CC1pi
+    achilles_run: "examples/MiniBooNE/run_MiniBooNE_virtresonances.yml"
+    data_per: atom             # published as cm^2/CH2 molecule
+    target_nucleons: 14        # CH2 (documented; not used when data_per: atom)
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MiniBooNE_CC1pip_XSec_1DTpi_nu
+      - MiniBooNE_CC1pip_XSec_1DQ2_nu
+      - MiniBooNE_CC1pi0_XSec_1Dppi0_nu
+
+  # MicroBooNE NCpi0 (WireCell). A separate generation from MicroBooNE_CC1Mu: the
+  # process list is neutral current, so no event file is shared with it. Needs the
+  # NCpi0 NUISANCE2 patch (see the header) or both samples come back empty.
+  - name: MicroBooNE_NCpi0
+    achilles_run: "examples/Microboone/run_uB_NC_pi0_virtresonances.yml"
+    data_per: nucleon          # integrates to ~3.5e-40 cm^2, i.e. the per-nucleon
+    target_nucleons: 40        # reading of the published ~1.2e-38 cm^2/Ar
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MicroBooNE_NCpi0_XSec_XpPpi0_nu
+      - MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu
+
+  # Inclusive electron scattering: NUISANCE's Durham/QES-archive samples
+  # (ElectronData_<Z>_<A>_<E>_<theta>_<ref>, data/Electron/{12C,16O}.dat). Each is a
+  # fixed beam energy, so an experiment here is one energy; angles at the same energy
+  # share the generation. These four sit in the QE + Delta range the models cover --
+  # the 2-5.8 GeV entries are DIS and x>1 data Achilles has no machinery for. All of
+  # them need the Durham NUISANCE2 patch (see the header) or nothing is selected.
+  #
+  # The published cross section is d2sigma/dOmega dq0 per nucleus, and the selection
+  # accepts a +-4 deg window around the quoted angle, so the prediction is divided by
+  # that window's solid angle under `solid_angle` below.
+  - name: e12C_560
+    achilles_run: "examples/Electron/run_e12C_560_virtresonances.yml"
+    data_per: atom             # nb/sr/GeV per 12C nucleus, not per nucleon
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.560_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.560_60.000_Barreau:1983ht
+
+  - name: e12C_961
+    achilles_run: "examples/Electron/run_e12C_961_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.961_37.500_Sealock:1989nx
+
+  - name: e12C_1299
+    achilles_run: "examples/Electron/run_e12C_1299_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_1.299_37.500_Sealock:1989nx
+
+  - name: e16O_880
+    achilles_run: "examples/Electron/run_e16O_880_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 16
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_8_16_0.8800_32.0_Anghinolfi:1996vm
+
+# MiniBooNE's shipped dsigma/dQ2 table (MiniBooNE/CC1pip/ccpipXSec_Q2.txt) is written
+# with an "E-45" exponent where the paper's table is 1e-39 cm^2/GeV^2, so it comes out
+# 1e6 low: it integrates to 2.9e-44 cm^2 where the same analysis' dsigma/dTpi and
+# sigma(Enu) tables both give 2.5e-38 cm^2/CH2. Put it back on their footing.
+data_scale:
+  MiniBooNE_CC1pip_XSec_1DQ2_nu: 1.0e+6
+
+# The NCpi0 samples' NUISANCE histogram is indexed by bin number (one sample stacks
+# several blocks, so it has no single physical axis). These are the physical edges of
+# the two single-block samples, from data/MicroBooNE/NCpi0/real_bins.txt.
+bin_edges:
+  MicroBooNE_NCpi0_XSec_XpPpi0_nu:
+    [0.0, 0.12, 0.18, 0.24, 0.3, 0.36, 0.42, 0.51, 0.66, 1.2]
+  MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu:
+    [-1.0, -0.8, -0.6, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,
+     0.7, 0.8, 0.9, 1.0]
+
+# 2*pi*(cos(theta-4 deg) - cos(theta+4 deg)), the acceptance window NUISANCE's
+# Electron_NThetaBins * Electron_ThetaWidth defaults (4 x 1 deg) cut on. Dividing by it
+# treats d2sigma/dOmega dq0 as flat across 8 deg, the same approximation the sample's
+# own (commented out) normalisation made.
+solid_angle:
+  ElectronData_6_12_0.560_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.560_60.000_Barreau:1983ht: 0.759145
+  ElectronData_6_12_0.961_37.500_Sealock:1989nx: 0.533632
+  ElectronData_6_12_1.299_37.500_Sealock:1989nx: 0.533632
+  ElectronData_8_16_0.8800_32.0_Anghinolfi:1996vm: 0.464520
+
+# Wiener-SVD additional smearing, the A_C blocks of MicroBooNE_NCpi0_data_release.root
+# for these two samples. The unfolded data is only comparable to A_C * prediction.
+smearing:
+  MicroBooNE_NCpi0_XSec_XpPpi0_nu: smearing/MicroBooNE_NCpi0_XSec_XpPpi0_nu_Ac.csv
+  MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu:
+    smearing/MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu_Ac.csv

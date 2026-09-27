@@ -21,7 +21,8 @@ the move is a path change.
 | `adapters.py` | The boundary to Achilles/NUISANCE3: `generate` (once per experimental setup) + `histogram` (per measurement). `Nuisance3Adapter` is the real path; `SyntheticAdapter` backs `--dry-run` and the self-tests. |
 | `plots.py` | Publication-style data/main/branch overlay + ratio panel, one PNG per measurement. |
 | `physval.py` | Driver: config → generate → stats → report; plus `--make-baseline` and `--unweighter-scan`. |
-| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events, plus the `unweighting:` variant list. |
+| `measurements.yml` | Experiments (run cards) each grouping the measurements that reuse their events, the per-sample override maps (`data_scale`, `bin_edges`, `solid_angle`, `smearing`), plus the `unweighting:` variant list. |
+| `smearing/` | Regularisation matrices (A_C) for the Wiener-SVD unfolded samples, as csv. |
 
 ## Run it locally
 
@@ -160,6 +161,35 @@ in the data's units. `data_table` takes the published values and the *full*
 
 Note the legacy NUISANCE2 record resolves analyses lazily — `get_analyses()` returns
 an empty list, but `record.analysis("<sample>")` works.
+
+### What a sample needs beyond the record
+
+Four things the legacy record does not do for us are declared per sample in
+`measurements.yml` and applied in the adapter, because the record calls neither the
+sample's `ConvertEventRates` nor its normalisation:
+
+* `bin_edges` — the sample's histogram is indexed by bin *number* (NCπ⁰ stacks several
+  blocks), so the widths from the NUISANCE binning are 1 and the prediction has to be
+  divided by the real ones.
+* `solid_angle` — the Durham electron data is published per steradian while the
+  selection integrates over its ±4° acceptance window.
+* `smearing` — a Wiener-SVD unfolded measurement is only comparable to `A_C ×
+  prediction`. The matrix is applied inside `bootstrap_covariance`, per replica, so it
+  reaches the MC covariance as `A C Aᵀ` and not just the central values. It is never
+  applied to the data.
+* `data_scale` — one shipped table (MiniBooNE dσ/dQ²) is written 1e6 low; the factor
+  multiplies the data and its covariance, not the prediction.
+
+### Samples that need patched NUISANCE2
+
+`MicroBooNE_NCpi0_*` and `ElectronData_*` do not work against NUISANCE2 as shipped:
+NCπ⁰ sets its bin index only in `FillHistograms`, which the legacy record never calls,
+and the Durham samples cut on variables the record fills *after* `isSignal`. Both fail
+silently — an empty prediction, not an error. The fixes are upstream as
+NUISANCEMC/nuisance#115 and #116 and are carried as patches in the physval image on top
+of its pinned NUISANCE2 sha; `versions.json`'s `nuisance2.patches` records them. The
+δp_n unit mixing that used to make `MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu` incomparable
+to data is fixed upstream (#114) and needs NUISANCE2 ≥ `86c64b44` in the image.
 
 ### Achilles' libraries must precede the image's
 
