@@ -40,6 +40,11 @@ permissions:
   contents: read
   packages: read
 
+# The container's default shell is sh; the steps use bash arrays.
+defaults:
+  run:
+    shell: bash
+
 env:
   PHYSVAL_DIR: validation/physval
   BASELINE_BRANCH: physval-baselines
