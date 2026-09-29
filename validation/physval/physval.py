@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Achilles distribution-based physics-validation driver.
 
-Per run: for each experimental setup, generate events once, histogram each of its
-measurements, bootstrap a covariance, compare against the stored 'main' baseline
-(compatibility p_compat) and the data (goodness-of-fit), and render a Sherpa-style
-PR comment + summary.json.
+For each experimental setup: generate events once, bin every measurement, and compare
+the PR against the stored main baseline (``p_compat``) and the data (``p_data``).
 
-Modes: --make-baseline stores the 'main' baseline; --dry-run swaps in the synthetic
-adapter (no Achilles/NUISANCE); --selftest runs an injected-regression check.
+  --make-baseline   write main's per-setup predictions to --out-dir
+  (default)         compare against <baseline-dir>/baselines/<key>/<setup>.json
+  --merge           combine shard summaries into one comment
+  --unweighter-scan compare Options/Unweighting variants against a reference
+  --dry-run         synthetic adapter, no Achilles/NUISANCE
+  --selftest        end-to-end check on the synthetic adapter
 """
 
 from __future__ import annotations
@@ -22,234 +24,171 @@ from typing import Dict, List, Optional
 import numpy as np
 import yaml
 
-from adapters import (DataTable, GeneratedEvents, Nuisance3Adapter,
-                      SyntheticAdapter)
-from report import (ALPHA, MeasurementResult, MissingMeasurement, Report,
-                    ScanReport, plot_basename,
-                    VariantMeasurement, VariantSummary)
-from stats import (Prediction, bonferroni, bootstrap_covariance, compatibility,
-                   goodness_of_fit, shape_compatibility, trial_covariance)
+from adapters import GeneratedEvents, Nuisance3Adapter, SyntheticAdapter
+from report import (ALPHA, MeasurementResult, MissingMeasurement, Report, ScanReport,
+                    VariantMeasurement, VariantSummary, plot_basename)
+from stats import (Prediction, bonferroni, compatibility, goodness_of_fit,
+                   shape_compatibility, trial_covariance)
+
+# Bump when a stored baseline stops being comparable with fresh predictions.
+BASELINE_SCHEMA = 1
 
 
 # ---------------------------------------------------------------------------
-# Baseline (stored 'main') I/O
+# Predictions and baselines
 # ---------------------------------------------------------------------------
 
-def baseline_path(baseline_dir: str, key: str) -> str:
-    return os.path.join(baseline_dir, "baselines", f"{key}.json")
+def predict_all(adapter, generated: GeneratedEvents, measurements):
+    """Bin a setup's events onto all its measurements: (predictions, samples) by name."""
+    if not generated.n_nonzero_trials:
+        raise RuntimeError("event file carries no trial counts; the MC covariance "
+                           "cannot be built")
+    samples = adapter.histogram_many(generated, measurements)
+    preds = {}
+    for m in measurements:
+        s = samples[m["name"]]
+        preds[m["name"]] = trial_covariance(
+            s.bin_index, s.weights, s.nbins, generated.n_nonzero_trials,
+            rel_xsec_err=generated.rel_xsec_err or 0.0,
+            response=adapter.response_matrix(m, s.nbins))
+    return preds, samples
 
 
-def load_baseline(path: str) -> Optional[dict]:
+def baseline_path(baseline_dir: str, key: str, experiment: str) -> str:
+    return os.path.join(baseline_dir, "baselines", key, f"{experiment}.json")
+
+
+def make_baseline(adapter, config: dict, *, seed: int, n_events: int, main_sha: str,
+                  out_dir: str) -> List[str]:
+    """Write one ``<setup>.json`` of main predictions per setup; return the paths."""
+    os.makedirs(out_dir, exist_ok=True)
+    paths = []
+    for exp in config["experiments"]:
+        gen = adapter.generate(exp, "main", seed, n_events)
+        preds, _ = predict_all(adapter, gen, exp["measurements"])
+        gen.cleanup()
+        path = os.path.join(out_dir, f"{exp['name']}.json")
+        with open(path, "w") as fh:
+            json.dump({"schema": BASELINE_SCHEMA, "adapter": adapter.name,
+                       "main_sha": main_sha, "seed": seed, "events": n_events,
+                       "measurements": {k: p.to_dict() for k, p in preds.items()}},
+                      fh)
+        paths.append(path)
+    return paths
+
+
+def load_baseline(path: str, adapter_name: str) -> Optional[dict]:
+    """The stored baseline at ``path``, or None if absent or not comparable."""
     if not os.path.exists(path):
         return None
     with open(path) as fh:
-        return json.load(fh)
-
-
-def _measurement_baseline(baseline: dict, name: str):
-    """Return (main Prediction, DataTable) for a measurement from a baseline dict."""
-    entry = baseline["measurements"][name]
-    main = Prediction.from_dict(entry["prediction"])
-    data = DataTable(values=np.asarray(entry["data"]["values"], dtype=float),
-                     covariance=np.asarray(entry["data"]["covariance"], dtype=float))
-    return main, data
-
-
-# Name of the estimator the covariances are built with, recorded in a stored
-# baseline: a baseline built with a different one cannot be mixed with fresh feature
-# predictions, so `run` treats it as stale and recomputes main inline.
-ESTIMATOR = "trial"
-
-
-def _predict(adapter, generated: GeneratedEvents, measurement: dict, sample,
-             n_boot: int, rng: np.random.Generator) -> Prediction:
-    """One measurement's prediction and MC covariance.
-
-    Uses the generator's trial counts and cross-section uncertainty when the events
-    carry them (`stats.trial_covariance`, which says why that is the correct
-    normalisation), and falls back to resampling when they do not -- an event sample
-    from some other source, or one written before the counters were recorded.
-    """
-    response = adapter.response_matrix(measurement, sample.nbins)
-    if generated.n_nonzero_trials:
-        return trial_covariance(sample.bin_index, sample.weights, sample.nbins,
-                                generated.n_nonzero_trials,
-                                rel_xsec_err=generated.rel_xsec_err or 0.0,
-                                response=response)
-    return bootstrap_covariance(sample.bin_index, sample.weights, sample.nbins,
-                                n_boot=n_boot, rng=rng, response=response)
-
-
-def _estimator_used(predictions) -> str:
-    """Which estimator built these covariances, read off the predictions themselves.
-
-    `trial_covariance` leaves `n_boot` unset because it is not a finite-sample
-    estimate, so this reports what `_predict` actually did rather than what it meant
-    to do -- the fallback is silent, and a summary that cannot be audited was how the
-    old covariance survived so long.
-    """
-    kinds = {"trial" if p.n_boot is None else "bootstrap" for p in predictions}
-    return "+".join(sorted(kinds)) if kinds else "unknown"
-
-
-def predict_all(adapter, generated: GeneratedEvents, measurements,
-                n_boot: int, rng: np.random.Generator) -> Dict[str, Prediction]:
-    """Bin a setup's shared events onto all of its measurements, then add errors.
-
-    One call into the adapter for the whole setup: the real one walks the event file
-    once with every sample's columns on the same frame, so this is where the batching
-    pays off.
-    """
-    samples = adapter.histogram_many(generated, measurements)
-    out, counts = {}, {}
-    for m in measurements:
-        sample = samples[m["name"]]
-        out[m["name"]] = _predict(adapter, generated, m, sample, n_boot, rng)
-        # Two samples that share a selection must bin the same number of events; when
-        # one of them comes out empty, this is the column that says so.
-        counts[m["name"]] = int(sample.bin_index.size)
-    return out, counts
-
-
-def predict(adapter, generated: GeneratedEvents, measurement: dict,
-            n_boot: int, rng: np.random.Generator) -> Prediction:
-    """One measurement, for callers that do not have the whole setup in hand."""
-    return predict_all(adapter, generated, [measurement], n_boot, rng)[0][
-        measurement["name"]]
+        b = json.load(fh)
+    if b.get("schema") != BASELINE_SCHEMA or b.get("adapter") != adapter_name:
+        return None
+    return b
 
 
 # ---------------------------------------------------------------------------
-# make-baseline: compute and store 'main' predictions + data + covariance
+# Comparison run
 # ---------------------------------------------------------------------------
 
-def make_baseline(adapter, config: dict, key: str, seed: int,
-                  n_events: int, n_boot: int, out_dir: str) -> str:
-    rng = np.random.default_rng(seed)
-    measurements: Dict[str, dict] = {}
-    estimators = set()
-    for exp in config["experiments"]:
-        gen_main = adapter.generate(exp, "main", seed, n_events)  # once per setup
-        mains, _ = predict_all(adapter, gen_main, exp["measurements"], n_boot, rng)
-        estimators.add(_estimator_used(mains.values()))
-        for m in exp["measurements"]:
-            name = m["name"]
-            main = mains[name]
-            data = adapter.data_table(m)
-            measurements[name] = {
-                "prediction": main.to_dict(),
-                "data": {"values": data.values.tolist(),
-                         "covariance": data.covariance.tolist()},
-            }
-        gen_main.cleanup()  # the event file can be many GB; drop it once binned
-    baseline = {
-        "key": key,
-        "seed": seed,
-        "events_per_measurement": n_events,
-        "n_boot": n_boot,
-        "estimator": "+".join(sorted(estimators)) or "unknown",
-        "measurements": measurements,
-    }
-    path = baseline_path(out_dir, key)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as fh:
-        json.dump(baseline, fh, indent=2)
-    return path
-
-
-# ---------------------------------------------------------------------------
-# run: compare feature branch against stored baseline, emit report
-# ---------------------------------------------------------------------------
-
-def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
-        baseline: Optional[dict], repo: str, feature_sha: str,
-        nuisance_version: str,
+def run(adapter, config: dict, *, seed: int, n_events: int, baseline_dir: str,
+        key: str, repo: str, feature_sha: str, nuisance_version: str,
         out_dir: str) -> Report:
-    # Imported here, not at module scope: only this path renders anything, so the
-    # aggregate job (which just merges shard summaries) needs no matplotlib.
-    from plots import plot_measurement
+    from plots import plot_measurement  # only this path needs matplotlib
 
-    rng = np.random.default_rng(seed + 101)
-    results = []
-    warnings = []
-    estimators = set()
-
+    os.makedirs(out_dir, exist_ok=True)
+    results, missing, main_shas = [], [], set()
     for exp in config["experiments"]:
-        # Feature events: once per setup, reused by every measurement. Main events
-        # are generated (also once) only for measurements with no stored baseline.
-        gen_feature = adapter.generate(exp, "feature", seed, n_events)
-        features, n_selected = predict_all(adapter, gen_feature, exp["measurements"],
-                                           n_boot, rng)
-        estimators.add(_estimator_used(features.values()))
+        try:
+            gen = adapter.generate(exp, "feature", seed, n_events)
+            features, samples = predict_all(adapter, gen, exp["measurements"])
+            gen.cleanup()
+        except Exception as err:  # report the setup as failed, keep the rest
+            print(f"::error::{exp['name']}: {err}")
+            missing += [MissingMeasurement(m["name"], exp["name"], str(err))
+                        for m in exp["measurements"]]
+            continue
 
-        # Measurements with no stored baseline need main computed inline. Collect them
-        # first so that generation, and the pass over its events, happens once.
-        # A baseline whose covariances came from a different estimator cannot be
-        # compared against fresh predictions -- the two would carry different
-        # uncertainties for the same thing -- so recompute main inline instead.
-        usable = baseline is not None and baseline.get("estimator") == ESTIMATOR
-        stale = [m for m in exp["measurements"]
-                 if not usable
-                 or m["name"] not in baseline.get("measurements", {})]
-        mains = {}
-        gen_main = None
-        if stale:
-            warnings.extend(m["name"] for m in stale)
-            gen_main = adapter.generate(exp, "main", seed, n_events)
-            mains, _ = predict_all(adapter, gen_main, stale, n_boot, rng)
-            estimators.add(_estimator_used(mains.values()))
+        base = load_baseline(baseline_path(baseline_dir, key, exp["name"]), adapter.name)
+        stored = base["measurements"] if base else {}
+        if base:
+            main_shas.add(base["main_sha"])
 
         for m in exp["measurements"]:
-            name = m["name"]
-            feature = features[name]
-
-            if name in mains:
-                main, data = mains[name], adapter.data_table(m)
-            else:
-                main, data = _measurement_baseline(baseline, name)
-
-            compat = compatibility(main, feature)
+            name, feature = m["name"], features[m["name"]]
+            data = adapter.data_table(m)
             gof_pr = goodness_of_fit(feature, data.values, data.covariance)
-            gof_main = goodness_of_fit(main, data.values, data.covariance)
-
-            os.makedirs(out_dir, exist_ok=True)
+            main = Prediction.from_dict(stored[name]) if name in stored else None
+            if main is not None and main.nbins != feature.nbins:
+                main = None  # binning changed since the baseline
+            r = MeasurementResult(name=name, experiment=exp["name"], ndof=gof_pr.ndof,
+                                  chi2_ndof_pr=gof_pr.chi2_per_ndof, p_data=gof_pr.pvalue,
+                                  plot=plot_basename(name),
+                                  selected_events=int(samples[name].bin_index.size))
+            if main is not None:
+                gof_main = goodness_of_fit(main, data.values, data.covariance)
+                r.chi2_ndof_main = gof_main.chi2_per_ndof
+                r.delta_chi2 = gof_pr.chi2 - gof_main.chi2
+                r.p_compat = compatibility(main, feature).pvalue
+            results.append(r)
             plot_measurement(
-                os.path.join(out_dir, plot_basename(name)), name,
+                os.path.join(out_dir, r.plot), name,
                 data=data.values, data_cov=data.covariance,
-                main=main.values, main_cov=main.covariance,
+                main=None if main is None else main.values,
+                main_cov=None if main is None else main.covariance,
                 feature=feature.values, feature_cov=feature.covariance,
                 edges=data.edges, xlabel=data.xlabel, ylabel=data.ylabel,
                 subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
                          f"{n_events:,} events  |  {feature_sha[:8]}")
 
-            results.append(MeasurementResult(
-                name=name,
-                ndof=compat.ndof,
-                chi2_ndof_main=gof_main.chi2_per_ndof,
-                chi2_ndof_pr=gof_pr.chi2_per_ndof,
-                delta_chi2=gof_pr.chi2 - gof_main.chi2,
-                p_compat=compat.pvalue,
-                p_data=gof_pr.pvalue,
-                plot=plot_basename(name),
-                experiment=exp["name"],
-                selected_events=n_selected.get(name, 0),
-            ))
-
-        gen_feature.cleanup()  # event files can be many GB; drop once binned
-        if gen_main is not None:
-            gen_main.cleanup()
-
-    extra_header = []
-    if warnings:
-        extra_header.append(
-            f"> ⚠️ No stored baseline for {len(warnings)} measurement(s) "
-            f"({', '.join(warnings)}); main was computed inline for this run.")
-
     report = Report(results=results, repo=repo, feature_sha=feature_sha,
-                    nuisance_version=nuisance_version,
-                    seed=seed, events_per_measurement=n_events,
-                    extra_header=extra_header,
-                    estimator="+".join(sorted(estimators)) or "unknown")
+                    nuisance_version=nuisance_version, seed=seed,
+                    events_per_measurement=n_events, did_not_run=missing,
+                    baseline_shas=sorted(main_shas), image_key=key)
+    report.write(os.path.join(out_dir, "comment.md"),
+                 os.path.join(out_dir, "summary.json"))
+    return report
 
+
+def _run_url() -> str:
+    env = os.environ
+    if not env.get("GITHUB_RUN_ID"):
+        return ""
+    return (f"{env.get('GITHUB_SERVER_URL', 'https://github.com')}/"
+            f"{env.get('GITHUB_REPOSITORY')}/actions/runs/{env['GITHUB_RUN_ID']}")
+
+
+def merge_shards(shard_paths, out_dir: str, config: Optional[dict] = None) -> Report:
+    """Combine shard summaries; ``config`` names the measurements no shard reported."""
+    shards = []
+    for p in shard_paths:
+        if os.path.exists(p):
+            with open(p) as fh:
+                shards.append(json.load(fh))
+    if not shards and not config:
+        raise SystemExit("merge: no shard summaries and no config")
+
+    results = [MeasurementResult.from_dict(m) for s in shards for m in s["measurements"]]
+    missing = [MissingMeasurement(**m) for s in shards for m in s.get("did_not_run", [])]
+    seen = {r.name for r in results} | {m.name for m in missing}
+    for exp in (config or {}).get("experiments", []):
+        missing += [MissingMeasurement(m["name"], exp["name"], "the shard's job failed")
+                    for m in exp["measurements"] if m["name"] not in seen]
+
+    head = shards[0] if shards else {}
+    report = Report(results=results,
+                    repo=head.get("repo", os.environ.get("GITHUB_REPOSITORY",
+                                                         "AchillesGen/Achilles")),
+                    feature_sha=head.get("feature_sha",
+                                         os.environ.get("GITHUB_SHA", "unknown")),
+                    nuisance_version=head.get("nuisance_version", "unknown"),
+                    seed=head.get("seed", 0),
+                    events_per_measurement=head.get("events_per_measurement", 0),
+                    did_not_run=missing,
+                    baseline_shas=sorted({sha for s in shards
+                                          for sha in s.get("baseline_shas", [])}),
+                    image_key=head.get("image_key", ""), run_url=_run_url())
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
@@ -260,212 +199,132 @@ def run(adapter, config: dict, *, seed: int, n_events: int, n_boot: int,
 # Unweighting scan: the same setup generated once per unweighting scheme
 # ---------------------------------------------------------------------------
 
+NULL_CONTROL = "null-control"  # the reference reseeded; calibrates the scan
+
+
 def _mean_error(pred: Prediction) -> float:
-    """Mean per-bin bootstrap 1-sigma — the size of the prediction's error band."""
     return float(np.mean(np.sqrt(np.clip(np.diag(pred.covariance), 0.0, None))))
 
 
 def run_unweighting_scan(adapter, config: dict, *, seed: int, n_events: int,
-                         n_boot: int, repo: str, feature_sha: str,
-                         nuisance_version: str, out_dir: str) -> ScanReport:
-    """Generate each setup once per unweighting variant and compare them.
-
-    Unweighting is variance reduction, so every variant must reproduce the reference
-    variant's distributions; what legitimately differs is the MC noise per event and
-    the wall time. Variants share a seed and an event count, so the only difference
-    between two runs of a setup is the scheme itself.
-    """
+                         repo: str, feature_sha: str, nuisance_version: str,
+                         out_dir: str) -> ScanReport:
+    """Generate each setup once per variant; every variant must match the reference."""
     from plots import plot_variants
 
     spec = config.get("unweighting")
     if not spec:
         raise SystemExit("--unweighter-scan needs an 'unweighting:' block in the config")
-    variants = spec["variants"]
-    reference = spec["reference"]
-    names = [v["name"] for v in variants]
-    if reference not in names:
-        raise SystemExit(f"unweighting.reference {reference!r} is not one of {names}")
+    variants, reference = spec["variants"], spec["reference"]
+    if reference not in [v["name"] for v in variants]:
+        raise SystemExit(f"unweighting.reference {reference!r} is not a variant")
 
-    rng = np.random.default_rng(seed + 202)
     rows: List[VariantMeasurement] = []
-    estimators = set()
-    # variant -> per-measurement pieces, rolled up once every setup has been seen.
-    per_variant: Dict[str, dict] = {v["name"]: {"pvalues": [], "ess": [], "err": [],
-                                                "norm": [], "seconds": 0.0,
-                                                "eff": []} for v in variants}
-
+    runtime: Dict[str, tuple] = {v["name"]: (0.0, []) for v in variants}
+    os.makedirs(out_dir, exist_ok=True)
     for exp in config["experiments"]:
         data = {m["name"]: adapter.data_table(m) for m in exp["measurements"]}
-        preds: Dict[str, Dict[str, Prediction]] = {}
-        samples: Dict[str, Dict[str, object]] = {}
-
-        # One generation per variant, immediately binned into every measurement of
-        # the setup so only a single event file is on disk at a time.
+        preds, samples = {}, {}
         for variant in variants:
             name = variant["name"]
-            # seed_offset is normally 0 so every variant shares a stream and only
-            # the scheme differs. A null-control variant repeats the reference's
-            # options at a different offset, which calibrates the test: its p-values
-            # are drawn from the null and should be uniform.
             gen = adapter.generate(exp, name, seed, n_events,
                                    unweighting=variant["options"],
                                    seed_offset=int(variant.get("seed_offset", 0)))
-            preds[name], samples[name] = {}, {}
-            binned = adapter.histogram_many(gen, exp["measurements"])
-            for m in exp["measurements"]:
-                sample = binned[m["name"]]
-                preds[name][m["name"]] = _predict(adapter, gen, m, sample,
-                                                  n_boot, rng)
-                samples[name][m["name"]] = sample
-            estimators.add(_estimator_used(preds[name].values()))
+            preds[name], samples[name] = predict_all(adapter, gen, exp["measurements"])
             if gen.run is not None:
-                if gen.run.seconds:
-                    per_variant[name]["seconds"] += gen.run.seconds
-                if gen.run.unweight_eff:
-                    per_variant[name]["eff"].append(gen.run.unweight_eff)
+                secs, effs = runtime[name]
+                runtime[name] = (secs + (gen.run.seconds or 0.0),
+                                 effs + ([gen.run.unweight_eff]
+                                         if gen.run.unweight_eff else []))
             gen.cleanup()
 
-        os.makedirs(out_dir, exist_ok=True)
         for m in exp["measurements"]:
             mname = m["name"]
-            ref_pred = preds[reference][mname]
-            ref_total = float(np.sum(ref_pred.values))
-            ref_err = _mean_error(ref_pred)
-
+            ref = preds[reference][mname]
+            ref_total, ref_err = float(np.sum(ref.values)), _mean_error(ref)
             for variant in variants:
                 vname = variant["name"]
-                pred = preds[vname][mname]
-                sample = samples[vname][mname]
-                compat = compatibility(ref_pred, pred)
-                shape = shape_compatibility(ref_pred, pred)
+                pred, sample = preds[vname][mname], samples[vname][mname]
+                is_ref = vname == reference
                 gof = goodness_of_fit(pred, data[mname].values, data[mname].covariance)
                 total = float(np.sum(pred.values))
-                row = VariantMeasurement(
-                    measurement=mname, variant=vname, ndof=compat.ndof,
+                rows.append(VariantMeasurement(
+                    measurement=mname, variant=vname, ndof=pred.nbins,
                     chi2_ndof_data=gof.chi2_per_ndof,
-                    # The reference has nothing to be compared against; NaN keeps it
-                    # out of the flagged rows and renders as a dash.
-                    p_compat=float("nan") if vname == reference else compat.pvalue,
-                    p_shape=float("nan") if vname == reference else shape.pvalue,
+                    p_compat=float("nan") if is_ref else compatibility(ref, pred).pvalue,
+                    p_shape=(float("nan") if is_ref
+                             else shape_compatibility(ref, pred).pvalue),
                     p_data=gof.pvalue,
                     norm_shift=(total - ref_total) / ref_total if ref_total else float("nan"),
                     ess_fraction=sample.ess_fraction(),
                     max_over_mean=sample.max_over_mean(),
-                    mc_error_ratio=_mean_error(pred) / ref_err if ref_err else float("nan"))
-                rows.append(row)
-                agg = per_variant[vname]
-                agg["ess"].append(row.ess_fraction)
-                agg["err"].append(row.mc_error_ratio)
-                agg["norm"].append(row.norm_shift)
-                if vname != reference:
-                    agg["pvalues"].append(compat.pvalue)
-
+                    mc_error_ratio=_mean_error(pred) / ref_err if ref_err else float("nan")))
             plot_variants(
                 os.path.join(out_dir, f"{mname}.unweighting.png"), mname,
                 data=data[mname].values, data_cov=data[mname].covariance,
                 variants={v["name"]: (preds[v["name"]][mname].values,
                                       preds[v["name"]][mname].covariance)
                           for v in variants},
-                reference=reference,
-                edges=data[mname].edges, xlabel=data[mname].xlabel,
-                ylabel=data[mname].ylabel,
+                reference=reference, edges=data[mname].edges,
+                xlabel=data[mname].xlabel, ylabel=data[mname].ylabel,
                 subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
                          f"{n_events:,} events/variant  |  {feature_sha[:8]}")
 
     report = ScanReport(
-        summaries=_scan_summaries(
-            [(v["name"], v["options"]) for v in variants], rows, reference,
-            {name: (agg["seconds"], agg["eff"]) for name, agg in per_variant.items()}),
+        summaries=_scan_summaries([(v["name"], v["options"]) for v in variants], rows,
+                                  reference, runtime),
         rows=rows, reference=reference, repo=repo, feature_sha=feature_sha,
-        nuisance_version=nuisance_version, seed=seed,
-        events_per_measurement=n_events,
-        estimator="+".join(sorted(estimators)) or "unknown")
-    os.makedirs(out_dir, exist_ok=True)
+        nuisance_version=nuisance_version, seed=seed, events_per_measurement=n_events)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
     return report
-
-
-# The variant that repeats the reference at a different seed. Its p-values come
-# from the null hypothesis, so they set the floor any real scheme is judged against.
-NULL_CONTROL = "null-control"
 
 
 def _scan_summaries(variants, rows: List[VariantMeasurement], reference: str,
                     runtime: Dict[str, tuple]) -> List[VariantSummary]:
-    """Roll the per-measurement scan rows up into one line per variant.
-
-    ``variants`` is an ordered ``(name, options)`` sequence; ``runtime`` maps a
-    variant to ``(total_seconds, [per-setup efficiencies])``. Shared by the direct
-    run and by ``merge_scan_shards`` so a sharded scan reports identically.
-    """
-    by_variant: Dict[str, List[VariantMeasurement]] = {}
-    for r in rows:
-        by_variant.setdefault(r.variant, []).append(r)
-
+    """One line per variant; ``runtime`` maps a variant to (seconds, [efficiencies])."""
     summaries = []
     for name, options in variants:
-        mine = by_variant.get(name, [])
-        pv = [r.p_compat for r in mine if r.p_compat == r.p_compat]  # drops the ref's NaN
+        mine = [r for r in rows if r.variant == name]
+        pv = [r.p_compat for r in mine if r.p_compat == r.p_compat]
         ps = [r.p_shape for r in mine if r.p_shape == r.p_shape]
         seconds, effs = runtime.get(name, (0.0, []))
+        nan = float("nan")
         summaries.append(VariantSummary(
             variant=name, options=dict(options), n_measurements=len(mine),
-            p_worst=float(np.min(pv)) if pv else float("nan"),
-            p_overall=bonferroni(pv) if pv else float("nan"),
-            p_shape_worst=float(np.min(ps)) if ps else float("nan"),
-            p_shape_overall=bonferroni(ps) if ps else float("nan"),
-            n_flagged=sum(1 for p in pv if p < ALPHA),
-            ess_fraction=float(np.nanmedian([r.ess_fraction for r in mine]))
-            if mine else float("nan"),
-            mc_error_ratio=float(np.nanmedian([r.mc_error_ratio for r in mine]))
-            if mine else float("nan"),
-            max_norm_shift=max((r.norm_shift for r in mine), key=abs)
-            if mine else float("nan"),
-            seconds=seconds or None,
-            unweight_eff=float(np.min(effs)) if effs else None,
-            is_reference=name == reference,
-            is_null_control=name == NULL_CONTROL))
+            p_worst=min(pv, default=nan), p_overall=bonferroni(pv),
+            p_shape_worst=min(ps, default=nan), p_shape_overall=bonferroni(ps),
+            n_flagged=sum(p < ALPHA for p in pv),
+            ess_fraction=float(np.nanmedian([r.ess_fraction for r in mine])) if mine else nan,
+            mc_error_ratio=(float(np.nanmedian([r.mc_error_ratio for r in mine]))
+                            if mine else nan),
+            max_norm_shift=max((r.norm_shift for r in mine), key=abs, default=nan),
+            seconds=seconds or None, unweight_eff=min(effs, default=None),
+            is_reference=name == reference, is_null_control=name == NULL_CONTROL))
     return summaries
 
 
 def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
-    """Combine per-experiment unweighting-scan ``summary.json`` files into one report.
-
-    The scan shards on the same axis as the branch comparison — one experimental
-    setup per job — so the rows just concatenate; only the per-variant rollup has to
-    be recomputed across the whole family.
-    """
     shards = []
     for p in shard_paths:
         with open(p) as fh:
             shards.append(json.load(fh))
-    if not shards:
-        raise SystemExit("merge_scan_shards: no shard summaries given")
-    if any(s.get("kind") != "unweighting-scan" for s in shards):
-        raise SystemExit("merge_scan_shards: not every shard is an unweighting scan")
-
+    if not shards or any(s.get("kind") != "unweighting-scan" for s in shards):
+        raise SystemExit("merge: expected unweighting-scan shard summaries")
     head = shards[0]
     rows = [VariantMeasurement(**r) for s in shards for r in s["rows"]]
-    # Variant order and options come from the first shard; every shard runs the
-    # same variant list, so this is just the display order.
     variants = [(v["variant"], v["options"]) for v in head["variants"]]
     runtime: Dict[str, tuple] = {name: (0.0, []) for name, _ in variants}
     for s in shards:
         for v in s["variants"]:
-            seconds, effs = runtime[v["variant"]]
-            runtime[v["variant"]] = (seconds + (v["seconds"] or 0.0),
-                                     effs + ([v["unweight_eff"]]
-                                             if v["unweight_eff"] else []))
-
+            secs, effs = runtime[v["variant"]]
+            runtime[v["variant"]] = (secs + (v["seconds"] or 0.0),
+                                     effs + ([v["unweight_eff"]] if v["unweight_eff"] else []))
     report = ScanReport(
         summaries=_scan_summaries(variants, rows, head["reference"], runtime),
         rows=rows, reference=head["reference"], repo=head["repo"],
-        feature_sha=head["feature_sha"],
-        nuisance_version=head["nuisance_version"], seed=head["seed"],
-        events_per_measurement=head["events_per_measurement"],
-        estimator="+".join(sorted(
-            {s.get("estimator", "unknown") for s in shards})) or "unknown")
+        feature_sha=head["feature_sha"], nuisance_version=head["nuisance_version"],
+        seed=head["seed"], events_per_measurement=head["events_per_measurement"])
     os.makedirs(out_dir, exist_ok=True)
     report.write(os.path.join(out_dir, "comment.md"),
                  os.path.join(out_dir, "summary.json"))
@@ -473,198 +332,89 @@ def merge_scan_shards(shard_paths, out_dir: str) -> ScanReport:
 
 
 # ---------------------------------------------------------------------------
-# CLI
+# Config and CLI
 # ---------------------------------------------------------------------------
 
-# Per-sample overrides declared as top-level maps in the config, folded onto the
-# measurement they name so the adapter sees them next to the sample.
+# Top-level per-sample maps in the config, folded onto the measurement they name.
 _MEASUREMENT_KEYS = ("data_scale", "bin_edges", "bin_widths", "solid_angle",
                      "smearing")
 
 
-def _load_config(path: str) -> dict:
+def load_config(path: str) -> dict:
     with open(path) as fh:
         config = yaml.safe_load(fh)
-    # A measurement is normally just its NUISANCE3 sample name; allow a mapping too
-    # for the odd entry that needs extra keys (e.g. a dryrun nbins override).
     for exp in config["experiments"]:
         exp["measurements"] = [m if isinstance(m, dict) else {"name": m}
                                for m in exp["measurements"]]
-
-    known = {m["name"] for exp in config["experiments"] for m in exp["measurements"]}
+    by_name = {m["name"]: m for exp in config["experiments"] for m in exp["measurements"]}
     for key in _MEASUREMENT_KEYS:
         entries = config.get(key) or {}
-        unknown = set(entries) - known
+        unknown = set(entries) - set(by_name)
         if unknown:
             raise SystemExit(f"{key}: no such measurement(s) {sorted(unknown)}")
-        for exp in config["experiments"]:
-            for m in exp["measurements"]:
-                if m["name"] in entries:
-                    value = entries[m["name"]]
-                    # smearing names a csv, relative to the config it is declared in.
-                    if key == "smearing":
-                        value = os.path.join(os.path.dirname(os.path.abspath(path)),
-                                             value)
-                    m[key] = value
+        for name, value in entries.items():
+            if key == "smearing":  # a csv relative to the config
+                value = os.path.join(os.path.dirname(os.path.abspath(path)), value)
+            by_name[name][key] = value
     return config
 
 
-def _filter_config(config: dict, only_experiments, only_measurements,
-                   only_variants=None) -> dict:
-    """Shard the config by experiment (primary) and/or by measurement name.
-
-    ``--only-experiment`` selects whole experimental setups (the CI shard axis);
-    ``--only`` further narrows to individual measurements within them;
-    ``--only-variant`` narrows the unweighting scan's variant list.
-    """
-    experiments = config["experiments"]
-
-    if only_experiments:
-        wanted = set(only_experiments)
-        experiments = [e for e in experiments if e["name"] in wanted]
-        missing = wanted - {e["name"] for e in experiments}
+def filter_config(config: dict, experiments=(), measurements=(), variants=()) -> dict:
+    """Narrow the config to named setups, measurements and scan variants."""
+    exps = config["experiments"]
+    if experiments:
+        exps = [e for e in exps if e["name"] in experiments]
+        missing = set(experiments) - {e["name"] for e in exps}
         if missing:
-            raise SystemExit(
-                f"--only-experiment names not in config: {sorted(missing)}")
-
-    if only_measurements:
-        wanted = set(only_measurements)
-        kept = []
-        for e in experiments:
-            ms = [m for m in e["measurements"] if m["name"] in wanted]
-            if ms:
-                kept.append({**e, "measurements": ms})
-        found = {m["name"] for e in kept for m in e["measurements"]}
-        missing = wanted - found
+            raise SystemExit(f"setups not in config: {sorted(missing)}")
+    if measurements:
+        exps = [{**e, "measurements": [m for m in e["measurements"]
+                                       if m["name"] in measurements]} for e in exps]
+        exps = [e for e in exps if e["measurements"]]
+        missing = set(measurements) - {m["name"] for e in exps for m in e["measurements"]}
         if missing:
-            raise SystemExit(f"--only names not in config: {sorted(missing)}")
-        experiments = kept
-
-    config = {**config, "experiments": experiments}
-
-    if only_variants:
-        spec = config.get("unweighting")
-        if not spec:
-            raise SystemExit("--only-variant needs an 'unweighting:' block in the config")
-        wanted = set(only_variants) | {spec["reference"]}  # the reference is required
-        kept_variants = [v for v in spec["variants"] if v["name"] in wanted]
-        missing = wanted - {v["name"] for v in kept_variants}
+            raise SystemExit(f"measurements not in config: {sorted(missing)}")
+    config = {**config, "experiments": exps}
+    if variants:
+        spec = config.get("unweighting") or {}
+        wanted = set(variants) | {spec.get("reference")}
+        kept = [v for v in spec.get("variants", []) if v["name"] in wanted]
+        missing = wanted - {v["name"] for v in kept}
         if missing:
-            raise SystemExit(f"--only-variant names not in config: {sorted(missing)}")
-        config["unweighting"] = {**spec, "variants": kept_variants}
-
+            raise SystemExit(f"variants not in config: {sorted(missing)}")
+        config["unweighting"] = {**spec, "variants": kept}
     return config
-
-
-def merge_shards(shard_paths, out_dir: str,
-                 config: Optional[dict] = None) -> Report:
-    """Combine per-shard ``summary.json`` files into one Report.
-
-    A shard whose job failed leaves no summary behind, and the aggregate still has to
-    run: reporting the setups that did report, with the rest marked as not run, beats
-    producing nothing at all. Paths that do not exist are therefore skipped (the caller
-    passes a glob), and ``config`` — when given — says which measurements were expected,
-    so the ones nobody reported can be named instead of silently vanishing.
-    """
-    shards = []
-    for p in shard_paths:
-        if not os.path.exists(p):
-            continue  # that shard's job failed, or the glob matched nothing
-        with open(p) as fh:
-            shards.append(json.load(fh))
-
-    expected = ([(m["name"], exp["name"])
-                 for exp in config["experiments"] for m in exp["measurements"]]
-                if config else [])
-    if not shards:
-        if not expected:
-            raise SystemExit("merge_shards: no shard summaries and no config to "
-                             "say what was expected")
-        # Every shard failed. Still emit a comment, so the run says what happened.
-        head = {"repo": os.environ.get("GITHUB_REPOSITORY", "AchillesGen/Achilles"),
-                "feature_sha": os.environ.get("GITHUB_SHA", "unknown"),
-                "nuisance_version": "unknown", "seed": 0,
-                "events_per_measurement": 0}
-        shards = []
-    else:
-        head = shards[0]
-
-    results = []
-    for s in shards:
-        for m in s["measurements"]:
-            results.append(MeasurementResult(
-                name=m["name"], ndof=m["ndof"],
-                chi2_ndof_main=m["chi2_ndof_main"], chi2_ndof_pr=m["chi2_ndof_pr"],
-                delta_chi2=m["delta_chi2"], p_compat=m["p_compat"],
-                p_data=m["p_data"], plot=m.get("plot"),
-                experiment=m.get("experiment", ""),
-                selected_events=m.get("selected_events", 0)))
-
-    reported = {r.name for r in results}
-    did_not_run = [MissingMeasurement(name=name, experiment=exp)
-                   for name, exp in expected if name not in reported]
-
-    report = Report(results=results, repo=head["repo"],
-                    feature_sha=head["feature_sha"],
-                    nuisance_version=head["nuisance_version"],
-                    seed=head["seed"],
-                    events_per_measurement=head["events_per_measurement"],
-                    did_not_run=did_not_run,
-                    estimator="+".join(sorted(
-                        {s.get("estimator", "unknown") for s in shards})) or "unknown")
-    os.makedirs(out_dir, exist_ok=True)
-    report.write(os.path.join(out_dir, "comment.md"),
-                 os.path.join(out_dir, "summary.json"))
-    return report
 
 
 def build_argparser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--config", default="measurements.yml",
-                   help="measurement-list YAML")
+    p.add_argument("--config", default="measurements.yml")
     p.add_argument("--workdir", default="physval-work")
     p.add_argument("--out-dir", default="physval-out")
     p.add_argument("--baseline-dir", default="physval-baselines",
                    help="checkout of the physval-baselines branch")
-    p.add_argument("--key", default="dev",
-                   help="baseline key {nuisance}-{data}-{confighash}-{sha}")
+    p.add_argument("--key", default="dev", help="baseline key (the image digest in CI)")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--events", type=int, default=200000)
-    p.add_argument("--n-boot", type=int, default=200)
-    p.add_argument("--repo", default="AchillesGen/Achilles")
+    p.add_argument("--repo", default=os.environ.get("GITHUB_REPOSITORY",
+                                                    "AchillesGen/Achilles"))
     p.add_argument("--feature-sha", default=os.environ.get("GITHUB_SHA", "local"))
-    p.add_argument("--nuisance-version", default=os.environ.get("NUISANCE_VERSION",
-                                                                "unknown"))
+    p.add_argument("--nuisance-version",
+                   default=os.environ.get("NUISANCE_VERSION", "unknown"))
     p.add_argument("--only-experiment", action="append", default=[],
-                   dest="only_experiments",
-                   help="run only this experimental setup (repeatable); the CI "
-                        "shard axis — its events are generated once and reused")
-    p.add_argument("--only", action="append", default=[],
-                   dest="only_measurements",
-                   help="run only this measurement (repeatable); narrows within "
-                        "the selected experiment(s)")
-    p.add_argument("--only-variant", action="append", default=[],
-                   dest="only_variants",
-                   help="run only this unweighting variant (repeatable); the "
-                        "reference variant is always kept")
-    p.add_argument("--unweighter-scan", action="store_true",
-                   help="generate each setup once per Options/Unweighting variant "
-                        "and compare them against the reference variant")
+                   dest="only_experiments", help="run only this setup (repeatable)")
+    p.add_argument("--only", action="append", default=[], dest="only_measurements",
+                   help="run only this measurement (repeatable)")
+    p.add_argument("--only-variant", action="append", default=[], dest="only_variants",
+                   help="run only this scan variant (repeatable)")
+    p.add_argument("--unweighter-scan", action="store_true")
     p.add_argument("--merge", nargs="+", default=None,
-                   help="merge these shard summary.json files into one report")
-    p.add_argument("--dry-run", action="store_true",
-                   help="use the synthetic adapter (no Achilles/NUISANCE)")
-    p.add_argument("--make-baseline", action="store_true",
-                   help="produce the stored main baseline instead of a comparison")
+                   help="merge these shard summary.json files")
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--make-baseline", action="store_true")
     p.add_argument("--selftest", action="store_true")
     return p
-
-
-def _adapter_from_args(args):
-    if args.dry_run:
-        return SyntheticAdapter(base_seed=args.seed)
-    return Nuisance3Adapter(workdir=args.workdir)
 
 
 def main(argv=None) -> int:
@@ -672,145 +422,129 @@ def main(argv=None) -> int:
     if args.selftest:
         return _selftest()
 
+    config = filter_config(load_config(args.config), args.only_experiments,
+                           args.only_measurements, args.only_variants)
     if args.merge:
         if args.unweighter_scan:
             scan = merge_scan_shards(args.merge, out_dir=args.out_dir)
-            print(f"merged {len(args.merge)} scan shard(s): rows={len(scan.rows)} "
+            print(f"merged {len(args.merge)} scan shard(s); "
                   f"biased={[s.variant for s in scan.biased()] or 'none'}")
-            print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
             return 0
-        # The config is what says which measurements were expected, so a shard whose
-        # job failed can be named in the comment rather than quietly dropped. A scoped
-        # run narrows that expectation: the setups nobody asked for are not missing.
-        merge_config = (_load_config(args.config)
-                        if os.path.exists(args.config) else None)
-        if merge_config and (args.only_experiments or args.only_measurements):
-            merge_config = _filter_config(merge_config, args.only_experiments,
-                                          args.only_measurements)
-        report = merge_shards(args.merge, out_dir=args.out_dir, config=merge_config)
-        print(f"merged {len(report.results)} measurement(s): "
-              f"p_overall={report.p_overall():.4g} "
-              f"flagged={report.n_flagged()}/{len(report.results)}")
-        if report.did_not_run:
-            print(f"did not report: {len(report.did_not_run)} measurement(s) in "
-                  f"{len(report.failed_setups())} setup(s): "
-                  f"{', '.join(report.failed_setups())}")
-        print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
+        report = merge_shards(args.merge, out_dir=args.out_dir, config=config)
+        print(f"merged {len(report.results)} measurement(s); "
+              f"flagged={len(report.flagged())}; did not report="
+              f"{', '.join(report.failed_setups()) or 'none'}")
         return 0
 
-    config = _filter_config(_load_config(args.config), args.only_experiments,
-                            args.only_measurements, args.only_variants)
-    adapter = _adapter_from_args(args)
-
+    adapter = (SyntheticAdapter(base_seed=args.seed) if args.dry_run
+               else Nuisance3Adapter(workdir=args.workdir))
+    common = dict(seed=args.seed, n_events=args.events, out_dir=args.out_dir)
     if args.unweighter_scan:
-        report = run_unweighting_scan(
-            adapter, config, seed=args.seed, n_events=args.events,
-            n_boot=args.n_boot, repo=args.repo, feature_sha=args.feature_sha,
-            nuisance_version=args.nuisance_version, out_dir=args.out_dir)
-        biased = [s.variant for s in report.biased()]
-        print(f"reference={report.reference} "
-              f"variants={len(report.summaries)} rows={len(report.rows)} "
-              f"biased={biased or 'none'}")
-        print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
+        scan = run_unweighting_scan(adapter, config, repo=args.repo,
+                                    feature_sha=args.feature_sha,
+                                    nuisance_version=args.nuisance_version, **common)
+        print(f"reference={scan.reference} "
+              f"biased={[s.variant for s in scan.biased()] or 'none'}")
         return 0
-
     if args.make_baseline:
-        path = make_baseline(adapter, config, key=args.key, seed=args.seed,
-                             n_events=args.events, n_boot=args.n_boot,
-                             out_dir=args.baseline_dir)
-        print(f"wrote baseline: {path}")
+        for path in make_baseline(adapter, config, main_sha=args.feature_sha, **common):
+            print(f"wrote baseline: {path}")
         return 0
 
-    baseline = load_baseline(baseline_path(args.baseline_dir, args.key))
-    report = run(adapter, config, seed=args.seed, n_events=args.events,
-                 n_boot=args.n_boot, baseline=baseline, repo=args.repo,
-                 feature_sha=args.feature_sha,
-                 nuisance_version=args.nuisance_version,
-                 out_dir=args.out_dir)
-
-    po = report.p_overall()
-    print(f"p_overall={po:.4g} flagged={report.n_flagged()}/{len(report.results)} "
-          f"overall_ok={report.overall_ok()}")
-    print(f"wrote {args.out_dir}/comment.md and {args.out_dir}/summary.json")
-    # Advisory only: exit 0 regardless so the build stays green (per plan).
-    return 0
+    report = run(adapter, config, baseline_dir=args.baseline_dir, key=args.key,
+                 repo=args.repo, feature_sha=args.feature_sha,
+                 nuisance_version=args.nuisance_version, **common)
+    print(f"flagged={len(report.flagged())}/{len(report.results)} "
+          f"without baseline={len(report.without_baseline())}")
+    # A failed setup still wrote its summary, but the job must go red.
+    return 1 if report.did_not_run else 0
 
 
 # ---------------------------------------------------------------------------
-# End-to-end self-test: baseline -> compatible run, then injected-regression run
+# Self-test
 # ---------------------------------------------------------------------------
+
+class _FailingAdapter(SyntheticAdapter):
+    def generate(self, experiment, *a, **kw):
+        if experiment["name"] == "SYNTH_crash":
+            raise RuntimeError("achilles failed for SYNTH_crash (signal 11)")
+        return super().generate(experiment, *a, **kw)
+
 
 def _selftest() -> int:
     import tempfile
 
-    # Two experimental setups: one whose feature generation is unchanged and one
-    # with an injected physics shift; each carries a single measurement.
     config = {"experiments": [
-        {"name": "SYNTH_stable_exp", "dryrun": {"feature_shift": 0.0},
-         "measurements": [{"name": "SYNTH_stable", "dryrun": {"nbins": 12}}]},
-        {"name": "SYNTH_regressed_exp", "dryrun": {"feature_shift": 0.05},
-         "measurements": [{"name": "SYNTH_regressed", "dryrun": {"nbins": 12}}]},
+        {"name": "SYNTH_stable", "dryrun": {"feature_shift": 0.0},
+         "measurements": [{"name": "SYNTH_stable_1Dx", "dryrun": {"nbins": 12}}]},
+        {"name": "SYNTH_regressed", "dryrun": {"feature_shift": 0.05},
+         "measurements": [{"name": "SYNTH_regressed_1Dx", "dryrun": {"nbins": 12}}]},
     ]}
+    crash = {"name": "SYNTH_crash", "measurements": [{"name": "SYNTH_crash_1Dx"}]}
     with tempfile.TemporaryDirectory() as tmp:
-        adapter = SyntheticAdapter(base_seed=7)
-        bpath = make_baseline(adapter, config, key="selftest", seed=7,
-                              n_events=60000, n_boot=150, out_dir=tmp)
-        baseline = load_baseline(bpath)
-        report = run(adapter, config, seed=7, n_events=60000, n_boot=150,
-                     baseline=baseline, repo="AchillesGen/Achilles",
-                     feature_sha="deadbeefcafef00d", nuisance_version="selftest",
-                     out_dir=tmp)
-        summary = report.to_summary_dict()
-        by_name = {m["name"]: m for m in summary["measurements"]}
+        kw = dict(seed=7, n_events=60000, repo="AchillesGen/Achilles",
+                  feature_sha="deadbeefcafef00d", nuisance_version="selftest")
+        make_baseline(SyntheticAdapter(base_seed=7), config, seed=7, n_events=60000,
+                      main_sha="0123456789ab",
+                      out_dir=os.path.join(tmp, "baselines", "k"))
+        rep = run(_FailingAdapter(base_seed=7),
+                  {"experiments": config["experiments"] + [crash]},
+                  baseline_dir=tmp, key="k", out_dir=os.path.join(tmp, "a"), **kw)
+        status = {r.name: r.status() for r in rep.results}
 
+        # A baseline from another adapter must not be used.
+        with open(baseline_path(tmp, "k", "SYNTH_stable")) as fh:
+            b = json.load(fh)
+        b["adapter"] = "nuisance3"
+        with open(baseline_path(tmp, "k", "SYNTH_stable"), "w") as fh:
+            json.dump(b, fh)
+        other = run(SyntheticAdapter(base_seed=7), config, baseline_dir=tmp, key="k",
+                    out_dir=os.path.join(tmp, "b"), **kw)
+
+        merged = merge_shards([os.path.join(tmp, "a", "summary.json"),
+                               os.path.join(tmp, "nope", "summary.json")],
+                              os.path.join(tmp, "m"),
+                              config={"experiments": config["experiments"] + [crash]})
         checks = {
-            "baseline written": os.path.exists(bpath),
-            "stable is compatible": by_name["SYNTH_stable"]["status"] == "compatible",
-            "regressed is flagged": by_name["SYNTH_regressed"]["status"] != "compatible",
-            "regressed p_compat < 0.05": by_name["SYNTH_regressed"]["p_compat"] < 0.05,
-            "comment written": os.path.exists(os.path.join(tmp, "comment.md")),
-            "summary written": os.path.exists(os.path.join(tmp, "summary.json")),
+            "stable is compatible": status["SYNTH_stable_1Dx"] == "compatible",
+            "regression is flagged": status["SYNTH_regressed_1Dx"] in
+                                     ("regression", "changed", "improvement"),
+            "baseline sha reported": rep.baseline_shas == ["0123456789ab"],
+            "crash reported with reason": [m.reason for m in rep.did_not_run] ==
+                                          ["achilles failed for SYNTH_crash (signal 11)"],
+            "other adapter's baseline ignored":
+                {r.name: r.status() for r in other.results}["SYNTH_stable_1Dx"]
+                == "no-baseline",
+            "merge keeps the reason": "(signal 11)" in merged.to_markdown(),
+            "merge counts once": len(merged.did_not_run) == 1,
+            "plot written": os.path.exists(os.path.join(tmp, "a",
+                                                        "SYNTH_stable_1Dx.png")),
         }
         checks.update(_selftest_scan(tmp))
-        for name, ok in checks.items():
-            print(f"[{'ok' if ok else 'FAIL'}] {name}")
-        ok = all(checks.values())
-        print("SELFTEST:", "PASS" if ok else "FAIL")
-        return 0 if ok else 1
+    for name, ok in checks.items():
+        print(f"[{'ok' if ok else 'FAIL'}] {name}")
+    ok = all(checks.values())
+    print("SELFTEST:", "PASS" if ok else "FAIL")
+    return 0 if ok else 1
 
 
 def _selftest_scan(tmp: str) -> dict:
-    """Unweighting scan on synthetic events: unbiased, sharper per event, slower.
-
-    The synthetic adapter applies the real cap rules (``adapters.unweighting_cap``),
-    so this checks both the scan plumbing and the trade the schemes are supposed to
-    make: at a fixed accepted-event count, accept-with-excess unweighting leaves the
-    distribution alone and buys precision, paid for in extra trials.
-    """
+    """Unweighting on synthetic events: unbiased, sharper per event, slower."""
     config = {
-        "unweighting": {
-            "reference": "weighted",
-            "variants": [
-                {"name": "weighted", "options": {"Name": "None"}},
-                {"name": "percentile-99", "options": {"Name": "Percentile",
-                                                      "percentile": 99}},
-                {"name": "excess-1e-2", "options": {"Name": "Excess",
-                                                    "epsilon": 0.01}},
-                {"name": "tailfrac-1e-2", "options": {"Name": "TailFraction",
-                                                      "epsilon": 0.01}},
-            ],
-        },
-        "experiments": [
-            {"name": "SYNTH_exp", "dryrun": {"feature_shift": 0.0},
-             "measurements": [{"name": "SYNTH_scan", "dryrun": {"nbins": 12}}]},
-        ],
+        "unweighting": {"reference": "weighted", "variants": [
+            {"name": "weighted", "options": {"Name": "None"}},
+            {"name": "percentile-99", "options": {"Name": "Percentile", "percentile": 99}},
+            {"name": "excess-1e-2", "options": {"Name": "Excess", "epsilon": 0.01}},
+            {"name": "tailfrac-1e-2", "options": {"Name": "TailFraction", "epsilon": 0.01}},
+        ]},
+        "experiments": [{"name": "SYNTH_exp", "dryrun": {"feature_shift": 0.0},
+                         "measurements": [{"name": "SYNTH_scan", "dryrun": {"nbins": 12}}]}],
     }
     out = os.path.join(tmp, "scan")
     report = run_unweighting_scan(SyntheticAdapter(base_seed=3), config, seed=3,
-                                 n_events=40000, n_boot=200,
-                                 repo="AchillesGen/Achilles",
-                                 feature_sha="deadbeefcafef00d",
-                                 nuisance_version="selftest", out_dir=out)
+                                  n_events=40000, repo="AchillesGen/Achilles",
+                                  feature_sha="deadbeefcafef00d",
+                                  nuisance_version="selftest", out_dir=out)
     by_name = {s.variant: s for s in report.summaries}
     ref, cut = by_name["weighted"], by_name["percentile-99"]
     return {
@@ -820,7 +554,6 @@ def _selftest_scan(tmp: str) -> dict:
         "scan: sharper per accepted event": cut.mc_error_ratio < 1.0,
         "scan: paid for in wall time": cut.seconds > ref.seconds,
         "scan: normalisation preserved": abs(cut.max_norm_shift) < 0.05,
-        "scan: comment written": os.path.exists(os.path.join(out, "comment.md")),
         "scan: overlay plot written": os.path.exists(
             os.path.join(out, "SYNTH_scan.unweighting.png")),
     }

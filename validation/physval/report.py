@@ -1,98 +1,89 @@
 #!/usr/bin/env python3
 # SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Render the Achilles physval summary as a PR comment and a machine-readable JSON.
+"""Render the physval summary as a PR comment (markdown) and summary.json.
 
-The comment is modeled on the Sherpa physval summary table: one row per
-measurement, chi2/ndof for main vs the pull request side by side, flagged when the
-main-vs-feature compatibility p-value (``p_compat``) drops below ``alpha``.  The
-flag is driven *solely* by ``p_compat``; the sign of the change in agreement with
-data (``delta_chi2``) only labels a flagged row as a regression or an improvement.
-
-No plotting or NUISANCE dependency here, so it is unit-testable on synthetic rows.
+A row is flagged when its main-vs-PR compatibility survives a Benjamini-Hochberg
+correction across the suite; the change in chi-square against data only labels the
+direction. No plotting or NUISANCE dependency, so it is testable on synthetic rows.
 """
 
 from __future__ import annotations
 
 import json
-import os
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from typing import List, Optional
 
-from stats import bonferroni, bonferroni_threshold
-
+from stats import benjamini_hochberg, bonferroni
 
 ALPHA = 0.05
-
-# Marker used to find-and-update the single PR comment instead of spamming.
+# Below this |Δχ²| a flagged row is called "changed" rather than better or worse.
+DELTA_CHI2_MIN = 1.0
 COMMENT_MARKER = "<!-- achilles-physval-summary -->"
+RAW_URL_TEMPLATE = ("https://raw.githubusercontent.com/{repo}/physval-baselines/"
+                    "plots/{sha}/{plot}")
+MAX_INLINE_PLOTS = 6
+# GitHub rejects comments over 65536 characters; past this, quiet setups collapse.
+MAX_COMMENT_CHARS = 60000
 
-RAW_URL_TEMPLATE = (
-    "https://raw.githubusercontent.com/{repo}/physval-baselines/"
-    "plots/{sha}/{plot}"
-)
-
-# actions/upload-artifact rejects these outright in a *path* inside the artifact, and
-# they are no better in a git tree or a Windows checkout. Sample names are not free of
-# them: the Durham electron samples carry their reference as
-# ElectronData_6_12_0.560_36.000_Barreau:1983ht.
+# Characters upload-artifact and git trees reject; Durham sample names contain ':'.
 _UNSAFE_IN_FILENAMES = '":<>|*?\r\n'
 
 
 def plot_basename(measurement: str) -> str:
-    """The on-disk name of a measurement's overlay plot.
+    return "".join("_" if c in _UNSAFE_IN_FILENAMES else c for c in measurement) + ".png"
 
-    Only the file name is sanitised: the measurement keeps its published name
-    everywhere it is displayed, compared or looked up.
-    """
-    return "".join("_" if c in _UNSAFE_IN_FILENAMES else c
-                   for c in measurement) + ".png"
 
-# Thumbnails are only inlined for flagged rows, and only this many: a comment with
-# fifty embedded PNGs is unreadable and slow to load. Everything else is one click
-# away behind its measurement name.
-MAX_INLINE_PLOTS = 6
+def _fmt(value: Optional[float], spec: str = ".3g") -> str:
+    return "—" if value is None or value != value else format(value, spec)
 
-# GitHub rejects a comment body over 65536 characters. Past this, the renderer drops
-# the tables of setups that have nothing flagged.
-MAX_COMMENT_CHARS = 60000
+
+def _plural(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
 
 
 @dataclass
 class MeasurementResult:
     name: str
+    experiment: str
     ndof: int
-    chi2_ndof_main: float      # main prediction vs data
-    chi2_ndof_pr: float        # PR prediction vs data
-    delta_chi2: float          # chi2_pr(vs data) - chi2_main(vs data); + = worse
-    p_compat: float            # main vs feature compatibility p-value (drives flag)
-    p_data: float              # PR vs data goodness-of-fit p-value (context only)
-    plot: Optional[str] = None  # basename of the overlay plot, e.g. "<name>.png"
-    experiment: str = ""        # the setup it was generated with; groups the comment
-    selected_events: int = 0    # events this sample selected and binned, for the PR side
+    chi2_ndof_pr: float                    # PR vs data
+    p_data: float                          # PR vs data
+    chi2_ndof_main: Optional[float] = None  # None: no usable baseline
+    delta_chi2: Optional[float] = None      # chi2_pr - chi2_main vs data; + = worse
+    p_compat: Optional[float] = None        # main vs PR
+    q_compat: Optional[float] = None        # BH-adjusted p_compat, set by Report
+    plot: Optional[str] = None
+    selected_events: int = 0
 
     def status(self, alpha: float = ALPHA) -> str:
-        """One of 'regression', 'improvement', 'compatible'."""
-        if self.p_compat >= alpha:
+        if self.p_compat is None:
+            return "no-baseline"
+        if self.q_compat is None or self.q_compat >= alpha:
             return "compatible"
+        if abs(self.delta_chi2) < DELTA_CHI2_MIN:
+            return "changed"
         return "regression" if self.delta_chi2 > 0 else "improvement"
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "MeasurementResult":
+        names = {f.name for f in fields(cls)}
+        return cls(**{k: v for k, v in d.items() if k in names})
 
-_EMOJI = {"regression": "🚩", "improvement": "⭐", "compatible": "✅"}
-# Flagged rows first (regression, then improvement), compatible last.
-_SORT_RANK = {"regression": 0, "improvement": 1, "compatible": 2}
+
+_EMOJI = {"regression": "🚩", "changed": "🔀", "improvement": "⭐",
+          "compatible": "✅", "no-baseline": "⚪"}
+_RANK = {s: i for i, s in enumerate(_EMOJI)}
+_FLAGGED = ("regression", "changed", "improvement")
 
 
 @dataclass
 class MissingMeasurement:
-    """A measurement the config asked for that no shard reported.
-
-    Its setup's job crashed or timed out. Kept in the report rather than dropped: a
-    comment that silently omits a third of the suite reads like a pass.
-    """
+    """A measurement the config asked for that no shard reported."""
 
     name: str
     experiment: str = ""
+    reason: str = ""
 
 
 @dataclass
@@ -104,289 +95,205 @@ class Report:
     seed: int = 0
     events_per_measurement: int = 0
     alpha: float = ALPHA
-    extra_header: List[str] = field(default_factory=list)
     did_not_run: List[MissingMeasurement] = field(default_factory=list)
-    # How the MC covariances were built, so a summary can be audited after the fact
-    # ("trial" = from the generator's trial counts, "bootstrap" = by resampling; a
-    # "+"-joined value means different setups used different ones).
-    estimator: str = "unknown"
+    baseline_shas: List[str] = field(default_factory=list)  # main commits compared to
+    image_key: str = ""
+    run_url: str = ""
 
-    # -- derived quantities ---------------------------------------------------
+    def __post_init__(self):
+        compared = [r for r in self.results if r.p_compat is not None]
+        for r, q in zip(compared, benjamini_hochberg([r.p_compat for r in compared])):
+            r.q_compat = float(q)
 
-    def p_overall(self) -> float:
-        return bonferroni([r.p_compat for r in self.results])
+    def flagged(self) -> List[MeasurementResult]:
+        return self._ordered([r for r in self.results if r.status(self.alpha) in _FLAGGED])
 
-    def n_flagged(self) -> int:
-        return sum(1 for r in self.results if r.status(self.alpha) != "compatible")
+    def without_baseline(self) -> List[MeasurementResult]:
+        return [r for r in self.results if r.p_compat is None]
 
     def overall_ok(self) -> bool:
-        if self.did_not_run:
-            return False  # part of the suite never reported; nothing to be ok about
-        po = self.p_overall()
-        return not (po == po and po < self.alpha)  # NaN-safe: ok if not < alpha
+        return not (self.did_not_run or self.flagged())
 
-    def failed_setups(self) -> "List[str]":
-        """Setups with at least one measurement that never reported."""
+    def failed_setups(self) -> List[str]:
         return sorted({m.experiment or "ungrouped" for m in self.did_not_run})
-
-    def _plot_url(self, r: MeasurementResult) -> Optional[str]:
-        if not r.plot:
-            return None
-        # Built from the stored basename, not the measurement name: the two differ
-        # wherever the name carries a character a file path cannot.
-        return RAW_URL_TEMPLATE.format(repo=self.repo, sha=self.feature_sha,
-                                       plot=r.plot)
 
     # -- rendering ------------------------------------------------------------
 
-    def _link(self, r: MeasurementResult, text: str) -> str:
-        """A reference-style link to the overlay plot, so table rows stay short.
+    def _plot_url(self, r: MeasurementResult) -> Optional[str]:
+        return (RAW_URL_TEMPLATE.format(repo=self.repo, sha=self.feature_sha, plot=r.plot)
+                if r.plot else None)
 
-        The definitions are emitted once at the end of the comment. Inline URLs make
-        every row ~180 characters of raw markdown, which is unreadable in a diff or in
-        the edit box once there are fifty of them.
-        """
+    def _link(self, r: MeasurementResult, text: str) -> str:
+        """Reference-style link; the definitions go once at the end of the comment."""
         url = self._plot_url(r)
         if not url:
             return text
-        ref = self._ref_ids.get(url)
-        if ref is None:
-            ref = f"p{len(self._refs) + 1}"
-            self._ref_ids[url] = ref
-            self._refs.append((ref, url, r.name))
-        return f"[{text}][{ref}]"
+        if url not in self._ref_ids:
+            self._ref_ids[url] = f"p{len(self._refs) + 1}"
+            self._refs.append((self._ref_ids[url], url, r.name))
+        return f"[{text}][{self._ref_ids[url]}]"
+
+    @staticmethod
+    def _common_prefix(names: List[str]) -> str:
+        """The shared leading text of a setup's sample names, cut after an '_'."""
+        if len(names) < 2:
+            return ""
+        first, last = min(names), max(names)
+        n = next((i for i, (a, b) in enumerate(zip(first, last)) if a != b), len(first))
+        return first[:first.rfind("_", 0, n) + 1]
 
     @staticmethod
     def _short(name: str, prefix: str) -> str:
-        """Drop the part of a name every row in its setup shares, plus the `_nu` tail."""
-        short = name[len(prefix):] if prefix and name.startswith(prefix) else name
-        short = short[:-3] if short.endswith("_nu") else short
-        return short.strip("_") or name
+        short = name[len(prefix):] if prefix else name
+        return (short[:-3] if short.endswith("_nu") else short) or name
 
-    @staticmethod
-    def _common_prefix(names: "List[str]") -> str:
-        """The shared leading text of a setup's sample names, cut at a separator."""
-        if len(names) < 2:
-            return ""
-        prefix = os.path.commonprefix(names)
-        cut = max(prefix.rfind("_"), prefix.rfind("1D"))
-        return prefix[:cut + 1] if cut > 0 else ""
-
-    def _row(self, r: MeasurementResult, *, setup: bool = False,
-             prefix: str = "") -> str:
-        """One table row. ``χ²/ndof`` is written main → PR to keep the table narrow."""
-        st = r.status(self.alpha)
-        name_cell = self._link(r, self._short(r.name, prefix))
-        cells = [_EMOJI[st], name_cell]
+    def _row(self, r: MeasurementResult, *, setup: bool = False, prefix: str = "") -> str:
+        cells = [_EMOJI[r.status(self.alpha)], self._link(r, self._short(r.name, prefix))]
         if setup:
-            cells.append(f"`{r.experiment}`" if r.experiment else "")
+            cells.append(f"`{r.experiment}`")
         cells += [str(r.ndof),
-                  f"{r.chi2_ndof_main:.2f} → {r.chi2_ndof_pr:.2f}",
-                  f"{r.delta_chi2:+.1f}",
-                  f"{r.p_compat:.3g}",
-                  f"{r.p_data:.3g}"]
+                  f"{_fmt(r.chi2_ndof_main, '.2f')} → {r.chi2_ndof_pr:.2f}",
+                  _fmt(r.delta_chi2, "+.1f"), _fmt(r.p_compat), _fmt(r.q_compat),
+                  _fmt(r.p_data)]
         return "| " + " | ".join(cells) + " |"
 
     @staticmethod
     def _table_header(setup: bool = False) -> str:
         cols = ["", "Measurement"] + (["Setup"] if setup else []) + [
-            "ndof", "χ²/ndof main → PR", "Δχ²", "p_cmp", "p_data"]
-        return ("| " + " | ".join(cols) + " |\n"
-                "|" + "|".join([":-:", "---"] + (["---"] if setup else []) +
-                               ["--:", ":-:", "--:", "--:", "--:"]) + "|")
+            "ndof", "χ²/ndof main → PR", "Δχ²", "p_cmp", "q", "p_data"]
+        align = [":-:", "---"] + (["---"] if setup else []) + [
+            "--:", ":-:", "--:", "--:", "--:", "--:"]
+        return f"| {' | '.join(cols)} |\n|{'|'.join(align)}|"
 
-    def _ordered(self, results: List[MeasurementResult]) -> List[MeasurementResult]:
-        """Flagged first (regression, then improvement), then by how big the move was."""
-        return sorted(results, key=lambda r: (_SORT_RANK[r.status(self.alpha)],
-                                              -abs(r.delta_chi2)))
+    def _ordered(self, rows: List[MeasurementResult]) -> List[MeasurementResult]:
+        return sorted(rows, key=lambda r: (_RANK[r.status(self.alpha)],
+                                           r.p_compat if r.p_compat is not None else 1.0))
 
-    def by_experiment(self) -> "List[tuple]":
-        """(setup, its results) with the setups that need attention first."""
+    def by_experiment(self) -> List[tuple]:
+        """(setup, rows), the setups that need attention first."""
         groups: dict = {}
         for r in self.results:
             groups.setdefault(r.experiment or "ungrouped", []).append(r)
-
-        def rank(item):
-            name, rows = item
-            worst = min((_SORT_RANK[r.status(self.alpha)] for r in rows), default=2)
-            return (worst, name)
-
-        return [(name, self._ordered(rows)) for name, rows in sorted(groups.items(),
-                                                                     key=rank)]
+        ordered = {name: self._ordered(rows) for name, rows in groups.items()}
+        return sorted(ordered.items(),
+                      key=lambda kv: (_RANK[kv[1][0].status(self.alpha)], kv[0]))
 
     def _setup_summary(self, name: str, rows: List[MeasurementResult]) -> str:
-        """The one line you read without expanding a setup."""
-        flagged = [r for r in rows if r.status(self.alpha) != "compatible"]
-        emoji = _EMOJI["compatible"]
-        if flagged:
-            emoji = _EMOJI[min((r.status(self.alpha) for r in flagged),
-                               key=lambda st: _SORT_RANK[st])]
-        worst_p = min((r.p_compat for r in rows), default=float("nan"))
-        note = (f"{len(flagged)} flagged" if flagged else "all compatible")
-        return (f"{emoji} <b>{name}</b> — {len(rows)} measurement"
-                f"{'s' if len(rows) != 1 else ''}, {note} "
-                f"<i>(lowest p_compat {worst_p:.3g})</i>")
+        worst = rows[0].status(self.alpha)
+        n_flagged = sum(r.status(self.alpha) in _FLAGGED for r in rows)
+        note = (f"{n_flagged} flagged" if n_flagged else
+                "no baseline" if worst == "no-baseline" else "all compatible")
+        return (f"{_EMOJI[worst]} <b>{name}</b> — "
+                f"{_plural(len(rows), 'measurement')}, {note}")
 
     def to_markdown(self) -> str:
-        """The comment, trimmed if the full one would not fit in a PR comment."""
         full = self._render(compact=False)
-        if len(full) <= MAX_COMMENT_CHARS:
-            return full
-        return self._render(compact=True)
+        return full if len(full) <= MAX_COMMENT_CHARS else self._render(compact=True)
 
     def _render(self, compact: bool) -> str:
         self._refs: List[tuple] = []
         self._ref_ids: dict = {}
-        po = self.p_overall()
-        n = len(self.results)
+        flagged = self.flagged()
         groups = self.by_experiment()
-        flagged = [r for r in self._ordered(self.results)
-                   if r.status(self.alpha) != "compatible"]
+        missing_base = self.without_baseline()
+        n = len(self.results)
 
         if self.did_not_run:
             verdict = "⚠️ incomplete run"
-        elif self.overall_ok():
-            verdict = "✅ no significant change"
-        else:
+        elif n and len(missing_base) == n:
+            verdict = "⚪ no baseline to compare against"
+        elif flagged:
             verdict = "⚠️ significant change"
-        lines: List[str] = [COMMENT_MARKER, "## 🔬 Physics validation (NUISANCE3)", ""]
-        summary = (f"**{verdict}** — Bonferroni p = `{po:.3g}` · "
-                   f"**{len(flagged)}** flagged of **{n}** measurements in "
-                   f"**{len(groups)}** setups")
+        else:
+            verdict = "✅ no significant change"
+        summary = (f"**{verdict}** — **{len(flagged)}** flagged of **{n}** measurements "
+                   f"in **{len(groups)}** setups")
         if self.did_not_run:
-            setups = self.failed_setups()
-            summary += (f" · ❌ **{len(self.did_not_run)}** measurements in "
-                        f"**{len(setups)}** setup{'s' if len(setups) != 1 else ''} "
-                        f"did not report")
-        lines.append(summary)
-        lines.append("")
+            summary += (f" · ❌ **{len(self.did_not_run)}** in "
+                        f"**{_plural(len(self.failed_setups()), 'setup')}** did not report")
+
+        base = ", ".join(f"`{s[:8]}`" for s in self.baseline_shas) or "none"
         meta = (f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
                 f"{self.events_per_measurement:,} events/setup · "
-                f"feature `{self.feature_sha[:8]}`")
-        lines.append(meta)
-        for extra in self.extra_header:
-            lines.append(extra)
-        lines.append("")
+                f"PR `{self.feature_sha[:8]}` vs main {base}")
+        if self.run_url:
+            meta += f" · [run]({self.run_url})"
+        lines = [COMMENT_MARKER, "## 🔬 Physics validation (NUISANCE3)", "",
+                 summary, "", meta, ""]
 
-        # Setups whose job died. Their numbers are absent, not compatible, so they get
-        # their own block above everything else.
+        if missing_base and len(missing_base) < n:
+            k = len(missing_base)
+            lines += [f"> ⚪ {_plural(k, 'measurement')} {'has' if k == 1 else 'have'} "
+                      f"no stored baseline for image `{self.image_key}` and are compared with data "
+                      "only. The nightly baseline run fills them in.", ""]
+        elif missing_base:
+            lines += [f"> ⚪ No stored baseline for image `{self.image_key}`; every "
+                      "measurement is compared with data only. Run *Physics Validation* "
+                      "with mode `baseline` on main, or wait for the nightly run.", ""]
+
         if self.did_not_run:
+            lines += [f"### ❌ Did not run ({len(self.did_not_run)})", ""]
             by_setup: dict = {}
             for m in self.did_not_run:
-                by_setup.setdefault(m.experiment or "ungrouped", []).append(m.name)
-            lines.append(f"### ❌ Did not run ({len(self.did_not_run)})")
-            lines.append("")
-            lines.append("These setups' jobs failed, so the suite is incomplete and the "
-                         "verdict above covers only what reported. Check the run's job "
-                         "logs.")
-            lines.append("")
-            for setup, names in sorted(by_setup.items()):
-                lines.append(f"* **{setup}** — {len(names)} measurement"
-                             f"{'s' if len(names) != 1 else ''}")
+                by_setup.setdefault(m.experiment or "ungrouped", []).append(m)
+            for setup, ms in sorted(by_setup.items()):
+                reason = next((m.reason for m in ms if m.reason), "")
+                why = f": `{reason.splitlines()[0][:200]}`" if reason else ""
+                lines.append(f"* **{setup}** — {_plural(len(ms), 'measurement')}{why}")
             lines.append("")
 
-        # What needs attention, across every setup, with the setup named per row.
         if flagged:
-            lines.append(f"### Needs attention ({len(flagged)})")
+            lines += [f"### Needs attention ({len(flagged)})", "",
+                      self._table_header(setup=True)]
+            lines += [self._row(r, setup=True) for r in flagged]
             lines.append("")
-            lines.append(self._table_header(setup=True))
-            for r in flagged:
-                lines.append(self._row(r, setup=True))
-            lines.append("")
-            shown = [r for r in flagged if self._plot_url(r)][:MAX_INLINE_PLOTS]
-            if shown:
-                for r in shown:
-                    lines.append(f"<b>{r.name}</b> — {r.status(self.alpha)}<br>")
-                    lines.append(f'<img src="{self._plot_url(r)}" width="420">')
-                    lines.append("")
-                hidden = len([r for r in flagged if self._plot_url(r)]) - len(shown)
-                if hidden > 0:
-                    lines.append(f"_{hidden} further flagged plot"
-                                 f"{'s' if hidden != 1 else ''} are linked from the "
-                                 f"table above._")
-                    lines.append("")
-        elif not self.did_not_run:
-            lines.append("Every measurement is compatible with the stored `main` "
-                         "baseline.")
-            lines.append("")
-        else:
-            lines.append("Nothing that reported is flagged.")
-            lines.append("")
+            with_plots = [r for r in flagged if r.plot]
+            for r in with_plots[:MAX_INLINE_PLOTS]:
+                lines += [f"<b>{r.name}</b> — {r.status(self.alpha)}<br>",
+                          f'<img src="{self._plot_url(r)}" width="420">', ""]
+            if len(with_plots) > MAX_INLINE_PLOTS:
+                lines += [f"_{len(with_plots) - MAX_INLINE_PLOTS} further flagged plots "
+                          "are linked from the table._", ""]
 
-        # One collapsible per setup: the comment stays the same length whether the
-        # suite has three setups or thirty.
-        lines.append(f"### All {n} measurements by setup")
-        lines.append("")
+        lines += [f"### All {n} measurements by setup", ""]
         for name, rows in groups:
-            quiet = all(r.status(self.alpha) == "compatible" for r in rows)
-            if compact and quiet:
-                # Too many measurements to print every table: a quiet setup is one
-                # line, and its numbers stay in summary.json.
+            if compact and not any(r.status(self.alpha) in _FLAGGED for r in rows):
                 lines.append(f"* {self._setup_summary(name, rows)}")
                 continue
-            lines.append("<details>")
-            lines.append(f"<summary>{self._setup_summary(name, rows)}</summary>")
-            lines.append("")
-            lines.append(self._table_header())
             prefix = self._common_prefix([r.name for r in rows])
-            for r in rows:
-                lines.append(self._row(r, prefix=prefix))
-            lines.append("")
-            lines.append("</details>")
+            lines += ["<details>", f"<summary>{self._setup_summary(name, rows)}</summary>",
+                      "", self._table_header()]
+            lines += [self._row(r, prefix=prefix) for r in rows]
+            lines += ["", "</details>"]
         lines.append("")
         if compact:
-            lines.append("_Trimmed to fit a PR comment: setups with nothing flagged "
-                         "are summarised rather than tabulated. Every measurement is "
-                         "in `summary.json`._")
-            lines.append("")
+            lines += ["_Trimmed to fit a PR comment; every row is in `summary.json`._", ""]
 
-        # Legend and the multiple-comparison arithmetic, out of the way.
-        thr = bonferroni_threshold(n, self.alpha)
-        expected_false = self.alpha * n
-        lines.append("<details><summary>How to read this</summary>")
-        lines.append("")
-        lines.append(f"* {_EMOJI['regression']} **regression** — p_compat < "
-                     f"{self.alpha} and Δχ² > 0 (agreement with data got worse)")
-        lines.append(f"* {_EMOJI['improvement']} **improvement** — p_compat < "
-                     f"{self.alpha} and Δχ² < 0")
-        lines.append(f"* {_EMOJI['compatible']} **compatible** — p_compat ≥ "
-                     f"{self.alpha}")
-        lines.append("")
-        lines.append("The flag is driven *only* by `p_compat`, the main-vs-PR "
-                     "compatibility; the sign of Δχ² only labels its direction. "
-                     "`p (data)` is the PR's goodness of fit to the published data, "
-                     "for context — a sample can disagree with data and still be "
-                     "perfectly compatible with `main`.")
-        lines.append("")
-        lines.append(f"At uncorrected α={self.alpha} across N={n} measurements, "
-                     f"~{expected_false:.1f} false flags are expected by chance; the "
-                     f"Bonferroni per-measurement threshold is α/N = {thr:.4g}.")
-        lines.append("")
-        lines.append("</details>")
-
+        lines += [
+            "<details><summary>How to read this</summary>", "",
+            f"`p_cmp` is the main-vs-PR compatibility; `q` is it after a Benjamini-Hochberg "
+            f"correction over the {n} measurements, and a row is flagged when q < "
+            f"{self.alpha} (so ~{self.alpha:.0%} of flags are expected to be noise). Δχ² is "
+            "the change in agreement with data and only labels the flag: "
+            f"{_EMOJI['regression']} worse, {_EMOJI['improvement']} better, "
+            f"{_EMOJI['changed']} |Δχ²| < {DELTA_CHI2_MIN:g}. `p_data` is the PR's fit to "
+            "data, for context.", "", "</details>"]
         if self._refs:
             lines.append("")
-            for ref, url, name in self._refs:
-                lines.append(f"[{ref}]: {url} \"{name}\"")
+            lines += [f'[{ref}]: {url} "{name}"' for ref, url, name in self._refs]
         return "\n".join(lines)
 
     def to_summary_dict(self) -> dict:
         return {
-            "repo": self.repo,
-            "feature_sha": self.feature_sha,
-            "nuisance_version": self.nuisance_version,
-            "seed": self.seed,
-            "events_per_measurement": self.events_per_measurement,
-            "alpha": self.alpha,
-            "estimator": self.estimator,
-            "p_overall": self.p_overall(),
-            "overall_ok": self.overall_ok(),
-            "n_flagged": self.n_flagged(),
+            "repo": self.repo, "feature_sha": self.feature_sha,
+            "nuisance_version": self.nuisance_version, "seed": self.seed,
+            "events_per_measurement": self.events_per_measurement, "alpha": self.alpha,
+            "baseline_shas": self.baseline_shas, "image_key": self.image_key,
+            "overall_ok": self.overall_ok(), "n_flagged": len(self.flagged()),
             "did_not_run": [asdict(m) for m in self.did_not_run],
             "failed_setups": self.failed_setups(),
-            "measurements": [
-                {**asdict(r), "status": r.status(self.alpha)} for r in self.results
-            ],
+            "measurements": [{**asdict(r), "status": r.status(self.alpha)}
+                             for r in self.results],
         }
 
     def write(self, comment_path: str, summary_path: str) -> None:
@@ -402,21 +309,14 @@ class Report:
 
 @dataclass
 class VariantMeasurement:
-    """One unweighting variant's prediction for one measurement.
-
-    ``p_compat`` is against the *reference* variant (the fully weighted sample), so a
-    small value means the scheme is biasing the distribution — a correctness failure,
-    not a cost. ``ess_fraction`` is the statistical power the scheme delivered per
-    selected event, and ``mc_error_ratio`` the resulting error band relative to the
-    reference's.
-    """
+    """One unweighting variant's prediction for one measurement, vs the reference."""
 
     measurement: str
     variant: str
     ndof: int
     chi2_ndof_data: float
     p_compat: float
-    p_shape: float          # as p_compat, with the overall normalisation divided out
+    p_shape: float           # p_compat with the normalisation fitted out
     p_data: float
     norm_shift: float        # (Σ variant − Σ reference) / Σ reference
     ess_fraction: float
@@ -426,8 +326,6 @@ class VariantMeasurement:
 
 @dataclass
 class VariantSummary:
-    """Per-variant rollup across every measurement in the scan."""
-
     variant: str
     options: dict
     n_measurements: int
@@ -436,8 +334,8 @@ class VariantSummary:
     p_shape_worst: float
     p_shape_overall: float
     n_flagged: int
-    ess_fraction: float       # median across measurements
-    mc_error_ratio: float     # median across measurements
+    ess_fraction: float       # medians across measurements
+    mc_error_ratio: float
     max_norm_shift: float
     seconds: Optional[float] = None
     unweight_eff: Optional[float] = None
@@ -447,8 +345,6 @@ class VariantSummary:
 
 @dataclass
 class ScanReport:
-    """The unweighting-scan comment: a per-variant verdict plus the detail rows."""
-
     summaries: List[VariantSummary]
     rows: List[VariantMeasurement]
     reference: str
@@ -458,46 +354,27 @@ class ScanReport:
     seed: int = 0
     events_per_measurement: int = 0
     alpha: float = ALPHA
-    extra_header: List[str] = field(default_factory=list)
-    did_not_run: List[MissingMeasurement] = field(default_factory=list)
-    estimator: str = "unknown"   # see Report.estimator
 
-    def biased(self) -> List[VariantSummary]:
-        """Variants whose distributions differ from the reference beyond MC noise."""
-        return [s for s in self.summaries
-                if not (s.is_reference or s.is_null_control)
-                and self._mark(s) == "🚩"]
+    def null_control(self) -> Optional[VariantSummary]:
+        return next((s for s in self.summaries if s.is_null_control), None)
 
-    @staticmethod
-    def _fmt(value: Optional[float], spec: str = ".3g", dash: str = "—") -> str:
-        if value is None or value != value:
-            return dash
-        return format(value, spec)
+    def calibrated(self) -> bool:
+        """The null control (the reference reseeded) must itself pass the test."""
+        null = self.null_control()
+        return null is None or (null.p_overall >= self.alpha
+                                and null.p_shape_overall >= self.alpha)
 
-    def _summary_table(self) -> List[str]:
-        lines = [
-            "| Unweighting | p (vs reference) | p (shape only) | ESS/event | "
-            "MC error | max Δnorm | Achilles eff | wall | |",
-            "|---|---|---|---|---|---|---|---|---|",
-        ]
-        for s in self.summaries:
-            if s.is_reference:
-                mark, pcell, scell = "🎯", "_reference_", "_reference_"
-            else:
-                mark = self._mark(s)
-                pcell, scell = (self._fmt(s.p_overall),
-                                self._fmt(s.p_shape_overall))
-            wall = (f"{s.seconds / 60:.1f} min" if s.seconds else "—")
-            lines.append(
-                f"| `{s.variant}` | {pcell} | {scell} | "
-                f"{self._fmt(s.ess_fraction, '.3f')} | "
-                f"×{self._fmt(s.mc_error_ratio, '.2f')} | "
-                f"{self._fmt(s.max_norm_shift, '+.2%')} | "
-                f"{self._fmt(s.unweight_eff, '.3g')} | {wall} | {mark} |")
-        return lines
+    def thresholds(self) -> tuple:
+        """(p, p_shape) thresholds, lowered to whatever the null control scored."""
+        null = self.null_control()
+        if null is None:
+            return (self.alpha, self.alpha)
+        return tuple(min(self.alpha, p) if p == p else self.alpha
+                     for p in (null.p_overall, null.p_shape_overall))
 
-    def _mark(self, s: "VariantSummary") -> str:
-        """🎯 reference · 🧪 null control · ❔ uncalibrated · 🚩 flagged · ✅ ok."""
+    def _mark(self, s: VariantSummary) -> str:
+        if s.is_reference:
+            return "🎯"
         if s.is_null_control:
             return "🧪"
         if not self.calibrated():
@@ -505,146 +382,86 @@ class ScanReport:
         p_thr, s_thr = self.thresholds()
         return "🚩" if (s.p_overall < p_thr or s.p_shape_overall < s_thr) else "✅"
 
-    def null_control(self) -> Optional["VariantSummary"]:
-        return next((s for s in self.summaries if s.is_null_control), None)
+    def biased(self) -> List[VariantSummary]:
+        return [s for s in self.summaries if self._mark(s) == "🚩"]
 
-    def calibrated(self) -> bool:
-        """Whether the p-values mean anything for this run.
+    def _summary_table(self) -> List[str]:
+        lines = ["| Unweighting | p (vs reference) | p (shape only) | ESS/event | "
+                 "MC error | max Δnorm | Achilles eff | wall | |",
+                 "|---|---|---|---|---|---|---|---|---|"]
+        for s in self.summaries:
+            p, ps = (("_reference_",) * 2 if s.is_reference
+                     else (_fmt(s.p_overall), _fmt(s.p_shape_overall)))
+            wall = f"{s.seconds / 60:.1f} min" if s.seconds else "—"
+            lines.append(f"| `{s.variant}` | {p} | {ps} | {_fmt(s.ess_fraction, '.3f')} | "
+                         f"×{_fmt(s.mc_error_ratio, '.2f')} | "
+                         f"{_fmt(s.max_norm_shift, '+.2%')} | {_fmt(s.unweight_eff)} | "
+                         f"{wall} | {self._mark(s)} |")
+        return lines
 
-        The null control is the reference's own configuration at a different seed, so
-        it is a draw from the null hypothesis and ought to sit above ``alpha``. When
-        it does not, the covariance is missing variance that is present between any
-        two runs, every p-value is compressed against zero, and ranking the variants
-        by p would be reading noise — several of them underflow to 0.0 outright.
-        The report says so instead of naming a culprit.
-        """
-        null = self.null_control()
-        if null is None:
-            return True  # no control was run; fall back to the nominal alpha
-        return null.p_overall >= self.alpha and null.p_shape_overall >= self.alpha
-
-    def thresholds(self) -> tuple:
-        """Flagging thresholds for (p_compat, p_shape), floored by the null control.
-
-        Whatever the control scores is what an *identical* configuration costs, and
-        no real scheme should be called out for doing at least as well. The control
-        can therefore only make the test more conservative — ``min`` with ``alpha`` —
-        never less, so a control that lands at p ≈ 1 leaves the threshold untouched.
-        """
-        null = self.null_control()
-        if null is None:
-            return (self.alpha, self.alpha)
-        p, q = null.p_overall, null.p_shape_overall
-        return (min(self.alpha, p if p == p else self.alpha),
-                min(self.alpha, q if q == q else self.alpha))
-
-    def _detail_table(self, rows: List[VariantMeasurement]) -> List[str]:
-        lines = [
-            "| Measurement | Unweighting | ndof | χ²/ndof (data) | p (vs ref) | "
-            "p (shape) | Δnorm | ESS/event | max/mean w |",
-            "|---|---|---|---|---|---|---|---|---|",
-        ]
-        for r in rows:
-            lines.append(
-                f"| {r.measurement} | `{r.variant}` | {r.ndof} | "
-                f"{self._fmt(r.chi2_ndof_data, '.2f')} | {self._fmt(r.p_compat)} | "
-                f"{self._fmt(r.p_shape)} | {self._fmt(r.norm_shift, '+.2%')} | "
-                f"{self._fmt(r.ess_fraction, '.3f')} | "
-                f"{self._fmt(r.max_over_mean, '.1f')} |")
+    @staticmethod
+    def _detail_table(rows: List[VariantMeasurement]) -> List[str]:
+        lines = ["| Measurement | Unweighting | ndof | χ²/ndof (data) | p (vs ref) | "
+                 "p (shape) | Δnorm | ESS/event | max/mean w |",
+                 "|---|---|---|---|---|---|---|---|---|"]
+        lines += [f"| {r.measurement} | `{r.variant}` | {r.ndof} | "
+                  f"{_fmt(r.chi2_ndof_data, '.2f')} | {_fmt(r.p_compat)} | "
+                  f"{_fmt(r.p_shape)} | {_fmt(r.norm_shift, '+.2%')} | "
+                  f"{_fmt(r.ess_fraction, '.3f')} | {_fmt(r.max_over_mean, '.1f')} |"
+                  for r in rows]
         return lines
 
     def to_markdown(self) -> str:
         biased = self.biased()
-        n_var = len([s for s in self.summaries
-                     if not (s.is_reference or s.is_null_control)])
+        n_var = sum(not (s.is_reference or s.is_null_control) for s in self.summaries)
         if not self.calibrated():
-            verdict = ("❔ uncalibrated — the null control fails its own test, so "
-                       "no scheme can be judged on p")
+            verdict = "❔ uncalibrated — the null control fails its own test"
         elif biased:
             verdict = f"⚠️ {len(biased)} of {n_var} scheme(s) differ from the reference"
         else:
             verdict = "✅ every scheme reproduces the reference"
-
-        lines: List[str] = [
-            COMMENT_MARKER, "## 🎚️ Unweighting scan", "",
-            f"**Reference `{self.reference}` · {verdict}**", "",
-            f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
-            f"{self.events_per_measurement:,} events/variant/setup "
-            f"· `{self.feature_sha[:8]}`",
-        ]
-        lines.extend(self.extra_header)
+        lines = [COMMENT_MARKER, "## 🎚️ Unweighting scan", "",
+                 f"**Reference `{self.reference}` · {verdict}**", "",
+                 f"NUISANCE3 `{self.nuisance_version}` · seed `{self.seed}` · "
+                 f"{self.events_per_measurement:,} events/variant/setup · "
+                 f"`{self.feature_sha[:8]}`", ""]
+        lines += self._summary_table()
         lines.append("")
-        lines.extend(self._summary_table())
-        lines.append("")
-
-        flagged_rows = ([] if not self.calibrated()
-                        else [r for r in self.rows if r.p_compat < self.alpha])
-        if flagged_rows:
-            lines.append("### Measurements differing from the reference")
-            lines.extend(self._detail_table(
-                sorted(flagged_rows, key=lambda r: r.p_compat)))
-            lines.append("")
-
-        lines.append(f"<details><summary>All {len(self.rows)} variant × "
-                     "measurement rows</summary>\n")
-        lines.extend(self._detail_table(self.rows))
-        lines.append("\n</details>")
-        lines.append("")
+        if self.calibrated():
+            flagged = sorted((r for r in self.rows if r.p_compat < self.alpha),
+                             key=lambda r: r.p_compat)
+            if flagged:
+                lines += ["### Measurements differing from the reference"]
+                lines += self._detail_table(flagged)
+                lines.append("")
+        lines += [f"<details><summary>All {len(self.rows)} variant × measurement "
+                  "rows</summary>\n"] + self._detail_table(self.rows) + ["\n</details>", ""]
         null = self.null_control()
-        if null is not None and not self.calibrated():
-            lines.append(
-                f"❔ **The p columns above are not usable for this run.** 🧪 "
-                f"`null-control` is the reference's own configuration at a different "
-                f"seed — a draw from the null hypothesis, which should sit above "
-                f"α={self.alpha}. It scores p = {self._fmt(null.p_overall)} "
-                f"(shape {self._fmt(null.p_shape_overall)}). Two *identical* "
-                f"configurations are therefore \"incompatible\", so the covariance is "
-                f"missing variance that is present between any two runs: the bootstrap "
-                f"is estimated inside a single run and carries neither the run-to-run "
-                f"scatter of the flux-averaged cross section nor the spread from each "
-                f"run's own adapted integration grid. Ranking variants by p here would "
-                f"be reading noise — some p-values underflow to 0.0 outright.")
+        if null is not None:
+            if self.calibrated():
+                p_thr, s_thr = self.thresholds()
+                lines.append(f"🧪 The null control (reference reseeded) scores p = "
+                             f"{_fmt(null.p_overall)} (shape {_fmt(null.p_shape_overall)}); "
+                             f"thresholds are floored there: {_fmt(p_thr)} and "
+                             f"{_fmt(s_thr)}.")
+            else:
+                lines.append(f"❔ The null control scores p = {_fmt(null.p_overall)} "
+                             f"(shape {_fmt(null.p_shape_overall)}), so the p columns are "
+                             "not usable this run; Δnorm, ESS, MC error and wall time "
+                             "still are.")
             lines.append("")
-            lines.append(
-                "The **effect sizes are still valid**: Δnorm, ESS/event, MC error and "
-                "wall time are direct measurements, not test statistics. Compare each "
-                "scheme's Δnorm against the null control's — a scheme inside that is "
-                "indistinguishable from rerunning the reference.")
-        elif null is not None:
-            p_thr, s_thr = self.thresholds()
-            lines.append(
-                f"🧪 **null control** — the reference rerun at a different seed, so its "
-                f"rows are drawn from the null. It scores p = "
-                f"{self._fmt(null.p_overall)} (shape "
-                f"{self._fmt(null.p_shape_overall)}); thresholds are floored there "
-                f"— {self._fmt(p_thr)} and {self._fmt(s_thr)} — so no scheme is "
-                f"flagged for doing as well as an identical rerun.")
-            lines.append("")
-        lines.append(
-            "Legend: **p (vs ref)** — correlated χ² against the reference variant's "
-            "histogram using both bootstrap covariances. **p (shape)** — the same "
-            "with the overall normalisation divided out and one dof given up for it; "
-            "the pair separates \"this scheme moved the distribution\" from "
-            "\"these two runs disagree on the total cross section\". "
-            "**ESS/event** — Kish effective sample size per selected event "
-            "(1.0 = unit weights); **MC error** — mean bootstrap error relative to "
-            "the reference; **Δnorm** — change in the integrated cross section; "
-            "**max/mean w** — heaviest surviving overweight."
-        )
+        lines.append("**p (shape)** fits the normalisation out; **ESS/event** is the Kish "
+                     "effective sample size per selected event; **MC error** is relative "
+                     "to the reference; **Δnorm** is the change in integrated cross "
+                     "section.")
         return "\n".join(lines)
 
     def to_summary_dict(self) -> dict:
         return {
-            "kind": "unweighting-scan",
-            "reference": self.reference,
-            "repo": self.repo,
-            "feature_sha": self.feature_sha,
-            "nuisance_version": self.nuisance_version,
-            "seed": self.seed,
-            "events_per_measurement": self.events_per_measurement,
-            "alpha": self.alpha,
-            "estimator": self.estimator,
-            "biased_variants": [s.variant for s in self.biased()],
+            "kind": "unweighting-scan", "reference": self.reference, "repo": self.repo,
+            "feature_sha": self.feature_sha, "nuisance_version": self.nuisance_version,
+            "seed": self.seed, "events_per_measurement": self.events_per_measurement,
+            "alpha": self.alpha, "biased_variants": [s.variant for s in self.biased()],
             "variants": [asdict(s) for s in self.summaries],
             "rows": [asdict(r) for r in self.rows],
         }
@@ -656,87 +473,59 @@ class ScanReport:
             json.dump(self.to_summary_dict(), fh, indent=2)
 
 
-def _selftest_incomplete() -> bool:
-    """A report missing a setup says so, and cannot come out green."""
-    rows = [MeasurementResult("A_XSec_1DVar_nu", 12, 1.1, 1.1, 0.0, 0.8, 0.5,
-                              plot="A_XSec_1DVar_nu.png", experiment="ExpA")]
-    rep = Report(rows, feature_sha="abc",
-                 did_not_run=[MissingMeasurement("B_XSec_1DVar_nu", "ExpB"),
-                              MissingMeasurement("B_XSec_1DOther_nu", "ExpB")])
-    md = rep.to_markdown()
-    summary = rep.to_summary_dict()
-    return (not rep.overall_ok()                     # cannot be green
-            and "incomplete run" in md               # verdict says so
-            and "Did not run (2)" in md              # and lists them
-            and "**ExpB** — 2 measurements" in md
-            and rep.failed_setups() == ["ExpB"]
-            and len(summary["did_not_run"]) == 2
-            and summary["failed_setups"] == ["ExpB"])
+# ---------------------------------------------------------------------------
+# Self-test
+# ---------------------------------------------------------------------------
 
-
-def _selftest_guard() -> bool:
-    """A suite far larger than today's must still fit in one PR comment."""
-    rows = [MeasurementResult(f"Exp{s}_XSec_1DVar{i}_nu", 12, 1.1, 1.2, 0.4, 0.5, 0.4,
-                              plot=f"Exp{s}_XSec_1DVar{i}_nu.png",
-                              experiment=f"Exp{s}")
-            for s in range(40) for i in range(15)]
-    md = Report(rows, feature_sha="abc123def456", seed=1,
-                events_per_measurement=500000).to_markdown()
-    return len(md) <= MAX_COMMENT_CHARS and "Trimmed to fit" in md
+def _row(name, exp, p, delta=2.0, **kw):
+    return MeasurementResult(name, exp, ndof=12, chi2_ndof_pr=1.2, p_data=0.4,
+                             chi2_ndof_main=1.1, delta_chi2=delta, p_compat=p,
+                             plot=plot_basename(name), **kw)
 
 
 def _selftest() -> int:
-    results = [
-        MeasurementResult("MINERvA_CC0pi_Tp", 38, 1.11, 1.10, -0.4, 0.62, 0.31,
-                          plot="MINERvA_CC0pi_Tp.png", experiment="MINERvA_CC"),
-        MeasurementResult("MINERvA_CC0pi_pmu", 21, 1.02, 1.04, +0.2, 0.55, 0.44,
-                          plot="MINERvA_CC0pi_pmu.png", experiment="MINERvA_CC"),
-        MeasurementResult("MiniBooNE_CC1pip_Q2", 40, 1.38, 1.53, +6.1, 0.013, 0.04,
-                          plot="MiniBooNE_CC1pip_Q2.png", experiment="MiniBooNE_CC1pi"),
-        MeasurementResult("T2K_CC0pi_cosTheta", 58, 0.98, 0.79, -11.0, 0.008, 0.71,
-                          plot="T2K_CC0pi_cosTheta.png", experiment="T2K_CC"),
+    rows = [
+        _row("MINERvA_CC0pi_XSec_1DTp_nu", "MINERvA_CH", 0.62),
+        _row("MINERvA_CC0pi_XSec_1Dpmu_nu", "MINERvA_CH", 0.55),
+        _row("MiniBooNE_CC1pip_XSec_1DQ2_nu", "MiniBooNE", 1e-4, delta=6.1),
+        _row("T2K_CC0pi_XSec_1Dcos_nu", "T2K", 2e-4, delta=-11.0),
+        _row("T2K_CC0pi_XSec_1Dp_nu", "T2K", 3e-4, delta=0.2),
+        _row("T2K_CC0pi_XSec_1Dq_nu", "T2K", 0.04),   # nominal p < 0.05, not after BH
+        MeasurementResult("e12C_new", "e12C", 8, 1.5, 0.3),  # no baseline
     ]
-    rep = Report(results, feature_sha="abcdef1234567890", nuisance_version="v3.0.1",
-                 seed=42, events_per_measurement=500000)
+    rep = Report(rows, feature_sha="abcdef1234567890", seed=42,
+                 events_per_measurement=500000, baseline_shas=["1234567890ab"],
+                 image_key="deadbeef", run_url="https://example/run/1",
+                 did_not_run=[MissingMeasurement(
+                     "ElectronData_6_12_1.108", "e12C_1108",
+                     "achilles failed for e12C_1108 (signal 11)\nlog-tail-line")])
     md = rep.to_markdown()
     summary = rep.to_summary_dict()
+    status = {m["name"]: m["status"] for m in summary["measurements"]}
 
+    big = Report([_row(f"Exp{s}_XSec_1DVar{i}_nu", f"Exp{s}", 0.5)
+                  for s in range(40) for i in range(15)], feature_sha="abc").to_markdown()
     checks = {
         "marker present": COMMENT_MARKER in md,
-        "bonferroni p = min(1, 4*0.008)=0.032": abs(summary["p_overall"] - 0.032) < 1e-9,
-        "summary records the estimator": summary["estimator"] == "unknown",
-        "overall flagged": summary["overall_ok"] is False,
-        "two flagged rows": summary["n_flagged"] == 2,
-        "regression labelled": next(m for m in summary["measurements"]
-                                    if m["name"].startswith("MiniBooNE"))["status"] == "regression",
-        "improvement labelled": next(m for m in summary["measurements"]
-                                     if m["name"].startswith("T2K"))["status"] == "improvement",
-        "compatible collapsed": "<details>" in md,
-        "raw url embedded": "raw.githubusercontent.com" in md,
-        # grouping: one collapsible per setup, worst setup first
-        "one details per setup": md.count("<summary>") == 4,  # 3 setups + the legend
-        "setups named in summaries": all(f"<b>{s}</b>" in md for s in
-                                         ("MINERvA_CC", "MiniBooNE_CC1pi", "T2K_CC")),
-        "flagged setup listed first": (md.index("<b>MiniBooNE_CC1pi</b>")
-                                       < md.index("<b>MINERvA_CC</b>")),
-        "quiet setup says so": "all compatible" in md,
-        # rows are reference links, with the definitions emitted once each
-        "reference links used": "][p1]" in md and "\n[p1]: http" in md,
-        "no inline urls in rows": "| [" in md and "](http" not in md,
-        # inside a setup the shared prefix goes; the full name stays in the link title
-        "names shortened per setup": "| [Tp][" in md and "| [pmu][" in md,
-        "full name kept in the link": '"MINERvA_CC0pi_Tp"' in md,
-        "flagged table keeps full names": "[MiniBooNE_CC1pip_Q2][" in md,
-        # the size guard trims instead of producing an over-long comment
-        "guard trims a huge suite": _selftest_guard(),
-        # a name that cannot be a file path still gets a usable plot file + url
-        "colon stripped from plot name":
-            plot_basename("ElectronData_6_12_0.560_36.000_Barreau:1983ht")
-            == "ElectronData_6_12_0.560_36.000_Barreau_1983ht.png",
-        "plot name keeps the rest verbatim":
-            plot_basename("MINERvA_CC0pi_Tp") == "MINERvA_CC0pi_Tp.png",
-        # an incomplete run is reported, not silently shrunk
-        "incomplete run marked": _selftest_incomplete(),
+        "regression": status["MiniBooNE_CC1pip_XSec_1DQ2_nu"] == "regression",
+        "improvement": status["T2K_CC0pi_XSec_1Dcos_nu"] == "improvement",
+        "tiny Δχ² is only 'changed'": status["T2K_CC0pi_XSec_1Dp_nu"] == "changed",
+        "BH keeps a nominal 0.04 quiet": status["T2K_CC0pi_XSec_1Dq_nu"] == "compatible",
+        "no baseline is not flagged": status["e12C_new"] == "no-baseline",
+        "no-baseline note": "compared with data only" in md,
+        "three flagged": summary["n_flagged"] == 3,
+        "incomplete is not ok": not summary["overall_ok"] and "incomplete run" in md,
+        "failure reason shown": "(signal 11)`" in md and "log-tail-line" not in md,
+        "baseline provenance": "vs main `12345678`" in md,
+        "run link": "[run](https://example/run/1)" in md,
+        "names cut at an underscore": "| [1DTp][" in md and "| [1Dpmu][" in md,
+        "flagged table keeps full names": "[MiniBooNE_CC1pip_XSec_1DQ2][" in md,
+        "reference links": "\n[p1]: https://raw.githubusercontent.com" in md,
+        "flagged setup first": md.index("<b>T2K</b>") < md.index("<b>MINERvA_CH</b>"),
+        "guard trims a huge suite": len(big) <= MAX_COMMENT_CHARS and "Trimmed" in big,
+        "plot name sanitised": plot_basename("A_Barreau:1983ht") == "A_Barreau_1983ht.png",
+        "round trip": MeasurementResult.from_dict(summary["measurements"][0]).name
+                      == rows[0].name,
     }
     for name, ok in checks.items():
         print(f"[{'ok' if ok else 'FAIL'}] {name}")

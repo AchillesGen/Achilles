@@ -3,13 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Achilles + NUISANCE3 boundary for physval.
 
-Runs inside the achilles-physval container, so ``achilles`` and NUISANCE3 are on
-PATH. Events are generated once per experimental setup (``generate``) and reused
-across that setup's measurements (``histogram``).
-
-``Nuisance3Adapter`` is the real path (skeleton). ``SyntheticAdapter`` backs
-``--dry-run`` and the self-tests; both expose the same three methods, so the driver
-just picks one — no base class needed.
+``Nuisance3Adapter`` runs achilles and bins with NUISANCE3 (inside the physval
+container); ``SyntheticAdapter`` backs ``--dry-run`` and the self-tests. Both expose
+``generate``, ``histogram_many``, ``response_matrix`` and ``data_table``.
 """
 
 from __future__ import annotations
@@ -58,16 +54,9 @@ _CardDumper.add_representer(
 
 def read_gen_cross_section(path: str, window: int = 1 << 16,
                            max_window: int = 1 << 24) -> "tuple[float, float, int, int]":
-    """``(xsec, xsec_err, n_nonzero_trials, n_total_trials)`` from the file's last event.
+    """``(xsec, xsec_err, n_nonzero_trials, n_total_trials)`` from the last event.
 
-    HepMC3 writes a ``GenCrossSection`` attribute on every event carrying the
-    generator's running estimate and its trial counters, so the last one in the file
-    has seen every event -- the same choice the fatx estimate in ``histogram_many``
-    makes. The file is read backwards from the end in growing windows rather than
-    walked: this is needed once per run, and a walk costs minutes.
-
-    Raises if no such attribute is found, which is what a compressed event file looks
-    like from here (the physval cards always write ``Zipped: False``).
+    Read backwards in growing windows: walking the file costs minutes.
     """
     size = os.path.getsize(path)
     while window <= max_window:
@@ -97,9 +86,7 @@ class GeneratedEvents:
     path: Optional[str] = None            # nuisance3: NuHepMC-v1.0 event file
     xsec_divisor: Optional[float] = None  # per-atom xsec / this = published convention
     run: Optional["RunStats"] = None      # generator-side cost of this sample
-    # The two numbers stats.trial_covariance needs: how many non-zero trials the
-    # generator produced (the events in the file, a count fixed by construction) and
-    # its own relative uncertainty on the total cross section.
+    # What stats.trial_covariance needs.
     n_nonzero_trials: Optional[int] = None
     rel_xsec_err: Optional[float] = None
 
@@ -111,12 +98,7 @@ class GeneratedEvents:
 
 @dataclass
 class RunStats:
-    """What the generation itself cost, independent of any one measurement.
-
-    ``unweight_eff`` is Achilles' own estimate (<xsec>/max_weight per process group,
-    the acceptance an ideal unweighter would reach for the cap it settled on); the
-    smallest finite group value is kept, since the slowest group paces the run.
-    """
+    """Wall time and Achilles' own unweighting efficiency (slowest process group)."""
 
     seconds: Optional[float] = None
     unweight_eff: Optional[float] = None
@@ -124,7 +106,7 @@ class RunStats:
 
 @dataclass
 class EventSample:
-    """One measurement's events, binned and ready for bootstrapping."""
+    """One measurement's selected events: bin index and scaled weight per event."""
 
     bin_index: np.ndarray
     weights: np.ndarray
@@ -132,13 +114,7 @@ class EventSample:
     raw_weights: Optional[np.ndarray] = None  # pre-normalisation weight.cv
 
     def ess_fraction(self) -> float:
-        """Kish effective sample size as a fraction of the selected events.
-
-        ``(Σ|w|)² / (N Σw²)`` — 1 for perfectly unit-weight events, and the factor by
-        which a scheme's statistical power falls short of its raw event count. Scale
-        free, so it is computed on the raw generator weights rather than the
-        bin-width-divided ones (whose spread is binning, not unweighting).
-        """
+        """Kish ``(Σ|w|)² / (N Σw²)`` on the raw weights; 1 for unit weights."""
         w = self.raw_weights if self.raw_weights is not None else self.weights
         w = np.abs(np.asarray(w, dtype=float))
         denom = float(w.size) * float(np.sum(w ** 2))
@@ -167,21 +143,13 @@ class DataTable:
 
 
 class Nuisance3Adapter:
-    """Achilles generation + NUISANCE3 (legacy NUISANCE2 record) histogramming.
+    """Achilles generation + NUISANCE3 (legacy NUISANCE2 record) binning.
 
-    generate:   achilles <experiment['achilles_run']> -> NuHepMC file (once/setup).
-    histogram:  NUISANCE3 <measurement['name']> over that file -> (bin, weight).
-    data_table: the sample's published values + covariance from NUISANCE3.
-
-    ``achilles_run`` is repo-root-relative and achilles runs with cwd=repo root, so the
-    flux/data paths inside a card resolve on their own (Filesystem::FindFile/FindFlux
-    search the cwd, $ACHILLES_PATH, $ACHILLES_DATA_DIR and share/Achilles).
-
-    Normalisation is delegated to NUISANCE: ``IAnalysis.process`` produces the
-    cross-section-scaled, bin-width-divided prediction, and the per-event weights are
-    rescaled so they sum to it. The bootstrap then measures MC uncertainty directly in
-    the data's units without this code reimplementing any of the scaling.
+    Cards are repo-root-relative and achilles runs from the repo root, so the flux and
+    data paths inside a card resolve on their own.
     """
+
+    name = "nuisance3"
 
     def __init__(self, workdir: str = "physval-work", repo_root: Optional[str] = None,
                  achilles: str = "achilles"):
@@ -212,8 +180,7 @@ class Nuisance3Adapter:
         """Copy the run card with our seed, event count and output path pinned."""
         os.makedirs(self.workdir, exist_ok=True)
         card_path = os.path.join(self.repo_root, experiment["achilles_run"])
-        if not os.path.isfile(card_path):
-            # achilles segfaults rather than erroring on a missing card, so check here.
+        if not os.path.isfile(card_path):  # achilles segfaults on a missing card
             raise FileNotFoundError(f"run card not found: {card_path}")
         with open(card_path) as fh:
             card = yaml.load(fh, Loader=_CardLoader)
@@ -222,24 +189,17 @@ class Nuisance3Adapter:
         card["Main"]["Output"] = {"Format": "NuHepMC", "Name": out_path,
                                   "Zipped": False}
 
-        # Seed lives in Options, which the cards pull in via `!include`; expand that
-        # include so the seed can be pinned without editing the shared defaults.
+        # The seed lives in the `!include`d Options block; expand it to pin the seed.
         options = card.get("Options")
         if isinstance(options, _Include):
             with open(os.path.join(self.repo_root, options.value)) as fh:
                 options = yaml.load(fh, Loader=_CardLoader)
         card["Options"] = options or {}
         card["Options"].setdefault("Initialize", {})["Seed"] = int(seed)
-        # Pin the integrator cache off for every pass, whatever the card says.
-        # EventGen defaults Cache/Load and Cache/Save to true when the keys are absent,
-        # and Optimize() runs whether or not a cached state was loaded -- so a pass that
-        # loads grids leaves the RNG stream somewhere else than one that optimizes from
-        # scratch. Two passes of the same setup would then generate different events
-        # from the same seed, and the difference would surface as a physics regression.
+        # A loaded integrator cache moves the RNG stream, so the same seed would give
+        # different events; keep it off whatever the card says.
         card["Cache"] = {"Save": False, "Load": False}
-        # The unweighting scan swaps this whole block per variant. Replace rather than
-        # merge: the schemes take different keys (percentile vs epsilon), so a leftover
-        # key from the card's default would silently apply to the wrong scheme.
+        # Replace, not merge: schemes take different keys (percentile vs epsilon).
         if unweighting is not None:
             card["Options"]["Unweighting"] = dict(unweighting)
 
@@ -251,13 +211,9 @@ class Nuisance3Adapter:
 
     @staticmethod
     def _runtime_env(exe: str) -> dict:
-        """Environment for achilles with its own libraries ahead of the image's.
+        """Achilles' own lib dir ahead of the image's LD_LIBRARY_PATH.
 
-        The physval image puts /opt/nuisance2/lib on LD_LIBRARY_PATH, which outranks
-        the binary's RUNPATH. NUISANCE2 ships spdlog built against fmt v10 while
-        Achilles bundles fmt v11, so leaving that ordering alone loads both and
-        Achilles segfaults inside InitializeLogging with no output at all. Putting
-        Achilles' own lib dir first keeps the pair consistent.
+        NUISANCE2's spdlog/fmt differ from Achilles' and mixing them segfaults silently.
         """
         env = dict(os.environ)
         libdir = os.path.join(os.path.dirname(os.path.dirname(
@@ -272,9 +228,7 @@ class Nuisance3Adapter:
                  unweighting: Optional[dict] = None,
                  seed_offset: Optional[int] = None) -> GeneratedEvents:
         os.makedirs(self.workdir, exist_ok=True)
-        # Offset the seed by branch so an inline 'main' is not the identical stream.
-        # The unweighting scan pins seed_offset=0 instead: every variant then starts
-        # from the same stream, so what differs between them is only the scheme.
+        # main and PR draw independent streams; the scan passes its own offset.
         seed = int(seed) + (seed_offset if seed_offset is not None
                             else (0 if branch == "main" else 1))
         out_path = os.path.join(self.workdir,
@@ -292,8 +246,6 @@ class Nuisance3Adapter:
         if proc.returncode != 0:
             with open(log_path) as fh:
                 tail = "\n".join(fh.read().splitlines()[-25:])
-            # A negative code is a signal (e.g. -11 = SIGSEGV), which usually dies
-            # without flushing anything useful, so say so rather than show a blank.
             how = (f"signal {-proc.returncode}" if proc.returncode < 0
                    else f"exit {proc.returncode}")
             raise RuntimeError(
@@ -309,8 +261,7 @@ class Nuisance3Adapter:
                                n_nonzero_trials=n_nonzero,
                                rel_xsec_err=(xsec_err / xsec) if xsec else None)
 
-    # Achilles' own end-of-run numbers. Both are printed rather than written to a
-    # machine-readable file, so they are scraped; a miss just leaves the field blank.
+    # Scraped from the log; a miss leaves the field blank.
     _RE_DURATION = re.compile(r"Run Duration:\s*(?:(\d+)h\s*)?(?:(\d+)m\s*)?(\d+)s")
     _RE_EFF = re.compile(r"Estimated unweighting eff for this group:\s*(\S+)")
 
@@ -328,22 +279,14 @@ class Nuisance3Adapter:
             h, mi, s = (int(g or 0) for g in m.groups())
             seconds = float(3600 * h + 60 * mi + s)
 
-        # Process groups with no allowed states print -nan; keep the least efficient
-        # real group, which is the one that paces the run.
+        # Empty process groups print -nan; the least efficient real one paces the run.
         effs = [v for v in (_as_float(x) for x in cls._RE_EFF.findall(text)) if v]
         return RunStats(seconds=seconds,
                         unweight_eff=min(effs) if effs else None)
 
     @staticmethod
     def _xsec_divisor(experiment: dict) -> float:
-        """How much to divide the per-ATOM cross section by for this experiment.
-
-        Achilles reports per atom, but published data does not use one convention:
-        T2K/MINERvA quote CH per nucleon (divide by 13), while MicroBooNE quotes per
-        argon atom (divide by 1 -- *not* by 40). Getting this wrong is silent and
-        costs a factor of the target's mass number, so it is declared per experiment
-        rather than guessed.
-        """
+        """What to divide Achilles' per-atom cross section by (see data_per)."""
         per = experiment.get("data_per")
         if per not in ("nucleon", "atom"):
             raise KeyError(
@@ -364,23 +307,13 @@ class Nuisance3Adapter:
 
     @staticmethod
     def _extra_bin_scale(measurement: dict, nbins: int) -> np.ndarray:
-        """Per-bin factors the NUISANCE binning does not already account for.
-
-        Dividing by the widths of the NUISANCE binning is all a sample with a physical
-        axis needs. Two cases are not: a histogram indexed by bin *number*, whose real
-        widths come from ``bin_edges`` (the sample divides by them in its own
-        ConvertEventRates, which the legacy record never calls), and a cross section
-        published per steradian, whose ``solid_angle`` the selection integrates over.
-        """
+        """Per-bin factors beyond the NUISANCE binning: bin_edges/bin_widths, solid_angle."""
         scale = np.ones(nbins)
         edges = measurement.get("bin_edges")
         explicit = measurement.get("bin_widths")
         if edges is not None and explicit is not None:
             raise ValueError(f"{measurement['name']}: give bin_edges or bin_widths, "
                              "not both")
-        # A sample whose axis stacks several channels (a 0p block then an Np block,
-        # say) has no monotonic edge list, but its per-bin widths are still defined --
-        # bin_widths carries them for exactly that case.
         widths = (np.diff(np.asarray(edges, dtype=float)) if edges is not None
                   else np.asarray(explicit, dtype=float)
                   if explicit is not None else None)
@@ -400,12 +333,7 @@ class Nuisance3Adapter:
 
     @staticmethod
     def response_matrix(measurement: dict, nbins: int) -> Optional[np.ndarray]:
-        """The regularisation matrix A_C for ``measurement``, or None.
-
-        A Wiener-SVD unfolded measurement is only comparable to A_C * prediction, so
-        the matrix is applied to the prediction (in stats.bootstrap_covariance, which
-        carries it into the MC covariance too), never to the data.
-        """
+        """The Wiener-SVD A_C applied to the prediction (never the data), or None."""
         path = measurement.get("smearing")
         if not path:
             return None
@@ -415,22 +343,9 @@ class Nuisance3Adapter:
                              f"{matrix.shape}, NUISANCE reports {nbins} bins")
         return matrix
 
-    def histogram(self, generated: GeneratedEvents,
-                  measurement: dict) -> EventSample:
-        """One measurement; a thin wrapper over the batched pass."""
-        return self.histogram_many(generated, [measurement])[measurement["name"]]
-
     def histogram_many(self, generated: GeneratedEvents, measurements,
                        block_size: int = 250_000) -> "dict[str, EventSample]":
-        """Bin every measurement of a setup in a single pass over the event file.
-
-        The legacy record evaluates one sample's selection and projections per column,
-        so a frame can carry all of a setup's samples at once (this is the notebook's
-        "lots of projections" pattern): the file is opened, parsed and walked once
-        instead of once per measurement, which is where the time goes for a setup with
-        eighteen of them. Events are pulled in blocks rather than with ``all()`` so
-        peak memory stays independent of the run length.
-        """
+        """Bin every measurement of a setup in one blocked pass over the event file."""
         pn = self._pn()
         measurements = list(measurements)
         if not measurements:
@@ -444,10 +359,8 @@ class Nuisance3Adapter:
         specs = []
         for i, measurement in enumerate(measurements):
             analysis = self._analysis(measurement["name"])
-            # The legacy NUISANCE2 record's add_to_framegen does not register the
-            # sample's columns, so add the selection and projection operators
-            # explicitly. The names are ours: a sample's own fname would collide with
-            # another's in a shared frame.
+            # The legacy record does not register its columns; add them under our own
+            # names, since a sample's fname can collide with another's.
             selection = analysis.get_selection()
             projections = analysis.get_projections()
             sel_col = f"sel{i}"
@@ -485,8 +398,7 @@ class Nuisance3Adapter:
             if fatx_col is None:
                 raise RuntimeError("event frame carries no per-target fatx estimate; "
                                    f"got {list(cols)}")
-            # A running estimate over the file, so the newest block's last row is the
-            # one to keep.
+            # A running estimate: the newest row wins.
             fatx_per_sumw = float(table[-1, fatx_col])
 
             weight_col = cols["weight.cv"]
@@ -516,31 +428,20 @@ class Nuisance3Adapter:
         nbins = spec["nbins"]
         bin_index = np.asarray(spec["bins"], dtype=int)
         weights = np.asarray(spec["weights"], dtype=float)
-        # Keep the generator's own weights: the scaling below folds in the bin width,
-        # which would otherwise show up as weight spread in the unweighting metrics.
         raw_weights = weights.copy()
 
         if not bin_index.size:
             return EventSample(bin_index=bin_index, weights=weights, nbins=nbins,
                                raw_weights=raw_weights)
 
-        # Cross-section normalisation, per the recipe that reproduces the published
-        # results: take the flux-averaged total xsec *per atom* and divide by the
-        # target's nucleon count ourselves.
-        #
-        # NUISANCE's own PerNucleon conversion must NOT be used here: for a composite
-        # target it divides by the struck nucleus' A, which for CH measures out at
-        # exactly 12 (carbon only), whereas the published data uses 13 (CH). That is a
-        # silent 13/12 = 8% normalisation error.
+        # Per-atom fatx divided by our own nucleon count: NUISANCE's PerNucleon uses
+        # the struck nucleus' A (12 for CH, not 13).
         if generated.xsec_divisor is None:
             raise ValueError("GeneratedEvents.xsec_divisor is required to normalise; "
                              "set data_per (and target_nucleons) on the experiment")
         if fatx_per_sumw is None:
             raise RuntimeError("no per-target fatx estimate was seen in any block")
-        # Use the frame's own per-TARGET estimate: it is normalised against the same
-        # weight.cv column used above. (EventSource.norm_info reports a differently
-        # normalised sumweights -- 0.45 where the frame's weights sum to ~92000 --
-        # so mixing the two overstates the prediction by ~4 orders of magnitude.)
+        # The frame's own estimate matches weight.cv; EventSource.norm_info does not.
         widths = np.asarray(list(spec["binning"].bin_sizes()),
                             dtype=float).reshape(-1)[:nbins]
         scale = np.divide(
@@ -560,8 +461,6 @@ class Nuisance3Adapter:
         errors = np.asarray(binned.errors, dtype=float).reshape(-1)
         covariance = np.asarray(analysis.get_covariance_matrix(), dtype=float)
 
-        # A shipped data table in the wrong units, put back on the prediction's
-        # footing before anything reads it (see data_scale in the config).
         data_scale = float(measurement.get("data_scale", 1.0))
         if data_scale != 1.0:
             values = values * data_scale
@@ -569,14 +468,10 @@ class Nuisance3Adapter:
             covariance = covariance * data_scale ** 2
 
         if covariance.shape != (values.size, values.size):
-            # No published covariance: fall back to the per-bin errors.
             covariance = np.diag(errors ** 2)
         else:
-            # NUISANCE returns the covariance in the sample's published units (e.g.
-            # 1e-38 cm^2 squared) while values/errors are absolute, so the two are not
-            # directly comparable -- for these samples the diagonal is off by 1e76.
-            # Recover the factor from the errors, which are in the values' units, so
-            # the correlation structure is kept and no unit convention is assumed.
+            # The covariance comes in the sample's published units (e.g. 1e-38 cm^2
+            # squared); rescale it onto the errors, which match the values.
             sd = np.sqrt(np.clip(np.diag(covariance), 0.0, None))
             usable = (sd > 0) & (errors > 0)
             if usable.any():
@@ -584,8 +479,6 @@ class Nuisance3Adapter:
 
         configured = measurement.get("bin_edges")
         if configured is not None:
-            # A bin-number histogram carries no usable edges of its own; these are the
-            # real ones, and what the prediction has been made differential in.
             edges = np.asarray(configured, dtype=float)
         else:
             try:
@@ -609,13 +502,7 @@ class Nuisance3Adapter:
 
 
 def unweighting_cap(weights: np.ndarray, options: dict) -> Optional[float]:
-    """The weight cap an Achilles unweighting scheme settles on for ``weights``.
-
-    Mirrors ``SortedWeightUnweighter::ComputeCap`` for each registered scheme, so the
-    synthetic adapter's ``--dry-run`` scan behaves like the real one and the rules
-    have a reference implementation outside C++. ``None`` means "no cap" (``None``
-    unweighter: events keep their weights).
-    """
+    """The cap ``SortedWeightUnweighter::ComputeCap`` settles on; None for no cap."""
     name = options.get("Name", "None")
     if name == "None":
         return None
@@ -654,13 +541,10 @@ def unweighting_cap(weights: np.ndarray, options: dict) -> Optional[float]:
 
 
 class SyntheticAdapter:
-    """Dry-run/self-test stand-in: draws weighted events from a tunable Gaussian.
+    """Weighted Gaussian events. ``dryrun.feature_shift`` fakes a physics change in the
+    PR; ``dryrun.nbins`` sets the binning; unweighting caps are applied for real."""
 
-    ``experiment['dryrun']['feature_shift']`` shifts only the feature branch (a fake
-    physics change); ``measurement['dryrun']['nbins']`` sets the histogram binning.
-    An ``unweighting`` block is applied for real (see ``unweighting_cap``), so the
-    scan's plumbing and its metrics can be checked without Achilles.
-    """
+    name = "synthetic"
 
     def __init__(self, base_seed: int = 0):
         self.base_seed = base_seed
@@ -668,16 +552,13 @@ class SyntheticAdapter:
     def _nbins(self, measurement: dict) -> int:
         return int(measurement.get("dryrun", {}).get("nbins", 12))
 
-    # Every prediction is normalised to this total, mirroring the real adapter's
-    # flux-averaged cross-section scaling: a scheme that throws away events must not
-    # come out smaller, only noisier.
+    # Every prediction is normalised to this total, as the real cross section would be.
     _TOTAL = 2.0e5
 
     def _draw(self, shift: float, n_events: int, rng: np.random.Generator, *,
               tail: bool = False) -> GeneratedEvents:
         x = np.clip(rng.normal(0.5 + shift, 0.18, size=n_events), 0.0, 0.999)
-        # A long overweight tail is what the schemes differ on, so the scan draws
-        # lognormal weights; the branch-comparison path keeps the mild uniform ones.
+        # The scan needs an overweight tail to tell schemes apart.
         weights = (rng.lognormal(0.0, 0.9, size=n_events) if tail
                    else rng.uniform(0.5, 1.5, size=n_events))
         return GeneratedEvents(x=x, weights=weights)
@@ -699,8 +580,7 @@ class SyntheticAdapter:
         shift = float(experiment.get("dryrun", {}).get("feature_shift", 0.0)) \
             if branch == "feature" else 0.0
 
-        # One pilot draw stands in for Achilles' optimisation pass: it fixes the cap
-        # and, with it, the acceptance rate.
+        # A pilot draw stands in for Achilles' optimisation pass and fixes the cap.
         pilot = self._draw(shift, min(n_events, 100_000), rng, tail=True)
         cap = (unweighting_cap(pilot.weights, unweighting)
                if unweighting is not None else None)
@@ -709,9 +589,7 @@ class SyntheticAdapter:
             gen = self._draw(shift, n_events, rng, tail=unweighting is not None)
             eff = 1.0
         else:
-            # Achilles generates until it has n_events *accepted*, so oversample by
-            # the acceptance rate rather than letting a harsher cap yield fewer
-            # events -- otherwise the schemes are compared at different statistics.
+            # Achilles generates until n_events are accepted; oversample to match.
             eff = float(np.mean(np.minimum(np.abs(pilot.weights) / cap, 1.0)))
             trials = int(n_events / max(eff, 1e-3) * 1.15) + 1000
             gen = self._unweight(self._draw(shift, trials, rng, tail=True), cap, rng)
@@ -719,9 +597,6 @@ class SyntheticAdapter:
 
         gen.run = RunStats(seconds=float(n_events) / 5e4 / max(eff, 1e-3),
                            unweight_eff=eff)
-        # Mirror what Achilles reports so --dry-run exercises the same estimator.
-        # The synthetic sample's total is forced to _TOTAL in `histogram`, so its
-        # normalisation is exact and trial_covariance is mildly conservative here.
         gen.n_nonzero_trials = int(gen.weights.size)
         gen.rel_xsec_err = 0.0
         return gen
@@ -737,8 +612,6 @@ class SyntheticAdapter:
 
     def histogram_many(self, generated: GeneratedEvents, measurements,
                        block_size: int = 250_000) -> "dict[str, EventSample]":
-        # In-memory events: nothing to save by sharing a pass, but the driver calls
-        # only this.
         return {m["name"]: self.histogram(generated, m) for m in measurements}
 
     @staticmethod
@@ -762,12 +635,7 @@ class SyntheticAdapter:
 # ---------------------------------------------------------------------------
 
 def _selftest() -> int:
-    """Check histogram_many over a fake pyNUISANCE, since the real one needs the image.
-
-    What is worth pinning down here is the frame bookkeeping: that each sample reads
-    its own selection and projection columns out of a shared frame, that blocks are
-    stitched together, and that the fatx estimate comes from the last block.
-    """
+    """histogram_many's frame bookkeeping, over a fake pyNUISANCE."""
     class Binning:
         def __init__(self, edges):
             self.edges = np.asarray(edges, dtype=float)
@@ -851,9 +719,6 @@ def _selftest() -> int:
     wide = adapter.histogram_many(gen, [{"name": "A", "solid_angle": 4.0}])["A"]
     checks["solid_angle divides"] = np.allclose(
         wide.weights, np.array([2.0, 4.0]) * scale / 4.0)
-    single = adapter.histogram(gen, {"name": "A"})
-    checks["histogram() matches the batch"] = np.allclose(single.weights,
-                                                          got["A"].weights)
     for name, ok in checks.items():
         print(f"[{'ok' if ok else 'FAIL'}] {name}")
     ok = all(checks.values())

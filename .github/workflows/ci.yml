@@ -220,6 +220,6 @@ jobs:
       - run: pip install numpy scipy pyyaml matplotlib
       - name: Self-tests
         run: |
-          for f in stats report adapters plots physval; do
+          for f in stats report adapters plots physval ci_scope; do
             python3 "$f.py" --selftest
           done

@@ -3,10 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Publication-style overlay plots for physval.
 
-One PNG per measurement: data with its uncertainty band, the stored `main`
-prediction and this branch's prediction on a shared axis, plus a ratio-to-data
-panel underneath. Prediction bands are the bootstrap MC uncertainty (the sqrt of
-the covariance diagonal).
+One PNG per measurement: data, main and this branch with their 1-sigma bands, plus a
+ratio-to-data panel.
 """
 
 from __future__ import annotations
@@ -18,13 +16,10 @@ matplotlib.use("Agg")  # headless CI
 import matplotlib.pyplot as plt
 import numpy as np
 
-# Colour-blind-safe (Okabe-Ito); data stays neutral so the two predictions read as
-# the signal. Kept in one place so every measurement's plot looks identical.
+# Okabe-Ito (colour-blind safe); the scan's reference takes the first slot.
 C_DATA = "#333333"
 C_MAIN = "#0072B2"
 C_FEATURE = "#D55E00"
-# The unweighting scan draws several predictions at once; rest of Okabe-Ito, with
-# the reference variant taking the first (blue) slot.
 C_VARIANTS = ("#0072B2", "#D55E00", "#009E73", "#CC79A7", "#E69F00", "#56B4E9",
               "#8B4513", "#7570B3")
 
@@ -61,7 +56,6 @@ def _errors(covariance: Optional[np.ndarray], n: int) -> np.ndarray:
 
 
 def _step(ax, edges: np.ndarray, values: np.ndarray, color: str, label: str):
-    """Histogram outline plus a shaded 1-sigma band, drawn bin-edge to bin-edge."""
     ax.stairs(values, edges, color=color, label=label, linewidth=1.4)
 
 
@@ -117,8 +111,7 @@ def plot_measurement(path: str, name: str, *,
         if subtitle:
             ax.text(0.0, 1.012, subtitle, transform=ax.transAxes, fontsize=8,
                     color="#666666", va="bottom")
-        # Cross sections are ~1e-38, so matplotlib parks a shared exponent at the top
-        # left -- exactly where the subtitle goes. Move it to the right instead.
+        # Keep the ~1e-38 offset text clear of the subtitle.
         offset = ax.yaxis.get_offset_text()
         offset.set_horizontalalignment("right")
         offset.set_position((1.0, 1.0))
