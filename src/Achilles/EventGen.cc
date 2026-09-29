@@ -269,8 +269,8 @@ bool achilles::EventGen::GenerateSingleEvent() {
     auto init_lep = event.Leptons()[0];
     auto init_beam = init_lep;
     init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
+    // Keep the sampled momentum: this becomes NuHepMC's status-4 incoming beam
+    // particle, which consumers read as the probe.
     event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays

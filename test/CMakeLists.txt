@@ -47,6 +47,7 @@ add_executable(achilles-testsuite
     # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_cache.cc
+    test_unweighter.cc
     test_interaction_handler.cc
     test_decays.cc
     test_mbamplitudes.cc

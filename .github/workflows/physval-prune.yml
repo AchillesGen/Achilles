@@ -1,0 +1,45 @@
+name: Physval Plot Pruning
+
+# Deletes plots/<sha>/ folders older than the retention window from the
+# physval-baselines branch. Baselines are replaced per image and need no pruning.
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Sundays 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Delete plot folders older than this many days'
+        default: '45'
+
+permissions:
+  contents: write
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    env:
+      BASELINE_BRANCH: physval-baselines
+      RETENTION_DAYS: ${{ inputs.retention_days || '45' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: physval-baselines
+          fetch-depth: 0
+      - name: Prune old plot folders
+        run: |
+          [ -d plots ] || { echo "no plots/; nothing to prune"; exit 0; }
+          cutoff=$(( $(date +%s) - RETENTION_DAYS * 86400 ))
+          removed=0
+          for d in plots/*/; do
+            ts=$(git log -1 --format=%ct -- "$d")
+            if [ "${ts:-0}" -gt 0 ] && [ "$ts" -lt "$cutoff" ]; then
+              git rm -rq "$d"
+              removed=$((removed + 1))
+            fi
+          done
+          [ "$removed" -eq 0 ] && { echo "nothing older than ${RETENTION_DAYS}d"; exit 0; }
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          git commit -qm "prune $removed physval plot folder(s) older than ${RETENTION_DAYS}d"
+          git push origin "HEAD:$BASELINE_BRANCH"

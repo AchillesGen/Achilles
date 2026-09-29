@@ -1,0 +1,68 @@
+# T2K numu on water, QE + virtual-resonance RES, for the CC1pi+ H2O samples. The
+# published cross sections are per nucleon of H2O, so the Nuclei list is 16O plus two
+# 1H and 18 nucleons are divided out downstream (data_per: nucleon).
+Main:
+  NEvents: 7500000
+  HardCuts: false
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: T2K_H2O_QE_RES_VirtResonances.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [14, [13]]
+
+Beams:
+  - Beam:
+      PID: 14
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/T2K_nu.dat
+
+Cascade:
+  Run: True
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+ - NuclearModel:
+    Model: FortranModel
+    Name: QE_Spectral_Func
+    ConfigFile: data/info_O16_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+ - NuclearModel:
+    Model: FortranModel
+    Name: RES_Spectral_Func
+    ConfigFile: data/info_O16_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/16O.yml"
+  - Nucleus: !include "data/default/1H.yml"
+  - Nucleus: !include "data/default/1H.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 13
+    range: [0., 180.]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []

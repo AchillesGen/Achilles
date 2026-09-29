@@ -1,0 +1,66 @@
+# MicroBooNE nue CC (CC1eNp), QE + virtual-resonance RES. A separate generation from the
+# numu setups: the beam is the BNB intrinsic nue component and the final-state lepton is
+# an electron, so no event file is shared with them.
+Main:
+  NEvents: 7500000
+  HardCuts: false
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: uB_nue_Ar_QE_RES_VirtResonances.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [12, [11]]
+
+Beams:
+  - Beam:
+      PID: 12
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/microboone_NCpi0_nue.dat
+
+Cascade:
+  Run: True
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+ - NuclearModel:
+    Model: FortranModel
+    Name: QE_Spectral_Func
+    ConfigFile: data/info_Ar40_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+ - NuclearModel:
+    Model: FortranModel
+    Name: RES_Spectral_Func
+    ConfigFile: data/info_Ar40_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/40Ar.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 11
+    range: [0., 180.]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []

@@ -11,10 +11,19 @@ on:
     types: [published]
   workflow_dispatch:
 
+# Only the last of a burst of pushes gets tagged, so cancel the rest.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker:
     name: Build and Push Docker image to DockerHub
     runs-on: ubuntu-latest
+    # Explicit, so a read-only default token does not break the ghcr.io push.
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Docker meta
         id: meta

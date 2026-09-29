@@ -1,0 +1,287 @@
+name: Physics Validation (NUISANCE3)
+
+# compare:  a branch against main's stored baseline and the data, posted as a PR
+#           comment. Triggered by "!physval" in a commit subject; "!physval(A,B)"
+#           limits it to setups A and B, and "dry-run" in the scope uses the
+#           synthetic adapter.
+# baseline: main's per-setup predictions, stored on the physval-baselines branch
+#           under the image digest. Nightly, skipped while the stored one is current.
+# Both modes build Achilles once and run one job per setup (validation/physval).
+
+on:
+  push:
+    branches-ignore: [physval-baselines]
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [compare, baseline]
+        default: compare
+      events:
+        description: 'Events per setup (blank = 500k compare, 2M baseline)'
+        default: ''
+      seed:
+        default: '42'
+      dry_run:
+        description: 'Synthetic adapter instead of Achilles + NUISANCE3'
+        type: boolean
+        default: false
+      only_experiment:
+        description: 'Setups to run, comma-separated (blank = all)'
+        default: ''
+
+concurrency:
+  group: physval-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: read
+
+# The container's default shell is sh; the steps use bash arrays.
+defaults:
+  run:
+    shell: bash
+
+env:
+  PHYSVAL_DIR: validation/physval
+  BASELINE_BRANCH: physval-baselines
+  PHYSVAL_IMAGE: ghcr.io/achillesgen/achilles-physval:latest
+  BUILD_TYPE: Release
+
+jobs:
+  setup:
+    if: >-
+      github.event_name != 'push' ||
+      contains(join(github.event.commits.*.message, ' '), '!physval')
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.scope.outputs.run }}
+      mode: ${{ steps.scope.outputs.mode }}
+      dry_run: ${{ steps.scope.outputs.dry_run }}
+      only: ${{ steps.scope.outputs.only }}
+      events: ${{ steps.scope.outputs.events }}
+      matrix: ${{ steps.scope.outputs.matrix }}
+      image: ${{ steps.image.outputs.ref }}
+      key: ${{ steps.image.outputs.key }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+
+      # The digest pins one image for the whole run and keys the baseline, so any
+      # toolchain rebuild starts a fresh one.
+      - id: image
+        name: Resolve the image digest
+        run: |
+          DIGEST=$(docker buildx imagetools inspect "$PHYSVAL_IMAGE" --format '{{ .Manifest.Digest }}')
+          SHORT="${DIGEST#sha256:}"
+          echo "ref=${PHYSVAL_IMAGE%:*}@${DIGEST}" >> "$GITHUB_OUTPUT"
+          echo "key=${SHORT:0:12}" >> "$GITHUB_OUTPUT"
+
+      - id: scope
+        name: Resolve mode and scope
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
+          IN_MODE: ${{ inputs.mode }}
+          IN_DRY: ${{ inputs.dry_run }}
+          IN_ONLY: ${{ inputs.only_experiment }}
+          IN_EVENTS: ${{ inputs.events }}
+          KEY: ${{ steps.image.outputs.key }}
+        run: python3 "$PHYSVAL_DIR/ci_scope.py" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: setup
+    if: needs.setup.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    container:
+      image: ${{ needs.setup.outputs.image }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+      - name: Build and install Achilles
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
+            -DACHILLES_ENABLE_SHERPA=OFF \
+            -DACHILLES_ENABLE_TESTING=OFF \
+            -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build build -j"$(nproc)"
+          cmake --install build
+      # Achilles' own lib must outrank the image's NUISANCE2 one (see adapters.py).
+      - name: Smoke-test the binary
+        run: |
+          LD_LIBRARY_PATH="$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" \
+            "$GITHUB_WORKSPACE/install/bin/achilles" --version
+      - uses: actions/upload-artifact@v5
+        with:
+          name: achilles-install
+          path: install
+          retention-days: 7
+
+  generate:
+    needs: [setup, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    container:
+      image: ${{ needs.setup.outputs.image }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    env:
+      MODE: ${{ needs.setup.outputs.mode }}
+      DRY_RUN: ${{ needs.setup.outputs.dry_run }}
+      KEY: ${{ needs.setup.outputs.key }}
+      EVENTS: ${{ needs.setup.outputs.events }}
+      SEED: ${{ inputs.seed || '42' }}
+      SETUP: ${{ matrix.experiment }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v5
+        with:
+          name: achilles-install
+          path: install
+
+      # Artifacts drop the executable bit. The image's python is PEP-668 managed, so
+      # its packages are checked rather than installed.
+      - name: Prepare the environment
+        run: |
+          chmod -R +x install/bin
+          echo "$GITHUB_WORKSPACE/install/bin" >> "$GITHUB_PATH"
+          echo "LD_LIBRARY_PATH=$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+          python3 -c "import numpy, scipy, yaml, matplotlib, pyNUISANCE"
+          python3 -c "import json; print('NUISANCE_VERSION=' + json.load(open('/opt/achilles-physval/versions.json'))['nuisance3']['sha'][:12])" >> "$GITHUB_ENV"
+
+      - name: Fetch the stored baseline
+        if: env.MODE == 'compare'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          mkdir -p baseline
+          if git fetch --depth 1 origin "$BASELINE_BRANCH"; then
+            git --work-tree=baseline checkout FETCH_HEAD -- "baselines/$KEY" 2>/dev/null \
+              || echo "No baseline for image $KEY."
+          fi
+
+      - name: Run physval
+        working-directory: ${{ env.PHYSVAL_DIR }}
+        run: |
+          args=(--config measurements.yml --only-experiment "$SETUP" --key "$KEY"
+                --events "$EVENTS" --seed "$SEED" --out-dir "out/$SETUP")
+          [ "$DRY_RUN" = true ] && args+=(--dry-run)
+          if [ "$MODE" = baseline ]; then
+            python3 physval.py "${args[@]}" --make-baseline
+          else
+            python3 physval.py "${args[@]}" --baseline-dir "$GITHUB_WORKSPACE/baseline"
+          fi
+
+      # always(): a setup that failed still wrote a summary saying why.
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: shard-${{ matrix.experiment }}
+          path: ${{ env.PHYSVAL_DIR }}/out/${{ matrix.experiment }}
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # always(): a crashed setup must not take the report for the others with it.
+  aggregate:
+    needs: [setup, generate]
+    if: always() && needs.setup.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write        # physval-baselines branch
+      pull-requests: write   # the summary comment
+    env:
+      MODE: ${{ needs.setup.outputs.mode }}
+      DRY_RUN: ${{ needs.setup.outputs.dry_run }}
+      KEY: ${{ needs.setup.outputs.key }}
+      ONLY: ${{ needs.setup.outputs.only }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml
+      - uses: actions/download-artifact@v5
+        continue-on-error: true   # every shard failed: nothing to download
+        with:
+          pattern: shard-*
+          path: shards
+
+      - name: Merge the shards
+        if: env.MODE == 'compare'
+        working-directory: ${{ env.PHYSVAL_DIR }}
+        run: |
+          scope=()
+          IFS=',' read -ra wanted <<< "$ONLY"
+          for e in "${wanted[@]}"; do scope+=(--only-experiment "$e"); done
+          python3 physval.py --merge "$GITHUB_WORKSPACE"/shards/shard-*/summary.json \
+            --config measurements.yml "${scope[@]}" --out-dir final
+          cat final/comment.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Synthetic results never reach the branch. Retries cover a concurrent push.
+      - name: Publish to ${{ env.BASELINE_BRANCH }}
+        if: env.DRY_RUN != 'true'
+        run: |
+          shopt -s nullglob
+          if [ "$MODE" = baseline ]; then
+            files=(shards/shard-*/*.json); dest="baselines/$KEY"
+          else
+            files=(shards/shard-*/*.png); dest="plots/$GITHUB_SHA"
+          fi
+          [ ${#files[@]} -eq 0 ] && { echo "nothing to publish"; exit 0; }
+          git config user.name  "achilles-physval[bot]"
+          git config user.email "achilles-physval@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            git worktree remove --force bl 2>/dev/null || true
+            if git fetch origin "$BASELINE_BRANCH"; then
+              git worktree add -B "$BASELINE_BRANCH" bl FETCH_HEAD
+            else
+              git worktree add --orphan -b "$BASELINE_BRANCH" bl
+            fi
+            # One image's baselines at a time: older keys can never match again.
+            if [ "$MODE" = baseline ]; then
+              for d in bl/baselines/*/; do
+                [ "$(basename "$d")" = "$KEY" ] || rm -rf "$d"
+              done
+            fi
+            mkdir -p "bl/$dest"
+            cp "${files[@]}" "bl/$dest/"
+            git -C bl add -A -f .
+            git -C bl commit -qm "physval $MODE for $GITHUB_SHA" || { echo "no change"; exit 0; }
+            git -C bl push origin "$BASELINE_BRANCH" && exit 0
+            sleep $((attempt * 15))
+          done
+          exit 1
+
+      - name: Post or update the PR comment
+        if: env.MODE == 'compare'
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync(`${process.env.PHYSVAL_DIR}/final/comment.md`, 'utf8');
+            const marker = '<!-- achilles-physval-summary -->';
+            const { owner, repo } = context.repo;
+            const branch = context.ref.replace('refs/heads/', '');
+            const prs = await github.rest.pulls.list({ owner, repo, head: `${owner}:${branch}`, state: 'open' });
+            if (prs.data.length === 0) { core.info('No open PR for this branch.'); return; }
+            const issue_number = prs.data[0].number;
+            const comments = await github.paginate(github.rest.issues.listComments,
+                                                   { owner, repo, issue_number, per_page: 100 });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
