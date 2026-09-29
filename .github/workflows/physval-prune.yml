@@ -22,7 +22,7 @@ jobs:
       BASELINE_BRANCH: physval-baselines
       RETENTION_DAYS: ${{ inputs.retention_days || '45' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: physval-baselines
           fetch-depth: 0
