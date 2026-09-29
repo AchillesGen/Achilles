@@ -81,6 +81,9 @@ def main() -> int:
     else:
         run, dry, only = parse_markers(json.loads(env.get("COMMIT_MESSAGES") or "[]"))
 
+    if mode == "baseline" and not dry and env.get("REF") != "refs/heads/main":
+        sys.exit("::error::a real baseline can only be made from main")
+
     unknown = [o for o in only if o not in names]
     if unknown:
         sys.exit(f"::error::unknown physval setups: {', '.join(unknown)}. "

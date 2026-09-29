@@ -82,6 +82,7 @@ jobs:
         name: Resolve mode and scope
         env:
           EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
           COMMIT_MESSAGES: ${{ toJson(github.event.commits.*.message) }}
           IN_MODE: ${{ inputs.mode }}
           IN_DRY: ${{ inputs.dry_run }}
