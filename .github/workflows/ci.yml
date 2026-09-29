@@ -1,16 +1,10 @@
 name: CI
 
-# Build + unit tests on every supported toolchain, then a cross-section check of the
-# example run cards against their reference values.
-#
-# Build and test share one job on purpose: the test binaries need the build tree, and
-# shipping that tree between jobs as an artifact cost more than the tests themselves.
-# Only the (small) install tree crosses a job boundary, for the cross-section check.
+# Build + unit tests per toolchain, then the example cards' cross sections against
+# their reference values. Only the install tree crosses a job boundary.
 
 on:
-  # Pushes to the long-lived branches and tags. PR branches are covered by the
-  # pull_request trigger below -- listing branches here rather than bare `push`
-  # is what stops every in-repo PR from running this matrix twice.
+  # PR branches run via pull_request; listing branches here avoids running twice.
   push:
     branches: [main, dev]
     tags: ['v*.*.*']
@@ -21,10 +15,14 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 env:
   BUILD_TYPE: Release
-  # Shared by the configure step and the cache; keep the two in sync.
   CPM_SOURCE_CACHE: ${{ github.workspace }}/cpm-cache
+  HOMEBREW_NO_AUTO_UPDATE: 1
+  HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
 
 jobs:
   build-test:
@@ -39,19 +37,18 @@ jobs:
             os: ubuntu-26.04
             cc: gcc
             cxx: g++
-            fort: gfortran
             coverage: true
           - name: Ubuntu Clang
             os: ubuntu-latest
             cc: clang
             cxx: clang++
-            fort: gfortran
             coverage: false
-          - name: macOS 14 Clang
-            os: macos-14
+          # Homebrew has no bottles for unsupported macOS releases, so an old
+          # runner builds LLVM from source and times out. Keep this current.
+          - name: macOS Clang
+            os: macos-15
             cc: clang
             cxx: clang++
-            fort: gfortran
             coverage: false
 
     steps:
@@ -69,20 +66,9 @@ jobs:
       - name: Install dependencies (macOS)
         if: runner.os == 'macOS'
         run: |
-          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
-          brew update
-          brew install hdf5
-          brew install --force gcc
-          os_ver=$(sw_vers -productVersion | cut -d'.' -f1)
-          # TODO: remove hardcoded gfortran major version
-          if (( "$os_ver" > 13 )); then
-            ln -fs /opt/homebrew/bin/gfortran-14 /usr/local/bin/gfortran
-          else
-            ln -fs /usr/local/bin/gfortran-14 /usr/local/bin/gfortran
-          fi
+          brew install hdf5 gcc ccache
+          echo "FC=$(brew --prefix gcc)/bin/gfortran" >> "$GITHUB_ENV"
 
-      # Keyed on the files that actually decide which sources CPM fetches. The old
-      # key used hashFiles('**/'), which matches nothing and so never varied.
       - name: Cache CPM sources
         uses: actions/cache@v5
         with:
@@ -107,25 +93,19 @@ jobs:
             -DCPM_SOURCE_CACHE="$CPM_SOURCE_CACHE" \
             -DCMAKE_C_COMPILER=${{ matrix.cc }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
-            -DCMAKE_Fortran_COMPILER=${{ matrix.fort }} \
+            -DCMAKE_Fortran_COMPILER="${FC:-gfortran}" \
             -DCMAKE_INSTALL_PREFIX="$GITHUB_WORKSPACE/install" \
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
       - name: Build
         run: cmake --build build --config "$BUILD_TYPE" -j"$(getconf _NPROCESSORS_ONLN)"
 
-      # catch_discover_tests registers each Catch2 case individually and the Fortran
-      # suite is one entry (see test/CMakeLists.txt), so ctest parallelises the C++
-      # cases and reports failures per test instead of as one opaque binary exit code.
       - name: Test
         run: |
           ctest --test-dir build \
             --output-on-failure \
             --parallel "$(getconf _NPROCESSORS_ONLN)"
 
-      # The build is instrumented with --coverage on this config only. Previously
-      # nothing ever turned the .gcda files into a report, so coverage.xml did not
-      # exist and the upload below was a silent no-op.
       - name: Generate coverage report
         if: matrix.coverage
         run: |
@@ -148,9 +128,7 @@ jobs:
       - name: Install
         run: cmake --install build
 
-      # Only the install tree is published. The cross-section check runs on Ubuntu
-      # GCC alone -- cross sections are physics, not compiler behaviour -- so the
-      # other configs have no consumer and skip the upload entirely.
+      # The cross-section check runs on this config alone; nothing else needs a tree.
       - name: Upload install tree
         if: matrix.name == 'Ubuntu GCC'
         uses: actions/upload-artifact@v5
@@ -162,9 +140,7 @@ jobs:
   cross-section:
     name: Cross Section - shard ${{ matrix.shard }}
     needs: build-test
-    # Must match the image of the config that produced install-ubuntu-gcc: the
-    # artifact is a dynamically linked binary, so building on 26.04 and running
-    # on an older image risks a glibc/libstdc++ mismatch at load time.
+    # Same image as the build that produced the artifact, so glibc/libstdc++ match.
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     strategy:
@@ -188,15 +164,10 @@ jobs:
           name: install-ubuntu-gcc
           path: install
 
-      # Artifacts are zipped, which does not carry the executable bit, so everything
-      # under bin/ comes back non-executable. -R rather than naming achilles alone,
-      # so any other installed tool stays runnable. Kept as its own step: under the
-      # `set -uo pipefail` (no -e) of the check step below a failure here would be
-      # swallowed and resurface as 21 confusing card failures.
+      # Artifacts drop the executable bit.
       - name: Restore the executable bit
         working-directory: ${{ github.workspace }}/install
         run: |
-          set -euo pipefail
           chmod -R +x bin
           ./bin/achilles --version
 
@@ -207,22 +178,15 @@ jobs:
           NSHARDS: 4
         run: |
           set -uo pipefail
-
-          # Deal the example cards round-robin across shards. Round-robin rather
-          # than contiguous blocks so a slow family of cards (say the 2000 MeV
-          # runs) spreads out instead of landing in one shard.
+          # Round-robin, so a slow family of cards spreads across shards.
           mapfile -t all < <(ls examples/*.yml | sort)
           files=()
           for i in "${!all[@]}"; do
             if [ $(( i % NSHARDS )) -eq "$SHARD" ]; then files+=("${all[$i]}"); fi
           done
+          [ ${#files[@]} -eq 0 ] && { echo "No examples in this shard."; exit 0; }
 
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No examples in this shard."; exit 0
-          fi
-
-          # Run every card before failing, so one bad cross section does not hide
-          # the rest. The old loop aborted the whole job on the first mismatch.
+          # Run every card before failing, so one mismatch does not hide the rest.
           failed=()
           for file in "${files[@]}"; do
             name=$(basename "$file" .yml)
@@ -236,8 +200,26 @@ jobs:
               failed+=("$name")
             fi
           done
-
           if [ ${#failed[@]} -gt 0 ]; then
             echo "Failed: ${failed[*]}"
             exit 1
           fi
+
+  physval-selftest:
+    name: Physval self-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: validation/physval
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install numpy scipy pyyaml matplotlib
+      - name: Self-tests
+        run: |
+          for f in stats report adapters plots physval; do
+            python3 "$f.py" --selftest
+          done
