@@ -79,11 +79,6 @@ class SortedWeightUnweighter : public Unweighter {
     void SaveState(std::ostream &os) const override;
     void LoadState(std::istream &is) override;
 
-    double RealizedTailFraction();
-    double RealizedExcessFraction();
-    bool CapAtMaximum();
-    bool Frozen() const { return m_frozen; }
-
   protected:
     virtual double ComputeCap(const std::vector<double> &sorted_weights, double total) const = 0;
     virtual std::string RuleTag() const = 0;
