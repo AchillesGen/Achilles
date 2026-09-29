@@ -6,6 +6,8 @@
 #include "Achilles/Random.hh"
 #include "Achilles/Utilities.hh"
 
+#include <optional>
+
 using namespace achilles;
 
 PionAbsorption::PionAbsorption(const YAML::Node &) {
@@ -108,7 +110,7 @@ InteractionResults PionAbsorption::CrossSection(Event &event, size_t part1, size
         size_t abs_partner_idx = state.first;
         // spdlog::debug("abs idx = {}", abs_partner_idx);
         if(abs_partner_idx == SIZE_MAX) continue;
-        absorption_partners.push_back(event.Hadrons()[abs_partner_idx]);
+        absorption_partners.emplace_back(event.Hadrons()[abs_partner_idx]);
         if(event.Hadrons()[abs_partner_idx].ID() == particle2.ID()) {
             same_isospin_counter += 1;
         } else {
@@ -142,20 +144,28 @@ std::vector<Particle> PionAbsorptionOneStep::GenerateMomentum(const Particle &pa
                                                               const Particle &particle2,
                                                               const std::vector<PID> &out_pids,
                                                               Random &random) const {
-    Particle absorption_partner;
-
     auto partner_charge =
         (ParticleInfo(out_pids[0]).IntCharge() + ParticleInfo(out_pids[1]).IntCharge() -
          particle1.Info().IntCharge() - particle2.Info().IntCharge()) /
         3;
 
-    for(const auto &partner : absorption_partners) {
-        if(partner.Info().IntCharge() / 3 == partner_charge) {
-            absorption_partner = partner;
+    std::optional<std::reference_wrapper<Particle>> selected;
+    for(auto &partner : absorption_partners) {
+        if(partner.get().Info().IntCharge() / 3 == partner_charge) {
+            selected = partner;
             break;
         }
     }
 
+    if(!selected)
+        throw std::runtime_error(
+            fmt::format("PionAbsorption: no absorption partner with charge {} for {} + {} -> {} "
+                        "+ {}",
+                        partner_charge, particle1.ID(), particle2.ID(), out_pids[0], out_pids[1]));
+
+    // Flag the partner in Event::Hadrons() so the cascade can consume it once Pauli blocking
+    // has been checked; without this it stays background and is double counted as bound.
+    Particle &absorption_partner = selected->get();
     absorption_partner.Status() = ParticleStatus::absorption_partner;
 
     spdlog::debug("We chose pion absorption!");

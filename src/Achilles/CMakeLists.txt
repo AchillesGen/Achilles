@@ -11,6 +11,7 @@ add_library(utilities SHARED
     ThreeVector.cc
     Utilities.cc
     ParticleInfo.cc
+    NuclearMass.cc
     Vegas.cc
     AdaptiveMap.cc
     Multichannel.cc
