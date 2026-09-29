@@ -3,12 +3,21 @@
 
 #include "Achilles/NuclearMass.hh"
 #include "Achilles/Constants.hh"
+#include "Achilles/Exception.hh"
+#include "Achilles/System.hh"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <fstream>
+#include <map>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <utility>
 
 #include "fmt/core.h"
+#include "spdlog/spdlog.h"
 
 namespace {
 
@@ -20,6 +29,44 @@ constexpr double aSurface = 13.921;
 constexpr double aCoulomb = 0.5813;
 constexpr double aAsymmetry = 17.372;
 constexpr double aPairing = 8.042;
+
+// Measured ground-state masses, read once on first use. The Bethe-Weizsacker fit
+// above carries a ~3 MeV RMS error, which is the same size as the excitation
+// energies it is used to test, so prefer measured values wherever the evaluation
+// covers the nuclide and keep the fit only for the gaps.
+constexpr const char *massTableFile = "data/ame2020_nuclear_masses.txt";
+
+const std::map<std::pair<int, int>, double> &MassTable() {
+    static const std::map<std::pair<int, int>, double> table = [] {
+        std::map<std::pair<int, int>, double> masses;
+
+        std::string path;
+        try {
+            path = achilles::Filesystem::FindFile(massTableFile, "NuclearMass");
+        } catch(const std::exception &) {
+            spdlog::warn("NuclearMass: could not find {}, falling back to the "
+                         "Bethe-Weizsacker fit for every nuclide",
+                         massTableFile);
+            return masses;
+        }
+
+        std::ifstream data(path);
+        std::string line;
+        while(std::getline(data, line)) {
+            if(line.empty() || line[0] == '#') continue;
+            std::istringstream parser(line);
+            int Z{}, A{};
+            double mass{};
+            if(!(parser >> Z >> A >> mass)) continue;
+            masses.emplace(std::make_pair(Z, A), mass);
+        }
+
+        spdlog::debug("NuclearMass: loaded {} measured masses from {}", masses.size(), path);
+        return masses;
+    }();
+
+    return table;
+}
 
 constexpr std::array<const char *, 119> symbols{
     "n",  "H",  "He", "Li", "Be", "B",  "C",  "N",  "O",  "F",  "Ne", "Na", "Mg", "Al", "Si",
@@ -56,6 +103,19 @@ double achilles::BindingEnergy(int Z, int A) {
 double achilles::NuclearMass(int Z, int A) {
     if(A <= 0) return 0.0;
     if(A == 1) return Z == 1 ? Constant::mp : Constant::mn;
+
+    // Prefer the measured mass. The fit is a stand-in for nuclides the evaluation
+    // does not cover, and its ~3 MeV error is the scale of the excitation energies
+    // these masses are used to compute, so the difference is not cosmetic.
+    const auto &table = MassTable();
+    if(const auto it = table.find({Z, A}); it != table.end()) return it->second;
+
+    static std::once_flag warned;
+    std::call_once(warned, [&] {
+        spdlog::warn("NuclearMass: {} is absent from {}, falling back to the "
+                     "Bethe-Weizsacker fit (reported once)",
+                     achilles::NuclearName(Z, A), massTableFile);
+    });
 
     return Z * Constant::mp + (A - Z) * Constant::mn - BindingEnergy(Z, A);
 }
