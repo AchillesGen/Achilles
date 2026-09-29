@@ -3,52 +3,26 @@
 #
 # Achilles physics-validation config.
 #
-# Cost: CI shards one job per experiment and each shard generates its setup's events
-# once, so wall time scales with the number of *setups*, not measurements. Adding a
-# measurement to an existing setup is free; adding a setup is one more generation per
-# run. 103 measurements across 20 setups as of this writing.
-#
-# Measurements are grouped under the *experimental setup* they share. Achilles
-# events are generated ONCE per experiment (one run card / beam+target) and reused
-# across every measurement in that setup — only the NUISANCE3 processing differs
-# per measurement. CI shards one job per experiment (the expensive, generation-bound
-# axis); adding a measurement to an existing setup costs no extra generation.
+# Events are generated once per experimental setup (one card: beam + target) and
+# reused by every measurement in it; CI runs one job per setup, so adding a
+# measurement to an existing setup is free.
 #
 # Experiment fields:
-#   name          Identifier for the setup — the common prefix of its sample names;
-#                 also the CI shard/job name.
-#   achilles_run  Achilles run card for this setup, path relative to the repo root.
-#                 Flux/data files referenced inside the card (flux/..., data/...) need
-#                 no fixups here: Achilles' loader searches the CWD, $ACHILLES_PATH,
-#                 $ACHILLES_DATA_DIR and the install tree's share/Achilles (see
-#                 Filesystem::FindFile / FindFlux), so a flux file shipped in flux/
-#                 resolves both from a source checkout and from an install.
-#   data_per      Convention the published data uses: 'nucleon' or 'atom'. Achilles
-#                 reports per ATOM, so a per-nucleon measurement is divided by
-#                 target_nucleons and a per-atom one is left alone. Do not use
-#                 NUISANCE's PerNucleon conversion: for a composite target it divides
-#                 by the struck nucleus' A (12 for CH), not the 13 the data uses.
-#   target_nucleons  Nucleons per target atom; required when data_per: nucleon.
-#   dryrun        SyntheticAdapter generation params (--dry-run / self-test):
-#                 feature_shift simulates a physics change; ignored by nuisance3.
-#   measurements  Full NUISANCE3 sample names, run verbatim. A bare name is enough;
-#                 use a mapping ({name: ..., dryrun: {nbins: N}}) only to override
-#                 synthetic-adapter binning.
+#   name             setup name (CI job name, and what !physval(<name>) selects)
+#   achilles_run     run card, relative to the repo root
+#   data_per         'nucleon' or 'atom': the published convention. Achilles reports
+#                    per atom; per-nucleon data is divided by target_nucleons. Never
+#                    use NUISANCE's PerNucleon: for CH it divides by 12, not 13.
+#   target_nucleons  nucleons per target atom; required with data_per: nucleon
+#   dryrun           synthetic-adapter params (feature_shift, per-sample nbins)
+#   measurements     NUISANCE3 sample names
 #
-# Per-sample overrides live in the maps at the bottom of this file, keyed by sample
-# name, and are folded onto the measurement at load time:
-#   data_scale    factor applied to the shipped NUISANCE data table and its
-#                 covariance. Only for a table that is in the wrong units.
-#   bin_edges     physical edges for a sample whose NUISANCE histogram is indexed by
-#                 bin *number*. The prediction is divided by the widths they imply
-#                 (the sample does that in its own ConvertEventRates, which the legacy
-#                 record never calls) and plots get a real x axis.
-#   solid_angle   sr the prediction is divided by, for a cross section published
-#                 doubly differential in solid angle while the selection integrates
-#                 over an angular acceptance window.
-#   smearing      csv (relative to this file) holding a regularisation matrix A_C
-#                 applied to the prediction as v -> A_C v, the way a Wiener-SVD
-#                 unfolded measurement has to be compared. Never applied to the data.
+# Per-sample maps at the bottom of the file, keyed by sample name:
+#   data_scale    factor for a shipped data table in the wrong units
+#   bin_edges     physical edges for a histogram indexed by bin number
+#   bin_widths    per-bin widths where stacked channels have no monotonic edges
+#   solid_angle   sr to divide by, for data per steradian over an angular window
+#   smearing      csv (relative to this file) with a Wiener-SVD A_C for the prediction
 #
 # NUISANCE2 requirements. The MicroBooNE_NCpi0 and ElectronData samples need two
 # NUISANCE2 fixes that are not on its main branch yet (NUISANCEMC/nuisance#115, #116):
@@ -58,36 +32,10 @@
 # top of its pinned NUISANCE2 sha; if a rebuild ever drops them, those samples go quiet
 # rather than red, so check versions.json's nuisance2.patches when they do.
 
-# Unweighting scan (`physval.py --unweighter-scan`).
-#
-# Unweighting is variance reduction, not physics: whatever cap a scheme picks, an
-# event above it is kept with its excess weight, so every scheme must reproduce the
-# same distributions and differ only in how much MC noise it carries per generated
-# event. The scan therefore re-generates each experimental setup once per variant,
-# compares every variant against `reference` with the same correlated chi-square the
-# branch comparison uses (a flag here means a scheme is *biasing* the physics), and
-# reports the efficiency each one bought.
-#
-#   reference   Variant every other one is compared against. The loosest cap in the
-#               list is the right choice: it leaves the fewest events overweighted,
-#               so it is the closest thing to an uncapped answer that still goes
-#               through the normal normalisation path.
-#   variants    name         label used in tables, plots and event-file names
-#               options      the Options/Unweighting block, substituted verbatim
-#               seed_offset  added to the run seed; 0 (the default) means every
-#                            variant shares a stream so only the scheme differs
-#
-# Always keep `null-control`: it repeats the reference's options at a different
-# seed, so its rows are drawn from the null hypothesis and calibrate the test. Any
-# scheme flagged no harder than null-control is not distinguishable from the
-# generator's own run-to-run scatter, whatever its p-value says.
-#
-# `Name: None` is deliberately NOT the reference. It looks like the ideal one — keep
-# every event with its weight, no cap, no bias — but its events come out of the
-# NuHepMC writer normalised low by a large factor: `NoUnweighter::AcceptEvent`
-# returns the raw weight where every capped scheme returns weight/cap, and
-# `EventGen::GenerateSingleEvent` multiplies by the summed caps either way. Until
-# that is reconciled, `None` is not on a comparable footing with the rest.
+# Unweighting scan (`physval.py --unweighter-scan`): every scheme must reproduce the
+# reference's distributions and differ only in MC noise and cost. `null-control` is
+# the reference reseeded, which calibrates the test; keep it. `Name: None` is not the
+# reference because NoUnweighter's events come out normalised differently.
 unweighting:
   reference: percentile-99.9
   variants:
@@ -108,7 +56,7 @@ unweighting:
       options: {Name: TailFraction, epsilon: 0.001}
 
 experiments:
-  - name: MINERvA_CC0pinp_STV_XSec
+  - name: MINERvA_numu_CH
     achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"
     data_per: nucleon          # published as cm^2/nucleon
     target_nucleons: 13        # CH
@@ -123,10 +71,8 @@ experiments:
       - MINERvA_CC0pinp_STV_XSec_1Dpprot_nu
       - MINERvA_CC0pinp_STV_XSec_1Dthmu_nu
       - MINERvA_CC0pinp_STV_XSec_1Dthprot_nu
-      # Single-pion samples on the same beam+target: this card already runs the
-      # CC1pi0 flux and cuts muons at 30 deg, which contains the CC0pi STV (20 deg),
-      # CC1pi0 (25 deg) and CC1pi+ 2017 (20 deg) selections. NUISANCE applies the
-      # published cuts itself.
+      # Single-pion samples: the card's 30 deg muon cut contains all of their
+      # selections, and NUISANCE applies the published cuts itself.
       - MINERvA_CC1pi0_XSec_1DWexp_nu
       - MINERvA_CC1pi0_XSec_1DPPi0Mass_nu
       - MINERvA_CC1pi0_XSec_1DPPi0MassDelta_nu
@@ -134,9 +80,7 @@ experiments:
       - MINERvA_CC1pi0_XSec_1DQ2_nu
       - MINERvA_CC1pip_XSec_1DTpi_nu_2017
       - MINERvA_CC1pip_XSec_1DQ2_nu_2017
-      # The Adler angles are the cleanest handle on the resonance production vertex
-      # this suite has: they are defined in the pion's rest frame, so a model that gets
-      # the total rate right can still get them wrong.
+      # Adler angles: the resonance decay in the pion rest frame.
       - MINERvA_CC1pi0_XSec_1DCosAdler_nu
       - MINERvA_CC1pi0_XSec_1DPhiAdler_nu
       - MINERvA_CC1pi0_XSec_1Dpmu_nu
@@ -154,12 +98,7 @@ experiments:
     measurements:
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
-      # This sample's comparison to data used to be meaningless: NUISANCE mixed GeV
-      # and MeV in the δp_n reconstruction, so it plotted roughly half the
-      # longitudinal momentum — a ~0.4 GeV offset for BNB kinematics, whatever
-      # generator was fed in. Fixed upstream (NUISANCEMC/nuisance#114), so the
-      # comparison is a real one from NUISANCE2 86c64b44 on. A baseline taken with an
-      # image older than that is not comparable for this sample alone.
+      # Needs NUISANCE2 >= 86c64b44 (nuisance#114 fixed a GeV/MeV mix in δp_n).
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
       - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
@@ -176,16 +115,10 @@ experiments:
       - MicroBooNE_CC1MuNp_XSec_1DPmu_nu
       - MicroBooNE_CC1MuNp_XSec_1DPp_nu
       - MicroBooNE_CC1MuNp_XSec_1Dthetamup_nu
-      # MicroBooNE_CC1Mu1p_XSec_1DProtonMomentum_nu and ..._1DEQE_nu are missing:
-      # SampleList.cxx offers both names and the class handles kProtonMomentum and kEQE
-      # when filling, but its constructor's name chain covers only ten of the twelve, so
-      # either one makes CreateSample hit NUIS_ABORT and abort the process -- taking the
-      # other 28 measurements of this setup with it. Patch 0004 adds both branches; put
-      # these two back once the image carries it.
-      # The WireCell 0p/Np analysis, on the same events. Its histogram is indexed by
-      # bin number: the single-block distributions get real edges below, and the ones
-      # that stack a 0p block on an Np block get per-bin widths instead. Needs the
-      # CC1Mu0pNp NUISANCE2 patch (see the header) or every event reads back -999.
+      # CC1Mu1p 1DProtonMomentum and 1DEQE abort NUISANCE's constructor; add them
+      # back once the image carries patch 0004.
+      # WireCell 0p/Np, indexed by bin number (edges/widths below). Needs the
+      # CC1Mu0pNp NUISANCE2 patch or every event reads back -999.
       - MicroBooNE_CC1Mu0pNp_XSec_EMu_nu
       - MicroBooNE_CC1Mu0pNp_XSec_CosThetaMu_nu
       - MicroBooNE_CC1Mu0pNp_XSec_ENu_nu
@@ -346,15 +279,8 @@ experiments:
       - ElectronData_6_12_0.680_36.000_Barreau:1983ht
       - ElectronData_6_12_0.680_60.000_Barreau:1983ht
 
-  # Fills the gap between the 961 and 1299 MeV Sealock points already in the suite.
-  - name: e12C_1108
-    achilles_run: "examples/Electron/run_e12C_1108_virtresonances.yml"
-    data_per: atom
-    target_nucleons: 12        # documented; not used when data_per: atom
-    dryrun:
-      feature_shift: 0.0
-    measurements:
-      - ElectronData_6_12_1.108_37.500_Sealock:1989nx
+  # e12C_1108 is out until the cascade NaN in Sigma- decays is fixed; its card is
+  # examples/Electron/run_e12C_1108_virtresonances.yml.
 
   # e-16O at 700 MeV, 32 deg -- the same Anghinolfi series as the 880 MeV setup.
   - name: e16O_700
@@ -504,7 +430,7 @@ solid_angle:
   ElectronData_6_12_0.620_60.000_Barreau:1983ht: 0.759145
   ElectronData_6_12_0.680_36.000_Barreau:1983ht: 0.515244
   ElectronData_6_12_0.680_60.000_Barreau:1983ht: 0.759145
-  ElectronData_6_12_1.108_37.500_Sealock:1989nx: 0.533632
+  # ElectronData_6_12_1.108_37.500_Sealock:1989nx: 0.533632   # e12C_1108, out for now
   ElectronData_8_16_0.7000_32.0_Anghinolfi:1996vm: 0.464520
   ElectronData_8_16_1.0800_32.0_Anghinolfi:1996vm: 0.464520
   ElectronData_8_16_1.2000_32.0_Anghinolfi:1996vm: 0.464520
