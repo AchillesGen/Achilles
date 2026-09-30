@@ -230,10 +230,10 @@ void achilles::CascadeTest::CascadeRunner::run() {
         GenerateEvent(current_mom, h_hits, h_nohits);
     }
 
-    if(m_mode == CascadeMode::Transparency) {
-        h_hits.Save(m_output_name + "_hits");
-        h_nohits.Save(m_output_name + "_nohits");
-    }
+    // In CrossSection mode hits / (hits + no hits) times the beam area is the reaction cross
+    // section
+    h_hits.Save(m_output_name + "_hits");
+    h_nohits.Save(m_output_name + "_nohits");
 }
 
 void achilles::CascadeTest::RunCascade(const std::string &runcard) {

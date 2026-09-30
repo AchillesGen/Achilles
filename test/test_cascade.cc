@@ -1,7 +1,10 @@
 #include "catch2/catch.hpp"
+
 #include "mock_classes.hh"
+#include <limits>
 
 #include "Achilles/Cascade.hh"
+#include "Achilles/CascadeInteractions/ConstantInteractions.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
@@ -244,6 +247,138 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     //     CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
     //     CHECK(hadrons[0].Radius() > radius);
     // }
+}
+
+namespace {
+
+// pn -> pn with a constant 10 mb cross section, i.e. sigma = 1 fm^2
+achilles::InteractionHandler ConstantPN() {
+    achilles::InteractionHandler handler;
+    achilles::ConstantInteraction interaction;
+    interaction.AddInteraction({achilles::PID::proton(), achilles::PID::neutron()},
+                               {{{achilles::PID::proton(), achilles::PID::neutron()}, 10}});
+    handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
+    return handler;
+}
+
+} // namespace
+
+TEST_CASE("Veto cascade", "[Cascade]") {
+    const achilles::Particle projectile{achilles::PID::proton(),
+                                        {1000, 500, 0, 0},
+                                        {0, 0, 0},
+                                        achilles::ParticleStatus::propagating};
+    constexpr double radius = 5;
+
+    SECTION("Escapes without targets") {
+        achilles::Particles hadrons = {projectile};
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+
+        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Gaussian,
+                                  achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        cascade.Evolve(event, &nucleus);
+
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+        CHECK(hadrons[0].Radius() > radius);
+    }
+
+    SECTION("No collision inside the formation zone") {
+        achilles::Particles hadrons = {projectile, Particle{achilles::PID::neutron(),
+                                                            {achilles::Constant::mN, 0, 0, 0},
+                                                            {1, 0, 0},
+                                                            achilles::ParticleStatus::background}};
+        hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+
+        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Cylinder,
+                                  achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        cascade.Evolve(event, &nucleus);
+
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+    }
+
+    SECTION("Potential propagation is not supported") {
+        achilles::Particles hadrons = {projectile};
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+
+        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Gaussian,
+                                  achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None, true);
+        CHECK_THROWS_AS(cascade.Evolve(event, &nucleus), std::runtime_error);
+    }
+
+    SECTION("NaN cross section never interacts") {
+        // A NaN probability must count as no interaction, as in the Base algorithm
+        achilles::InteractionHandler handler;
+        achilles::ConstantInteraction interaction;
+        interaction.AddInteraction({achilles::PID::proton(), achilles::PID::neutron()},
+                                   {{{achilles::PID::proton(), achilles::PID::neutron()},
+                                     std::numeric_limits<double>::quiet_NaN()}});
+        handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
+        achilles::Particles hadrons = {projectile, Particle{achilles::PID::neutron(),
+                                                            {achilles::Constant::mN, 0, 0, 0},
+                                                            {2, 0.3, 0},
+                                                            achilles::ParticleStatus::background}};
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+        ALLOW_CALL(nucleus, ID()).RETURN(achilles::PID::hydrogen());
+
+        achilles::Cascade cascade(std::move(handler), achilles::Cascade::ProbabilityType::Gaussian,
+                                  achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        CHECK_NOTHROW(cascade.Evolve(event, &nucleus));
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+    }
+
+    SECTION("Single pair interacts with probability P(b^2, sigma)") {
+        // Hydrogen skips Pauli blocking, so the pair's interaction probability is exactly P
+        const double b = GENERATE(0.3, 0.7);
+        auto mode = GENERATE(achilles::Cascade::ProbabilityType::Gaussian,
+                             achilles::Cascade::ProbabilityType::Cylinder);
+        auto alg = GENERATE(achilles::Cascade::Algorithm::Veto, achilles::Cascade::Algorithm::Base);
+        const double sigma = 1; // fm^2
+        const double expected = mode == achilles::Cascade::ProbabilityType::Gaussian
+                                    ? std::exp(-M_PI * b * b / sigma)
+                                    : (b * b < sigma / M_PI ? 1.0 : 0.0);
+
+        const achilles::Particle target{achilles::PID::neutron(),
+                                        {achilles::Constant::mN, 0, 0, 0},
+                                        {2, b, 0},
+                                        achilles::ParticleStatus::background};
+        achilles::Particles hadrons;
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+        ALLOW_CALL(nucleus, ID()).RETURN(achilles::PID::hydrogen());
+        ALLOW_CALL(nucleus, GetPotential()).RETURN(nullptr);
+
+        achilles::Cascade cascade(ConstantPN(), mode, alg, achilles::Cascade::InMedium::None);
+        constexpr size_t ntrials = 4000;
+        size_t hits = 0;
+        for(size_t i = 0; i < ntrials; ++i) {
+            hadrons = {projectile, target};
+            cascade.Evolve(event, &nucleus);
+            hits += hadrons[1].Status() == achilles::ParticleStatus::interacted;
+        }
+        const double frac = static_cast<double>(hits) / ntrials;
+        const double err = std::sqrt(expected * (1 - expected) / ntrials);
+        CHECK(frac == Approx(expected).margin(5 * err + 1e-9));
+    }
 }
 
 TEST_CASE("Mean Free Path", "[Cascade]") {

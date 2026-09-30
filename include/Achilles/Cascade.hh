@@ -64,13 +64,15 @@ class Cascade {
     }
 
     // Algorithms Enums
-    enum Algorithm { Base, MFP };
+    enum Algorithm { Base, MFP, Veto };
     std::string ToString(const Algorithm &type) {
         switch(type) {
         case Base:
             return "Base";
         case MFP:
             return "MFP";
+        case Veto:
+            return "Veto";
         }
         return "Unknown";
     }
@@ -199,6 +201,9 @@ class Cascade {
     void Validate(Event &);
     size_t BaseAlgorithm(size_t, Event &);
     size_t MFPAlgorithm(size_t, Event &);
+    void VetoEvolve(Event &);
+    double Lifetime(const Particle &) const;
+    bool DecayNow(Event &, size_t) const;
     double InMediumCorrection(const Particle &, const Particle &) const;
     void PropagateAll(Particles &, double) const;
     bool HasInteraction(Event &, size_t, size_t) const;
@@ -212,6 +217,7 @@ class Cascade {
     DecayHandler m_decays{"data/decays.yml"};
     std::function<double(double, double)> probability;
     std::function<size_t(Cascade *, size_t, Event &)> algorithm;
+    Algorithm m_algorithm{Base};
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
@@ -279,6 +285,8 @@ template <> struct convert<achilles::Cascade::Algorithm> {
             type = achilles::Cascade::Algorithm::Base;
         else if(node.as<std::string>() == "MFP")
             type = achilles::Cascade::Algorithm::MFP;
+        else if(node.as<std::string>() == "Veto")
+            type = achilles::Cascade::Algorithm::Veto;
         else
             return false;
         return true;
