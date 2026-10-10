@@ -7,6 +7,7 @@
 
 #include "yaml-cpp/node/node.h"
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <string>
@@ -278,7 +279,32 @@ template <typename Derived>
 using RegistrableVariationGroup = Registrable<VariationGroup, Derived, const YAML::Node &>;
 using VariationGroupFactory = Factory<VariationGroup, const YAML::Node &>;
 
-/// Form factor parameter scans / min-max pairs, or alternative functional forms:
+/// Compact notation for the 'Variations' block, given as a map instead of a list of groups.
+/// Each top-level key (e.g. 'FormFactors') is handled by a registered expander that appends
+/// the equivalent explicit group definitions, so both notations share one implementation.
+class VariationShorthand {
+  public:
+    using Expander = std::function<void(const YAML::Node &entries, YAML::Node &groups)>;
+    static bool Register(const std::string &key, Expander expander);
+    static std::vector<std::string> Keys();
+    /// Translate the map form into the explicit list of groups
+    static YAML::Node Expand(const YAML::Node &shorthand);
+
+  private:
+    static std::map<std::string, Expander> &Registry();
+};
+
+/// Form factor parameter scans / min-max pairs, or alternative functional forms.
+///
+/// Shorthand, with the kind of variation inferred from the value:
+///
+///   FormFactors:
+///     AxialDipole/MA: 1.0 +0.3 -0.1                    # central with up/down: MA:min, MA:max
+///     Kelly/lambdasq: {Min: 0.6, Max: 0.8, Number: 5}   # range scan (or Step)
+///     AxialZExpansion/CC Params/1: [2.2, 2.4]           # explicit values
+///     vector: [BBBA, VectorDipole]                      # alternative functional forms
+///
+/// Explicit form:
 ///
 ///   - Name: MA
 ///     Type: FormFactor
@@ -298,12 +324,20 @@ class FormFactorGroup : public VariationGroup, RegistrableVariationGroup<FormFac
         return std::make_unique<FormFactorGroup>(node);
     }
     static std::string Name() { return "FormFactor"; }
+    static void ExpandShorthand(const YAML::Node &, YAML::Node &);
 
   private:
     static FormFactorVariation::Edit ParseEdit(const YAML::Node &);
 };
 
-/// Alternative spectral functions for single-nucleon knockout models:
+/// Alternative spectral functions for single-nucleon knockout models.
+///
+/// Shorthand, as [proton, neutron] files. Bare file names are looked up in data/Spectral_Functions:
+///
+///   SpectralFunctions:
+///     MF: [pke12p_MF.data, pke12n_MF.data]
+///
+/// Explicit form:
 ///
 ///   - Name: SF
 ///     Type: SpectralFunction
@@ -319,13 +353,15 @@ class SpectralFunctionGroup : public VariationGroup,
         return std::make_unique<SpectralFunctionGroup>(node);
     }
     static std::string Name() { return "SpectralFunction"; }
+    static void ExpandShorthand(const YAML::Node &, YAML::Node &);
 };
 
 /// Owns all requested variation groups and evaluates them for accepted events.
 class VariationHandler {
   public:
     VariationHandler() = default;
-    explicit VariationHandler(const YAML::Node &groups);
+    /// Accepts either the shorthand map or the explicit list of groups
+    explicit VariationHandler(const YAML::Node &variations);
 
     void AddGroup(std::unique_ptr<VariationGroup> group);
     const std::vector<std::unique_ptr<VariationGroup>> &Groups() const { return m_groups; }

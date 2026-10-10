@@ -272,3 +272,112 @@ TEST_CASE("Edits never modify the nominal configuration", "[Variations]") {
     same.value = 1.0;
     CHECK(FormFactorVariation::EditedConfig(nominal, same).IsNull());
 }
+
+namespace {
+void CheckEquivalent(const std::string &shorthand, const std::string &verbose) {
+    achilles::VariationHandler compact(YAML::Load(shorthand));
+    achilles::VariationHandler expanded(YAML::Load(verbose));
+    CHECK(compact.WeightNames() == expanded.WeightNames());
+    const auto info_compact = compact.Info();
+    const auto info_expanded = expanded.Info();
+    REQUIRE(info_compact.size() == info_expanded.size());
+    for(size_t i = 0; i < info_compact.size(); ++i) {
+        CHECK(info_compact[i].name == info_expanded[i].name);
+        CHECK(info_compact[i].type == info_expanded[i].type);
+        CHECK(info_compact[i].combination == info_expanded[i].combination);
+        CHECK(info_compact[i].combination_scale == info_expanded[i].combination_scale);
+        CHECK(info_compact[i].parameter == info_expanded[i].parameter);
+        CHECK(info_compact[i].member_values == info_expanded[i].member_values);
+        CHECK(info_compact[i].weight_names == info_expanded[i].weight_names);
+    }
+}
+} // namespace
+
+TEST_CASE("Shorthand variations match the explicit groups", "[Variations]") {
+    SECTION("Central with up and down") {
+        CheckEquivalent("{FormFactors: {AxialDipole/MA: 1.0 +0.3 -0.1}}", R"(
+- {Name: AxialDipole.MA, Type: FormFactor, Parameter: AxialDipole/MA, Central: 1.0,
+   MinMax: [0.9, 1.3]}
+)");
+        CheckEquivalent("{FormFactors: {AxialDipole/MA: 1.0 -0.1 +0.3}}", R"(
+- {Name: AxialDipole.MA, Type: FormFactor, Parameter: AxialDipole/MA, Central: 1.0,
+   MinMax: [0.9, 1.3]}
+)");
+        CheckEquivalent("{FormFactors: {AxialDipole/MA: 1.05 +- 0.1}}", R"(
+- {Name: AxialDipole.MA, Type: FormFactor, Parameter: AxialDipole/MA, Central: 1.05,
+   MinMax: [0.95, 1.15]}
+)");
+    }
+
+    SECTION("Scans") {
+        CheckEquivalent("{FormFactors: {Kelly/lambdasq: {Min: 0.6, Max: 0.8, Number: 5}}}", R"(
+- {Name: Kelly.lambdasq, Type: FormFactor, Parameter: Kelly/lambdasq,
+   Scan: {Min: 0.6, Max: 0.8, Steps: 5}}
+)");
+        CheckEquivalent("{FormFactors: {Kelly/lambdasq: {Min: 0.6, Max: 0.8, Step: 0.05}}}", R"(
+- {Name: Kelly.lambdasq, Type: FormFactor, Parameter: Kelly/lambdasq,
+   Scan: {Min: 0.6, Max: 0.8, Steps: 5}}
+)");
+        CheckEquivalent("{FormFactors: {AxialZExpansion/CC Params/1: [2.2, 2.4]}}", R"(
+- {Name: AxialZExpansion.CC_Params.1, Type: FormFactor,
+   Parameter: AxialZExpansion/CC Params/1, Values: [2.2, 2.4]}
+)");
+        CheckEquivalent("{FormFactors: {AxialDipole/MA: 1.2}}", R"(
+- {Name: AxialDipole.MA, Type: FormFactor, Parameter: AxialDipole/MA, Values: [1.2]}
+)");
+    }
+
+    SECTION("Explicit options inside the shorthand") {
+        CheckEquivalent(
+            "{FormFactors: {AxialDipole/MA: {Values: [1.1, 0.9], Combination: Hessian}}}", R"(
+- {Name: AxialDipole.MA, Type: FormFactor, Parameter: AxialDipole/MA, Values: [1.1, 0.9],
+   Combination: Hessian}
+)");
+    }
+
+    SECTION("Functional forms and spectral functions") {
+        CheckEquivalent(R"(
+FormFactors: {vector: [BBBA, VectorDipole], axial: AxialZExpansion}
+SpectralFunctions: {MF: [pke12p_MF.data, pke12n_MF.data]}
+)",
+                        R"(
+- Name: vector
+  Type: FormFactor
+  Alternatives:
+    - {Name: BBBA, Overrides: {vector: BBBA}}
+    - {Name: VectorDipole, Overrides: {vector: VectorDipole}}
+- Name: axial
+  Type: FormFactor
+  Alternatives: [{Name: AxialZExpansion, Overrides: {axial: AxialZExpansion}}]
+- Name: SF
+  Type: SpectralFunction
+  Alternatives:
+    - {Name: MF, SpectralP: data/Spectral_Functions/pke12p_MF.data,
+       SpectralN: data/Spectral_Functions/pke12n_MF.data}
+)");
+    }
+
+    SECTION("Weight names") {
+        achilles::VariationHandler handler(YAML::Load(R"(
+FormFactors:
+  AxialDipole/MA: 1.0 +- 0.1
+  vector: [BBBA]
+)"));
+        CHECK(handler.WeightNames() ==
+              std::vector<std::string>{"AxialDipole.MA:central", "AxialDipole.MA:min",
+                                       "AxialDipole.MA:max", "vector:central", "vector:BBBA"});
+    }
+
+    SECTION("Invalid shorthand") {
+        auto build = [](const std::string &yaml) {
+            return achilles::VariationHandler(YAML::Load(yaml));
+        };
+        CHECK_THROWS(build("{FromFactors: {AxialDipole/MA: [1.1]}}"));
+        CHECK_THROWS(build("{FormFactors: {MA: [1.1]}}"));
+        CHECK_THROWS(build("{FormFactors: {AxialDipole/MA: about one}}"));
+        CHECK_THROWS(build("{FormFactors: {AxialDipole/MA: {Min: 0.9, Max: 1.1}}}"));
+        CHECK_THROWS(build("{FormFactors: {AxialDipole/MA: {Min: 0.9, Max: 1.1, Step: 0.15}}}"));
+        CHECK_THROWS(build("{FormFactors: {AxialDipole/MA: {Values: [1.1], Typo: 1}}}"));
+        CHECK_THROWS(build("{SpectralFunctions: {MF: [pke12p_MF.data]}}"));
+    }
+}

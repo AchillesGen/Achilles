@@ -16,11 +16,14 @@
 #include "yaml-cpp/yaml.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <numeric>
+#include <regex>
 
 using achilles::Combination;
 using achilles::EnvelopeCombination;
+using achilles::FFType;
 using achilles::FormFactorGroup;
 using achilles::FormFactorVariation;
 using achilles::HessianCombination;
@@ -31,6 +34,7 @@ using achilles::SpectralFunctionVariation;
 using achilles::SymmetricHessianCombination;
 using achilles::VariationGroup;
 using achilles::VariationHandler;
+using achilles::VariationShorthand;
 
 namespace {
 
@@ -433,10 +437,230 @@ SpectralFunctionGroup::SpectralFunctionGroup(const YAML::Node &node) : Variation
 }
 
 // ---------------------------------------------------------------------------
+// Shorthand notation
+// ---------------------------------------------------------------------------
+
+namespace {
+
+bool IsNumber(const YAML::Node &node) {
+    double value{};
+    return node.IsScalar() && YAML::convert<double>::decode(node, value);
+}
+
+/// Group names may not contain whitespace, ':' or '|', so derive them from parameter paths
+std::string GroupNameFromPath(const std::string &path) {
+    std::string name = path;
+    std::replace(name.begin(), name.end(), '/', '.');
+    std::replace_if(name.begin(), name.end(), [](char c) { return std::isspace(c) != 0; }, '_');
+    return name;
+}
+
+/// Round to 15 significant digits so that e.g. 1.05 - 0.1 gives the same double as 0.95
+double RoundDecimal(double value) {
+    return std::stod(fmt::format("{:.15g}", value));
+}
+
+/// Parse "C +- d", "C ± d", "C +u -d" or "C -d +u" into (central, down, up)
+std::array<double, 3> ParseUncertainty(const std::string &value) {
+    static const std::string number = R"(([-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?))";
+    static const std::regex symmetric("^\\s*" + number + "\\s*(?:\\+-|\\+/-|±)\\s*" + number +
+                                      "\\s*$");
+    static const std::regex up_down("^\\s*" + number + "\\s*\\+\\s*" + number + "\\s*-\\s*" +
+                                    number + "\\s*$");
+    static const std::regex down_up("^\\s*" + number + "\\s*-\\s*" + number + "\\s*\\+\\s*" +
+                                    number + "\\s*$");
+    std::smatch match;
+    if(std::regex_match(value, match, symmetric)) {
+        const double central = std::stod(match[1]), delta = std::stod(match[2]);
+        return {central, RoundDecimal(central - std::abs(delta)),
+                RoundDecimal(central + std::abs(delta))};
+    }
+    if(std::regex_match(value, match, up_down)) {
+        const double central = std::stod(match[1]);
+        return {central, RoundDecimal(central - std::stod(match[3])),
+                RoundDecimal(central + std::stod(match[2]))};
+    }
+    if(std::regex_match(value, match, down_up)) {
+        const double central = std::stod(match[1]);
+        return {central, RoundDecimal(central - std::stod(match[2])),
+                RoundDecimal(central + std::stod(match[3]))};
+    }
+    throw std::runtime_error(
+        fmt::format("Variations: Could not parse '{}', expected a number, a list, a range or "
+                    "'central +- delta' / 'central +up -down'",
+                    value));
+}
+
+/// Translate a Sherpa style range {Min, Max, Number | Step} into the explicit Scan
+YAML::Node ScanFromRange(const std::string &key, const YAML::Node &range) {
+    const auto min = range["Min"].as<double>();
+    const auto max = range["Max"].as<double>();
+    YAML::Node scan;
+    scan["Min"] = min;
+    scan["Max"] = max;
+    if(range["Number"] && !range["Step"]) {
+        scan["Steps"] = range["Number"].as<size_t>();
+    } else if(range["Step"] && !range["Number"]) {
+        const auto step = range["Step"].as<double>();
+        const double intervals = (max - min) / step;
+        const auto nintervals = std::llround(intervals);
+        if(step <= 0 || nintervals < 1 ||
+           std::abs(intervals - static_cast<double>(nintervals)) > 1e-9 * std::max(1.0, intervals))
+            throw std::runtime_error(fmt::format(
+                "Variations: Step of {} must divide the range of {} into equal intervals", key,
+                key));
+        scan["Steps"] = nintervals + 1;
+    } else {
+        throw std::runtime_error(
+            fmt::format("Variations: Range of {} needs exactly one of 'Number' or 'Step'", key));
+    }
+    return scan;
+}
+
+std::string SpectralFunctionFile(const std::string &file) {
+    return file.find('/') == std::string::npos ? "data/Spectral_Functions/" + file : file;
+}
+
+YAML::Node SpectralFunctionPair(const std::string &key, const YAML::Node &value) {
+    if(!value.IsSequence() || value.size() != 2)
+        throw std::runtime_error(fmt::format(
+            "Variations: Spectral function {} expects [proton file, neutron file]", key));
+    YAML::Node spec;
+    spec["SpectralP"] = SpectralFunctionFile(value[0].as<std::string>());
+    spec["SpectralN"] = SpectralFunctionFile(value[1].as<std::string>());
+    return spec;
+}
+
+[[maybe_unused]] const bool registered_form_factors =
+    VariationShorthand::Register("FormFactors", achilles::FormFactorGroup::ExpandShorthand);
+[[maybe_unused]] const bool registered_spectral_functions = VariationShorthand::Register(
+    "SpectralFunctions", achilles::SpectralFunctionGroup::ExpandShorthand);
+
+} // namespace
+
+std::map<std::string, VariationShorthand::Expander> &VariationShorthand::Registry() {
+    static std::map<std::string, Expander> registry;
+    return registry;
+}
+
+bool VariationShorthand::Register(const std::string &key, Expander expander) {
+    return Registry().emplace(key, std::move(expander)).second;
+}
+
+std::vector<std::string> VariationShorthand::Keys() {
+    std::vector<std::string> keys;
+    for(const auto &entry : Registry()) keys.push_back(entry.first);
+    return keys;
+}
+
+YAML::Node VariationShorthand::Expand(const YAML::Node &shorthand) {
+    YAML::Node groups(YAML::NodeType::Sequence);
+    for(const auto &entry : shorthand) {
+        const auto key = entry.first.as<std::string>();
+        auto it = Registry().find(key);
+        if(it == Registry().end()) {
+            throw std::runtime_error(fmt::format(
+                "Variations: Unknown variation kind '{}', did you mean '{}'? Known kinds: {}", key,
+                GetSuggestion(Keys(), key), fmt::join(Keys(), ", ")));
+        }
+        if(!entry.second.IsMap())
+            throw std::runtime_error(fmt::format("Variations: '{}' expects a map", key));
+        it->second(entry.second, groups);
+    }
+    return groups;
+}
+
+void FormFactorGroup::ExpandShorthand(const YAML::Node &entries, YAML::Node &groups) {
+    static const std::vector<std::string> slots{
+        FFTypeToString(FFType::vector),         FFTypeToString(FFType::axial),
+        FFTypeToString(FFType::coherent),       FFTypeToString(FFType::resonancevector),
+        FFTypeToString(FFType::resonanceaxial), FFTypeToString(FFType::mecvector),
+        FFTypeToString(FFType::mecaxial),       FFTypeToString(FFType::hyperon)};
+
+    for(const auto &entry : entries) {
+        const auto key = entry.first.as<std::string>();
+        const YAML::Node value = entry.second;
+        YAML::Node group;
+        group["Type"] = Name();
+
+        if(key.find('/') == std::string::npos) {
+            // Functional form alternatives for one of the form factor slots
+            if(std::find(slots.begin(), slots.end(), key) == slots.end())
+                throw std::runtime_error(fmt::format(
+                    "Variations: '{}' is neither a 'Block/parameter' path nor one of the form "
+                    "factor types: {}",
+                    key, fmt::join(slots, ", ")));
+            group["Name"] = key;
+            YAML::Node names(YAML::NodeType::Sequence);
+            if(value.IsSequence()) {
+                names = value;
+            } else {
+                names.push_back(value);
+            }
+            for(const auto &name : names) {
+                YAML::Node alternative;
+                alternative["Name"] = name.as<std::string>();
+                alternative["Overrides"][key] = name.as<std::string>();
+                group["Alternatives"].push_back(alternative);
+            }
+        } else {
+            group["Name"] = GroupNameFromPath(key);
+            group["Parameter"] = key;
+            if(value.IsSequence()) {
+                group["Values"] = value;
+            } else if(value.IsMap()) {
+                for(const auto &option : value) {
+                    const auto name = option.first.as<std::string>();
+                    if(name == "Min" || name == "Max" || name == "Number" || name == "Step")
+                        continue;
+                    if(name != "Values" && name != "MinMax" && name != "Central" &&
+                       name != "Combination")
+                        throw std::runtime_error(fmt::format(
+                            "Variations: Unknown option '{}' for parameter {}", name, key));
+                    group[name] = option.second;
+                }
+                if(value["Min"] || value["Max"]) group["Scan"] = ScanFromRange(key, value);
+            } else if(IsNumber(value)) {
+                group["Values"].push_back(value);
+            } else {
+                const auto [central, down, up] = ParseUncertainty(value.as<std::string>());
+                group["Central"] = central;
+                group["MinMax"].push_back(down);
+                group["MinMax"].push_back(up);
+            }
+        }
+        groups.push_back(group);
+    }
+}
+
+void SpectralFunctionGroup::ExpandShorthand(const YAML::Node &entries, YAML::Node &groups) {
+    YAML::Node group;
+    group["Name"] = "SF";
+    group["Type"] = Name();
+    for(const auto &entry : entries) {
+        const auto key = entry.first.as<std::string>();
+        if(key == "Combination") {
+            group["Combination"] = entry.second;
+        } else if(key == "Central") {
+            group["Central"] = SpectralFunctionPair(key, entry.second);
+        } else {
+            auto alternative = SpectralFunctionPair(key, entry.second);
+            alternative["Name"] = key;
+            group["Alternatives"].push_back(alternative);
+        }
+    }
+    groups.push_back(group);
+}
+
+// ---------------------------------------------------------------------------
 // Handler
 // ---------------------------------------------------------------------------
 
-VariationHandler::VariationHandler(const YAML::Node &groups) {
+VariationHandler::VariationHandler(const YAML::Node &variations) {
+    const YAML::Node groups =
+        variations.IsMap() ? VariationShorthand::Expand(variations) : variations;
+    if(variations.IsMap())
+        spdlog::debug("Variations: Expanded shorthand to\n{}", YAML::Dump(groups));
     for(const auto &node : groups) {
         const auto type = node["Type"].as<std::string>();
         std::unique_ptr<VariationGroup> group;
