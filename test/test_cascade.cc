@@ -111,6 +111,31 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         CHECK(hadrons[0].Radius() > radius);
     }
 
+    SECTION("Veto: Evolve Event") {
+        MockEvent event;
+        achilles::InteractionHandler interaction;
+        MockNucleus nucleus;
+
+        REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(1)).LR_RETURN((hadrons));
+        REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
+
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        cascade.Evolve(event, &nucleus);
+
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+        CHECK(hadrons[0].Radius() > radius);
+    }
+
+    SECTION("Veto: PotentialProp not supported") {
+        achilles::InteractionHandler interaction;
+        CHECK_THROWS_AS(achilles::Cascade(std::move(interaction), mode,
+                                          achilles::Cascade::Algorithm::Veto,
+                                          achilles::Cascade::InMedium::None,
+                                          achilles::default_decay_file, true),
+                        std::runtime_error);
+    }
+
     // TODO: Restore MFP Approach
     // SECTION("NuWro Evolve") {
     //     achilles::InteractionHandler interaction;
@@ -194,6 +219,26 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
         cascade.Evolve(event, &nucleus);
 
         CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+        CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
+        CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
+    }
+
+    SECTION("Veto: Large Formation Zone") {
+        achilles::InteractionHandler interaction;
+        MockEvent event;
+        MockNucleus nucleus;
+
+        REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(1)).LR_RETURN((hadrons));
+        REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
+
+        // Both spectators are passed while the nucleon is still forming: no trial is offered
+        hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
+        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        cascade.Evolve(event, &nucleus);
+
+        CHECK(hadrons[0].Status() == achilles::ParticleStatus::final_state);
+        CHECK(hadrons[0].Radius() > radius);
         CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
         CHECK(hadrons[2].Status() == achilles::ParticleStatus::background);
     }

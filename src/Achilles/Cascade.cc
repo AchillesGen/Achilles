@@ -26,8 +26,8 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
                  const InMedium &medium, std::string_view decay_file, bool potential_prop,
                  double dist)
     : distance(dist), m_interactions(std::move(interactions)),
-      m_decays(Filesystem::FindFile(std::string(decay_file), "Cascade")), m_medium(medium),
-      m_potential_prop(potential_prop) {
+      m_decays(Filesystem::FindFile(std::string(decay_file), "Cascade")),
+      m_algorithm(alg), m_medium(medium), m_potential_prop(potential_prop) {
     switch(alg) {
     case Algorithm::Base:
         algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
@@ -38,6 +38,13 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
         algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
             return cascade->MFPAlgorithm(idx, event);
         };
+        break;
+    case Algorithm::Veto:
+        // Veto runs its own event loop (EvolveVeto) and has no per-step algorithm
+        if(potential_prop)
+            throw std::runtime_error(
+                "Cascade: the Veto algorithm assumes straight-line propagation and does not "
+                "support PotentialProp yet");
         break;
     }
 
@@ -179,6 +186,7 @@ std::size_t Cascade::GetInter(Particles &, const Particle &, double &) {
 void Cascade::Reset() {
     kickedIdxs.clear();
     integrators.clear();
+    m_time_steps = {};
 }
 
 std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
@@ -269,36 +277,16 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
+    if(m_algorithm == Algorithm::Veto) {
+        EvolveVeto(event, nucleus);
+        return;
+    }
+
     // Run the cascade
     currentTime = 0;
     m_nucleus = nucleus;
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
-    for(const auto &kicked : kickedIdxs) {
-        for(size_t i = 0; i < particles.size(); ++i) {
-            if(particles[i].Status() != ParticleStatus::background) continue;
-            double closest = ClosestApproach(particles[kicked], particles[i]);
-            spdlog::debug("Closest approach time({}, {}) = {}", kicked, i, closest);
-            if(closest > 0) { m_time_steps.push({closest, {kicked, i}}); }
-        }
-    }
-
-    // while(!m_time_steps.empty()) {
-    //     timeStep = m_time_steps.top().time - currentTime;
-    //     auto [kicked, hit] = m_time_steps.top().idxs;
-    //     m_time_steps.pop();
-    //     PropagateAll(particles, timeStep);
-    //     currentTime += timeStep;
-    //     if(HasInteraction(particles, kicked, hit)) {
-    //         spdlog::trace("Kicked = {}", kicked);
-    //         spdlog::trace("Hit = {}", hit);
-    //         FinalizeMomentum(event, particles, kicked, hit);
-    //         // tmp = m_time_steps;
-    //         // pop_println("After Interaction", tmp);
-    //         // if(m_time_steps.empty()) throw;
-    //     }
-    //     Escaped(particles);
-    // }
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
@@ -801,12 +789,10 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
                                                                position3);
 }
 
-bool Cascade::Decay(Event &event, size_t idx) const {
-    auto part = event.Hadrons()[idx];
+double Cascade::Lifetime(const Particle &part) const {
     auto beta = part.Beta().Magnitude();
     auto gamma = 1. / sqrt(1. - beta * beta);
-    double lifetime = gamma * Constant::HBARC / part.Info().Width();
-    double survival_prob = exp(-timeStep / lifetime);
+    double width = part.Info().Width();
 
     if(part.Info().IsDelta()) {
         const double mn =
@@ -814,24 +800,30 @@ bool Cascade::Decay(Event &event, size_t idx) const {
         const double mpi =
             (2 * ParticleInfo(PID::pionp()).Mass() + ParticleInfo(PID::pion0()).Mass()) / 3 / 1_GeV;
 
-        auto running_width = resonance::GetEffectiveWidth(part.Info().ID(),
-                                                          part.Momentum().M() / 1_GeV, mpi, mn, 1) *
-                             1_GeV;
-        auto running_lifetime = gamma * Constant::HBARC / running_width;
-
-        spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}", part.Momentum().M(),
-                      part.Info().Mass(), part.Info().Width());
-        spdlog::debug("Running width = {}", running_width);
-        spdlog::debug("Running survival prob = {}", exp(-timeStep / running_lifetime));
-        spdlog::debug("Fixed survival prob = {}", exp(-timeStep / lifetime));
-
-        survival_prob = exp(-timeStep / running_lifetime);
+        width = resonance::GetEffectiveWidth(part.Info().ID(), part.Momentum().M() / 1_GeV, mpi,
+                                             mn, 1) *
+                1_GeV;
+        spdlog::debug("Delta minv = {}, mass = {}, fixed width = {}, running width = {}",
+                      part.Momentum().M(), part.Info().Mass(), part.Info().Width(), width);
     }
+
+    return gamma * Constant::HBARC / width;
+}
+
+bool Cascade::Decay(Event &event, size_t idx) const {
+    const double lifetime = Lifetime(event.Hadrons()[idx]);
+    const double survival_prob = exp(-timeStep / lifetime);
 
     // Should we attempt a decay in this time step
     spdlog::debug("survival prob = {}, timestep = {}, lifetime = {}", survival_prob, timeStep,
                   lifetime);
     if(Random::Instance().Uniform(0.0, 1.0) < survival_prob) return false;
+
+    return DecayNow(event, idx);
+}
+
+bool Cascade::DecayNow(Event &event, size_t idx) const {
+    auto part = event.Hadrons()[idx];
 
     // Look up in decay handler
     auto particles_out = m_decays.Decay(part);
@@ -862,4 +854,102 @@ bool Cascade::Decay(Event &event, size_t idx) const {
                               EventHistory::StatusCode::decay);
 
     return true;
+}
+
+/// Continuous-time cascade. Every propagating particle offers each background
+/// nucleon exactly one trial, at the time of closest approach on its straight
+/// line, with probability P(b^2, sigma); unstable particles also schedule a decay
+/// time drawn from their lifetime. All trials sit in one queue ordered by global
+/// time, so there is no step size. A trial is stale (lazily skipped) once either
+/// particle has left its state; products of an accepted trial schedule their own
+/// trials. Pauli blocking vetoes the accepted trial and leaves the state unchanged.
+void Cascade::EvolveVeto(Event &event, Nucleus *nucleus) {
+    m_nucleus = nucleus;
+    currentTime = 0;
+    m_time_steps = {};
+    Particles &particles = event.Hadrons();
+
+    for(size_t idx = 0; idx < particles.size(); ++idx) {
+        if(particles[idx].IsPropagating()) ScheduleTrials(event, idx);
+    }
+
+    while(!m_time_steps.empty()) {
+        const auto entry = m_time_steps.top();
+        m_time_steps.pop();
+        const auto [idx, hit] = entry.idxs;
+        const bool is_decay = hit == cDecayTrial;
+
+        if(!particles[idx].IsPropagating()) continue;
+        if(!is_decay && particles[hit].Status() != ParticleStatus::background) continue;
+
+        PropagateAll(particles, entry.time - currentTime);
+        currentTime = entry.time;
+        Escaped(particles);
+        if(!particles[idx].IsPropagating()) continue;
+
+        const size_t nbefore = particles.size();
+        if(is_decay) {
+            if(!DecayNow(event, idx)) {
+                // Pauli-blocked decay: draw the next attempt from the same lifetime
+                ScheduleDecay(particles[idx], idx);
+                continue;
+            }
+        } else {
+            // Formation zone is checked at the trial time, not at the start of a step
+            if(particles[idx].InFormationZone() && !particles[idx].Info().IsPion()) continue;
+
+            // At closest approach the separation is the impact parameter
+            const double dist2 = (particles[idx].Position() - particles[hit].Position()).Magnitude2();
+            const double prob = probability(dist2, GetXSec(event, idx, hit) / 10);
+            spdlog::trace("Trial t = {}, ({}, {}): b2 = {}, prob = {}", currentTime, idx, hit,
+                          dist2, prob);
+            if(Random::Instance().Uniform(0.0, 1.0) >= prob) continue;
+            FinalizeMomentum(event, particles, idx, hit);
+        }
+        for(size_t i = nbefore; i < particles.size(); ++i) ScheduleTrials(event, i);
+    }
+
+    // No trials left: every particle still propagating leaves the nucleus
+    for(auto &particle : particles) {
+        if(particle.IsPropagating()) particle.Propagate(ExitTime(particle));
+    }
+    Escaped(particles);
+
+    Validate(event);
+    Reset();
+}
+
+void Cascade::ScheduleTrials(Event &event, size_t idx) {
+    const Particles &particles = event.Hadrons();
+    const Particle &part = particles[idx];
+    if(!part.Info().IsStable()) ScheduleDecay(part, idx);
+
+    for(size_t i = 0; i < particles.size(); ++i) {
+        if(particles[i].Status() != ParticleStatus::background) continue;
+        const double closest = ClosestApproach(part, particles[i]);
+        if(closest > 0) m_time_steps.push({currentTime + closest, {idx, i}});
+    }
+}
+
+void Cascade::ScheduleDecay(const Particle &part, size_t idx) {
+    const double lifetime = Lifetime(part);
+    const double time = -lifetime * std::log(Random::Instance().Uniform(0.0, 1.0));
+    m_time_steps.push({currentTime + time, {idx, cDecayTrial}});
+}
+
+/// Time for a straight-line particle to reach just outside the nuclear radius
+/// (for an external test particle, also past the plane z = R used by Escaped)
+double Cascade::ExitTime(const Particle &part) const {
+    static constexpr double margin = 1e-6;
+    const double radius = m_nucleus->Radius() + margin;
+    const auto pos = part.Position();
+    const auto vel = part.Beta();
+    const double a = vel.Magnitude2();
+    const double b = pos.Dot(vel);
+    const double c = pos.Magnitude2() - radius * radius;
+    if(a <= 0) return 0;
+    double time = std::max(0.0, (-b + std::sqrt(std::max(0.0, b * b - a * c))) / a);
+    if(part.Status() == ParticleStatus::external_test && vel.Pz() > 0)
+        time = std::max(time, (radius - pos.Pz()) / vel.Pz());
+    return time;
 }

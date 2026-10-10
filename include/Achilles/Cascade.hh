@@ -5,6 +5,7 @@
 #define CASCADE_HH
 
 #include <array>
+#include <cstdint>
 #include <queue>
 #include <vector>
 
@@ -67,13 +68,15 @@ class Cascade {
     }
 
     // Algorithms Enums
-    enum Algorithm { Base, MFP };
+    enum Algorithm { Base, MFP, Veto };
     std::string ToString(const Algorithm &type) {
         switch(type) {
         case Base:
             return "Base";
         case MFP:
             return "MFP";
+        case Veto:
+            return "Veto";
         }
         return "Unknown";
     }
@@ -207,6 +210,14 @@ class Cascade {
     void PropagateAll(Particles &, double) const;
     bool HasInteraction(Event &, size_t, size_t) const;
     bool Decay(Event &, size_t) const;
+    bool DecayNow(Event &, size_t) const;
+    double Lifetime(const Particle &) const;
+
+    // Continuous-time (Veto) algorithm
+    void EvolveVeto(Event &, Nucleus *);
+    void ScheduleTrials(Event &, size_t);
+    void ScheduleDecay(const Particle &, size_t);
+    double ExitTime(const Particle &) const;
 
     // Variables
     std::set<std::size_t> kickedIdxs;
@@ -215,11 +226,15 @@ class Cascade {
     DecayHandler m_decays;
     std::function<double(double, double)> probability;
     std::function<size_t(Cascade *, size_t, Event &)> algorithm;
+    Algorithm m_algorithm{Algorithm::Base};
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
     std::map<size_t, SymplecticIntegrator> integrators;
     std::string m_probability_name;
+
+    /// Marks a queue entry as a decay trial rather than a pair trial
+    static constexpr size_t cDecayTrial = SIZE_MAX;
 
     struct queue_entry {
         double time;
@@ -284,6 +299,8 @@ template <> struct convert<achilles::Cascade::Algorithm> {
             type = achilles::Cascade::Algorithm::Base;
         else if(node.as<std::string>() == "MFP")
             type = achilles::Cascade::Algorithm::MFP;
+        else if(node.as<std::string>() == "Veto")
+            type = achilles::Cascade::Algorithm::Veto;
         else
             return false;
         return true;
