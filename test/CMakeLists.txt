@@ -44,6 +44,7 @@ add_executable(achilles-testsuite
     test_poincare.cc
     test_process.cc
     test_process_group.cc
+    test_variations.cc
     # NOTE: Validator is broken. Need to add to cpputils
     # test_nuhepmc.cc
     test_cache.cc

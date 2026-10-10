@@ -28,6 +28,7 @@ namespace achilles {
 
 class Beam;
 class FourVector;
+class VariationHandler;
 class NuclearModel;
 class Nucleus;
 class SherpaInterface;
@@ -110,6 +111,10 @@ class ProcessGroup {
     Nucleus *GetNucleus() { return m_nucleus.get(); }
     void SetupBackend(const Settings &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
+    void SetVariations(std::shared_ptr<const VariationHandler> variations) {
+        m_variations = std::move(variations);
+    }
+    NuclearModel *GetNuclearModel() { return m_backend ? m_backend->GetNuclearModel() : nullptr; }
     void SetupLeptons(Event &, std::optional<size_t>) const;
 
     // Initialize processes and process groups
@@ -147,6 +152,7 @@ class ProcessGroup {
     std::shared_ptr<Nucleus> m_nucleus = nullptr;
     std::unique_ptr<XSecBackend> m_backend = nullptr;
     CutCollection m_cuts;
+    std::shared_ptr<const VariationHandler> m_variations = nullptr;
 
     // Numerical components
     bool NeedsOptimization() const;

@@ -29,6 +29,7 @@ class NuHepMCWriter : public EventWriter {
     std::shared_ptr<HepMC3::Writer> file;
     std::string outfilename;
     achilles::StatsData results;
+    std::vector<achilles::StatsData> variation_results;
     static constexpr std::array<int, 3> version{0, 1, 0};
 };
 

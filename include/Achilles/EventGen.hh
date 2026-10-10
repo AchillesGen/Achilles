@@ -14,6 +14,7 @@
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Vegas.hh"
 
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -29,6 +30,7 @@ class Beam;
 class Nucleus;
 class Cascade;
 class EventWriter;
+class VariationHandler;
 
 class SherpaInterface;
 
@@ -47,6 +49,7 @@ class EventGen {
     bool MakeCuts(Event &);
     // bool MakeEventCuts(Event&);
     void Rotate(Event &);
+    void VariationSummary() const;
 
     std::shared_ptr<Beam> beam;
     std::vector<std::shared_ptr<Nucleus>> nuclei;
@@ -61,6 +64,15 @@ class EventGen {
     double m_max_weight{};
 
     std::shared_ptr<EventWriter> writer;
+    std::shared_ptr<VariationHandler> variations;
+    struct VariationSums {
+        double sum_w{}, sum_w2{};
+        double min_ratio{std::numeric_limits<double>::max()};
+        double max_ratio{std::numeric_limits<double>::lowest()};
+    };
+    double m_nominal_sum{};
+    size_t m_nvaried{};
+    std::vector<VariationSums> m_variation_sums{};
     std::unique_ptr<Unweighter> unweighter;
     SherpaInterface *p_sherpa;
 };

@@ -15,6 +15,7 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
+#include "Achilles/Variations.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -147,6 +148,20 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         }
     }
 
+    // Setup on-the-fly variation weights
+    if(config.Exists("Variations")) {
+        const auto format = config.GetAs<std::string>("Main/Output/Format");
+        if(format != "NuHepMC")
+            throw std::runtime_error(fmt::format(
+                "Achilles: Variations are only supported for NuHepMC output, got {}", format));
+        variations = std::make_shared<VariationHandler>(config["Variations"]);
+        for(auto &group : process_groups) {
+            if(auto *model = group.GetNuclearModel()) variations->Initialize(*model);
+            group.SetVariations(variations);
+        }
+        m_variation_sums.resize(variations->NWeights());
+    }
+
     // Setup outputs
     bool zipped =
         config.Exists("Main/Output/Zipped") ? config.GetAs<bool>("Main/Output/Zipped") : true;
@@ -165,6 +180,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         std::string msg = fmt::format("Achilles: Invalid output format requested {}", format);
         throw std::runtime_error(msg);
     }
+    if(variations) writer->SetVariations(variations->Info());
     writer->WriteHeader(configFile, process_groups);
 }
 
@@ -244,6 +260,31 @@ void achilles::EventGen::GenerateEvents(bool batchMode) {
         if(GenerateSingleEvent()) accepted++;
     }
     printFormat(accepted, nevents);
+    if(variations) VariationSummary();
+}
+
+void achilles::EventGen::VariationSummary() const {
+    spdlog::info("Variation summary ({} accepted events), cross sections relative to CV:",
+                 m_nvaried);
+    size_t idx = 0;
+    for(const auto &group : variations->Groups()) {
+        const auto names = group->WeightNames();
+        std::vector<double> member_xsecs;
+        for(size_t i = 0; i < names.size(); ++i, ++idx) {
+            const auto &sums = m_variation_sums[idx];
+            const double ratio = sums.sum_w / m_nominal_sum;
+            if(i > 0) member_xsecs.push_back(ratio);
+            // Kish effective sample size of the variation weights
+            const double n_eff = sums.sum_w2 > 0 ? sums.sum_w * sums.sum_w / sums.sum_w2 : 0;
+            spdlog::info("  {}: xsec ratio = {:.6f}, event ratios in [{:.4g}, {:.4g}], "
+                         "N_eff = {:.1f}",
+                         names[i], ratio, sums.min_ratio, sums.max_ratio, n_eff);
+        }
+        const double central = m_variation_sums[idx - names.size()].sum_w / m_nominal_sum;
+        const auto band = group->GetCombination().Combine(central, member_xsecs);
+        spdlog::info("  {} band ({}): [{:.6f}, {:.6f}]", group->GroupName(),
+                     group->GetCombination().Type(), band.lower, band.upper);
+    }
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {
@@ -325,6 +366,20 @@ bool achilles::EventGen::GenerateSingleEvent() {
     // Running Sherpa interface if requested
     if(runDecays) { p_sherpa->GenerateEvent(event); }
 #endif
+
+    if(variations) {
+        m_nominal_sum += event.Weight();
+        ++m_nvaried;
+        const auto &ratios = event.VariationRatios();
+        for(size_t i = 0; i < ratios.size(); ++i) {
+            auto &sums = m_variation_sums[i];
+            const double wgt = event.Weight() * ratios[i];
+            sums.sum_w += wgt;
+            sums.sum_w2 += wgt * wgt;
+            sums.min_ratio = std::min(sums.min_ratio, ratios[i]);
+            sums.max_ratio = std::max(sums.max_ratio, ratios[i]);
+        }
+    }
 
     writer->Write(event);
     return true;

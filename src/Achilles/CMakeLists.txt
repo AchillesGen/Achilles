@@ -116,6 +116,7 @@ add_subdirectory(CascadeInteractions)
 
 add_library(nuclear_models SHARED
     NuclearModel.cc
+    Variations.cc
     XSecBackend.cc
     Process.cc
 )

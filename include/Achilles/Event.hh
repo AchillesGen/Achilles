@@ -77,6 +77,11 @@ class Event {
     int &ProcessId() { return m_process_id; }
     const int &ProcessId() const { return m_process_id; }
 
+    // Variation weights stored as ratios to the nominal weight. Empty unless variations are
+    // enabled and the event was accepted
+    std::vector<double> &VariationRatios() { return m_variation_ratios; }
+    const std::vector<double> &VariationRatios() const { return m_variation_ratios; }
+
   private:
     // Helper functions
     template <class UnaryPred>
@@ -100,6 +105,7 @@ class Event {
     EventHistory m_history{};
     double flux{};
     int m_process_id{};
+    std::vector<double> m_variation_ratios{};
 };
 
 } // namespace achilles

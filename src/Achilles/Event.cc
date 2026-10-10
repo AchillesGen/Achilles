@@ -23,6 +23,7 @@ Event::Event(const Event &other) {
     m_history = other.m_history;
     flux = other.flux;
     m_process_id = other.m_process_id;
+    m_variation_ratios = other.m_variation_ratios;
 }
 
 Event &Event::operator=(const Event &other) {
@@ -36,6 +37,7 @@ Event &Event::operator=(const Event &other) {
     m_history = other.m_history;
     flux = other.flux;
     m_process_id = other.m_process_id;
+    m_variation_ratios = other.m_variation_ratios;
     return *this;
 }
 

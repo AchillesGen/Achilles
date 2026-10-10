@@ -13,6 +13,7 @@
 #include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
+#include "Achilles/Variations.hh"
 
 #include "fmt/ranges.h"
 
@@ -300,7 +301,13 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
     } else {
         auto &process = m_processes[process_idx.value()];
         auto weight = m_backend->CrossSection(event, process);
-        event.Weight() = process.Unweight(weight);
+        auto accepted = process.Unweight(weight);
+        // Variation weights are only computed for accepted events during generation. The
+        // event still carries the phase space weight here, as required by the backend
+        if(accepted != 0 && m_variations) {
+            event.VariationRatios() = m_variations->Evaluate({event, process, *m_backend, weight});
+        }
+        event.Weight() = accepted;
     }
 }
 

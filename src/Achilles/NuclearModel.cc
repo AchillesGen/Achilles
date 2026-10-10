@@ -30,6 +30,12 @@ using Type = achilles::FormFactorInfo::Type;
 NuclearModel::NuclearModel(const YAML::Node &config,
                            FormFactorBuilder &ffbuilder = FormFactorBuilder::Instance()) {
     spdlog::debug("Setting up form factors");
+    m_ff_config = YAML::Clone(config);
+    m_form_factor = BuildFormFactor(config, ffbuilder);
+}
+
+std::unique_ptr<achilles::FormFactor> NuclearModel::BuildFormFactor(const YAML::Node &config,
+                                                                    FormFactorBuilder &ffbuilder) {
     const auto vectorFF = config["vector"].as<std::string>();
     const auto axialFF = config["axial"].as<std::string>();
     const auto coherentFF = config["coherent"].as<std::string>();
@@ -38,16 +44,17 @@ NuclearModel::NuclearModel(const YAML::Node &config,
     const auto mecvectorFF = config["mecvector"].as<std::string>();
     const auto mecaxialFF = config["mecaxial"].as<std::string>();
     const auto hyperonFF = config["hyperon"].as<std::string>();
-    m_form_factor = ffbuilder.Vector(vectorFF, config[vectorFF])
-                        .AxialVector(axialFF, config[axialFF])
-                        .Coherent(coherentFF, config[coherentFF])
-                        .ResonanceVector(resvectorFF, config[resvectorFF])
-                        .ResonanceAxial(resaxialFF, config[resaxialFF])
-                        .MesonExchangeVector(mecvectorFF, config[mecvectorFF])
-                        .MesonExchangeAxial(mecaxialFF, config[mecaxialFF])
-                        .Hyperon(hyperonFF, config[hyperonFF])
-                        .build();
+    auto form_factor = ffbuilder.Vector(vectorFF, config[vectorFF])
+                           .AxialVector(axialFF, config[axialFF])
+                           .Coherent(coherentFF, config[coherentFF])
+                           .ResonanceVector(resvectorFF, config[resvectorFF])
+                           .ResonanceAxial(resaxialFF, config[resaxialFF])
+                           .MesonExchangeVector(mecvectorFF, config[mecvectorFF])
+                           .MesonExchangeAxial(mecaxialFF, config[mecaxialFF])
+                           .Hyperon(hyperonFF, config[hyperonFF])
+                           .build();
     ffbuilder.Reset();
+    return form_factor;
 }
 
 void NuclearModel::SetTransform() {
@@ -647,6 +654,11 @@ NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &u
     return result;
 }
 
+const achilles::SpectralFunction *QESpectral::GetSpectralFunction(PID pid) const {
+    if(is_hydrogen || is_free_neutron) return nullptr;
+    return pid == PID::proton() ? &spectral_proton : &spectral_neutron;
+}
+
 std::string QESpectral::PhaseSpace(PID nuc_id) const {
     if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
     if(nuc_id == PID::hydrogen())
@@ -775,6 +787,11 @@ NuclearModel::Current HyperonSpectral::HadronicCurrent(const std::array<Spinor, 
         }
     }
     return result;
+}
+
+const achilles::SpectralFunction *HyperonSpectral::GetSpectralFunction(PID pid) const {
+    if(is_hydrogen || is_free_neutron) return nullptr;
+    return pid == PID::proton() ? &spectral_proton : &spectral_neutron;
 }
 
 std::string HyperonSpectral::PhaseSpace(PID nuc_id) const {

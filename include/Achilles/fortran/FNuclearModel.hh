@@ -49,6 +49,7 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
 
     std::string GetName() const override { return ModelName(m_model); }
     std::string InspireHEP() const override { return GetInspireHEP(m_model); }
+    const SpectralFunction *GetSpectralFunction(PID) const override;
 
     // Method needed to register fortran models at start-up
     static void RegisterModels() { RegisterAll(); }
@@ -63,6 +64,8 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
     const WardGauge m_ward;
     size_t m_model;
     std::map<std::string, double> param_map;
+    // C++ copies of the spectral functions loaded on the fortran side (one-body models only)
+    std::unique_ptr<SpectralFunction> m_spectral_p{}, m_spectral_n{};
 };
 
 } // namespace achilles

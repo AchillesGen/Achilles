@@ -4,6 +4,9 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/System.hh"
+
+#include <fstream>
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -44,6 +47,27 @@ FortranModel::FortranModel(const YAML::Node &config, const YAML::Node &form_fact
                                modelname, filename);
         throw std::runtime_error(msg);
     }
+
+    // Mirror the spectral functions read by the one-body fortran models, which take the proton
+    // and neutron spectral function files from the first two lines of the config file
+    if(PSName() == "OneBodySpectral") {
+        std::ifstream config_file(Filesystem::FindFile(filename, "NuclearModel"));
+        std::string spectral_p, spectral_n;
+        auto Trim = [](const std::string &str) {
+            const auto first = str.find_first_not_of(" \t\r");
+            const auto last = str.find_last_not_of(" \t\r");
+            return first == std::string::npos ? std::string{} : str.substr(first, last - first + 1);
+        };
+        if(std::getline(config_file, spectral_p) && std::getline(config_file, spectral_n)) {
+            m_spectral_p = std::make_unique<SpectralFunction>(Trim(spectral_p));
+            m_spectral_n = std::make_unique<SpectralFunction>(Trim(spectral_n));
+        }
+    }
+}
+
+const achilles::SpectralFunction *FortranModel::GetSpectralFunction(PID pid) const {
+    if(is_hydrogen || is_free_neutron) return nullptr;
+    return pid == PID::proton() ? m_spectral_p.get() : m_spectral_n.get();
 }
 
 NuclearModel::Currents FortranModel::CalcCurrents(const std::vector<Particle> &had_in,

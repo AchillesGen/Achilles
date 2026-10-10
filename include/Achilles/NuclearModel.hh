@@ -127,6 +127,16 @@ class NuclearModel {
     void TransformFrame(Event &, const Process &, bool) const;
     void SetTransform();
 
+    // Hooks for on-the-fly variation weights
+    static std::unique_ptr<FormFactor> BuildFormFactor(const YAML::Node &, FormFactorBuilder &);
+    const YAML::Node &FormFactorConfig() const { return m_ff_config; }
+    std::shared_ptr<FormFactor> SwapFormFactor(std::shared_ptr<FormFactor> form_factor) {
+        std::swap(m_form_factor, form_factor);
+        return form_factor;
+    }
+    /// Nominal spectral function used in the initial state weight, if the model has one
+    virtual const SpectralFunction *GetSpectralFunction(PID) const { return nullptr; }
+
   protected:
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
@@ -144,7 +154,8 @@ class NuclearModel {
 
   private:
     FourVector::RotMat rotation;
-    std::unique_ptr<FormFactor> m_form_factor{nullptr};
+    std::shared_ptr<FormFactor> m_form_factor{nullptr};
+    YAML::Node m_ff_config{};
 };
 
 template <typename Derived>
@@ -195,6 +206,7 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     std::string GetName() const override { return QESpectral::Name(); }
     std::string InspireHEP() const override { return "Rocco:2018mwt"; }
     std::string PSName() const override { return "OneBodySpectral"; }
+    const SpectralFunction *GetSpectralFunction(PID) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -226,6 +238,7 @@ class HyperonSpectral : public NuclearModel, RegistrableNuclearModel<HyperonSpec
     std::string GetName() const override { return HyperonSpectral::Name(); }
     std::string InspireHEP() const override { return ""; }
     std::string PSName() const override { return "OneBodySpectral"; }
+    const SpectralFunction *GetSpectralFunction(PID) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

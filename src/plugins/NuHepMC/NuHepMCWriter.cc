@@ -62,9 +62,29 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     run->tools().push_back(generator);
     NuHepMC::add_attribute(run, "Achilles.RunCard", filename);
 
-    NuHepMC::GR7::SetWeightNames(run, {
-                                          "CV",
-                                      });
+    std::vector<std::string> weight_names{"CV"};
+    weight_names.insert(weight_names.end(), m_variation_names.begin(), m_variation_names.end());
+    NuHepMC::GR7::SetWeightNames(run, weight_names);
+    variation_results.resize(m_variation_names.size());
+
+    // Describe how the variation weights are grouped and combined into uncertainty bands
+    std::vector<std::string> group_names;
+    for(const auto &group : m_variation_info) {
+        group_names.push_back(group.name);
+        const auto prefix = fmt::format("Achilles.Variations[{}]", group.name);
+        NuHepMC::add_attribute(run, prefix + ".Type", group.type);
+        NuHepMC::add_attribute(run, prefix + ".CentralWeight", group.weight_names.front());
+        NuHepMC::add_attribute(
+            run, prefix + ".MemberWeights",
+            std::vector<std::string>(group.weight_names.begin() + 1, group.weight_names.end()));
+        NuHepMC::add_attribute(run, prefix + ".Combination", group.combination);
+        NuHepMC::add_attribute(run, prefix + ".CombinationScale", group.combination_scale);
+        if(!group.parameter.empty()) {
+            NuHepMC::add_attribute(run, prefix + ".Parameter", group.parameter);
+            NuHepMC::add_attribute(run, prefix + ".MemberValues", group.member_values);
+        }
+    }
+    if(!group_names.empty()) NuHepMC::add_attribute(run, "Achilles.Variations", group_names);
 
     // Add all possible processes
     std::vector<int> proc_ids = achilles::AllProcessIDs(groups);
@@ -248,6 +268,10 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
 
     // Update cumulative results, but skip writing if weight is zero
     results += event.Weight() * nb_to_pb;
+    const auto &ratios = event.VariationRatios();
+    for(size_t i = 0; i < variation_results.size(); ++i) {
+        variation_results[i] += i < ratios.size() ? event.Weight() * ratios[i] * nb_to_pb : 0;
+    }
     spdlog::trace("Event weight = {}", event.Weight());
     if(event.Weight() == 0) { return; }
 
@@ -263,12 +287,21 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     // Cross Section
     spdlog::trace("Writing out cross-section");
     auto cross_section = std::make_shared<GenCrossSection>();
-    cross_section->set_cross_section(results.Mean(), results.Error(), results.FiniteCalls(),
-                                     results.Calls());
+    std::vector<double> xsecs{results.Mean()}, errors{results.Error()};
+    for(const auto &var : variation_results) {
+        xsecs.push_back(var.Mean());
+        errors.push_back(var.Error());
+    }
+    cross_section->set_cross_section(xsecs, errors, static_cast<long>(results.FiniteCalls()),
+                                     static_cast<long>(results.Calls()));
     visitor.evt.set_cross_section(cross_section);
 
     NuHepMC::add_attribute(visitor.evt, "Flux", event.Flux());
     visitor.evt.weight("CV") = event.Weight() * nb_to_pb;
+    for(size_t i = 0; i < m_variation_names.size(); ++i) {
+        const double ratio = i < ratios.size() ? ratios[i] : 1;
+        visitor.evt.weight(m_variation_names[i]) = event.Weight() * ratio * nb_to_pb;
+    }
 
     // TODO: once we have a detector to simulate interaction location
     // Event position
