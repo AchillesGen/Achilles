@@ -112,6 +112,8 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     }
 
     SECTION("Veto: Evolve Event") {
+        auto alg = GENERATE(achilles::Cascade::Algorithm::Veto,
+                            achilles::Cascade::Algorithm::Continuous);
         MockEvent event;
         achilles::InteractionHandler interaction;
         MockNucleus nucleus;
@@ -119,7 +121,7 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
         REQUIRE_CALL(event, Hadrons()).TIMES(AT_LEAST(1)).LR_RETURN((hadrons));
         REQUIRE_CALL(nucleus, Radius()).TIMES(AT_LEAST(1)).RETURN(radius);
 
-        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Veto,
+        achilles::Cascade cascade(std::move(interaction), mode, alg,
                                   achilles::Cascade::InMedium::None);
         cascade.Evolve(event, &nucleus);
 
@@ -128,9 +130,10 @@ TEST_CASE("Evolve States: 1 nucleon", "[Cascade]") {
     }
 
     SECTION("Veto: PotentialProp not supported") {
+        auto alg = GENERATE(achilles::Cascade::Algorithm::Veto,
+                            achilles::Cascade::Algorithm::Continuous);
         achilles::InteractionHandler interaction;
-        CHECK_THROWS_AS(achilles::Cascade(std::move(interaction), mode,
-                                          achilles::Cascade::Algorithm::Veto,
+        CHECK_THROWS_AS(achilles::Cascade(std::move(interaction), mode, alg,
                                           achilles::Cascade::InMedium::None,
                                           achilles::default_decay_file, true),
                         std::runtime_error);
@@ -224,6 +227,8 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
     }
 
     SECTION("Veto: Large Formation Zone") {
+        auto alg = GENERATE(achilles::Cascade::Algorithm::Veto,
+                            achilles::Cascade::Algorithm::Continuous);
         achilles::InteractionHandler interaction;
         MockEvent event;
         MockNucleus nucleus;
@@ -233,7 +238,7 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
 
         // Both spectators are passed while the nucleon is still forming: no trial is offered
         hadrons[0].SetFormationZone({10000, 0, 0, 0}, {88.2, 0, 0, 0});
-        achilles::Cascade cascade(std::move(interaction), mode, achilles::Cascade::Algorithm::Veto,
+        achilles::Cascade cascade(std::move(interaction), mode, alg,
                                   achilles::Cascade::InMedium::None);
         cascade.Evolve(event, &nucleus);
 

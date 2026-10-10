@@ -6,6 +6,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <queue>
 #include <vector>
 
@@ -68,7 +69,7 @@ class Cascade {
     }
 
     // Algorithms Enums
-    enum Algorithm { Base, MFP, Veto };
+    enum Algorithm { Base, MFP, Veto, Continuous };
     std::string ToString(const Algorithm &type) {
         switch(type) {
         case Base:
@@ -77,6 +78,8 @@ class Cascade {
             return "MFP";
         case Veto:
             return "Veto";
+        case Continuous:
+            return "Continuous";
         }
         return "Unknown";
     }
@@ -213,9 +216,11 @@ class Cascade {
     bool DecayNow(Event &, size_t) const;
     double Lifetime(const Particle &) const;
 
-    // Continuous-time (Veto) algorithm
+    // Event-driven algorithms (Veto: one trial per pair at closest approach,
+    // Continuous: a smooth hazard per pair along the line)
     void EvolveVeto(Event &, Nucleus *);
-    void ScheduleTrials(Event &, size_t);
+    void ScheduleTrials(Event &, size_t, bool formed = false);
+    std::optional<double> SmoothPairTime(double, double, double, double, double) const;
     void ScheduleDecay(const Particle &, size_t);
     double ExitTime(const Particle &) const;
 
@@ -235,6 +240,8 @@ class Cascade {
 
     /// Marks a queue entry as a decay trial rather than a pair trial
     static constexpr size_t cDecayTrial = SIZE_MAX;
+    /// Marks the end of a formation zone in the Continuous algorithm
+    static constexpr size_t cFormedTrial = SIZE_MAX - 1;
 
     struct queue_entry {
         double time;
@@ -301,6 +308,8 @@ template <> struct convert<achilles::Cascade::Algorithm> {
             type = achilles::Cascade::Algorithm::MFP;
         else if(node.as<std::string>() == "Veto")
             type = achilles::Cascade::Algorithm::Veto;
+        else if(node.as<std::string>() == "Continuous")
+            type = achilles::Cascade::Algorithm::Continuous;
         else
             return false;
         return true;

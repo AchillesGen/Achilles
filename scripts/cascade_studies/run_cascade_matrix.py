@@ -66,19 +66,22 @@ PBINS = [200, 400, 600, 800, 1000, 1200, 1400]  # MeV, probe momentum
 
 def read_hist(path):
     rows = np.loadtxt(path, skiprows=2)
-    return rows[:, 0], rows[:, 1], rows[:, 2]
+    return rows[:, 0], rows[:, 1], rows[:, 2], rows[:, 3]
+
+
+def counts(value, error):
+    """Event counts per bin: all events share one weight w, so N = (N w)^2 / (N w^2)."""
+    return np.where(error > 0, value**2 / np.where(error > 0, error**2, 1), 0.0)
 
 
 def summarize(name, mode):
-    lo, hi, hits = read_hist(f"{name}_hits.txt")
-    _, _, nohits = read_hist(f"{name}_nohits.txt")
-    # every event carries the same weight; convert weighted sums to counts
-    span = PBINS[-1] - PBINS[0]
-    wgt = span / 1000.0 if mode == "Transparency" else np.pi * BEAM_RADIUS**2 * 10 * 1e6 * span
+    lo, hi, hv, he = read_hist(f"{name}_hits.txt")
+    _, _, nv, ne = read_hist(f"{name}_nohits.txt")
+    hits, nohits = counts(hv, he), counts(nv, ne)
     out = []
     for a, b in zip(PBINS[:-1], PBINS[1:]):
         sel = (lo >= a) & (hi <= b)
-        h, n = hits[sel].sum() / wgt, nohits[sel].sum() / wgt
+        h, n = hits[sel].sum(), nohits[sel].sum()
         tot = h + n
         frac, err = h / tot, np.sqrt(h * n / tot) / tot
         if mode == "Transparency":
@@ -127,7 +130,9 @@ def matrix(study, cfgdir):
         for mode in ("Transparency", "CrossSection"):
             for prob in ("Gaussian", "Cylinder"):
                 for e, path in ens.items():
-                    add(f"configs_{mode}_{prob}_{e}", mode=mode, prob=prob, alg="Veto", configs=path)
+                    for alg in ("Veto", "Continuous"):
+                        add(f"configs_{mode}_{prob}_{e}_{alg}", mode=mode, prob=prob, alg=alg,
+                            configs=path, nevents=40000)
     return specs
 
 

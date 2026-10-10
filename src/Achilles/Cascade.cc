@@ -40,11 +40,12 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
         };
         break;
     case Algorithm::Veto:
-        // Veto runs its own event loop (EvolveVeto) and has no per-step algorithm
+    case Algorithm::Continuous:
+        // Event-driven algorithms run their own loop (EvolveVeto), no per-step algorithm
         if(potential_prop)
             throw std::runtime_error(
-                "Cascade: the Veto algorithm assumes straight-line propagation and does not "
-                "support PotentialProp yet");
+                "Cascade: the Veto and Continuous algorithms assume straight-line propagation "
+                "and do not support PotentialProp yet");
         break;
     }
 
@@ -277,7 +278,7 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
-    if(m_algorithm == Algorithm::Veto) {
+    if(m_algorithm == Algorithm::Veto || m_algorithm == Algorithm::Continuous) {
         EvolveVeto(event, nucleus);
         return;
     }
@@ -856,13 +857,20 @@ bool Cascade::DecayNow(Event &event, size_t idx) const {
     return true;
 }
 
-/// Continuous-time cascade. Every propagating particle offers each background
-/// nucleon exactly one trial, at the time of closest approach on its straight
-/// line, with probability P(b^2, sigma); unstable particles also schedule a decay
-/// time drawn from their lifetime. All trials sit in one queue ordered by global
-/// time, so there is no step size. A trial is stale (lazily skipped) once either
-/// particle has left its state; products of an accepted trial schedule their own
-/// trials. Pauli blocking vetoes the accepted trial and leaves the state unchanged.
+/// Event-driven cascade with no time step. All trials sit in one queue ordered by
+/// global time; a trial is stale (lazily skipped) once either particle has left its
+/// state, and products of an accepted trial schedule their own trials. Pauli blocking
+/// vetoes an accepted trial and leaves the state unchanged. Unstable particles schedule
+/// a decay time drawn from their lifetime.
+///
+/// Veto: each propagating particle offers each background nucleon one trial, at the
+/// time of closest approach on its straight line, with probability P(b^2, sigma). The
+/// hazard of a pair is an atom P delta(t - t_c), so collisions happen only at the
+/// discrete closest-approach times of the configuration.
+///
+/// Continuous: the hazard of a pair is spread over the line (SmoothPairTime) with the
+/// same total survival 1 - P, so collision times are continuous. The firing time of each
+/// pair is drawn when it is scheduled (competing risks); the earliest one wins.
 void Cascade::EvolveVeto(Event &event, Nucleus *nucleus) {
     m_nucleus = nucleus;
     currentTime = 0;
@@ -878,14 +886,21 @@ void Cascade::EvolveVeto(Event &event, Nucleus *nucleus) {
         m_time_steps.pop();
         const auto [idx, hit] = entry.idxs;
         const bool is_decay = hit == cDecayTrial;
+        const bool is_formed = hit == cFormedTrial;
 
         if(!particles[idx].IsPropagating()) continue;
-        if(!is_decay && particles[hit].Status() != ParticleStatus::background) continue;
+        if(!is_decay && !is_formed && particles[hit].Status() != ParticleStatus::background)
+            continue;
 
         PropagateAll(particles, entry.time - currentTime);
         currentTime = entry.time;
         Escaped(particles);
         if(!particles[idx].IsPropagating()) continue;
+
+        if(is_formed) {
+            ScheduleTrials(event, idx, true);
+            continue;
+        }
 
         const size_t nbefore = particles.size();
         if(is_decay) {
@@ -894,6 +909,9 @@ void Cascade::EvolveVeto(Event &event, Nucleus *nucleus) {
                 ScheduleDecay(particles[idx], idx);
                 continue;
             }
+        } else if(m_algorithm == Algorithm::Continuous) {
+            // Firing time and acceptance were drawn in ScheduleTrials
+            FinalizeMomentum(event, particles, idx, hit);
         } else {
             // Formation zone is checked at the trial time, not at the start of a step
             if(particles[idx].InFormationZone() && !particles[idx].Info().IsPion()) continue;
@@ -919,16 +937,59 @@ void Cascade::EvolveVeto(Event &event, Nucleus *nucleus) {
     Reset();
 }
 
-void Cascade::ScheduleTrials(Event &event, size_t idx) {
+void Cascade::ScheduleTrials(Event &event, size_t idx, bool formed) {
     const Particles &particles = event.Hadrons();
     const Particle &part = particles[idx];
-    if(!part.Info().IsStable()) ScheduleDecay(part, idx);
+    if(!formed && !part.Info().IsStable()) ScheduleDecay(part, idx);
+
+    // Continuous: pair hazards switch on when the particle leaves its formation zone
+    if(m_algorithm == Algorithm::Continuous && !formed && part.InFormationZone() &&
+       !part.Info().IsPion()) {
+        m_time_steps.push({currentTime + part.FormationZone(), {idx, cFormedTrial}});
+        return;
+    }
+
+    const auto velocity = part.Beta();
+    const double speed = velocity.Magnitude();
 
     for(size_t i = 0; i < particles.size(); ++i) {
         if(particles[i].Status() != ParticleStatus::background) continue;
-        const double closest = ClosestApproach(part, particles[i]);
-        if(closest > 0) m_time_steps.push({currentTime + closest, {idx, i}});
+        const double closest = currentTime + ClosestApproach(part, particles[i]);
+        if(m_algorithm != Algorithm::Continuous) {
+            if(closest > currentTime) m_time_steps.push({closest, {idx, i}});
+            continue;
+        }
+
+        const auto separation = particles[i].Position() - part.Position();
+        const double along = separation.Dot(velocity) / speed;
+        const double b2 = separation.Magnitude2() - along * along;
+        const double sigma = GetXSec(event, idx, i) / 10;
+        const double prob = probability(b2, sigma);
+        if(prob <= 0) continue;
+        if(auto time = SmoothPairTime(closest, currentTime, sigma, speed, prob))
+            m_time_steps.push({*time, {idx, i}});
     }
+}
+
+/// Firing time of one pair in the Continuous algorithm, or nothing if it does not fire.
+/// The hazard is uniform over |t - t_c| < l / v around the closest-approach time t_c, with
+/// l = sqrt(3 sigma / 2 pi) (longitudinal rms equal to the transverse rms of the Gaussian
+/// profile), and integrates to -ln(1 - P) over the whole line, so a pair seen in full
+/// survives with exactly 1 - P. Only the part of the window after "start" (now) is used,
+/// so a pair beside the vertex keeps part of its hazard. A black pair (P = 1) fires on
+/// entering its window.
+std::optional<double> Cascade::SmoothPairTime(double tclose, double start, double sigma,
+                                              double speed, double prob) const {
+    const double half_window = std::sqrt(3 * sigma / (2 * M_PI)) / speed;
+    const double lower = std::max(tclose - half_window, start);
+    const double upper = tclose + half_window;
+    if(lower >= upper) return std::nullopt;
+    if(prob >= 1) return lower;
+
+    const double rate = -std::log1p(-prob) / (2 * half_window);
+    const double time = lower - std::log(Random::Instance().Uniform(0.0, 1.0)) / rate;
+    if(time >= upper) return std::nullopt;
+    return time;
 }
 
 void Cascade::ScheduleDecay(const Particle &part, size_t idx) {
