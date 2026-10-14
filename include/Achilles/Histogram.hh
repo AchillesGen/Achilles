@@ -52,6 +52,10 @@ class Histogram {
     virtual std::vector<double> Edges() const { return binedges; }
     virtual std::vector<double> Centers() const;
     virtual std::vector<double> Heights() const { return binvals; }
+    // Per-bin sum of squared (density-normalized) weights, i.e. the sumw2 that
+    // pairs with Heights(); sqrt() of it is the bin's MC standard error before
+    // the 1/N normalization.
+    virtual std::vector<double> SumW2() const { return errors; }
     virtual void Scale(const double &);
     virtual void Normalize(const double &norm = 1.0);
     virtual double Integral() const;

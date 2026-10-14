@@ -105,9 +105,55 @@ void Interp1D::CubicSpline(const double &derivLeft, const double &derivRight) {
     kSplineInit = true;
 }
 
+void Interp1D::MonotoneSpline() {
+    const std::size_t n = knotX.size();
+    if(n < 2) throw std::runtime_error("MonotoneSpline needs at least two knots");
+    kMode = InterpolationType::MonotoneCubic;
+    derivs1.assign(n, 0.0);
+
+    std::vector<double> slope;
+    slope.reserve(n - 1);
+    for(std::size_t i = 0; i < n - 1; ++i)
+        slope.push_back((knotY[i + 1] - knotY[i]) / (knotX[i + 1] - knotX[i]));
+    if(slope.empty()) throw std::runtime_error("MonotoneSpline needs at least two knots");
+
+    // Start from the three-point (parabolic) estimate, then apply the
+    // Fritsch-Carlson limiter so no segment can overshoot its own data.
+    derivs1.front() = slope.front();
+    derivs1.back() = slope.back();
+    for(std::size_t i = 1; i < n - 1; ++i) {
+        if(slope[i - 1] * slope[i] <= 0) {
+            derivs1[i] = 0.0;
+        } else {
+            const double h1 = knotX[i] - knotX[i - 1];
+            const double h2 = knotX[i + 1] - knotX[i];
+            const double wl = 2 * h2 + h1;
+            const double wr = h2 + 2 * h1;
+            derivs1[i] = (wl + wr) / (wl / slope[i - 1] + wr / slope[i]);
+        }
+    }
+    for(std::size_t i = 0; i < n - 1; ++i) {
+        if(slope[i] == 0) {
+            derivs1[i] = 0.0;
+            derivs1[i + 1] = 0.0;
+            continue;
+        }
+        const double alpha = derivs1[i] / slope[i];
+        const double beta = derivs1[i + 1] / slope[i];
+        const double norm = alpha * alpha + beta * beta;
+        if(norm > 9.0) {
+            const double tau = 3.0 / std::sqrt(norm);
+            derivs1[i] = tau * alpha * slope[i];
+            derivs1[i + 1] = tau * beta * slope[i];
+        }
+    }
+    kSplineInit = true;
+}
+
 double Interp1D::operator()(const double &x) const {
     // Ensure the interpolation is initialized first
-    if(!kSplineInit && kMode == InterpolationType::CubicSpline)
+    if(!kSplineInit &&
+       (kMode == InterpolationType::CubicSpline || kMode == InterpolationType::MonotoneCubic))
         throw std::runtime_error("Interpolation is not initialized!");
 
     // Outside the knot range, either extrapolate linearly along the boundary
@@ -136,7 +182,7 @@ double Interp1D::operator()(const double &x) const {
     case InterpolationType::Polynomial:
         result = PolynomialInterp(x);
         break;
-    case InterpolationType::CubicSpline:
+    case InterpolationType::CubicSpline: {
         const double height = knotX[idxHigh] - knotX[idxLow];
         const double a = (knotX[idxHigh] - x) / height;
         const double b = (x - knotX[idxLow]) / height;
@@ -145,6 +191,15 @@ double Interp1D::operator()(const double &x) const {
                  ((ipow(a, 3) - a) * derivs2[idxLow] + (ipow(b, 3) - b) * derivs2[idxHigh]) *
                      ipow(height, 2) / 6.0;
         break;
+    }
+    case InterpolationType::MonotoneCubic: {
+        const double h = knotX[idxHigh] - knotX[idxLow];
+        const double t = (x - knotX[idxLow]) / h;
+        const double t2 = t * t, t3 = t2 * t;
+        result = (2 * t3 - 3 * t2 + 1) * knotY[idxLow] + (t3 - 2 * t2 + t) * h * derivs1[idxLow] +
+                 (-2 * t3 + 3 * t2) * knotY[idxHigh] + (t3 - t2) * h * derivs1[idxHigh];
+        break;
+    }
     }
     return result;
 }
@@ -173,6 +228,11 @@ double Interp1D::Derivative(const double &x) const {
 
     const double h = knotX[idxHigh] - knotX[idxLow];
     const double slope = (knotY[idxHigh] - knotY[idxLow]) / h;
+    if(kMode == InterpolationType::MonotoneCubic) {
+        const double t = (xq - knotX[idxLow]) / h;
+        return (6 * t - 6 * t * t) * (knotY[idxHigh] - knotY[idxLow]) / h +
+               (3 * t * t - 4 * t + 1) * derivs1[idxLow] + (3 * t * t - 2 * t) * derivs1[idxHigh];
+    }
     if(kMode != InterpolationType::CubicSpline) return slope;
 
     // d/dx of the cubic spline segment (Numerical Recipes form).
@@ -221,6 +281,13 @@ double Interp1D::Integrate() const {
                       24.0;
         }
         break;
+    case InterpolationType::MonotoneCubic:
+        for(size_t i = 0; i < knotX.size() - 1; ++i) {
+            const double h = knotX[i + 1] - knotX[i];
+            result +=
+                h * (knotY[i] + knotY[i + 1]) / 2 + h * h * (derivs1[i] - derivs1[i + 1]) / 12;
+        }
+        break;
     }
     return result;
 }
@@ -256,6 +323,15 @@ bool Interp1D::SaveState(std::ostream &os) const {
         for(const auto &ky : knotY) { os << ky << " "; }
         if(kSplineInit) {
             for(const auto &deriv : derivs2) { os << deriv << " "; }
+        }
+        break;
+    case InterpolationType::MonotoneCubic:
+        os << kSplineInit << " ";
+        os << knotX.size() << " ";
+        for(const auto &kx : knotX) { os << kx << " "; }
+        for(const auto &ky : knotY) { os << ky << " "; }
+        if(kSplineInit) {
+            for(const auto &deriv : derivs1) { os << deriv << " "; }
         }
         break;
     }
@@ -302,6 +378,27 @@ bool Interp1D::LoadState(std::istream &is) {
                 double deriv;
                 is >> deriv;
                 derivs2.push_back(deriv);
+            }
+        }
+        break;
+    case InterpolationType::MonotoneCubic:
+        is >> kSplineInit;
+        is >> size;
+        for(size_t i = 0; i < size; ++i) {
+            double kx;
+            is >> kx;
+            knotX.push_back(kx);
+        }
+        for(size_t i = 0; i < size; ++i) {
+            double ky;
+            is >> ky;
+            knotY.push_back(ky);
+        }
+        if(kSplineInit) {
+            for(size_t i = 0; i < size; ++i) {
+                double deriv;
+                is >> deriv;
+                derivs1.push_back(deriv);
             }
         }
         break;
@@ -364,7 +461,7 @@ double Interp2D::operator()(const double &x, const double &y) const {
     case InterpolationType::Polynomial:
         result = PolynomialInterp(x, y);
         break;
-    case InterpolationType::CubicSpline:
+    case InterpolationType::CubicSpline: {
         std::vector<double> zTmp(knotX.size());
         for(std::size_t i = 0; i < knotX.size(); ++i) zTmp[i] = derivs2[i](y);
 
@@ -373,6 +470,9 @@ double Interp2D::operator()(const double &x, const double &y) const {
         interp.CubicSpline();
         result = interp(x);
         break;
+    }
+    case InterpolationType::MonotoneCubic:
+        throw std::runtime_error("Interp2D: MonotoneCubic is not implemented");
     }
 
     return result;

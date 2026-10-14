@@ -4,6 +4,7 @@
 #include "Achilles/Utilities.hh"
 
 #include <algorithm>
+#include <cmath>
 #include <limits>
 
 using achilles::FlatFlux;
@@ -96,7 +97,24 @@ void achilles::GeometryBeam::SetInjected(const FourVector &lab_ray) {
     static const FourVector zaxis{0, 0, 0, 1};
     // Rotation taking the lab ray's direction onto +z (RotateBack undoes it).
     m_rotation = Poincare(lab_ray, zaxis);
-    m_injected = m_rotation * lab_ray;
+    // Do NOT use the rounded product `m_rotation * lab_ray` directly.  The
+    // rotation is exact in exact arithmetic -- it lands on (E, 0, 0, |p|) for
+    // every direction -- but in floating point it can leave |p| one ULP ABOVE
+    // E, i.e. a slightly SPACELIKE neutrino (m^2 = E^2 - |p|^2 < 0).  The
+    // downstream phase-space mappers cannot absorb a negative invariant mass:
+    // the event weight collapses by ~9x, and because |m^2| ~ 2 E * ULP(E) grows
+    // as E^2 it crosses their tolerance above ~7 GeV.  The effect is a
+    // deterministic function of the injected direction, so in a flux run
+    // 10-30% of rays above 7 GeV are hit, which drove a ~25% shortfall in the
+    // high-energy spectrum for single-shot (EnvelopeNoRetry) drivers.  A
+    // retrying driver only hid it.  Reconstruct the on-shell +z vector, which
+    // is exactly what the rotation is defined to produce.
+    // Clamp m^2 to >= 0 first: the incoming lab ray is itself a hair spacelike
+    // whenever sin^2 + cos^2 rounds above 1, so propagating its m^2 verbatim
+    // just reintroduces the problem at a different set of angles.
+    const double m2 = std::max(0.0, lab_ray.M2());
+    const double p = std::sqrt(std::max(0.0, lab_ray.E() * lab_ray.E() - m2));
+    m_injected = {lab_ray.E(), 0.0, 0.0, p};
 }
 
 achilles::FourVector achilles::GeometryBeam::Flux(const std::vector<double> &ran,

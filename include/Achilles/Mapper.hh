@@ -2,6 +2,7 @@
 #define MAPPER_HH
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,13 @@ template <typename T> class Mapper {
     virtual void SetMasses(std::vector<double> masses) { m_masses = std::move(masses); }
     virtual const std::vector<double> &Masses() const { return m_masses; }
     virtual void SetGaugeBosonMass(double) {}
+
+    // Index (into this mapper's random numbers) of a dimension whose value is
+    // supplied externally instead of being sampled from this mapping -- the
+    // injected beam energy in geometry mode. Nothing is fixed by default.
+    virtual std::optional<size_t> FixedDim() const { return std::nullopt; }
+    // Density this mapping gave that dimension in the last GenerateWeight call.
+    virtual double FixedDensity() const { return 1; }
 
     // Printers
     static void Print(const char *func, const std::vector<T> &point,

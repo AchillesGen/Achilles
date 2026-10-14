@@ -19,14 +19,25 @@ class XSecSpline {
     // included), so its Fill count equals the sample count N.
     void InitializeSpline();
     double Interpolate(double) const;
+    // Mean per-bin relative MC error of the knots the spline was built from --
+    // the spline's own precision, not that of the total cross section. Set by
+    // InitializeSpline(); a spline restored from cache holds only the finished
+    // interpolant, so this reads zero there.
+    double BinError() const { return m_bin_error; }
 
     // Cache Splines
     bool SaveState(std::ostream &) const;
     bool LoadState(std::istream &);
 
   private:
+    // Merge factor whose merged bins reach kTargetBinError, subject to kMinBins.
+    static size_t ChooseMerge(const std::vector<double> &heights, const std::vector<double> &sumw2);
+    static constexpr double kTargetBinError = 0.02;
+    static constexpr size_t kMinBins = 20;
+
     bool m_initialized{false};
     double m_emin{}, m_emax{};
+    double m_bin_error{};
     Histogram m_xsec; // summed MC weights per energy bin
     Interp1D m_interp;
 };

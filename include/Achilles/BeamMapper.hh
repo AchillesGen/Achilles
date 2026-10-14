@@ -16,10 +16,13 @@ class BeamMapper : public Mapper<FourVector> {
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
     size_t NDims() const override;
+    std::optional<size_t> FixedDim() const override;
+    double FixedDensity() const override { return m_density; }
 
   private:
     size_t m_idx;
     std::shared_ptr<Beam> m_beam;
+    double m_density{1};
 };
 
 } // namespace achilles

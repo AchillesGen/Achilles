@@ -160,7 +160,8 @@ Species: [12, 14, -12, -14]
         CHECK(beam.MaxEnergy() == 1000);
         CHECK(beam.Flux({0.5}, 0) == achilles::FourVector(500, 0, 0, 500));
         std::vector<double> rans(1);
-        CHECK(beam.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1000);
+        // Phase-space volume over the flat flux normalization, as FlatFlux does.
+        CHECK(beam.GenerateWeight({500, 0, 0, 500}, rans, 0) == 1.0);
         CHECK(rans[0] == 0.5);
     }
 
@@ -171,7 +172,7 @@ Species: [12, 14, -12, -14]
 
         // In range: the flat-flux phase-space volume, ran[0] in [0, 1].
         beam.SetInjected({500, 0, 0, 500});
-        CHECK(beam.GenerateWeight(beam.Injected(), rans, 0) == 1000);
+        CHECK(beam.GenerateWeight(beam.Injected(), rans, 0) == 1.0);
         CHECK(rans[0] == Approx(0.5));
 
         // Above the range: infinite volume (zero density -> rejected trial),

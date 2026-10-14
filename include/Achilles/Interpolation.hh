@@ -13,7 +13,12 @@
 
 namespace achilles {
 
-enum class InterpolationType : size_t { NearestNeighbor = 0, Polynomial, CubicSpline };
+enum class InterpolationType : size_t {
+    NearestNeighbor = 0,
+    Polynomial,
+    CubicSpline,
+    MonotoneCubic
+};
 
 double Polint(const std::vector<double> &, const std::vector<double> &, size_t, double);
 
@@ -47,6 +52,12 @@ class Interp1D {
     ///@param derivLeft: The derivative of the left most knot
     ///@param derivRight: The derivative of the right most knot
     void CubicSpline(const double &derivLeft = maxDeriv, const double &derivRight = maxDeriv);
+
+    /// Create a shape-preserving (Fritsch-Carlson) cubic Hermite interpolant.
+    /// Unlike CubicSpline it never overshoots between knots, so it stays
+    /// monotone on monotone data and non-negative on non-negative data --
+    /// what a cross section sampled from noisy MC bins needs.
+    void MonotoneSpline();
 
     const double &min() const { return knotX.front(); }
     const double &max() const { return knotX.back(); }
@@ -95,6 +106,7 @@ class Interp1D {
     bool kExtrapolate{false};
     size_t polyOrder{4};
     std::vector<double> knotX, knotY, derivs2;
+    std::vector<double> derivs1; // MonotoneCubic only
 };
 
 /// Class to perform two-dimensional interpolations of data. Currently, only Bicubic Splines are

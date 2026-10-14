@@ -59,6 +59,10 @@ class AdaptiveMap {
     // Generate random numbers
     double operator()(std::vector<double> &);
     double GenerateWeight(const std::vector<double> &) const;
+    // The single-dimension factor of GenerateWeight's jacobian.
+    double Jacobian(size_t dim, double ran) const {
+        return width(dim, FindBin(dim, ran)) * static_cast<double>(m_bins);
+    }
 
     // Update histograms
     void Adapt(const double &, const std::vector<double> &);

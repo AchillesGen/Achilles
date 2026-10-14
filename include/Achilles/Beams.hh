@@ -32,6 +32,9 @@ class FluxType {
     virtual double MinEnergy() const = 0;
     virtual double MaxEnergy() const = 0;
     virtual double EvaluateFlux(const FourVector &) const = 0;
+    // True when Flux() serves an externally injected momentum instead of
+    // sampling one from the random numbers it is handed.
+    virtual bool IsFixed() const { return false; }
 };
 
 class Monochromatic : public FluxType {
@@ -124,6 +127,7 @@ class GeometryBeam : public FluxType {
     double MinEnergy() const override { return m_min_energy; }
     double MaxEnergy() const override { return m_max_energy; }
     double EvaluateFlux(const FourVector &) const override { return 1; }
+    bool IsFixed() const override { return m_mode == Mode::Generate; }
 
     void SetMode(Mode mode) { m_mode = mode; }
     Mode GetMode() const { return m_mode; }
@@ -176,7 +180,7 @@ class Beam {
         return m_beams.at(pid)->Flux(rans, smin);
     }
     double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans,
-                               double smin) const {
+                          double smin) const {
         return m_beams.at(pid)->GenerateWeight(p, rans, smin);
     }
     size_t NBeams() const { return m_beams.size(); }
@@ -186,6 +190,10 @@ class Beam {
     double MaxEnergy() const;
     double EvaluateFlux(const PID pid, const FourVector &p) const {
         return m_beams.at(pid)->EvaluateFlux(p);
+    }
+    bool IsFixed(const PID pid) const {
+        const auto it = m_beams.find(pid);
+        return it != m_beams.end() && it->second->IsFixed();
     }
 
     // Accessors

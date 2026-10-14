@@ -4,6 +4,7 @@
 #include "Achilles/Utilities.hh"
 #include "fmt/ostream.h"
 #include <iostream>
+#include <sstream>
 
 double TestFunc(const double &x, size_t power) {
     return pow(x, static_cast<double>(power));
@@ -169,6 +170,65 @@ TEST_CASE("Derivative and extrapolation", "[Interp]") {
         interp.AllowExtrapolation(true);
         CHECK(interp(-2.0) == Approx(2 * -2.0 + 1).margin(1e-6));
         CHECK(interp(13.0) == Approx(2 * 13.0 + 1).margin(1e-6));
+    }
+}
+
+TEST_CASE("Monotone cubic", "[Interp]") {
+    SECTION("exact on a straight line") {
+        const std::vector<double> x = achilles::Linspace(0, 10, 11);
+        std::vector<double> y;
+        for(const auto &xi : x) y.emplace_back(2 * xi + 1);
+        achilles::Interp1D interp(x, y);
+        interp.MonotoneSpline();
+        for(double xq = 0; xq <= 10; xq += 0.13)
+            CHECK(interp(xq) == Approx(2 * xq + 1).margin(1e-9));
+        CHECK(interp.Derivative(4.2) == Approx(2.0).margin(1e-9));
+    }
+
+    SECTION("never overshoots its own knots") {
+        // A step is what a natural cubic rings against: it undershoots below the
+        // low plateau and overshoots above the high one. The monotone form
+        // cannot leave the [min, max] of the knots it interpolates between.
+        const std::vector<double> x = achilles::Linspace(0, 10, 11);
+        const std::vector<double> y = {0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1};
+        achilles::Interp1D mono(x, y);
+        mono.MonotoneSpline();
+        achilles::Interp1D natural(x, y);
+        natural.CubicSpline();
+
+        bool natural_overshoots = false;
+        for(double xq = 0; xq <= 10; xq += 0.01) {
+            CHECK(mono(xq) >= 0.0);
+            CHECK(mono(xq) <= 1.0);
+            if(natural(xq) < -1e-6 || natural(xq) > 1 + 1e-6) natural_overshoots = true;
+        }
+        CHECK(natural_overshoots);
+    }
+
+    SECTION("preserves monotonicity of noisy but rising data") {
+        const std::vector<double> x = {0, 1, 2, 3, 4, 5, 6};
+        const std::vector<double> y = {0, 1, 1.05, 3, 3.02, 5, 9};
+        achilles::Interp1D interp(x, y);
+        interp.MonotoneSpline();
+        double prev = interp(0.0);
+        for(double xq = 0.005; xq <= 6; xq += 0.005) {
+            CHECK(interp(xq) >= prev - 1e-12);
+            prev = interp(xq);
+        }
+    }
+
+    SECTION("survives a cache round trip") {
+        const std::vector<double> x = {0, 1, 2, 3, 4};
+        const std::vector<double> y = {0, 2, 2.1, 5, 9};
+        achilles::Interp1D interp(x, y);
+        interp.MonotoneSpline();
+
+        std::stringstream ss;
+        interp.SaveState(ss);
+        achilles::Interp1D loaded;
+        loaded.LoadState(ss);
+        for(double xq = 0; xq <= 4; xq += 0.05)
+            CHECK(loaded(xq) == Approx(interp(xq)).margin(1e-12));
     }
 }
 

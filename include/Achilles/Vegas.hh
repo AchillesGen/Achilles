@@ -92,6 +92,7 @@ class Vegas {
     }
     AdaptiveMap Grid() const { return grid; }
     AdaptiveMap &Grid() { return grid; }
+    double Jacobian(size_t dim, double ran) const { return grid.Jacobian(dim, ran); }
 
     bool operator==(const Vegas &rhs) const {
         return grid == rhs.grid && summary == rhs.summary && params == rhs.params;

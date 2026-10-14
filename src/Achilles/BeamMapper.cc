@@ -22,9 +22,17 @@ double BeamMapper::GenerateWeight(const std::vector<FourVector> &point, std::vec
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
     spdlog::trace("  Beam weight = {}", wgt);
 #endif
-    return 1.0 / wgt;
+    m_density = 1.0 / wgt;
+    return m_density;
 }
 
 size_t BeamMapper::NDims() const {
     return static_cast<size_t>(m_beam->NVariables());
+}
+
+std::optional<size_t> BeamMapper::FixedDim() const {
+    // Geometry mode serves the injected ray, so this mapper's variable is not
+    // drawn from the density it reports; the caller has to divide it back out.
+    if(NDims() == 0 || !m_beam->IsFixed(*m_beam->BeamIDs().begin())) return std::nullopt;
+    return 0;
 }

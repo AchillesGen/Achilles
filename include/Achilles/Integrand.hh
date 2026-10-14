@@ -6,6 +6,8 @@
 #include "Achilles/PhaseSpaceBuilder.hh"
 #include "Achilles/Vegas.hh"
 
+#include <cmath>
+
 namespace achilles {
 
 template <typename T> struct Channel {
@@ -90,7 +92,20 @@ template <typename T> class Integrand {
             densities[i] = channels[i].mapping->GenerateWeight(point, rans);
             channels[i].rans = rans;
             double vw = channels[i].integrator.GenerateWeight(rans);
-            weight += wgts[i] * densities[i] / vw;
+            double density = densities[i] / vw;
+            // A dimension supplied from outside (geometry mode's injected beam
+            // energy) is not drawn from this channel's density, so it must not
+            // appear in it: divide out that dimension's mapper density and VEGAS
+            // jacobian, leaving the conditional density of the sampled ones.
+            // Each channel has its own grid, so this cannot be pulled out of the
+            // sum -- and a zero density there means the channel cannot reach the
+            // fixed value at all.
+            if(const auto dim = channels[i].mapping->FixedDim()) {
+                const double fixed = channels[i].mapping->FixedDensity();
+                if(!(fixed > 0) || !std::isfinite(fixed)) continue;
+                density *= channels[i].integrator.Jacobian(*dim, rans[*dim]) / fixed;
+            }
+            weight += wgts[i] * density;
         }
         return 1.0 / weight;
     }
