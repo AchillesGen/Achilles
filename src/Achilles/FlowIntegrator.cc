@@ -48,6 +48,12 @@ FlowIntegrator::GenerateWeights(Integrand<FourVector> &func,
     return this->GenerateWeights<FourVector>(func, points);
 }
 
+achilles::WeightedPoints FlowIntegrator::GenerateWeightedPoints(Integrand<FourVector> &func,
+                                                                size_t n) {
+    auto [points, weights] = this->GenerateWeightedPoints<FourVector>(func, n);
+    return {std::move(points), std::move(weights)};
+}
+
 void FlowIntegrator::SaveState(std::ostream &os) const {
     const auto default_precision{os.precision()};
     os << std::setprecision(std::numeric_limits<double>::max_digits10 + 1);

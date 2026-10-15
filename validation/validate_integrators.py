@@ -168,6 +168,13 @@ CONFIGS = {
     "spline": {"kind": "Flow",
                "params": {"Class": "SplineFlow", "hidden": 32, "blocks": 4, "bins": 8, "Accuracy": "1.0e-3"},
                "needs": ["torch", "normflows"], "runner": "python"},
+    "hypercube": {"kind": "Flow",
+                  "params": {"Class": "HypercubeSplineFlow", "hidden": 32, "bins": 16, "Accuracy": "1.0e-3"},
+                  "needs": ["torch", "normflows"], "runner": "python"},
+    "vegas_spline": {"kind": "Flow",
+                     "params": {"Class": "VegasSplineFlow", "hidden": 32, "bins": 16, "vegas_iterations": 10,
+                                "Accuracy": "1.0e-3"},
+                     "needs": ["torch", "normflows"], "runner": "python"},
     "zuko_nsf": {"kind": "Flow",
                  "params": {"Class": "ZukoFlow", "flow": "NSF", "hidden": 32, "transforms": 3, "Accuracy": "1.0e-3"},
                  "needs": ["torch", "zuko"], "runner": "python"},
@@ -176,6 +183,10 @@ CONFIGS = {
     "flowmatching": {"kind": "Flow",
                      "params": {"Class": "FlowMatchingFlow", "hidden": 32, "step_size": 0.1, "Accuracy": "1.0e-3"},
                      "needs": ["torch", "flow_matching"], "runner": "python"},
+    "vegas_flowmatching": {"kind": "Flow",
+                           "params": {"Class": "VegasFlowMatchingFlow", "hidden": 64,
+                                      "vegas_iterations": 10, "Accuracy": "1.0e-3"},
+                           "needs": ["torch", "flow_matching", "scipy"], "runner": "python"},
 }
 
 

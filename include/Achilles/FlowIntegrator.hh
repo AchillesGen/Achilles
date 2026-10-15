@@ -33,6 +33,9 @@ class FlowIntegrator : public Integrator {
     template <typename T> std::vector<std::vector<T>> GeneratePoints(Integrand<T> &, size_t n);
     template <typename T>
     std::vector<double> GenerateWeights(Integrand<T> &, const std::vector<std::vector<T>> &points);
+    template <typename T>
+    std::pair<std::vector<std::vector<T>>, std::vector<double>>
+    GenerateWeightedPoints(Integrand<T> &, size_t n);
 
     // Integrator interface (runtime-polymorphic, FourVector only).
     void operator()(Integrand<FourVector> &) override;
@@ -44,6 +47,7 @@ class FlowIntegrator : public Integrator {
     std::vector<double>
     GenerateWeights(Integrand<FourVector> &,
                     const std::vector<std::vector<FourVector>> &points) override;
+    WeightedPoints GenerateWeightedPoints(Integrand<FourVector> &, size_t n) override;
     void SetRtol(double rtol) override { m_rtol = rtol; }
     void SetNCalls(size_t ncalls) override { m_ncalls = ncalls; }
 
@@ -63,9 +67,14 @@ class FlowIntegrator : public Integrator {
     void SetWeightsPath(std::string path) { m_weights_path = std::move(path); }
 
   private:
+    // With `sampled`, the flow density of each point's own channel is taken from the batch
+    // instead of being queried again.
     template <typename T>
     std::vector<double> MultiChannelWeights(Integrand<T> &func,
-                                            const std::vector<std::vector<T>> &points);
+                                            const std::vector<std::vector<T>> &points,
+                                            const FlowSampleBatch *sampled = nullptr);
+    template <typename T>
+    std::vector<std::vector<T>> MapPoints(Integrand<T> &func, const FlowSampleBatch &batch);
     void PrintIteration() const;
 
     size_t m_ndims{};
@@ -93,17 +102,14 @@ std::unique_ptr<Integrator> MakeFlowIntegrator(const Settings &config, size_t nd
                                                size_t nchannels, UnitsEnum unit);
 
 template <typename T>
-std::vector<double>
-achilles::FlowIntegrator::MultiChannelWeights(Integrand<T> &func,
-                                              const std::vector<std::vector<T>> &points) {
+std::vector<double> achilles::FlowIntegrator::MultiChannelWeights(
+    Integrand<T> &func, const std::vector<std::vector<T>> &points, const FlowSampleBatch *sampled) {
     const size_t nch = func.NChannels();
     const size_t np = points.size();
 
-    std::vector<size_t> channels;
+    std::vector<size_t> channels, query_index;
     std::vector<std::vector<double>> rans;
-    std::vector<double> map_density(np * nch);
-    channels.reserve(np * nch);
-    rans.reserve(np * nch);
+    std::vector<double> map_density(np * nch), flow_density(np * nch);
 
     // For each point, inverse-map it under every channel: this yields the channel's
     // mapper density p_map_i(x) and the rans the flow density is evaluated on.
@@ -111,12 +117,20 @@ achilles::FlowIntegrator::MultiChannelWeights(Integrand<T> &func,
         for(size_t i = 0; i < nch; ++i) {
             std::vector<double> r;
             map_density[k * nch + i] = func.GetChannel(i).mapping->GenerateWeight(points[k], r);
+            if(sampled && sampled->channels[k] == i) {
+                flow_density[k * nch + i] = sampled->density[k];
+                continue;
+            }
+            query_index.push_back(k * nch + i);
             channels.push_back(i);
             rans.push_back(std::move(r));
         }
     }
 
-    const auto flow_density = m_sampler->Density(channels, rans);
+    if(!query_index.empty()) {
+        const auto queried = m_sampler->Density(channels, rans);
+        for(size_t q = 0; q < query_index.size(); ++q) flow_density[query_index[q]] = queried[q];
+    }
 
     std::vector<double> weights(np);
     for(size_t k = 0; k < np; ++k) {
@@ -129,12 +143,26 @@ achilles::FlowIntegrator::MultiChannelWeights(Integrand<T> &func,
 }
 
 template <typename T>
-std::vector<std::vector<T>> achilles::FlowIntegrator::GeneratePoints(Integrand<T> &func, size_t n) {
-    auto batch = m_sampler->Sample(n);
-    std::vector<std::vector<T>> points(n, std::vector<T>(m_ndims));
-    for(size_t i = 0; i < n; ++i)
+std::vector<std::vector<T>> achilles::FlowIntegrator::MapPoints(Integrand<T> &func,
+                                                                const FlowSampleBatch &batch) {
+    std::vector<std::vector<T>> points(batch.channels.size(), std::vector<T>(m_ndims));
+    for(size_t i = 0; i < points.size(); ++i)
         func.GetChannel(batch.channels[i]).mapping->GeneratePoint(points[i], batch.rans[i]);
     return points;
+}
+
+template <typename T>
+std::vector<std::vector<T>> achilles::FlowIntegrator::GeneratePoints(Integrand<T> &func, size_t n) {
+    return MapPoints(func, m_sampler->Sample(n));
+}
+
+template <typename T>
+std::pair<std::vector<std::vector<T>>, std::vector<double>>
+achilles::FlowIntegrator::GenerateWeightedPoints(Integrand<T> &func, size_t n) {
+    const auto batch = m_sampler->Sample(n);
+    auto points = MapPoints(func, batch);
+    auto weights = MultiChannelWeights(func, points, &batch);
+    return {std::move(points), std::move(weights)};
 }
 
 template <typename T>
@@ -147,13 +175,8 @@ achilles::FlowIntegrator::GenerateWeights(Integrand<T> &func,
 template <typename T> void achilles::FlowIntegrator::operator()(Integrand<T> &func) {
     // Draw the whole iteration in one flow forward pass.
     auto batch = m_sampler->Sample(m_ncalls);
-
-    std::vector<std::vector<T>> points(m_ncalls, std::vector<T>(m_ndims));
-    for(size_t i = 0; i < m_ncalls; ++i)
-        func.GetChannel(batch.channels[i]).mapping->GeneratePoint(points[i], batch.rans[i]);
-
-    // Batched multichannel phase-space weights (one Density call).
-    const auto ps_wgts = MultiChannelWeights(func, points);
+    const auto points = MapPoints(func, batch);
+    const auto ps_wgts = MultiChannelWeights(func, points, &batch);
 
     StatsData results;
     std::vector<double> values(m_ncalls);

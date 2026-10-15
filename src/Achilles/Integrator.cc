@@ -15,12 +15,19 @@
 using achilles::Integrator;
 using achilles::IntegratorType;
 
+achilles::WeightedPoints achilles::Integrator::GenerateWeightedPoints(Integrand<FourVector> &func,
+                                                                      size_t n) {
+    WeightedPoints batch;
+    batch.points = GeneratePoints(func, n);
+    batch.weights = GenerateWeights(func, batch.points);
+    return batch;
+}
+
 void achilles::Integrator::SampleForMaxWeight(Integrand<FourVector> &integrand, size_t nsamples) {
     const size_t batch_size = BatchSize();
     for(size_t drawn = 0; drawn < nsamples; drawn += batch_size) {
         const size_t n = std::min(batch_size, nsamples - drawn);
-        auto points = GeneratePoints(integrand, n);
-        auto weights = GenerateWeights(integrand, points);
+        auto [points, weights] = GenerateWeightedPoints(integrand, n);
         for(size_t i = 0; i < points.size(); ++i)
             if(weights[i] != 0) integrand(points[i], weights[i]);
     }

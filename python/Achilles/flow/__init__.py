@@ -165,6 +165,14 @@ def __getattr__(name):
         from .normflow import SplineFlow
 
         return SplineFlow
+    if name == "HypercubeSplineFlow":
+        from .hypercube import HypercubeSplineFlow
+
+        return HypercubeSplineFlow
+    if name == "VegasSplineFlow":
+        from .hypercube import VegasSplineFlow
+
+        return VegasSplineFlow
     if name == "ZukoFlow":
         from .zukoflow import ZukoFlow
 
@@ -173,6 +181,10 @@ def __getattr__(name):
         from .flowmatching import FlowMatchingFlow
 
         return FlowMatchingFlow
+    if name == "VegasFlowMatchingFlow":
+        from .flowmatching import VegasFlowMatchingFlow
+
+        return VegasFlowMatchingFlow
     if name == "OnnxFlow":
         from .onnxflow import OnnxFlow
 
@@ -185,8 +197,11 @@ __all__ = [
     "UniformFlow",
     "NormFlow",
     "SplineFlow",
+    "HypercubeSplineFlow",
+    "VegasSplineFlow",
     "ZukoFlow",
     "FlowMatchingFlow",
+    "VegasFlowMatchingFlow",
     "OnnxFlow",
     "load_flow",
 ]

@@ -50,6 +50,9 @@ class NormFlow(ChannelFlow):
         z, _ = self.cores[channel].sample(n)
         return z
 
+    def _core_sample_and_log_prob(self, channel, n):
+        return self.cores[channel].sample(n)
+
     def _core_log_prob(self, channel, z):
         return self.cores[channel].log_prob(z)
 
@@ -89,6 +92,9 @@ class SplineFlow(ChannelFlow):
     def _core_sample(self, channel, n):
         z, _ = self.cores[channel].sample(n)
         return z
+
+    def _core_sample_and_log_prob(self, channel, n):
+        return self.cores[channel].sample(n)
 
     def _core_log_prob(self, channel, z):
         return self.cores[channel].log_prob(z)

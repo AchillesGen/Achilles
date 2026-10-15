@@ -17,6 +17,9 @@ an identity-initialized flow gives ``rans = Φ(z)`` with ``z ~ N(0, 1)``, i.e. *
 (and refines) the analytic mapping rather than wasting training relearning it. A sigmoid
 would instead peak ``rans`` at 0.5 and force the flow to unlearn that distortion first.
 
+Backends whose core already lives on the unit cube override the squash hooks
+(:meth:`latent`, :meth:`unit_cube`, :meth:`_squash_log_det`).
+
 A subclass only implements the continuous core via :meth:`_build_cores`,
 :meth:`_core_sample` and :meth:`_core_log_prob`. Backends whose training objective is not
 likelihood-based (e.g. flow matching) override :meth:`train`.
@@ -64,9 +67,12 @@ class ChannelFlow(Flow):
     # y-axis label for plot_loss; backends with a different objective override it.
     loss_ylabel = "importance-weighted NLL loss"
 
-    def __init__(self, ndims, nchannels, lr=1.0e-3, channel_select="learned", **params):
+    def __init__(self, ndims, nchannels, lr=1.0e-3, lr_decay=1.0, loss_power=1.0,
+                 channel_select="learned", threads=1, **params):
         torch = require_torch()
         self.torch = torch
+        # Batches are small, so intra-op threading costs more in synchronization than it saves.
+        torch.set_num_threads(int(threads))
         self.ndims = int(ndims)
         self.nchannels = int(nchannels)
         self.cores = self._build_cores(**params)  # one core per channel, or one conditional core
@@ -84,6 +90,10 @@ class ChannelFlow(Flow):
         if self._learn_channels:
             opt_params.append(self.logits)
         self.optimizer = torch.optim.Adam(opt_params, lr=float(lr))
+        # lr is multiplied by lr_decay after every training step.
+        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, float(lr_decay))
+        # Samples are weighted by |f/g|^loss_power: 1 is the KL (NLL) loss, 2 the variance loss.
+        self.loss_power = float(loss_power)
         self.loss = []
 
     # -- subclass hooks --------------------------------------------------------------
@@ -99,6 +109,11 @@ class ChannelFlow(Flow):
         """Return ``log q(z)`` (tensor ``[n]``) under the core."""
         raise NotImplementedError
 
+    def _core_sample_and_log_prob(self, channel, n):
+        """Return ``(z, log q(z))``; override when sampling already yields the density."""
+        z = self._core_sample(channel, n)
+        return z, self._core_log_prob(channel, z)
+
     # One-hot channel context, for backends that condition a single shared core on the
     # channel rather than keeping one core per channel.
     def _channel_onehot(self, channel, n):
@@ -111,19 +126,21 @@ class ChannelFlow(Flow):
     def _log_density(self, channel, rans_t):
         torch = self.torch
         rans_t = rans_t.clamp(_EPS, 1.0 - _EPS)
-        z = self.latent(rans_t)  # probit: z = Phi^{-1}(rans), matches the Gaussian base
+        z = self.latent(channel, rans_t)
         log_q = self._core_log_prob(channel, z)
-        # Change of variables for rans = Phi(z): log|dz/d rans| = -log phi(z).
-        log_phi = torch.sum(-0.5 * z * z - 0.5 * math.log(2.0 * math.pi), dim=1)
         log_p_channel = torch.log_softmax(self.logits, dim=0)[channel]
-        return log_p_channel + log_q - log_phi
+        return log_p_channel + log_q - self._squash_log_det(channel, z)
 
     # Latent <-> unit-cube transforms (standard-normal CDF and its inverse).
-    def latent(self, rans_t):
+    def latent(self, channel, rans_t):
         return self.torch.special.ndtri(rans_t.clamp(_EPS, 1.0 - _EPS))
 
-    def unit_cube(self, z):
+    def unit_cube(self, channel, z):
         return self.torch.special.ndtr(z).clamp(_EPS, 1.0 - _EPS)
+
+    def _squash_log_det(self, channel, z):
+        # log|d rans/dz| = log phi(z) for rans = Phi(z).
+        return self.torch.sum(-0.5 * z * z - 0.5 * math.log(2.0 * math.pi), dim=1)
 
     # -- protocol --------------------------------------------------------------------
     def sample(self, n):
@@ -138,10 +155,10 @@ class ChannelFlow(Flow):
                 idx = (channels == c).nonzero(as_tuple=True)[0]
                 if idx.numel() == 0:
                     continue
-                z = self._core_sample(c, int(idx.numel()))
-                r = self.unit_cube(z)
-                rans[idx] = r
-                density[idx] = torch.exp(self._log_density(c, r))
+                z, log_q = self._core_sample_and_log_prob(c, int(idx.numel()))
+                rans[idx] = self.unit_cube(c, z)
+                log_p_channel = torch.log_softmax(self.logits, dim=0)[c]
+                density[idx] = torch.exp(log_p_channel + log_q - self._squash_log_det(c, z))
         return (
             channels.cpu().numpy().astype(np.int64),
             rans.cpu().numpy().astype(np.float64),
@@ -179,7 +196,7 @@ class ChannelFlow(Flow):
             log_q[idx] = self._log_density(c, rans_t[idx].clamp(_EPS, 1.0 - _EPS))
         loss = -(weights * log_q).sum()
         loss.backward()
-        self.optimizer.step()
+        self._optimizer_step()
         self.loss.append(loss.detach().cpu().item())
         return float(loss.detach().cpu().item())
 
@@ -216,24 +233,32 @@ class ChannelFlow(Flow):
         plt.close(fig)
 
     # -- helpers ---------------------------------------------------------------------
+    def _optimizer_step(self):
+        self.optimizer.step()
+        self.scheduler.step()
+
     def _normalized_weights(self, values):
-        torch = self.torch
-        weights = torch.as_tensor(np.asarray(values, dtype=np.float64), dtype=torch.float32).abs()
+        weights = np.abs(np.asarray(values, dtype=np.float64)) ** self.loss_power
         norm = weights.sum()
-        if norm <= 0:
+        if not norm > 0:
             return None
-        return (weights / norm).detach()
+        return self.torch.as_tensor(weights / norm, dtype=self.torch.float32)
+
+    def _state(self):
+        return {"cores": self.cores.state_dict(), "logits": self.logits.detach()}
+
+    def _set_state(self, state):
+        self.cores.load_state_dict(state["cores"])
+        with self.torch.no_grad():
+            self.logits.copy_(state["logits"])
 
     def save(self, path):
-        self.torch.save({"cores": self.cores.state_dict(), "logits": self.logits.detach()}, path)
+        self.torch.save(self._state(), path)
 
     def load(self, path):
-        torch = self.torch
         try:
-            state = torch.load(path, map_location="cpu")
+            state = self.torch.load(path, map_location="cpu")
         except (FileNotFoundError, RuntimeError):
             return False
-        self.cores.load_state_dict(state["cores"])
-        with torch.no_grad():
-            self.logits.copy_(state["logits"])
+        self._set_state(state)
         return True

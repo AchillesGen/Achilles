@@ -66,6 +66,8 @@ class MockFlowSampler : public achilles::FlowSampler {
     }
     std::vector<double> Density(const std::vector<size_t> &channels,
                                 const std::vector<std::vector<double>> &) override {
+        ++m_density_calls;
+        m_density_queries += channels.size();
         return std::vector<double>(channels.size(), m_density);
     }
     double Train(const std::vector<size_t> &, const std::vector<std::vector<double>> &,
@@ -78,6 +80,8 @@ class MockFlowSampler : public achilles::FlowSampler {
 
     size_t SampleCalls() const { return m_sample_calls; }
     size_t TrainCalls() const { return m_train_calls; }
+    size_t DensityCalls() const { return m_density_calls; }
+    size_t DensityQueries() const { return m_density_queries; }
 
   private:
     size_t m_ndims;
@@ -85,11 +89,13 @@ class MockFlowSampler : public achilles::FlowSampler {
     std::vector<double> m_weights;
     size_t m_sample_calls{};
     size_t m_train_calls{};
+    size_t m_density_calls{};
+    size_t m_density_queries{};
 };
 
-static achilles::Integrand<double> MakeIntegrand() {
+static achilles::Integrand<double> MakeIntegrand(size_t nchannels = 2) {
     achilles::Integrand<double> integrand(test_func_exp);
-    for(size_t i = 0; i < 2; ++i) {
+    for(size_t i = 0; i < nchannels; ++i) {
         achilles::Channel<double> channel;
         channel.mapping = std::make_unique<DoubleMapper>(i);
         achilles::AdaptiveMap map(channel.mapping->NDims(), 2);
@@ -137,6 +143,25 @@ TEST_CASE("FlowIntegrator GeneratePoints/GenerateWeights are batched and finite"
         CHECK(points[i].size() == 1);
         CHECK(std::isfinite(weights[i]));
         CHECK(weights[i] > 0);
+    }
+}
+
+TEST_CASE("FlowIntegrator reuses the sampled density for the sampled channel", "[flow]") {
+    constexpr size_t n = 256;
+    for(size_t nchannels : {1, 2}) {
+        auto integrand = MakeIntegrand(nchannels);
+        auto sampler = std::make_unique<MockFlowSampler>(1, nchannels);
+        auto *sampler_ptr = sampler.get();
+        achilles::FlowIntegrator flow(1, nchannels, std::move(sampler));
+
+        auto [points, weights] = flow.GenerateWeightedPoints(integrand, n);
+        // Only the other channels are queried; a single channel needs no Density call.
+        CHECK(sampler_ptr->DensityQueries() == n * (nchannels - 1));
+        CHECK(sampler_ptr->DensityCalls() == (nchannels > 1 ? 1 : 0));
+
+        const auto expected = flow.GenerateWeights(integrand, points);
+        REQUIRE(weights.size() == n);
+        for(size_t i = 0; i < n; ++i) CHECK(weights[i] == Approx(expected[i]));
     }
 }
 

@@ -450,8 +450,7 @@ achilles::Event ProcessGroup::GenerateEvent() {
     // pass) and does not affect the statistics.
     if(m_sample_buffer.empty()) {
         const size_t n = m_integrator->BatchSize();
-        auto points = m_integrator->GeneratePoints(m_integrand, n);
-        auto weights = m_integrator->GenerateWeights(m_integrand, points);
+        auto [points, weights] = m_integrator->GenerateWeightedPoints(m_integrand, n);
         m_sample_buffer.reserve(points.size());
         for(size_t i = 0; i < points.size(); ++i)
             m_sample_buffer.emplace_back(std::move(points[i]), weights[i]);

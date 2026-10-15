@@ -11,8 +11,13 @@ Integrator:
     Accuracy: 1e-2
   # Flow:
   #   File: ""             # optional path to a user .py file defining the flow class
-  #   Class: NormFlow      # built-in: NormFlow (coupling), ZukoFlow (CNF/coupling),
-  #                        #           FlowMatchingFlow, UniformFlow, OnnxFlow
+  #   Class: NormFlow      # built-in: NormFlow (coupling), SplineFlow (RQS, Gaussian
+  #                        #           latent), HypercubeSplineFlow (RQS on the unit
+  #                        #           cube), VegasSplineFlow (VEGAS warm start, then
+  #                        #           HypercubeSplineFlow), ZukoFlow (CNF/coupling),
+  #                        #           FlowMatchingFlow, VegasFlowMatchingFlow (VEGAS
+  #                        #           warm start, then FlowMatchingFlow), UniformFlow,
+  #                        #           OnnxFlow
   #   Epochs: 1000         # maximum training iterations
   #   NIterations: 7       # minimum training iterations
   #   NCalls: 10000        # samples per training iteration
@@ -25,8 +30,26 @@ Integrator:
   #                             #   conditioned on the channel (ZukoFlow/FlowMatchingFlow)
   #   hidden: 64           # hidden units
   #   lr: 1.0e-3           # Adam learning rate
+  #   lr_decay: 1.0        # lr multiplier applied after every training step
+  #   loss_power: 1.0      # weight samples by |f/g|^p: 1 = KL loss, 2 = variance loss
+  #   threads: 1           # torch intra-op threads (torch backends)
   #   blocks: 4            # coupling blocks (NormFlow)
   #   flow: CNF            # zuko.flows class (ZukoFlow)
+  #   bins: 16             # spline bins (SplineFlow/HypercubeSplineFlow/VegasSplineFlow)
+  #   repeats: 1           # passes over the binary mask set (Hypercube/VegasSplineFlow)
+  #   res_blocks: 2        # residual blocks per conditioner (Hypercube/VegasSplineFlow)
+  #   vegas_iterations: 10 # VEGAS-only training calls before the flow (Vegas*Flow)
+  #   vegas_bins: 50       # VEGAS grid bins per dimension (Vegas*Flow)
+  #   alpha: 1.5           # VEGAS damping exponent (Vegas*Flow)
+  #   step_size: 0.05      # fixed ODE step (FlowMatchingFlow)
+  #   train_steps: 1       # CFM steps per training batch (FlowMatchingFlow)
+  #   zero_init: false     # start from the identity flow (FlowMatchingFlow)
+  #   ot_batch: 0          # minibatch OT coupling chunk size, 0 = off (FlowMatchingFlow)
+  #   buffer_size: 0       # replay buffer of past training points (FlowMatchingFlow)
+  #   time_freqs: 0        # Fourier time features (FlowMatchingFlow)
+  #   layers: 2            # hidden layers of the velocity net (FlowMatchingFlow)
+  #   # VegasFlowMatchingFlow defaults: zero_init, train_steps 10, ot_batch 256,
+  #   # buffer_size 50000, loss_power 1.5, lr_decay 0.999, step_size 0.25
 
 Unweighting:
   Name: Percentile

@@ -58,6 +58,11 @@ class ZukoFlow(ChannelFlow):
             return self.cores[0](self._channel_onehot(channel, n)).sample()
         return self.cores[channel]().sample((n,))
 
+    def _core_sample_and_log_prob(self, channel, n):
+        if self._conditional:
+            return self.cores[0](self._channel_onehot(channel, n)).rsample_and_log_prob()
+        return self.cores[channel]().rsample_and_log_prob((n,))
+
     def _core_log_prob(self, channel, z):
         if self._conditional:
             return self.cores[0](self._channel_onehot(channel, z.shape[0])).log_prob(z)

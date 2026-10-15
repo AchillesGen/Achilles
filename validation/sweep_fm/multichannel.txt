@@ -1,0 +1,9 @@
+start mc_qe_acc1.0e-3 load=2.13
+RESULT {"tag": "mc_qe_acc1.0e-3", "mode": "qe", "status": "OK", "mean": 0.00020602267560684774, "err": 2.9798268175173095e-07, "reason": null, "eff1": 0.18776749388501698, "relstd": 0.7912816408975041, "t_train": 114.0, "t_scan": 12.954, "t_gen": 11.111, "iter_err_med_last20": 0.26, "iters": 13, "us_per_trial": 111.11000000000001, "hours_100M": 16.472555742022145}
+start mc_qe_acc1.0e-2 load=2.57
+RESULT {"tag": "mc_qe_acc1.0e-2", "mode": "qe", "status": "OK", "mean": 0.00020536786959084362, "err": 2.974815309395874e-07, "reason": null, "eff1": 0.18245575759358704, "relstd": 0.7980847152118336, "t_train": 12.036, "t_scan": 12.945, "t_gen": 11.188, "iter_err_med_last20": 0.47, "iters": 7, "us_per_trial": 111.88000000000001, "hours_100M": 17.039987719183323}
+start mc_res_acc1.0e-3 load=2.58
+RESULT {"tag": "mc_res_acc1.0e-3", "mode": "res", "status": "OK", "mean": 0.00012159601786372522, "err": 2.3289841073737977e-07, "reason": null, "eff1": 0.07945910681741351, "relstd": 1.3966929717518561, "t_train": 1528.0, "t_scan": 121.0, "t_gen": 25.937, "iter_err_med_last20": 0.32999999999999996, "iters": 14, "us_per_trial": 259.37, "hours_100M": 91.13013218457831}
+start mc_res_acc1.0e-2 load=2.20
+RESULT {"tag": "mc_res_acc1.0e-2", "mode": "res", "status": "OK", "mean": 0.0001221827951706562, "err": 2.3739826176647759e-07, "reason": null, "eff1": 0.08030318023667944, "relstd": 1.349565708623483, "t_train": 111.0, "t_scan": 122.0, "t_gen": 24.82, "iter_err_med_last20": 0.79, "iters": 7, "us_per_trial": 248.20000000000002, "hours_100M": 85.91990783410318}
+MC_DONE

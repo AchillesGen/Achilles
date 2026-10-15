@@ -19,6 +19,11 @@ template <typename T> class Integrand;
 // backend can verify it is reconstructing the correct cache.
 enum class IntegratorType { MultiChannel, Flow };
 
+struct WeightedPoints {
+    std::vector<std::vector<FourVector>> points;
+    std::vector<double> weights;
+};
+
 std::string_view ToString(IntegratorType);
 IntegratorType IntegratorTypeFromString(std::string_view);
 
@@ -43,6 +48,8 @@ class Integrator {
     virtual std::vector<double>
     GenerateWeights(Integrand<FourVector> &,
                     const std::vector<std::vector<FourVector>> &points) = 0;
+    // Both at once, letting a backend reuse what it computed while sampling.
+    virtual WeightedPoints GenerateWeightedPoints(Integrand<FourVector> &, size_t n);
 
     // Draws nsamples points from the current (fixed) sampling distribution, in batches of
     // BatchSize(), and evaluates the integrand on each nonzero-weight point.
