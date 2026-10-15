@@ -231,6 +231,7 @@ void achilles::EventGen::Initialize() {
     spdlog::info("Group weights: {}",
                  fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "));
     spdlog::info("Finished optimization");
+    writer->SetWeightNormalization(m_max_weight);
 }
 
 void achilles::EventGen::GenerateEvents(bool batchMode) {

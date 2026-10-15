@@ -24,12 +24,14 @@ class NuHepMCWriter : public EventWriter {
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
     void Write(const Event &) override;
+    void SetWeightNormalization(double norm) override { m_weight_norm = norm; }
 
   private:
     std::shared_ptr<HepMC3::Writer> file;
     std::string outfilename;
     achilles::StatsData results;
     std::vector<achilles::StatsData> variation_results;
+    double m_weight_norm{1};
     static constexpr std::array<int, 3> version{0, 1, 0};
 };
 

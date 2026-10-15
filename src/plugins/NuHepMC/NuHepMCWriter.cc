@@ -297,10 +297,14 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     visitor.evt.set_cross_section(cross_section);
 
     NuHepMC::add_attribute(visitor.evt, "Flux", event.Flux());
-    visitor.evt.weight("CV") = event.Weight() * nb_to_pb;
+    // Event weights are relative to the unweighting maximum, so that the CV weight of unweighted
+    // events is 1 (or slightly above for events exceeding the maximum). The cross section of each
+    // weight is carried by GenCrossSection, so a histogram bin is xsec * sum_bin(w) / sum_all(w).
+    const double cv = event.Weight() / m_weight_norm;
+    visitor.evt.weight("CV") = cv;
     for(size_t i = 0; i < m_variation_names.size(); ++i) {
         const double ratio = i < ratios.size() ? ratios[i] : 1;
-        visitor.evt.weight(m_variation_names[i]) = event.Weight() * ratio * nb_to_pb;
+        visitor.evt.weight(m_variation_names[i]) = cv * ratio;
     }
 
     // TODO: once we have a detector to simulate interaction location

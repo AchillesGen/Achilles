@@ -33,6 +33,9 @@ class EventWriter {
 
     virtual void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) = 0;
     virtual void Write(const Event &) = 0;
+    /// Physical weight of an accepted event with unit unweighted weight. Writers that support it
+    /// store event weights relative to this, so that unweighted events have weights around 1
+    virtual void SetWeightNormalization(double) {}
     /// Variation groups and their weights, must be set before writing the header
     void SetVariations(std::vector<VariationGroupInfo> info) {
         m_variation_info = std::move(info);
