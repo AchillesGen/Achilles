@@ -305,7 +305,8 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
         // Variation weights are only computed for accepted events during generation. The
         // event still carries the phase space weight here, as required by the backend
         if(accepted != 0 && m_variations) {
-            event.VariationRatios() = m_variations->Evaluate({event, process, *m_backend, weight});
+            event.VariationRatios() =
+                m_variations->Evaluate({event, process, *m_backend, weight, m_beam.get()});
         }
         event.Weight() = accepted;
     }

@@ -15,6 +15,7 @@
 
 namespace achilles {
 
+class Beam;
 class Event;
 class FormFactor;
 class NuclearModel;
@@ -30,6 +31,7 @@ struct VariationContext {
     const Process &process;
     XSecBackend &backend;
     double nominal;
+    const Beam *beam{nullptr};
 };
 
 /// A single alternative weight. Implementations return w_var / w_nominal.
@@ -67,13 +69,17 @@ class RecomputeVariation : public Variation {
 
 /// Rebuild the nucleon form factors from the nominal configuration of each model with
 /// edits applied: overrides merged in (parameters or functional forms), a complete
-/// replacement configuration, and/or a single parameter set to a value.
+/// replacement configuration, and/or parameters set to values or shifted from their nominal.
 class FormFactorVariation : public RecomputeVariation {
   public:
+    struct ParameterEdit {
+        std::string path{};
+        double value{};
+        bool shift{false}; // add value to the parameter of each model instead of replacing it
+    };
     struct Edit {
         YAML::Node overrides{}, replacement{};
-        std::string parameter{};
-        double value{};
+        std::vector<ParameterEdit> parameters{};
     };
     explicit FormFactorVariation(Edit edit) : m_edit{std::move(edit)} {}
     void Initialize(const NuclearModel &) override;
@@ -109,6 +115,27 @@ class SpectralFunctionVariation : public Variation {
 
   private:
     std::shared_ptr<SpectralFunction> m_proton, m_neutron;
+};
+
+/// Scale the incoming flux by a factor per energy bin. Since the beam energy is sampled flat and
+/// the event weight carries phi(E) / Phi, the ratio is exactly s(E) / <s>, where <s> is the flux
+/// weighted average of the scale factors (flux averaged cross sections), or s(E) when the
+/// normalisation of the flux is varied as well. Events outside the bins are not scaled.
+class FluxVariation : public Variation {
+  public:
+    FluxVariation(std::vector<double> edges, std::vector<double> scales, int pid, bool normalize)
+        : m_edges{std::move(edges)}, m_scales{std::move(scales)}, m_pid{pid},
+          m_normalize{normalize} {}
+    double Ratio(const VariationContext &) override;
+
+  private:
+    double Scale(double energy) const;
+    double Normalization(const Beam &, int pid);
+
+    std::vector<double> m_edges, m_scales;
+    int m_pid; // 0 applies to all beams
+    bool m_normalize;
+    std::map<std::pair<const Beam *, int>, double> m_norms;
 };
 
 /// Uncertainty band from the central value and the member values of a group, for any
@@ -232,6 +259,8 @@ struct VariationGroupInfo {
     std::vector<std::string> member_labels;
     std::vector<double> member_values; // parameter values, empty for alternatives
     std::string parameter{};
+    std::vector<std::string> parameters{}; // for groups varying several parameters together
+    std::vector<std::pair<std::string, std::vector<double>>> vectors{}; // e.g. eigen decomposition
 };
 
 /// One entry of the 'Variations' block: a central value and its members.
@@ -262,8 +291,11 @@ class VariationGroup {
     /// Read member values from 'Values', 'Scan: {Min, Max, Steps}' or 'MinMax'.
     /// Returns (label, value) pairs and sets the default combination accordingly
     std::vector<std::pair<std::string, double>> ParameterValues(const YAML::Node &);
-    void SetupCombination(const YAML::Node &);
+    void SetupCombination(const YAML::Node &, double default_scale = 1);
+    void SetDefaultCombination(std::string type) { m_default_combination = std::move(type); }
     std::string m_parameter{};
+    std::vector<std::string> m_parameters{};
+    std::vector<std::pair<std::string, std::vector<double>>> m_info_vectors{};
 
   private:
     std::string m_name;
@@ -353,6 +385,123 @@ class SpectralFunctionGroup : public VariationGroup,
         return std::make_unique<SpectralFunctionGroup>(node);
     }
     static std::string Name() { return "SpectralFunction"; }
+    static void ExpandShorthand(const YAML::Node &, YAML::Node &);
+};
+
+using Matrix = std::vector<std::vector<double>>;
+
+/// Eigen decomposition of a symmetric matrix (Jacobi rotations). Eigenvalues are sorted in
+/// decreasing order and vectors[k] is the normalised eigenvector of values[k], with its
+/// largest component positive.
+struct EigenSystem {
+    std::vector<double> values;
+    Matrix vectors;
+};
+EigenSystem SymmetricEigen(Matrix matrix);
+
+/// Covariance of n parameters from exactly one of 'Covariance', 'Correlation' with
+/// 'Uncertainties', 'Uncertainties' alone (uncorrelated) or 'Hessian' (inverse covariance).
+/// Entries may also be read from a YAML 'File'; keys in the node take precedence.
+Matrix ParseCovariance(const YAML::Node &spec, size_t n);
+
+/// Shifts +-nsigma * sqrt(lambda_k) * v_k along the eigenvectors of the covariance, keeping
+/// directions with lambda_k > tolerance * lambda_max (at most 'keep' of them if keep > 0).
+struct EigenShifts {
+    std::vector<double> sigmas; // sqrt(lambda_k)
+    Matrix directions;          // v_k
+};
+EigenShifts CovarianceEigenShifts(const Matrix &covariance, double tolerance, size_t keep = 0);
+
+/// What a covariance group varies: maps a shift of its parameter vector to a variation.
+class CovarianceTarget {
+  public:
+    CovarianceTarget() = default;
+    CovarianceTarget(const CovarianceTarget &) = delete;
+    CovarianceTarget &operator=(const CovarianceTarget &) = delete;
+    virtual ~CovarianceTarget() = default;
+
+    virtual std::vector<std::string> Parameters() const = 0;
+    size_t Dimension() const { return Parameters().size(); }
+    /// The central value (the generation settings unless the target defines its own)
+    virtual std::unique_ptr<Variation> Central() const;
+    virtual std::unique_ptr<Variation> Shifted(const std::vector<double> &delta) const = 0;
+
+    static std::string Name() { return "Covariance Target"; }
+};
+
+template <typename Derived>
+using RegistrableCovarianceTarget = Registrable<CovarianceTarget, Derived, const YAML::Node &>;
+using CovarianceTargetFactory = Factory<CovarianceTarget, const YAML::Node &>;
+
+/// Form factor parameters, e.g. z-expansion coefficients. Shifts are applied to each model's
+/// nominal values, or to 'Central' if given:
+///   FormFactor: [AxialZExpansion/CC Params/1, AxialZExpansion/CC Params/2]
+///   FormFactor: {Parameters: [...], Central: [...]}
+class FormFactorTarget : public CovarianceTarget, RegistrableCovarianceTarget<FormFactorTarget> {
+  public:
+    explicit FormFactorTarget(const YAML::Node &);
+    std::vector<std::string> Parameters() const override { return m_parameters; }
+    std::unique_ptr<Variation> Central() const override;
+    std::unique_ptr<Variation> Shifted(const std::vector<double> &) const override;
+    static std::unique_ptr<CovarianceTarget> Construct(const YAML::Node &node) {
+        return std::make_unique<FormFactorTarget>(node);
+    }
+    static std::string Name() { return "FormFactor"; }
+
+  private:
+    std::vector<std::string> m_parameters;
+    std::vector<double> m_central;
+};
+
+/// Relative flux scale factors in energy bins [MeV], with central value 1:
+///   Flux: {Bins: [0, 500, 1000, ...], PID: 14, Normalize: true}
+class FluxTarget : public CovarianceTarget, RegistrableCovarianceTarget<FluxTarget> {
+  public:
+    explicit FluxTarget(const YAML::Node &);
+    std::vector<std::string> Parameters() const override;
+    std::unique_ptr<Variation> Shifted(const std::vector<double> &) const override;
+    static std::unique_ptr<CovarianceTarget> Construct(const YAML::Node &node) {
+        return std::make_unique<FluxTarget>(node);
+    }
+    static std::string Name() { return "Flux"; }
+
+  private:
+    std::vector<double> m_edges;
+    int m_pid{0};
+    bool m_normalize{true};
+};
+
+/// Correlated parameters with a covariance matrix. Shorthand:
+///
+///   Covariance:
+///     ZExp:
+///       FormFactor: [AxialZExpansion/CC Params/1, AxialZExpansion/CC Params/2]
+///       Uncertainties: [0.1, 0.2]
+///       Correlation: [[1, -0.5], [-0.5, 1]]
+///     Flux:
+///       Flux: {Bins: [0, 500, 1000, 2000], PID: 14}
+///       File: flux_covariance.yml    # e.g. holding 'Covariance: [[...]]'
+///
+/// The covariance is diagonalised and each
+/// eigenvector is shifted up and down by NSigma (default 1) standard deviations, giving weights
+/// '<group>:ev<k>+' and '<group>:ev<k>-'. The default band is the asymmetric Hessian one,
+/// rescaled to one standard deviation.
+///
+///   - Name: ZExp
+///     Type: Covariance
+///     Target: {FormFactor: [AxialZExpansion/CC Params/1, AxialZExpansion/CC Params/2]}
+///     Covariance: [[...], [...]]     # or Correlation + Uncertainties, Uncertainties, Hessian
+///     NSigma: 1                      # optional
+///     Tolerance: 1e-10               # optional, drop eigenvalues below Tolerance * largest
+///     Keep: 0                        # optional, keep only the largest N directions
+class CovarianceGroup : public VariationGroup, RegistrableVariationGroup<CovarianceGroup> {
+  public:
+    explicit CovarianceGroup(const YAML::Node &);
+    std::string Type() const override { return Name(); }
+    static std::unique_ptr<VariationGroup> Construct(const YAML::Node &node) {
+        return std::make_unique<CovarianceGroup>(node);
+    }
+    static std::string Name() { return "Covariance"; }
     static void ExpandShorthand(const YAML::Node &, YAML::Node &);
 };
 

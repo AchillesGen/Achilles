@@ -9,6 +9,8 @@
 #include "Achilles/Process.hh"
 #include "Achilles/Version.hh"
 
+#include "fmt/ranges.h"
+
 #include "gzstream/gzstream.h"
 
 // this needs to go first as it enables dependency flags in the below headers
@@ -67,7 +69,14 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     NuHepMC::GR7::SetWeightNames(run, weight_names);
     variation_results.resize(m_variation_names.size());
 
-    // Describe how the variation weights are grouped and combined into uncertainty bands
+    // Describe how the variation weights are grouped and combined into uncertainty bands.
+    // NOTE: Numbers are written as strings, since HepMC3 writes vectors of doubles with only six
+    // decimals, and names are joined with "; " since vectors of strings are space separated
+    auto numbers = [](const std::vector<double> &values) {
+        std::vector<std::string> formatted;
+        for(const auto &value : values) formatted.push_back(fmt::format("{:.10g}", value));
+        return fmt::format("{}", fmt::join(formatted, " "));
+    };
     std::vector<std::string> group_names;
     for(const auto &group : m_variation_info) {
         group_names.push_back(group.name);
@@ -79,10 +88,15 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
             std::vector<std::string>(group.weight_names.begin() + 1, group.weight_names.end()));
         NuHepMC::add_attribute(run, prefix + ".Combination", group.combination);
         NuHepMC::add_attribute(run, prefix + ".CombinationScale", group.combination_scale);
-        if(!group.parameter.empty()) {
+        if(!group.parameter.empty())
             NuHepMC::add_attribute(run, prefix + ".Parameter", group.parameter);
-            NuHepMC::add_attribute(run, prefix + ".MemberValues", group.member_values);
-        }
+        if(!group.parameters.empty())
+            NuHepMC::add_attribute(run, prefix + ".Parameters",
+                                   fmt::format("{}", fmt::join(group.parameters, "; ")));
+        if(!group.member_values.empty())
+            NuHepMC::add_attribute(run, prefix + ".MemberValues", numbers(group.member_values));
+        for(const auto &[key, values] : group.vectors)
+            NuHepMC::add_attribute(run, prefix + "." + key, numbers(values));
     }
     if(!group_names.empty()) NuHepMC::add_attribute(run, "Achilles.Variations", group_names);
 

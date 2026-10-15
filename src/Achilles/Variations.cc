@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/Variations.hh"
+#include "Achilles/Beams.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/FormFactor.hh"
@@ -131,11 +132,20 @@ YAML::Node FormFactorVariation::EditedConfig(const YAML::Node &nominal, const Ed
     const bool only_parameter = edit.replacement.IsNull() && edit.overrides.IsNull();
     const YAML::Node base = YAML::Clone(edit.replacement.IsNull() ? nominal : edit.replacement);
     const YAML::Node merged = edit.overrides.IsNull() ? base : Merge(base, edit.overrides);
-    if(edit.parameter.empty()) return merged;
+    if(edit.parameters.empty()) return merged;
 
-    // Setting a parameter to the value used for generation leaves the model unchanged
-    if(only_parameter && Lookup(merged, edit.parameter).as<double>() == edit.value) return {};
-    return SetParameter(merged, edit.parameter, edit.value);
+    YAML::Node result = YAML::Clone(merged);
+    bool unchanged = only_parameter;
+    for(const auto &parameter : edit.parameters) {
+        const double nominal_value = Lookup(merged, parameter.path).as<double>();
+        const double value = parameter.shift ? nominal_value + parameter.value : parameter.value;
+        unchanged = unchanged && value == nominal_value;
+        // NOTE: reset rebinds the handle, assignment would write through to the node it refers to
+        result.reset(SetParameter(result, parameter.path, value));
+    }
+    // Setting parameters to the values used for generation leaves the model unchanged
+    if(unchanged) return {};
+    return result;
 }
 
 std::shared_ptr<achilles::FormFactor> FormFactorVariation::Alternate(const NuclearModel &model) {
@@ -340,8 +350,15 @@ VariationGroup::ParameterValues(const YAML::Node &node) {
     return result;
 }
 
-void VariationGroup::SetupCombination(const YAML::Node &node) {
-    m_combination = Combination::Build(node["Combination"], m_default_combination);
+void VariationGroup::SetupCombination(const YAML::Node &node, double default_scale) {
+    YAML::Node combination;
+    if(node["Combination"]) {
+        combination = YAML::Clone(node["Combination"]);
+    } else {
+        combination["Type"] = m_default_combination;
+        combination["Scale"] = default_scale;
+    }
+    m_combination = Combination::Build(combination, m_default_combination);
     m_combination->Validate(m_name, m_members.size());
 }
 
@@ -359,10 +376,12 @@ achilles::VariationGroupInfo VariationGroup::Info() const {
     info.combination_scale = m_combination->Scale();
     info.weight_names = WeightNames();
     info.member_labels = m_labels;
-    if(!m_parameter.empty()) {
+    if(!m_parameter.empty() || !m_parameters.empty()) {
         info.parameter = m_parameter;
+        info.parameters = m_parameters;
         info.member_values = m_values;
     }
+    info.vectors = m_info_vectors;
     return info;
 }
 
@@ -383,10 +402,10 @@ FormFactorVariation::Edit FormFactorGroup::ParseEdit(const YAML::Node &node) {
         edit.replacement =
             YAML::LoadFile(Filesystem::FindFile(node["File"].as<std::string>(), "Variations"));
     if(node["Parameter"]) {
-        edit.parameter = node["Parameter"].as<std::string>();
-        edit.value = node["Value"].as<double>();
+        edit.parameters.push_back(
+            {node["Parameter"].as<std::string>(), node["Value"].as<double>(), false});
     }
-    if(edit.overrides.IsNull() && edit.replacement.IsNull() && edit.parameter.empty())
+    if(edit.overrides.IsNull() && edit.replacement.IsNull() && edit.parameters.empty())
         throw std::runtime_error(
             "Variations: A form factor variation needs 'Overrides', 'File' or 'Parameter'");
     return edit;
@@ -401,8 +420,7 @@ FormFactorGroup::FormFactorGroup(const YAML::Node &node) : VariationGroup(node) 
         m_parameter = node["Parameter"].as<std::string>();
         auto edit_for = [&](double value) {
             FormFactorVariation::Edit edit;
-            edit.parameter = m_parameter;
-            edit.value = value;
+            edit.parameters.push_back({m_parameter, value, false});
             return std::make_unique<FormFactorVariation>(edit);
         };
         if(node["Central"]) SetCentral(edit_for(node["Central"].as<double>()));
@@ -434,6 +452,323 @@ SpectralFunctionGroup::SpectralFunctionGroup(const YAML::Node &node) : Variation
     for(const auto &alternative : node["Alternatives"])
         AddMember(alternative["Name"].as<std::string>(), build(alternative));
     SetupCombination(node);
+}
+
+// ---------------------------------------------------------------------------
+// Flux variations
+// ---------------------------------------------------------------------------
+
+double achilles::FluxVariation::Scale(double energy) const {
+    if(energy < m_edges.front() || energy >= m_edges.back()) return 1;
+    const auto bin = std::upper_bound(m_edges.begin(), m_edges.end(), energy) - m_edges.begin() - 1;
+    return m_scales[static_cast<size_t>(bin)];
+}
+
+double achilles::FluxVariation::Normalization(const Beam &beam, int pid) {
+    const auto key = std::make_pair(&beam, pid);
+    auto it = m_norms.find(key);
+    if(it != m_norms.end()) return it->second;
+
+    // Flux weighted average of the scale factors over the bins
+    static constexpr size_t npoints = 512;
+    double total = 0, scaled = 0;
+    for(size_t ibin = 0; ibin + 1 < m_edges.size(); ++ibin) {
+        const double lo = m_edges[ibin], hi = m_edges[ibin + 1];
+        const double step = (hi - lo) / static_cast<double>(npoints);
+        double integral = 0;
+        for(size_t i = 0; i <= npoints; ++i) {
+            const double energy = lo + step * static_cast<double>(i);
+            const double weight = (i == 0 || i == npoints) ? 0.5 : 1.0;
+            integral += weight * beam.EvaluateFlux(PID(pid), {energy, 0, 0, energy});
+        }
+        integral *= step;
+        total += integral;
+        scaled += m_scales[ibin] * integral;
+    }
+    const double norm = total > 0 ? scaled / total : 1;
+    m_norms[key] = norm;
+    return norm;
+}
+
+double achilles::FluxVariation::Ratio(const VariationContext &ctx) {
+    const auto pid = static_cast<int>(ctx.process.Info().m_leptonic.first.AsInt());
+    if(m_pid != 0 && pid != m_pid) return 1;
+    if(!ctx.beam) throw std::runtime_error("FluxVariation: No beam available");
+    // A fixed beam energy has no flux shape, so flux averaged cross sections do not change
+    const bool monochromatic = ctx.beam->at(PID(pid))->Type() == "Monochromatic";
+    const double scale = Scale(ctx.event.Momentum()[0].E());
+    if(!m_normalize) return scale;
+    if(monochromatic) return 1;
+    return scale / Normalization(*ctx.beam, pid);
+}
+
+// ---------------------------------------------------------------------------
+// Covariance groups
+// ---------------------------------------------------------------------------
+
+achilles::EigenSystem achilles::SymmetricEigen(Matrix a) {
+    const size_t n = a.size();
+    Matrix v(n, std::vector<double>(n, 0));
+    for(size_t i = 0; i < n; ++i) v[i][i] = 1;
+
+    // Cyclic Jacobi rotations, robust for the small matrices used here
+    for(size_t sweep = 0; sweep < 100; ++sweep) {
+        double off = 0, diag = 0;
+        for(size_t p = 0; p < n; ++p) {
+            diag += a[p][p] * a[p][p];
+            for(size_t q = p + 1; q < n; ++q) off += a[p][q] * a[p][q];
+        }
+        if(off <= 1e-30 * std::max(diag, 1e-300)) break;
+        for(size_t p = 0; p < n; ++p) {
+            for(size_t q = p + 1; q < n; ++q) {
+                if(a[p][q] == 0) continue;
+                const double theta = (a[q][q] - a[p][p]) / (2 * a[p][q]);
+                const double t =
+                    (theta >= 0 ? 1.0 : -1.0) / (std::abs(theta) + std::sqrt(theta * theta + 1));
+                const double c = 1 / std::sqrt(t * t + 1), s = t * c;
+                for(size_t k = 0; k < n; ++k) {
+                    const double akp = a[k][p], akq = a[k][q];
+                    a[k][p] = c * akp - s * akq;
+                    a[k][q] = s * akp + c * akq;
+                }
+                for(size_t k = 0; k < n; ++k) {
+                    const double apk = a[p][k], aqk = a[q][k];
+                    a[p][k] = c * apk - s * aqk;
+                    a[q][k] = s * apk + c * aqk;
+                }
+                for(size_t k = 0; k < n; ++k) {
+                    const double vkp = v[k][p], vkq = v[k][q];
+                    v[k][p] = c * vkp - s * vkq;
+                    v[k][q] = s * vkp + c * vkq;
+                }
+            }
+        }
+    }
+
+    std::vector<size_t> order(n);
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(), [&](size_t i, size_t j) { return a[i][i] > a[j][j]; });
+    EigenSystem result;
+    for(const auto k : order) {
+        result.values.push_back(a[k][k]);
+        std::vector<double> vec(n);
+        size_t imax = 0;
+        for(size_t i = 0; i < n; ++i) {
+            vec[i] = v[i][k];
+            if(std::abs(vec[i]) > std::abs(vec[imax])) imax = i;
+        }
+        if(vec[imax] < 0)
+            for(auto &x : vec) x = -x;
+        result.vectors.push_back(vec);
+    }
+    return result;
+}
+
+namespace {
+
+achilles::Matrix ReadMatrix(const YAML::Node &node, size_t n, const std::string &name) {
+    auto matrix = node.as<achilles::Matrix>();
+    if(matrix.size() != n)
+        throw std::runtime_error(fmt::format("Variations: {} must be {}x{}", name, n, n));
+    for(const auto &row : matrix)
+        if(row.size() != n)
+            throw std::runtime_error(fmt::format("Variations: {} must be {}x{}", name, n, n));
+    for(size_t i = 0; i < n; ++i)
+        for(size_t j = i + 1; j < n; ++j)
+            if(std::abs(matrix[i][j] - matrix[j][i]) >
+               1e-9 * std::max({std::abs(matrix[i][j]), std::abs(matrix[j][i]), 1e-300}))
+                throw std::runtime_error(fmt::format("Variations: {} is not symmetric", name));
+    return matrix;
+}
+
+} // namespace
+
+achilles::Matrix achilles::ParseCovariance(const YAML::Node &node, size_t n) {
+    YAML::Node spec = YAML::Clone(node);
+    if(node["File"]) {
+        const auto file =
+            YAML::LoadFile(Filesystem::FindFile(node["File"].as<std::string>(), "Variations"));
+        for(const auto &entry : file) {
+            const auto key = entry.first.as<std::string>();
+            if(!spec[key]) spec[key] = entry.second;
+        }
+    }
+
+    const bool has_cov = spec["Covariance"].IsDefined() && !spec["Covariance"].IsNull();
+    const bool has_corr = spec["Correlation"].IsDefined() && !spec["Correlation"].IsNull();
+    const bool has_unc = spec["Uncertainties"].IsDefined() && !spec["Uncertainties"].IsNull();
+    const bool has_hess = spec["Hessian"].IsDefined() && !spec["Hessian"].IsNull();
+    if(static_cast<int>(has_cov) + static_cast<int>(has_unc || has_corr) +
+           static_cast<int>(has_hess) !=
+       1)
+        throw std::runtime_error("Variations: Give exactly one of 'Covariance', "
+                                 "'Uncertainties' (with optional 'Correlation') or 'Hessian'");
+
+    if(has_cov) return ReadMatrix(spec["Covariance"], n, "Covariance");
+
+    if(has_hess) {
+        // Invert through the eigen decomposition, which shares the eigenvectors
+        const auto hessian = SymmetricEigen(ReadMatrix(spec["Hessian"], n, "Hessian"));
+        Matrix cov(n, std::vector<double>(n, 0));
+        for(size_t k = 0; k < n; ++k) {
+            if(hessian.values[k] <= 1e-12 * std::abs(hessian.values.front()))
+                throw std::runtime_error("Variations: Hessian is not positive definite");
+            for(size_t i = 0; i < n; ++i)
+                for(size_t j = 0; j < n; ++j)
+                    cov[i][j] += hessian.vectors[k][i] * hessian.vectors[k][j] / hessian.values[k];
+        }
+        return cov;
+    }
+
+    if(!has_unc) throw std::runtime_error("Variations: 'Correlation' needs 'Uncertainties'");
+    const auto sigma = spec["Uncertainties"].as<std::vector<double>>();
+    if(sigma.size() != n)
+        throw std::runtime_error(fmt::format("Variations: Expected {} uncertainties", n));
+    Matrix corr(n, std::vector<double>(n, 0));
+    if(has_corr) {
+        corr = ReadMatrix(spec["Correlation"], n, "Correlation");
+    } else {
+        for(size_t i = 0; i < n; ++i) corr[i][i] = 1;
+    }
+    Matrix cov(n, std::vector<double>(n, 0));
+    for(size_t i = 0; i < n; ++i) {
+        if(std::abs(corr[i][i] - 1) > 1e-9)
+            throw std::runtime_error("Variations: Correlation diagonal must be 1");
+        for(size_t j = 0; j < n; ++j) {
+            if(std::abs(corr[i][j]) > 1 + 1e-9)
+                throw std::runtime_error("Variations: Correlations must be within [-1, 1]");
+            cov[i][j] = corr[i][j] * sigma[i] * sigma[j];
+        }
+    }
+    return cov;
+}
+
+achilles::EigenShifts achilles::CovarianceEigenShifts(const Matrix &covariance, double tolerance,
+                                                      size_t keep) {
+    const auto eigen = SymmetricEigen(covariance);
+    if(eigen.values.empty() || eigen.values.front() <= 0)
+        throw std::runtime_error("Variations: Covariance has no positive eigenvalues");
+    const double largest = eigen.values.front();
+    if(eigen.values.back() < -1e-9 * largest)
+        throw std::runtime_error(fmt::format(
+            "Variations: Covariance is not positive semi-definite (eigenvalue {} vs largest {})",
+            eigen.values.back(), largest));
+
+    EigenShifts shifts;
+    for(size_t k = 0; k < eigen.values.size(); ++k) {
+        if(eigen.values[k] <= tolerance * largest) break;
+        if(keep > 0 && shifts.sigmas.size() == keep) break;
+        shifts.sigmas.push_back(std::sqrt(eigen.values[k]));
+        shifts.directions.push_back(eigen.vectors[k]);
+    }
+    return shifts;
+}
+
+std::unique_ptr<achilles::Variation> achilles::CovarianceTarget::Central() const {
+    return std::make_unique<NominalVariation>();
+}
+
+achilles::FormFactorTarget::FormFactorTarget(const YAML::Node &node) {
+    if(node.IsSequence()) {
+        m_parameters = node.as<std::vector<std::string>>();
+    } else {
+        m_parameters = node["Parameters"].as<std::vector<std::string>>();
+        if(node["Central"]) m_central = node["Central"].as<std::vector<double>>();
+    }
+    if(m_parameters.empty())
+        throw std::runtime_error("Variations: FormFactor covariance needs parameters");
+    if(!m_central.empty() && m_central.size() != m_parameters.size())
+        throw std::runtime_error(
+            "Variations: FormFactor covariance needs one central value per parameter");
+}
+
+std::unique_ptr<achilles::Variation> achilles::FormFactorTarget::Central() const {
+    if(m_central.empty()) return std::make_unique<NominalVariation>();
+    return Shifted(std::vector<double>(m_parameters.size(), 0));
+}
+
+std::unique_ptr<achilles::Variation>
+achilles::FormFactorTarget::Shifted(const std::vector<double> &delta) const {
+    FormFactorVariation::Edit edit;
+    for(size_t i = 0; i < m_parameters.size(); ++i) {
+        if(m_central.empty()) {
+            edit.parameters.push_back({m_parameters[i], delta[i], true});
+        } else {
+            edit.parameters.push_back({m_parameters[i], m_central[i] + delta[i], false});
+        }
+    }
+    return std::make_unique<FormFactorVariation>(edit);
+}
+
+achilles::FluxTarget::FluxTarget(const YAML::Node &node) {
+    m_edges = node["Bins"].as<std::vector<double>>();
+    if(m_edges.size() < 2 || !std::is_sorted(m_edges.begin(), m_edges.end()) ||
+       std::adjacent_find(m_edges.begin(), m_edges.end()) != m_edges.end())
+        throw std::runtime_error("Variations: Flux 'Bins' must be increasing bin edges");
+    if(node["PID"]) m_pid = node["PID"].as<int>();
+    if(node["Normalize"]) m_normalize = node["Normalize"].as<bool>();
+}
+
+std::vector<std::string> achilles::FluxTarget::Parameters() const {
+    std::vector<std::string> names;
+    for(size_t i = 0; i + 1 < m_edges.size(); ++i)
+        names.push_back(
+            fmt::format("Flux[{},{})", FormatValue(m_edges[i]), FormatValue(m_edges[i + 1])));
+    return names;
+}
+
+std::unique_ptr<achilles::Variation>
+achilles::FluxTarget::Shifted(const std::vector<double> &delta) const {
+    std::vector<double> scales(delta.size());
+    for(size_t i = 0; i < delta.size(); ++i) scales[i] = 1 + delta[i];
+    return std::make_unique<FluxVariation>(m_edges, scales, m_pid, m_normalize);
+}
+
+achilles::CovarianceGroup::CovarianceGroup(const YAML::Node &node) : VariationGroup(node) {
+    const YAML::Node target_node = node["Target"];
+    if(!target_node || !target_node.IsMap() || target_node.size() != 1)
+        throw std::runtime_error(
+            fmt::format("Variations: Group {} needs a 'Target' with exactly one of: {}",
+                        GroupName(), fmt::join(CovarianceTargetFactory::List(), ", ")));
+    const auto target_name = target_node.begin()->first.as<std::string>();
+    std::unique_ptr<CovarianceTarget> target;
+    try {
+        target = CovarianceTargetFactory::Initialize(target_name, target_node.begin()->second);
+    } catch(std::out_of_range &) {
+        throw std::runtime_error(
+            fmt::format("Variations: Unknown covariance target '{}', did you mean '{}'?",
+                        target_name, GetSuggestion(CovarianceTargetFactory::List(), target_name)));
+    }
+
+    const double nsigma = node["NSigma"] ? node["NSigma"].as<double>() : 1.0;
+    const double tolerance = node["Tolerance"] ? node["Tolerance"].as<double>() : 1e-10;
+    const size_t keep = node["Keep"] ? node["Keep"].as<size_t>() : 0;
+    if(nsigma <= 0) throw std::runtime_error("Variations: NSigma must be positive");
+
+    const auto covariance = ParseCovariance(node, target->Dimension());
+    const auto shifts = CovarianceEigenShifts(covariance, tolerance, keep);
+    spdlog::info("Variations: Group {} keeps {} of {} eigen directions", GroupName(),
+                 shifts.sigmas.size(), target->Dimension());
+
+    m_parameters = target->Parameters();
+    SetCentral(target->Central());
+    std::vector<double> flat_vectors;
+    for(size_t k = 0; k < shifts.sigmas.size(); ++k) {
+        std::vector<double> delta(shifts.directions[k].size());
+        for(size_t i = 0; i < delta.size(); ++i)
+            delta[i] = nsigma * shifts.sigmas[k] * shifts.directions[k][i];
+        std::vector<double> minus(delta.size());
+        std::transform(delta.begin(), delta.end(), minus.begin(), [](double x) { return -x; });
+        AddMember(fmt::format("ev{}+", k + 1), target->Shifted(delta), nsigma * shifts.sigmas[k]);
+        AddMember(fmt::format("ev{}-", k + 1), target->Shifted(minus), -nsigma * shifts.sigmas[k]);
+        flat_vectors.insert(flat_vectors.end(), shifts.directions[k].begin(),
+                            shifts.directions[k].end());
+    }
+    m_info_vectors = {{"Sigmas", shifts.sigmas}, {"Eigenvectors", flat_vectors}};
+
+    // The members are NSigma away, so rescale the Hessian band to one standard deviation
+    SetDefaultCombination(HessianCombination::Name());
+    SetupCombination(node, 1 / nsigma);
 }
 
 // ---------------------------------------------------------------------------
@@ -535,6 +870,8 @@ YAML::Node SpectralFunctionPair(const std::string &key, const YAML::Node &value)
     VariationShorthand::Register("FormFactors", achilles::FormFactorGroup::ExpandShorthand);
 [[maybe_unused]] const bool registered_spectral_functions = VariationShorthand::Register(
     "SpectralFunctions", achilles::SpectralFunctionGroup::ExpandShorthand);
+[[maybe_unused]] const bool registered_covariance =
+    VariationShorthand::Register("Covariance", achilles::CovarianceGroup::ExpandShorthand);
 
 } // namespace
 
@@ -627,6 +964,30 @@ void FormFactorGroup::ExpandShorthand(const YAML::Node &entries, YAML::Node &gro
                 group["Central"] = central;
                 group["MinMax"].push_back(down);
                 group["MinMax"].push_back(up);
+            }
+        }
+        groups.push_back(group);
+    }
+}
+
+void achilles::CovarianceGroup::ExpandShorthand(const YAML::Node &entries, YAML::Node &groups) {
+    const auto targets = CovarianceTargetFactory::List();
+    for(const auto &entry : entries) {
+        const auto name = entry.first.as<std::string>();
+        if(!entry.second.IsMap())
+            throw std::runtime_error(fmt::format("Variations: Covariance {} expects a map", name));
+        YAML::Node group;
+        group["Name"] = name;
+        group["Type"] = Name();
+        for(const auto &option : entry.second) {
+            const auto key = option.first.as<std::string>();
+            if(std::find(targets.begin(), targets.end(), key) != targets.end()) {
+                if(group["Target"])
+                    throw std::runtime_error(
+                        fmt::format("Variations: Covariance {} has more than one target", name));
+                group["Target"][key] = option.second;
+            } else {
+                group[key] = option.second;
             }
         }
         groups.push_back(group);
