@@ -13,6 +13,7 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/PDFBase.hh"
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/UnitsIO.hh"
 
 namespace achilles {
 
@@ -26,31 +27,34 @@ class FluxType {
     virtual ~FluxType() = default;
 
     virtual int NVariables() const = 0;
-    virtual FourVector Flux(const std::vector<double> &, double) const = 0;
-    virtual double GenerateWeight(const FourVector &, std::vector<double> &, double) const = 0;
+    virtual FourVector Flux(const std::vector<double> &, units::Energy) const = 0;
+    virtual double GenerateWeight(const FourVector &, std::vector<double> &,
+                                  units::Energy) const = 0;
     virtual std::string Type() const = 0;
-    virtual double MinEnergy() const = 0;
-    virtual double MaxEnergy() const = 0;
+    /// The energy range of the flux. Whatever unit a flux file writes its
+    /// energies in is resolved when the file is read, so these are energies.
+    virtual units::Energy MinEnergy() const = 0;
+    virtual units::Energy MaxEnergy() const = 0;
     virtual double EvaluateFlux(const FourVector &) const = 0;
 };
 
 class Monochromatic : public FluxType {
   public:
-    Monochromatic(const double &energy) : m_energy(energy) {}
+    Monochromatic(units::Energy energy) : m_energy(energy) {}
     int NVariables() const override { return 0; }
-    FourVector Flux(const std::vector<double> &, double) const override {
-        return {m_energy, 0, 0, m_energy};
+    FourVector Flux(const std::vector<double> &, units::Energy) const override {
+        return {m_energy, units::Energy{}, units::Energy{}, m_energy};
     }
-    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override {
+    double GenerateWeight(const FourVector &, std::vector<double> &, units::Energy) const override {
         return 1;
     }
     std::string Type() const override { return "Monochromatic"; }
-    double MinEnergy() const override { return m_energy; }
-    double MaxEnergy() const override { return m_energy; }
+    units::Energy MinEnergy() const override { return m_energy; }
+    units::Energy MaxEnergy() const override { return m_energy; }
     double EvaluateFlux(const FourVector &) const override { return 1; }
 
   private:
-    double m_energy;
+    units::Energy m_energy;
 };
 
 class Spectrum : public FluxType {
@@ -67,12 +71,12 @@ class Spectrum : public FluxType {
 
     Spectrum(const YAML::Node &);
     int NVariables() const override { return 1; }
-    FourVector Flux(const std::vector<double> &, double) const override;
-    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    FourVector Flux(const std::vector<double> &, units::Energy) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, units::Energy) const override;
     std::string Type() const override { return "Spectrum"; }
     std::string Format() const;
-    double MinEnergy() const override { return m_min_energy; }
-    double MaxEnergy() const override { return m_max_energy; }
+    units::Energy MinEnergy() const override { return m_min_energy; }
+    units::Energy MaxEnergy() const override { return m_max_energy; }
     double EvaluateFlux(const FourVector &) const override;
 
   private:
@@ -89,9 +93,12 @@ class Spectrum : public FluxType {
         v_cm2_POT_100MeV,
         cm2_50MeV,
     };
+    /// Interpolated flux, indexed by energy in MeV. The unit the file wrote
+    /// its energies in is resolved once at load, so nothing downstream of the
+    /// constructor needs to know about it.
     std::function<double(double)> m_flux{};
-    double m_min_energy{}, m_max_energy{};
-    double m_delta_energy{}, m_energy_units{1};
+    units::Energy m_min_energy{}, m_max_energy{}, m_delta_energy{};
+    /// Integral of the flux over MeV, so that the weight below is a pure ratio
     double m_flux_integral{};
     flux_units m_units;
     FluxFormat m_format;
@@ -101,11 +108,11 @@ class PDFBeam : public FluxType {
   public:
     PDFBeam(const YAML::Node &);
     int NVariables() const override { return 1; }
-    FourVector Flux(const std::vector<double> &, double) const override;
-    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    FourVector Flux(const std::vector<double> &, units::Energy) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, units::Energy) const override;
     std::string Type() const override { return "PDFBeam"; }
-    double MinEnergy() const override { return 0; }
-    double MaxEnergy() const override { return 0; }
+    units::Energy MinEnergy() const override { return units::Energy{}; }
+    units::Energy MaxEnergy() const override { return units::Energy{}; }
     double EvaluateFlux(const FourVector &) const override;
 
   private:
@@ -116,15 +123,15 @@ class FlatFlux : public FluxType {
   public:
     FlatFlux(const YAML::Node &);
     int NVariables() const override { return 1; }
-    FourVector Flux(const std::vector<double> &, double) const override;
-    double GenerateWeight(const FourVector &, std::vector<double> &, double) const override;
+    FourVector Flux(const std::vector<double> &, units::Energy) const override;
+    double GenerateWeight(const FourVector &, std::vector<double> &, units::Energy) const override;
     std::string Type() const override { return "FlatFlux"; }
-    double MinEnergy() const override { return m_min_energy; }
-    double MaxEnergy() const override { return m_max_energy; }
+    units::Energy MinEnergy() const override { return m_min_energy; }
+    units::Energy MaxEnergy() const override { return m_max_energy; }
     double EvaluateFlux(const FourVector &) const override { return 1; }
 
   private:
-    double m_min_energy, m_max_energy;
+    units::Energy m_min_energy, m_max_energy;
 };
 
 class Beam {
@@ -140,16 +147,16 @@ class Beam {
 
     Beam() { n_vars = 0; }
     MOCK int NVariables() const { return n_vars; }
-    MOCK FourVector Flux(const PID pid, const std::vector<double> &rans, double smin) const {
-        return m_beams.at(pid)->Flux(rans, smin);
+    MOCK FourVector Flux(const PID pid, const std::vector<double> &rans, units::Energy emin) const {
+        return m_beams.at(pid)->Flux(rans, emin);
     }
     MOCK double GenerateWeight(const PID pid, const FourVector &p, std::vector<double> &rans,
-                               double smin) const {
-        return m_beams.at(pid)->GenerateWeight(p, rans, smin);
+                               units::Energy emin) const {
+        return m_beams.at(pid)->GenerateWeight(p, rans, emin);
     }
     size_t NBeams() const { return m_beams.size(); }
     MOCK const std::set<PID> &BeamIDs() const { return m_pids; }
-    double MaxEnergy() const;
+    units::Energy MaxEnergy() const;
     MOCK double EvaluateFlux(const PID pid, const FourVector &p) const {
         return m_beams.at(pid)->EvaluateFlux(p);
     }
@@ -173,7 +180,8 @@ class Beam {
 template <> struct std::hash<achilles::FluxType> {
     std::size_t operator()(const achilles::FluxType &b) const {
         size_t seed = 0;
-        achilles::utils::hash_combine(seed, b.Type(), b.MinEnergy(), b.MaxEnergy());
+        achilles::utils::hash_combine(seed, b.Type(), b.MinEnergy().native(),
+                                      b.MaxEnergy().native());
         return seed;
     }
 };

@@ -10,8 +10,8 @@ using achilles::Spinor;
 Spinor::Spinor(bool type, bool bar, const int &hel, const FourVector &mom, int ms)
     : m_type{type}, m_bar{bar}, m_hel{hel} {
     bool mode = m_type ^ (m_hel < 0);
-    if(std::abs(mom.Px()) == 0.0 && std::abs(mom.Py()) == 0.0 && std::abs(mom.Pz()) == 0) {
-        Complex rte(sqrt(Complex(mom.E())));
+    if(mom.Px() == units::Energy{} && mom.Py() == units::Energy{} && mom.Pz() == units::Energy{}) {
+        Complex rte(sqrt(Complex(mom.E().native())));
         if(mode) { // u+(p,m) or v-(p,m)
             m_u[2] = rte;
             m_u[3] = 0.0;
@@ -28,22 +28,22 @@ Spinor::Spinor(bool type, bool bar, const int &hel, const FourVector &mom, int m
             *this = Bar();
         }
     } else {
-        FourVector ph(mom.E() < 0.0 ? -mom.P() : mom.P(), mom.Px(), mom.Py(), mom.Pz());
+        FourVector ph(mom.E() < units::Energy{} ? -mom.P() : mom.P(), mom.Px(), mom.Py(), mom.Pz());
         if(mode) { // u+(p,m) or v-(p,m)
             WeylSpinor sh(true, ph);
             m_u[2] = sh.U1();
             m_u[3] = sh.U2();
         } else { // u-(p,m) or v+(p,m)
             WeylSpinor sh(false, ph);
-            if(mom.E() < 0.0) sh = -sh;
+            if(mom.E() < units::Energy{}) sh = -sh;
             m_u[0] = sh.U2();
             m_u[1] = -sh.U1();
         }
-        double m2 = mom.M2();
+        double m2 = mom.M2().native();
         if(!IsZero(m2, tol)) {
             double sgn = m_type ^ (ms < 0) ? 1.0 : -1.0;
-            double omp = sqrt((mom.E() + ph.E()) / (2 * ph.E()));
-            double omm = sqrt((mom.E() - ph.E()) / (2 * ph.E()));
+            double omp = sqrt(((mom.E() + ph.E()) / (2 * ph.E())).native());
+            double omm = sqrt(((mom.E() - ph.E()) / (2 * ph.E())).native());
             size_t r = mode ? 0 : 2;
             m_u[0 + r] = sgn * omm * m_u[2 - r];
             m_u[1 + r] = sgn * omm * m_u[3 - r];
@@ -86,7 +86,8 @@ SpinMatrix SpinMatrix::PR() {
 }
 
 SpinMatrix SpinMatrix::Slashed(const FourVector &mom) {
-    return mom.E() * Gamma_0() - mom.Px() * Gamma_1() - mom.Py() * Gamma_2() - mom.Pz() * Gamma_3();
+    return mom.E().native() * Gamma_0() - mom.Px().native() * Gamma_1() -
+           mom.Py().native() * Gamma_2() - mom.Pz().native() * Gamma_3();
 }
 
 SpinMatrix SpinMatrix::SigmaMuNu(size_t mu, size_t nu) {

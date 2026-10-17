@@ -8,309 +8,266 @@
 #include <cmath>
 #include <iosfwd>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
+#include "Achilles/PhysicalUnits.hh"
+#include "Achilles/UnitsFormat.hh"
 #include "spdlog/fmt/ostr.h"
 
 namespace achilles {
 
-/// @brief ThreeVector is a container for dealing with three vectors
+/// @brief ThreeVectorT is a container for dealing with three vectors
 ///
-/// The ThreeVector class provides an easy to use container to handle three
-/// component vectors, such as position and three-momentums
-class ThreeVector {
-    using RotMat = std::array<double, 9>;
-
+/// Templated on the mass dimension D of its components, so that one body serves
+/// a three-momentum (D = 1, MeV), a position (D = -1, MeV^-1 -- ask for
+/// .in(units::fm)) and a velocity (D = 0). Mixing them is a compile error.
+template <int D> class ThreeVectorT {
   public:
+    using RotMat = std::array<double, 9>;
+    /// Component type: MeV^D
+    using Q = units::Quantity<D>;
+    /// Type of a product of two components: MeV^2D
+    using Q2 = units::Quantity<2 * D>;
+
     /// @name Constructors and Destructors
     ///@{
 
-    /// Create an empty ThreeVector object
-    ThreeVector() noexcept : vec({0, 0, 0}) {}
-    /// Create a ThreeVector object with values given by p
-    ///@param p: A std::array<double, 3> containing the values for the vector
-    constexpr ThreeVector(std::array<double, 3> p) noexcept : vec(p) {}
-    /// Create a ThreeVector object with values pX, pY, and pZ
+    /// Create an empty ThreeVectorT object
+    constexpr ThreeVectorT() noexcept : vec({Q{}, Q{}, Q{}}) {}
+    /// Create a ThreeVectorT object with values given by p
+    ///@param p: A std::array<Q, 3> containing the values for the vector
+    constexpr explicit ThreeVectorT(std::array<Q, 3> p) noexcept : vec(p) {}
+    /// Create a ThreeVectorT object with values pX, pY, and pZ
     ///@param pX: The x value of the vector
     ///@param pY: The y value of the vector
     ///@param pZ: The z value of the vector
-    constexpr ThreeVector(double pX, double pY, double pZ) noexcept : vec({pX, pY, pZ}) {}
-    /// Create a copy of a ThreeVector object
-    ///@param other: The vector to be copied
-    ThreeVector(const ThreeVector &other) noexcept = default;
-    /// Move a ThreeVector object to another
-    ///@param other: The vector to be moved
-    ThreeVector(ThreeVector &&other) noexcept = default;
+    constexpr ThreeVectorT(Q pX, Q pY, Q pZ) noexcept : vec({pX, pY, pZ}) {}
+    ThreeVectorT(const ThreeVectorT &other) noexcept = default;
+    ThreeVectorT(ThreeVectorT &&other) noexcept = default;
 
-    /// Assign a vector to another vector object
-    ///@param other: three vector to be assigned
-    ///@return ThreeVector: assigned new vector
-    ThreeVector &operator=(const ThreeVector &) noexcept = default;
-    ThreeVector &operator=(ThreeVector &&) noexcept = default;
+    ThreeVectorT &operator=(const ThreeVectorT &) noexcept = default;
+    ThreeVectorT &operator=(ThreeVectorT &&) noexcept = default;
 
-    /// Default destructor
-    ~ThreeVector() = default;
+    ~ThreeVectorT() = default;
     ///@}
+
+    /// @name Interop boundary
+    /// @{
+    /// Raw canonical components (MeV^D). For a position this is MeV^-1, NOT fm;
+    /// use ToArray(units::fm) at any fm-facing boundary.
+    constexpr const std::array<Q, 3> &Native() const noexcept { return vec; }
+    constexpr std::array<Q, 3> &Native() noexcept { return vec; }
+
+    /// Build from raw canonical components (MeV^D)
+    static constexpr ThreeVectorT FromNative(const std::array<double, 3> &p) noexcept {
+        return ThreeVectorT{Q{p[0]}, Q{p[1]}, Q{p[2]}};
+    }
+
+    /// Components expressed in the given unit
+    std::array<double, 3> ToArray(units::Unit<D> u) const noexcept {
+        return {vec[0].in(u), vec[1].in(u), vec[2].in(u)};
+    }
+    /// @}
 
     /// @name Setters
     /// @{
-    /// These functions provide access to setting the parameters of the ThreeVector
 
-    /// Set position variable based on pased in array
-    ///@param position: position to be stored
-    void SetXYZ(const std::array<double, 3> &position) noexcept { vec = position; }
+    void SetXYZ(const std::array<Q, 3> &position) noexcept { vec = position; }
+    void SetXYZ(Q x, Q y, Q z) noexcept { vec = std::array<Q, 3>{x, y, z}; }
+    void SetPxPyPz(const std::array<Q, 3> &momentum) noexcept { vec = momentum; }
+    void SetPxPyPz(Q pX, Q pY, Q pZ) noexcept { vec = std::array<Q, 3>{pX, pY, pZ}; }
 
-    /// Set position variable based on pased in array
-    ///@param x: position in the x-direction to be stored
-    ///@param y: position in the y-direction to be stored
-    ///@param z: position in the z-direction to be stored
-    void SetXYZ(const double &x, const double &y, const double &z) noexcept {
-        vec = std::array<double, 3>{x, y, z};
-    }
-
-    /// Set position variable based on pased in array
-    ///@param momentum: three momentum to be stored
-    void SetPxPyPz(const std::array<double, 3> momentum) noexcept { vec = momentum; }
-
-    /// Set momentum variable based on pased in array
-    ///@param pX: momentum in the x-direction to be stored
-    ///@param pY: momentum in the y-direction to be stored
-    ///@param pZ: momentum in the z-direction to be stored
-    void SetPxPyPz(const double &pX, const double &pY, const double &pZ) noexcept {
-        vec = std::array<double, 3>{pX, pY, pZ};
-    }
-
-    /// Set only the position in the x-direction
-    ///@param x: value to be stored
-    void SetX(const double &x) noexcept { vec[0] = x; }
-
-    /// Set only the position in the y-direction
-    ///@param y: value to be stored
-    void SetY(const double &y) noexcept { vec[1] = y; }
-
-    /// Set only the position in the z-direction
-    ///@param z: value to be stored
-    void SetZ(const double &z) noexcept { vec[2] = z; }
-
-    /// Set only the momentum in the x-direction
-    ///@param pX: value to be stored
-    void SetPx(const double &pX) noexcept { vec[0] = pX; }
-
-    /// Set only the momentum in the y-direction
-    ///@param pY: value to be stored
-    void SetPy(const double &pY) noexcept { vec[1] = pY; }
-
-    /// Set only the position in the z-direction
-    ///@param pZ: value to be stored
-    void SetPz(const double &pZ) noexcept { vec[2] = pZ; }
+    void SetX(Q x) noexcept { vec[0] = x; }
+    void SetY(Q y) noexcept { vec[1] = y; }
+    void SetZ(Q z) noexcept { vec[2] = z; }
+    void SetPx(Q pX) noexcept { vec[0] = pX; }
+    void SetPy(Q pY) noexcept { vec[1] = pY; }
+    void SetPz(Q pZ) noexcept { vec[2] = pZ; }
     ///@}
 
     /// @name Getters
     /// @{
-    /// These functions provide get specific features from the ThreeVector object
 
     constexpr size_t Size() const noexcept { return 3; }
 
-    /// Return the position as an array
-    ///@return std::array<double, 3>: containing the position
-    const std::array<double, 3> &Position() const noexcept { return vec; }
+    constexpr Q X() const noexcept { return vec[0]; }
+    constexpr Q Y() const noexcept { return vec[1]; }
+    constexpr Q Z() const noexcept { return vec[2]; }
+    constexpr Q Px() const noexcept { return vec[0]; }
+    constexpr Q Py() const noexcept { return vec[1]; }
+    constexpr Q Pz() const noexcept { return vec[2]; }
 
-    /// Return the position in the x-direction
-    ///@return double: containing the position in the x-direction
-    const double &X() const noexcept { return vec[0]; }
-    // double& X() noexcept { return vec[0]; }
+    /// Transverse component squared
+    constexpr Q2 Pt2() const noexcept { return vec[0] * vec[0] + vec[1] * vec[1]; }
+    /// Transverse component
+    Q Pt() const noexcept { return Q{std::sqrt(Pt2().native())}; }
+    /// Magnitude squared
+    constexpr Q2 P2() const noexcept { return (*this) * (*this); }
+    /// Magnitude
+    Q P() const noexcept { return Q{std::sqrt(P2().native())}; }
+    constexpr Q2 Magnitude2() const noexcept { return P2(); }
+    Q Magnitude() const noexcept { return P(); }
 
-    /// Return the position in the y-direction
-    ///@return double: containing the position in the y-direction
-    const double &Y() const noexcept { return vec[1]; }
-    // double& Y() noexcept { return vec[1]; }
+    /// Angle between the z-component and the transverse component (radians)
+    double Theta() const noexcept { return std::atan2(Pt().native(), Pz().native()); }
 
-    /// Return the position in the z-direction
-    ///@return double: containing the position in the z-direction
-    const double &Z() const noexcept { return vec[2]; }
-    // double& Z() noexcept { return vec[2]; }
+    /// Angle between the x and y components (radians)
+    double Phi() const noexcept {
+        const double phi = std::atan2(Py().native(), Px().native());
+        if(phi < 0) return phi + 2 * M_PI;
+        return phi;
+    }
 
-    /// Return the momentum in the x-direction
-    ///@return double: containing the momentum in the x-direction
-    const double &Px() const noexcept { return vec[0]; }
-    // double& Px() noexcept { return vec[0]; }
+    /// Rotate by three Euler angles
+    ThreeVectorT Rotate(const std::array<double, 3> &angles) const noexcept {
+        const double c1 = cos(angles[0]), s1 = sin(angles[0]);
+        const double c2 = cos(angles[1]), s2 = sin(angles[1]);
+        const double c3 = cos(angles[2]), s3 = sin(angles[2]);
 
-    /// Return the momentum in the y-direction
-    ///@return double: containing the momentum in the y-direction
-    const double &Py() const noexcept { return vec[1]; }
-    // double& Py() noexcept { return vec[1]; }
+        return {(c1 * c3 - c2 * s1 * s3) * vec[0] + (-c1 * s3 - c2 * c3 * s1) * vec[1] +
+                    s1 * s2 * vec[2],
+                (c3 * s1 + c1 * c2 * s3) * vec[0] + (c1 * c2 * c3 - s1 * s3) * vec[1] -
+                    c1 * s2 * vec[2],
+                s2 * s3 * vec[0] + c3 * s2 * vec[1] + c2 * vec[2]};
+    }
 
-    /// Return the momentum in the z-direction
-    ///@return double: containing the momentum in the z-direction
-    const double &Pz() const noexcept { return vec[2]; }
-    // double& Pz() noexcept { return vec[2]; }
+    /// Rotate by a rotation matrix
+    ThreeVectorT Rotate(const RotMat &mat) const noexcept {
+        return {mat[0] * vec[0] + mat[1] * vec[1] + mat[2] * vec[2],
+                mat[3] * vec[0] + mat[4] * vec[1] + mat[5] * vec[2],
+                mat[6] * vec[0] + mat[7] * vec[1] + mat[8] * vec[2]};
+    }
 
-    /// Return the transverse momentum squared
-    ///@return double: containing the transverse momentum squared
-    double Pt2() const noexcept { return pow(vec[0], 2) + pow(vec[1], 2); }
+    /// Rotation matrix aligning this vector with the given (unit) axis
+    RotMat Align(const ThreeVectorT<0> &axis) const noexcept {
+        ThreeVectorT<0> a = Unit();
 
-    /// Return the transverse momentum
-    ///@return double: containing the transverse momentum
-    double Pt() const noexcept { return sqrt(Pt2()); }
+        auto v = a.Cross(axis);
+        double c = a.Dot(axis).native();
 
-    /// Return the three momentum squared
-    ///@return double: containing the three momentum squared
-    double P2() const noexcept { return (*this) * (*this); }
+        return {
+            1 - v[1].native() * v[1].native() / (1 + c) - v[2].native() * v[2].native() / (1 + c),
+            -v[2].native() + v[0].native() * v[1].native() / (1 + c),
+            v[1].native() + v[0].native() * v[2].native() / (1 + c),
+            v[2].native() + v[0].native() * v[1].native() / (1 + c),
+            1 - v[0].native() * v[0].native() / (1 + c) - v[2].native() * v[2].native() / (1 + c),
+            -v[0].native() + v[1].native() * v[2].native() / (1 + c),
+            -v[1].native() + v[0].native() * v[2].native() / (1 + c),
+            v[0].native() + v[1].native() * v[2].native() / (1 + c),
+            1 - v[0].native() * v[0].native() / (1 + c) - v[1].native() * v[1].native() / (1 + c)};
+    }
 
-    /// Return the three momentum
-    ///@return double: containing the three momentum
-    double P() const noexcept { return sqrt(P2()); }
-
-    /// Return the magnitude squared of the vector
-    ///@return double: containing the magnitude squared of the vector
-    double Magnitude2() const noexcept { return P2(); }
-
-    /// Return the magnitude of the vector
-    ///@return double: containing the magnitude of the vector
-    double Magnitude() const noexcept { return P(); }
-
-    /// Return the angle between the z-component and the transverse component
-    ///@return double: containing the angle between the z and transverse components
-    double Theta() const noexcept;
-
-    /// Return the angle between the x and y components
-    ///@return double: containing the angle between the x and y components
-    double Phi() const noexcept;
-
-    /// Rotate the three vector to the frame given by the 3 angles
-    ///@param angles: The rotation angles
-    ///@return FourVector: The vector in the corresponding frame
-    ThreeVector Rotate(const std::array<double, 3> &) const noexcept;
-
-    /// Rotate the three vector to the frame given by the 3 angles
-    ///@param angles: The rotation matrix
-    ///@return FourVector: The vector in the corresponding frame
-    ThreeVector Rotate(const RotMat &) const noexcept;
-
-    /// Obtain the rotation matrix to align the vector with a given axis
-    ///@param axis: The axis to rotate to align with
-    ///@return std::array<double, 9>: The rotation matrix to align the vector
-    ///                               with the given axis
-    RotMat Align(const ThreeVector &) const noexcept;
-
-    /// Get the rotation matrix to align the vector with the z-axis
-    ///@return std::array<double, 9>: The matrix needed to define the rotation
-    RotMat AlignZ() const noexcept;
+    /// Rotation matrix aligning this vector with the z-axis
+    RotMat AlignZ() const noexcept {
+        ThreeVectorT<0> z{units::Dimensionless{0}, units::Dimensionless{0},
+                          units::Dimensionless{1}};
+        return Align(z);
+    }
     ///@}
 
     /// @name Functions
     /// @{
 
-    /// Calculate the dot product between two three vectors
-    ///@param other: three vector to take dot product with
-    ///@return double: the value of the dot product
-    double Dot(const ThreeVector &other) const noexcept { return (*this) * other; }
+    /// Dot product; the dimensions add
+    template <int B>
+    constexpr units::Quantity<D + B> Dot(const ThreeVectorT<B> &other) const noexcept {
+        return (*this) * other;
+    }
 
-    /// Calculate the cross product between two three vectors
-    ///@param other: three vector to take cross product with
-    ///@return ThreeVector: the resultant cross product
-    ThreeVector Cross(const ThreeVector &) const noexcept;
+    /// Cross product; the dimensions add
+    template <int B>
+    constexpr ThreeVectorT<D + B> Cross(const ThreeVectorT<B> &other) const noexcept {
+        return {vec[1] * other[2] - vec[2] * other[1], vec[2] * other[0] - vec[0] * other[2],
+                vec[0] * other[1] - vec[1] * other[0]};
+    }
 
-    /// Return a unit vector in the direction of the vector
-    ///@return ThreeVector: a unit vector in the direction of the vector
-    ThreeVector Unit() const noexcept;
+    /// Unit vector in the direction of this vector. Dimensionless by construction.
+    ThreeVectorT<0> Unit() const noexcept {
+        const Q norm = Magnitude();
+        return {vec[0] / norm, vec[1] / norm, vec[2] / norm};
+    }
 
-    /// Return a string representation of the vector
-    ///@return std::string: a string representation of the vector
-    std::string ToString() const noexcept;
+    std::string ToString() const noexcept {
+        return "ThreeVector(" + std::to_string(vec[0].native()) + ", " +
+               std::to_string(vec[1].native()) + ", " + std::to_string(vec[2].native()) + ")";
+    }
     ///@}
 
     /// @name Operator Overloads
     /// @{
-    /// Operator overloads of math functions for ease of use
 
-    /// Add two three vectors together
-    ///@param other: three vector to add to this one
-    ///@return ThreeVector: The sum of the two three vectors
-    ThreeVector &operator+=(const ThreeVector &) noexcept;
+    ThreeVectorT &operator+=(const ThreeVectorT &other) noexcept {
+        vec[0] += other.vec[0];
+        vec[1] += other.vec[1];
+        vec[2] += other.vec[2];
+        return *this;
+    }
 
-    /// Subtract two three vectors together
-    ///@param other: three vector to subtract from this one
-    ///@return ThreeVector: The difference of the two three vectors
-    ThreeVector &operator-=(const ThreeVector &) noexcept;
+    ThreeVectorT &operator-=(const ThreeVectorT &other) noexcept {
+        vec[0] -= other.vec[0];
+        vec[1] -= other.vec[1];
+        vec[2] -= other.vec[2];
+        return *this;
+    }
 
-    /// Scale a three vector by a constant
-    ///@param scale: value to scale three vector by
-    ///@return ThreeVector: The scaled three vector
-    ThreeVector &operator*=(const double &) noexcept;
+    ThreeVectorT &operator*=(double scale) noexcept {
+        vec[0] *= scale;
+        vec[1] *= scale;
+        vec[2] *= scale;
+        return *this;
+    }
 
-    /// Reduce the magnitude of a three vector by a constant
-    ///@param scale: value to scale three vector by
-    ///@return ThreeVector: The scaled three vector
-    ThreeVector &operator/=(const double &);
+    ThreeVectorT &operator/=(double scale) {
+        vec[0] /= scale;
+        vec[1] /= scale;
+        vec[2] /= scale;
+        return *this;
+    }
 
-    /// Calculate dot product of two vectors
-    ///@param other: The other vector to take the dot product with
-    ///@return double: The value of the dot product
-    double operator*(const ThreeVector &) const noexcept;
+    /// Dot product; the dimensions add
+    template <int B>
+    constexpr units::Quantity<D + B> operator*(const ThreeVectorT<B> &other) const noexcept {
+        return vec[0] * other[0] + vec[1] * other[1] + vec[2] * other[2];
+    }
 
-    /// Negate a given vector
-    ///@return ThreeVector: The negative of the input vector
-    ThreeVector operator-() const noexcept;
+    ThreeVectorT operator-() const noexcept { return {-vec[0], -vec[1], -vec[2]}; }
+    ThreeVectorT operator+() const noexcept { return *this; }
 
-    /// Unary plus operator
-    ///@return ThreeVector: The input vector
-    ThreeVector operator+() const noexcept;
+    ThreeVectorT operator*(double scale) const noexcept { return ThreeVectorT(*this) *= scale; }
+    ThreeVectorT operator/(double scale) const { return ThreeVectorT(*this) /= scale; }
 
-    /// Scale a three vector by a constant
-    ///@param scale: value to scale three vector by
-    ///@return ThreeVector: The scaled three vector
-    ThreeVector operator*(const double &) const noexcept;
+    /// Scale by a quantity; the dimensions add
+    template <int B>
+    constexpr ThreeVectorT<D + B> operator*(units::Quantity<B> scale) const noexcept {
+        return {vec[0] * scale, vec[1] * scale, vec[2] * scale};
+    }
 
-    /// Reduce the magnitude of a three vector by a constant
-    ///@param scale: value to scale three vector by
-    ///@return ThreeVector: The scaled three vector
-    ThreeVector operator/(const double &) const;
+    /// Divide by a quantity; the dimensions subtract
+    template <int B>
+    constexpr ThreeVectorT<D - B> operator/(units::Quantity<B> scale) const noexcept {
+        return {vec[0] / scale, vec[1] / scale, vec[2] / scale};
+    }
 
-    /// Calculate difference of two vectors
-    ///@param other: The other vector to take the difference with
-    ///@return ThreeVector: The resulting difference vector
-    ThreeVector operator-(const ThreeVector &) const noexcept;
+    ThreeVectorT operator-(const ThreeVectorT &other) const noexcept {
+        return ThreeVectorT(*this) -= other;
+    }
+    ThreeVectorT operator+(const ThreeVectorT &other) const noexcept {
+        return ThreeVectorT(*this) += other;
+    }
 
-    /// Calculate sum of two vectors
-    ///@param other: The other vector to take the sum with
-    ///@return ThreeVector: The resulting sum vector
-    ThreeVector operator+(const ThreeVector &) const noexcept;
+    bool operator==(const ThreeVectorT &other) const noexcept { return vec == other.vec; }
+    bool operator!=(const ThreeVectorT &other) const noexcept { return !(*this == other); }
 
-    // Comparison Operators
+    constexpr Q &operator[](const std::size_t &idx) { return vec[idx]; }
+    constexpr const Q &operator[](const std::size_t &idx) const { return vec[idx]; }
 
-    /// Determine if two three vectors are equivalent
-    ///@param other: The vector to compare against
-    ///@return bool: True, if the vectors are equal otherwise False
-    bool operator==(const ThreeVector &) const noexcept;
-
-    /// Determine if two three vectors are not equivalent
-    ///@param other: The vector to compare against
-    ///@return bool: False, if the vectors are equal otherwise True
-    bool operator!=(const ThreeVector &other) const noexcept { return !(*this == other); }
-
-    // Access Operators
-    /// Access a given index from the vector
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    double &operator[](const std::size_t &idx) { return vec[idx]; }
-
-    /// Access a given index from the vector
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    const double &operator[](const std::size_t &idx) const { return vec[idx]; }
-
-    /// Access a given index from the vector with range checks
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    double &at(const std::size_t &idx) {
+    Q &at(const std::size_t &idx) {
         if(idx > 2) throw std::range_error("Max value is 2.");
         return vec[idx];
     }
-
-    /// Access a given index from the vector with range checks
-    ///@param idx: Index to access
-    ///@return double: The value of the vector at the given index
-    const double &at(const std::size_t &idx) const {
+    const Q &at(const std::size_t &idx) const {
         if(idx > 2) throw std::range_error("Max value is 2.");
         return vec[idx];
     }
@@ -318,51 +275,71 @@ class ThreeVector {
 
     ///@name Stream Operators
     /// @{
-    /// Stream operators for writing to and reading from streams
-
-    /// Write out a vector to an output stream
-    ///@param ostr: Output stream to write to
-    ///@param vec: The three vector to be written out
-    template <typename OStream> friend OStream &operator<<(OStream &os, const ThreeVector &vec3) {
-        os << "ThreeVector(" << vec3.Px() << ", " << vec3.Py() << ", " << vec3.Pz() << ")";
+    template <typename OStream> friend OStream &operator<<(OStream &os, const ThreeVectorT &vec3) {
+        os << "ThreeVector(" << vec3.Px().native() << ", " << vec3.Py().native() << ", "
+           << vec3.Pz().native() << ")";
         return os;
     }
-
-    /// Write in a vector to an input stream
-    ///@param istr: Input stream to read from
-    ///@param vec: The three vector to be read into
-    friend std::istream &operator>>(std::istream &, ThreeVector &);
     /// @}
 
   private:
-    std::array<double, 3> vec;
+    std::array<Q, 3> vec;
 };
 
-ThreeVector operator*(const double &, const ThreeVector &) noexcept;
+/// The storage is bit-compatible with the legacy double[3] layout, so ROOT,
+/// HepMC3 and Fortran buffers are unaffected.
+static_assert(sizeof(ThreeVectorT<1>) == 3 * sizeof(double));
+static_assert(std::is_trivially_copyable_v<ThreeVectorT<1>>);
+static_assert(std::is_standard_layout_v<ThreeVectorT<1>>);
+
+template <int D> ThreeVectorT<D> operator*(double s, const ThreeVectorT<D> &v) noexcept {
+    return v * s;
+}
+
+template <int B, int D>
+constexpr ThreeVectorT<B + D> operator*(units::Quantity<B> s, const ThreeVectorT<D> &v) noexcept {
+    return v * s;
+}
+
+template <int D> std::istream &operator>>(std::istream &is, ThreeVectorT<D> &vec) {
+    std::string head(12, ' '), sep1(1, ' '), sep2(1, ' '), tail(1, ' ');
+    double px{}, py{}, pz{};
+    is.read(&head[0], 12);
+    is >> px;
+    is.read(&sep1[0], 1);
+    is >> py;
+    is.read(&sep2[0], 1);
+    is >> pz;
+    is.read(&tail[0], 1);
+    if(head == "ThreeVector(" && sep1 == "," && sep2 == "," && tail == ")")
+        vec = ThreeVectorT<D>::FromNative({px, py, pz});
+    return is;
+}
+
+/// Three-momentum, canonical MeV
+using ThreeVector = ThreeVectorT<1>;
+/// Position, canonical MeV^-1 -- .in(units::fm) at any fm-facing boundary
+using ThreePosition = ThreeVectorT<-1>;
+/// Velocity / boost vector, dimensionless
+using ThreeBoost = ThreeVectorT<0>;
 
 } // namespace achilles
 
-template <> struct fmt::formatter<achilles::ThreeVector> {
+template <int D> struct fmt::formatter<achilles::ThreeVectorT<D>> {
     char presentation = 'e';
     constexpr auto parse(format_parse_context &ctx) -> format_parse_context::iterator {
-        // Parse the presentation format and store it in the formatter:
         auto it = ctx.begin(), end = ctx.end();
         if(it != end && (*it == 'f' || *it == 'e')) presentation = *it++;
-
-        // Check if reached the end of the range:
         if(it != end && *it != '}') throw format_error("Invalid format");
-
-        // Return an iterator past the end of the parsed range:
         return it;
     }
 
-    auto format(const achilles::ThreeVector &p, format_context &ctx) const
+    auto format(const achilles::ThreeVectorT<D> &p, format_context &ctx) const
         -> format_context::iterator {
-        // ctx.out() is an output iterator to write to
         return format_to(ctx.out(),
                          presentation == 'f' ? "ThreeVector({:.8f}, {:.8f}, {:.8f})"
                                              : "ThreeVector({:.8e}, {:.8e}, {:.8e})",
-                         p.Px(), p.Py(), p.Pz());
+                         p.Px().native(), p.Py().native(), p.Pz().native());
     }
 };
 

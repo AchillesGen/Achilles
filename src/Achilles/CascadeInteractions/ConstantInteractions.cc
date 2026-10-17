@@ -36,19 +36,19 @@ std::vector<Particle> ConstantInteraction::GenerateMomentum(const Particle &part
                                                             const std::vector<PID> &out_pids,
                                                             Random &random) const {
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
 
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
-    const double pcm = p1CM.Vec3().Magnitude();
+    const double pcm = p1CM.Vec3().Magnitude().native();
     std::vector<double> rans(2);
     random.Generate(rans);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
-    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
-    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+    FourVector p1Out = FourVector{p1CM.E(), momentum[0], momentum[1], momentum[2]};
+    FourVector p2Out = FourVector{p1CM.E(), -momentum[0], -momentum[1], -momentum[2]};
 
     // Boost back to lab frame
     p1Out = p1Out.Boost(boostCM);
@@ -64,5 +64,5 @@ ThreeVector ConstantInteraction::MakeMomentum(bool, double pcm,
     double pTheta = acos(2 * rans[0] - 1);
     double pPhi = 2 * M_PI * rans[1];
 
-    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector::FromNative(ToCartesian({pR, pTheta, pPhi}));
 }

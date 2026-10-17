@@ -7,16 +7,22 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Approx.hh"
 
-constexpr double energy = 1000;
-constexpr double timestep = 10000;
+using achilles::FourVector;
+using achilles::Particle;
+using achilles::ThreePosition;
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
+constexpr units::Energy energy = 1000_MeV;
+constexpr units::Time timestep = 10000.0 * units::fm;
 
 TEST_CASE("Formation Zone", "[Particle]") {
-    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}};
-    achilles::FourVector mom{energy, 0, 100, 0};
+    Particle part{achilles::PID::proton(), {units::Energy{energy}, 100_MeV, 0_MeV, 0_MeV}};
+    FourVector mom{energy, 0_MeV, 100_MeV, 0_MeV};
 
     part.SetFormationZone(part.Momentum(), mom);
     CHECK(part.InFormationZone());
@@ -26,18 +32,20 @@ TEST_CASE("Formation Zone", "[Particle]") {
 }
 
 TEST_CASE("Properties", "[Particle]") {
-    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}, {0, 1, 0}};
+    Particle part{achilles::PID::proton(),
+                  {units::Energy{energy}, 100_MeV, 0_MeV, 0_MeV},
+                  {0.0_fm, 1.0_fm, 0.0_fm}};
 
     SECTION("Momentum") {
-        CHECK(part.Momentum() == achilles::FourVector{energy, 100, 0, 0});
-        part.SetMomentum({energy, 0, 100, 0});
-        CHECK(part.Momentum() == achilles::FourVector{energy, 0, 100, 0});
+        CHECK(part.Momentum() == FourVector{energy, 100_MeV, 0_MeV, 0_MeV});
+        part.SetMomentum({energy, 0_MeV, 100_MeV, 0_MeV});
+        CHECK(part.Momentum() == FourVector{energy, 0_MeV, 100_MeV, 0_MeV});
     }
 
     SECTION("Position") {
-        CHECK(part.Position() == achilles::ThreeVector{0, 1, 0});
-        part.SetPosition({0, 0, 1});
-        CHECK(part.Position() == achilles::ThreeVector{0, 0, 1});
+        CHECK(part.Position() == ThreePosition{0.0_fm, 1.0_fm, 0.0_fm});
+        part.SetPosition({0.0_fm, 0.0_fm, 1.0_fm});
+        CHECK(part.Position() == ThreePosition{0.0_fm, 0.0_fm, 1.0_fm});
     }
 
     SECTION("Status") {
@@ -55,31 +63,32 @@ TEST_CASE("Properties", "[Particle]") {
 }
 
 TEST_CASE("Propagate", "[Particle]") {
-    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}};
+    Particle part{achilles::PID::proton(), {units::Energy{energy}, 100_MeV, 0_MeV, 0_MeV}};
     static constexpr double eps = 1e-8;
 
     SECTION("Time propagation") {
-        part.Propagate(1);
-        CHECK_THAT(part.Position(), IsVectorApprox<achilles::ThreeVector>(
-                                        achilles::ThreeVector{part.Momentum().P() / part.E(), 0, 0})
-                                        .margin(eps));
-        part.BackPropagate(1);
+        part.Propagate(1.0 * units::fm);
+        const double beta = (part.Momentum().P() / part.E()).native();
+        CHECK_THAT(part.Position(),
+                   IsVectorApprox<ThreePosition>(ThreePosition{beta * units::fm, 0.0_fm, 0.0_fm})
+                       .margin(eps));
+        part.BackPropagate(1.0 * units::fm);
         CHECK_THAT(
             part.Position(),
-            IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{0, 0, 0}).margin(eps));
+            IsVectorApprox<ThreePosition>(ThreePosition{0.0_fm, 0.0_fm, 0.0_fm}).margin(eps));
     }
 
     SECTION("Space propagation") {
-        part.SpacePropagate(1);
+        part.SpacePropagate(1.0 * units::fm);
         CHECK_THAT(
             part.Position(),
-            IsVectorApprox<achilles::ThreeVector>(achilles::ThreeVector{1, 0, 0}).margin(eps));
+            IsVectorApprox<ThreePosition>(ThreePosition{1.0_fm, 0.0_fm, 0.0_fm}).margin(eps));
     }
 }
 
 TEST_CASE("I/O", "[Particle]") {
-    achilles::Particle part{achilles::PID::proton(), {energy, 100, 0, 0}};
-    achilles::Particle part2;
+    Particle part{achilles::PID::proton(), {units::Energy{energy}, 100_MeV, 0_MeV, 0_MeV}};
+    Particle part2;
 
     CHECK(part.ToString() == "Particle(2212, FourVector(1000.000000, 100.000000, 0.000000, "
                              "0.000000), ThreeVector(0.000000, 0.000000, 0.000000), 25)");
@@ -92,12 +101,14 @@ TEST_CASE("I/O", "[Particle]") {
 }
 
 TEST_CASE("Closest Approach", "[Particle]") {
-    achilles::Particle part1(achilles::PID::proton(), {1, 0, 0, 1.0 / achilles::Constant::HBARC});
-    achilles::Particle part2(achilles::PID::proton(), {}, {3, 2, 1});
+    // A particle moving at beta = 1/hbarc in z, one fm-scale offset away.
+    Particle part1(achilles::PID::proton(),
+                   {1_MeV, 0_MeV, 0_MeV, units::Energy{1.0 / achilles::Constant::HBARC}});
+    Particle part2(achilles::PID::proton(), {}, {3.0_fm, 2.0_fm, 1.0_fm});
 
     auto time = achilles::ClosestApproach(part1, part2);
-    CHECK(time == Catch::Approx(achilles::Constant::HBARC));
+    CHECK(time.in(units::fm) == Catch::Approx(achilles::Constant::HBARC));
 
     part1.Propagate(time);
-    CHECK(part1.Position() == achilles::ThreeVector{0, 0, 1});
+    CHECK(part1.Position() == ThreePosition{0.0_fm, 0.0_fm, 1.0_fm});
 }

@@ -9,16 +9,22 @@
 #include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 using achilles::Particle;
 
 TEST_CASE("Initialize Event Parameters", "[Event]") {
     auto nuc = std::make_shared<MockNucleus>();
     auto beam = std::make_shared<MockBeam>();
     std::vector<double> rans{0};
-    static constexpr achilles::FourVector lepton0{1000, 0, 0, 1000};
-    static constexpr achilles::FourVector lepton1{313.073, 105.356, 174.207, -237.838};
-    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+    static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
+    static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
+                                                  -237.838_MeV};
+    static constexpr achilles::FourVector hadron0{65.4247_MeV, 26.8702_MeV, -30.5306_MeV,
+                                                  -10.9449_MeV};
+    static constexpr achilles::FourVector hadron1{1560.42_MeV, -78.4858_MeV, -204.738_MeV,
+                                                  1226.89_MeV};
 
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
@@ -36,8 +42,10 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
 }
 
 TEST_CASE("Finalize Event", "[Event]") {
-    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+    static constexpr achilles::FourVector hadron0{65.4247_MeV, 26.8702_MeV, -30.5306_MeV,
+                                                  -10.9449_MeV};
+    static constexpr achilles::FourVector hadron1{1560.42_MeV, -78.4858_MeV, -204.738_MeV,
+                                                  1226.89_MeV};
 
     // Dummy carbon event
     achilles::Particles final = {
@@ -59,15 +67,18 @@ TEST_CASE("Finalize Event", "[Event]") {
     event.Hadrons() = final;
     event.Finalize();
     CHECK(event.Remnant().PID() == 1000050110);
-    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
+    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN().native());
 }
 
 TEST_CASE("Test Event Copy Constructor", "[Event]") {
     auto nuc = std::make_shared<MockNucleus>();
-    static constexpr achilles::FourVector lepton0{1000, 0, 0, 1000};
-    static constexpr achilles::FourVector lepton1{313.073, 105.356, 174.207, -237.838};
-    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+    static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
+    static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
+                                                  -237.838_MeV};
+    static constexpr achilles::FourVector hadron0{65.4247_MeV, 26.8702_MeV, -30.5306_MeV,
+                                                  -10.9449_MeV};
+    static constexpr achilles::FourVector hadron1{1560.42_MeV, -78.4858_MeV, -204.738_MeV,
+                                                  1226.89_MeV};
 
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
@@ -88,7 +99,8 @@ TEST_CASE("Test Event Copy Constructor", "[Event]") {
 
     SECTION("Ensure original and copied events are independent") {
         // Modify the original event and ensure it does not affect the copied event
-        event.Momentum()[0] = {0, 0, 0, 0}; // Modify first momentum of the original event
+        event.Momentum()[0] = {0_MeV, 0_MeV, 0_MeV,
+                               0_MeV}; // Modify first momentum of the original event
 
         CHECK(event.Momentum()[0] !=
               copied_event.Momentum()[0]); // The copied event should remain unchanged
@@ -99,10 +111,13 @@ TEST_CASE("Test Event Copy Constructor", "[Event]") {
 
 TEST_CASE("Test Event Assignment Operator", "[Event]") {
     auto nuc = std::make_shared<MockNucleus>();
-    static constexpr achilles::FourVector lepton0{1000, 0, 0, 1000};
-    static constexpr achilles::FourVector lepton1{313.073, 105.356, 174.207, -237.838};
-    static constexpr achilles::FourVector hadron0{65.4247, 26.8702, -30.5306, -10.9449};
-    static constexpr achilles::FourVector hadron1{1560.42, -78.4858, -204.738, 1226.89};
+    static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
+    static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
+                                                  -237.838_MeV};
+    static constexpr achilles::FourVector hadron0{65.4247_MeV, 26.8702_MeV, -30.5306_MeV,
+                                                  -10.9449_MeV};
+    static constexpr achilles::FourVector hadron1{1560.42_MeV, -78.4858_MeV, -204.738_MeV,
+                                                  1226.89_MeV};
 
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
@@ -124,7 +139,8 @@ TEST_CASE("Test Event Assignment Operator", "[Event]") {
 
     SECTION("Ensure original and assigned events are independent") {
         // Modify the original event and ensure it does not affect the assigned event
-        event.Momentum()[0] = {0, 0, 0, 0}; // Modify first momentum of the original event
+        event.Momentum()[0] = {0_MeV, 0_MeV, 0_MeV,
+                               0_MeV}; // Modify first momentum of the original event
 
         CHECK(event.Momentum()[0] !=
               assigned_event.Momentum()[0]); // The assigned event should remain unchanged

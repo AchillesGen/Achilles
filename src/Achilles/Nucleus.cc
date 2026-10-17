@@ -12,9 +12,9 @@
 
 #include "spdlog/spdlog.h"
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 
@@ -25,8 +25,8 @@ const std::map<std::size_t, std::string> Nucleus::ZToName = {
     {8, "O"}, {13, "Al"}, {18, "Ar"}, {20, "Ca"}, {26, "Fe"},
 };
 
-Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEnergy,
-                 const double &kf, const std::string &protondensityFilename,
+Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, units::Energy bEnergy,
+                 units::Energy kf, const std::string &protondensityFilename,
                  const std::string &neutrondensityFilename, const FermiGas &fg,
                  std::unique_ptr<Density> _density)
     : binding(bEnergy), fermiMomentum(kf), fermi_gas(fg), density(std::move(_density)) {
@@ -51,7 +51,8 @@ Nucleus::Nucleus(const std::size_t &Z, const std::size_t &A, const double &bEner
     std::vector<double> protonvecRadius, protonvecDensity;
     constexpr double minDensity = 1E-6;
     while(protondensityFile >> protonradius_ >> protondensity_ >> protondensityErr) {
-        if(protondensity_ < minDensity && radius == 0) radius = protonradius_;
+        if(protondensity_ < minDensity && radius == units::Length{})
+            radius = protonradius_ * units::fm;
         protonvecRadius.push_back(std::move(protonradius_));
         protonvecDensity.push_back(std::move(protondensity_));
     }
@@ -133,10 +134,14 @@ void Nucleus::Initialize(size_t Z, size_t A) {
 Particles Nucleus::GenerateConfig() {
     // Handle special case of hydrogen
     if(is_hydrogen) {
-        return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
+        return {
+            Particle{PID::proton(), FourVector{ParticleInfo(PID::proton()).Mass(), units::Energy{},
+                                               units::Energy{}, units::Energy{}}}};
     }
     if(is_free_neutron) {
-        return {Particle{PID::neutron(), {ParticleInfo(PID::neutron()).Mass(), 0, 0, 0}}};
+        return {Particle{PID::neutron(),
+                         FourVector{ParticleInfo(PID::neutron()).Mass(), units::Energy{},
+                                    units::Energy{}, units::Energy{}}}};
     }
 
     // Get a configuration from the density function
@@ -145,9 +150,10 @@ Particles Nucleus::GenerateConfig() {
     for(Particle &particle : particles) {
         // Set momentum for each nucleon
         auto mom3 = GenerateMomentum(particle.Position().Magnitude(), particle.ID());
-        double energy2 = pow(particle.Info().Mass(), 2); // Constant::mN*Constant::mN;
+        double energy2 =
+            (particle.Info().Mass() * particle.Info().Mass()).native(); // Constant::mN2().native()
         for(auto mom : mom3) energy2 += mom * mom;
-        particle.Momentum() = FourVector(sqrt(energy2), mom3[0], mom3[1], mom3[2]);
+        particle.Momentum() = FourVector::FromNative({sqrt(energy2), mom3[0], mom3[1], mom3[2]});
 
         // Ensure status is set to background
         particle.Status() = ParticleStatus::background;
@@ -155,19 +161,19 @@ Particles Nucleus::GenerateConfig() {
     return particles;
 }
 
-const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
+const std::array<double, 3> Nucleus::GenerateMomentum(units::Length position,
                                                       const PID &pid) noexcept {
     std::array<double, 3> momentum{};
-    momentum[0] = SampleMagnitudeMomentum(position, pid);
+    momentum[0] = SampleMagnitudeMomentum(position, pid).native();
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
     momentum[2] = Random::Instance().Uniform(0.0, 2 * M_PI);
 
     return ToCartesian(momentum);
 }
 
-double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) noexcept {
+units::Energy Nucleus::SampleMagnitudeMomentum(units::Length position, const PID &pid) noexcept {
     // NOTE: To sample on a sphere, need to take a cube-root.
-    double kf = FermiMomentum(position, pid);
+    units::Energy kf = FermiMomentum(position, pid);
     if(fermi_gas.correlated) {
         if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
             return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
@@ -179,8 +185,8 @@ double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) 
     return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
 }
 
-Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
-                             const double &fermiMomentum, const std::string &protondensityFilename,
+Nucleus Nucleus::MakeNucleus(const std::string &name, units::Energy bEnergy,
+                             units::Energy fermiMomentum, const std::string &protondensityFilename,
                              const std::string &neutrondensityFilename, const FermiGas &fg,
                              std::unique_ptr<Density> density) {
     const std::regex regex("([0-9]+)([a-zA-Z]+)");
@@ -212,7 +218,7 @@ const std::string Nucleus::ToString() const noexcept {
     return std::to_string(NNucleons()) + ZToName.at(NProtons());
 }
 
-double Nucleus::FermiMomentum(const double &position, const PID &nuc_pid) const {
+units::Energy Nucleus::FermiMomentum(units::Length position, const PID &nuc_pid) const {
     double rho = 0.;
     if(nuc_pid == PID::proton())
         rho = ProtonRho(position);
@@ -222,11 +228,11 @@ double Nucleus::FermiMomentum(const double &position, const PID &nuc_pid) const 
         throw std::runtime_error(fmt::format("Fermi Momentum for: {} does not exist.", nuc_pid));
     }
 
-    // double rho = Rho(position);
-    double result{};
+    units::Energy result{};
     switch(fermi_gas.type) {
     case FermiGasType::Local:
-        result = std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC;
+        // (3 pi^2 rho)^(1/3) is an inverse length; hbar*c turns fm^-1 into MeV.
+        result = units::Energy{std::cbrt(rho * 3 * M_PI * M_PI) * Constant::HBARC};
         break;
     case FermiGasType::Global:
         //        static constexpr double small = 1E-2; //This leads to a large small momentum

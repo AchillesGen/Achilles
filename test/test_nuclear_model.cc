@@ -7,11 +7,14 @@
 
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Particle.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 #include "Approx.hh"
 #include "mock_classes.hh"
 #include "yaml-cpp/yaml.h"
+
+namespace units = achilles::units;
+using namespace achilles::units::literals;
 
 using achilles::operator""_GeV;
 using achilles::Particle;
@@ -97,12 +100,12 @@ dummy: dummy2
 
     SECTION("CalcCurrents") {
         std::vector<achilles::FourVector> momentum = {
-            {1.3e+03, 0.0, 0.0, 1.3e+03},
-            {1.1188e+04, 0.0, 0.0, 0.0},
-            {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03},
-            {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}};
+            {1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV},
+            {1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV},
+            {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV},
+            {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}};
 
-        double Q2 = -(momentum[0] - momentum[2]).M2();
+        double Q2 = -(momentum[0] - momentum[2]).M2().native();
         achilles::FormFactor::Values value;
         value.Fcoh = 1;
         REQUIRE_CALL(*form_factor, call_op(Q2)).TIMES(1).LR_RETURN((value));
@@ -121,10 +124,8 @@ dummy: dummy2
         CHECK(output.size() == 1);
         auto results = output[achilles::PID::photon()];
         achilles::VCurrent expected;
-        expected[0] = {momentum[1][0] + momentum[3][0], 0.0};
-        expected[1] = {momentum[1][1] + momentum[3][1], 0.0};
-        expected[2] = {momentum[1][2] + momentum[3][2], 0.0};
-        expected[3] = {momentum[1][3] + momentum[3][3], 0.0};
+        for(size_t i = 0; i < 4; ++i)
+            expected[i] = {(momentum[1][i] + momentum[3][i]).native(), 0.0};
         CHECK(results.size() == model.NSpins());
         CHECK(results[0].size() == 4);
         CHECK_THAT(results[0][0].real(), Catch::Matchers::WithinAbs(expected[0].real(), 1e-8));
@@ -255,11 +256,11 @@ dummy: dummy2
     // test
     SECTION("CalcCurrents") {
         std::vector<achilles::FourVector> momentum = {
-            {1.30000000e+03, 0.00000000e+00, 0.00000000e+00, 1.30000000e+03},
-            {6.61445463e+02, 5.72268451e+01, -5.50505424e+02, 1.44888604e+02},
-            {6.05909852e+02, -4.66914933e+01, -3.46184656e+02, 4.95078618e+02},
-            {1.35553561e+03, 1.03918338e+02, -2.04320768e+02, 9.49809986e+02}};
-        double Q2 = -(momentum[0] - momentum[2]).M2() / 1.0_GeV / 1.0_GeV;
+            {1.30000000e+03_MeV, 0.00000000e+00_MeV, 0.00000000e+00_MeV, 1.30000000e+03_MeV},
+            {6.61445463e+02_MeV, 5.72268451e+01_MeV, -5.50505424e+02_MeV, 1.44888604e+02_MeV},
+            {6.05909852e+02_MeV, -4.66914933e+01_MeV, -3.46184656e+02_MeV, 4.95078618e+02_MeV},
+            {1.35553561e+03_MeV, 1.03918338e+02_MeV, -2.04320768e+02_MeV, 9.49809986e+02_MeV}};
+        double Q2 = -(momentum[0] - momentum[2]).M2().in(units::GeV2);
         achilles::FormFactor::Values value;
         value.F1p = 1;
         value.F1n = 1;

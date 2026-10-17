@@ -110,7 +110,7 @@ void Process::SetupHadrons(Event &event) const {
     // TODO: Handle propagating deltas
     // TODO: Handle selecting position for things like MEC+pion production
     size_t cur_idx = 0;
-    ThreeVector position;
+    ThreePosition position;
     for(size_t i = 0; i < had_out.size(); ++i) {
         Particle part(m_info.m_hadronic.second[i]);
         if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
@@ -288,10 +288,13 @@ void ProcessGroup::SetupLeptons(Event &event, std::optional<size_t> process_idx)
 }
 
 void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx) {
+    // The backend hands back a typed cross section; event weights, the
+    // integrand and the unweighter all carry nb, so this is the one place the
+    // unit is applied.
     if(!process_idx) {
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
-            auto process_weight = m_backend->CrossSection(event, m_processes[i]);
+            auto process_weight = m_backend->CrossSection(event, m_processes[i]).in(units::nb);
             if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
         }
@@ -299,7 +302,7 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
         if(b_calc_weights) m_xsec += weight;
     } else {
         auto &process = m_processes[process_idx.value()];
-        auto weight = m_backend->CrossSection(event, process);
+        auto weight = m_backend->CrossSection(event, process).in(units::nb);
         event.Weight() = process.Unweight(weight);
     }
 }
@@ -446,7 +449,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     spdlog::debug("Event Phase Space:");
     size_t idx = 0;
     for(const auto &momentum : event.Momentum()) {
-        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2());
+        spdlog::debug("\t{}: {} (M2 = {})", ++idx, momentum, momentum.M2().native());
     }
     // Cut on leptons: NOTE: This assumes that all processes in the group have the same leptons
     auto process_opt = b_optimize ? std::nullopt : std::optional<size_t>(SelectProcess());
