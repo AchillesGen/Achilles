@@ -181,6 +181,7 @@ void Cascade::Reset() {
     kickedIdxs.clear();
     integrators.clear();
     m_removal_debt.clear();
+    m_track_recoil = false;
 }
 
 bool Cascade::MoveNucleon(Event &event, const Particle &nucleon, bool remove) {
@@ -218,32 +219,69 @@ void Cascade::TransferDebt(std::size_t from, std::size_t to) {
     m_removal_debt.erase(it);
 }
 
-bool Cascade::PayRemovalEnergy(Particles &particles, std::size_t idx) {
+bool Cascade::PayRemovalEnergy(Event &event, std::size_t idx) {
     auto it = m_removal_debt.find(idx);
     if(it == m_removal_debt.end()) return true;
-
-    // Composition of the bound pool once this nucleon is gone, so that the separation
-    // energies charged over an event telescope to the total mass difference.
-    int nZ = 0, nA = 0;
-    for(const auto &part : particles) {
-        if(!part.Info().IsNucleon()) continue;
-        if(part.Status() != ParticleStatus::background && part.Status() != ParticleStatus::captured)
-            continue;
-        if(part.ID() == PID::proton()) nZ++;
-        nA++;
-    }
+    auto &particles = event.Hadrons();
 
     const bool is_proton = it->second.is_proton;
-    const double debit =
-        SeparationEnergy(nZ + (is_proton ? 1 : 0), nA + 1, is_proton) + it->second.kinetic;
+    const auto &remnant = event.Remnant();
+    const bool recoil = m_track_recoil && remnant.ID() != PID::undefined();
+
+    double separation{};
+    if(recoil) {
+        // Charge against the composition settled so far, not the current bound pool, so
+        // the charges telescope however the knockouts and escapes interleave.
+        separation = SeparationEnergy(m_paid_Z, m_paid_A, is_proton);
+    } else {
+        // No remnant to settle against (cascade-only modes): fall back to the bound pool.
+        int nZ = 0, nA = 0;
+        for(const auto &part : particles) {
+            if(!part.Info().IsNucleon()) continue;
+            if(part.Status() != ParticleStatus::background &&
+               part.Status() != ParticleStatus::captured)
+                continue;
+            if(part.ID() == PID::proton()) nZ++;
+            nA++;
+        }
+        separation = SeparationEnergy(nZ + (is_proton ? 1 : 0), nA + 1, is_proton);
+    }
+    const double base = separation + it->second.kinetic;
 
     auto &particle = particles[idx];
     const double mass = particle.Info().Mass();
+    const auto p_old = particle.Momentum().Vec3();
+    const auto dir = p_old.Unit();
+
+    // Recoil: every knockout since the last settlement shoved the remnant by -p_i, and
+    // this escape shoves it again along the nucleon's direction. Energy telescoping to
+    // the ground-state mass leaves no room for that kinetic energy, so without this term
+    // it comes out of the remnant's invariant mass and E_x drifts down ~0.5 MeV per
+    // knockout. The escape recoil depends on the debit, so iterate; it converges at once.
+    double debit = base;
+    if(recoil) {
+        const double rem_mass = remnant.Momentum().M();
+        const auto rem_p = remnant.Momentum().Vec3();
+        const double paid = RecoilKinetic(rem_mass, m_recoil_paid);
+        for(int iter = 0; iter < 4; ++iter) {
+            const double energy = particle.Momentum().E() - debit;
+            if(energy <= mass) return false;
+            const double p_new = std::sqrt(energy * energy - mass * mass);
+            const auto rem_after = rem_p + dir * (p_old.Magnitude() - p_new);
+            debit = base + RecoilKinetic(rem_mass, rem_after) - paid;
+        }
+    }
+
     const double energy = particle.Momentum().E() - debit;
     if(energy <= mass) return false;
 
     const double momentum = std::sqrt(energy * energy - mass * mass);
-    particle.SetMomentum({particle.Momentum().Vec3().Unit() * momentum, energy});
+    particle.SetMomentum({dir * momentum, energy});
+    if(recoil) {
+        m_recoil_paid = remnant.Momentum().Vec3() + (p_old - particle.Momentum().Vec3());
+        m_paid_Z -= is_proton ? 1 : 0;
+        m_paid_A -= 1;
+    }
     m_removal_debt.erase(it);
     return true;
 }
@@ -311,6 +349,8 @@ void Cascade::Validate(Event &event) {
             // Ensure outgoing particles are propagating and add to list of particles in event
             // and assign formation zone
             std::vector<Particle> final;
+            const Particle remnant_in = event.Remnant();
+            bool repaid = false;
             for(auto &out : particles_out) {
                 out.Status() = ParticleStatus::final_state;
                 out.Position() = event.Hadrons()[idx].Position();
@@ -320,18 +360,30 @@ void Cascade::Validate(Event &event) {
                 if(out.Info().IsBaryon()) {
                     const auto iout = event.Hadrons().size() - 1;
                     TransferDebt(idx, iout);
-                    if(!PayRemovalEnergy(event.Hadrons(), iout)) {
+                    const bool owes = m_removal_debt.count(iout) > 0;
+                    const auto before = event.Hadrons()[iout].Momentum();
+                    if(!PayRemovalEnergy(event, iout)) {
                         spdlog::debug("Cascade: escaped resonance product cannot repay its "
                                       "removal energy, releasing it unpaid");
                         m_removal_debt.erase(iout);
+                    } else if(owes && remnant_in.ID() != PID::undefined()) {
+                        // What the product paid goes to the remnant, as in Escaped.
+                        RecoilRemnant(event, before - event.Hadrons()[iout].Momentum());
+                        repaid = true;
                     }
                 }
                 final.push_back(event.Hadrons().back());
             }
 
-            // Add decay to the event history
-            event.History().AddVertex(event.Hadrons()[idx].Position(), {event.Hadrons()[idx]},
-                                      final, EventHistory::StatusCode::decay);
+            // Add decay to the event history. When a product repaid removal energy the
+            // remnant took it up, so it enters and leaves this vertex to keep it balanced.
+            Particles decay_in{event.Hadrons()[idx]};
+            if(repaid) {
+                decay_in.push_back(remnant_in);
+                final.push_back(event.Remnant());
+            }
+            event.History().AddVertex(event.Hadrons()[idx].Position(), decay_in, final,
+                                      EventHistory::StatusCode::decay);
         }
     }
 }
@@ -352,6 +404,14 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
     // Run the cascade
     currentTime = 0;
     m_nucleus = nucleus;
+    // The recoil the remnant already has from the primary vertex is paid for by the
+    // spectral function; only recoil the cascade adds from here on is charged.
+    m_track_recoil = event.Remnant().ID() != PID::undefined();
+    if(m_track_recoil) {
+        m_recoil_paid = event.Remnant().Momentum().Vec3();
+        m_paid_Z = event.Remnant().ID().NuclearZ();
+        m_paid_A = event.Remnant().ID().NuclearA();
+    }
     Particles &particles = event.Hadrons();
     kickedIdxs = InitializeIntegrator(event);
     for(const auto &kicked : kickedIdxs) {
@@ -636,7 +696,7 @@ void Cascade::Escaped(Event &event) {
         // the separation energy plus the Fermi kinetic energy it was given, it stays bound.
         const bool owes = m_removal_debt.count(idx) > 0;
         const Particle before = particles[idx];
-        if(PayRemovalEnergy(particles, idx)) {
+        if(PayRemovalEnergy(event, idx)) {
             particles[idx].Status() = ParticleStatus::final_state;
             // Losing the removal energy at the surface is a physical step, so record it as
             // its own vertex. The remnant takes up the energy and momentum the nucleon gave

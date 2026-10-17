@@ -232,7 +232,27 @@ class Cascade {
     void TransferDebt(std::size_t from, std::size_t to);
     /// Subtract the removal energy owed by the particle at `idx`, rescaling it on shell.
     /// Returns false, leaving the particle untouched, if it cannot pay.
-    bool PayRemovalEnergy(Particles &, std::size_t idx);
+    /// The debit is the separation energy plus the Fermi kinetic energy, plus the change in
+    /// the remnant's recoil kinetic energy since the last settlement: S is defined for a
+    /// residue at rest, so a residue left moving costs that much more to leave behind.
+    bool PayRemovalEnergy(Event &, std::size_t idx);
+
+    /// Lab kinetic energy a remnant of invariant mass `mass` has at momentum `mom`.
+    static double RecoilKinetic(double mass, const ThreeVector &mom) {
+        return std::sqrt(mass * mass + mom.Magnitude2()) - mass;
+    }
+    /// Remnant momentum whose recoil kinetic energy has already been paid for. Set when
+    /// the cascade starts, so the recoil from the primary vertex (already in the spectral
+    /// function's removal energy) is never charged twice.
+    ThreeVector m_recoil_paid{};
+    bool m_track_recoil{false};
+    /// Composition whose ground-state mass the remnant's energy has been settled against.
+    /// Each payment charges S for this composition and then removes the nucleon from it, so
+    /// the separation energies telescope to M_gs(final) - M_gs(start) in whatever order the
+    /// debts are paid. Counting the bound pool instead breaks that whenever two nucleons are
+    /// knocked out before either escapes: both are charged against the already-depleted
+    /// pool and the sum misses by the second difference of the mass surface (1-3 MeV).
+    int m_paid_Z{}, m_paid_A{};
 
     // Variables
     std::set<std::size_t> kickedIdxs;
