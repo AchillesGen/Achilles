@@ -1,0 +1,18 @@
+{% from "../macros/buttons.html" import render_funcs with context %}
+
+<div class="article-header-buttons">
+{#- Landing page link (first) #}
+{% include "landing-link.html" %}
+
+{%- for button in header_buttons -%}
+{% set btype = button.get("type") %}
+{% set bopts = button.copy() %}
+{% set _ = bopts.pop("type") %}
+{{ render_funcs[btype](**bopts) }}
+{%- endfor -%}
+
+{#- Extra theme buttons #}
+{% include "theme-switcher.html" %}
+{% include "search-button.html" %}
+{% include "toggle-secondary-sidebar.html" %}
+</div>
