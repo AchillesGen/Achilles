@@ -16,7 +16,7 @@ SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
-path = ["cascade.yml", "run.yml", "run_hnl.yml", "FormFactors.yml", "parameters.dat", "data/default/**"]
+path = ["cascade.yml", "run.yml", "run_hnl.yml", "precomputed.yml", "FormFactors.yml", "parameters.dat", "data/default/**"]
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "GPL-3.0-or-later"
