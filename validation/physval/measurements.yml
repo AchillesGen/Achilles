@@ -1,0 +1,455 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Achilles physics-validation config.
+#
+# Events are generated once per experimental setup (one card: beam + target) and
+# reused by every measurement in it; CI runs one job per setup, so adding a
+# measurement to an existing setup is free.
+#
+# Experiment fields:
+#   name             setup name (CI job name, and what !physval(<name>) selects)
+#   achilles_run     run card, relative to the repo root
+#   data_per         'nucleon' or 'atom': the published convention. Achilles reports
+#                    per atom; per-nucleon data is divided by target_nucleons. Never
+#                    use NUISANCE's PerNucleon: for CH it divides by 12, not 13.
+#   target_nucleons  nucleons per target atom; required with data_per: nucleon
+#   dryrun           synthetic-adapter params (feature_shift, per-sample nbins)
+#   measurements     NUISANCE3 sample names
+#
+# Per-sample maps at the bottom of the file, keyed by sample name:
+#   data_scale    factor for a shipped data table in the wrong units
+#   bin_edges     physical edges for a histogram indexed by bin number
+#   bin_widths    per-bin widths where stacked channels have no monotonic edges
+#   solid_angle   sr to divide by, for data per steradian over an angular window
+#   smearing      csv (relative to this file) with a Wiener-SVD A_C for the prediction
+#
+# NUISANCE2 requirements. The MicroBooNE_NCpi0 and ElectronData samples need two
+# NUISANCE2 fixes that are not on its main branch yet (NUISANCEMC/nuisance#115, #116):
+# NCpi0 sets its bin index only in FillHistograms, which the legacy record never
+# calls, and the Durham samples cut on variables the record fills after isSignal. Both
+# fail silently, with an empty prediction. The physval image carries them as patches on
+# top of its pinned NUISANCE2 sha; if a rebuild ever drops them, those samples go quiet
+# rather than red, so check versions.json's nuisance2.patches when they do.
+
+# Unweighting scan (`physval.py --unweighter-scan`): every scheme must reproduce the
+# reference's distributions and differ only in MC noise and cost. `null-control` is
+# the reference reseeded, which calibrates the test; keep it. `Name: None` is not the
+# reference because NoUnweighter's events come out normalised differently.
+unweighting:
+  reference: percentile-99.9
+  variants:
+    - name: percentile-99.9
+      options: {Name: Percentile, percentile: 99.9}
+    - name: null-control                                # the reference, reseeded
+      options: {Name: Percentile, percentile: 99.9}
+      seed_offset: 1
+    - name: percentile-99
+      options: {Name: Percentile, percentile: 99}       # the shipped default
+    - name: excess-1e-2
+      options: {Name: Excess, epsilon: 0.01}
+    - name: excess-1e-3
+      options: {Name: Excess, epsilon: 0.001}
+    - name: tailfrac-1e-2
+      options: {Name: TailFraction, epsilon: 0.01}
+    - name: tailfrac-1e-3
+      options: {Name: TailFraction, epsilon: 0.001}
+
+experiments:
+  - name: MINERvA_numu_CH
+    achilles_run: "examples/Minerva/run_MINERvA_virtresonances.yml"
+    data_per: nucleon          # published as cm^2/nucleon
+    target_nucleons: 13        # CH
+    dryrun:
+      feature_shift: 0.0        # synthetic: physics shift applied to feature events
+    measurements:
+      - MINERvA_CC0pinp_STV_XSec_1Ddalphat_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddphit_nu
+      - MINERvA_CC0pinp_STV_XSec_1Ddpt_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpnreco_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dpprot_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthmu_nu
+      - MINERvA_CC0pinp_STV_XSec_1Dthprot_nu
+      # Single-pion samples: the card's 30 deg muon cut contains all of their
+      # selections, and NUISANCE applies the published cuts itself.
+      - MINERvA_CC1pi0_XSec_1DWexp_nu
+      - MINERvA_CC1pi0_XSec_1DPPi0Mass_nu
+      - MINERvA_CC1pi0_XSec_1DPPi0MassDelta_nu
+      - MINERvA_CC1pi0_XSec_1DTpi_nu
+      - MINERvA_CC1pi0_XSec_1DQ2_nu
+      - MINERvA_CC1pip_XSec_1DTpi_nu_2017
+      - MINERvA_CC1pip_XSec_1DQ2_nu_2017
+      # Adler angles: the resonance decay in the pion rest frame.
+      - MINERvA_CC1pi0_XSec_1DCosAdler_nu
+      - MINERvA_CC1pi0_XSec_1DPhiAdler_nu
+      - MINERvA_CC1pi0_XSec_1Dpmu_nu
+      - MINERvA_CC1pi0_XSec_1Dthmu_nu
+      - MINERvA_CC1pi0_XSec_1Dth_nu
+
+  # CC1Mu1p / CC1Mu2p / CC1MuNp share MicroBooNE's numu+Ar beam+target, so one
+  # generation serves all three sample families.
+  - name: MicroBooNE_CC1Mu
+    achilles_run: "examples/Microboone/run_uB_1mu_virtresonances.yml"
+    data_per: atom             # published as cm^2/argon atom, NOT per nucleon
+    target_nucleons: 40        # 40Ar (documented; not used when data_per: atom)
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaAlphaT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPhiT_nu
+      # Needs NUISANCE2 >= 86c64b44 (nuisance#114 fixed a GeV/MeV mix in δp_n).
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPn_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPtx_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DDeltaPty_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DECal_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonCosTheta_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DMuonMomentum_nu
+      - MicroBooNE_CC1Mu1p_XSec_1DProtonCosTheta_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DDeltaPT_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Mu_Both_nu
+      - MicroBooNE_CC1Mu2p_XSec_1DOpening_Angle_Protons_Lab_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dcosp_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPmu_nu
+      - MicroBooNE_CC1MuNp_XSec_1DPp_nu
+      - MicroBooNE_CC1MuNp_XSec_1Dthetamup_nu
+      # CC1Mu1p 1DProtonMomentum and 1DEQE abort NUISANCE's constructor; add them
+      # back once the image carries patch 0004.
+      # WireCell 0p/Np, indexed by bin number (edges/widths below). Needs the
+      # CC1Mu0pNp NUISANCE2 patch or every event reads back -999.
+      - MicroBooNE_CC1Mu0pNp_XSec_EMu_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_CosThetaMu_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_ENu_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_TransferEnergy_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_AvailEnergy_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_ProtonKE_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_ProtonCosTheta_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_ProtonMult_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_XpEMu_nu
+      - MicroBooNE_CC1Mu0pNp_XSec_XpCosThetaMu_nu
+
+  # CC0pinp / CC1pipNp share T2K's numu+CH beam+target.
+  - name: T2K_CC
+    achilles_run: "examples/T2K/run_T2K_virtresonances.yml"
+    data_per: nucleon          # published as cm^2/nucleon
+    target_nucleons: 13        # CH
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - T2K_CC0pinp_STV_XSec_1Ddat_nu
+      - T2K_CC0pinp_STV_XSec_1Ddphit_nu
+      - T2K_CC0pinp_STV_XSec_1Ddpt_nu
+      - T2K_CC1pipNp_CH_XSec_1DdaT_nu
+      - T2K_CC1pipNp_CH_XSec_1DdpTT_nu
+      - T2K_CC1pipNp_CH_XSec_1DpN_nu
+      - T2K_CC1pip_CH_XSec_1Dppi_nu
+      - T2K_CC1pip_CH_XSec_1DQ2_nu
+      - T2K_CC1pip_CH_XSec_1Dthpi_nu
+      - T2K_CC1pip_CH_XSec_1Dthmupi_nu
+      - T2K_CC1pip_CH_XSec_1DAdlerPhi_nu
+      - T2K_CC1pip_CH_XSec_1DCosThAdler_nu
+
+  # MiniBooNE numu on mineral oil. The published cross sections are per CH2 molecule,
+  # so the run card lists 1H twice and nothing is divided out here.
+  - name: MiniBooNE_CC1pi
+    achilles_run: "examples/MiniBooNE/run_MiniBooNE_virtresonances.yml"
+    data_per: atom             # published as cm^2/CH2 molecule
+    target_nucleons: 14        # CH2 (documented; not used when data_per: atom)
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MiniBooNE_CC1pip_XSec_1DTpi_nu
+      - MiniBooNE_CC1pip_XSec_1DQ2_nu
+      - MiniBooNE_CC1pip_XSec_1DTu_nu
+      - MiniBooNE_CC1pi0_XSec_1Dppi0_nu
+      - MiniBooNE_CC1pi0_XSec_1DQ2_nu
+      - MiniBooNE_CC1pi0_XSec_1DTu_nu
+      - MiniBooNE_CC1pi0_XSec_1Dcosmu_nu
+      - MiniBooNE_CC1pi0_XSec_1Dcospi0_nu
+
+  # MicroBooNE NCpi0 (WireCell). A separate generation from MicroBooNE_CC1Mu: the
+  # process list is neutral current, so no event file is shared with it. Needs the
+  # NCpi0 NUISANCE2 patch (see the header) or both samples come back empty.
+  - name: MicroBooNE_NCpi0
+    achilles_run: "examples/Microboone/run_uB_NC_pi0_virtresonances.yml"
+    data_per: nucleon          # integrates to ~3.5e-40 cm^2, i.e. the per-nucleon
+    target_nucleons: 40        # reading of the published ~1.2e-38 cm^2/Ar
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MicroBooNE_NCpi0_XSec_XpPpi0_nu
+      - MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu
+      # The same data split by proton multiplicity: a 0p block followed by an Np one,
+      # so these carry per-bin widths rather than edges.
+      - MicroBooNE_NCpi0_XSec_0pNpPpi0_nu
+      - MicroBooNE_NCpi0_XSec_0pNpCosThetaPi0_nu
+
+  # Inclusive electron scattering: NUISANCE's Durham/QES-archive samples
+  # (ElectronData_<Z>_<A>_<E>_<theta>_<ref>, data/Electron/{12C,16O}.dat). Each is a
+  # fixed beam energy, so an experiment here is one energy; angles at the same energy
+  # share the generation. These four sit in the QE + Delta range the models cover --
+  # the 2-5.8 GeV entries are DIS and x>1 data Achilles has no machinery for. All of
+  # them need the Durham NUISANCE2 patch (see the header) or nothing is selected.
+  #
+  # The published cross section is d2sigma/dOmega dq0 per nucleus, and the selection
+  # accepts a +-4 deg window around the quoted angle, so the prediction is divided by
+  # that window's solid angle under `solid_angle` below.
+  - name: e12C_560
+    achilles_run: "examples/Electron/run_e12C_560_virtresonances.yml"
+    data_per: atom             # nb/sr/GeV per 12C nucleus, not per nucleon
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.560_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.560_60.000_Barreau:1983ht
+
+  - name: e12C_961
+    achilles_run: "examples/Electron/run_e12C_961_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.961_37.500_Sealock:1989nx
+
+  - name: e12C_1299
+    achilles_run: "examples/Electron/run_e12C_1299_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_1.299_37.500_Sealock:1989nx
+
+  - name: e16O_880
+    achilles_run: "examples/Electron/run_e16O_880_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 16
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_8_16_0.8800_32.0_Anghinolfi:1996vm
+
+  # Barreau 12C at 320/480/620/680 MeV: each energy was measured at both 36 and 60 deg,
+  # so one generation per energy serves two samples. Together with 560 MeV these walk
+  # the QE peak and the dip region across the range the model is meant to cover.
+  - name: e12C_320
+    achilles_run: "examples/Electron/run_e12C_320_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.320_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.320_60.000_Barreau:1983ht
+
+  # e-12C at 480 MeV.
+  - name: e12C_480
+    achilles_run: "examples/Electron/run_e12C_480_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.480_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.480_60.000_Barreau:1983ht
+
+  # e-12C at 620 MeV.
+  - name: e12C_620
+    achilles_run: "examples/Electron/run_e12C_620_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.620_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.620_60.000_Barreau:1983ht
+
+  # e-12C at 680 MeV.
+  - name: e12C_680
+    achilles_run: "examples/Electron/run_e12C_680_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 12        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_6_12_0.680_36.000_Barreau:1983ht
+      - ElectronData_6_12_0.680_60.000_Barreau:1983ht
+
+  # e12C_1108 is out until the cascade NaN in Sigma- decays is fixed; its card is
+  # examples/Electron/run_e12C_1108_virtresonances.yml.
+
+  # e-16O at 700 MeV, 32 deg -- the same Anghinolfi series as the 880 MeV setup.
+  - name: e16O_700
+    achilles_run: "examples/Electron/run_e16O_700_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 16        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_8_16_0.7000_32.0_Anghinolfi:1996vm
+
+  # e-16O at 1080 MeV, 32 deg -- the same Anghinolfi series as the 880 MeV setup.
+  - name: e16O_1080
+    achilles_run: "examples/Electron/run_e16O_1080_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 16        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_8_16_1.0800_32.0_Anghinolfi:1996vm
+
+  # e-16O at 1200 MeV, 32 deg -- the same Anghinolfi series as the 880 MeV setup.
+  - name: e16O_1200
+    achilles_run: "examples/Electron/run_e16O_1200_virtresonances.yml"
+    data_per: atom
+    target_nucleons: 16        # documented; not used when data_per: atom
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - ElectronData_8_16_1.2000_32.0_Anghinolfi:1996vm
+
+  # MicroBooNE nue CC (CC1eNp). A separate generation: the BNB intrinsic nue component
+  # with an electron in the final state. Unlike the CC1Mu samples, this analysis
+  # publishes per NUCLEON (the sample's own scaling says so), not per argon atom.
+  - name: MicroBooNE_CC1ENp
+    achilles_run: "examples/Microboone/run_uB_nue_virtresonances.yml"
+    data_per: nucleon
+    target_nucleons: 40
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MicroBooNE_CC1ENp_XSec_1DElecEnergy_nu
+      - MicroBooNE_CC1ENp_XSec_1DOpeningAngle_nu
+      - MicroBooNE_CC1ENp_XSec_1DTrueVisibleEnergy_nu
+
+  # MINERvA antineutrino CC1pi0 on CH (RHC flux). The antineutrino channel weights the
+  # axial-vector interference the opposite way to the neutrino samples, so it is a
+  # genuinely different test of the same resonance model.
+  - name: MINERvA_CC1pi0_antinu
+    achilles_run: "examples/Minerva/run_MINERvA_antinu_virtresonances.yml"
+    data_per: nucleon          # published as cm^2/nucleon
+    target_nucleons: 13        # CH
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - MINERvA_CC1pi0_XSec_1Dppi0_antinu
+      - MINERvA_CC1pi0_XSec_1Dpmu_antinu
+      - MINERvA_CC1pi0_XSec_1DQ2_antinu
+      - MINERvA_CC1pi0_XSec_1Dth_antinu
+
+  # T2K CC1pi+ on water. Same beam as T2K_CC, different target, so it needs its own
+  # generation; the published cross sections are per nucleon of H2O (18).
+  - name: T2K_CC1pip_H2O
+    achilles_run: "examples/T2K/run_T2K_H2O_virtresonances.yml"
+    data_per: nucleon
+    target_nucleons: 18        # H2O
+    dryrun:
+      feature_shift: 0.0
+    measurements:
+      - T2K_CC1pip_H2O_XSec_1Dppi_nu
+      - T2K_CC1pip_H2O_XSec_1Dpmu_nu
+      - T2K_CC1pip_H2O_XSec_1Dcosmu_nu
+      - T2K_CC1pip_H2O_XSec_1Dcospi_nu
+      - T2K_CC1pip_H2O_XSec_1Dcosmupi_nu
+
+# MiniBooNE's shipped dsigma/dQ2 table (MiniBooNE/CC1pip/ccpipXSec_Q2.txt) is written
+# with an "E-45" exponent where the paper's table is 1e-39 cm^2/GeV^2, so it comes out
+# 1e6 low: it integrates to 2.9e-44 cm^2 where the same analysis' dsigma/dTpi and
+# sigma(Enu) tables both give 2.5e-38 cm^2/CH2. Put it back on their footing.
+data_scale:
+  MiniBooNE_CC1pip_XSec_1DQ2_nu: 1.0e+6
+
+# The NCpi0 samples' NUISANCE histogram is indexed by bin number (one sample stacks
+# several blocks, so it has no single physical axis). These are the physical edges of
+# the two single-block samples, from data/MicroBooNE/NCpi0/real_bins.txt.
+bin_edges:
+  MicroBooNE_NCpi0_XSec_XpPpi0_nu:
+    [0.0, 0.12, 0.18, 0.24, 0.3, 0.36, 0.42, 0.51, 0.66, 1.2]
+  MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu:
+    [-1.0, -0.8, -0.6, -0.4, -0.3, -0.2, -0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,
+     0.7, 0.8, 0.9, 1.0]
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonKE_nu:
+    [0, 0.035, 0.105, 0.1225, 0.14, 0.1575, 0.175, 0.1925, 0.21, 0.245, 0.28, 0.315, 
+     0.35, 0.42, 0.525, 0.8]
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonCosTheta_nu:
+    [-1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 
+     0.5, 0.6, 0.7, 0.8, 0.9, 1]
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonMult_nu:
+    [0, 1, 2, 3, 4]
+  MicroBooNE_CC1Mu0pNp_XSec_XpEMu_nu:
+    [0.106, 0.226, 0.296, 0.386, 0.505, 0.577, 0.659, 0.753, 0.861, 0.984, 1.285, 
+     2.506]
+  MicroBooNE_CC1Mu0pNp_XSec_XpCosThetaMu_nu:
+    [-1, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 
+     0.8, 0.9, 1]
+
+# Per-bin widths, for a sample whose axis stacks several channels (a 0p block then an Np
+# block) and so has no monotonic edge list. Taken from the same real_bins.txt
+# element_lo/element_hi columns as the edges above; plots for these run against bin
+# number, which is what the axis is.
+bin_widths:
+  MicroBooNE_CC1Mu0pNp_XSec_EMu_nu:
+    [0.12, 0.07, 0.09, 0.119, 0.072, 0.082, 0.094, 0.108, 0.123, 0.301, 1.221, 0.12, 
+     0.07, 0.09, 0.119, 0.072, 0.082, 0.094, 0.108, 0.123, 0.301, 1.221]
+  MicroBooNE_CC1Mu0pNp_XSec_CosThetaMu_nu:
+    [0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 
+     0.1, 0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 
+     0.1, 0.1]
+  MicroBooNE_CC1Mu0pNp_XSec_ENu_nu:
+    [0.34, 0.165, 0.1, 0.115, 0.13, 0.15, 0.175, 0.195, 0.48, 1.95, 0.34, 0.165, 0.1, 
+     0.115, 0.13, 0.15, 0.175, 0.195, 0.48, 1.95]
+  MicroBooNE_CC1Mu0pNp_XSec_TransferEnergy_nu:
+    [0.3, 0.4, 1.8, 0.12, 0.155, 0.125, 0.2, 0.4, 1.5]
+  MicroBooNE_CC1Mu0pNp_XSec_AvailEnergy_nu:
+    [0.3, 0.1, 0.1, 0.5, 1.5, 0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.2, 0.3, 1.2]
+  MicroBooNE_NCpi0_XSec_0pNpPpi0_nu:
+    [0.15, 0.06, 0.09, 0.12, 0.18, 0.6, 0.12, 0.06, 0.12, 0.12, 0.18, 0.6]
+  MicroBooNE_NCpi0_XSec_0pNpCosThetaPi0_nu:
+    [1, 0.3, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 
+     0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
+# 2*pi*(cos(theta-4 deg) - cos(theta+4 deg)), the acceptance window NUISANCE's
+# Electron_NThetaBins * Electron_ThetaWidth defaults (4 x 1 deg) cut on. Dividing by it
+# treats d2sigma/dOmega dq0 as flat across 8 deg, the same approximation the sample's
+# own (commented out) normalisation made.
+solid_angle:
+  ElectronData_6_12_0.560_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.560_60.000_Barreau:1983ht: 0.759145
+  ElectronData_6_12_0.961_37.500_Sealock:1989nx: 0.533632
+  ElectronData_6_12_1.299_37.500_Sealock:1989nx: 0.533632
+  ElectronData_8_16_0.8800_32.0_Anghinolfi:1996vm: 0.464520
+  ElectronData_6_12_0.320_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.320_60.000_Barreau:1983ht: 0.759145
+  ElectronData_6_12_0.480_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.480_60.000_Barreau:1983ht: 0.759145
+  ElectronData_6_12_0.620_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.620_60.000_Barreau:1983ht: 0.759145
+  ElectronData_6_12_0.680_36.000_Barreau:1983ht: 0.515244
+  ElectronData_6_12_0.680_60.000_Barreau:1983ht: 0.759145
+  # ElectronData_6_12_1.108_37.500_Sealock:1989nx: 0.533632   # e12C_1108, out for now
+  ElectronData_8_16_0.7000_32.0_Anghinolfi:1996vm: 0.464520
+  ElectronData_8_16_1.0800_32.0_Anghinolfi:1996vm: 0.464520
+  ElectronData_8_16_1.2000_32.0_Anghinolfi:1996vm: 0.464520
+
+# Wiener-SVD additional smearing, the A_C blocks of MicroBooNE_NCpi0_data_release.root
+# for these two samples. The unfolded data is only comparable to A_C * prediction.
+smearing:
+  MicroBooNE_NCpi0_XSec_XpPpi0_nu: smearing/MicroBooNE_NCpi0_XSec_XpPpi0_nu_Ac.csv
+  MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu:
+    smearing/MicroBooNE_NCpi0_XSec_XpCosThetaPi0_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_EMu_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_EMu_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_CosThetaMu_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_CosThetaMu_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_ENu_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_ENu_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_TransferEnergy_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_TransferEnergy_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_AvailEnergy_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_AvailEnergy_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonKE_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_ProtonKE_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonCosTheta_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_ProtonCosTheta_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_ProtonMult_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_ProtonMult_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_XpEMu_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_XpEMu_nu_Ac.csv
+  MicroBooNE_CC1Mu0pNp_XSec_XpCosThetaMu_nu: smearing/MicroBooNE_CC1Mu0pNp_XSec_XpCosThetaMu_nu_Ac.csv
+  MicroBooNE_NCpi0_XSec_0pNpPpi0_nu: smearing/MicroBooNE_NCpi0_XSec_0pNpPpi0_nu_Ac.csv
+  MicroBooNE_NCpi0_XSec_0pNpCosThetaPi0_nu: smearing/MicroBooNE_NCpi0_XSec_0pNpCosThetaPi0_nu_Ac.csv

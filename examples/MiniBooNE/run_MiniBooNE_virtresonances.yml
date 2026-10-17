@@ -1,0 +1,69 @@
+# MiniBooNE numu on mineral oil, QE + virtual-resonance RES, for the physics-validation
+# CC1pi samples. Mineral oil is CH2 and the published cross sections are per CH2
+# molecule: the cross section Achilles reports is the sum over the Nuclei list, so 1H
+# appears twice and nothing is divided out downstream (data_per: atom).
+Main:
+  NEvents: 7500000
+  HardCuts: false
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: MiniBooNE_CH2_QE_RES_VirtResonances.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [14, [13]]
+
+Beams:
+  - Beam:
+      PID: 14
+      Beam Params:
+        Type: Spectrum
+        Histogram: flux/miniboone_nu.dat
+
+Cascade:
+  Run: True
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+ - NuclearModel:
+    Model: FortranModel
+    Name: QE_Spectral_Func
+    ConfigFile: data/info_C12_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+ - NuclearModel:
+    Model: FortranModel
+    Name: RES_Spectral_Func
+    ConfigFile: data/info_C12_pke.data
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+
+Nuclei:
+  - Nucleus: !include "data/default/12C.yml"
+  - Nucleus: !include "data/default/1H.yml"
+  - Nucleus: !include "data/default/1H.yml"
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 13
+    range: [0., 180.]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []
