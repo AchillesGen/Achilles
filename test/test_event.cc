@@ -5,6 +5,7 @@
 #include "mock_classes.hh"
 
 #include "Achilles/Event.hh"
+#include "Achilles/NuclearMass.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -57,9 +58,23 @@ TEST_CASE("Finalize Event", "[Event]") {
 
     achilles::Event event{};
     event.Hadrons() = final;
-    event.Finalize();
-    CHECK(event.Remnant().PID() == 1000050110);
-    CHECK(event.Remnant().Mass() == 11 * achilles::Constant::mN);
+
+    SECTION("Finalize leaves the threaded remnant alone") {
+        // The remnant is built at the target vertex and updated through the cascade, so
+        // Finalize only validates it rather than deriving it from hadron statuses.
+        static constexpr achilles::FourVector rem_mom{10249.99, 0, 0, 0};
+        event.SetRemnant(Particle{
+            achilles::PID::MakeNucleus(5, 11), rem_mom, {}, achilles::ParticleStatus::residue});
+        event.Finalize();
+        CHECK(event.Remnant().ID() == achilles::PID::MakeNucleus(5, 11));
+        CHECK(event.Remnant().Momentum() == rem_mom);
+        CHECK(event.Remnant().Mass() == achilles::NuclearMass(5, 11));
+    }
+
+    SECTION("Finalize is a no-op when no remnant was threaded") {
+        event.Finalize();
+        CHECK(event.Remnant().ID() == achilles::PID::undefined());
+    }
 }
 
 TEST_CASE("Test Event Copy Constructor", "[Event]") {

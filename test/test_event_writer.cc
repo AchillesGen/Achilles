@@ -40,7 +40,7 @@ TEST_CASE("Builtin", "[EventWriter]") {
         achilles::Particles particles = {
             Particle{achilles::PID::proton(), hadron0, {}, achilles::ParticleStatus::initial_state},
             Particle{achilles::PID::proton(), hadron1, {}, achilles::ParticleStatus::final_state}};
-        achilles::NuclearRemnant remnant(11, 5);
+        achilles::Particle remnant(achilles::PID::MakeNucleus(5, 11), {100, 0, 0, 0});
 
         const MockEvent event{};
         double wgt = 1.0;

@@ -101,6 +101,16 @@ class PID {
     static constexpr PID carbon() { return PID{1000060120}; }
     static constexpr PID argon() { return PID{1000180400}; }
 
+    // Nuclear codes are +/- 10LZZZAAAI, see
+    // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
+    static constexpr PID MakeNucleus(int Z, int A, int L = 0, int I = 0) {
+        return PID{1000000000 + 10000000 * L + 10000 * Z + 10 * A + I};
+    }
+    constexpr int NuclearL() const { return static_cast<int>((Abs_() / 10000000) % 10); }
+    constexpr int NuclearZ() const { return static_cast<int>((Abs_() / 10000) % 1000); }
+    constexpr int NuclearA() const { return static_cast<int>((Abs_() / 10) % 1000); }
+    constexpr int NuclearI() const { return static_cast<int>(Abs_() % 10); }
+
     // Stream Operator
     template <typename OStream> friend OStream &operator<<(OStream &os, const PID &pid) {
         os << pid.id;
@@ -120,6 +130,7 @@ class PID {
     // http://pdg.lbl.gov/2019/reviews/rpp2019-rev-monte-carlo-numbering.pdf
     // TODO: Implement this function, may not be explicitly needed though
     // bool valid(const long int&);
+    constexpr long int Abs_() const { return id < 0 ? -id : id; }
     long int id;
 };
 
@@ -172,6 +183,10 @@ class ParticleInfo {
     static ParticleDB particleDB;
     static std::map<std::string, PID> nameToPID;
     static void BuildDatabase(const std::string &);
+    // Find the entry for a PID, synthesizing and caching one for nuclei absent from the
+    // database. Throws for any other unknown PID.
+    static std::shared_ptr<ParticleInfoEntry> Lookup(PID);
+    static std::shared_ptr<ParticleInfoEntry> BuildNucleusEntry(PID);
 
   public:
     ParticleInfo(std::shared_ptr<ParticleInfoEntry> info_, const bool &anti_ = false)
@@ -183,11 +198,7 @@ class ParticleInfo {
 
     explicit ParticleInfo(const long int &id) : info(nullptr), anti(false) {
         InitDatabase("data/Particles.yml");
-        auto it(particleDB.find(static_cast<PID>(std::abs(id))));
-        if(it != particleDB.end())
-            info = it->second;
-        else
-            throw std::runtime_error(fmt::format("Invalid PID: id={}", id));
+        info = Lookup(static_cast<PID>(std::abs(id)));
         if(id < 0 && info->majorana == 0) anti = true;
     }
 
@@ -197,10 +208,7 @@ class ParticleInfo {
             id = -id;
             anti = true;
         }
-        auto it(particleDB.find(id));
-        if(it == particleDB.end())
-            throw std::runtime_error(fmt::format("Invalid PID: id={}", int(id)));
-        info = it->second;
+        info = Lookup(id);
         if(anti_ && info->majorana == 0) anti = anti_;
     }
 
