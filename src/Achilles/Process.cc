@@ -29,6 +29,90 @@ using achilles::Process;
 using achilles::ProcessGroup;
 using achilles::refParticles;
 
+namespace achilles {
+namespace {
+
+using PIDs = std::vector<PID>;
+
+// options[i] = the concrete PIDs allowed in slot i
+std::vector<PIDs> CartesianProduct(const std::vector<PIDs> &options) {
+    std::vector<PIDs> result{{}}; // one empty tuple
+    for(const auto &opts : options) {
+        std::vector<PIDs> next;
+        next.reserve(result.size() * opts.size());
+        for(const auto &partial : result)
+            for(const auto &pid : opts) {
+                auto extended = partial;
+                extended.push_back(pid);
+                next.push_back(std::move(extended));
+            }
+        result = std::move(next);
+    }
+    return result;
+}
+
+PIDs Options(PID pid) {
+    ParticleInfo info(pid);
+    if(!info.IsGroup()) return {pid};
+    PIDs out;
+    for(const auto &m : info.Decompose()) out.push_back(m.ID());
+    return out;
+}
+
+std::vector<PIDs> ExpandSlots(const PIDs &slots) {
+    std::vector<PIDs> options;
+    for(auto pid : slots) options.push_back(Options(pid));
+    return CartesianProduct(options);
+}
+
+std::vector<std::pair<PIDs, PIDs>> ExpandHadronic(const PIDs &in, const PIDs &out) {
+    std::vector<PIDs> options;
+    for(auto pid : in) options.push_back(Options(pid));
+    for(auto pid : out) options.push_back(Options(pid));
+
+    std::vector<std::pair<PIDs, PIDs>> expanded;
+    for(const auto &combo : CartesianProduct(options)) {
+        auto split = combo.begin() + static_cast<std::ptrdiff_t>(in.size());
+        expanded.emplace_back(PIDs(combo.begin(), split), PIDs(split, combo.end()));
+    }
+    return expanded;
+}
+
+// Hadronic charge change in thirds: sum(final) - sum(initial)
+int HadronicCharge3(const ProcessInfo &process) {
+    int charge = 0;
+    for(const auto &pid : process.m_hadronic.first) charge -= ParticleInfo(pid).IntCharge();
+    for(const auto &pid : process.m_hadronic.second) charge += ParticleInfo(pid).IntCharge();
+    return charge;
+}
+
+// Total charge change must vanish: ΔQ_lep + ΔQ_had = 0
+bool ConservesCharge(const ProcessInfo &process) {
+    return 3 * process.LeptonicCharge() + HadronicCharge3(process) == 0;
+}
+
+std::vector<ProcessInfo> ExpandProcessInfo(const ProcessInfo &process) {
+    std::vector<ProcessInfo> result;
+    const auto &[in, out] = process.m_hadronic;
+    const auto spectators = ExpandSlots(process.m_spectator);
+
+    for(auto &[new_in, new_out] : ExpandHadronic(in, out)) {
+        ProcessInfo copy = process;
+        copy.m_hadronic = {new_in, new_out};
+        // TODO: Add MinimalFlips filter; MEC currently includes np->pn / pn->np for ΔQ = 0
+        if(!ConservesCharge(copy)) continue;
+        // Spectators do not change charge, so every combination is kept
+        for(const auto &spectator : spectators) {
+            copy.m_spectator = spectator;
+            result.push_back(copy);
+        }
+    }
+    return result;
+}
+
+} // namespace
+} // namespace achilles
+
 refParticles Process::SelectParticles(const refParticles &protons, const refParticles &neutrons,
                                       const std::vector<PID> &ids,
                                       const std::vector<FourVector> &momenta,
@@ -315,19 +399,35 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : settings["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
-        auto infos = model->AllowedStates(process_info);
-        const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
-        for(auto &info : infos) {
+        model->AllowedStates(process_info);
+        const auto multiplicity = process_info.Multiplicity();
+        if(groups.find(multiplicity) == groups.end()) {
+            groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
+        }
+        groups.at(multiplicity).AddProcessInfo(std::move(process_info));
+    }
+
+    for(auto &group : groups) group.second.BuildProcess(settings, model);
+
+    return groups;
+}
+
+void ProcessGroup::BuildProcess(const Settings &settings, NuclearModel *model) {
+    const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
+
+    for(const auto &info : m_process_info) {
+        const auto expanded_infos = ExpandProcessInfo(info);
+        if(expanded_infos.empty())
+            throw std::runtime_error(
+                fmt::format("ProcessGroup: No charge-conserving states found for {}", info));
+
+        for(const auto &expanded : expanded_infos) {
             try {
                 auto unweighter =
                     UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
-                Process process(info, std::move(unweighter));
+                Process process(expanded, std::move(unweighter));
                 process.SetID(model);
-                const auto multiplicity = info.Multiplicity();
-                if(groups.find(multiplicity) == groups.end()) {
-                    groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
-                }
-                groups.at(multiplicity).AddProcess(std::move(process));
+                m_processes.push_back(std::move(process));
             } catch(std::out_of_range &e) {
                 spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
                               unweight_name,
@@ -336,9 +436,8 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
             }
         }
     }
-
-    return groups;
 }
+
 
 void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {

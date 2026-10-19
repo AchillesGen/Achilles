@@ -233,12 +233,8 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
 }
 
 // TODO: Rewrite to match process grouping
-std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo &info) const {
+void NuclearModel::AllowedStates(ProcessInfo &info) const {
     // Check for charge conservation
-    const auto charge = info.LeptonicCharge();
-    spdlog::debug("Charge = {}", charge);
-    std::vector<ProcessInfo> results;
-    auto local = info;
 
     switch(Mode()) {
     case NuclearMode::None:
@@ -248,164 +244,25 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         throw std::runtime_error("NuclearModel: Coherent needs custom AllowedStates.");
 
     case NuclearMode::Quasielastic:
-        if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
-
-        switch(charge) {
-        case -1: // Final state has less charge than initial
-            local.m_hadronic = {{PID::neutron()}, {PID::proton()}};
-            results.push_back(local);
-            break;
-        case 0: // Same charge in inital and final
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::proton()}};
-            results.push_back(local);
-            break;
-        case 1: // Final state has more charge than initial
-            local.m_hadronic = {{PID::proton()}, {PID::neutron()}};
-            results.push_back(local);
-            break;
-        }
-
-        return results;
+        info.m_hadronic = {{PID::nucleon()}, {PID::nucleon()}};
+        return;
 
     case NuclearMode::Resonance:
-        if(std::abs(charge) > 1)
-            throw std::runtime_error(
-                fmt::format("{}}: Requires |charge| < 2, but found |charge| {}", ToString(Mode()),
-                            std::abs(charge)));
-
-        switch(charge) {
-        case -1: // Final state has less charge than initial
-            local.m_hadronic = {{PID::neutron()}, {PID::proton(), PID::pion0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron(), PID::pionp()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::proton(), PID::pionp()}};
-            results.push_back(local);
-            break;
-        case 0: // Same charge in inital and final
-            local.m_hadronic = {{PID::proton()}, {PID::proton(), PID::pion0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::neutron(), PID::pionp()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron(), PID::pion0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::proton(), -PID::pionp()}};
-            results.push_back(local);
-            break;
-        case 1: // Final state has more charge than initial
-            local.m_hadronic = {{PID::proton()}, {PID::neutron(), PID::pion0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::proton(), -PID::pionp()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron(), -PID::pionp()}};
-            results.push_back(local);
-            break;
-        }
-        return results;
+        info.m_hadronic = {{PID::nucleon()}, {PID::nucleon(),PID::pion()}};
+        return;
 
     case NuclearMode::MesonExchangeCurrent:
-        if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format("{}: Requires |charge| < 2, but found |charge| {}",
-                                                 ToString(Mode()), std::abs(charge)));
+        info.m_hadronic = {{PID::nucleon(), PID::nucleon()}, {PID::nucleon(),PID::nucleon()}};
+        return;
 
-        switch(charge) {
-        case -1: // Final state has less charge than initial
-            local.m_hadronic = {{PID::neutron(), PID::proton()}, {PID::proton(), PID::proton()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton(), PID::neutron()}, {PID::proton(), PID::proton()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron(), PID::neutron()}, {PID::proton(), PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron(), PID::neutron()}, {PID::neutron(), PID::proton()}};
-            results.push_back(local);
-            break;
-        case 0: // Same charge in inital and final
-            local.m_hadronic = {{PID::neutron(), PID::neutron()}, {PID::neutron(), PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton(), PID::neutron()}, {PID::proton(), PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron(), PID::proton()}, {PID::neutron(), PID::proton()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton(), PID::proton()}, {PID::proton(), PID::proton()}};
-            results.push_back(local);
-            break;
-        case 1: // Final state has more charge than initial
-            local.m_hadronic = {{PID::proton(), PID::neutron()}, {PID::neutron(), PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron(), PID::proton()}, {PID::neutron(), PID::neutron()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton(), PID::proton()}, {PID::neutron(), PID::proton()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton(), PID::proton()}, {PID::proton(), PID::neutron()}};
-            results.push_back(local);
-            break;
-        }
-        return results;
     case NuclearMode::Interference_QE_MEC:
-        if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Interference: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
-
-        switch(charge) {
-        case -1: // Final state has less charge than initial
-            local.m_hadronic = {{PID::neutron()}, {PID::proton()}};
-            local.m_spectator = {PID::neutron()};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::proton()}};
-            local.m_spectator = {PID::proton()};
-            results.push_back(local);
-            break;
-        case 0: // Same charge in inital and final
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
-            local.m_spectator = {PID::neutron()};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::neutron()}};
-            local.m_spectator = {PID::proton()};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::proton()}};
-            local.m_spectator = {PID::neutron()};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::proton()}};
-            local.m_spectator = {PID::proton()};
-            results.push_back(local);
-            break;
-        case 1: // Final state has more charge than initial
-            local.m_hadronic = {{PID::proton()}, {PID::neutron()}};
-            local.m_spectator = {PID::neutron()};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::neutron()}};
-            local.m_spectator = {PID::proton()};
-            results.push_back(local);
-            break;
-        }
-
-        return results;
+        info.m_hadronic = {{PID::nucleon()}, {PID::nucleon()}};
+        info.m_spectator = {PID::nucleon()};
+        return;
 
     case NuclearMode::Hyperon:
-        if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Hyperon: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
-
-        switch(charge) {
-        case -1: // Final state has less charge than initial
-            break;
-        case 0: // Same charge in inital and final
-            break;
-        case 1: // Final state has more charge than initial
-            local.m_hadronic = {{PID::proton()}, {PID::lambda0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::proton()}, {PID::sigma0()}};
-            results.push_back(local);
-            local.m_hadronic = {{PID::neutron()}, {PID::sigmam()}};
-            results.push_back(local);
-            break;
-        }
-
-        return results;
+        info.m_hadronic = {{PID::nucleon()}, {PID::hyperon()}};
+        return;
 
     // TODO: Implement remaining cases
     case NuclearMode::ShallowInelastic:
@@ -413,8 +270,6 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         throw std::runtime_error(fmt::format(
             "NuclearModel: Allowed states for {} not implemented yet", ToString(Mode())));
     }
-
-    return results;
 }
 
 // TODO: Clean this up so it isn't hardcoded
@@ -514,16 +369,14 @@ achilles::NuclearModel::Currents Coherent::CalcCurrents(const std::vector<Partic
     return results;
 }
 
-std::vector<achilles::ProcessInfo> Coherent::AllowedStates(const ProcessInfo &info) const {
+void Coherent::AllowedStates(ProcessInfo &info) const {
     // Check for charge conservation
     const auto charge = info.LeptonicCharge();
     spdlog::debug("Charge = {}", charge);
     if(charge != 0)
         throw std::runtime_error(
             fmt::format("Coherent: Requires charge 0, but found charge {}", charge));
-    auto result = info;
-    result.m_hadronic = {{nucleus_pid}, {nucleus_pid}};
-    return {result};
+    info.m_hadronic = {{nucleus_pid}, {nucleus_pid}};
 }
 
 std::unique_ptr<NuclearModel> Coherent::Construct(const YAML::Node &config) {
