@@ -236,6 +236,19 @@ void ParticleInfo::RegisterContainerRule(PID id, std::string name, ContainerRule
     rules[id] = pred;
 }
 
+void ParticleInfo::RegisterDefaultContainers() {
+    // Massless (light) quarks; the jet also contains the gluon. Rule-based so that
+    // BSM / Sherpa-registered massless partons are picked up when re-finalized
+    // (cf. Sherpa MODEL/Main/Model_Base.C kf_quark / kf_jet).
+    auto light_quark = [](const ParticleInfo &p) {
+        return p.ID() != PID::undefined() && p.IsQuark() && !p.IsMassive();
+    };
+    RegisterContainerRule(PID::quark(), "quark", light_quark);
+    RegisterContainerRule(PID::jet(), "jet", [light_quark](const ParticleInfo &p) {
+        return light_quark(p) || p.IsGluon();
+    });
+}
+
 void ParticleInfo::FinalizeContainers() {
     // Rebuild rule-based membership from the finalized table.
     for(const auto &[group_id, rule] : rules) {

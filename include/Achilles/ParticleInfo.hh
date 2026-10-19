@@ -299,10 +299,15 @@ class ParticleInfo {
         if(particleDB.size() == 0) {
             particleDB[PID::undefined()] = std::make_shared<ParticleInfoEntry>(ParticleInfoEntry());
             BuildDatabase(filename);
+            RegisterDefaultContainers();
+            FinalizeContainers();
         }
     }
     static void RegisterContainer(PID id, std::string name, std::vector<PID> members);
     static void RegisterContainerRule(PID id, std::string name, ContainerRule pred);
+    // Register the built-in rule-based containers (jet, quark). Rule-based so BSM /
+    // Sherpa-registered states are picked up on re-finalize.
+    static void RegisterDefaultContainers();
     static void FinalizeContainers();
     static void PrintDatabase();
     static const std::map<std::string, PID> &NameToPID() { return nameToPID; }
