@@ -438,7 +438,6 @@ void ProcessGroup::BuildProcess(const Settings &settings, NuclearModel *model) {
     }
 }
 
-
 void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {
     auto backend_name = settings.GetAs<std::string>("Backend/Name");

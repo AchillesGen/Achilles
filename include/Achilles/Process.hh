@@ -145,7 +145,7 @@ class ProcessGroup {
   private:
     // Physics components
     std::vector<ProcessInfo> m_process_info;
-    std::vector<Process> m_processes; 
+    std::vector<Process> m_processes;
     std::shared_ptr<Beam> m_beam = nullptr;
     std::shared_ptr<Nucleus> m_nucleus = nullptr;
     std::unique_ptr<XSecBackend> m_backend = nullptr;

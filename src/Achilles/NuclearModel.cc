@@ -248,11 +248,11 @@ void NuclearModel::AllowedStates(ProcessInfo &info) const {
         return;
 
     case NuclearMode::Resonance:
-        info.m_hadronic = {{PID::nucleon()}, {PID::nucleon(),PID::pion()}};
+        info.m_hadronic = {{PID::nucleon()}, {PID::nucleon(), PID::pion()}};
         return;
 
     case NuclearMode::MesonExchangeCurrent:
-        info.m_hadronic = {{PID::nucleon(), PID::nucleon()}, {PID::nucleon(),PID::nucleon()}};
+        info.m_hadronic = {{PID::nucleon(), PID::nucleon()}, {PID::nucleon(), PID::nucleon()}};
         return;
 
     case NuclearMode::Interference_QE_MEC:
