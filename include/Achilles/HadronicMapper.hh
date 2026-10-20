@@ -6,6 +6,7 @@
 #include "Achilles/Factory.hh"
 #include "Achilles/Mapper.hh"
 #include "Achilles/ProcessInfo.hh"
+#include "Achilles/Particle.hh"
 
 namespace achilles {
 
@@ -99,7 +100,7 @@ class DISSingleNucleonMapper: public HadronicBeamMapper,
 	/// 1 for [x]
 	size_t NDims() const override { return 1; }
   private:
-	FourVector pHadron;
+	Particle m_nucleon;
 };
 
 class DISNucleusMapper: public HadronicBeamMapper,

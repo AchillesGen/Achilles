@@ -27,12 +27,12 @@ TEST_CASE("Passes Validator", "[NuHepMC]") {
 
     achilles::EventHistory history;
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {target}, {nuc_in}, achilles::EventHistoryNode::StatusCode::target);
+                      {target}, {nuc_in}, achilles::EventVertex::StatusCode::target);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
-                      {beam_part}, {neutrino}, achilles::EventHistoryNode::StatusCode::beam);
+                      {beam_part}, {neutrino}, achilles::EventVertex::StatusCode::beam);
     history.AddVertex({8.1502403531109633e-13, 3.6163822359943019e-13, 1.0579315614474801e-12},
                       {nuc_in, neutrino}, {nuc_out, lepton},
-                      achilles::EventHistoryNode::StatusCode::primary);
+                      achilles::EventVertex::StatusCode::primary);
 
     const MockEvent event{};
     double wgt = 1.0;

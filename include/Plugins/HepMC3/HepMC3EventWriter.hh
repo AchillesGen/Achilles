@@ -23,7 +23,7 @@ class HepMC3Writer : public EventWriter {
     ~HepMC3Writer() override = default;
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
-    void Write(const Event &) override;
+    void Write(Event&) override;
 
   private:
     HepMC3::WriterAscii file;

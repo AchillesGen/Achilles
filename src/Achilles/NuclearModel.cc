@@ -413,8 +413,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 				"DIS: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
 		switch(charge) {
 			case -1: // Final lepton has less charge than initial
-				for(PID u:disUpQuarks)
-					for(PID d:disDownQuarks) {
+				for(const PID& u:disUpQuarks)
+					for(const PID& d:disDownQuarks) {
 						local.m_hadronic={{d},{u}};
 						results.push_back(local);
 						local.m_hadronic={{-u},{-d}};
@@ -422,13 +422,13 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 					}
 				break;
 			case 0: // Same charge in inital and final
-				for(PID u:disUpQuarks) {
+				for(const PID& u:disUpQuarks) {
 					local.m_hadronic={{u},{u}};
 					results.push_back(local);
 					local.m_hadronic={{-u},{-u}};
 					results.push_back(local);
 				}
-				for(PID d:disDownQuarks) {
+				for(const PID& d:disDownQuarks) {
 					local.m_hadronic={{d},{d}};
 					results.push_back(local);
 					local.m_hadronic={{-d},{-d}};
@@ -436,8 +436,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 				}
 				break;
 			case 1: // Final lepton has more charge than initial
-				for(PID u:disUpQuarks)
-					for(PID d:disDownQuarks) {
+				for(const PID& u:disUpQuarks)
+					for(const PID& d:disDownQuarks) {
 						local.m_hadronic={{u},{d}};
 						results.push_back(local);
 						local.m_hadronic={{-d},{-u}};

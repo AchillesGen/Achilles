@@ -12,14 +12,22 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/ThreeVector.hh"
+#include "Achilles/Random.hh"
 
 namespace achilles {
 
+class Particle;
+using vParticles = std::vector<Particle>;
+
 // The codes given here are to match to the NuHepMC standard
 enum class ParticleStatus : int {
+	/// A particle that should no longer be considered,
+	/// usually because it's a redundant duplicate
+	discarded = -1,
     any = 0,
     final_state = 1,
     decayed = 2,
+	/// Incoming particles on the Primary Vertex
     initial_state = 3,
     beam = 4,
     target = 11,
@@ -58,6 +66,9 @@ inline auto format_as(achilles::ParticleStatus s) {
 /// @endrst
 class Particle {
   public:
+	/// Value to store in start_vertex or end_vertex when this is
+	/// an initial-state or final-state particle respectively.
+	static constexpr size_t OPEN_END=static_cast<size_t>(-1);
     /// @name Constructors and Destructors
     ///@{
 
@@ -101,14 +112,15 @@ class Particle {
 
     Particle(const Particle &other)
         : info{other.info}, momentum{other.momentum}, position{other.position},
-          status{other.status}, mothers{other.mothers}, formationZone{other.formationZone} {}
+          status{other.status}, mothers{other.mothers}, formationZone{other.formationZone},
+		  start_vertex{other.start_vertex}, end_vertex{other.end_vertex} {}
 
     Particle(Particle &&) = default;
     Particle &operator=(const Particle &) = default;
     Particle &operator=(Particle &&) = default;
 
     /// Default destructor
-    ~Particle() = default;
+    virtual ~Particle() = default;
     ///@}
 
     /// @name Setters
@@ -192,6 +204,14 @@ class Particle {
     ///@param int: The status to be set
     ParticleStatus &Status() noexcept { return status; }
 
+	/// The index of the vertex this particle starts on, within the event
+	size_t& startVertex() { return start_vertex; }
+	const size_t& startVertex() const { return start_vertex; }
+
+	/// The index of the vertex this particle ends on, within the event
+	size_t& endVertex() { return end_vertex; }
+	const size_t& endVertex() const { return end_vertex; }
+
     /// Return a vector of the mother particle indices
     ///@return std::vector<Particle>: A vector of Particles referring to the mothers
     const std::vector<Particle> &Mothers() const noexcept { return mothers; }
@@ -256,6 +276,10 @@ class Particle {
     ///@return bool: True if the particle should be written out, False otherwise
     bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
 
+	/// Check to see if the particle is no longer valid
+	///@return bool: True if the particle should no longer be considered, False otherwise
+	bool IsDiscarded() const noexcept { return status == ParticleStatus::discarded; }
+
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
     void Propagate(const double &) noexcept;
@@ -274,8 +298,12 @@ class Particle {
 
     /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
     ///@param rot_mat: the 3x3 rotation matrix
-    void Rotate(const std::array<double, 9> &) noexcept;
-    void RotateBack(const std::array<double, 9> &) noexcept;
+    virtual void Rotate(const std::array<double, 9> &) noexcept;
+    virtual void RotateBack(const std::array<double, 9> &) noexcept;
+
+	/// Adds the given vector to the current particle's position
+	virtual void Move(const ThreeVector& dx) { position+=dx; }
+	void Mode(ThreeVector&& dx) { Move(dx); }
 
     /// Return a string representation of the particle
     ///@return std::string: a string representation of the particle
@@ -311,14 +339,52 @@ class Particle {
     friend std::istream &operator>>(std::istream &, Particle &);
     /// @}
 
-  private:
+  protected:
     ParticleInfo info;
     FourVector momentum;
     ThreeVector position;
     ParticleStatus status;
-    std::vector<Particle> mothers, daughters;
+    vParticles mothers, daughters;
     double formationZone;
     double distanceTraveled = 0.0;
+	size_t start_vertex=OPEN_END, end_vertex=OPEN_END;
+};
+
+inline FourVector sumMomenta(vParticles& parts) {
+	FourVector result{};
+	for(Particle& p:parts)
+		result+=p.Momentum();
+	return result;
+}
+inline ThreeVector avgPosition(vParticles& parts) {
+	ThreeVector result{};
+	for(Particle& p:parts)
+		result+=p.Position();
+	result/=parts.size();
+	return result;
+}
+
+class CompositeParticle: public Particle {
+  public:
+	CompositeParticle(vParticles& parts,PID pid=PID{0},ParticleStatus status=ParticleStatus::background):
+		Particle(pid,sumMomenta(parts),avgPosition(parts),status), sub_parts{parts} {}
+	CompositeParticle(vParticles&& parts={},PID pid=PID{0},ParticleStatus status=ParticleStatus::background):
+		CompositeParticle(parts,pid,status) {}
+	/// Default destructor
+	~CompositeParticle() = default;
+
+	/// Returns a new CompositeParticle with the particle at partIndex
+	/// removed, paired with the particle that was removed
+	std::pair<CompositeParticle,Particle> splitSingle(size_t);
+	/// Splits off a randomly-selected (uniform) particle with the given PID
+	/// from this composite, if such a particle exists
+	std::pair<CompositeParticle,Particle> splitSingleRandom(PID);
+
+	void Rotate(const std::array<double, 9> &) noexcept override;
+	void RotateBack(const std::array<double, 9> &) noexcept override;
+	void Move(const ThreeVector&) override;
+
+	vParticles sub_parts;
 };
 
 /// Find the time to closest approach between two particles
@@ -330,6 +396,19 @@ double ClosestApproach(const Particle &, const Particle &);
 // Comparisons for std::reference_wrapper<Particle> with Particle
 bool operator==(const std::reference_wrapper<Particle> &, const Particle &);
 bool operator==(const Particle &, const std::reference_wrapper<Particle> &);
+
+struct compare_momentum {
+    explicit compare_momentum(const Particle &particle, double _eps = 1e-10)
+        : self(particle), eps(_eps) {}
+    bool operator()(const Particle &other) {
+        return self.Momentum().Approx(other.Momentum(), eps) && self.ID() == other.ID();
+    }
+    bool operator()(const Particle* other) {
+        return self.Momentum().Approx(other->Momentum(), eps) && self.ID() == other->ID();
+    }
+    Particle self;
+    double eps;
+};
 
 } // namespace achilles
 

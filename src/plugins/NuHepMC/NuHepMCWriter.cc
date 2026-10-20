@@ -163,21 +163,21 @@ int ToNuHepMC(achilles::ParticleStatus status) {
     return -1;
 }
 
-int ToNuHepMC(achilles::EventHistoryNode::StatusCode status) {
+int ToNuHepMC(achilles::EventVertex::StatusCode status) {
     switch(status) {
-    case achilles::EventHistoryNode::StatusCode::propagation:
+    case achilles::EventVertex::StatusCode::propagation:
         return NuHepMC::VertexStatus::Propagation;
-    case achilles::EventHistoryNode::StatusCode::cascade:
+    case achilles::EventVertex::StatusCode::cascade:
         return NuHepMC::VertexStatus::Cascade;
-    case achilles::EventHistoryNode::StatusCode::primary:
+    case achilles::EventVertex::StatusCode::primary:
         return NuHepMC::VertexStatus::Primary;
-    case achilles::EventHistoryNode::StatusCode::beam:
+    case achilles::EventVertex::StatusCode::beam:
         return NuHepMC::VertexStatus::Beam;
-    case achilles::EventHistoryNode::StatusCode::target:
+    case achilles::EventVertex::StatusCode::target:
         return NuHepMC::VertexStatus::NucleonSeparation;
-    case achilles::EventHistoryNode::StatusCode::decay:
+    case achilles::EventVertex::StatusCode::decay:
         return NuHepMC::VertexStatus::Decay;
-    case achilles::EventHistoryNode::StatusCode::shower:
+    case achilles::EventVertex::StatusCode::shower:
         return NuHepMC::VertexStatus::Shower;
     }
     return -1;
@@ -202,14 +202,15 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     std::map<achilles::Particle, GenParticlePtr, NuHepMCVisitor::compare> converted;
     std::vector<GenParticlePtr> beamparticles;
     NuHepMCVisitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
-    void visit(achilles::EventHistoryNode *node) {
-		spdlog::trace("Visiting node {}",node->Index());
+    void visit(achilles::Event& event,size_t vertexIdx) {
+		spdlog::trace("Visiting node {}",vertexIdx);
+		achilles::EventVertex* node=event.vertex(vertexIdx);
         const achilles::ThreeVector& position = node->Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
         vertex_pos *= to_mm;
         GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
         vertex->set_status(ToNuHepMC(node->Status()));
-        for(const auto &part : node->ParticlesIn()) {
+        for(const achilles::Particle& part:event.particlesIn(vertexIdx)) {
 			spdlog::trace("Particle In: {}",part);
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
@@ -218,14 +219,14 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
                 particle = ToNuHepMC(part);
                 converted[part] = particle;
             }
-            if(node->Status() == achilles::EventHistory::StatusCode::beam) {
+            if(node->Status() == achilles::EventVertex::StatusCode::beam) {
                 beamparticles[0] = particle;
-            } else if(node->Status() == achilles::EventHistory::StatusCode::target) {
+            } else if(node->Status() == achilles::EventVertex::StatusCode::target) {
                 beamparticles[1] = particle;
             }
             vertex->add_particle_in(particle);
         }
-        for(const auto &part : node->ParticlesOut()) {
+        for(const achilles::Particle& part:event.particlesOut(vertexIdx)) {
 			spdlog::trace("Particle Out: {}",part);
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
@@ -240,7 +241,7 @@ struct NuHepMCVisitor : achilles::HistoryVisitor {
     }
 };
 
-void NuHepMCWriter::Write(const achilles::Event &event) {
+void NuHepMCWriter::Write(achilles::Event& event) {
     spdlog::debug("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
@@ -277,7 +278,7 @@ void NuHepMCWriter::Write(const achilles::Event &event) {
     NuHepMC::ER5::SetLabPosition(visitor.evt, {0, 0, 0, 0});
 
     // Walk the history and add to file
-    event.History().WalkHistory(visitor);
+    event.WalkHistory(visitor);
     // visitor.evt.add_tree(visitor.beamparticles);
     spdlog::trace("Writing Event");
     file->write_event(visitor.evt);

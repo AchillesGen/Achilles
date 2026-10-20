@@ -7,6 +7,7 @@
 #include "HepMC3/GenVertex.h"
 
 #include "Achilles/Event.hh"
+#include "Achilles/EventVertex.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Version.hh"
@@ -50,13 +51,14 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
     std::map<achilles::Particle, GenParticlePtr, HepMC3Visitor::compare> converted;
     std::vector<GenParticlePtr> beamparticles;
     HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
-    void visit(achilles::EventHistoryNode *node) {
-        auto position = node->Position();
+    void visit(achilles::EventHistory& event,size_t vertexIdx) {
+		achilles::EventVertex* node=event.vertex(vertexIdx);
+        const achilles::ThreeVector& position = node->Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
         vertex_pos *= to_mm;
         GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
         vertex->set_status(static_cast<int>(node->Status()));
-        for(const auto &part : node->ParticlesIn()) {
+        for(const achilles::Particle& part:event.particlesIn(vertexIdx)) {
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -64,14 +66,14 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
                 particle = ToHepMC3(part);
                 converted[part] = particle;
             }
-            if(node->Status() == achilles::EventHistory::StatusCode::beam) {
+            if(node->Status() == achilles::EventVertex::StatusCode::beam) {
                 beamparticles[0] = particle;
-            } else if(node->Status() == achilles::EventHistory::StatusCode::target) {
+            } else if(node->Status() == achilles::EventVertex::StatusCode::target) {
                 beamparticles[1] = particle;
             }
             vertex->add_particle_in(particle);
         }
-        for(const auto &part : node->ParticlesOut()) {
+        for(const achilles::Particle& part:event.particlesOut(vertexIdx)) {
             GenParticlePtr particle;
             if(converted.count(part) > 0) {
                 particle = converted[part];
@@ -85,7 +87,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
     }
 };
 
-void HepMC3Writer::Write(const achilles::Event &event) {
+void HepMC3Writer::Write(achilles::Event& event) {
     spdlog::trace("Writing out event");
     constexpr double to_mm = 1e-12;
     constexpr double nb_to_pb = 1000;
@@ -120,7 +122,7 @@ void HepMC3Writer::Write(const achilles::Event &event) {
     // evt.shift_position_to(position);
 
     // Walk the history and add to file
-    event.History().WalkHistory(visitor);
+    event.WalkHistory(visitor);
     // visitor.evt.add_tree(visitor.beamparticles);
     file.write_event(visitor.evt);
 }

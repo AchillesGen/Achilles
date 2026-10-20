@@ -1,6 +1,6 @@
 #include "Achilles/Precomputed.hh"
 #include "Achilles/Cascade.hh"
-#include "Achilles/EventHistory.hh"
+#include "Achilles/EventVertex.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -105,7 +105,7 @@ void achilles::Precomputed::RunCascade::Run(Event &event) {
         if(part->IsFinal()) final_part.push_back(*part);
         if(part->IsInitial()) init_part.push_back(*part);
     }
-    event.History().AddVertex(init_part[0].Position(), init_part, final_part,
-                              EventHistory::StatusCode::primary);
+    event.AddVertex(init_part[0].Position(), init_part, final_part,
+                              EventVertex::StatusCode::primary);
     writer->Write(event);
 }

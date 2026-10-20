@@ -28,7 +28,7 @@ class EventWriter {
     virtual ~EventWriter() = default;
 
     virtual void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) = 0;
-    virtual void Write(const Event &) = 0;
+    virtual void Write(Event &) = 0;
 
   protected:
     static std::ostream *InitializeStream(const std::string &, bool);
@@ -57,7 +57,7 @@ class AchillesWriter : public EventWriter {
     }
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
-    void Write(const Event &) override;
+    void Write(Event &) override;
 
   private:
     std::ostream *m_out;

@@ -1,7 +1,6 @@
 #include "Achilles/RunCascade.hh"
 #include "Achilles/Cascade.hh"
 #include "Achilles/Event.hh"
-#include "Achilles/EventHistory.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Histogram.hh"
 #include "Achilles/Nucleus.hh"
@@ -196,13 +195,9 @@ void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hit
     // Cascade
     m_cascade->Evolve(event, m_nuc.get());
     // Write the event to file if an interaction happened
-    if(event.History().size() > 0) {
+    if(event.nVertices() > 0) {
         // Set status of the first interaction as the primary interaction
-        event.History().Node(0)->Status() = EventHistoryNode::StatusCode::primary;
-        // TODO: This is ugly, and the history should store references to the particles
-        // However, the first attempt to do this had issues when event.Hadrons() needed to
-        // be resized
-        event.History().UpdateStatuses(event.Hadrons());
+        event.vertex(0)->Status() = EventVertex::StatusCode::primary;
         hits.Fill(mom, event.Weight());
         generated_events++;
     } else {

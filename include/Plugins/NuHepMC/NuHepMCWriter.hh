@@ -20,7 +20,7 @@ class NuHepMCWriter : public EventWriter {
     ~NuHepMCWriter() override = default;
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
-    void Write(const Event &) override;
+    void Write(Event&) override;
 
   private:
     std::shared_ptr<HepMC3::Writer> file;

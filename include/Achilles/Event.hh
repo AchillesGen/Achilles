@@ -9,7 +9,7 @@
 #include "fmt/format.h"
 
 #include "Achilles/Achilles.hh"
-#include "Achilles/EventHistory.hh"
+#include "Achilles/EventVertex.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -22,22 +22,18 @@ class FourVector;
 class Particle;
 class Beam;
 class NuclearModel;
+class HistoryVisitor;
 
 using vParticles = std::vector<Particle>;
-using ptrParticles = std::vector<Particle*>;
-using cptrParticles = std::vector<const Particle*>;
-using vMomentum = std::vector<FourVector>;
 using refParticles = std::vector<std::reference_wrapper<Particle>>;
 using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
+
 
 class Event {
   public:
     Event() = default;
+	Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt=0.0);
 	Event(const Event&);
-	Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt=0.0):
-			m_processInfo{std::make_shared<ProcessInfo>(pi)}, m_nuc{nuc}, m_wgt{std::move(vwgt)} {
-				spdlog::trace("Event Process: {}",pi);
-			}
     Event &operator=(const Event &);
     MOCK ~Event() = default;
 
@@ -47,7 +43,7 @@ class Event {
 
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
-	ProcessInfo& processInfo() { return *m_processInfo; }
+	const ProcessInfo& processInfo() const { return m_processInfo; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
@@ -56,93 +52,83 @@ class Event {
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
-    MOCK const vParticles &NucleusHadrons() const { return nucleus_hadrons; }
-    MOCK vParticles &NucleusHadrons() { return nucleus_hadrons; }
-    MOCK const vParticles &LeptonsIn() const { return leptonsIn; }
-    MOCK vParticles &LeptonsIn() { return leptonsIn; }
-    MOCK const vParticles &LeptonsOut() const { return leptonsOut; }
-    MOCK vParticles &LeptonsOut() { return leptonsOut; }
-    MOCK const vParticles &HadronsIn() const { return hadronsIn; }
-    MOCK vParticles &HadronsIn() { return hadronsIn; }
-    MOCK const vParticles &HadronsOut() const { return hadronsOut; }
-    MOCK vParticles &HadronsOut() { return hadronsOut; }
-    MOCK const vParticles &Spectators() const { return spectators; }
-    MOCK vParticles &Spectators() { return spectators; }
+	vParticles& Particles() { return particles; }
 
 	/// Resets the event to its starting configuration
 	/// so it can be passed through the mappers again.
 	/// Intended for training/optimization purposes.
 	void reset() {
-		leptonsIn.clear();
-		hadronsIn.clear();
-		leptonsOut.clear();
-		hadronsOut.clear();
-		spectators.clear();
+		vertices.clear();
+		particles.clear();
 		hadrons_setup=false;
-	}
-	void addLeptonIn(FourVector momentum,ParticleStatus status=ParticleStatus::initial_state) {
-		if(leptonsIn.size()>=1)
-			throw std::runtime_error("Event::addLeptonIn(): Particle count exceeds process specifications");
-		spdlog::trace("Creating Lepton-In ({}, {})",m_processInfo->m_leptonic.first,status);
-		leptonsIn.push_back(Particle(m_processInfo->m_leptonic.first,momentum,{},status));
-	}
-	void addLeptonOut(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
-		if(leptonsOut.size()>=m_processInfo->m_leptonic.second.size())
-			throw std::runtime_error("Event::addLeptonOut(): Particle count exceeds process specifications");
-		spdlog::trace("Creating Lepton-Out ({}, {})",m_processInfo->m_leptonic.second[leptonsOut.size()],status);
-		leptonsOut.push_back(Particle(m_processInfo->m_leptonic.second[leptonsOut.size()],momentum,{},status));
-	}
-	void addHadronIn(FourVector momentum,ParticleStatus status=ParticleStatus::initial_state) {
-		if(hadronsIn.size()>=m_processInfo->m_hadronic.first.size())
-			throw std::runtime_error("Event::addHadronIn(): Particle count exceeds process specifications");
-		spdlog::trace("Creating Hadron-In ({}, {})",m_processInfo->m_hadronic.first[hadronsIn.size()],status);
-		hadronsIn.push_back(Particle(m_processInfo->m_hadronic.first[hadronsIn.size()],momentum,{},status));
-	}
-	void addHadronOut(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
-		if(hadronsOut.size()>=m_processInfo->m_hadronic.second.size())
-			throw std::runtime_error("Event::addHadronOut(): Particle count exceeds process specifications");
-		spdlog::trace("Creating Hadron-Out ({} ,{})",m_processInfo->m_hadronic.second[hadronsOut.size()],status);
-		hadronsOut.push_back(Particle(m_processInfo->m_hadronic.second[hadronsOut.size()],momentum,{},status));
-	}
-	void addSpectator(FourVector momentum,ParticleStatus status=ParticleStatus::spectator) {
-		if(spectators.size()>=m_processInfo->m_spectator.size())
-			throw std::runtime_error("Event::addSpectator(): Particle count exceeds process specifications");
-		spdlog::trace("Creating Spectator ({}, {})",m_processInfo->m_spectator[spectators.size()],status);
-		spectators.push_back(Particle(m_processInfo->m_spectator[spectators.size()],momentum,{},status));
-	}
-	void addAutoOutgoing(FourVector momentum,ParticleStatus status=ParticleStatus::final_state) {
-		if(leptonsOut.size()<m_processInfo->m_leptonic.second.size())
-			addLeptonOut(momentum,status);
-		else
-			addHadronOut(momentum,status);
 	}
 
 	void SetupHadrons();
 
-	ptrParticles getAllOfType(vParticles&,PID,ParticleStatus=ParticleStatus::any);
-	ptrParticles allParticles();
-	cptrParticles allParticles() const;
-
-    MOCK const EventHistory &History() const { return m_history; }
-    EventHistory &History() { return m_history; }
+	refParticles getAllOfType(PID,ParticleStatus=ParticleStatus::any);
+	crefParticles getAllOfType(PID,ParticleStatus=ParticleStatus::any) const;
+	refParticles getAllOfType(refParticles&,PID,ParticleStatus=ParticleStatus::any);
+	crefParticles getAllOfType(const crefParticles&,PID,ParticleStatus=ParticleStatus::any) const;
 
     bool operator==(const Event &other) const {
         return m_nuc == other.m_nuc && m_remnant == other.m_remnant
-				&&nucleus_hadrons==other.nucleus_hadrons
-				&&leptonsIn==other.leptonsIn && leptonsOut==other.leptonsOut
-				&&hadronsIn==other.hadronsIn && hadronsOut==other.hadronsOut;
+				&&vertices==other.vertices&&particles==other.particles;
     }
 
     int &ProcessId() { return m_process_id; }
     const int &ProcessId() const { return m_process_id; }
 
+	/// Returns the new index of the created vertex
+	size_t addVertex(EventVertex::StatusCode,ThreeVector={});
+	void addParticle(Particle&,size_t,size_t);
+	void addParticle(Particle&& part,size_t start_vertex,size_t end_vertex) {
+		addParticle(part,start_vertex,end_vertex);
+	}
+	void addParticle(Particle&,EventVertex*,EventVertex*);
+
+	EventVertex* vertex(size_t) const;
+	size_t nVertices() const { return vertices.size(); }
+	/// Accepts a Vertex Index, returns other Vertex Indices
+	std::vector<size_t> ChildVertices(size_t) const;
+	/// Accepts a Vertex Index, returns other Vertex Indices
+	std::vector<size_t> ParentVertices(size_t) const;
+	EventVertex* uniqueVertex(EventVertex::StatusCode) const;
+	/// Current implementation: primary is always at 0
+	EventVertex* Primary() const { return vertices[0].get(); }
+
+	refParticles particlesIn(size_t);
+	crefParticles particlesIn(size_t) const;
+	refParticles particlesIn(size_t,PID,ParticleStatus=ParticleStatus::any);
+	crefParticles particlesIn(size_t,PID,ParticleStatus=ParticleStatus::any) const;
+	refParticles particlesOut(size_t);
+	crefParticles particlesOut(size_t) const;
+	refParticles particlesOut(size_t,PID,ParticleStatus=ParticleStatus::any);
+	crefParticles particlesOut(size_t,PID,ParticleStatus=ParticleStatus::any) const;
+
+	/// When the size_t argument is 0,
+	/// these methods correspond to the ProcessInfo
+	const Particle& leptonIn(size_t=0) const;
+	crefParticles hadronsIn(size_t=0) const;
+	crefParticles leptonsOut(size_t=0) const;
+	crefParticles hadronsOut(size_t=0) const;
+
+	// Traversal
+	void WalkHistory(HistoryVisitor&);
+
   private:
     // Helper functions
-    template <class UnaryPred> ptrParticles FilterPointers(vParticles& particles, UnaryPred pred) {
-        ptrParticles result;
+    template <class UnaryPred> refParticles FilterParticles(vParticles& particles, UnaryPred pred) {
+        refParticles result;
 		for(Particle& p:particles)
 			if(pred(p))
-				result.push_back(&p);
+				result.push_back(std::reference_wrapper(p));
+        return result;
+    }
+    template <class UnaryPred> crefParticles FilterParticles(const vParticles& particles, UnaryPred pred) const {
+        crefParticles result;
+		for(const Particle& p:particles)
+			if(pred(p))
+				result.push_back(std::reference_wrapper(p));
         return result;
     }
     template <class UnaryPred>
@@ -157,28 +143,54 @@ class Event {
         return result;
     }
 
-	vParticles concatenate(std::vector<vParticles> lists) const {
-		vParticles result;
-		for(vParticles list:lists)
-			std::copy(list.begin(), list.end(), std::back_inserter(result));
-		return result;
-	}
 	/// Takes all particles of the given PID from the given list of particles,
 	/// and assigns their Status and Momentum to randomly-selected particles of
 	/// the same type in the given event's "nucleus_hadrons" list.
     void assignParticleDetails(vParticles&,PID);
 
     // Variables
-	std::shared_ptr<ProcessInfo> m_processInfo;
+	ProcessInfo m_processInfo;
     std::shared_ptr<Nucleus> m_nuc;
     NuclearRemnant m_remnant{};
-    //vMomentum m_mom{};
     double m_wgt{};
-    vParticles nucleus_hadrons{}, leptonsIn{}, leptonsOut{}, hadronsIn{}, hadronsOut{}, spectators{};
-    EventHistory m_history{};
+	std::vector<std::unique_ptr<EventVertex>> vertices{};
+    vParticles particles{};
     double flux{};
     int m_process_id{};
 	bool hadrons_setup=false;
+};
+
+class HistoryVisitor {
+  public:
+    virtual ~HistoryVisitor() = default;
+    virtual void visit(Event&,size_t) = 0;
+};
+
+struct PrintVisitor : HistoryVisitor {
+	std::string data;
+	void visit(Event& event,size_t vertexIdx) {
+		refParticles in=event.particlesIn(vertexIdx),out=event.particlesOut(vertexIdx);
+		data+=fmt::format("Vertex({}, {{{}}} -> {{{}}})\n", achilles::ToString(event.vertex(vertexIdx)->Status()),
+				fmt::join(in.begin(), in.end(), ", "),fmt::join(out.begin(), out.end(), ", "));
+	}
+};
+
+struct PIDLocator : HistoryVisitor {
+    std::vector<Particle> particles;
+    PID pid;
+    int direction;
+    PIDLocator(PID _pid, int dir) : pid(_pid), direction(dir) {}
+    void visit(Event& event,size_t vertexIdx) {
+        if(direction >= 0) {
+            for(Particle& particle:event.particlesOut(vertexIdx)) {
+                if(particle.ID() == pid) particles.push_back(particle);
+            }
+        } else {
+            for(Particle& particle:event.particlesIn(vertexIdx)) {
+                if(particle.ID() == pid) particles.push_back(particle);
+            }
+        }
+    }
 };
 
 } // namespace achilles

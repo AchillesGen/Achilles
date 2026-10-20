@@ -21,7 +21,8 @@ void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans)
 	// 2. Momentum of the initial lepton
 	// 3. Momentum of all outgoing parts of the leptonic tensor
 	// 4. Momentum of all outgoing hadrons
-	FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
 	FourVector p01=lepIn+hadIn;
 	double s = p01.M2();
 	double sqrts = sqrt(s);
@@ -36,17 +37,22 @@ void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans)
 	double lambda = sqrt(pow(s - s2 - s3, 2) - 4 * s2 * s3);
 	double pCM = lambda / (2 * sqrts);
 
-	FourVector lepOut={E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
-	FourVector hadOut={E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
+	FourVector p_lepOut={E1, pCM * sinT * cos(phi), pCM * sinT * sin(phi), pCM * cosT};
+	FourVector p_hadOut={E2, -pCM * sinT * cos(phi), -pCM * sinT * sin(phi), -pCM * cosT};
 
-	zax.RotateBack(lepOut);
-	zax.RotateBack(hadOut);
+	zax.RotateBack(p_lepOut);
+	zax.RotateBack(p_hadOut);
 
-	lepOut=lepOut.Boost(boostVec);
-	hadOut=hadOut.Boost(boostVec);
+	p_lepOut=p_lepOut.Boost(boostVec);
+	p_hadOut=p_hadOut.Boost(boostVec);
 
-	event.addLeptonOut(lepOut);
-	event.addHadronOut(hadOut);
+	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,{},ParticleStatus::final_state);
+	Particle hadOut(event.processInfo().m_hadronic.second[0],p_hadOut,{},ParticleStatus::final_state);
+
+	size_t primary=event.Primary()->Index();
+	event.addParticle(lepOut,primary,Particle::OPEN_END);
+	event.addParticle(hadOut,primary,Particle::OPEN_END);
+
 
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
@@ -56,8 +62,9 @@ void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans)
 }
 
 double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
-	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
-					  lepOut=event.LeptonsOut()[0].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
+	const FourVector& lepOut=event.leptonsOut()[0].get().Momentum();
 	FourVector com=lepIn+hadIn;
 	ThreeVector boostVec = com.BoostVector();
 	FourVector lepInBoosted = lepIn.Boost(-boostVec);
@@ -84,7 +91,8 @@ double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &ra
 }
 
 void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
 
     // Mass and width of "resonance"
     // double res_mass = 1232.;
@@ -104,15 +112,20 @@ void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &ran
     // new
     double s23 = s23_min + (s23_max - s23_min) * rans[0];
 
-    FourVector p23,lepOut,hadOut0,hadOut1;
+    FourVector p23,p_lepOut,p_hadOut0,p_hadOut1;
     // Should tmass = res_mass?
-    TChannelMomenta(lepIn, hadIn, p23, hadOut1, s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
+    TChannelMomenta(lepIn, hadIn, p23, p_hadOut1, s23, s4, 0.0, m_alpha, m_ctmax, m_ctmin, m_amct, 0,
                     rans[1], rans[2]);
-    Isotropic2Momenta(p23, s2, s3, lepOut, hadOut0, rans[3], rans[4], m_ctmin, m_ctmax);
+    Isotropic2Momenta(p23, s2, s3, p_lepOut, p_hadOut0, rans[3], rans[4], m_ctmin, m_ctmax);
 
-	event.addLeptonOut(lepOut);
-	event.addHadronOut(hadOut0);
-	event.addHadronOut(hadOut1);
+	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,{},ParticleStatus::final_state);
+	Particle hadOut0(event.processInfo().m_hadronic.second[0],p_hadOut0,{},ParticleStatus::final_state);
+	Particle hadOut1(event.processInfo().m_hadronic.second[1],p_hadOut1,{},ParticleStatus::final_state);
+
+	size_t primary=event.Primary()->Index();
+	event.addParticle(lepOut,primary,Particle::OPEN_END);
+	event.addParticle(hadOut0,primary,Particle::OPEN_END);
+	event.addParticle(hadOut1,primary,Particle::OPEN_END);
 
     // Want to know gammaN invariant mass
     // auto pGamma = mom[1] - mom[FinalStateIdx()+2];
@@ -124,9 +137,12 @@ void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &ran
 }
 
 double ThreeBodyMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
-	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
-					  lepOut=event.LeptonsOut()[0].Momentum(),
-					  hadOut0=event.HadronsOut()[0].Momentum(),hadOut1=event.HadronsOut()[1].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
+	const FourVector& lepOut=event.leptonsOut()[0].get().Momentum();
+	crefParticles hadronsOut=event.hadronsOut();
+	const FourVector& hadOut0=hadronsOut[0].get().Momentum();
+	const FourVector& hadOut1=hadronsOut[1].get().Momentum();
 
 	// The momentum are given in the following order:
 	// 1. Momentum of the initial hadron
@@ -380,26 +396,34 @@ void ThreeBodyMapper::Boost(int lflag, const FourVector &q, const FourVector &ph
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 void SherpaMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	size_t inSize=event.LeptonsIn().size()+event.HadronsIn().size();
+	size_t inSize=1+event.processInfo().m_hadronic.first.size();
 	std::vector<Vec4D> mom(inSize);
 	size_t i=0;
-	for(Particle& part:event.LeptonsIn()) {
-		FourVector& p=part.Momentum();
-		mom[i++]=Vec4D(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
-	}
-	for(Particle& part:event.HadronsIn()) {
+	for(Particle& part:event.particlesIn(event.Primary()->Index())) {
 		FourVector& p=part.Momentum();
 		mom[i++]=Vec4D(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
 	}
 	sherpa_mapper->GeneratePoint(mom, rans);
-	for(i = inSize; i < mom.size(); ++i)
-		event.addAutoOutgoing(FourVector(mom[i][0] * 1_GeV, mom[i][1] * 1_GeV, mom[i][2] * 1_GeV, mom[i][3] * 1_GeV));
+
+	size_t primary=event.Primary()->Index();
+	size_t threshold=event.processInfo().m_leptonic.second.size();
+	size_t idx=0;
+	FourVector p;
+	PID pid;
+	for(i = inSize; i < mom.size(); ++i) {
+		p={mom[i][0] * 1_GeV, mom[i][1] * 1_GeV, mom[i][2] * 1_GeV, mom[i][3] * 1_GeV};
+		pid=(idx<threshold)?
+			event.processInfo().m_leptonic.second[idx]:
+			event.processInfo().m_hadronic.second[idx-threshold];
+		Particle part(pid,p,{},ParticleStatus::final_state);
+		event.addParticle(part,primary,Particle::OPEN_END);
+	}
 }
 
 double SherpaMapper::GenerateWeight(const Event& event, std::vector<double> &rans) {
     std::vector<Vec4D> mom{};
-    for(const Particle* part:event.allParticles()) {
-		const FourVector& p=part->Momentum();
+    for(const Particle& part:event.partsHistory()) {
+		const FourVector& p=part.Momentum();
         mom.emplace_back(p[0]/1_GeV, p[1]/1_GeV, p[2]/1_GeV, p[3]/1_GeV);
 	}
     return sherpa_mapper->GenerateWeight(mom, rans);

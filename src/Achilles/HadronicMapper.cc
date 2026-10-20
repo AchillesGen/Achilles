@@ -17,8 +17,13 @@ CoherentMapper::CoherentMapper(const ProcessInfo &info)
 }
 
 void CoherentMapper::GeneratePoint(Event& event, const std::vector<double> &) {
-    event.addHadronIn({m_mass,0,0,0},ParticleStatus::target);
-	event.NucleusHadrons()={event.HadronsIn()[0]};
+	Particle init_nuc=event.CurrentNucleus()->InitParticle();
+    Particle interacted(init_nuc.ID(),{m_mass,0,0,0},{},ParticleStatus::initial_state);
+
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
+	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
+	event.addParticle(interacted,targetVertex,event.Primary()->Index());
+
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, {});
 }
 
@@ -34,8 +39,8 @@ QESpectralMapper::QESpectralMapper(const ProcessInfo &info)
 
 void QESpectralMapper::GeneratePoint(Event& event,
                                      const std::vector<double> &rans) {
-	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
-	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
+	event.partsBackend()=event.CurrentNucleus()->GenerateConfig();
+	const FourVector& lepIn=event.leptonIn().Momentum();
 	// Generate inital nucleon state
 	double radical =
 	    pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
@@ -68,7 +73,13 @@ void QESpectralMapper::GeneratePoint(Event& event,
 	// const double cosT = (cosT_max + 1) * rans[1] - 1;
 	// const double sinT = sqrt(1 - cosT*cosT);
 
-	event.addHadronIn({Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT});
+	FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
+
+	Particle hadron(event.processInfo().m_hadronic.first[0],p_hadron,{},ParticleStatus::initial_state);
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
+	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(hadron,targetVertex,event.Primary()->Index());
+
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  lepIn = {}", lepIn);
@@ -85,7 +96,8 @@ void QESpectralMapper::GeneratePoint(Event& event,
 
 double QESpectralMapper::GenerateWeight(const Event& event,
                                         std::vector<double> &rans) {
-	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
     double radical = pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
     if(radical < 0) radical = 0;
     double pmin = lepIn.E() - sqrt(radical);
@@ -139,8 +151,8 @@ IntfSpectralMapper::IntfSpectralMapper(const ProcessInfo &info)
 
 void IntfSpectralMapper::GeneratePoint(Event& event,
                                        const std::vector<double> &rans) {
-	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
-	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
+	event.partsBackend()=event.CurrentNucleus()->GenerateConfig();
+	const FourVector& lepIn=event.leptonIn().Momentum();
     // Generate spectator momentum from a flat distribution
     double p2 = dp2 * rans[4];
     double cosT2 = dCos2 * rans[5] - 1.;
@@ -149,8 +161,6 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
 
     ThreeVector pmom2 = {p2 * sinT2 * cos(phi2), p2 * sinT2 * sin(phi2), p2 * cosT2};
     double E2 = sqrt(p2 * p2 + Constant::mN2);
-
-    event.addSpectator({E2, pmom2[0], pmom2[1], pmom2[2]});
 
     // Generate inital nucleon state
     double pmin = lepIn.E() - sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
@@ -183,7 +193,16 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     // const double cosT = (cosT_max + 1) * rans[1] - 1;
     // const double sinT = sqrt(1 - cosT*cosT);
 
-    event.addHadronIn({Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT});
+    FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
+    FourVector p_spectator={E2, pmom2[0], pmom2[1], pmom2[2]};
+
+	Particle hadron(event.processInfo().m_hadronic.first[0],p_hadron,{},ParticleStatus::initial_state);
+	Particle spectator(event.processInfo().m_spectator[0],p_spectator,{},ParticleStatus::spectator);
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
+	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(hadron,targetVertex,event.Primary()->Index());
+	event.addParticle(spectator,targetVertex,Particle::OPEN_END);
+
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
     spdlog::trace("  lepIn = {}", lepIn);
@@ -201,8 +220,13 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
 
 double IntfSpectralMapper::GenerateWeight(const Event& event,
                                           std::vector<double> &rans) {
-	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),hadIn=event.HadronsIn()[0].Momentum(),
-					  spectator=event.Spectators()[0].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& hadIn=event.hadronsIn()[0].get().Momentum();
+	const FourVector& spectator=event.particlesOut(
+		event.uniqueVertex(EventVertex::StatusCode::target)->Index(),
+		event.processInfo().m_spectator[0],
+		ParticleStatus::spectator
+	)[0].get().Momentum();
 
     double pmin = lepIn.E() - sqrt(pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN +
                                       Constant::mN2 - Smin());
@@ -256,7 +280,7 @@ double IntfSpectralMapper::GenerateWeight(const Event& event,
 }
 
 
-static achilles::FourVector getQuarkMomentum(achilles::FourVector& pLepton,achilles::FourVector& pHadron,double x) {
+static achilles::FourVector getQuarkMomentum(const achilles::FourVector& pLepton,const achilles::FourVector& pHadron,double x) {
 	// ~~ Boost to COM Frame ~~
 	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
 	achilles::FourVector pHadBoosted=pHadron.Boost(com);
@@ -291,21 +315,27 @@ static double xMin=1e-10,xMax=1.0;
 DISSingleNucleonMapper::DISSingleNucleonMapper(const ProcessInfo& info): HadronicBeamMapper(info) {
 	SetMasses(info.Masses());
 	// Hadron is always stationary in this model
-	pHadron={ParticleInfo(info.m_hadronic.first[0]).Mass(),0,0,0};
+	PID pid=info.m_hadronic.first[0];
+	m_nucleon=Particle(pid,{ParticleInfo(pid).Mass(),0,0,0},{},ParticleStatus::target);
 }
 
 void DISSingleNucleonMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
-	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
+	event.partsBackend()=event.CurrentNucleus()->GenerateConfig();
 	// Generate initial quark state
 	double x=xMin*pow(xMax/xMin,rans[0]);
-	event.addHadronIn(getQuarkMomentum(event.LeptonsIn()[0].Momentum(),pHadron,x));
+	FourVector pQuark=getQuarkMomentum(event.leptonIn().Momentum(),m_nucleon.Momentum(),x);
+	Particle quark(event.processInfo().m_hadronic.first[0],pQuark,{},ParticleStatus::initial_state);
+
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
+	event.addParticle(m_nucleon,Particle::OPEN_END,targetVertex);
+	event.addParticle(quark,targetVertex,event.Primary()->Index());
 }
 
 double DISSingleNucleonMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
-	const FourVector& hadIn=event.HadronsIn()[0].Momentum();
-	double x=getX(event.LeptonsIn()[0].Momentum(),pHadron,hadIn);
+	const FourVector& pQuark=event.hadronsIn()[0].get().Momentum();
+	double x=getX(event.leptonIn().Momentum(),m_nucleon.Momentum(),pQuark);
 	rans[0]=log(x/xMin)/log(xMax/xMin);
-	return 1.0/(hadIn.P2()*(x*log(xMax/xMin)));
+	return 1.0/(pQuark.P2()*(x*log(xMax/xMin)));
 }
 
 
@@ -314,8 +344,8 @@ DISNucleusMapper::DISNucleusMapper(const ProcessInfo& info): HadronicBeamMapper(
 }
 
 void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& rans) {
-	event.NucleusHadrons()=event.CurrentNucleus()->GenerateConfig();
-	FourVector& lepIn=event.LeptonsIn()[0].Momentum();
+	event.partsBackend()=event.CurrentNucleus()->GenerateConfig();
+	const FourVector& lepIn=event.leptonIn().Momentum();
 	// Generate inital nucleon state
 	double radical =
 		pow(lepIn.E(), 2) + 2 * lepIn.E() * Constant::mN + Constant::mN2 - Smin();
@@ -340,20 +370,27 @@ void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& ran
 	emax = emax > 400 ? 400 : emax;
 	const double energy = emax * rans[3] - 1e-8;
 
-	// pHadron
-	FourVector hadIn={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
-	event.addHadronIn(hadIn);
-
+	FourVector pHadron={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 	double x=xMin*pow(xMax/xMin,rans[4]);
+	FourVector pQuark=getQuarkMomentum(lepIn,pHadron,x);
 
-	// pQuark
-	event.addHadronIn(getQuarkMomentum(lepIn,hadIn,x));
+	// TODO: Get Correct PID for Nucleon
+	Particle hadron(event.processInfo().m_hadronic.first[0],pHadron,{},ParticleStatus::initial_state);
+	Particle quark(event.processInfo().m_hadronic.first[0],pQuark,{},ParticleStatus::initial_state);
+
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
+	size_t quarkVertex=event.addVertex(EventVertex::StatusCode::decay);
+	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(hadron,targetVertex,quarkVertex);
+	event.addParticle(quark,quarkVertex,event.Primary()->Index());
 }
 
 double DISNucleusMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
-	const FourVector& lepIn=event.LeptonsIn()[0].Momentum(),
-					  hadIn=event.HadronsIn()[0].Momentum(),
-					  quarkIn=event.HadronsIn()[1].Momentum();
+	const FourVector& lepIn=event.leptonIn().Momentum();
+	const FourVector& quarkIn=event.hadronsIn()[0].get().Momentum();
+	const FourVector& hadIn=event.particlesOut(
+		event.uniqueVertex(EventVertex::StatusCode::target)->Index()
+	)[0].get().Momentum();
 	double x=getX(lepIn,hadIn,quarkIn);
 
 	double radical =

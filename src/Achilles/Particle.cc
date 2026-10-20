@@ -23,7 +23,7 @@ void Particle::Propagate(const double &time) noexcept {
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
     if(formationZone > 0) formationZone -= time;
-    position += propDist;
+    Move(propDist);
 }
 
 void Particle::SpacePropagate(const double &dist) noexcept {
@@ -36,7 +36,7 @@ void Particle::SpacePropagate(const double &dist) noexcept {
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
-    position += propDist;
+    Move(propDist);
 }
 
 void Particle::BackPropagate(const double &time) noexcept {
@@ -52,7 +52,7 @@ void Particle::BackPropagate(const double &time) noexcept {
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
     if(status == ParticleStatus::internal_test) distanceTraveled -= propDist.Magnitude();
     if(formationZone != 0) formationZone += time;
-    position -= propDist;
+    Move(-propDist);
 }
 
 void Particle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
@@ -111,6 +111,41 @@ bool operator==(const std::reference_wrapper<Particle> &lhs, const Particle &rhs
 
 bool operator==(const Particle &lhs, const std::reference_wrapper<Particle> &rhs) {
     return lhs == rhs.get();
+}
+
+
+std::pair<CompositeParticle,Particle> CompositeParticle::splitSingle(size_t partIndex) {
+	CompositeParticle remaining({},ID(),status);
+	remaining.sub_parts.reserve(sub_parts.size()-1);
+	for(size_t i=0;i<sub_parts.size();i++)
+		if(i!=partIndex)
+			remaining.sub_parts.push_back(sub_parts[i]);
+	return std::pair<CompositeParticle,Particle>(remaining,sub_parts[partIndex]);
+}
+std::pair<CompositeParticle,Particle> CompositeParticle::splitSingleRandom(PID type) {
+	std::vector<size_t> candidates;
+	for(size_t i=0;i<sub_parts.size();i++)
+		if(sub_parts[i].ID()==type)
+			candidates.push_back(i);
+	if(candidates.empty())
+		throw std::runtime_error(fmt::format("No particle with PID {} was found",type));
+	return splitSingle(Random::Instance().Pick(candidates));
+}
+
+void CompositeParticle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
+	Particle::Rotate(rot_mat);
+	for(Particle& part:sub_parts)
+		part.Rotate(rot_mat);
+}
+void CompositeParticle::RotateBack(const std::array<double, 9> &rot_mat) noexcept {
+	Particle::RotateBack(rot_mat);
+	for(Particle& part:sub_parts)
+		part.RotateBack(rot_mat);
+}
+void CompositeParticle::Move(const ThreeVector& dx) {
+	Particle::Move(dx);
+	for(Particle& part:sub_parts)
+		part.Move(dx);
 }
 
 } // namespace achilles

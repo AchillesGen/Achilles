@@ -9,7 +9,7 @@
 #include "ATOOLS/Phys/KF_Table.H"
 #include "Achilles/Current.hh"
 #include "Achilles/Event.hh"
-#include "Achilles/EventHistory.hh"
+#include "Achilles/EventVertex.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/Particle.hh"
@@ -497,7 +497,7 @@ void achilles::SherpaInterface::GenerateEvent(Event &event) {
 
     // Extract all active particles in the event
     auto bl = p_sherpa->GetEventHandler()->GetBlobs();
-    ToAchilles(bl, event.History());
+    ToAchilles(bl, event);
 
     p_sherpa->GetEventHandler()->Reset();
 }
@@ -532,29 +532,29 @@ achilles::Particle achilles::SherpaInterface::ToAchilles(ATOOLS::Particle *part,
 }
 
 void achilles::SherpaInterface::AddHistoryNode(ATOOLS::Blob *blob, EventHistory &history,
-                                               EventHistory::StatusCode status) {
+                                               EventVertex::StatusCode status) {
     auto sherpa_in = blob->GetInParticles();
     auto sherpa_out = blob->GetOutParticles();
-    std::vector<achilles::Particle> achilles_in, achilles_out;
-    for(const auto &part : sherpa_in) achilles_in.push_back(ToAchilles(part, true));
+    size_t vertex=history.addVertex({},status);
+    for(const auto &part : sherpa_in)
+		history.addParticle(ToAchilles(part, true),achilles::Particle::OPEN_END,vertex);
     for(const auto &part : sherpa_out) {
         bool is_intermediate = (part->DecayBlob() != nullptr);
-        achilles_out.push_back(ToAchilles(part, false, is_intermediate));
+        history.addParticle(ToAchilles(part, false, is_intermediate),vertex);
     }
-    history.AddVertex({}, achilles_in, achilles_out, status);
 }
 
 void achilles::SherpaInterface::MergeIntoExistingPrimary(ATOOLS::Blob *blob,
                                                          EventHistory &history) {
-    auto *primary_node = history.Primary();
+    size_t primary_node = history.Primary()->Index();
     for(auto *sherpa_part : blob->GetOutParticles()) {
         bool is_intermediate = (sherpa_part->DecayBlob() != nullptr);
-        auto achilles_part = ToAchilles(sherpa_part, false, is_intermediate);
+        Particle achilles_part = ToAchilles(sherpa_part, false, is_intermediate);
 
         // Match by PID, then by closest 4-momentum (handles the off-shell case).
         Particle *best_match = nullptr;
         double best_diff = std::numeric_limits<double>::max();
-        for(auto &prim_part : primary_node->ParticlesOut()) {
+        for(Particle& prim_part:history.particlesOut(primary_node)) {
             if(prim_part.ID() != achilles_part.ID()) continue;
             auto delta = prim_part.Momentum() - achilles_part.Momentum();
             double diff = std::abs(delta.E()) + std::abs(delta.Px()) + std::abs(delta.Py()) +
@@ -594,7 +594,7 @@ void achilles::SherpaInterface::ToAchilles(ATOOLS::Blob_List *blobs,
 
         auto blob_type = blob->Type();
         if(blob_type == btp::code::Hadron_Decay) {
-            AddHistoryNode(blob, history, EventHistory::StatusCode::decay);
+            AddHistoryNode(blob, history, EventVertex::StatusCode::decay);
         } else if(blob_type != btp::code::Shower) {
             // Unknown blob type: skip without following outgoing particles
             continue;

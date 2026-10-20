@@ -256,30 +256,27 @@ bool achilles::EventGen::GenerateSingleEvent() {
 	}
 
     Particle init_nuc = group.GetNucleus()->InitParticle();
-    std::vector<Particle> init_parts;
-    for(const Particle& nucleon:event.NucleusHadrons()) {
-        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
-    }
+	ThreeVector pos;
+	for(Particle& part:event.NucleusHadrons())
+		if(part.Status()==ParticleStatus::initial_state) {
+			pos=part.Position();
+			break;
+		}
+
+	event.Primary()->Position()=pos;
+	event.uniqueVertex(EventVertex::StatusCode::target)->Position()=pos;
+
     // TODO: Handle multiple positions from MEC
-    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, init_parts,
-                              EventHistory::StatusCode::target);
-    // Setup beam in history
-    Particle& init_lep = event.LeptonsIn()[0];
-    Particle init_beam = init_lep;
-    init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
-    event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
+	event.addParticle(init_nuc,targetVertex,Particle::OPEN_END);
+	
+    for(Particle& nucleon:event.NucleusHadrons())
+        if(nucleon.Status() == ParticleStatus::initial_state)
+			event.addParticle(nucleon,targetVertex,primaryVertex);
 
     // TODO: Figure out how to best handle tracking this with the cascade and decays
-    std::vector<Particle> primary_out;
-    //std::vector<Particle> propagating; // Seems to be unused
-	for(Particle* part:event.allParticles())
-		if(part->IsFinal()||part->IsPropagating())
-			primary_out.push_back(*part);
-    init_parts.push_back(init_lep);
-    event.History().AddVertex(init_parts[0].Position(), init_parts, primary_out,
-                              EventHistory::StatusCode::primary);
+	for(Particle& part:event.allParticles())
+		if(part.IsFinal()||part.IsPropagating())
+			event.addParticle(part,primaryVertex,Particle::OPEN_END);
 
     // TODO: Determine if cascade or Sherpa Decays go first
     // Cascade the nucleus, with possible re-runs in case of rare errors
@@ -318,9 +315,6 @@ bool achilles::EventGen::GenerateSingleEvent() {
             }
         }
     }
-
-    // Update particle statuses in history to account for after the cascade
-    event.History().UpdateStatuses(event.NucleusHadrons());
 
 #ifdef ACHILLES_SHERPA_INTERFACE
     // Running Sherpa interface if requested

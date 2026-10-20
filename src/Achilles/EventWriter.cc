@@ -26,7 +26,7 @@ void achilles::AchillesWriter::WriteHeader(const std::string &filename,
     *m_out << fmt::format("{0:-^40}\n\n", "");
 }
 
-void achilles::AchillesWriter::Write(const Event &event) {
+void achilles::AchillesWriter::Write(Event &event) {
     *m_out << fmt::format("Event: {}\n", ++nEvents);
     *m_out << fmt::format("  Particles:\n");
     for(const Particle* part : event.allParticles()) { *m_out << fmt::format("  - {}\n", part->Momentum()); }
