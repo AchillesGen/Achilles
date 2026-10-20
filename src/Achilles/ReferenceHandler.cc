@@ -1,8 +1,16 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/ReferenceHandler.hh"
 #include "fmt/format.h"
 #include <fstream>
 
 using achilles::ReferenceHandler;
+
+ReferenceHandler &ReferenceHandler::Handle() {
+    static ReferenceHandler handle;
+    return handle;
+}
 
 void ReferenceHandler::WriteReferences() const {
     fmt::print("Writing out references from current run.\n");

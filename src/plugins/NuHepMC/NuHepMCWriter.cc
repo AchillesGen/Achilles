@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/NuHepMC/NuHepMCWriter.hh"
 
 #include "Achilles/Event.hh"
@@ -32,6 +35,8 @@ static constexpr int Cascade = 23;
 static constexpr int Beam = 24;
 static constexpr int Decay = 25;
 static constexpr int Shower = 26;
+static constexpr int Escape = 27;
+static constexpr int Capture = 28;
 } // namespace VertexStatus
 
 namespace ParticleStatus {
@@ -43,6 +48,7 @@ static constexpr int Captured = 26;
 static constexpr int UndecayedResidue = 27;
 static constexpr int Spectator = 28;
 static constexpr int Cascade = 29;
+static constexpr int IntermediateResidue = 30;
 } // namespace ParticleStatus
 } // namespace NuHepMC
 
@@ -79,7 +85,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // List all possible vertex status codes
     // TODO: Make this a conversion from enum of the EventHistory class?
-    NuHepMC::GR5::WriteVertexStatusIDDefinitions(
+    NuHepMC::GR9::WriteVertexStatusIDDefinitions(
         run, {
                  {NuHepMC::VertexStatus::Primary, {"Primary", "The main hard interaction"}},
                  {NuHepMC::VertexStatus::Beam,
@@ -87,6 +93,10 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::VertexStatus::NucleonSeparation,
                   {"Nucleus", "The vertex defining a nucleon in a nucleus"}},
                  {NuHepMC::VertexStatus::Decay, {"Decay", "A vertex used in a decay chain"}},
+                 {NuHepMC::VertexStatus::Escape,
+                  {"Escape", "A nucleon paying its removal energy to leave the nucleus"}},
+                 {NuHepMC::VertexStatus::Capture,
+                  {"Capture", "A nucleon reabsorbed into the nuclear remnant"}},
                  {NuHepMC::VertexStatus::Shower, {"Shower", "Vertex used in a shower"}},
                  {NuHepMC::VertexStatus::Propagation, {"Propagation", "Propagation"}},
                  {NuHepMC::VertexStatus::Cascade, {"Cascade", "Cascade"}},
@@ -94,7 +104,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
 
     // List all possible particle status codes
     // TODO: Make this a conversion from ParticleStatus enum
-    NuHepMC::GR6::WriteParticleStatusIDDefinitions(
+    NuHepMC::GR10::WriteParticleStatusIDDefinitions(
         run, {
                  {NuHepMC::ParticleStatus::UndecayedPhysical,
                   {"Undecayed physical particle", "Final-state \"stable\" particle"}},
@@ -112,21 +122,26 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Captured, {"Captured", "Captured"}},
                  {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
                  {NuHepMC::ParticleStatus::Cascade, {"Cascade", "Cascade"}},
+                 {NuHepMC::ParticleStatus::UndecayedResidue,
+                  {"Undecayed residue", "Nuclear remnant left after the interaction"}},
+                 {NuHepMC::ParticleStatus::IntermediateResidue,
+                  {"Intermediate residue", "Nuclear remnant partway through the cascade"}},
              });
 
     // Signal conventions
     // TODO: Make flags to turn on / off different conventions
-    NuHepMC::GC1::SetConventions(run, {"G.C.4", "G.C.6", "E.C.1", "E.C.4", "E.C.5", "V.C.1"});
+    // TODO: Automate citation writeout from ReferenceHandler
+    NuHepMC::GR4::SetConventions(run, {"G.C.3", "E.C.1", "E.C.4", "V.C.1"});
 
     // TODO: Update to using newer NuHepMC version
     const auto scale = NuHepMC::to_string(NuUnits::Scale::pb);
-    const std::string tgtscale = "PerAtom";
-    NuHepMC::GC4::SetCrossSectionUnits(run, scale, tgtscale);
+    const auto tgtscale = NuHepMC::to_string(NuUnits::TargetScale::PerAtom);
+    NuHepMC::GR6::SetCrossSectionUnits(run, scale, tgtscale);
 
     // Write out the number of requested events
     // TODO: Read this from run card
-    long nevents = 10;
-    NuHepMC::GC2::SetExposureNEvents(run, nevents);
+    // long nevents = 10;
+    // NuHepMC::GC2::SetExposureNEvents(run, nevents);
 
     file = std::shared_ptr<HepMC3::Writer>(NuHepMC::Writer::make_writer(outfilename, run));
     if(!file->run_info()) { throw; }
@@ -159,6 +174,10 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Spectator;
     case achilles::ParticleStatus::interacted:
         return NuHepMC::ParticleStatus::Cascade;
+    case achilles::ParticleStatus::residue:
+        return NuHepMC::ParticleStatus::UndecayedResidue;
+    case achilles::ParticleStatus::intermediate_residue:
+        return NuHepMC::ParticleStatus::IntermediateResidue;
     }
     return -1;
 }
@@ -177,7 +196,11 @@ int ToNuHepMC(achilles::EventVertex::StatusCode status) {
         return NuHepMC::VertexStatus::NucleonSeparation;
     case achilles::EventVertex::StatusCode::decay:
         return NuHepMC::VertexStatus::Decay;
-    case achilles::EventVertex::StatusCode::shower:
+    case achilles::EventHistoryNode::StatusCode::escape:
+        return NuHepMC::VertexStatus::Escape;
+    case achilles::EventHistoryNode::StatusCode::capture:
+        return NuHepMC::VertexStatus::Capture;
+    case achilles::EventHistoryNode::StatusCode::shower:
         return NuHepMC::VertexStatus::Shower;
     }
     return -1;

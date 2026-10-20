@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef ACHILLES_CASCADEINTERACTIONS_NASAINTERACTIONS
 #define ACHILLES_CASCADEINTERACTIONS_NASAINTERACTIONS
 
@@ -10,7 +13,7 @@ class ThreeVector;
 class NasaInteraction : public Interaction, RegistrableInteraction<NasaInteraction> {
   public:
     NasaInteraction() = default;
-    NasaInteraction(const YAML::Node &){};
+    NasaInteraction(const YAML::Node &) {};
 
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
         return std::make_unique<NasaInteraction>(data);

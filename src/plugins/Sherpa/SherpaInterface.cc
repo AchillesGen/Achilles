@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #include "AMEGIC++/Main/Process_Base.H"
 #include "ATOOLS/Org/CXXFLAGS.H"

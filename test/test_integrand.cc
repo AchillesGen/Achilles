@@ -1,5 +1,8 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/Integrand.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
 
 double dummy_func(const std::vector<double> &, double) {
     return 1.0;

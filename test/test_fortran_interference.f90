@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module test_fortran_inteference
     use intf_spectral_model
 
@@ -207,8 +210,12 @@ contains
         mom_spect = fourvector(p2_4(1), p2_4(2), p2_4(3), p2_4(4))
         qvec = fourvector(q4(1), q4(2), q4(3), q4(4))
 
-
         call model%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvec, ff, cur_1b, nspin, nlorentz)
+
+        mom_in = fourvector(p1_4(1), p1_4(2), p1_4(3), p1_4(4))
+        mom_out = fourvector(pp1_4(1), pp1_4(2), pp1_4(3), pp1_4(4))
+        mom_spect = fourvector(p2_4(1), p2_4(2), p2_4(3), p2_4(4))
+        qvec = fourvector(q4(1), q4(2), q4(3), q4(4))
         call model%currents(pids_in, mom_in, nin, pids_out, mom_out, nout, pids_spect, mom_spect, nspect, qvec, ff, cur_2b, nspin, nlorentz)
 
 

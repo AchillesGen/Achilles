@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef PYBINDINGS_HH
 #define PYBINDINGS_HH
 
@@ -5,6 +8,7 @@
 #include "pybind11/operators.h"
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
+#include "pybind11/stl/filesystem.h"
 #include "pybind11/stl_bind.h"
 
 namespace py = pybind11;

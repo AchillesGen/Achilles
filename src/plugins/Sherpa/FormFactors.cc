@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Plugins/Sherpa/FormFactors.hh"
 #include "Achilles/Constants.hh"
 
@@ -78,9 +81,7 @@ double FormFactorInterface::FF(double Q2) const {
         static NAME s_initializer;                                                               \
                                                                                                  \
       protected:                                                                                 \
-        void PrintInfo(std::ostream &str, const size_t) const {                                  \
-            str << #NAME;                                                                        \
-        }                                                                                        \
+        void PrintInfo(std::ostream &str, const size_t width) const { str << #NAME; }            \
         Object_Type *operator()(const Parameter_Type &args) const {                              \
             return new FormFactorInterface(args, #NAME);                                         \
         }                                                                                        \

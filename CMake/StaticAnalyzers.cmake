@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 option(ENABLE_CPPCHECK "Enable static analysis with cppcheck" OFF)
 option(ENABLE_CLANG_TIDY "Enable static analysis with clang-tidy" OFF)
 if(ENABLE_CPPCHECK)

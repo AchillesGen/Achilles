@@ -1,6 +1,10 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/CascadeInteractions/GeantInteractions.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
 
 #pragma GCC diagnostic push

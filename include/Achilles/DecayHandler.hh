@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef ACHILLES_DECAY_HANDLER
 #define ACHILLES_DECAY_HANDLER
 
@@ -10,6 +13,8 @@
 namespace achilles {
 
 class Particle;
+
+static constexpr std::string_view default_decay_file = "data/decays.yml";
 
 struct DecayMode {
     double branching_ratio;

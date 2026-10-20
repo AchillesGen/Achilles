@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef YAML_BEAMS_HH
 #define YAML_BEAMS_HH
 

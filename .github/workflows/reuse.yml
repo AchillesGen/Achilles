@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+name: REUSE Compliance
+
+on:
+  push:
+  pull_request:
+  release:
+    types: [published]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: REUSE Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: REUSE Compliance Check
+        uses: fsfe/reuse-action@v5
+
+  sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install reuse
+        run: pip install reuse
+      - name: Generate SPDX SBOM
+        run: reuse spdx --output achilles-${{ github.ref_name }}.spdx
+      - name: Upload SBOM to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: achilles-${{ github.ref_name }}.spdx

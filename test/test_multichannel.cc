@@ -1,5 +1,10 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/MultiChannel.hh"
-#include "catch2/catch.hpp"
+#include "catch2/catch_test_macros.hpp"
+#include "catch2/generators/catch_generators_adapters.hpp"
+#include "catch2/generators/catch_generators_random.hpp"
 #include "catch_utils.hh"
 
 constexpr double s0 = -10.0;

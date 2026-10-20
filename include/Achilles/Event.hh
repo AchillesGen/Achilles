@@ -1,9 +1,11 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef EVENT_HH
 #define EVENT_HH
 
 #include <algorithm>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "fmt/format.h"
@@ -39,7 +41,11 @@ class Event {
 
     void Finalize();
 
-    MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
+    MOCK const Particle &Remnant() const { return m_remnant; }
+    /// The remnant is threaded through the history: it is created at the target vertex and
+    /// updated at every vertex that moves a nucleon or energy between it and the cascade,
+    /// so that four-momentum and baryon number are conserved at each one.
+    void SetRemnant(Particle remnant) { m_remnant = std::move(remnant); }
 
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
@@ -142,6 +148,7 @@ class Event {
         std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
         return result;
     }
+    Particle MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const;
 
 	/// Takes all particles of the given PID from the given list of particles,
 	/// and assigns their Status and Momentum to randomly-selected particles of

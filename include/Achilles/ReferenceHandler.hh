@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef ACHILLES_REFHANDLER
 #define ACHILLES_REFHANDLER
 
@@ -20,10 +23,7 @@ struct Reference {
 
 class ReferenceHandler {
   public:
-    static ReferenceHandler &Handle() {
-        static ReferenceHandler handle;
-        return handle;
-    }
+    static ReferenceHandler &Handle();
     ~ReferenceHandler() { WriteReferences(); }
 
     void AddReference(Reference ref) { m_references[ref.id] = std::move(ref); }

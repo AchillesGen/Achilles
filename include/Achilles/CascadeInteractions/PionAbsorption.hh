@@ -1,9 +1,15 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef ACHILLES_CASCADEINTERACTIONS_PIONABSORPTION
 #define ACHILLES_CASCADEINTERACTIONS_PIONABSORPTION
 
 #include "Achilles/Interactions.hh"
 #include "Achilles/OsetCrossSections.hh"
 #include "Achilles/Particle.hh"
+
+#include <functional>
+#include <vector>
 
 namespace achilles {
 
@@ -29,7 +35,11 @@ class PionAbsorption : public Interaction {
 
     using InteractionMap = std::map<std::pair<PID, PID>, std::vector<InteractionStates>>;
     InteractionMap states;
-    mutable std::vector<Particle> absorption_partners;
+    // Same type as achilles::refParticles, spelled out to avoid including Event.hh here.
+    // Refers into Event::Hadrons() so GenerateMomentum can flag the partner it consumes;
+    // only valid between the CrossSection call that fills it and the following
+    // GenerateMomentum, as Event::Hadrons() is not resized in between.
+    mutable std::vector<std::reference_wrapper<Particle>> absorption_partners;
     mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 
@@ -40,7 +50,7 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
 
     /// Initialize PionAbsorptionOneStep class
     PionAbsorptionOneStep() = default;
-    PionAbsorptionOneStep(const YAML::Node &node) : PionAbsorption(node){};
+    PionAbsorptionOneStep(const YAML::Node &node) : PionAbsorption(node) {};
 
     /// Generate a object. This is used in the InteractionFactory.
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {
@@ -72,7 +82,7 @@ class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<Pion
 
     /// Initialize PionAbsorptionTwoStep class
     PionAbsorptionTwoStep() = default;
-    PionAbsorptionTwoStep(const YAML::Node &){};
+    PionAbsorptionTwoStep(const YAML::Node &) {};
 
     /// Generate a object. This is used in the InteractionFactory.
     static std::unique_ptr<Interaction> Construct(const YAML::Node &data) {

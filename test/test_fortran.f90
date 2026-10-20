@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 program fortran_test
   use unit_test
   use test_spectral_interface
@@ -8,6 +11,7 @@ program fortran_test
   implicit none
 
   type(test_suite_type) :: test_suite
+  logical, allocatable :: results(:)
 
   ! example with specific suite
   call test_suite_init('Achilles Fortran Test Suite', test_suite)
@@ -18,7 +22,13 @@ program fortran_test
   call test_string_conversion(test_suite)
   ! report the complete suite
   call test_suite_report(test_suite)
+  ! capture per-assertion pass/fail results before the suite is torn down
+  results = test_suite_get_assert_results(test_suite)
   ! finalize
   call test_suite_final(test_suite)
+
+  ! The FUT framework always exits 0, so signal failures with a non-zero exit
+  ! code. This lets CTest (and CI) detect a failing Fortran assertion.
+  if (any(.not. results)) error stop 1
 
 end program fortran_test

@@ -1,7 +1,9 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef PHASE_SPACE_BUILDER
 #define PHASE_SPACE_BUILDER
 
-#include "Achilles/Achilles.hh"
 #include "Achilles/PhaseSpaceMapper.hh"
 #include "Achilles/ProcessInfo.hh"
 

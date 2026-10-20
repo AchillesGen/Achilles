@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #ifndef VERSION_HH
 #define VERSION_HH
 
-#define ACHILLES_VERSION "1.0.0"
-#define ACHILLES_VERSION_MAJOR 1
-#define ACHILLES_VERSION_MINOR 0
+#define ACHILLES_VERSION "0.3.0"
+#define ACHILLES_VERSION_MAJOR 0
+#define ACHILLES_VERSION_MINOR 3
 #define ACHILLES_VERSION_PATCH 0
 
 #include <array>

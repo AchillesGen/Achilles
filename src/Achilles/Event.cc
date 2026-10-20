@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include "Achilles/Event.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
@@ -53,13 +56,27 @@ Event &Event::operator=(const Event &other) {
 }
 
 void Event::Finalize() {
-    size_t nA = 0, nZ = 0;
-    for(const Particle& part:p_backend) {
-        if(part.IsDiscarded()) continue;
-        if(part.ID() == PID::proton()) nZ++;
-        nA++;
+    spdlog::debug("Finalizing the event");
+    if(m_remnant.ID() == PID::undefined()) return;
+
+    // Every residue is created as intermediate; the one still standing at the end is the
+    // actual remnant. Promoting it here is what lets a reader pick it out of the chain by
+    // status instead of walking the graph for an unconsumed residue.
+    m_remnant.Status() = ParticleStatus::residue;
+    m_history.UpdateStatuses({m_remnant});
+
+    // The remnant is built up through the history rather than derived here. Cross-check it
+    // against global four-momentum balance, which must agree if every vertex conserved.
+    if(spdlog::get_level() <= spdlog::level::debug && m_nuc && !m_leptons.empty()) {
+        FourVector mom = m_leptons[0].Momentum() + m_nuc->InitParticle().Momentum();
+        for(size_t i = 1; i < m_leptons.size(); ++i) { mom -= m_leptons[i].Momentum(); }
+        for(const auto &part : m_hadrons) {
+            if(part.IsFinal()) mom -= part.Momentum();
+        }
+        const auto diff = mom - m_remnant.Momentum();
+        if(std::abs(diff.E()) > 1e-6 || diff.Vec3().Magnitude() > 1e-6)
+            spdlog::debug("Event: remnant disagrees with momentum balance by {}", diff);
     }
-    m_remnant = NuclearRemnant(nA, nZ);
 }
 
 void Event::Display() const {
@@ -320,4 +337,8 @@ void Event::WalkHistory(achilles::HistoryVisitor &visitor) {
 
         visited.push_back(current);
     }
+}
+achilles::Particle Event::MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const {
+    PID pid = PID::MakeNucleus(static_cast<int>(nZ), static_cast<int>(nA));
+    return Particle(pid, mom, {}, ParticleStatus::residue);
 }

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #pragma once
 
 #include "Achilles/Logging.hh"
@@ -63,7 +66,7 @@ inline void Splash() {
 }
 
 inline void GitInformation() {
-    std::string msg;
+    // std::string msg;
     if(git::IsPopulated()) {
         spdlog::info("Achilles git information");
         spdlog::info("    Commit: {}", git::CommitSHA1());

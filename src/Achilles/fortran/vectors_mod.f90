@@ -1,3 +1,6 @@
+! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+! SPDX-License-Identifier: GPL-3.0-or-later
+
 module libvectors
     use iso_c_binding
 
@@ -43,6 +46,7 @@ module libvectors
         procedure :: get => get3
         procedure :: print => print3
         procedure :: copy => new3
+        procedure :: delete => delete_threevector
     end type threevector
 
     ! This will act as constructor
@@ -92,9 +96,11 @@ contains ! Implementation of functions
     ! No final procedure: assignment copies ptr, so owners must call delete explicitly.
     subroutine delete_fourvector(this)
         implicit none
-        class(fourvector), intent(inout) :: this
-        call delete_fourvector_c(this%ptr)
-        this%ptr = c_null_ptr
+        class(fourvector) :: this
+        if(c_associated(this%ptr)) then
+            call delete_fourvector_c(this%ptr)
+            this%ptr = c_null_ptr
+        end if
     end subroutine
 
     function get_ptr4(this)
@@ -225,8 +231,11 @@ contains ! Implementation of functions
 
     subroutine delete_threevector(this)
         implicit none
-        type(threevector) :: this
-        call delete_threevector_c(this%ptr)
+        class(threevector) :: this
+        if(c_associated(this%ptr)) then
+            call delete_threevector_c(this%ptr)
+            this%ptr = c_null_ptr
+        end if
     end subroutine
 
     function get_ptr3(this)

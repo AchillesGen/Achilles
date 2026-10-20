@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 #include <complex>
 #include <map>
 #include <string>
@@ -42,19 +45,6 @@ void map_delete(std::map<std::string, double> *map) {
     delete map;
 }
 
-struct complex {
-    double real;
-    double imag;
-
-#ifdef __cplusplus
-    complex() : real(0.0), imag(0.0) {}
-    complex(double r) : real(r), imag(0.0) {}
-    complex(double r, double i) : real(r), imag(i) {}
-    complex(std::complex<double> c) : real(c.real()), imag(c.imag()) {}
-    operator std::complex<double>() const { return std::complex<double>(real, imag); }
-#endif
-};
-
 void cmap_init(std::map<std::string, std::complex<double>> *&map) {
     map = new std::map<std::string, std::complex<double>>();
 }
@@ -65,9 +55,14 @@ void cmap_insert(std::map<std::string, std::complex<double>> *map, const char *k
 }
 
 void cmap_lookup(std::map<std::string, std::complex<double>> *map, const char *key,
-                 std::complex<double> *val) {
-    const auto it = map->find(std::string(key));
-    *val = it == map->end() ? std::complex<double>() : it->second;
+                 std::complex<double> *outval) {
+    std::string skey(key);
+    auto it = map->find(skey);
+    if(it == map->end()) {
+        *outval = std::complex<double>();
+    } else {
+        *outval = it->second;
+    }
 }
 
 bool cmap_contains(std::map<std::string, std::complex<double>> *map, const char *key) {
