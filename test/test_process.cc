@@ -39,7 +39,7 @@ TEST_CASE("Handles weights correctly", "[Process]") {
     CHECK_THAT(process.MaxWeight(), Catch::Matchers::WithinRel(max_wgt));
 
     static constexpr double value = 42;
-    CHECK_THAT(process.Unweight(value), Catch::Matchers::WithinRel(value));
+    CHECK_THAT(process.Unweight(value), Catch::Matchers::WithinRel(value / max_wgt));
     CHECK_THAT(process.UnweightEff(), Catch::Matchers::WithinRel(expected_xsec / max_wgt));
 }
 

@@ -42,10 +42,11 @@ class NoUnweighter : public Unweighter, RegistrableUnweighter<NoUnweighter> {
     void AddEvent(double weight) override {
         if(weight > m_max_weight) m_max_weight = weight;
     }
+    // Return w / w_max like the other unweighters; EventGen rescales by the max weight.
     double AcceptEvent(double weight) override {
         m_accepted++;
         m_total++;
-        return weight;
+        return m_max_weight > 0 ? weight / m_max_weight : weight;
     }
     double MaxValue() override { return m_max_weight; }
     void SaveState(std::ostream &os) const override {
