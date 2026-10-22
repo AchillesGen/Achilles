@@ -92,7 +92,6 @@ add_library(physics SHARED
     ElectronPDF.cc
     EventHistory.cc
     MesonBaryonAmplitudes.cc
-    OsetCrossSections.cc
     ResonanceHelper.cc
 )
 set(physics_libs "")
