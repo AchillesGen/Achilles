@@ -26,6 +26,7 @@ class Beam;
 class Nucleus;
 class Cascade;
 class EventWriter;
+class FoldingCorrection;
 
 class SherpaInterface;
 
@@ -48,6 +49,7 @@ class EventGen {
     std::shared_ptr<Beam> beam;
     std::vector<std::shared_ptr<Nucleus>> nuclei;
     std::shared_ptr<Cascade> cascade;
+    std::shared_ptr<FoldingCorrection> folding;
     std::vector<ProcessGroup> process_groups;
     CutCollection hard_cuts{};
     // CutCollection event_cuts{};

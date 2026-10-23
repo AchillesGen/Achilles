@@ -6,12 +6,15 @@
 #include "Achilles/Event.hh"
 #include "Achilles/EventWriter.hh"
 #include "Achilles/Exception.hh"
+#include "Achilles/FoldingCorrection.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
+
+#include <limits>
 
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -64,6 +67,17 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     runCascade = config.GetAs<bool>("Cascade/Run");
     spdlog::debug("Cascade mode: {}", runCascade);
     cascade = runCascade ? (std::make_unique<Cascade>(config.GetAs<Cascade>("Cascade"))) : nullptr;
+    if(runCascade && config.Exists("Cascade/FoldingCorrection")) {
+        if(config.GetAs<std::string>("Cascade/Algorithm") != "Veto")
+            throw std::runtime_error("EventGen: FoldingCorrection requires the Veto cascade");
+        const auto mode = config.GetAs<std::string>("Cascade/FoldingCorrection/Mode");
+        const double max_delta = config.Exists("Cascade/FoldingCorrection/MaxDelta")
+                                     ? config.GetAs<double>("Cascade/FoldingCorrection/MaxDelta")
+                                     : std::numeric_limits<double>::infinity();
+        spdlog::info("Applying the (experimental) non-unitary folding correction: {}", mode);
+        folding =
+            std::make_shared<FoldingCorrection>(FoldingCorrection::ParseMode(mode), max_delta);
+    }
 
     // Initialize decays
     runDecays = config.GetAs<bool>("Main/RunDecays");
@@ -288,10 +302,17 @@ bool achilles::EventGen::GenerateSingleEvent() {
     size_t ntrials = 10;
     if(runCascade) {
         spdlog::debug("Runnning cascade");
+        // The folding correction follows the single struck nucleon of the primary vertex
+        std::vector<size_t> primaries;
+        for(size_t i = 0; i < event.Hadrons().size(); ++i)
+            if(event.Hadrons()[i].IsPropagating()) primaries.push_back(i);
         for(size_t itrial = 1; itrial <= ntrials; itrial++) {
             try {
                 auto tmp_event = event;
                 cascade->Evolve(tmp_event, group.GetNucleus());
+                if(folding && primaries.size() == 1)
+                    folding->Apply(*cascade, tmp_event, primaries[0],
+                                   event.Hadrons()[primaries[0]]);
                 event = tmp_event;
                 spdlog::trace("Achilles cascade succeeded after {} trials", itrial);
                 break;

@@ -922,7 +922,7 @@ void Cascade::VetoEvolve(Event &event) {
         tracks[idx] = {t, t_exit};
         const bool formed = !(part.InFormationZone() && !part.Info().IsPion());
         const double t_start = formed ? t : t + part.FormationZone();
-        for(size_t j = 0; j < particles.size(); ++j) {
+        for(size_t j = 0; j < particles.size() && b2 > 0; ++j) {
             if(particles[j].Status() != ParticleStatus::background) continue;
             const double tca = t + (particles[j].Position() - pos).Dot(beta) / b2;
             if(tca < t_start || tca > t_exit) continue;
@@ -931,6 +931,7 @@ void Cascade::VetoEvolve(Event &event) {
         if(!part.Info().IsStable()) add_decay(idx, t);
     };
 
+    m_first_collision.clear();
     for(auto idx : kickedIdxs) add_channels(idx, 0);
 
     while(!trials.empty()) {
@@ -957,7 +958,15 @@ void Cascade::VetoEvolve(Event &event) {
         const double xsec = GetXSec(event, trial.idx, trial.target);
         // Same comparison as Interacted, so a NaN probability never interacts
         if(!(Random::Instance().Uniform(0.0, 1.0) < probability(dist2, xsec / 10))) continue;
+        const double energy_in = particles[trial.idx].Momentum().E();
         FinalizeMomentum(event, particles, trial.idx, trial.target);
+        if(particles[trial.idx].Status() == ParticleStatus::interacted &&
+           kickedIdxs.count(trial.idx) > 0) {
+            double leading = 0;
+            for(size_t k = nbefore; k < particles.size(); ++k)
+                leading = std::max(leading, particles[k].Momentum().E());
+            m_first_collision.emplace(trial.idx, FirstCollision{trial.time, energy_in - leading});
+        }
         for(size_t k = nbefore; k < particles.size(); ++k) add_channels(k, trial.time);
     }
 
@@ -978,4 +987,61 @@ void Cascade::VetoEvolve(Event &event) {
         }
     }
     Escaped(particles);
+}
+
+std::vector<double> Cascade::SurvivalProfile(Event &event, Nucleus *nucleus, size_t idx,
+                                             const std::vector<double> &times, size_t npauli) {
+    m_nucleus = nucleus;
+    const Particles &particles = event.Hadrons();
+    const Particle &part = particles[idx];
+    const ThreeVector pos = part.Position(), beta = part.Beta();
+    const double b2 = beta.Magnitude2(), radius = m_nucleus->Radius();
+    std::vector<double> survival(times.size(), 1);
+    if(b2 <= 0) return survival;
+
+    double t_exit = 0;
+    const double pb = pos.Dot(beta), disc = pb * pb - b2 * (pos.Magnitude2() - radius * radius);
+    if(disc > 0) t_exit = std::max(0.0, (-pb + std::sqrt(disc)) / b2);
+    const bool formed = !(part.InFormationZone() && !part.Info().IsPion());
+    const double t_start = formed ? 0 : part.FormationZone();
+    const bool pauli = m_nucleus->ID() != PID::hydrogen() && m_nucleus->ID() != PID::free_neutron();
+
+    // (closest-approach time, probability that this pair does not collide)
+    std::vector<std::pair<double, double>> factors;
+    for(size_t j = 0; j < particles.size(); ++j) {
+        if(particles[j].Status() != ParticleStatus::background) continue;
+        const double tca = (particles[j].Position() - pos).Dot(beta) / b2;
+        if(tca < t_start || tca > t_exit) continue;
+        Particle moved = part;
+        moved.Propagate(tca);
+        const double dist2 = (particles[j].Position() - moved.Position()).Magnitude2();
+        const double prob = probability(dist2, GetXSec(event, idx, j) / 10);
+        if(!(prob > 0)) continue;
+
+        double allowed = 1;
+        if(pauli) {
+            auto modes = m_interactions.CrossSection(event, idx, j);
+            size_t nallowed = 0;
+            for(size_t s = 0; s < npauli; ++s) {
+                auto mode =
+                    m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
+                auto outs = m_interactions.GenerateMomentum(moved, particles[j], mode.particles,
+                                                            Random::Instance());
+                bool blocked = false;
+                for(const auto &out : outs) blocked |= PauliBlocking(out);
+                nallowed += !blocked;
+            }
+            allowed = static_cast<double>(nallowed) / static_cast<double>(npauli);
+        }
+        factors.emplace_back(tca, 1 - std::min(prob, 1.0) * allowed);
+    }
+    std::sort(factors.begin(), factors.end());
+
+    for(size_t k = 0; k < times.size(); ++k) {
+        for(const auto &[tca, keep] : factors) {
+            if(tca > times[k]) break;
+            survival[k] *= keep;
+        }
+    }
+    return survival;
 }

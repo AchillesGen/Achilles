@@ -6,6 +6,8 @@
 #include "Achilles/Cascade.hh"
 #include "Achilles/CascadeInteractions/ConstantInteractions.hh"
 #include "Achilles/Event.hh"
+#include "Achilles/EventHistory.hh"
+#include "Achilles/FoldingCorrection.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
@@ -251,12 +253,14 @@ TEST_CASE("Evolve States: 3 nucleons", "[Cascade]") {
 
 namespace {
 
-// pn -> pn with a constant 10 mb cross section, i.e. sigma = 1 fm^2
-achilles::InteractionHandler ConstantPN() {
+// Elastic NN scattering with a constant 10 mb cross section, i.e. sigma = 1 fm^2
+achilles::InteractionHandler ConstantNN() {
     achilles::InteractionHandler handler;
     achilles::ConstantInteraction interaction;
-    interaction.AddInteraction({achilles::PID::proton(), achilles::PID::neutron()},
-                               {{{achilles::PID::proton(), achilles::PID::neutron()}, 10}});
+    const auto p = achilles::PID::proton(), n = achilles::PID::neutron();
+    interaction.AddInteraction({p, p}, {{{p, p}, 10}});
+    interaction.AddInteraction({p, n}, {{{p, n}, 10}});
+    interaction.AddInteraction({n, n}, {{{n, n}, 10}});
     handler.RegisterInteraction(std::make_unique<achilles::ConstantInteraction>(interaction));
     return handler;
 }
@@ -277,7 +281,7 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
         ALLOW_CALL(nucleus, Radius()).RETURN(radius);
 
-        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Gaussian,
+        achilles::Cascade cascade(ConstantNN(), achilles::Cascade::ProbabilityType::Gaussian,
                                   achilles::Cascade::Algorithm::Veto,
                                   achilles::Cascade::InMedium::None);
         cascade.Evolve(event, &nucleus);
@@ -297,7 +301,7 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
         ALLOW_CALL(nucleus, Radius()).RETURN(radius);
 
-        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Cylinder,
+        achilles::Cascade cascade(ConstantNN(), achilles::Cascade::ProbabilityType::Cylinder,
                                   achilles::Cascade::Algorithm::Veto,
                                   achilles::Cascade::InMedium::None);
         cascade.Evolve(event, &nucleus);
@@ -313,7 +317,7 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
         ALLOW_CALL(nucleus, Radius()).RETURN(radius);
 
-        achilles::Cascade cascade(ConstantPN(), achilles::Cascade::ProbabilityType::Gaussian,
+        achilles::Cascade cascade(ConstantNN(), achilles::Cascade::ProbabilityType::Gaussian,
                                   achilles::Cascade::Algorithm::Veto,
                                   achilles::Cascade::InMedium::None, true);
         CHECK_THROWS_AS(cascade.Evolve(event, &nucleus), std::runtime_error);
@@ -344,6 +348,56 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         CHECK(hadrons[1].Status() == achilles::ParticleStatus::background);
     }
 
+    SECTION("SurvivalProfile matches the first-collision times") {
+        const std::vector<achilles::Particle> targets = {
+            Particle{achilles::PID::neutron(),
+                     {achilles::Constant::mN, 0, 0, 0},
+                     {1, 0.2, 0},
+                     achilles::ParticleStatus::background},
+            Particle{achilles::PID::neutron(),
+                     {achilles::Constant::mN, 0, 0, 0},
+                     {2, -0.4, 0.1},
+                     achilles::ParticleStatus::background},
+            Particle{achilles::PID::neutron(),
+                     {achilles::Constant::mN, 0, 0, 0},
+                     {3, 0.1, -0.3},
+                     achilles::ParticleStatus::background}};
+        achilles::Particles hadrons;
+        MockEvent event;
+        MockNucleus nucleus;
+        ALLOW_CALL(event, Hadrons()).LR_RETURN((hadrons));
+        ALLOW_CALL(nucleus, Radius()).RETURN(radius);
+        ALLOW_CALL(nucleus, ID()).RETURN(achilles::PID::hydrogen());
+
+        achilles::Cascade cascade(ConstantNN(), achilles::Cascade::ProbabilityType::Gaussian,
+                                  achilles::Cascade::Algorithm::Veto,
+                                  achilles::Cascade::InMedium::None);
+        // Projectile velocity 0.5: the targets are passed at t = 2, 4, 6 fm
+        const std::vector<double> times = {1, 3, 5, 7};
+        hadrons = {projectile};
+        hadrons.insert(hadrons.end(), targets.begin(), targets.end());
+        const auto expected = cascade.SurvivalProfile(event, &nucleus, 0, times);
+
+        constexpr size_t ntrials = 20000;
+        std::vector<double> survived(times.size(), 0);
+        for(size_t i = 0; i < ntrials; ++i) {
+            hadrons = {projectile};
+            hadrons.insert(hadrons.end(), targets.begin(), targets.end());
+            cascade.Evolve(event, &nucleus);
+            const auto &first = cascade.FirstCollisions();
+            const auto it = first.find(0);
+            for(size_t k = 0; k < times.size(); ++k)
+                survived[k] += it == first.end() || it->second.time > times[k];
+        }
+        CHECK(expected[0] == Approx(1));
+        CHECK(expected.back() < 0.9);
+        for(size_t k = 0; k < times.size(); ++k) {
+            const double frac = survived[k] / ntrials;
+            const double err = std::sqrt(expected[k] * (1 - expected[k]) / ntrials);
+            CHECK(frac == Approx(expected[k]).margin(5 * err + 1e-9));
+        }
+    }
+
     SECTION("Single pair interacts with probability P(b^2, sigma)") {
         // Hydrogen skips Pauli blocking, so the pair's interaction probability is exactly P
         const double b = GENERATE(0.3, 0.7);
@@ -367,7 +421,7 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         ALLOW_CALL(nucleus, ID()).RETURN(achilles::PID::hydrogen());
         ALLOW_CALL(nucleus, GetPotential()).RETURN(nullptr);
 
-        achilles::Cascade cascade(ConstantPN(), mode, alg, achilles::Cascade::InMedium::None);
+        achilles::Cascade cascade(ConstantNN(), mode, alg, achilles::Cascade::InMedium::None);
         constexpr size_t ntrials = 4000;
         size_t hits = 0;
         for(size_t i = 0; i < ntrials; ++i) {
@@ -378,6 +432,47 @@ TEST_CASE("Veto cascade", "[Cascade]") {
         const double frac = static_cast<double>(hits) / ntrials;
         const double err = std::sqrt(expected * (1 - expected) / ntrials);
         CHECK(frac == Approx(expected).margin(5 * err + 1e-9));
+    }
+}
+
+TEST_CASE("FoldingCorrection shifts the outgoing lepton", "[Cascade]") {
+    const Particle beam{
+        achilles::PID::electron(), {1000, 0, 0, 1000}, {}, achilles::ParticleStatus::initial_state};
+    const Particle scattered{
+        achilles::PID::electron(), {800, 0, 480, 640}, {}, achilles::ParticleStatus::final_state};
+    const Particle nucleon{
+        achilles::PID::proton(), {1100, 0, -480, 360}, {}, achilles::ParticleStatus::final_state};
+    achilles::Event event;
+    event.Leptons() = {beam, scattered};
+    event.Hadrons() = {nucleon};
+    event.History().AddVertex({}, {beam}, {scattered, nucleon},
+                              achilles::EventHistoryNode::StatusCode::primary);
+
+    SECTION("Energy lowered at fixed direction, in the event and the history") {
+        REQUIRE(achilles::FoldingCorrection::ShiftLepton(event, 30));
+        const auto &lep = event.Leptons()[1].Momentum();
+        const double mass = event.Leptons()[1].Info().Mass();
+        CHECK(lep.E() == Approx(770));
+        CHECK(lep.P() == Approx(std::sqrt(770 * 770 - mass * mass)));
+        CHECK(lep.Py() / lep.Pz() == Approx(480.0 / 640.0));
+        CHECK(event.Leptons()[0].Momentum().E() == Approx(1000));
+        const auto &out = event.History().Primary()->ParticlesOut();
+        CHECK(out[0].Momentum().E() == Approx(770));
+        CHECK(out[1].Momentum().E() == Approx(1100));
+    }
+
+    SECTION("Modes parse by name") {
+        using Mode = achilles::FoldingCorrection::Mode;
+        CHECK(achilles::FoldingCorrection::ParseMode("Full") == Mode::Full);
+        CHECK(achilles::FoldingCorrection::ParseMode("Limited") == Mode::Limited);
+        CHECK(achilles::FoldingCorrection::ParseMode("Collided") == Mode::Collided);
+        CHECK_THROWS(achilles::FoldingCorrection::ParseMode("Symmetric"));
+    }
+
+    SECTION("A shift below the lepton mass is refused") {
+        CHECK_FALSE(achilles::FoldingCorrection::ShiftLepton(event, 900));
+        CHECK(event.Leptons()[1].Momentum().E() == Approx(800));
+        CHECK(event.History().Primary()->ParticlesOut()[0].Momentum().E() == Approx(800));
     }
 }
 

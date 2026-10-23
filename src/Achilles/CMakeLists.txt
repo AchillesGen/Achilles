@@ -75,6 +75,7 @@ list(APPEND achilles_targets mappers)
 
 add_library(physics SHARED
     Cascade.cc
+    FoldingCorrection.cc
     Nucleus.cc
     FormFactor.cc
     FormFactorBuilder.cc

@@ -158,6 +158,24 @@ class Cascade {
     ///@param maxSteps: The maximum steps to take in the cascade
     void Evolve(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
+    /// First accepted collision of an initially propagating particle: time (fm) and the energy
+    /// (MeV) its leading outgoing particle lost, E_in - max E_out
+    struct FirstCollision {
+        double time, energy_loss;
+    };
+    /// First collisions in the last Veto evolution; particles that left without colliding are
+    /// absent
+    const std::map<std::size_t, FirstCollision> &FirstCollisions() const {
+        return m_first_collision;
+    }
+
+    /// No-collision probability S(t) of a propagating particle on its straight line through the
+    /// background of the event, with the Veto algorithm's single attempt per pair:
+    /// S(t) = prod over pairs with closest approach before t of [1 - P(b^2, sigma) a], where a is
+    /// the Pauli-allowed fraction of npauli sampled final states
+    std::vector<double> SurvivalProfile(Event &, Nucleus *, std::size_t,
+                                        const std::vector<double> &times, std::size_t npauli = 20);
+
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
     /// traveled by the kicked particle before it interacts.
@@ -222,6 +240,7 @@ class Cascade {
     InMedium m_medium;
     bool m_potential_prop;
     std::map<size_t, SymplecticIntegrator> integrators;
+    std::map<size_t, FirstCollision> m_first_collision;
     std::string m_probability_name;
 
     struct queue_entry {
