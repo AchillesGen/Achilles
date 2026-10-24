@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/AchillesGen/Achilles/actions/workflows/ci.yml/badge.svg)](https://github.com/AchillesGen/Achilles/actions/workflows/ci.yml)
 
-[![codecov](https://codecov.io/gh/Achilles/AchillesGen/branch/main/graph/badge.svg?token=Xq2sJ4kv5L)](https://codecov.io/gh/AchillesGen/Achilles)
+[![codecov](https://codecov.io/gh/AchillesGen/Achilles/branch/main/graph/badge.svg?token=Xq2sJ4kv5L)](https://codecov.io/gh/AchillesGen/Achilles)
 
 ## Introduction
 
