@@ -29,6 +29,9 @@ jobs:
     name: Build and Test - ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 90
+    permissions:
+      contents: read
+      id-token: write # Codecov OIDC upload
     strategy:
       fail-fast: false
       matrix:
@@ -43,7 +46,7 @@ jobs:
             cc: gcc
             cxx: g++
             coverage: true
-            buidl_type: Debug
+            build_type: Debug
           - name: Ubuntu Clang
             os: ubuntu-26.04
             cc: clang
@@ -128,7 +131,7 @@ jobs:
         with:
           files: ./coverage.xml
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
 
       - name: Install
         run: cmake --install build
