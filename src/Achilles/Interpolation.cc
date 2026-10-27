@@ -18,38 +18,33 @@ constexpr double ipow(double x, size_t exponent) {
 
 using namespace achilles;
 
-double achilles::Polint(const std::vector<double> &x_, const std::vector<double> &y_, size_t n,
-                        double x) {
-    int ns = 0;
-    double dift{}, dif = std::abs(x - x_[0]);
-    std::vector<double> c(n);
-    std::vector<double> d(n);
-    for(size_t i = 0; i < n; ++i) {
-        if((dift = std::abs(x - x_[i])) < dif) {
-            ns = static_cast<int>(i);
-            dif = dift;
-        }
-        c[i] = y_[i];
-        d[i] = y_[i];
-    }
-    double y = y_[static_cast<size_t>(ns--)];
-    double ho{}, hp{}, w{}, den{};
-    for(size_t m = 0; m < n - 1; ++m) {
-        for(size_t i = 0; i < n - m - 1; ++i) {
-            ho = x_[i] - x;
-            hp = x_[i + m + 1] - x;
-            w = c[i + 1] - d[i];
-            if((den = ho - hp) == 0)
-                throw std::runtime_error("Polint: Error in interpolation routine");
-            den = w / den;
-            d[i] = hp * den;
-            c[i] = ho * den;
-        }
-        y += (2 * ns + 1 < static_cast<int>(n - m - 1) ? c[static_cast<size_t>(ns + 1)]
-                                                       : d[static_cast<size_t>(ns--)]);
-    }
+double achilles::NevilleInterpolate(const std::vector<double> &nodes,
+                                    const std::vector<double> &values, size_t count, double x) {
+    // Neville's algorithm (E. H. Neville, J. Indian Math. Soc. 20 (1934) 87): evaluate the unique
+    // degree-(count-1) polynomial through the given nodes at x, by repeatedly combining adjacent
+    // lower-degree interpolants using
+    //
+    //     P_{i,i}   = values[i]
+    //     P_{i,i+k} = [ (x - nodes[i+k]) P_{i,i+k-1} + (nodes[i] - x) P_{i+1,i+k} ]
+    //                 / (nodes[i] - nodes[i+k])
+    //
+    // The tableau is carried in one rolling buffer: after pass k, tableau[i] holds P_{i,i+k}.
+    if(count == 0) throw std::runtime_error("NevilleInterpolate: no interpolation nodes");
+    if(values.size() < count || nodes.size() < count)
+        throw std::runtime_error("NevilleInterpolate: fewer nodes than requested");
 
-    return y;
+    std::vector<double> tableau(values.begin(),
+                                values.begin() + static_cast<std::ptrdiff_t>(count));
+    for(size_t k = 1; k < count; ++k) {
+        for(size_t i = 0; i + k < count; ++i) {
+            const double spread = nodes[i] - nodes[i + k];
+            if(spread == 0)
+                throw std::runtime_error("NevilleInterpolate: repeated interpolation node");
+            tableau[i] =
+                ((x - nodes[i + k]) * tableau[i] + (nodes[i] - x) * tableau[i + 1]) / spread;
+        }
+    }
+    return tableau[0];
 }
 
 constexpr double Interp1D::maxDeriv;
@@ -68,42 +63,57 @@ Interp1D::Interp1D(const std::vector<double> &x, const std::vector<double> &y,
 }
 
 void Interp1D::CubicSpline(const double &derivLeft, const double &derivRight) {
+    // The natural/clamped interpolating cubic spline is fixed by its second derivatives M_i,
+    // which satisfy the tridiagonal system
+    //
+    //     h_{i-1} M_{i-1} + 2 (h_{i-1} + h_i) M_i + h_i M_{i+1}
+    //         = 6 [ (y_{i+1} - y_i) / h_i - (y_i - y_{i-1}) / h_{i-1} ],    i = 1 .. n-2
+    //
+    // with h_i = x_{i+1} - x_i, closed at each end by either a natural condition (M = 0) or a
+    // clamped one (prescribed first derivative).  Solved here by the Thomas algorithm.
     const std::size_t n = knotX.size();
-    std::vector<double> u(n);
-    derivs2.resize(n);
-
-    if(derivLeft >= maxDeriv) {
-        derivs2[0] = 0.0;
-        u[0] = 0.0;
-    } else {
-        derivs2[0] = -0.5;
-        u[0] = (3 / (knotX[1] - knotX[0])) *
-               ((knotY[1] - knotY[0]) / (knotX[1] - knotX[0]) - derivLeft);
+    derivs2.assign(n, 0.0);
+    if(n < 2) {
+        kSplineInit = true;
+        return;
     }
 
-    for(std::size_t i = 1; i < n - 1; ++i) {
-        double sig = (knotX[i] - knotX[i - 1]) / (knotX[i + 1] - knotX[i - 1]);
-        double p = sig * derivs2[i - 1] + 2;
-        derivs2[i] = (sig - 1.0) / p;
-        u[i] = (knotY[i + 1] - knotY[i]) / (knotX[i + 1] - knotX[i]) -
-               (knotY[i] - knotY[i - 1]) / (knotX[i] - knotX[i - 1]);
-        u[i] = (6.0 * u[i] / (knotX[i + 1] - knotX[i - 1]) - sig * u[i - 1]) / p;
+    const auto h = [&](std::size_t i) { return knotX[i + 1] - knotX[i]; };
+    const auto slope = [&](std::size_t i) { return (knotY[i + 1] - knotY[i]) / h(i); };
+
+    std::vector<double> sub(n, 0.0), diag(n, 0.0), sup(n, 0.0), rhs(n, 0.0);
+
+    if(derivLeft >= maxDeriv) { // natural
+        diag[0] = 1.0;
+    } else { // clamped
+        diag[0] = 2.0 * h(0);
+        sup[0] = h(0);
+        rhs[0] = 6.0 * (slope(0) - derivLeft);
     }
 
-    double dn{}, un{};
-    if(derivRight >= maxDeriv) {
-        dn = 0.0;
-        un = 0.0;
-    } else {
-        dn = 0.5;
-        un = (3 / (knotX[n - 1] - knotX[n - 2])) *
-             (derivRight - (knotY[n - 1] - knotY[n - 2]) / (knotX[n - 1] - knotX[n - 2]));
+    for(std::size_t i = 1; i + 1 < n; ++i) {
+        sub[i] = h(i - 1);
+        diag[i] = 2.0 * (h(i - 1) + h(i));
+        sup[i] = h(i);
+        rhs[i] = 6.0 * (slope(i) - slope(i - 1));
     }
 
-    derivs2[n - 1] = (un - dn * u[n - 2]) / (dn * derivs2[n - 2] + 1.0);
-    for(std::size_t i = n - 1; i > 0; --i) {
-        derivs2[i - 1] = derivs2[i - 1] * derivs2[i] + u[i - 1];
+    if(derivRight >= maxDeriv) { // natural
+        diag[n - 1] = 1.0;
+    } else { // clamped
+        sub[n - 1] = h(n - 2);
+        diag[n - 1] = 2.0 * h(n - 2);
+        rhs[n - 1] = 6.0 * (derivRight - slope(n - 2));
     }
+
+    for(std::size_t i = 1; i < n; ++i) { // forward elimination
+        const double factor = sub[i] / diag[i - 1];
+        diag[i] -= factor * sup[i - 1];
+        rhs[i] -= factor * rhs[i - 1];
+    }
+    derivs2[n - 1] = rhs[n - 1] / diag[n - 1]; // back substitution
+    for(std::size_t i = n - 1; i > 0; --i)
+        derivs2[i - 1] = (rhs[i - 1] - sup[i - 1] * derivs2[i]) / diag[i - 1];
 
     kSplineInit = true;
 }
@@ -208,7 +218,7 @@ double Interp1D::PolynomialInterp(double x) const {
     std::vector<double> tmp(&knotY[idx] - polyOrder / 2,
                             &knotY[idx] + polyOrder / 2 + polyOrder % 2);
 
-    return Polint(xInterp, tmp, static_cast<size_t>(polyOrder), x);
+    return NevilleInterpolate(xInterp, tmp, static_cast<size_t>(polyOrder), x);
 }
 
 Interp2D::Interp2D(const std::vector<double> &x, const std::vector<double> &y,
@@ -316,7 +326,7 @@ double Interp2D::PolynomialInterp(double x, double y) const {
         for(size_t j = 0; j < polyOrderY; ++j) {
             tmp[j] = knotZ[idxY + j - polyOrderY / 2 + knotY.size() * (idxX - polyOrderX / 2 + i)];
         }
-        tmp2[i] = Polint(yInterp, tmp, polyOrderY, y);
+        tmp2[i] = NevilleInterpolate(yInterp, tmp, polyOrderY, y);
     }
-    return Polint(xInterp, tmp2, polyOrderX, x);
+    return NevilleInterpolate(xInterp, tmp2, polyOrderX, x);
 }

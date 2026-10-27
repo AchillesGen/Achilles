@@ -1,5 +1,15 @@
+! SPDX-FileCopyrightText: 2015-2026 S. X. Nakamura, H. Kamano and T. Sato
 ! SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 ! SPDX-License-Identifier: GPL-3.0-or-later
+!
+! The ANL-Osaka dynamical coupled-channels amplitude code, provided to the
+! Achilles Developers by its authors and distributed here with their permission
+! under the terms of this project's licence.  See CREDITS.md.
+!
+! Please cite: S. X. Nakamura, H. Kamano and T. Sato,
+!              Phys. Rev. D 92 (2015) 074024 [arXiv:1506.03403];
+!              S. X. Nakamura et al., Rept. Prog. Phys. 80 (2017) 056301
+!              [arXiv:1610.01464].
 
 module dirac_matrices_pi
     implicit none

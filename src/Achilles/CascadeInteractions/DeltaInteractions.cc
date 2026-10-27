@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/CascadeInteractions/DeltaInteractions.hh"
+#include "Achilles/CascadeInteractions/OsetPiNModel.hh"
 #include "Achilles/ClebschGordan.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Integrators/DoubleExponential.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Nucleus.hh"
-#include "Achilles/OsetCrossSections.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/ResonanceHelper.hh"
@@ -149,8 +149,8 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
         // s-wave absorption
         if(auto states = AllowedAbsorption(event, part1, part2);
            states.size() > 0 && swave_enabled) {
-            OsetCrossSection Oset;
-            auto oset_abs_xsec = Oset.SChannelAbsCrossSection(event, part1, part2);
+            OsetPiNModel Oset;
+            auto oset_abs_xsec = Oset.SWaveAbsorptionCrossSection(event, part1, part2);
             // Nuclear Physics A568 (1994) 855-872 Table 1
             auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
             auto same_isospin_xsec = (1. / 6.) * oset_abs_xsec;
