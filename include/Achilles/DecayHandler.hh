@@ -14,6 +14,8 @@ namespace achilles {
 
 class Particle;
 
+static constexpr std::string_view default_decay_file = "data/decays.yml";
+
 struct DecayMode {
     double branching_ratio;
     size_t angular_mom;

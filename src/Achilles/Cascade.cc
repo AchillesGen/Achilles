@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "Achilles/System.hh"
 #include "spdlog/spdlog.h"
 
 #include "Achilles/Cascade.hh"
@@ -22,8 +23,10 @@
 using namespace achilles;
 
 Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, Algorithm alg,
-                 const InMedium &medium, bool potential_prop, double dist)
-    : distance(dist), m_interactions(std::move(interactions)), m_medium(medium),
+                 const InMedium &medium, std::string_view decay_file, bool potential_prop,
+                 double dist)
+    : distance(dist), m_interactions(std::move(interactions)),
+      m_decays(Filesystem::FindFile(std::string(decay_file), "Cascade")), m_medium(medium),
       m_potential_prop(potential_prop) {
     switch(alg) {
     case Algorithm::Base:

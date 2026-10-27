@@ -165,7 +165,8 @@ Spectrum::Spectrum(const YAML::Node &node) {
         m_delta_energy = m_max_energy - m_min_energy;
     } else if(node["ROOTHist"]) {
 #ifdef USE_ROOT
-        std::string filename = Filesystem::FindFlux(node["ROOTHist"]["File"].as<std::string>());
+        std::string filename =
+            Filesystem::FindFlux(node["ROOTHist"]["File"].as<std::string>(), "ROOTFlux");
         spdlog::trace("Reading flux file: {}", filename);
         TFile *file = new TFile(filename.c_str());
         TH1D *hist =
