@@ -4,6 +4,7 @@
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Units.hh"
 
 using achilles::FortranModel;
 using achilles::NuclearModel;

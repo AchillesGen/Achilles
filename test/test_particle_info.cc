@@ -4,6 +4,7 @@
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers.hpp"
 
+#include "Achilles/NuclearMass.hh"
 #include "Achilles/ParticleInfo.hh"
 
 TEST_CASE("ParticleInfo", "[ParticleInfo]") {
@@ -90,5 +91,52 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
         CHECK(info1 != info3);
         // Anti-particles are not equal to particles
         CHECK(info1 != info4);
+    }
+}
+
+TEST_CASE("Nuclear PIDs are synthesized on demand", "[ParticleInfo]") {
+    SECTION("Remnants absent from the database are built from the mass formula") {
+        const auto pid = achilles::PID::MakeNucleus(6, 11);
+
+        achilles::ParticleInfo info(pid);
+        CHECK(info.ID() == pid);
+        CHECK(info.IntCharge() == 18);
+        CHECK(info.Name() == "C11");
+        CHECK(info.Mass() == achilles::NuclearMass(6, 11));
+        CHECK(info.IsNucleus());
+
+        // The synthesized entry is cached, so a second lookup adds nothing.
+        CHECK(achilles::ParticleInfo::Database().count(pid) == 1);
+        const auto size = achilles::ParticleInfo::Database().size();
+        achilles::ParticleInfo again(pid);
+        CHECK(achilles::ParticleInfo::Database().size() == size);
+        CHECK(again.Mass() == info.Mass());
+    }
+
+    SECTION("Database entries take precedence over the mass formula") {
+        achilles::ParticleInfo carbon(achilles::PID::carbon());
+        CHECK(carbon.Mass() == 11188);
+        CHECK(carbon.Mass() != achilles::NuclearMass(6, 12));
+        CHECK(carbon.IntCharge() == 18);
+    }
+
+    SECTION("Only well formed nuclear codes are accepted") {
+        CHECK(achilles::PID::MakeNucleus(6, 12).valid_nucleus());
+        CHECK(achilles::PID::MakeNucleus(1, 1).valid_nucleus());
+        // More protons than nucleons
+        CHECK_FALSE(achilles::PID::MakeNucleus(12, 6).valid_nucleus());
+        // Not a nuclear code at all
+        CHECK_FALSE(achilles::PID::proton().valid_nucleus());
+        CHECK_THROWS_WITH(achilles::ParticleInfo(achilles::PID::MakeNucleus(12, 6)),
+                          "Invalid PID: id=1000120060");
+    }
+
+    SECTION("Nuclear codes decode back to Z and A") {
+        const auto pid = achilles::PID::MakeNucleus(18, 40);
+        CHECK(pid.NuclearZ() == 18);
+        CHECK(pid.NuclearA() == 40);
+        CHECK(pid.NuclearL() == 0);
+        CHECK(pid.NuclearI() == 0);
+        CHECK(pid == achilles::PID::argon());
     }
 }

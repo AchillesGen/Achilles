@@ -6,13 +6,10 @@
 
 #include <algorithm>
 #include <memory>
-#include <utility>
 #include <vector>
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/EventHistory.hh"
-#include "Achilles/NuclearRemnant.hh"
-#include "Achilles/ProcessInfo.hh"
 
 namespace achilles {
 
@@ -38,7 +35,11 @@ class Event {
 
     void Finalize();
 
-    MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
+    MOCK const Particle &Remnant() const { return m_remnant; }
+    /// The remnant is threaded through the history: it is created at the target vertex and
+    /// updated at every vertex that moves a nucleon or energy between it and the cascade,
+    /// so that four-momentum and baryon number are conserved at each one.
+    void SetRemnant(Particle remnant) { m_remnant = std::move(remnant); }
 
     MOCK const vMomentum &Momentum() const { return m_mom; }
     MOCK vMomentum &Momentum() { return m_mom; }
@@ -90,10 +91,11 @@ class Event {
         std::copy_if(particles.begin(), particles.end(), std::back_inserter(result), pred);
         return result;
     }
+    Particle MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const;
 
     // Variables
     std::shared_ptr<Nucleus> m_nuc;
-    NuclearRemnant m_remnant{};
+    Particle m_remnant{};
     vMomentum m_mom{};
     double m_wgt{};
     vParticles m_leptons{}, m_hadrons{};

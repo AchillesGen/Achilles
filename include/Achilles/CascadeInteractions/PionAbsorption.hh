@@ -8,6 +8,9 @@
 #include "Achilles/OsetCrossSections.hh"
 #include "Achilles/Particle.hh"
 
+#include <functional>
+#include <vector>
+
 namespace achilles {
 
 class PionAbsorption : public Interaction {
@@ -32,7 +35,11 @@ class PionAbsorption : public Interaction {
 
     using InteractionMap = std::map<std::pair<PID, PID>, std::vector<InteractionStates>>;
     InteractionMap states;
-    mutable std::vector<Particle> absorption_partners;
+    // Same type as achilles::refParticles, spelled out to avoid including Event.hh here.
+    // Refers into Event::Hadrons() so GenerateMomentum can flag the partner it consumes;
+    // only valid between the CrossSection call that fills it and the following
+    // GenerateMomentum, as Event::Hadrons() is not resized in between.
+    mutable std::vector<std::reference_wrapper<Particle>> absorption_partners;
     mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 

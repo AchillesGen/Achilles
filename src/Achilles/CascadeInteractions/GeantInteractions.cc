@@ -4,6 +4,7 @@
 #include "Achilles/CascadeInteractions/GeantInteractions.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Random.hh"
+#include "Achilles/Units.hh"
 #include "Achilles/Utilities.hh"
 
 #pragma GCC diagnostic push
