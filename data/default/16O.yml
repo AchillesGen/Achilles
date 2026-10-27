@@ -2,7 +2,7 @@ Name: 16O
 Binding: 8.6
 Fermi Momentum: 228
 Density:
-  ProtonFile: data/densities/rho_O_P_IAFDMC.txt
+  ProtonFile: data/densities/rho_O_p_IAFDMC.txt
   NeutronFile: data/densities/rho_O_n_IAFDMC.txt
   FilePotential: data/realOP_12C_EDAI.dat
   Function: configuration
