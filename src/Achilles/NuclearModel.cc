@@ -234,7 +234,14 @@ NuclearModel::ModelMap achilles::LoadModels(const Settings &settings) {
 
 // TODO: Rewrite to match process grouping
 void NuclearModel::AllowedStates(ProcessInfo &info) const {
-    // Check for charge conservation
+    // Check for charge conservation: the hadronic system can change charge by at most one
+    const auto charge = info.LeptonicCharge();
+    spdlog::debug("Charge = {}", charge);
+    const auto check_charge = [&]() {
+        if(std::abs(charge) > 1)
+            throw std::runtime_error(fmt::format("{}: Requires |charge| < 2, but found |charge| {}",
+                                                 ToString(Mode()), std::abs(charge)));
+    };
 
     switch(Mode()) {
     case NuclearMode::None:
@@ -244,23 +251,28 @@ void NuclearModel::AllowedStates(ProcessInfo &info) const {
         throw std::runtime_error("NuclearModel: Coherent needs custom AllowedStates.");
 
     case NuclearMode::Quasielastic:
+        check_charge();
         info.m_hadronic = {{PID::nucleon()}, {PID::nucleon()}};
         return;
 
     case NuclearMode::Resonance:
+        check_charge();
         info.m_hadronic = {{PID::nucleon()}, {PID::nucleon(), PID::pion()}};
         return;
 
     case NuclearMode::MesonExchangeCurrent:
+        check_charge();
         info.m_hadronic = {{PID::nucleon(), PID::nucleon()}, {PID::nucleon(), PID::nucleon()}};
         return;
 
     case NuclearMode::Interference_QE_MEC:
+        check_charge();
         info.m_hadronic = {{PID::nucleon()}, {PID::nucleon()}};
         info.m_spectator = {PID::nucleon()};
         return;
 
     case NuclearMode::Hyperon:
+        check_charge();
         info.m_hadronic = {{PID::nucleon()}, {PID::hyperon()}};
         return;
 

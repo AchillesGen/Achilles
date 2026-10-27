@@ -247,6 +247,9 @@ void ParticleInfo::RegisterDefaultContainers() {
     RegisterContainerRule(PID::jet(), "jet", [light_quark](const ParticleInfo &p) {
         return light_quark(p) || p.IsGluon();
     });
+
+    // Fixed list, so not rule-based. pi- is listed explicitly to cover all three charge states
+    RegisterContainer(PID::pion(), "pion", {PID::pionp(), PID::pion0(), -PID::pionp()});
 }
 
 void ParticleInfo::FinalizeContainers() {

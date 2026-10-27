@@ -109,6 +109,9 @@ class PID {
     static constexpr PID jet() { return PID{93}; }
     static constexpr PID quark() { return PID{94}; }
     static constexpr PID nucleon() { return PID{95}; }
+    static constexpr PID pion() { return PID{96}; }
+    // TODO: Not registered yet; Lambda and Sigma masses exceed the container mass tolerance
+    static constexpr PID hyperon() { return PID{97}; }
 
     // Stream Operator
     template <typename OStream> friend OStream &operator<<(OStream &os, const PID &pid) {

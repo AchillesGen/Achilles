@@ -55,7 +55,8 @@ PIDs Options(PID pid) {
     ParticleInfo info(pid);
     if(!info.IsGroup()) return {pid};
     PIDs out;
-    for(const auto &m : info.Decompose()) out.push_back(m.ID());
+    // IntID keeps the anti-particle sign; ID() would turn pi- into pi+
+    for(const auto &m : info.Decompose()) out.push_back(PID{m.IntID()});
     return out;
 }
 
@@ -427,7 +428,7 @@ void ProcessGroup::BuildProcess(const Settings &settings, NuclearModel *model) {
                     UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
                 Process process(expanded, std::move(unweighter));
                 process.SetID(model);
-                m_processes.push_back(std::move(process));
+                AddProcess(std::move(process));
             } catch(std::out_of_range &e) {
                 spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
                               unweight_name,
