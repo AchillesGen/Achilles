@@ -20,16 +20,16 @@ class Beam;
 class PSBuilder {
   public:
     PSBuilder(const ProcessInfo &);
-    MOCK ~PSBuilder() = default;
-    MOCK PSBuilder &Beam(std::shared_ptr<Beam>, size_t = 0);
-    MOCK PSBuilder &Hadron(const std::string &, size_t = 1);
-    MOCK PSBuilder &FinalState(const std::string &, std::optional<double> = std::nullopt);
+    ~PSBuilder() = default;
+    PSBuilder &Beam(std::shared_ptr<Beam>, size_t = 0);
+    PSBuilder &Hadron(const std::string &, size_t = 1);
+    PSBuilder &FinalState(const std::string &, std::optional<double> = std::nullopt);
 #ifdef ACHILLES_SHERPA_INTERFACE
-    MOCK PSBuilder &SherpaFinalState(const std::string &);
-    MOCK PSBuilder &GenFinalState(std::unique_ptr<PHASIC::Channels>);
+    PSBuilder &SherpaFinalState(const std::string &);
+    PSBuilder &GenFinalState(std::unique_ptr<PHASIC::Channels>);
 #endif // ACHILLES_SHERPA_INERFACE
 
-    MOCK std::unique_ptr<PSMapper> build() { return std::move(phase_space); }
+    std::unique_ptr<PSMapper> build() { return std::move(phase_space); }
 
   private:
     ProcessInfo m_info;

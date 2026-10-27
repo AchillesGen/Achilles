@@ -9,7 +9,6 @@
 #include <utility>
 #include <vector>
 
-#include "Achilles/Achilles.hh"
 #include "Achilles/EventHistory.hh"
 #include "Achilles/NuclearRemnant.hh"
 #include "Achilles/ProcessInfo.hh"
@@ -34,28 +33,29 @@ class Event {
     Event(std::shared_ptr<Nucleus>, std::vector<FourVector>, double);
     Event(const Event &);
     Event &operator=(const Event &);
-    MOCK ~Event() = default;
+    ~Event() = default;
 
     void Finalize();
 
-    MOCK const NuclearRemnant &Remnant() const { return m_remnant; }
+    const NuclearRemnant &Remnant() const { return m_remnant; }
+    NuclearRemnant &Remnant() { return m_remnant; }
 
-    MOCK const vMomentum &Momentum() const { return m_mom; }
-    MOCK vMomentum &Momentum() { return m_mom; }
+    const vMomentum &Momentum() const { return m_mom; }
+    vMomentum &Momentum() { return m_mom; }
 
-    MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
-    MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
+    const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
+    std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
 
-    MOCK vParticles Particles() const;
-    MOCK const vParticles &Hadrons() const { return m_hadrons; }
-    MOCK vParticles &Hadrons() { return m_hadrons; }
-    MOCK const vParticles &Leptons() const { return m_leptons; }
-    MOCK vParticles &Leptons() { return m_leptons; }
-    MOCK const double &Weight() const { return m_wgt; }
-    MOCK double &Weight() { return m_wgt; }
+    vParticles Particles() const;
+    const vParticles &Hadrons() const { return m_hadrons; }
+    vParticles &Hadrons() { return m_hadrons; }
+    const vParticles &Leptons() const { return m_leptons; }
+    vParticles &Leptons() { return m_leptons; }
+    const double &Weight() const { return m_wgt; }
+    double &Weight() { return m_wgt; }
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
@@ -66,7 +66,7 @@ class Event {
     crefParticles Neutrons(ParticleStatus = ParticleStatus::any) const;
     refParticles Neutrons(ParticleStatus = ParticleStatus::any);
 
-    MOCK const EventHistory &History() const { return m_history; }
+    const EventHistory &History() const { return m_history; }
     EventHistory &History() { return m_history; }
 
     bool operator==(const Event &other) const {

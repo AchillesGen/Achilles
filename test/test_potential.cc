@@ -29,8 +29,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
         constexpr double rvector = 301.65297587389080, ivector = -84.374377568119442;
         constexpr double rscalar = -384.29852972736001, iscalar = 89.69329129030613;
 
-        auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
+        auto nucleus = MakeNucleus(6, AA);
 
         achilles::CooperPotential potential(nucleus);
 
@@ -131,8 +130,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
 #ifdef AUTODIFF
     BENCHMARK_ADVANCED("Autodiff")(Catch::Benchmark::Chronometer meter) {
         autodiff::dual r = 0.15;
-        auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
+        auto nucleus = MakeNucleus(6, AA);
         achilles::CooperPotential potential(nucleus);
         autodiff::dual plab =
             sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
@@ -167,8 +165,7 @@ TEST_CASE("CooperPotential::EDAD1 Values", "[Potential]") {
     BENCHMARK_ADVANCED("Stencil")(Catch::Benchmark::Chronometer meter) {
         double r = 0.15;
         double plab = sqrt(pow(tplab + achilles::Constant::mN, 2) - pow(achilles::Constant::mN, 2));
-        auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
+        auto nucleus = MakeNucleus(6, AA);
         achilles::CooperPotential potential(nucleus);
 
         meter.measure([&]() {
@@ -188,8 +185,7 @@ TEST_CASE("CooperPotential::Schroedinger::EDAD1 Values", "[Potential]") {
         // Results from the fortran code for tplab = 100, r = 0.15, A = 12
         constexpr double rvector = -27.159583, ivector = -11.257281;
 
-        auto nucleus = std::make_shared<MockNucleus>();
-        REQUIRE_CALL(*nucleus, NNucleons()).LR_RETURN((AA)).TIMES(AT_LEAST(1));
+        auto nucleus = MakeNucleus(6, AA);
 
         achilles::SchroedingerPotential potential(nucleus, 5);
 
