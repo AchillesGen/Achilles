@@ -22,17 +22,17 @@ jobs:
     name: REUSE Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: REUSE Compliance Check
-        uses: fsfe/reuse-action@v5
+        uses: fsfe/reuse-action@v6
 
   sbom:
     name: Generate SBOM
     runs-on: ubuntu-latest
     if: github.event_name == 'release'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Install reuse
@@ -40,6 +40,6 @@ jobs:
       - name: Generate SPDX SBOM
         run: reuse spdx --output achilles-${{ github.ref_name }}.spdx
       - name: Upload SBOM to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: achilles-${{ github.ref_name }}.spdx
