@@ -7,7 +7,8 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "AchillesGen"
-version = "0.3.0.dev20260710"
+# Local builds only; CI stamps the release tag or <next minor>.devYYYYMMDD.
+version = "0.4.0"
 requires-python = ">=3.10"
 readme = "README.md"
 license = "GPL-3.0-or-later"
