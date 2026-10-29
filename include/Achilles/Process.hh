@@ -47,7 +47,7 @@ class Process {
     double TotalCrossSection() const { return m_xsec.Mean(); }
     ProcessInfo &Info() { return m_info; }
     const ProcessInfo &Info() const { return m_info; }
-    void SetupHadrons(Event &) const;
+    void SetupHadrons(Event &, const NuclearModel * = nullptr) const;
     void AddWeight(double weight) {
         m_unweighter->AddEvent(weight);
         m_xsec += weight;

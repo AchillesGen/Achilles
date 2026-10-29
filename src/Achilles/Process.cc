@@ -49,7 +49,7 @@ refParticles Process::SelectParticles(const refParticles &protons, const refPart
     return result;
 }
 
-void Process::SetupHadrons(Event &event) const {
+void Process::SetupHadrons(Event &event, const NuclearModel *model) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
@@ -95,6 +95,20 @@ void Process::SetupHadrons(Event &event) const {
         SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
                         ParticleStatus::initial_state);
     spdlog::debug("Selected initial states: {}", fmt::join(initial_states, ", "));
+
+    // Models with a position-dependent Fermi sea choose the struck nucleon's radius; keep its
+    // direction from the configuration
+    if(model && had_in.size() == 1 && had_out.size() == 1 &&
+       ParticleInfo(m_info.m_hadronic.second[0]).IsNucleon()) {
+        auto &struck = initial_states[0].get();
+        const auto radius = model->StruckNucleonRadius(had_in[0].P(), m_info.m_hadronic.first[0],
+                                                       had_out[0].P(), m_info.m_hadronic.second[0]);
+        if(radius) {
+            const double r = struck.Position().Magnitude();
+            ThreeVector direction = r > 0 ? struck.Position() / r : ThreeVector{0, 0, 1};
+            struck.SetPosition(direction * *radius);
+        }
+    }
 
     // Sample for spectators
     protons = event.Protons(ParticleStatus::background);
@@ -471,7 +485,7 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     auto &process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
     event.ProcessId() = process.ID();
-    process.SetupHadrons(event);
+    process.SetupHadrons(event, m_backend->GetNuclearModel());
 
     return event;
 }

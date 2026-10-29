@@ -15,6 +15,7 @@
 #include "yaml-cpp/node/node.h"
 
 #include <complex>
+#include <optional>
 #include <stdexcept>
 
 namespace achilles {
@@ -128,6 +129,12 @@ class NuclearModel {
     virtual void SetNucleus(const Nucleus &) {}
     // Settings handed to the hadronic phase-space mapper after it is built
     virtual YAML::Node PhaseSpaceSettings() const { return {}; }
+    // Radius [fm] at which a struck nucleon (in, |p|) going to (out, |p'|) sits, for models in
+    // which it depends on the kinematics (e.g. a local Fermi gas); by default the nucleon keeps
+    // its position in the nuclear configuration
+    virtual std::optional<double> StruckNucleonRadius(double, PID, double, PID) const {
+        return std::nullopt;
+    }
     virtual std::string InspireHEP() const = 0;
     virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
     void TransformFrame(Event &, const Process &, bool) const;

@@ -5,6 +5,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Random.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Spinor.hh"
 #include "Achilles/Units.hh"
@@ -20,7 +21,7 @@ using achilles::QEFermiGas;
 
 LocalFermiSea::LocalFermiSea(const std::vector<double> &edges, const std::vector<double> &rho_p,
                              const std::vector<double> &rho_n)
-    : m_rho_p{rho_p}, m_rho_n{rho_n} {
+    : m_edges{edges}, m_rho_p{rho_p}, m_rho_n{rho_n} {
     if(edges.size() != rho_p.size() + 1 || rho_p.size() != rho_n.size())
         throw std::runtime_error("LocalFermiSea: need n+1 shell edges and n densities");
     const auto kf = [](double rho) { return Constant::HBARC * std::cbrt(3 * M_PI * M_PI * rho); };
@@ -55,6 +56,27 @@ double LocalFermiSea::PauliFactor(double p, PID in, double pout, PID out) const 
         if(kf_out[i] <= pout) allowed += m_dv[i];
     }
     return occupied > 0 ? allowed / occupied : 0;
+}
+
+std::optional<double> LocalFermiSea::SampleRadius(double p, PID in, double pout, PID out,
+                                                  double u) const {
+    const auto &kf_in = FermiMomenta(in);
+    const auto &kf_out = FermiMomenta(out);
+    std::vector<double> cumulative(m_dv.size());
+    double allowed = 0;
+    for(size_t i = 0; i < m_dv.size(); ++i) {
+        if(kf_in[i] > p && kf_out[i] <= pout) allowed += m_dv[i];
+        cumulative[i] = allowed;
+    }
+    if(allowed <= 0) return std::nullopt;
+    const double target = u * allowed;
+    const auto i = static_cast<size_t>(
+        std::upper_bound(cumulative.begin(), cumulative.end(), target) - cumulative.begin());
+    const size_t shell = std::min(i, m_dv.size() - 1);
+    // Uniform in volume inside the shell
+    const double r0 = std::pow(m_edges[shell], 3), r1 = std::pow(m_edges[shell + 1], 3);
+    const double f = (target - (cumulative[shell] - m_dv[shell])) / m_dv[shell];
+    return std::cbrt(r0 + std::clamp(f, 0.0, 1.0) * (r1 - r0));
 }
 
 double LocalFermiSea::NNucleons(PID nucleon) const {
@@ -137,6 +159,13 @@ void QEFermiGas::SetNucleus(const Nucleus &nucleus) {
                  "from the densities",
                  nucleus.ID(), m_sea.MaxFermiMomentum(), m_sea.NNucleons(PID::proton()),
                  m_sea.NNucleons(PID::neutron()));
+}
+
+// The local Fermi gas places the struck nucleon where it is occupied and its final state is free
+std::optional<double> QEFermiGas::StruckNucleonRadius(double p, PID in, double pout,
+                                                      PID out) const {
+    if(!m_local || is_hydrogen || is_free_neutron) return std::nullopt;
+    return m_sea.SampleRadius(p, in, pout, out, Random::Instance().Uniform(0.0, 1.0));
 }
 
 YAML::Node QEFermiGas::PhaseSpaceSettings() const {

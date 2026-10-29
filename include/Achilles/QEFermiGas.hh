@@ -6,6 +6,7 @@
 
 #include "Achilles/NuclearModel.hh"
 
+#include <optional>
 #include <vector>
 
 namespace achilles {
@@ -26,12 +27,15 @@ class LocalFermiSea {
     double Volume(double k, PID nucleon) const; // fm^3 where kF_nucleon(r) > k [MeV]
     double PauliFactor(double p, PID in, double pout, PID out) const;
     double NNucleons(PID nucleon) const; // integral of rho_N d^3r, for checks
+    // Radius drawn uniformly in volume where (in, p) is occupied and (out, pout) is free, from a
+    // uniform random number u in [0, 1); nullopt if there is no such region
+    std::optional<double> SampleRadius(double p, PID in, double pout, PID out, double u) const;
     double MaxFermiMomentum() const { return m_kf_max; }
 
   private:
     const std::vector<double> &FermiMomenta(PID nucleon) const;
 
-    std::vector<double> m_dv, m_kf_p, m_kf_n, m_rho_p, m_rho_n;
+    std::vector<double> m_edges, m_dv, m_kf_p, m_kf_n, m_rho_p, m_rho_n;
     double m_kf_max{};
 };
 
@@ -69,6 +73,7 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     std::string PSName() const override { return "OneBodyMomentum"; }
     YAML::Node PhaseSpaceSettings() const override;
     void SetNucleus(const Nucleus &) override;
+    std::optional<double> StruckNucleonRadius(double, PID, double, PID) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);

@@ -235,6 +235,44 @@ TEST_CASE("Local Fermi sea", "[QEFermiGas]") {
         }
     }
 
+    SECTION("The struck nucleon is placed where it is occupied and its final state is free") {
+        constexpr double dr = 0.005; // shell width used by MakeSea
+        auto kf_at = [&](double r, double scale) {
+            const double centre = (std::floor(r / dr) + 0.5) * dr;
+            return achilles::Constant::HBARC * std::cbrt(3 * M_PI * M_PI * scale * dip(centre));
+        };
+        for(double p = 20; p < 260; p += 40) {
+            for(double pout = p + 10; pout < 300; pout += 30) {
+                const double free = sea.PauliFactor(p, neutron, pout, proton);
+                if(free <= 0) {
+                    CHECK_FALSE(sea.SampleRadius(p, neutron, pout, proton, 0.5));
+                    continue;
+                }
+                for(double u = 0.0005; u < 1; u += 0.001) {
+                    const auto r = sea.SampleRadius(p, neutron, pout, proton, u);
+                    REQUIRE(r);
+                    CHECK(kf_at(*r, 1.2) > p);     // neutron occupied
+                    CHECK(kf_at(*r, 1.0) <= pout); // proton state free
+                }
+            }
+        }
+        CHECK_FALSE(sea.SampleRadius(100, proton, 90, proton, 0.5));
+
+        // Uniform in volume: for a uniform sphere <r^3> = R0^3 / 2
+        constexpr double R0 = 2.5;
+        auto uniform = [&](double r) { return r < R0 ? 0.1 : 0.0; };
+        auto sphere = MakeSea(R0, uniform, uniform);
+        double r3 = 0;
+        constexpr size_t n = 10000;
+        for(size_t i = 0; i < n; ++i) {
+            const auto r =
+                sphere.SampleRadius(50, proton, 400, proton, (static_cast<double>(i) + 0.5) / n);
+            REQUIRE(r);
+            r3 += std::pow(*r, 3) / n;
+        }
+        CHECK_THAT(r3, WithinRel(std::pow(R0, 3) / 2, 1e-3));
+    }
+
     SECTION("A neutron turning into a proton is blocked by the proton sea") {
         // Neutron sea deeper than the proton sea: p' between the two kF is free
         const double kfp = sea.MaxFermiMomentum() / std::cbrt(1.2);
@@ -272,5 +310,13 @@ TEST_CASE("QEFermiGas with a local Fermi gas", "[QEFermiGas]") {
         CHECK(model->PCut() > nuc.FermiMomentum(0, achilles::PID::proton()));
         CHECK_THAT(model->PhaseSpaceSettings()["PCut"].as<double>(),
                    WithinRel(model->PCut(), 1e-12));
+
+        // Only the local Fermi gas chooses the struck nucleon's radius
+        const auto proton = achilles::PID::proton();
+        const auto radius = model->StruckNucleonRadius(100, proton, 400, proton);
+        REQUIRE(radius);
+        CHECK(*radius < nuc.Radius());
+        CHECK_FALSE(MakeModel("{Distribution: RFG, kF: 221, Binding: 25}")
+                        ->StruckNucleonRadius(100, proton, 400, proton));
     }
 }
