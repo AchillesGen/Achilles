@@ -107,9 +107,9 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
     NuHepMC::GR10::WriteParticleStatusIDDefinitions(
         run, {
                  {NuHepMC::ParticleStatus::UndecayedPhysical,
-                  {"Undecayed physical particle", "Final-state \"stable\" particle"}},
+                  {"Undecayed Physical Particle", "Final-state \"stable\" particle"}},
                  {NuHepMC::ParticleStatus::DecayedPhysical,
-                  {"Decayed physical particle", "Particle that decayed during the generation"}},
+                  {"Decayed Physical Particle", "Particle that decayed during the generation"}},
                  {NuHepMC::ParticleStatus::DocumentationLine,
                   {"Documentation line", "Internal particle history"}},
                  {NuHepMC::ParticleStatus::IncomingBeam,
@@ -123,9 +123,9 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::ParticleStatus::Spectator, {"Spectator", "Spectator"}},
                  {NuHepMC::ParticleStatus::Cascade, {"Cascade", "Cascade"}},
                  {NuHepMC::ParticleStatus::UndecayedResidue,
-                  {"Undecayed residue", "Nuclear remnant left after the interaction"}},
+                  {"Undecayed Residue", "Nuclear remnant left after the interaction"}},
                  {NuHepMC::ParticleStatus::IntermediateResidue,
-                  {"Intermediate residue", "Nuclear remnant partway through the cascade"}},
+                  {"Intermediate Residue", "Nuclear remnant partway through the cascade"}},
              });
 
     // Signal conventions

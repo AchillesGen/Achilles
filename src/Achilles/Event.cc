@@ -77,10 +77,10 @@ void Event::Finalize() {
 	}
 }
 
-achilles::NuclearRemnant* Event::Remnant() {
+Particle* Event::Remnant() {
 	for(Particle& part:hist_particles)
-		if(part.isRemnant()&&part.isInFinalState())
-			return static_cast<NuclearRemnant*>(&part);
+		if(part.isInFinalState()&&part.ID().IsNucleus())
+			return &part;
 	return nullptr;
 }
 Particle* Event::findFinalStateParticle(const Particle& match) {

@@ -40,10 +40,9 @@ class Event {
 
     void Finalize();
 
-	/// Returns the NuclearRemnant particle that is currently
-	/// in the event's final state (no end vertex),
-	/// or nullptr if none exists.
-	NuclearRemnant* Remnant();
+	/// Returns the particle representing the remnant that is currently in
+	/// the event's final state (no end vertex), or nullptr if none exists.
+	Particle* Remnant();
 	/// Returns a pointer to the particle matching the argument
 	/// within the event's final state, or nullptr if none exists.
 	Particle* findFinalStateParticle(const Particle&);

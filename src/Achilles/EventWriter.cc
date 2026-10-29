@@ -33,6 +33,5 @@ void achilles::AchillesWriter::Write(Event &event) {
     *m_out << fmt::format("Event: {}\n", ++nEvents);
     *m_out << fmt::format("  Particles:\n");
     for(const Particle& part : event.Particles()) { *m_out << fmt::format("  - {}\n", part.Momentum()); }
-    //*m_out << fmt::format("  - {}\n", event.Remnant());
     *m_out << fmt::format("  Weight: {}\n", event.Weight());
 }
