@@ -88,9 +88,6 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     const LocalFermiSea &Sea() const { return m_sea; }
 
   private:
-    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
-                            const FourVector &, const FormFactorMap &) const;
-
     const WardGauge m_ward;
     MomentumDistribution m_distribution{MomentumDistribution::RFG};
     double m_kf{}, m_eb{}, m_c0{}, m_lambda{1};

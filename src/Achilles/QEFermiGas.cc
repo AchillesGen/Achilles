@@ -226,7 +226,7 @@ achilles::NuclearModel::Currents QEFermiGas::CalcCurrents(const std::vector<Part
 
     for(const auto &formFactor : ff) {
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
-        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        auto current = OneBodyCurrent(ubar, u, qVec, ffVal);
         for(auto &subcur : current) {
             for(auto &comp : subcur) comp *= pauli_amp;
             switch(m_ward) {
@@ -246,35 +246,4 @@ achilles::NuclearModel::Currents QEFermiGas::CalcCurrents(const std::vector<Part
         results[formFactor.first] = current;
     }
     return results;
-}
-
-achilles::NuclearModel::Current QEFermiGas::HadronicCurrent(const std::array<Spinor, 2> &ubar,
-                                                            const std::array<Spinor, 2> &u,
-                                                            const FourVector &qVec,
-                                                            const FormFactorMap &ffVal) const {
-    Current result;
-    std::array<SpinMatrix, 4> gamma{};
-    for(size_t mu = 0; mu < 4; ++mu) {
-        gamma[mu] = ffVal.at(FormFactorInfo::Type::F1) * SpinMatrix::GammaMu(mu);
-        gamma[mu] +=
-            ffVal.at(FormFactorInfo::Type::FA) * SpinMatrix::GammaMu(mu) * SpinMatrix::Gamma_5();
-        gamma[mu] +=
-            ffVal.at(FormFactorInfo::Type::FAP) * SpinMatrix::Gamma_5() * qVec[mu] / Constant::mN;
-        double sign = 1;
-        for(size_t nu = 0; nu < 4; ++nu) {
-            gamma[mu] += std::complex<double>(0, 1) *
-                         (ffVal.at(FormFactorInfo::Type::F2) * SpinMatrix::SigmaMuNu(mu, nu) *
-                          sign * qVec[nu] / (2 * Constant::mN));
-            sign = -1;
-        }
-    }
-
-    for(size_t i = 0; i < 2; ++i) {
-        for(size_t j = 0; j < 2; ++j) {
-            VCurrent subcur;
-            for(size_t mu = 0; mu < 4; ++mu) { subcur[mu] = ubar[i] * gamma[mu] * u[j]; }
-            result.push_back(subcur);
-        }
-    }
-    return result;
 }

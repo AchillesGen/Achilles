@@ -137,6 +137,11 @@ class NuclearModel {
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
                               const std::vector<FormFactorInfo> &) const;
+    // One-body nucleon current ubar_i Gamma^mu u_j for the four spin combinations, with
+    // Gamma^mu = F1 gamma^mu + i F2 sigma^{mu nu} q_nu / 2m + FA gamma^mu gamma^5
+    //            + FP q^mu gamma^5 / m
+    static Current OneBodyCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                                  const FourVector &, const FormFactorMap &);
     std::function<void(Event &, const Process &, bool)> transform;
     void TransformLab(Event &, const Process &, bool) const {}
     void TransformQZ(Event &, const Process &, bool);
@@ -207,9 +212,6 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     static std::string Name() { return "QESpectral"; }
 
   private:
-    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
-                            const FourVector &, const FormFactorMap &) const;
-
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution
