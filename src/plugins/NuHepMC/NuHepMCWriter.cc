@@ -196,11 +196,11 @@ int ToNuHepMC(achilles::EventVertex::StatusCode status) {
         return NuHepMC::VertexStatus::NucleonSeparation;
     case achilles::EventVertex::StatusCode::decay:
         return NuHepMC::VertexStatus::Decay;
-    case achilles::EventHistoryNode::StatusCode::escape:
+    case achilles::EventVertex::StatusCode::escape:
         return NuHepMC::VertexStatus::Escape;
-    case achilles::EventHistoryNode::StatusCode::capture:
+    case achilles::EventVertex::StatusCode::capture:
         return NuHepMC::VertexStatus::Capture;
-    case achilles::EventHistoryNode::StatusCode::shower:
+    case achilles::EventVertex::StatusCode::shower:
         return NuHepMC::VertexStatus::Shower;
     }
     return -1;

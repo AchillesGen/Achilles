@@ -258,57 +258,6 @@ bool achilles::EventGen::GenerateSingleEvent() {
 		event.Display();
 	}
 
-    Particle init_nuc = group.GetNucleus()->InitParticle();
-	ThreeVector pos;
-	for(Particle& part:event.NucleusHadrons())
-		if(part.Status()==ParticleStatus::initial_state) {
-			pos=part.Position();
-			break;
-		}
-
-	event.Primary()->Position()=pos;
-	event.uniqueVertex(EventVertex::StatusCode::target)->Position()=pos;
-
-    auto init_nuc = group.GetNucleus()->InitParticle();
-    std::vector<Particle> init_parts;
-    for(const auto &nucleon : event.Hadrons()) {
-        if(nucleon.Status() == ParticleStatus::initial_state) { init_parts.push_back(nucleon); }
-    }
-    // The nucleus splits into the struck nucleon(s) and the remnant, which is then threaded
-    // through the cascade so every vertex conserves four-momentum and baryon number.
-    FourVector rem_mom = init_nuc.Momentum();
-    int rem_Z = static_cast<int>(group.GetNucleus()->NProtons());
-    int rem_A = static_cast<int>(group.GetNucleus()->NNucleons());
-    for(const auto &part : init_parts) {
-        rem_mom -= part.Momentum();
-        if(part.ID() == PID::proton()) rem_Z--;
-        rem_A--;
-    }
-    // Hydrogen and free-neutron targets leave nothing behind, so there is no remnant to
-    // create or thread. The cascade's threading is all guarded on the remnant existing.
-    auto target_out = init_parts;
-    if(rem_A > 0) {
-        Particle remnant(PID::MakeNucleus(rem_Z, rem_A), rem_mom, init_parts[0].Position(),
-                         ParticleStatus::intermediate_residue);
-        event.SetRemnant(remnant);
-        target_out.push_back(remnant);
-    }
-    // TODO: Handle multiple positions from MEC
-    event.History().AddVertex(init_parts[0].Position(), {init_nuc}, target_out,
-                              EventHistory::StatusCode::target);
-    // Setup beam in history
-    auto init_lep = event.Leptons()[0];
-    auto init_beam = init_lep;
-    init_beam.Status() = ParticleStatus::beam;
-    const double max_energy = beam->MaxEnergy();
-    init_beam.Momentum() = {max_energy, 0, 0, max_energy};
-    event.History().AddVertex({}, {init_beam}, {init_lep}, EventHistory::StatusCode::beam);
-
-    // TODO: Figure out how to best handle tracking this with the cascade and decays
-	for(Particle& part:event.allParticles())
-		if(part.IsFinal()||part.IsPropagating())
-			event.addParticle(part,primaryVertex,Particle::OPEN_END);
-
     // TODO: Determine if cascade or Sherpa Decays go first
     // Cascade the nucleus, with possible re-runs in case of rare errors
     size_t ntrials = 10;
@@ -330,20 +279,9 @@ bool achilles::EventGen::GenerateSingleEvent() {
 			}
         }
     } else {
-        for(Particle& nucleon : event.HadronsIn()) {
-            if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::final_state;
-            }
-        }
-        for(Particle& nucleon : event.HadronsOut()) {
-            if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::final_state;
-            }
-        }
-        for(Particle& nucleon : event.NucleusHadrons()) {
-            if(nucleon.Status() == ParticleStatus::propagating) {
-                nucleon.Status() = ParticleStatus::final_state;
-            }
+        for(Particle& p:event.Particles()) {
+            if(p.Status() == ParticleStatus::propagating)
+                p.Status() = ParticleStatus::final_state;
         }
     }
 
@@ -390,9 +328,9 @@ bool achilles::EventGen::MakeEventCuts(Event &event) {
 void achilles::EventGen::Rotate(Event &event) {
     // Isolate the azimuthal angle of the outgoing electron
     double phi = 0.0;
-    for(const Particle* particle:event.allParticles()) {
-        if(particle->ID() == PID::electron() && particle->IsFinal()) {
-            phi = particle->Momentum().Phi();
+    for(const Particle& particle:event.Particles()) {
+        if(particle.ID() == PID::electron() && particle.IsFinal()) {
+            phi = particle.Momentum().Phi();
         }
     }
     // Rotate the coordiantes of particles so that all azimuthal angles phi are

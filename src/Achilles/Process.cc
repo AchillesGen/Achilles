@@ -114,8 +114,8 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
 }*/
 
 achilles::FourVector Process::ExtractQ(const Event &event) const {
-    auto q = event.LeptonsIn()[0].Momentum();
-    for(const Particle& lepOut:event.LeptonsOut())
+    auto q = event.leptonIn().Momentum();
+    for(const Particle& lepOut:event.leptonsOut())
 		q-=lepOut.Momentum();
     return q;
 }
@@ -414,9 +414,8 @@ void ProcessGroup::EventSetup(Event& event) {
 
     // Otherwise, we need to fill the event with the selected process
     Process& process = m_processes[process_opt.value()];
-    event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.LeptonsIn()[0].Momentum());
+    event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.leptonIn().Momentum());
     event.ProcessId() = process.ID();
-	event.SetupHadrons();
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {

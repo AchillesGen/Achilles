@@ -42,8 +42,8 @@ double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) 
     auto cross_sections = CrossSection(event, part1, part2);
     double total = 0;
     for(const auto &cross_section : cross_sections) total += cross_section.cross_section;
-    spdlog::debug("Total cross section for particles {} and {}: {} mb", event.NucleusHadrons()[part1].ID(),
-                  event.NucleusHadrons()[part2].ID(), total);
+    spdlog::debug("Total cross section for particles {} and {}: {} mb", event.CascadeHadrons()[part1].ID(),
+                  event.CascadeHadrons()[part2].ID(), total);
     return total;
 }
 

@@ -10,9 +10,11 @@
 #include <vector>
 
 #include "Achilles/DecayHandler.hh"
+#include "Achilles/EventVertex.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/InteractionHandler.hh"
 #include "Achilles/Interactions.hh"
+#include "Achilles/Particle.hh"
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
@@ -28,7 +30,7 @@ class Particle;
 class Event;
 class PID;
 
-using Particles = std::vector<Particle>;
+using vParticles = std::vector<Particle>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
 
 /// The Cascade class performs a cascade of the nucleons inside the nucleus. The nucleons that
@@ -145,7 +147,7 @@ class Cascade {
     ///@param particles: The list of particles inside the nucleus
     ///@param energyTransfer: The energy transfered to the nucleon during the kick
     ///@param sigma: An array representing the cross-section for different kicked nucleons
-    void Kick(Event &, const FourVector &, const std::array<double, 2> &);
+    //void Kick(Event &, const FourVector &, const std::array<double, 2> &);
 
     /// Reset the cascade internal variables for the next cascade
     void Reset();
@@ -172,7 +174,7 @@ class Cascade {
     /// the background. This is done according to the NuWro algorithm.
     ///@param nucleus: The nucleus to evolve according to the NuWro method of cascade
     ///@param maxSteps: The maximum steps to take in the particle evolution
-    void NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
+    //void NuWro(Event &, Nucleus *, const std::size_t &maxSteps = cMaxSteps);
 
     /// Simulate evolution of a kicked particle until it interacts for the
     /// first time with another particle, accumulating the total distance
@@ -183,30 +185,30 @@ class Cascade {
     ///@}
   private:
     // Functions
-    std::size_t GetInter(Particles &, const Particle &, double &stepDistance);
-    void AdaptiveStep(const Particles &, const double &) noexcept;
+    std::size_t GetInter(vParticles &, const Particle &, double &stepDistance);
+    void AdaptiveStep(const vParticles &, const double &) noexcept;
     bool BetweenPlanes(const ThreeVector &, const ThreeVector &, const ThreeVector &,
                        double) const noexcept;
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
-    const InteractionDistances AllowedInteractions(Particles &, const std::size_t &) noexcept;
-    double GetXSec(Event &, size_t, size_t) const;
-    std::size_t Interacted(Event &, size_t, const InteractionDistances &) noexcept;
+    const InteractionDistances AllowedInteractions(vParticles &, const std::size_t &) noexcept;
+    double GetXSec(Event&, size_t, size_t) const;
+    std::size_t Interacted(Event&, size_t, const InteractionDistances &) noexcept;
     void Escaped(Event &);
-    void FinalizeMomentum(Event &, Particles &, size_t, size_t) noexcept;
+    void FinalizeMomentum(Event &, vParticles &, size_t, size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
-    bool Absorption(Event &, Particle &, Particle &) noexcept;
+    //bool Absorption(Event &, Particle &, Particle &) noexcept;
     void AddIntegrator(size_t, const Particle &);
     void Propagate(size_t, Particle *);
     void PropagateSpace(size_t, Particle *, double);
-    std::set<size_t> InitializeIntegrator(Event &);
-    void UpdateKicked(Particles &, std::set<size_t> &);
+    std::set<size_t> InitializeIntegrator();
+    void UpdateKicked(vParticles &, std::set<size_t> &);
     void Validate(Event &);
     size_t BaseAlgorithm(size_t, Event &);
     size_t MFPAlgorithm(size_t, Event &);
     double InMediumCorrection(const Particle &, const Particle &) const;
-    void PropagateAll(Particles &, double) const;
-    bool HasInteraction(Event &, size_t, size_t) const;
+    void PropagateAll(vParticles &, double) const;
+    bool HasInteraction(Event&, size_t, size_t) const;
     bool Decay(Event &, size_t);
 
     /// Removal energy a propagating baryon owes the nucleus if it leaves. Opened when the
@@ -220,13 +222,19 @@ class Cascade {
     /// stable because Hadrons() is only ever appended to.
     std::map<std::size_t, RemovalDebt> m_removal_debt;
 
-    /// Move `nucleon` between the free state and the remnant, keeping four-momentum and
-    /// baryon number balanced. `remove` takes it out of the remnant, otherwise it is
-    /// absorbed back in. Returns false if the event has no remnant to thread (cascade-only
+    /// Move `nucleon` to the free state from the remnant, keeping four-momentum and
+    /// baryon number balanced. Returns false if the event has no remnant to thread (cascade-only
     /// test modes), in which case the caller records the vertex the old way.
-    bool MoveNucleon(Event &, const Particle &nucleon, bool remove);
+    bool MoveNucleon(const Particle& nucleon,bool remove);
+
+	/// Creates a new vertex and updates it with the given incoming and outgoing particles.
+	/// Each particle in the incoming list must match an existing final-state particle in the event;
+	/// if so, those particles in the event are updated to end on the new vertex, and otherwise
+	/// an error is thrown. The outgoing particles are added to the event as new particles.
+	void addInteraction(Event&,EventVertex::StatusCode,const ThreeVector&,const vParticles&,const vParticles&);
+
     /// Transfer four-momentum to the remnant without changing its composition.
-    void RecoilRemnant(Event &, const FourVector &);
+    void RecoilRemnant(const FourVector &);
 
     /// Move any debt on `from` to `to`, leaving `from` clear.
     void TransferDebt(std::size_t from, std::size_t to);
@@ -235,7 +243,7 @@ class Cascade {
     /// The debit is the separation energy plus the Fermi kinetic energy, plus the change in
     /// the remnant's recoil kinetic energy since the last settlement: S is defined for a
     /// residue at rest, so a residue left moving costs that much more to leave behind.
-    bool PayRemovalEnergy(Event &, std::size_t idx);
+    bool PayRemovalEnergy(std::size_t idx);
 
     /// Lab kinetic energy a remnant of invariant mass `mass` has at momentum `mom`.
     static double RecoilKinetic(double mass, const ThreeVector &mom) {
@@ -253,6 +261,9 @@ class Cascade {
     /// knocked out before either escapes: both are charged against the already-depleted
     /// pool and the sum misses by the second difference of the mass surface (1-3 MeV).
     int m_paid_Z{}, m_paid_A{};
+
+	vParticles hadrons;
+	Particle remnant;
 
     // Variables
     std::set<std::size_t> kickedIdxs;

@@ -48,7 +48,7 @@ class ConstantInteraction : public Interaction, RegistrableInteraction<ConstantI
 
     // These functions are defined in the base class
     std::vector<std::pair<PID, PID>> InitialStates() const override { return m_states; }
-    InteractionResults CrossSection(Event &, size_t, size_t) const override;
+    InteractionResults CrossSection(Event&, size_t, size_t) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;

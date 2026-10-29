@@ -5,12 +5,12 @@
 #include "Achilles/Particle.hh"
 
 bool achilles::CutCollection::EvaluateCuts(Event& event) {
-	ptrParticles parts=event.allParticles();
+	vParticles& parts=event.Particles();
     ntot++;
     bool result = true;
     spdlog::debug("Evaluating Cuts");
     for(size_t i = 0; i < parts.size(); ++i) {
-		const Particle& part=*parts[i];
+		const Particle& part=parts[i];
         if(!part.IsFinal() && !part.IsPropagating()) continue;
 		PID id=part.ID();
         spdlog::trace("Making cut for particle {} (PID {})",i,id);
@@ -20,7 +20,7 @@ bool achilles::CutCollection::EvaluateCuts(Event& event) {
 
         // Two Particle Cuts
         for(size_t j = i + 1; j < parts.size(); ++j) {
-			const Particle& part_j=*parts[j];
+			const Particle& part_j=parts[j];
             if(!part_j.IsFinal() && !part.IsPropagating()) continue;
             for(const auto &cut : two_part_cuts)
                 if(cut.Contains(part.ID(), part_j.ID()))

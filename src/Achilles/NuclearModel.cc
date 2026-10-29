@@ -169,9 +169,9 @@ void NuclearModel::TransformQZ(Event &event, const Process &process, bool forwar
     if(forward) {
         FourVector q = process.ExtractQ(event);
         rotation = q.AlignZ();
-        for(Particle* p:event.allParticles()) { p->Rotate(rotation); }
+        for(Particle& p:event.Particles()) { p.Rotate(rotation); }
     } else {
-        for(Particle* p:event.allParticles()) { p->RotateBack(rotation); }
+        for(Particle& p:event.Particles()) { p.RotateBack(rotation); }
     }
 }
 
@@ -254,8 +254,9 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::Quasielastic:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Quasielastic: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -279,8 +280,8 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
     case NuclearMode::Resonance:
         if(std::abs(charge) > 1)
             throw std::runtime_error(
-                fmt::format("{}}: Requires |charge| < 2, but found |charge| {}", ToString(Mode()),
-                            std::abs(charge)));
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -314,8 +315,9 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::MesonExchangeCurrent:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format("{}: Requires |charge| < 2, but found |charge| {}",
-                                                 ToString(Mode()), std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -352,8 +354,9 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
         return results;
     case NuclearMode::Interference_QE_MEC:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Interference: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -392,8 +395,9 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
     case NuclearMode::Hyperon:
         if(std::abs(charge) > 1)
-            throw std::runtime_error(fmt::format(
-                "Hyperon: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 
         switch(charge) {
         case -1: // Final state has less charge than initial
@@ -414,8 +418,9 @@ std::vector<achilles::ProcessInfo> NuclearModel::AllowedStates(const ProcessInfo
 
 	case NuclearMode::DeepInelastic:
 		if(std::abs(charge) > 1)
-			throw std::runtime_error(fmt::format(
-				"DIS: Requires |charge| < 2, but found |charge| {}", std::abs(charge)));
+            throw std::runtime_error(
+                fmt::format("{}: Requires |charge| < 2, but found charge {}",
+						ToString(Mode()),charge));
 		switch(charge) {
 			case -1: // Final lepton has less charge than initial
 				for(const PID& u:disUpQuarks)

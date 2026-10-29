@@ -65,7 +65,7 @@ void Particle::RotateBack(const std::array<double, 9> &rot_mat) noexcept {
     momentum = momentum.RotateBack(rot_mat);
 }
 
-bool Particle::operator==(const Particle &other) const noexcept {
+bool Particle::equalsIgnoreVertices(const Particle &other) const noexcept {
     if(info != other.info) return false;
     if(status != other.status) return false;
     if(formationZone != other.formationZone) return false;
@@ -74,6 +74,12 @@ bool Particle::operator==(const Particle &other) const noexcept {
     if(mothers != other.mothers) return false;
     if(daughters != other.daughters) return false;
     return true;
+}
+
+bool Particle::operator==(const Particle& other) const noexcept {
+	return equalsIgnoreVertices(other)
+		&&start_vertex==other.start_vertex
+		&&end_vertex==other.end_vertex;
 }
 
 std::string Particle::ToString() const noexcept {
@@ -116,25 +122,6 @@ bool operator==(const Particle &lhs, const std::reference_wrapper<Particle> &rhs
     return lhs == rhs.get();
 }
 
-
-std::pair<CompositeParticle,Particle> CompositeParticle::splitSingle(size_t partIndex) {
-	CompositeParticle remaining({},ID(),status);
-	remaining.sub_parts.reserve(sub_parts.size()-1);
-	for(size_t i=0;i<sub_parts.size();i++)
-		if(i!=partIndex)
-			remaining.sub_parts.push_back(sub_parts[i]);
-	return std::pair<CompositeParticle,Particle>(remaining,sub_parts[partIndex]);
-}
-std::pair<CompositeParticle,Particle> CompositeParticle::splitSingleRandom(PID type) {
-	std::vector<size_t> candidates;
-	for(size_t i=0;i<sub_parts.size();i++)
-		if(sub_parts[i].ID()==type)
-			candidates.push_back(i);
-	if(candidates.empty())
-		throw std::runtime_error(fmt::format("No particle with PID {} was found",type));
-	return splitSingle(Random::Instance().Pick(candidates));
-}
-
 void CompositeParticle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
 	Particle::Rotate(rot_mat);
 	for(Particle& part:sub_parts)
@@ -149,6 +136,52 @@ void CompositeParticle::Move(const ThreeVector& dx) {
 	Particle::Move(dx);
 	for(Particle& part:sub_parts)
 		part.Move(dx);
+}
+void CompositeParticle::ApplyImpulse(const FourVector& dp) {
+	Particle::ApplyImpulse(dp);
+	double totalMass=0.;
+	for(Particle& part:sub_parts)
+		totalMass+=part.Mass();
+	for(Particle& part:sub_parts)
+		part.ApplyImpulse(dp*(part.Mass()/totalMass));
+}
+
+
+std::pair<Particle,Particle> NuclearRemnant::splitSingle(size_t partIndex) {
+	switch(sub_parts.size()) {
+		case 0:
+			return std::pair<Particle,Particle>(Particle(),Particle());
+		case 1:
+			return std::pair<Particle,Particle>(sub_parts[partIndex],Particle());
+		case 2:
+			return std::pair<Particle,Particle>(sub_parts[partIndex],sub_parts[1-partIndex]);
+	}
+	vParticles remaining;
+	remaining.reserve(sub_parts.size()-1);
+	for(size_t i=0;i<sub_parts.size();i++)
+		if(i!=partIndex)
+			remaining.push_back(sub_parts[i]);
+	return std::pair<Particle,Particle>(sub_parts[partIndex],NuclearRemnant(remaining,status));
+}
+std::pair<Particle,Particle> NuclearRemnant::splitSingle(const Particle& match) {
+	for(size_t i=0;i<sub_parts.size();i++)
+		if(sub_parts[i].equalsIgnoreVertices(match))
+			return splitSingle(i);
+	throw std::runtime_error("NuclearRemnant::splitSingle(): No matching particle found in this remnant.");
+}
+std::pair<Particle,Particle> NuclearRemnant::splitSingleRandom(PID type) {
+	std::vector<size_t> candidates;
+	for(size_t i=0;i<sub_parts.size();i++)
+		if(sub_parts[i].ID()==type)
+			candidates.push_back(i);
+	if(candidates.empty())
+		throw std::runtime_error(fmt::format("NuclearRemnant::splitSingleRandom(): No particle with PID {} was found",type));
+	return splitSingle(Random::Instance().Pick(candidates));
+}
+NuclearRemnant NuclearRemnant::absorb(const Particle& part) {
+	vParticles parts=sub_parts;
+	parts.push_back(part);
+	return NuclearRemnant(parts,status);
 }
 
 } // namespace achilles

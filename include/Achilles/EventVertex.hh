@@ -15,6 +15,8 @@ class EventVertex {
         target = 3,
         decay = 4,
         shower = 5,
+		escape = 6,
+		capture = 7,
     };
 
     EventVertex(size_t idx,StatusCode status=StatusCode::cascade,ThreeVector position={})
@@ -35,8 +37,8 @@ class EventVertex {
     ThreeVector& Position() { return m_position; }
   private:
     size_t m_idx{};
-    ThreeVector m_position{};
     StatusCode m_status;
+    ThreeVector m_position{};
 };
 
 inline std::string ToString(EventVertex::StatusCode code) {
@@ -56,6 +58,10 @@ inline std::string ToString(EventVertex::StatusCode code) {
         return "decay";
     case StatusCode::shower:
         return "shower";
+    case StatusCode::escape:
+        return "escape";
+    case StatusCode::capture:
+        return "capture";
     }
     return "UNKOWN";
 }

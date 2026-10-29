@@ -59,18 +59,28 @@ achilles::DefaultBackend::DefaultBackend() {}
 double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
     Event event = event_in;
 
+	const vParticles& allParticles=event.Particles();
+	const Particle& leptonIn=event.leptonIn();
+	crefParticles leptonsOut=event.leptonsOut();
+	crefParticles hadronsIn=event.hadronsIn();
+	crefParticles hadronsOut=event.hadronsOut();
+	crefParticles spectators=event.spectators();
+
+	vParticles hadronsInCopy=Event::MakeCopies(hadronsIn);
+	vParticles hadronsOutCopy=Event::MakeCopies(hadronsOut);
+	vParticles spectatorsCopy=Event::MakeCopies(spectators);
+
 	spdlog::debug("Pre-Transform:");
 	size_t np=0;
-	ptrParticles allParticles=event.allParticles();
-    for(const Particle* p:allParticles) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p->Momentum()[0], p->Momentum()[1], p->Momentum()[2], p->Momentum()[3]);
+    for(const Particle& p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
     m_model->TransformFrame(event, process, true);
 
 	spdlog::debug("Post-Transform:");
 	np=0;
-    for(const Particle* p:allParticles) {
-        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p->Momentum()[0], p->Momentum()[1], p->Momentum()[2], p->Momentum()[3]);
+    for(const Particle& p:allParticles) {
+        spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
 
     const ProcessInfo& process_info = process.Info();
@@ -79,20 +89,20 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
     auto lcurrent_calculator = m_currents.at(leptons);
 
     auto lepton_current =
-        lcurrent_calculator.CalcCurrents(event.LeptonsIn()[0].Momentum(), event.LeptonsOut()[0].Momentum());
+        lcurrent_calculator.CalcCurrents(leptonIn.Momentum(), leptonsOut[0].get().Momentum());
 
     // TODO: Handle the case for MEC, RES, and DIS
     NuclearModel::FFInfoMap ff_info;
     for(const auto &boson : lepton_current) {
         ff_info[boson.first] = form_factors.at({process_info.m_hadronic.first[0], boson.first});
     }
-    FourVector q = event.LeptonsIn()[0].Momentum() - event.LeptonsOut()[0].Momentum();
-    auto hadron_current = m_model->CalcCurrents(event.HadronsIn(), event.HadronsOut(), event.Spectators(), q, ff_info);
+    FourVector q = leptonIn.Momentum() - leptonsOut[0].get().Momentum();
+    auto hadron_current = m_model->CalcCurrents(hadronsInCopy,hadronsOutCopy,spectatorsCopy, q, ff_info);
 
     double amps2 = 0;
 
     // TODO: Clean this up to look nicer
-    if(event.Spectators().size() == 0) {
+    if(spectators.size() == 0) {
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
             if(hadron_current.find(boson) == hadron_current.end()) continue;
@@ -104,7 +114,7 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
             }
         }
     } else {
-        auto hadron_current2 = m_model->CalcCurrents(event.HadronsIn(), event.HadronsOut(), event.Spectators(), q, ff_info);
+        auto hadron_current2 = m_model->CalcCurrents(hadronsInCopy,hadronsOutCopy,spectatorsCopy, q, ff_info);
         for(const auto &lcurrent : lepton_current) {
             auto boson = lcurrent.first;
             if(hadron_current.find(boson) == hadron_current.end() ||
@@ -127,10 +137,10 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
     if(std::isnan(amps2)) amps2 = 0;
 
-    auto flux = FluxFactor(event.LeptonsIn()[0].Momentum(), event.HadronsIn()[0].Momentum(), process_info);
+    auto flux = FluxFactor(leptonIn.Momentum(),hadronsIn[0].get().Momentum(), process_info);
     size_t nprotons = event.CurrentNucleus()->NProtons();
     size_t nneutrons = event.CurrentNucleus()->NNeutrons();
-    auto initial_wgt = InitialStateFactor(nprotons, nneutrons, event.HadronsIn(),event.Spectators());
+    auto initial_wgt = InitialStateFactor(nprotons, nneutrons,hadronsInCopy,spectatorsCopy);
     spdlog::debug("flux = {}, initial_wgt = {}, amps2 = {}", flux, initial_wgt,
                   amps2 * SpinAvg(process_info));
     double xsec = amps2 * flux * initial_wgt * SpinAvg(process_info) * event.Weight();

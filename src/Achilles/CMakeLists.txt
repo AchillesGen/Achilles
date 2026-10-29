@@ -91,7 +91,6 @@ add_library(physics SHARED
     DecayHandler.cc
     SpectralFunction.cc
     ElectronPDF.cc
-    EventHistory.cc
     MesonBaryonAmplitudes.cc
     OsetCrossSections.cc
     ResonanceHelper.cc

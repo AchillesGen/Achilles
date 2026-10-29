@@ -112,8 +112,8 @@ void GeantInteraction::LoadData(bool samePID, const HighFive::Group &group) {
 }
 
 InteractionResults GeantInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.NucleusHadrons()[part1];
-    const auto &particle2 = event.NucleusHadrons()[part2];
+    const auto &particle1 = event.CascadeHadrons()[part1];
+    const auto &particle2 = event.CascadeHadrons()[part2];
 
     bool samePID = particle1.ID() == particle2.ID();
     ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();

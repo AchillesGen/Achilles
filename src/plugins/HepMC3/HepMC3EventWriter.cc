@@ -54,7 +54,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
     std::map<achilles::Particle, GenParticlePtr, HepMC3Visitor::compare> converted;
     std::vector<GenParticlePtr> beamparticles;
     HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
-    void visit(achilles::EventHistory& event,size_t vertexIdx) {
+    void visit(achilles::Event& event,size_t vertexIdx) {
 		achilles::EventVertex* node=event.vertex(vertexIdx);
         const achilles::ThreeVector& position = node->Position();
         HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};

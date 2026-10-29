@@ -10,11 +10,11 @@ using achilles::BeamMapper;
 
 void BeamMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
     // TODO: Should Masses().back() be the mass of the final state hadronic system or the initial?
-	PID pid=event.processInfo().m_leptonic.first;
+	const PID& pid=event.processInfo().m_leptonic.first;
     FourVector p_init_lep=m_beam->Flux(*m_beam->BeamIDs().begin(), rans, (Smin() - Masses()[1]) / (2 * sqrt(Masses()[1])));
 
 	Particle init_lep(pid,p_init_lep,{},ParticleStatus::initial_state);
-	double Ebeam=p_init_lep.E();
+	double Ebeam=m_beam->MaxEnergy();
 	Particle beam(pid,{Ebeam,0,0,Ebeam},{},ParticleStatus::beam);
 
 	size_t beamVertex=event.addVertex(EventVertex::StatusCode::beam);

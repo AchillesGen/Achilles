@@ -30,8 +30,8 @@ OsetMesonBaryonInteraction::OsetMesonBaryonInteraction(const YAML::Node &) {
 
 InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t part1,
                                                             size_t part2) const {
-    const auto &particle1 = event.NucleusHadrons()[part1];
-    const auto &particle2 = event.NucleusHadrons()[part2];
+    const auto &particle1 = event.CascadeHadrons()[part1];
+    const auto &particle2 = event.CascadeHadrons()[part2];
 
     auto sqrts = (particle1.Momentum() + particle2.Momentum()).M();
 
