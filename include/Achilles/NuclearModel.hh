@@ -19,6 +19,7 @@
 
 namespace achilles {
 
+class Nucleus;
 class PID;
 class PSBuilder;
 class Spinor;
@@ -122,6 +123,9 @@ class NuclearModel {
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string PSName() const = 0;
+    // Called once with the target nucleus before the channels are built, for models that
+    // depend on its density (e.g. a local Fermi gas); ignored by default
+    virtual void SetNucleus(const Nucleus &) {}
     // Settings handed to the hadronic phase-space mapper after it is built
     virtual YAML::Node PhaseSpaceSettings() const { return {}; }
     virtual std::string InspireHEP() const = 0;

@@ -6,6 +6,7 @@
 
 #include "Achilles/Constants.hh"
 #include "Achilles/HadronicMapper.hh"
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/QEFermiGas.hh"
 
@@ -147,5 +148,129 @@ TEST_CASE("MomentumMapper", "[QEFermiGas]") {
             sum += 1.0 / mapper->GenerateWeight(mom, ran2);
         }
         CHECK_THAT(sum / n, WithinRel(4.0 / 3 * M_PI * std::pow(221.0, 3), 2e-2));
+    }
+}
+
+namespace {
+
+// Shells of width dr out to rmax with densities rho_p(r), rho_n(r) at the shell centres
+template <class Fp, class Fn>
+achilles::LocalFermiSea MakeSea(double rmax, Fp rho_p, Fn rho_n, double dr = 0.005) {
+    const auto n = static_cast<size_t>(std::round(rmax / dr));
+    std::vector<double> edges(n + 1), rp(n), rn(n);
+    for(size_t i = 0; i <= n; ++i) edges[i] = static_cast<double>(i) * dr;
+    for(size_t i = 0; i < n; ++i) {
+        const double r = 0.5 * (edges[i] + edges[i + 1]);
+        rp[i] = rho_p(r);
+        rn[i] = rho_n(r);
+    }
+    return {edges, rp, rn};
+}
+
+// 4 pi int p^2 dp 2 V(p) / (2 pi hbar c)^3: the number of nucleons in the local Fermi sea
+double LocalNormalization(const achilles::LocalFermiSea &sea, achilles::PID nucleon) {
+    constexpr size_t n = 20000;
+    const double h = 1.01 * sea.MaxFermiMomentum() / n;
+    double sum = 0;
+    for(size_t i = 0; i < n; ++i) {
+        const double p = (static_cast<double>(i) + 0.5) * h;
+        sum += 4 * M_PI * p * p * 2 * sea.Volume(p, nucleon) * h;
+    }
+    return sum / std::pow(2 * M_PI * achilles::Constant::HBARC, 3);
+}
+
+} // namespace
+
+TEST_CASE("Local Fermi sea", "[QEFermiGas]") {
+    const auto proton = achilles::PID::proton(), neutron = achilles::PID::neutron();
+
+    SECTION("A uniform sphere reproduces the global Fermi gas") {
+        constexpr double R0 = 2.5, Z = 6;
+        const double rho0 = Z / (4.0 / 3 * M_PI * std::pow(R0, 3));
+        const double kf = achilles::Constant::HBARC * std::cbrt(3 * M_PI * M_PI * rho0);
+        auto uniform = [&](double r) { return r < R0 ? rho0 : 0.0; };
+        auto sea = MakeSea(R0, uniform, uniform);
+        const double v0 = 4.0 / 3 * M_PI * std::pow(R0, 3);
+
+        CHECK_THAT(sea.MaxFermiMomentum(), WithinRel(kf, 1e-12));
+        CHECK_THAT(sea.Volume(0.5 * kf, proton), WithinRel(v0, 1e-10));
+        CHECK(sea.Volume(1.01 * kf, proton) == 0);
+        // 2 V0 / (2 pi hbar c)^3 = Z * 3 / (4 pi kF^3): the RFG weight per d^3p
+        CHECK_THAT(2 * v0 / std::pow(2 * M_PI * achilles::Constant::HBARC, 3),
+                   WithinRel(Z * 3 / (4 * M_PI * std::pow(kf, 3)), 1e-12));
+        CHECK(sea.PauliFactor(0.5 * kf, proton, 1.1 * kf, proton) == 1);
+        CHECK(sea.PauliFactor(0.5 * kf, proton, 0.9 * kf, proton) == 0);
+    }
+
+    // Carbon-like profile with a central depression, as in the 12C VMC density
+    auto dip = [](double r) {
+        return 0.09 * (1 - 0.4 * std::exp(-r * r / 0.8)) / (1 + std::exp((r - 2.3) / 0.45));
+    };
+    auto sea = MakeSea(8, dip, [&](double r) { return 1.2 * dip(r); });
+
+    SECTION("The momentum integral counts every nucleon") {
+        CHECK_THAT(LocalNormalization(sea, proton), WithinRel(sea.NNucleons(proton), 2e-3));
+        CHECK_THAT(LocalNormalization(sea, neutron), WithinRel(sea.NNucleons(neutron), 2e-3));
+    }
+
+    SECTION("V(k) falls with k and the Pauli factor is a fraction of it") {
+        double last = sea.Volume(0, proton);
+        for(double k = 10; k < sea.MaxFermiMomentum(); k += 10) {
+            const double v = sea.Volume(k, proton);
+            CHECK(v <= last);
+            last = v;
+        }
+        for(double p = 20; p < 260; p += 40) {
+            for(double pout = 0; pout < 400; pout += 25) {
+                const double f = sea.PauliFactor(p, proton, pout, proton);
+                CHECK(f >= 0);
+                CHECK(f <= 1);
+                if(pout <= p) CHECK(f == 0);
+                // Same nucleon type: 1 - V(p') / V(p), also with a non-monotonic density
+                if(pout > p && sea.Volume(p, proton) > 0)
+                    CHECK_THAT(
+                        f, WithinRel(1 - sea.Volume(pout, proton) / sea.Volume(p, proton), 1e-12) ||
+                               Catch::Matchers::WithinAbs(0, 1e-12));
+            }
+        }
+    }
+
+    SECTION("A neutron turning into a proton is blocked by the proton sea") {
+        // Neutron sea deeper than the proton sea: p' between the two kF is free
+        const double kfp = sea.MaxFermiMomentum() / std::cbrt(1.2);
+        CHECK(sea.PauliFactor(10, neutron, 1.01 * kfp, proton) == 1);
+        CHECK(sea.PauliFactor(10, neutron, 1.01 * kfp, neutron) < 1);
+    }
+}
+
+TEST_CASE("QEFermiGas with a local Fermi gas", "[QEFermiGas]") {
+    SECTION("kF: Local is read from the run card, and only for RFG") {
+        auto model = MakeModel("{Distribution: RFG, kF: Local, Binding: 25}");
+        CHECK(model->IsLocal());
+        CHECK_FALSE(MakeModel("{Distribution: RFG, kF: 221, Binding: 25}")->IsLocal());
+        CHECK_THROWS(
+            MakeModel("{Distribution: CFG, kF: Local, Binding: 25, c0: 4.16, lambda: 2.75}"));
+    }
+
+    SECTION("SetNucleus builds the sea from the nucleus densities") {
+        static constexpr size_t Z = 6;
+        achilles::Particles particles;
+        for(size_t i = 0; i < Z; ++i) {
+            particles.emplace_back(achilles::PID::proton());
+            particles.emplace_back(achilles::PID::neutron());
+        }
+        achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Local, {}};
+        auto density = std::make_unique<MockDensity>();
+        REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+        achilles::Nucleus nuc(Z, 2 * Z, 0, 225, "data/densities/c12.prova.txt",
+                              "data/densities/c12.prova.txt", fermiGas, std::move(density));
+
+        auto model = MakeModel("{Distribution: RFG, kF: Local, Binding: 25}");
+        model->SetNucleus(nuc);
+        CHECK_THAT(model->Sea().NNucleons(achilles::PID::proton()), WithinRel(6.0, 5e-3));
+        // The 12C density peaks off-centre: the largest local kF is not the central one
+        CHECK(model->PCut() > nuc.FermiMomentum(0, achilles::PID::proton()));
+        CHECK_THAT(model->PhaseSpaceSettings()["PCut"].as<double>(),
+                   WithinRel(model->PCut(), 1e-12));
     }
 }

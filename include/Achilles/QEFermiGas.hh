@@ -6,7 +6,34 @@
 
 #include "Achilles/NuclearModel.hh"
 
+#include <vector>
+
 namespace achilles {
+
+// Local Fermi sea on radial shells: kF_N(r) = hbar c (3 pi^2 rho_N(r))^{1/3}, N = p or n.
+// A nucleon of type N and momentum p can sit wherever kF_N(r) > p, a volume V_N(p). The number
+// of such nucleons per d^3p is 2 V_N(p) / (2 pi hbar c)^3. Its final state (type N', momentum
+// p') is free where kF_N'(r) <= p' at the same r, so the Pauli factor is the fraction of V_N(p)
+// with kF_N'(r) <= p'; for N' = N this is 1 - V_N(p') / V_N(p).
+class LocalFermiSea {
+  public:
+    LocalFermiSea() = default;
+    // Shell edges [fm] (n+1, increasing) and the proton and neutron densities [fm^-3] at the
+    // n shell centres
+    LocalFermiSea(const std::vector<double> &edges, const std::vector<double> &rho_p,
+                  const std::vector<double> &rho_n);
+
+    double Volume(double k, PID nucleon) const; // fm^3 where kF_nucleon(r) > k [MeV]
+    double PauliFactor(double p, PID in, double pout, PID out) const;
+    double NNucleons(PID nucleon) const; // integral of rho_N d^3r, for checks
+    double MaxFermiMomentum() const { return m_kf_max; }
+
+  private:
+    const std::vector<double> &FermiMomenta(PID nucleon) const;
+
+    std::vector<double> m_dv, m_kf_p, m_kf_n, m_rho_p, m_rho_n;
+    double m_kf_max{};
+};
 
 // Quasielastic scattering on a (correlated) relativistic Fermi gas.
 //
@@ -19,6 +46,10 @@ namespace achilles {
 // QESpectral this gives the Smith-Moniz shift  q0 -> omega - Eb  in the hadronic current.
 // Weight: A_N * n(|p|) (InitialStateWeight, A_N = Z or N) times the Pauli factor
 // [1 - occupation(|p'|)], applied to |J|^2 in CalcCurrents (the only hook that sees p').
+//
+// kF: Local (RFG only) replaces the global kF by the local Fermi sea of the target nucleus
+// (LocalFermiSea, built in SetNucleus from the nucleus' proton and neutron densities):
+// weight 2 V_N(p) / (2 pi hbar c)^3, Pauli factor from the same radial shells.
 class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
   public:
     enum class MomentumDistribution { RFG, CFG };
@@ -37,6 +68,7 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     std::string InspireHEP() const override;
     std::string PSName() const override { return "OneBodyMomentum"; }
     YAML::Node PhaseSpaceSettings() const override;
+    void SetNucleus(const Nucleus &) override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
@@ -45,10 +77,15 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     // Exposed for testing
     double Density(double p) const;        // normalized: int d^3p Density = 1
     double Occupation(double k) const;     // 0 <= occupation <= 1
-    double PauliFactor(double pout) const; // 1 - occupation(|p'|), or 1 if disabled
+    double PauliFactor(double pout) const; // global kF: 1 - occupation(|p'|), or 1 if disabled
+    // Pauli factor for a struck nucleon (in, |p|) going to (out, |p'|); local or global kF
+    double PauliFactor(double p, PID in, double pout, PID out) const;
     double PCut() const {
+        if(m_local) return m_sea.MaxFermiMomentum();
         return m_distribution == MomentumDistribution::CFG ? m_lambda * m_kf : m_kf;
     }
+    bool IsLocal() const { return m_local; }
+    const LocalFermiSea &Sea() const { return m_sea; }
 
   private:
     Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
@@ -59,6 +96,8 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     double m_kf{}, m_eb{}, m_c0{}, m_lambda{1};
     double m_alpha0{1}, m_alpha1{0};
     bool m_pauli{true};
+    bool m_local{false};
+    LocalFermiSea m_sea;
     mutable bool is_hydrogen{false};
     mutable bool is_free_neutron{false};
 };

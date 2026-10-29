@@ -343,6 +343,7 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
 void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {
     auto backend_name = settings.GetAs<std::string>("Backend/Name");
+    if(m_nucleus) model->SetNucleus(*m_nucleus);
     m_backend = XSecBuilder(backend_name)
                     .AddOptions(settings["Backend/Options"])
                     .AddNuclearModel(std::move(model))
