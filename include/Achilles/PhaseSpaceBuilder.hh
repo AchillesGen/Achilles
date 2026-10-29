@@ -7,6 +7,8 @@
 #include "Achilles/PhaseSpaceMapper.hh"
 #include "Achilles/ProcessInfo.hh"
 
+#include "yaml-cpp/node/node.h"
+
 #include <optional>
 
 namespace PHASIC {
@@ -22,7 +24,7 @@ class PSBuilder {
     PSBuilder(const ProcessInfo &);
     ~PSBuilder() = default;
     PSBuilder &Beam(std::shared_ptr<Beam>, size_t = 0);
-    PSBuilder &Hadron(const std::string &, size_t = 1);
+    PSBuilder &Hadron(const std::string &, const YAML::Node & = {}, size_t = 1);
     PSBuilder &FinalState(const std::string &, std::optional<double> = std::nullopt);
 #ifdef ACHILLES_SHERPA_INTERFACE
     PSBuilder &SherpaFinalState(const std::string &);

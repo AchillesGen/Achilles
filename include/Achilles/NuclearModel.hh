@@ -122,6 +122,8 @@ class NuclearModel {
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string PSName() const = 0;
+    // Settings handed to the hadronic phase-space mapper after it is built
+    virtual YAML::Node PhaseSpaceSettings() const { return {}; }
     virtual std::string InspireHEP() const = 0;
     virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
     void TransformFrame(Event &, const Process &, bool) const;

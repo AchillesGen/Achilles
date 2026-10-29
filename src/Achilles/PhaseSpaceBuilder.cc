@@ -26,11 +26,13 @@ PSBuilder &PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, size_t idx) {
     return *this;
 }
 
-PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
+PSBuilder &PSBuilder::Hadron(const std::string &mode, const YAML::Node &settings, size_t idx) {
     // BUG: The idx parameter needs to be cast to size_t otherwise it is an error about rvalue and
     // lvalues
-    phase_space->hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
+    auto hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
         mode, m_info, std::move(idx));
+    hbeam->Configure(settings);
+    phase_space->hbeam = std::move(hbeam);
     return *this;
 }
 

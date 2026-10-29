@@ -10,6 +10,8 @@
 #include "Achilles/Mapper.hh"
 #include "Achilles/ProcessInfo.hh"
 
+#include "yaml-cpp/node/node.h"
+
 namespace achilles {
 
 class FourVector;
@@ -21,6 +23,8 @@ class HadronicBeamMapper : public Mapper<FourVector> {
     void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override = 0;
     double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override = 0;
     size_t NDims() const override = 0;
+    // Model-specific settings (NuclearModel::PhaseSpaceSettings); ignored by default
+    virtual void Configure(const YAML::Node &) {}
     static std::string Name() { return "Hadronic Initial State"; }
 
   protected:
@@ -50,6 +54,41 @@ class QESpectralMapper
     static constexpr double dPhi = 2 * M_PI;
     // static constexpr double dp = 800;
     // static constexpr double dE = 400;
+};
+
+// Initial-state mapper for models with an analytic momentum distribution (RFG, CFG): the bound
+// nucleon has a fixed energy for a given momentum, E_in(p) = sqrt(p^2 + mN^2) - Eb, so only
+// (|p|, cos, phi) are sampled. The weight is the density in d^3p (no dE integral).
+class MomentumMapper
+    : public HadronicBeamMapper,
+      Registrable<HadronicBeamMapper, MomentumMapper, const ProcessInfo &, size_t> {
+  public:
+    MomentumMapper(const ProcessInfo &info, size_t idx);
+    static std::string Name() { return "OneBodyMomentum"; }
+    static std::unique_ptr<HadronicBeamMapper> Construct(const ProcessInfo &info, size_t idx) {
+        return std::make_unique<MomentumMapper>(info, idx);
+    }
+
+    void GeneratePoint(std::vector<FourVector> &, const std::vector<double> &) override;
+    double GenerateWeight(const std::vector<FourVector> &, std::vector<double> &) override;
+    size_t NDims() const override { return 3; }
+
+    // Reads PCut (largest sampled momentum) and Binding from QEFermiGas::PhaseSpaceSettings
+    void Configure(const YAML::Node &) override;
+    double PCut() const { return m_pcut; }
+    double Binding() const { return m_binding; }
+    double InitialEnergy(double p) const;
+
+  private:
+    struct Limits {
+        double pmin, pmax;
+        bool valid;
+    };
+    Limits MomentumLimits(const FourVector &) const;
+    double CosMax(const FourVector &, double) const;
+    double SMax(const FourVector &, double) const;
+    static constexpr double dPhi = 2 * M_PI;
+    double m_pcut{250}, m_binding{0};
 };
 
 class CoherentMapper
