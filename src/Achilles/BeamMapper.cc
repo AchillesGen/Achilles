@@ -17,9 +17,11 @@ void BeamMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
 	double Ebeam=m_beam->MaxEnergy();
 	Particle beam(pid,{Ebeam,0,0,Ebeam},{},ParticleStatus::beam);
 
+	// Primary must always be added first
+	size_t primary=event.addVertex(EventVertex::StatusCode::primary);
 	size_t beamVertex=event.addVertex(EventVertex::StatusCode::beam);
 	event.addParticle(beam,Particle::OPEN_END,beamVertex);
-	event.addParticle(init_lep,beamVertex,event.Primary()->Index());
+	event.addParticle(init_lep,beamVertex,primary);
 
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);

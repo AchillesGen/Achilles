@@ -484,8 +484,8 @@ template <> struct formatter<achilles::Particle> {
 
     auto format(const achilles::Particle &particle, format_context &ctx) const
         -> format_context::iterator {
-        return format_to(ctx.out(), "Particle[{}, {}, {}, {}]", particle.ID(), particle.Status(),
-                         particle.Momentum(), particle.Position());
+        return format_to(ctx.out(), "Particle[{}, {}, {}, {}, V({}->{})]", particle.ID(), particle.Status(),
+                         particle.Momentum(), particle.Position(),particle.startVertex(),particle.endVertex());
     }
 };
 

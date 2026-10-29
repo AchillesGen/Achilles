@@ -14,8 +14,6 @@ using achilles::Particle;
 
 Event::Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt):
 			m_processInfo{pi}, m_nuc{nuc}, m_wgt{std::move(vwgt)} {
-	// Primary vertex is always at position 0
-	addVertex(EventVertex::StatusCode::primary);
 	spdlog::trace("Event Process: {}",pi);
 }
 
