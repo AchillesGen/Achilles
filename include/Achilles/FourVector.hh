@@ -393,8 +393,8 @@ template <int D> struct fmt::formatter<achilles::FourVectorT<D>> {
         return it;
     }
 
-    auto format(const achilles::FourVectorT<D> &p,
-                format_context &ctx) const -> format_context::iterator {
+    auto format(const achilles::FourVectorT<D> &p, format_context &ctx) const
+        -> format_context::iterator {
         return format_to(ctx.out(),
                          presentation == 'f' ? "FourVector({:.8f}, {:.8f}, {:.8f}, {:.8f})"
                                              : "FourVector({:.8e}, {:.8e}, {:.8e}, {:.8e})",

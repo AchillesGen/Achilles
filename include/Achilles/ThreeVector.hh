@@ -331,8 +331,8 @@ template <int D> struct fmt::formatter<achilles::ThreeVectorT<D>> {
         return it;
     }
 
-    auto format(const achilles::ThreeVectorT<D> &p,
-                format_context &ctx) const -> format_context::iterator {
+    auto format(const achilles::ThreeVectorT<D> &p, format_context &ctx) const
+        -> format_context::iterator {
         return format_to(ctx.out(),
                          presentation == 'f' ? "ThreeVector({:.8f}, {:.8f}, {:.8f})"
                                              : "ThreeVector({:.8e}, {:.8e}, {:.8e})",
