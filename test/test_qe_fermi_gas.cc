@@ -330,6 +330,7 @@ TEST_CASE("QEFermiGas with a local Fermi gas", "[QEFermiGas]") {
                                    "data/densities/c12.prova.txt", fermiGas, std::move(density));
         REQUIRE(hydrogen.ID() == achilles::PID::hydrogen());
         CHECK_THROWS(MakeModel("{Distribution: RFG, kF: 221, Binding: 25}")->SetNucleus(hydrogen));
-        CHECK_THROWS(MakeModel("{Distribution: RFG, kF: Local, Binding: 25}")->SetNucleus(hydrogen));
+        CHECK_THROWS(
+            MakeModel("{Distribution: RFG, kF: Local, Binding: 25}")->SetNucleus(hydrogen));
     }
 }

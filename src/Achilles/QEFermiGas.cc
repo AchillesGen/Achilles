@@ -152,9 +152,8 @@ void QEFermiGas::SetNucleus(const Nucleus &nucleus) {
                  m_sea.NNucleons(PID::neutron()));
 }
 
-std::optional<std::pair<double, double>> QEFermiGas::StruckNucleonRadii(double p, PID in,
-                                                                        double pout,
-                                                                        PID out) const {
+std::optional<std::pair<double, double>>
+QEFermiGas::StruckNucleonRadii(double p, PID in, double pout, PID out) const {
     if(!m_local) return std::nullopt;
     return m_sea.AllowedRadii(p, in, pout, out);
 }
