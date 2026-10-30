@@ -13,6 +13,12 @@
 //     Energy^2 (e.g. Mandelstam) D = +2   stored in MeV^2
 //     Dimensionless              D =  0
 //
+// A dimensionless Quantity<0> (a ratio such as E/m, a velocity, a unit
+// vector's components) has no unit to get wrong, so it is the one dimension
+// that converts implicitly to and from double: std::exp(r / lambda) and
+// `units::Dimensionless beta = 0.5;` both just work. Every other dimension
+// needs an explicit constructor and .in(unit) to cross the boundary.
+//
 // Consequences of the single axis (all physically correct in natural units):
 //   * A length and a cross section are just Quantity<-1> and Quantity<-2>;
 //     a geometric area (fm^2) and a matrix-element cross section (MeV^-2) are
@@ -50,7 +56,18 @@ template <int D> class Quantity {
     static constexpr int dim = D;
 
     constexpr Quantity() = default;
+    /// A dimensionful value must be built explicitly (or with a unit/literal)...
+    template <int E = D, std::enable_if_t<E != 0, int> = 0>
     explicit constexpr Quantity(double v) noexcept : val_(v) {}
+    /// ...while a dimensionless one is just a number.
+    template <int E = D, std::enable_if_t<E == 0, int> = 0>
+    constexpr Quantity(double v) noexcept : val_(v) {} // NOLINT(google-explicit-constructor)
+
+    /// A dimensionless quantity reads back as a plain number.
+    template <int E = D, std::enable_if_t<E == 0, int> = 0>
+    constexpr operator double() const noexcept { // NOLINT(google-explicit-constructor)
+        return val_;
+    }
 
     // Canonical value (MeV^D). Prefer .in(unit) at ABI boundaries -- for a
     // length this is MeV^-1, NOT fm.
@@ -100,6 +117,34 @@ template <int D> class Quantity {
     friend constexpr bool operator==(Quantity a, Quantity b) noexcept { return a.val_ == b.val_; }
     friend constexpr bool operator!=(Quantity a, Quantity b) noexcept { return a.val_ != b.val_; }
 
+    // Dimensionless mixed with a plain number ----------------------------------
+    // Quantity<0> converts both ways, so `d + 1` would otherwise be ambiguous
+    // between this class's operators and the built-in arithmetic ones. These
+    // exact matches for any arithmetic operand settle it and keep the result a
+    // Quantity<0>.
+#define ACHILLES_UNITS_DIMLESS_OP(op, Ret)                                       \
+    template <typename T, int E = D,                                             \
+              std::enable_if_t<E == 0 && std::is_arithmetic<T>::value, int> = 0> \
+    friend constexpr Ret operator op(Quantity a, T b) noexcept {                 \
+        return Ret(a.val_ op static_cast<double>(b));                            \
+    }                                                                            \
+    template <typename T, int E = D,                                             \
+              std::enable_if_t<E == 0 && std::is_arithmetic<T>::value, int> = 0> \
+    friend constexpr Ret operator op(T a, Quantity b) noexcept {                 \
+        return Ret(static_cast<double>(a) op b.val_);                            \
+    }
+    ACHILLES_UNITS_DIMLESS_OP(+, Quantity)
+    ACHILLES_UNITS_DIMLESS_OP(-, Quantity)
+    ACHILLES_UNITS_DIMLESS_OP(*, Quantity)
+    ACHILLES_UNITS_DIMLESS_OP(/, Quantity)
+    ACHILLES_UNITS_DIMLESS_OP(<, bool)
+    ACHILLES_UNITS_DIMLESS_OP(>, bool)
+    ACHILLES_UNITS_DIMLESS_OP(<=, bool)
+    ACHILLES_UNITS_DIMLESS_OP(>=, bool)
+    ACHILLES_UNITS_DIMLESS_OP(==, bool)
+    ACHILLES_UNITS_DIMLESS_OP(!=, bool)
+#undef ACHILLES_UNITS_DIMLESS_OP
+
     // Extract in a named unit of the SAME dimension --------------------------
     template <int D2> constexpr double in(Unit<D2> u) const noexcept;
 };
@@ -109,6 +154,8 @@ template <int D> class Quantity {
 static_assert(sizeof(Quantity<1>) == sizeof(double), "Quantity must be a plain double");
 static_assert(std::is_trivially_copyable<Quantity<1>>::value, "Quantity must be memcpy-able");
 static_assert(std::is_standard_layout<Quantity<1>>::value, "Quantity must be standard layout");
+static_assert(sizeof(Quantity<0>) == sizeof(double), "Quantity must be a plain double");
+static_assert(std::is_trivially_copyable<Quantity<0>>::value, "Quantity must be memcpy-able");
 
 // Dimension-combining multiply / divide -------------------------------------
 template <int A, int B> constexpr Quantity<A + B> operator*(Quantity<A> a, Quantity<B> b) noexcept {
@@ -117,7 +164,9 @@ template <int A, int B> constexpr Quantity<A + B> operator*(Quantity<A> a, Quant
 template <int A, int B> constexpr Quantity<A - B> operator/(Quantity<A> a, Quantity<B> b) noexcept {
     return Quantity<A - B>{a.native() / b.native()};
 }
-template <int D> constexpr Quantity<-D> operator/(double s, Quantity<D> q) noexcept {
+// (A dimensionless divisor is handled by Quantity<0>'s own mixed operators.)
+template <int D, std::enable_if_t<D != 0, int> = 0>
+constexpr Quantity<-D> operator/(double s, Quantity<D> q) noexcept {
     return Quantity<-D>{s / q.native()};
 }
 
@@ -149,6 +198,14 @@ template <int D> constexpr Quantity<D> abs(Quantity<D> q) noexcept {
     return q.native() < 0 ? -q : q;
 }
 
+// Integer power multiplies the dimension: pow<4>(m_pi) is a Quantity<4>.
+template <int N, int D> constexpr Quantity<N * D> pow(Quantity<D> q) noexcept {
+    static_assert(N >= 0, "use 1.0 / pow<N>(q) for a negative power");
+    double r = 1.0;
+    for(int i = 0; i < N; ++i) r *= q.native();
+    return Quantity<N * D>{r};
+}
+
 // ---------------------------------------------------------------------------
 // Unit<D>: a labelled scale factor. One 'unit' equals `scale` canonical MeV^D.
 // ---------------------------------------------------------------------------
@@ -177,8 +234,8 @@ template <int D> template <int D2> constexpr double Quantity<D>::in(Unit<D2> u) 
 // ---------------------------------------------------------------------------
 // Named dimensions
 // ---------------------------------------------------------------------------
-using Dimensionless = Quantity<0>;
-using Energy = Quantity<1>; // == Momentum == Mass  (c = 1)
+using Dimensionless = Quantity<0>; // == double, implicitly
+using Energy = Quantity<1>;        // == Momentum == Mass  (c = 1)
 using Momentum = Quantity<1>;
 using Mass = Quantity<1>;
 using Energy2 = Quantity<2>;
@@ -192,6 +249,11 @@ using CrossSection = Quantity<-2>;
 // Units whose scale is a pure power of ten. The length/area units (fm, barn,
 // ...) are fixed by hbar*c, so they follow the constants further down.
 // ---------------------------------------------------------------------------
+// Dimensionless units (D = 0). `one` lets generic code call .in(unit) or
+// ToArray(unit) on a dimensionless vector like any other.
+inline constexpr Unit<0> one{1.0, ""};
+inline constexpr Unit<0> percent{1.0e-2, "%"};
+
 // Energy units (D = +1), canonical MeV -- the MeV/GeV fix.
 inline constexpr Unit<1> eV{1.0e-6, "eV"};
 inline constexpr Unit<1> keV{1.0e-3, "keV"};
@@ -213,16 +275,16 @@ inline constexpr Unit<-2> iGeV2{1.0e-6, "GeV^-2"}; // 1 GeV^-2 = 1e-6 MeV^-2
 // User-defined literals (strongly typed).
 // ---------------------------------------------------------------------------
 namespace literals {
-constexpr Energy operator"" _MeV(long double x) {
+constexpr Energy operator""_MeV(long double x) {
     return static_cast<double>(x) * MeV;
 }
-constexpr Energy operator"" _MeV(unsigned long long x) {
+constexpr Energy operator""_MeV(unsigned long long x) {
     return static_cast<double>(x) * MeV;
 }
-constexpr Energy operator"" _GeV(long double x) {
+constexpr Energy operator""_GeV(long double x) {
     return static_cast<double>(x) * GeV;
 }
-constexpr Energy operator"" _GeV(unsigned long long x) {
+constexpr Energy operator""_GeV(unsigned long long x) {
     return static_cast<double>(x) * GeV;
 }
 } // namespace literals
@@ -234,10 +296,10 @@ namespace achilles {
 // Angle literals. Angles are dimensionless, so they are plain doubles and are
 // deliberately outside the Quantity system; a strong Angle type is a separate
 // piece of work.
-constexpr double operator"" _rad(long double x) {
+constexpr double operator""_rad(long double x) {
     return static_cast<double>(x);
 }
-constexpr double operator"" _deg(long double x) {
+constexpr double operator""_deg(long double x) {
     constexpr double ToRads = M_PI / 180;
     return static_cast<double>(x) * ToRads;
 }
@@ -309,19 +371,19 @@ inline constexpr Unit<-2> pb{1.0e-12 * b.scale(), "pb"};
 inline constexpr Unit<-2> fb{1.0e-15 * b.scale(), "fb"};
 
 namespace literals {
-constexpr Length operator"" _fm(long double x) {
+constexpr Length operator""_fm(long double x) {
     return static_cast<double>(x) * fm;
 }
-constexpr Length operator"" _fm(unsigned long long x) {
+constexpr Length operator""_fm(unsigned long long x) {
     return static_cast<double>(x) * fm;
 }
-constexpr Length operator"" _m(long double x) {
+constexpr Length operator""_m(long double x) {
     return static_cast<double>(x) * m;
 }
-constexpr CrossSection operator"" _nb(long double x) {
+constexpr CrossSection operator""_nb(long double x) {
     return static_cast<double>(x) * nb;
 }
-constexpr CrossSection operator"" _mb(long double x) {
+constexpr CrossSection operator""_mb(long double x) {
     return static_cast<double>(x) * mb;
 }
 } // namespace literals

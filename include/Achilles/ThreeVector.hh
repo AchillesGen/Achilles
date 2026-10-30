@@ -144,27 +144,24 @@ template <int D> class ThreeVectorT {
     RotMat Align(const ThreeVectorT<0> &axis) const noexcept {
         ThreeVectorT<0> a = Unit();
 
-        auto v = a.Cross(axis);
-        double c = a.Dot(axis).native();
+        // Everything here is dimensionless, so plain doubles are exact stand-ins.
+        const auto v = a.Cross(axis);
+        const double c = a.Dot(axis);
+        const double x = v[0], y = v[1], z = v[2];
 
-        return {
-            1 - v[1].native() * v[1].native() / (1 + c) - v[2].native() * v[2].native() / (1 + c),
-            -v[2].native() + v[0].native() * v[1].native() / (1 + c),
-            v[1].native() + v[0].native() * v[2].native() / (1 + c),
-            v[2].native() + v[0].native() * v[1].native() / (1 + c),
-            1 - v[0].native() * v[0].native() / (1 + c) - v[2].native() * v[2].native() / (1 + c),
-            -v[0].native() + v[1].native() * v[2].native() / (1 + c),
-            -v[1].native() + v[0].native() * v[2].native() / (1 + c),
-            v[0].native() + v[1].native() * v[2].native() / (1 + c),
-            1 - v[0].native() * v[0].native() / (1 + c) - v[1].native() * v[1].native() / (1 + c)};
+        return {1 - y * y / (1 + c) - z * z / (1 + c),
+                -z + x * y / (1 + c),
+                y + x * z / (1 + c),
+                z + x * y / (1 + c),
+                1 - x * x / (1 + c) - z * z / (1 + c),
+                -x + y * z / (1 + c),
+                -y + x * z / (1 + c),
+                x + y * z / (1 + c),
+                1 - x * x / (1 + c) - y * y / (1 + c)};
     }
 
     /// Rotation matrix aligning this vector with the z-axis
-    RotMat AlignZ() const noexcept {
-        ThreeVectorT<0> z{units::Dimensionless{0}, units::Dimensionless{0},
-                          units::Dimensionless{1}};
-        return Align(z);
-    }
+    RotMat AlignZ() const noexcept { return Align(ThreeVectorT<0>{0.0, 0.0, 1.0}); }
     ///@}
 
     /// @name Functions
@@ -334,8 +331,8 @@ template <int D> struct fmt::formatter<achilles::ThreeVectorT<D>> {
         return it;
     }
 
-    auto format(const achilles::ThreeVectorT<D> &p, format_context &ctx) const
-        -> format_context::iterator {
+    auto format(const achilles::ThreeVectorT<D> &p,
+                format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(),
                          presentation == 'f' ? "ThreeVector({:.8f}, {:.8f}, {:.8f})"
                                              : "ThreeVector({:.8e}, {:.8e}, {:.8e})",

@@ -13,6 +13,7 @@
 #include "Achilles/UnitsIO.hh"
 #include "Achilles/UnitsSchema.hh"
 
+#include <cmath>
 #include <type_traits>
 
 using namespace achilles::units;
@@ -97,6 +98,60 @@ TEST_CASE("Quantity is a zero-overhead double", "[Units]") {
     STATIC_REQUIRE(!std::is_convertible<double, Energy>::value);
     STATIC_REQUIRE(!std::is_convertible<Energy, double>::value);
     STATIC_REQUIRE(std::is_constructible<Energy, double>::value);
+
+    STATIC_REQUIRE(sizeof(Dimensionless) == sizeof(double));
+    STATIC_REQUIRE(std::is_trivially_copyable<Dimensionless>::value);
+}
+
+TEST_CASE("Dimensionless quantities are plain numbers", "[Units]") {
+    const Energy e = 2.0_GeV;
+    const Dimensionless r = e / 1.0_GeV;
+
+    SECTION("They convert to and from double implicitly") {
+        STATIC_REQUIRE(std::is_convertible<double, Dimensionless>::value);
+        STATIC_REQUIRE(std::is_convertible<Dimensionless, double>::value);
+        const Dimensionless half = 0.5;
+        const double x = r;
+        CHECK(half == 0.5);
+        CHECK(x == 2.0);
+        CHECK(std::exp(-r) == Approx(std::exp(-2.0)));
+        CHECK(r == Approx(2.0));
+    }
+
+    SECTION("Mixed arithmetic with numbers stays dimensionless") {
+        STATIC_REQUIRE(std::is_same<decltype(r + 1), Dimensionless>::value);
+        STATIC_REQUIRE(std::is_same<decltype(1.0 - r), Dimensionless>::value);
+        STATIC_REQUIRE(std::is_same<decltype(2 * r), Dimensionless>::value);
+        STATIC_REQUIRE(std::is_same<decltype(1 / r), Dimensionless>::value);
+        CHECK(r + 1 == 3.0);
+        CHECK(1.0 - r == -1);
+        CHECK(1 / r == 0.5);
+        CHECK(r > 1);
+        CHECK(3 > r);
+    }
+
+    SECTION("They scale dimensionful quantities without changing their dimension") {
+        STATIC_REQUIRE(std::is_same<decltype(r * e), Energy>::value);
+        STATIC_REQUIRE(std::is_same<decltype(e / r), Energy>::value);
+        CHECK(r * e == 4.0_GeV);
+    }
+
+    SECTION("The conversion stops at dimension zero") {
+        STATIC_REQUIRE(!std::is_convertible<Dimensionless, Energy>::value);
+        STATIC_REQUIRE(!std::is_convertible<Energy, Dimensionless>::value);
+    }
+
+    SECTION("Dimensionless units") {
+        CHECK(r.in(one) == 2.0);
+        CHECK((25.0 * percent) == Approx(0.25));
+        CHECK(fmt::format("{:.0f}", in(0.25 * one, percent)) == "25 %");
+    }
+
+    SECTION("Integer powers multiply the dimension") {
+        STATIC_REQUIRE(std::is_same<decltype(pow<4>(e)), Quantity<4>>::value);
+        CHECK(pow<3>(2.0_MeV).native() == 8.0);
+        CHECK(pow<0>(e) == 1.0);
+    }
 }
 
 TEST_CASE("Quantity formats in canonical units by default", "[Units]") {
@@ -212,8 +267,28 @@ TEST_CASE("Config quantities must name their unit", "[Units][IO]") {
     SECTION("Round-trips through canonical units") {
         YAML::Node out;
         out["beam"] = 2.2_GeV;
-        CHECK(out["beam"].as<std::string>() == "2200.000000 MeV");
+        CHECK(out["beam"].as<std::string>() == "2200 MeV");
         CHECK(out["beam"].as<Energy>() == 2.2_GeV);
+    }
+
+    SECTION("Round-trips are exact, even for tiny canonical values") {
+        // 1 nb is ~2.6e-15 MeV^-2: a fixed six-decimal writer would emit 0.
+        YAML::Node out;
+        out["xsec"] = 2.5_nb;
+        out["step"] = 0.04_fm;
+        CHECK(out["xsec"].as<CrossSection>() == 2.5_nb);
+        CHECK(out["step"].as<Length>() == 0.04_fm);
+    }
+
+    SECTION("A dimensionless value needs no unit") {
+        CHECK(YAML::Load("ratio: 0.25")["ratio"].as<Dimensionless>() == 0.25);
+        CHECK(YAML::Load("ratio: 25 %")["ratio"].as<Dimensionless>() == Approx(0.25));
+        CHECK(YAML::Load("ratio: { value: 0.25 }")["ratio"].as<Dimensionless>() == 0.25);
+        CHECK_THROWS_WITH(YAML::Load("ratio: 0.25 GeV")["ratio"].as<Dimensionless>(),
+                          Catch::Matchers::ContainsSubstring("not a known DIMENSIONLESS unit"));
+        YAML::Node out;
+        out["ratio"] = Dimensionless{0.25};
+        CHECK(out["ratio"].as<std::string>() == "0.25");
     }
 }
 

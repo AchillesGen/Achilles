@@ -114,10 +114,8 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
                    achilles::WiringaPotential) {
     constexpr double r0 = -1;
     constexpr double pmag = 275;
-    achilles::PSVector q{units::Dimensionless{r0}, units::Dimensionless{0},
-                         units::Dimensionless{0}};
-    achilles::PSVector p{units::Dimensionless{0}, units::Dimensionless{pmag},
-                         units::Dimensionless{0}};
+    achilles::PSVector q{r0, 0.0, 0.0};
+    achilles::PSVector p{0.0, pmag, 0.0};
     constexpr size_t nsteps = 10000;
     constexpr double step_size = 0.01;
     constexpr double omega = 20;

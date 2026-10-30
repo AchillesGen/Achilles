@@ -47,12 +47,12 @@ OsetPiNModel::CMKinematics OsetPiNModel::CMFrame(const Particle &pion, units::Mo
 double OsetPiNModel::RelativeSpeed(const Particle &pion, const Particle &nucleon) {
     const auto vN = nucleon.Momentum().Vec3() / nucleon.E();
     const auto vpi = pion.Momentum().Vec3() / pion.E();
-    return (vpi - vN).Magnitude().native();
+    return (vpi - vN).Magnitude();
 }
 
 // A468 eq. 4.4, two- and three-body absorption terms
 units::Energy OsetPiNModel::AbsSelfEnergy(units::Energy Tpi, units::Energy mpi, double rho) {
-    const double x = (Tpi / mpi).native();
+    const double x = Tpi / mpi;
     const double r = rho / Constant::rho0;
     const double beta = Quadratic(x, kBeta);
     const double abs2 = Quadratic(x, kCA2) * std::pow(r, beta);
@@ -69,7 +69,7 @@ units::Energy OsetPiNModel::AbsSelfEnergy(units::Energy Tpi, units::Energy mpi, 
 
 // A468 eq. 4.4, quasielastic term
 units::Energy OsetPiNModel::QESelfEnergy(units::Energy Tpi, units::Energy mpi, double rho) {
-    const double x = (Tpi / mpi).native();
+    const double x = Tpi / mpi;
     const double alpha = Quadratic(x, kAlpha);
     return Quadratic(x, kCQ) * std::pow(rho / Constant::rho0, alpha) * units::MeV;
 }
@@ -84,7 +84,7 @@ units::Energy OsetPiNModel::DeltaHalfWidth(units::Energy Epi, units::Energy mpi,
     const units::Energy2 ppi2 = Epi * Epi - mpi * mpi;
     const units::Momentum pDelta = units::sqrt(ppi2 + kFermiAverage * kf * kf);
     const units::Energy ENcm = units::sqrt(qcm * qcm + mN * mN);
-    const double mu = ((EDelta * ENcm - Ef * sqrtS) / (pDelta * qcm)).native();
+    const double mu = (EDelta * ENcm - Ef * sqrtS) / (pDelta * qcm);
 
     // Pauli-blocking reduction of the Delta decay width.
     double reduction;
@@ -117,9 +117,8 @@ units::CrossSection OsetPiNModel::SWave(const Particle &pion, double rho, double
     const double ImB0 = 0.035;
     const units::Energy mpi = pion.Mass();
     const units::Energy E = pion.E();
-    const units::Quantity<-4> B0 = ImB0 / (mpi * mpi * mpi * mpi);
-    return 4.0 * M_PI * B0 * DensityNatural(rho) / E *
-           (1.0 + (E / (2.0 * Constant::mN())).native()) / vrel;
+    const units::Quantity<-4> B0 = ImB0 / units::pow<4>(mpi);
+    return 4.0 * M_PI * B0 * DensityNatural(rho) / E * (1.0 + E / (2.0 * Constant::mN())) / vrel;
 }
 
 double OsetPiNModel::AbsorptionCrossSection(Event &event, std::size_t pionIndex,
@@ -172,7 +171,7 @@ OsetPiNModel::QECrossSections(Event &event, std::size_t pionIndex, std::size_t n
                                   DeltaHalfWidth(pion.E(), mpi, cm.qcm, kf, cm.sqrtS);
     const double p = (Q / 9.0).in(units::mb);
 
-    const double xi = ((cm.sqrtS - Constant::mN() - mpi) / mpi).native();
+    const double xi = (cm.sqrtS - Constant::mN() - mpi) / mpi;
     const double s = (Quadratic(xi, kSigma) / (mpi * mpi)).in(units::mb);
     const double B = Quadratic(xi, kB);
     const double D = Quadratic(xi, kD);

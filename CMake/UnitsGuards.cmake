@@ -12,11 +12,17 @@
 include(CheckCXXSourceCompiles)
 
 function(_achilles_expect_fail tag code)
+    # Every snippet sees the units header, so a guard can only fail for the
+    # reason it names -- never because `achilles::units` is undeclared.
+    set(code "#include \"Achilles/PhysicalUnits.hh\"\n${code}")
     # Save/restore so we don't leak flags into later checks.
     set(_save_flags "${CMAKE_REQUIRED_FLAGS}")
     set(_save_inc "${CMAKE_REQUIRED_INCLUDES}")
     set(CMAKE_REQUIRED_FLAGS "-std=c++17 -DSPDLOG_FMT_EXTERNAL")
     set(CMAKE_REQUIRED_INCLUDES "${ACHILLES_UNITS_INCLUDE_DIRS}")
+    # check_cxx_source_compiles caches by variable name only; drop the cached
+    # verdict so an edited guard (or header) is re-checked on every configure.
+    unset(ACHILLES_GUARD_${tag} CACHE)
     check_cxx_source_compiles("${code}" ACHILLES_GUARD_${tag})
     set(CMAKE_REQUIRED_FLAGS "${_save_flags}")
     set(CMAKE_REQUIRED_INCLUDES "${_save_inc}")
@@ -45,10 +51,12 @@ function(achilles_check_units_guards)
     set(_save_inc "${CMAKE_REQUIRED_INCLUDES}")
     set(CMAKE_REQUIRED_FLAGS "-std=c++17 -DSPDLOG_FMT_EXTERNAL")
     set(CMAKE_REQUIRED_INCLUDES "${ACHILLES_UNITS_INCLUDE_DIRS}")
+    unset(ACHILLES_GUARD_positive_control CACHE)
     check_cxx_source_compiles([=[
         #include "Achilles/PhysicalUnits.hh"
         using namespace achilles::units; using namespace achilles::units::literals;
-        int main(){ Energy e = 2.2_GeV; return e.in(GeV) > 0 ? 0 : 1; }
+        int main(){ Energy e = 2.2_GeV; Dimensionless r = e / 1.1_GeV; double x = r;
+                    return e.in(GeV) > 0 && x > 1 ? 0 : 1; }
     ]=] ACHILLES_GUARD_positive_control)
     set(CMAKE_REQUIRED_FLAGS "${_save_flags}")
     set(CMAKE_REQUIRED_INCLUDES "${_save_inc}")
@@ -63,6 +71,7 @@ function(achilles_check_units_guards)
     set(_save_inc "${CMAKE_REQUIRED_INCLUDES}")
     set(CMAKE_REQUIRED_FLAGS "-std=c++17 -DSPDLOG_FMT_EXTERNAL")
     set(CMAKE_REQUIRED_INCLUDES "${ACHILLES_UNITS_INCLUDE_DIRS}")
+    unset(ACHILLES_GUARD_positive_control_vectors CACHE)
     check_cxx_source_compiles([=[
         #include "Achilles/FourVector.hh"
         using namespace achilles; using namespace achilles::units::literals;
@@ -124,6 +133,17 @@ function(achilles_check_units_guards)
         using namespace achilles; using namespace achilles::units::literals;
         int main(){ FourPosition x{0.0_fm,1.5_fm,0.0_fm,2.0_fm};
                     double bad = x.ToArray(units::MeV)[3]; (void)bad; }
+    ]=])
+
+    # Dimensionless converts to and from double; no other dimension does.
+    _achilles_expect_fail(dimensionless_to_energy [=[
+        using namespace achilles::units; using namespace achilles::units::literals;
+        int main(){ Energy e = 2.2_GeV / 1.1_GeV; (void)e; }
+    ]=])
+
+    _achilles_expect_fail(compare_energy_with_number [=[
+        using namespace achilles::units; using namespace achilles::units::literals;
+        int main(){ bool bad = 2.2_GeV > 1; (void)bad; }
     ]=])
 
     _achilles_expect_fail(sqrt_odd_dimension [=[

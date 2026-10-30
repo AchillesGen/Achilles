@@ -186,8 +186,7 @@ template <int D> class FourVectorT {
     }
 
     FourVectorT Boost(double beta_x, double beta_y, double beta_z) const noexcept {
-        return Boost(ThreeVectorT<0>{units::Dimensionless{beta_x}, units::Dimensionless{beta_y},
-                                     units::Dimensionless{beta_z}});
+        return Boost(ThreeVectorT<0>{beta_x, beta_y, beta_z});
     }
 
     /// Rotate the spatial part by a rotation matrix
@@ -394,8 +393,8 @@ template <int D> struct fmt::formatter<achilles::FourVectorT<D>> {
         return it;
     }
 
-    auto format(const achilles::FourVectorT<D> &p, format_context &ctx) const
-        -> format_context::iterator {
+    auto format(const achilles::FourVectorT<D> &p,
+                format_context &ctx) const -> format_context::iterator {
         return format_to(ctx.out(),
                          presentation == 'f' ? "FourVector({:.8f}, {:.8f}, {:.8f}, {:.8f})"
                                              : "FourVector({:.8e}, {:.8e}, {:.8e}, {:.8e})",

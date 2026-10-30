@@ -17,6 +17,7 @@
 
 #include "Achilles/PhysicalUnits.hh"
 
+#include <cstdio>
 #include <cstdlib>
 #include <stdexcept>
 #include <string>
@@ -49,9 +50,16 @@ inline const std::unordered_map<std::string, Unit<-2>> &xsec_units() {
     return t;
 }
 
+inline const std::unordered_map<std::string, Unit<0>> &dimensionless_units() {
+    static const std::unordered_map<std::string, Unit<0>> t{{"%", percent}};
+    return t;
+}
+
 /// The canonical unit name for dimension D, used when writing values back out.
+/// Only the dimensions that have a unit table can be read back.
 template <int D> constexpr const char *canonical_unit_name() {
-    return D == 1 ? "MeV" : D == 2 ? "MeV^2" : D == -1 ? "MeV^-1" : D == -2 ? "MeV^-2" : "MeV^?";
+    static_assert(D >= -2 && D <= 1, "no unit table for this dimension");
+    return D == 0 ? "" : D == 1 ? "MeV" : D == -1 ? "MeV^-1" : "MeV^-2";
 }
 
 /// Names of the units accepted for dimension D, for error messages.
@@ -60,6 +68,9 @@ template <int D> std::string known_units();
 // Generic dimension-checked lookup. Wrong dimension or unknown name -> throw.
 template <int D> Unit<D> unit_from_string(const std::string &name);
 
+template <> inline std::string known_units<0>() {
+    return "a plain number, or %";
+}
 template <> inline std::string known_units<1>() {
     return "eV, keV, MeV, GeV, TeV";
 }
@@ -70,6 +81,15 @@ template <> inline std::string known_units<-2>() {
     return "MeV^-2, GeV^-2, fm^2, b, mb, ub, nb, pb, fb";
 }
 
+template <> inline Unit<0> unit_from_string<0>(const std::string &name) {
+    if(name.empty()) return one;
+    auto it = dimensionless_units().find(name);
+    if(it == dimensionless_units().end())
+        throw std::runtime_error("Units: '" + name +
+                                 "' is not a known DIMENSIONLESS unit (expected " +
+                                 known_units<0>() + ")");
+    return it->second;
+}
 template <> inline Unit<1> unit_from_string<1>(const std::string &name) {
     auto it = energy_units().find(name);
     if(it == energy_units().end())
@@ -98,7 +118,8 @@ template <> inline Unit<-2> unit_from_string<-2>(const std::string &name) {
 // (A) File declares its unit as a string. Build the typed quantity, checking
 //     that the declared unit actually has the dimension the caller expects.
 template <int D> Quantity<D> from_declared(double value, const std::string &unit_name) {
-    if(unit_name.empty())
+    // A dimensionless value has nothing to forget: a bare number is complete.
+    if(D != 0 && unit_name.empty())
         throw std::runtime_error("Units: missing unit, refusing to guess (expected one of " +
                                  known_units<D>() + ")");
     return value * unit_from_string<D>(unit_name); // wrong dimension -> throws
@@ -120,7 +141,7 @@ template <int D> Quantity<D> from_literal(const std::string &text) {
     const auto last = unit_name.find_last_not_of(" \t");
     unit_name = first == std::string::npos ? "" : unit_name.substr(first, last - first + 1);
 
-    if(unit_name.empty())
+    if(D != 0 && unit_name.empty())
         throw std::runtime_error("Units: '" + text + "' is a bare number; name the unit, e.g. '" +
                                  text + " " + canonical_unit_name<D>() + "' (expected one of " +
                                  known_units<D>() + ")");
@@ -181,6 +202,12 @@ template <int D> struct convert<achilles::units::Quantity<D>> {
             out = io::from_literal<D>(node.Scalar());
             return true;
         }
+        if constexpr(D == 0) {
+            if(node.IsMap() && node["value"] && !node["unit"]) {
+                out = node["value"].as<double>();
+                return true;
+            }
+        }
         if(!node.IsMap() || !node["value"] || !node["unit"])
             throw std::runtime_error("Units: expected <number> <unit> or { value: <number>, "
                                      "unit: <" +
@@ -190,9 +217,14 @@ template <int D> struct convert<achilles::units::Quantity<D>> {
     }
 
     static Node encode(const achilles::units::Quantity<D> &q) {
-        // Written as a literal in canonical units, self-describing on the way out.
-        return Node(std::to_string(q.native()) + " " +
-                    achilles::units::io::canonical_unit_name<D>());
+        // Written as a literal in canonical units, self-describing on the way
+        // out. %.17g round-trips a double exactly; std::to_string's fixed six
+        // decimals would flush a cross section in MeV^-2 (~1e-8) to zero.
+        char buf[32];
+        std::snprintf(buf, sizeof(buf), "%.17g", q.native());
+        std::string text(buf);
+        if(D != 0) text += std::string(" ") + achilles::units::io::canonical_unit_name<D>();
+        return Node(text);
     }
 };
 } // namespace YAML

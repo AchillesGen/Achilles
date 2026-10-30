@@ -28,9 +28,7 @@ void DeleteFourVector(Vec4 *self) {
 Vec4 *Boost(const Vec4 *self, const Vec3 *beta) {
     // The Fortran side carries a velocity in a plain triple; it is dimensionless.
     const auto b = beta->Native();
-    return new Vec4(
-        self->Boost(Boost3{units::Dimensionless{b[0].native()}, units::Dimensionless{b[1].native()},
-                           units::Dimensionless{b[2].native()}}));
+    return new Vec4(self->Boost(Boost3{b[0].native(), b[1].native(), b[2].native()}));
 }
 Vec3 *BoostVector(const Vec4 *self) {
     const auto b = self->BoostVector().Native();
