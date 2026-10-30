@@ -34,10 +34,10 @@ SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
 SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
-path = "doc/**"
+path = "docs/**"
 precedence = "aggregate"
 SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
-SPDX-License-Identifier = "GPL-3.0-or-later"
+SPDX-License-Identifier = "CC0-1.0"
 
 [[annotations]]
 path = "examples/**"
@@ -62,3 +62,16 @@ path = ["src/Achilles/fortran/amp_dcc_sl.f", "src/Achilles/fortran/currents_pi_d
 precedence = "aggregate"
 SPDX-FileCopyrightText = ["2015-2026 S. X. Nakamura, H. Kamano and T. Sato", "2018-2026 Achilles Developers"]
 SPDX-License-Identifier = "GPL-3.0-or-later"
+
+# Third-party docs assets: keep original attribution rather than the docs/** default above.
+[[annotations]]
+path = "docs/_static/css/s5defs-roles.css"
+precedence = "override"
+SPDX-FileCopyrightText = "2013-2016 Lilian Besson"
+SPDX-License-Identifier = "GPL-3.0-only"
+
+[[annotations]]
+path = "docs/s5defs.rst"
+precedence = "override"
+SPDX-FileCopyrightText = "NONE"
+SPDX-License-Identifier = "CC0-1.0"
