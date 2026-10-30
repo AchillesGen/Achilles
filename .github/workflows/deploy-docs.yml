@@ -93,11 +93,4 @@ jobs:
 
   rebuild-landing:
     needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger landing page rebuild
-        run: |
-          gh api repos/${{ github.repository }}/dispatches \
-            -f event_type=rebuild-landing
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    uses: AchillesGen/Achilles/.github/workflows/landing.yml@landing_page
