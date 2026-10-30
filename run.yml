@@ -19,12 +19,12 @@ Beams:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1108
+        Energy: { value: 1108, unit: MeV }
 
 Cascade:
   Run: False
   Interactions: !include "data/default/VirtResInteractions.yml"
-  Step: 0.04
+  Step: { value: 0.04, unit: fm }
   Probability: Cylinder
   InMedium: None
   PotentialProp: False

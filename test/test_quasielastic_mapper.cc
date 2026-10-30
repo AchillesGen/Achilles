@@ -10,20 +10,23 @@
 #include "Approx.hh"
 #include "mock_classes.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 TEST_CASE("QuasielasticTestMapper", "[PhaseSpace]") {
     static constexpr auto electron = achilles::PID::electron();
-    const achilles::FourVector beam_mom = {1000, 0, 0, 1000};
+    const achilles::FourVector beam_mom = {1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
     const std::vector<double> beam_rans{0};
     static constexpr int nvars = 1;
     auto flux = std::make_shared<MockFluxType>(nvars);
-    REQUIRE_CALL(*flux, Flux(beam_rans, 0)).TIMES(1).LR_RETURN((beam_mom));
-    REQUIRE_CALL(*flux, GenerateWeight(beam_mom, trompeloeil::_, 0)).TIMES(1).RETURN(1.0);
+    REQUIRE_CALL(*flux, Flux(beam_rans, 0_MeV)).TIMES(1).LR_RETURN((beam_mom));
+    REQUIRE_CALL(*flux, GenerateWeight(beam_mom, trompeloeil::_, 0_MeV)).TIMES(1).RETURN(1.0);
     auto beam = MakeBeam(electron, flux);
 
     auto input_fmt = R"node(
         Run Mode: {}
         Angle: 90
-        Energy: 500
+        Energy: {{ value: 500, unit: MeV }}
     )node";
     auto mode = GENERATE(table<std::string, size_t>(
         {{"FixedAngleEnergy", 4}, {"FixedAngle", 5}, {"FullPhaseSpace", 6}}));
@@ -41,13 +44,14 @@ TEST_CASE("QuasielasticTestMapper", "[PhaseSpace]") {
         std::vector<double> rans_out(rans.size());
         mapper.GenerateWeight(mom, rans_out);
         CHECK_THAT(rans, Catch::Matchers::Approx(rans_out));
-        CHECK_THAT(mom[0].E() + mom[1].E(), Catch::Matchers::WithinRel(mom[2].E() + mom[3].E()));
-        CHECK_THAT(mom[0].Px() + mom[1].Px(),
-                   Catch::Matchers::WithinRel(mom[2].Px() + mom[3].Px()));
-        CHECK_THAT(mom[0].Py() + mom[1].Py(),
-                   Catch::Matchers::WithinRel(mom[2].Py() + mom[3].Py()));
-        CHECK_THAT(mom[0].Pz() + mom[1].Pz(),
-                   Catch::Matchers::WithinRel(mom[2].Pz() + mom[3].Pz()));
+        CHECK_THAT(mom[0].E().native() + mom[1].E().native(),
+                   Catch::Matchers::WithinRel(mom[2].E().native() + mom[3].E().native()));
+        CHECK_THAT(mom[0].Px().native() + mom[1].Px().native(),
+                   Catch::Matchers::WithinRel(mom[2].Px().native() + mom[3].Px().native()));
+        CHECK_THAT(mom[0].Py().native() + mom[1].Py().native(),
+                   Catch::Matchers::WithinRel(mom[2].Py().native() + mom[3].Py().native()));
+        CHECK_THAT(mom[0].Pz().native() + mom[1].Pz().native(),
+                   Catch::Matchers::WithinRel(mom[2].Pz().native() + mom[3].Pz().native()));
     }
 
     // TODO: Figure out how to handle this, since each mode needs different momenta

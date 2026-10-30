@@ -76,7 +76,8 @@ constexpr int LeviCivita(const int i, const int j, const int k, const int l) {
                : (i - j) * (i - k) * (i - l) * (j - k) * (j - l) * (k - l) / 12;
 }
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 bool CheckMasses(const std::vector<achilles::FourVector> &, const std::vector<double> &,
                  double = 1e-8);
 
@@ -228,8 +229,8 @@ template <typename T> constexpr bool IsZero(const T &x, const T &tol) {
     return std::abs(x) < tol;
 }
 
-template <typename T> T Sign(const T &a) {
-    return a > 0 ? 1 : (a < 0 ? -1 : 0);
+template <typename T> int Sign(const T &a) {
+    return a > T{} ? 1 : (a < T{} ? -1 : 0);
 }
 
 // From arxiv:2201.01678

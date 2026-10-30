@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include <array>
 #include <cmath>
 #include <cstddef>
@@ -30,6 +31,7 @@ class OsetPiNModel {
   public:
     OsetPiNModel() = default;
 
+    // Cross sections are returned in mb, the unit InteractionResult carries.
     // S + P wave
     double AbsorptionCrossSection(Event &event, std::size_t pionIndex,
                                   std::size_t nucleonIndex) const;
@@ -42,13 +44,18 @@ class OsetPiNModel {
   private:
     using Coefficients = std::array<double, 3>;
     struct CMKinematics {
-        double sqrtS;
-        double qcm;
+        units::Energy sqrtS;
+        units::Momentum qcm;
     };
 
     static constexpr double kFermiAverage = 0.6; // <p_N^2> / kf^2
 
-    // Delta self-energy fits: a*x^2 + b*x + c, with x = T_pi / m_pi.
+    // The parametrisation is tuned against this Delta pole mass, so it is pinned
+    // here rather than taken from Particles.yml, whose four charge states carry
+    // their own measured masses.
+    static constexpr units::Energy kMdelta = 1232.25_MeV;
+
+    // Delta self-energy fits, in MeV: a*x^2 + b*x + c, with x = T_pi / m_pi.
     // Oset & Salcedo, Nucl. Phys. A468 (1987) 631, eq. 4.5 and Table 2; gamma = 2 beta
     static constexpr Coefficients kCQ{-5.19, 15.35, 2.06};
     static constexpr Coefficients kCA2{1.06, -6.64, 22.66};
@@ -62,15 +69,17 @@ class OsetPiNModel {
     static constexpr Coefficients kD{-0.08229, 0.37062, -0.03130};
 
     static double Quadratic(double x, const Coefficients &a);
-    static double CouplingFactor(double mpi);
-    static CMKinematics CMFrame(const Particle &pion, double kf);
+    static units::Quantity<-2> CouplingFactor(units::Energy mpi);
+    static CMKinematics CMFrame(const Particle &pion, units::Momentum kf);
     static double RelativeSpeed(const Particle &pion, const Particle &nucleon);
-    static double AbsSelfEnergy(double Tpi, double mpi, double rho);
-    static double QESelfEnergy(double Tpi, double mpi, double rho);
-    static double DeltaHalfWidth(double Epi, double mpi, double qcm, double kf, double sqrtS);
-    static double PWaveKernel(double Epi, double mpi, double qcm, double kf, double sqrtS,
-                              double rho);
-    static double SWave(const Particle &pion, double rho, double vrel);
+    static units::Energy AbsSelfEnergy(units::Energy Tpi, units::Energy mpi, double rho);
+    static units::Energy QESelfEnergy(units::Energy Tpi, units::Energy mpi, double rho);
+    static units::Energy DeltaHalfWidth(units::Energy Epi, units::Energy mpi, units::Momentum qcm,
+                                        units::Momentum kf, units::Energy sqrtS);
+    static units::Quantity<-3> PWaveKernel(units::Energy Epi, units::Energy mpi,
+                                           units::Momentum qcm, units::Momentum kf,
+                                           units::Energy sqrtS, double rho);
+    static units::CrossSection SWave(const Particle &pion, double rho, double vrel);
 };
 
 } // namespace achilles

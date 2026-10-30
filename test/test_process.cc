@@ -13,6 +13,9 @@
 #include "trompeloeil.hpp"
 #include <utility>
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 using achilles::Particle;
 
 template <typename Type, std::size_t Size, std::size_t... Index>
@@ -52,20 +55,20 @@ TEST_CASE("Handles events correctly", "[Process]") {
     achilles::ProcessInfo info;
     info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
     const std::vector<achilles::FourVector> momentum = {
-        {1.3e+03, 0.0, 0.0, 1.3e+03},
-        {1.1188e+04, 0.0, 0.0, 0.0},
-        {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03},
-        {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}};
+        {1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV},
+        {1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV},
+        {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV},
+        {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}};
 
     SECTION("Extract Momentum") {
         info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
-        achilles::FourVector lep_in, lep_in_expected{1.3e+03, 0.0, 0.0, 1.3e+03};
+        achilles::FourVector lep_in, lep_in_expected{1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV};
         std::vector<achilles::FourVector> had_in, lep_out, had_out, spect;
-        std::vector<achilles::FourVector> had_in_exp{{1.1188e+04, 0.0, 0.0, 0.0}};
+        std::vector<achilles::FourVector> had_in_exp{{1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV}};
         std::vector<achilles::FourVector> lep_out_exp{
-            {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}};
+            {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV}};
         std::vector<achilles::FourVector> had_out_exp{
-            {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}};
+            {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}};
         YAML::Node config;
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));
@@ -97,16 +100,17 @@ TEST_CASE("Handles events correctly", "[Process]") {
     SECTION("Extract Q Vector") {
         info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
         achilles::Particle lep_in;
-        achilles::Particle lep_in_expected{achilles::PID::electron(), {1.3e+03, 0.0, 0.0, 1.3e+03}};
+        achilles::Particle lep_in_expected{achilles::PID::electron(),
+                                           {1.3e+03_MeV, 0.0_MeV, 0.0_MeV, 1.3e+03_MeV}};
         std::vector<achilles::Particle> had_in, lep_out, had_out, spect;
         std::vector<achilles::Particle> had_in_exp{
-            Particle{achilles::PID::proton(), {1.1188e+04, 0.0, 0.0, 0.0}}};
-        std::vector<achilles::Particle> lep_out_exp{
-            Particle{achilles::PID::electron(),
-                     {1.27035325e+03, 6.15441682e+02, -4.52084137e+02, 1.01520877e+03}}};
-        std::vector<achilles::Particle> had_out_exp{
-            Particle{achilles::PID::proton(),
-                     {1.12176467e+04, -6.15441682e+02, 4.52084137e+02, 2.84791227e+02}}};
+            Particle{achilles::PID::proton(), {1.1188e+04_MeV, 0.0_MeV, 0.0_MeV, 0.0_MeV}}};
+        std::vector<achilles::Particle> lep_out_exp{Particle{
+            achilles::PID::electron(),
+            {1.27035325e+03_MeV, 6.15441682e+02_MeV, -4.52084137e+02_MeV, 1.01520877e+03_MeV}}};
+        std::vector<achilles::Particle> had_out_exp{Particle{
+            achilles::PID::proton(),
+            {1.12176467e+04_MeV, -6.15441682e+02_MeV, 4.52084137e+02_MeV, 2.84791227e+02_MeV}}};
         YAML::Node config;
         auto unweight = std::make_unique<achilles::NoUnweighter>(config);
         achilles::Process process(info, std::move(unweight));

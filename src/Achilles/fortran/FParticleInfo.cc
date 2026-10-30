@@ -37,10 +37,10 @@ double Spin(const PInfo *self) {
 }
 
 double Mass(const PInfo *self) {
-    return self->Mass();
+    return self->Mass().in(achilles::units::MeV);
 }
 
 double Width(const PInfo *self) {
-    return self->Width();
+    return self->Width().in(achilles::units::MeV);
 }
 }

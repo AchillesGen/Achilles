@@ -26,14 +26,14 @@ Beams:
       PID: 11
       Beam Params:
         Type: Monochromatic
-        Energy: 1300
+        Energy: { value: 1300, unit: MeV }
 
 Cascade:
   Run: False
   Interaction:
     Name: GeantInteractions
     GeantData: data/GeantData.hdf5
-  Step: 0.04
+  Step: { value: 0.04, unit: fm }
   Probability: Cylinder
 
 NuclearModel:
@@ -45,8 +45,8 @@ NuclearModel:
 
 Nucleus:
   Name: 12C
-  Binding: 8.6
-  Fermi Momentum: 225
+  Binding: { value: 8.6, unit: MeV }
+  Fermi Momentum: { value: 225, unit: MeV }
   Density:
     File: data/c12.prova.txt
     FilePotential: data/realOP_12C_EDAI.dat

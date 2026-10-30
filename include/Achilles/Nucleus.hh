@@ -12,15 +12,16 @@
 #include <vector>
 
 #include "Achilles/Configuration.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interpolation.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/Random.hh"
 #include "Achilles/System.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
+#include "Achilles/UnitsIO.hh"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -30,7 +31,8 @@ namespace achilles {
 
 class PID;
 class Particle;
-class ThreeVector;
+template <int D> class ThreeVectorT;
+using ThreeVector = ThreeVectorT<1>;
 
 using Particles = std::vector<Particle>;
 
@@ -60,7 +62,7 @@ class Nucleus {
     ///@param density: A function that generates nucleon configurations according
     ///                to the density profile
     Nucleus() = default;
-    Nucleus(const std::size_t &, const std::size_t &, const double &, const double &,
+    Nucleus(const std::size_t &, const std::size_t &, units::Energy, units::Energy,
             const std::string &, const std::string &, const FermiGas &, std::unique_ptr<Density>);
     Nucleus(const Nucleus &) = delete;
     Nucleus(Nucleus &&) = default;
@@ -77,11 +79,11 @@ class Nucleus {
 
     /// Set the binding energy of the nucleus in MeV
     ///@param energy: The binding energy to be set in MeV
-    void SetBindingEnergy(const double &energy) noexcept { binding = energy; }
+    void SetBindingEnergy(units::Energy energy) noexcept { binding = energy; }
 
     /// Set the Fermi Momentum of the nucleus in MeV
     ///@param mom: The Fermi Momentum to be set in MeV
-    void SetFermiMomentum(const double &mom) noexcept { fermiMomentum = mom; }
+    void SetFermiMomentum(units::Energy mom) noexcept { fermiMomentum = mom; }
 
     /// Set the density function to use for configuration generation
     ///@param density: The function to be use for generating nucleons
@@ -97,7 +99,7 @@ class Nucleus {
 
     /// Set the radius of the nucleus in fm
     /// @param radius: The radius to be set in fm
-    void SetRadius(const double &_radius) noexcept { radius = _radius; }
+    void SetRadius(units::Length _radius) noexcept { radius = _radius; }
 
     /// Set the nucleon density profiles, tabulated against radius, instead of
     /// reading them from the density files the constructor takes
@@ -124,8 +126,9 @@ class Nucleus {
     /// Return a particle with initial momentum for at rest nucleus and correct PID
     ///@return Particle: Particle representing the initial nucleus
     Particle InitParticle() const {
-        double mass = ParticleInfo(ID()).Mass();
-        return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
+        const units::Energy mass = ParticleInfo(ID()).Mass();
+        return Particle(ID(), {mass, units::Energy{}, units::Energy{}, units::Energy{}}, {},
+                        ParticleStatus::target);
     }
 
     /// Return the number of nucleons in the nucleus
@@ -142,11 +145,11 @@ class Nucleus {
 
     /// Return the current binding energy of the nucleus
     ///@return double: The binding energy in MeV
-    const double &BindingEnergy() const noexcept { return binding; }
+    units::Energy BindingEnergy() const noexcept { return binding; }
 
     /// Return the current Fermi Momentum of the nucleus
     ///@return double: The Fermi Momentum in MeV
-    const double &FermiMomentum() const noexcept { return fermiMomentum; }
+    units::Energy FermiMomentum() const noexcept { return fermiMomentum; }
 
     /// Return the phenomenological potential
     ///@return std::shared_ptr<Potential>: The potential of the nucleus
@@ -154,38 +157,35 @@ class Nucleus {
 
     /// Return the radius cutoff of the nucleus used for the cascade
     ///@return double: The radius in femtometers
-    const double &Radius() const noexcept { return radius; }
+    units::Length Radius() const noexcept { return radius; }
 
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    double Rho(const double &position) const noexcept {
-        // return position > rhoInterp.max() ? 0 : rhoInterp(position);
-        return position > radius ? 0 : protonrhoInterp(position);
+    double Rho(units::Length position) const noexcept {
+        return position > radius ? 0 : protonrhoInterp(position.in(units::fm));
     }
     ///@}
 
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    double ProtonRho(const double &position) const noexcept {
-        // return position > rhoInterp.max() ? 0 : rhoInterp(position);
-        return position > radius ? 0 : protonrhoInterp(position);
+    double ProtonRho(units::Length position) const noexcept {
+        return position > radius ? 0 : protonrhoInterp(position.in(units::fm));
     }
     ///@}
 
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    double NeutronRho(const double &position) const noexcept {
-        // return position > rhoInterp.max() ? 0 : rhoInterp(position);
-        return position > radius ? 0 : neutronrhoInterp(position);
+    double NeutronRho(units::Length position) const noexcept {
+        return position > radius ? 0 : neutronrhoInterp(position.in(units::fm));
     }
     ///@}
 
     /// Return the Fermi momentum according to a given FG model
     ///@param position: The radius to calculate the density
-    double FermiMomentum(const double &, const PID &) const;
+    units::Energy FermiMomentum(units::Length, const PID &) const;
 
     void SetRecoil(const FourVector recoil) { m_recoil = recoil; }
     ///@}
@@ -198,9 +198,9 @@ class Nucleus {
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-    const std::array<double, 3> GenerateMomentum(const double &, const PID &) noexcept;
+    const std::array<double, 3> GenerateMomentum(units::Length, const PID &) noexcept;
 
-    double SampleMagnitudeMomentum(const double &position, const PID &) noexcept;
+    units::Energy SampleMagnitudeMomentum(units::Length position, const PID &) noexcept;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
@@ -244,7 +244,7 @@ class Nucleus {
     /// TODO: This should be added to the Nucleus class when we refactor to have the Nucleus
     ///      passed in as an object
     ///@param density: The density function to use to generate configurations with
-    static Nucleus MakeNucleus(const std::string &, const double &, const double &,
+    static Nucleus MakeNucleus(const std::string &, units::Energy, units::Energy,
                                const std::string &, const std::string &, const FermiGas &,
                                std::unique_ptr<Density>);
 
@@ -258,7 +258,8 @@ class Nucleus {
 
   private:
     size_t nnucleons, nprotons, nneutrons;
-    double binding{}, fermiMomentum{}, radius{};
+    units::Energy binding{}, fermiMomentum{};
+    units::Length radius{};
     FermiGas fermi_gas{};
     std::unique_ptr<Density> density;
     Interp1D protonrhoInterp;
@@ -314,8 +315,8 @@ template <> struct convert<achilles::Nucleus> {
             return true;
         }
 
-        auto binding = node["Binding"].as<double>();
-        auto kf = node["Fermi Momentum"].as<double>();
+        auto binding = node["Binding"].as<achilles::units::Energy>();
+        auto kf = node["Fermi Momentum"].as<achilles::units::Energy>();
 
         auto fermi_gas = node["FermiGas"].as<achilles::Nucleus::FermiGas>();
         auto protondensityFile = node["Density"]["ProtonFile"].as<std::string>();

@@ -20,7 +20,7 @@ achilles::HCurrents achilles::FCoherent::HadronicCurrents(Event &event, const FF
     auto qVec = event.Momentum()[1];
     for(size_t i = 2; i < event.Momentum().size() - 1; ++i) { qVec -= event.Momentum()[i]; }
 
-    auto ffVals = EvalFormFactor(-qVec.M2() / 1.0_GeV / 1.0_GeV);
+    auto ffVals = EvalFormFactor(-qVec.M2().in(units::GeV2));
 
     // Calculate coherent contributions
     HCurrents results;

@@ -77,8 +77,8 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
         CHECK(info.Stable() == 1);
         CHECK(info.IsStable() == true);
         CHECK(info.IsMassive() == true);
-        CHECK(info.Mass() == 10);
-        CHECK(info.Width() == 1);
+        CHECK(info.Mass().native() == 10);
+        CHECK(info.Width().native() == 1);
     }
 
     SECTION("Equality of two particles") {
@@ -91,4 +91,27 @@ TEST_CASE("ParticleInfo", "[ParticleInfo]") {
         // Anti-particles are not equal to particles
         CHECK(info1 != info4);
     }
+}
+
+TEST_CASE("Mass constants come from the particle database", "[ParticleInfo]") {
+    using achilles::ParticleInfo;
+    using achilles::PID;
+    namespace Constant = achilles::Constant;
+
+    // Bit-exact: these were hard-coded constants before they moved into the
+    // particle file, and the Fortran interference benchmark holds to 1e-6.
+    CHECK(Constant::mp().native() == 938.27208816);
+    CHECK(Constant::mn().native() == 939.56542054);
+
+    CHECK(Constant::mp() == ParticleInfo(PID::proton()).Mass());
+    CHECK(Constant::mn() == ParticleInfo(PID::neutron()).Mass());
+    CHECK(Constant::mN() == (Constant::mp() + Constant::mn()) / 2.0);
+    CHECK(Constant::mN2() == Constant::mN() * Constant::mN());
+    CHECK(Constant::mlambda() == ParticleInfo(PID::lambda0()).Mass());
+    CHECK(Constant::msigma0() == ParticleInfo(PID::sigma0()).Mass());
+    // Sigma^- is 3112; PID::sigmam() is 3222, which the file lists as sigma+.
+    CHECK(Constant::msigmam() == ParticleInfo(PID{3112}).Mass());
+
+    // rho0 is in the database so nothing needs to hard-code it.
+    CHECK(ParticleInfo(PID{113}).Name() == "rho0");
 }

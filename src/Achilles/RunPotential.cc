@@ -15,42 +15,46 @@
 #include <chrono>
 #include <fstream>
 
-double Hamiltonian(const achilles::ThreeVector &q, const achilles::ThreeVector &p,
+// The phase-space vectors are dimensionless: q holds fm and p holds MeV, the
+// units the potentials are written in.
+double Hamiltonian(const achilles::PSVector &q, const achilles::PSVector &p,
                    std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
-    auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    return sqrt(p.P2() + pow(mass_eff, 2)).real() + vals.rvector;
+    const double pmag = p.P(), qmag = q.P();
+    auto vals = potential->operator()(pmag, qmag);
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
+    return sqrt(pmag * pmag + pow(mass_eff, 2)).real() + vals.rvector;
 }
 
-achilles::ThreeVector dHamiltonian_dp(const achilles::ThreeVector &q,
-                                      const achilles::ThreeVector &p,
-                                      std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
-    auto dpot_dp = potential->derivative_p(p.P(), q.P(), 0.1 * p.P());
+achilles::PSVector dHamiltonian_dp(const achilles::PSVector &q, const achilles::PSVector &p,
+                                   std::shared_ptr<achilles::Potential> potential) {
+    const double pmag = p.P(), qmag = q.P();
+    auto vals = potential->operator()(pmag, qmag);
+    auto dpot_dp = potential->derivative_p(pmag, qmag, 0.1 * pmag);
 
-    auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-    return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
+    double numerator = (vals.rscalar + achilles::Constant::mN().native()) * dpot_dp.rscalar + pmag;
+    double denominator = sqrt(pow(mass_eff, 2) + pmag * pmag).real();
+    return numerator / denominator * p / pmag + dpot_dp.rvector * p / pmag;
 }
 
-achilles::ThreeVector dHamiltonian_dr(const achilles::ThreeVector &q,
-                                      const achilles::ThreeVector &p,
-                                      std::shared_ptr<achilles::Potential> potential) {
-    auto vals = potential->operator()(p.P(), q.P());
-    auto dpot_dr = potential->derivative_r(p.P(), q.P(), 0.1 * q.P());
+achilles::PSVector dHamiltonian_dr(const achilles::PSVector &q, const achilles::PSVector &p,
+                                   std::shared_ptr<achilles::Potential> potential) {
+    const double pmag = p.P(), qmag = q.P();
+    auto vals = potential->operator()(pmag, qmag);
+    auto dpot_dr = potential->derivative_r(pmag, qmag, 0.1 * qmag);
 
-    auto mass_eff =
-        achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-    double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dr.rscalar;
-    double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-    return numerator / denominator * q / q.P() + dpot_dr.rvector * q / q.P();
+    auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                    std::complex<double>(0, 1) * vals.iscalar;
+    double numerator = (vals.rscalar + achilles::Constant::mN().native()) * dpot_dr.rscalar;
+    double denominator = sqrt(pow(mass_eff, 2) + pmag * pmag).real();
+    return numerator / denominator * q / qmag + dpot_dr.rvector * q / qmag;
 }
 
 void RunPropagation(std::shared_ptr<achilles::Potential> potential,
-                    std::shared_ptr<achilles::Nucleus> nucleus, const YAML::Node &config) {
+                    [[maybe_unused]] std::shared_ptr<achilles::Nucleus> nucleus,
+                    const YAML::Node &config) {
     auto kick_mom = config["KickMomentum"].as<std::vector<double>>();
     auto nevents = config["NEvents"].as<size_t>();
 
@@ -76,9 +80,9 @@ void RunPropagation(std::shared_ptr<achilles::Potential> potential,
             double costheta = achilles::Random::Instance().Uniform(-1.0, 1.0);
             double sintheta = sqrt(1 - costheta * costheta);
             double phi = achilles::Random::Instance().Uniform(0.0, 2 * M_PI);
-            achilles::ThreeVector q{r0, 0, 0};
-            achilles::ThreeVector p{current_mom * sintheta * cos(phi),
-                                    current_mom * sintheta * sin(phi), current_mom * costheta};
+            achilles::PSVector q{r0, 0.0, 0.0};
+            achilles::PSVector p{current_mom * sintheta * cos(phi),
+                                 current_mom * sintheta * sin(phi), current_mom * costheta};
             achilles::SymplecticIntegrator si(q, p, potential, dHamiltonian_dr, dHamiltonian_dp,
                                               omega);
             for(size_t j = 0; j < time_steps; ++j) {
@@ -125,10 +129,11 @@ void RunEnergySpectrum(std::shared_ptr<achilles::Potential> potential, const YAM
     while(current_radius <= radii[1]) {
         double current_mom = kick_mom[0];
         while(current_mom <= kick_mom[1]) {
-            double energy_free = pow(current_mom, 2) / 2 / achilles::Constant::mN;
+            double energy_free = pow(current_mom, 2) / 2 / achilles::Constant::mN().native();
             if(config["Potential"].as<std::string>() == "Cooper")
-                energy_free = sqrt(pow(current_mom, 2) + pow(achilles::Constant::mN, 2)) -
-                              achilles::Constant::mN;
+                energy_free =
+                    sqrt(pow(current_mom, 2) + pow(achilles::Constant::mN().native(), 2)) -
+                    achilles::Constant::mN().native();
             double energy = potential->EnergySpectrum(current_radius, current_mom);
             fmt::print("  Radius = {}, Momentum = {}, Energy = {}, Free Energy = {}\n",
                        current_radius, current_mom, energy, energy_free);
@@ -185,8 +190,8 @@ void RunApprox(std::shared_ptr<achilles::Potential> potential, const YAML::Node 
         double exact = potential->Hamiltonian(p, r);
         auto vals = potential->operator()(p, r);
         fmt::print("Exact = {}\n", exact);
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+        auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                        std::complex<double>(0, 1) * vals.iscalar;
         double approx = mass_eff.real() + vals.rvector;
         double approx2 = p + vals.rvector;
         fmt::print("Approx[-1] = {}\n", approx);

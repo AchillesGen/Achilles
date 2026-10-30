@@ -27,7 +27,7 @@ EventHistory &EventHistory::operator=(const EventHistory &other) {
     return *this;
 }
 
-void EventHistory::AddVertex(ThreeVector position, const Particles &in, const Particles &out,
+void EventHistory::AddVertex(ThreePosition position, const Particles &in, const Particles &out,
                              StatusCode status) {
     m_history.push_back(std::make_unique<EventHistoryNode>(cur_idx++, position, status));
     for(auto &part : in) { AddParticleIn(m_history.size() - 1, part); }
@@ -44,7 +44,7 @@ void EventHistory::AddParticleOut(size_t idx, const Particle &part) {
     UpdatePrevNode(part);
 }
 
-void EventHistory::InsertShowerVert(ThreeVector position, const Particle &org, const Particle &in,
+void EventHistory::InsertShowerVert(ThreePosition position, const Particle &org, const Particle &in,
                                     const Particle &out_org, const Particles &other) {
     // Create shower node
     m_history.push_back(
