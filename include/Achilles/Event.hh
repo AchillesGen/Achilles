@@ -83,10 +83,7 @@ class Event {
     const int &ProcessId() const { return m_process_id; }
 
 	/// Returns the new index of the created vertex
-	size_t addVertex(EventVertex::StatusCode,const ThreeVector&);
-	size_t addVertex(EventVertex::StatusCode status,ThreeVector&& position={}) {
-		return addVertex(status,position);
-	}
+	size_t addVertex(EventVertex::StatusCode,const ThreeVector& = {});
 	void addParticle(const Particle&,size_t,size_t);
 	void addParticle(Particle&& part,size_t start_vertex,size_t end_vertex) {
 		addParticle(part,start_vertex,end_vertex);

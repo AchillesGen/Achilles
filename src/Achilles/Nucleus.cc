@@ -119,7 +119,7 @@ void Nucleus::Initialize(size_t Z, size_t A) {
     if(Z == 0 && A == 1) is_free_neutron = true;
 }
 
-vParticles Nucleus::GenerateConfig() {
+vParticles Nucleus::GenerateConfig() const {
     // Handle special case of hydrogen
     if(is_hydrogen) {
         return {Particle{PID::proton(), {ParticleInfo(PID::proton()).Mass(), 0, 0, 0}}};
@@ -145,7 +145,7 @@ vParticles Nucleus::GenerateConfig() {
 }
 
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
-                                                      const PID &pid) noexcept {
+                                                      const PID &pid) const noexcept {
     std::array<double, 3> momentum{};
     momentum[0] = SampleMagnitudeMomentum(position, pid);
     momentum[1] = std::acos(Random::Instance().Uniform(-1.0, 1.0));
@@ -154,7 +154,7 @@ const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
     return ToCartesian(momentum);
 }
 
-double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) noexcept {
+double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) const noexcept {
     // NOTE: To sample on a sphere, need to take a cube-root.
     double kf = FermiMomentum(position, pid);
     if(fermi_gas.correlated) {

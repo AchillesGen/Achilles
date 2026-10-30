@@ -416,6 +416,42 @@ void ProcessGroup::EventSetup(Event& event) {
     Process& process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.leptonIn().Momentum());
     event.ProcessId() = process.ID();
+
+	SetupRemnant(event);
+}
+
+void ProcessGroup::SetupRemnant(Event& event) {
+	EventVertex* targetVertex=event.uniqueVertex(EventVertex::StatusCode::target);
+	Particle& init_nuc=event.particlesIn(targetVertex->Index())[0].get();
+	if(!init_nuc.IsComposite())
+		return;
+
+	// Hadron and Remnant
+	// hnr.first: Hadron to map to ev_hadron
+	// hnr.second: Remnant after the split
+	std::pair<Particle,Particle> hnr;
+	Particle remnant=init_nuc;
+	bool hasFoundPos=false;
+	for(Particle& ev_hadron:event.particlesOut(targetVertex->Index())) {
+		hnr=remnant.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
+		remnant=hnr.second;
+
+		remnant.Momentum()+=hnr.first.Momentum()-ev_hadron.Momentum();
+		ev_hadron.Position()=hnr.first.Position();
+
+		if(!hasFoundPos) {
+			event.Primary()->Position()=hnr.first.Position();
+			targetVertex->Position()=hnr.first.Position();
+			hasFoundPos=true;
+		}
+	}
+
+	// Remaining bound particles are now tracked by the remnant;
+	// composite nucleus no longer needed
+	init_nuc.SubParts().clear();
+
+	remnant.Status()=ParticleStatus::intermediate_residue;
+	event.addParticle(remnant,targetVertex->Index(),Particle::OPEN_END);
 }
 
 std::vector<int> achilles::AllProcessIDs(const std::vector<ProcessGroup> &groups) {

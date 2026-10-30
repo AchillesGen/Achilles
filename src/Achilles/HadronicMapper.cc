@@ -77,28 +77,12 @@ void QESpectralMapper::GeneratePoint(Event& event,
 
 	FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
 
-	Particle init_nuc=event.CurrentNucleus()->InitParticle();
-	// Hadron and Remnant
-	std::pair<Particle,Particle> hnr=
-			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),ParticleStatus::intermediate_residue,
-			init_nuc.Momentum(),init_nuc.Position())
-			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
-	Particle& hadron=hnr.first;
-	Particle& remnant=hnr.second;
+	Particle init_nuc=event.CurrentNucleus()->InitParticle(true);
+	Particle hadron(event.processInfo().m_hadronic.first[0],p_hadron,{},ParticleStatus::initial_state);
 
-	hadron.Status()=ParticleStatus::initial_state;
-
-	FourVector recoil=hadron.Momentum()-p_hadron;
-	hadron.Momentum()=p_hadron;
-	remnant.Momentum()+=recoil;
-
-	ThreeVector& pos=hadron.Position();
-
-	event.Primary()->Position()=pos;
-	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
 	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,event.Primary()->Index());
-	event.addParticle(remnant,targetVertex,Particle::OPEN_END);
 
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
@@ -218,43 +202,14 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
     FourVector p_spectator={E2, pmom2[0], pmom2[1], pmom2[2]};
 
-	Particle init_nuc=event.CurrentNucleus()->InitParticle();
-	// Hadron and Remnant
-	std::pair<Particle,Particle> hnr=
-			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),ParticleStatus::intermediate_residue,
-			init_nuc.Momentum(),init_nuc.Position())
-			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
-	Particle& hadron=hnr.first;
+	Particle init_nuc=event.CurrentNucleus()->InitParticle(true);
+	Particle hadron(event.processInfo().m_hadronic.first[0],p_hadron,{},ParticleStatus::initial_state);
+	Particle spectator(event.processInfo().m_spectator[0],p_spectator,{},ParticleStatus::spectator);
 
-	// Spectator and Final Remnant
-	Particle spectator,remnant;
-	if(hnr.second.IsComposite()) {
-		std::pair<Particle,Particle> snr=
-				hnr.second.splitSingleRandom(event.processInfo().m_spectator[0]);
-		spectator=snr.first;
-		remnant=snr.second;
-	} else if(hnr.second.ID()==event.processInfo().m_spectator[0]) {
-		spectator=hnr.second;
-	} else
-		throw std::runtime_error("No suitable Spectator particle found for Interference process");
-
-	hadron.Status()=ParticleStatus::initial_state;
-	FourVector recoil=hadron.Momentum()-p_hadron;
-	hadron.Momentum()=p_hadron;
-
-	spectator.Status()=ParticleStatus::spectator;
-	spectator.Momentum()=p_spectator;
-	ThreeVector& pos=hadron.Position();
-
-	event.Primary()->Position()=pos;
-	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
 	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,event.Primary()->Index());
 	event.addParticle(spectator,targetVertex,Particle::OPEN_END);
-	if(remnant.ID()!=PID::undefined()) {
-		remnant.Momentum()+=recoil;
-		event.addParticle(remnant,targetVertex,Particle::OPEN_END);
-	}
 
 #ifdef ACHILLES_EVENT_DETAILS
     Mapper<Event>::Print(__PRETTY_FUNCTION__, event, rans);
@@ -380,8 +335,6 @@ void DISSingleNucleonMapper::GeneratePoint(Event& event,const std::vector<double
 	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
 	event.addParticle(m_nucleon,Particle::OPEN_END,targetVertex);
 	event.addParticle(quark,targetVertex,event.Primary()->Index());
-
-	//TODO: Add Hadron Remnant
 }
 
 double DISSingleNucleonMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {
@@ -423,38 +376,21 @@ void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& ran
 	emax = emax > 400 ? 400 : emax;
 	const double energy = emax * rans[3] - 1e-8;
 
-	FourVector pHadron={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
+	FourVector p_hadron={Constant::mN - energy, mom * sinT * cos(phi), mom * sinT * sin(phi), mom * cosT};
 	double x=xMin*pow(xMax/xMin,rans[4]);
-	FourVector pQuark=getQuarkMomentum(lepIn,pHadron,x);
+	FourVector p_quark=getQuarkMomentum(lepIn,p_hadron,x);
 
 	Particle init_nuc=event.CurrentNucleus()->InitParticle();
-	// Hadron and Remnant
 	//TODO: Correct Hadron PID
-	std::pair<Particle,Particle> hnr=
-			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),
-			ParticleStatus::intermediate_residue,init_nuc.Momentum(),init_nuc.Position())
-			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
-	Particle& hadron=hnr.first;
-	Particle& remnant=hnr.second;
+	Particle hadron(event.processInfo().m_hadronic.first[0],p_hadron,{},ParticleStatus::initial_state);
+	Particle quark(event.processInfo().m_hadronic.first[0],p_quark,{},ParticleStatus::initial_state);
 
-	hadron.Status()=ParticleStatus::initial_state;
-	FourVector recoil=hadron.Momentum()-pHadron;
-	hadron.Momentum()=pHadron;
-	remnant.Momentum()+=recoil;
-	
-	ThreeVector& pos=hadron.Position();
-	Particle quark(event.processInfo().m_hadronic.first[0],pQuark,pos,ParticleStatus::initial_state);
-
-	event.Primary()->Position()=pos;
-	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
+	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target);
 	//TODO: Create New Vertex Code for pulling out a quark
 	size_t quarkVertex=event.addVertex(EventVertex::StatusCode::decay,quark.Position());
 	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,quarkVertex);
 	event.addParticle(quark,quarkVertex,event.Primary()->Index());
-	event.addParticle(remnant,targetVertex,Particle::OPEN_END);
-
-	//TODO: Add Hadron Remnant
 }
 
 double DISNucleusMapper::GenerateWeight(const Event& event,std::vector<double>& rans) {

@@ -112,6 +112,7 @@ class ProcessGroup {
     void Summary() const;
     Event GenerateEvent();
 	void EventSetup(Event&);
+	void SetupRemnant(Event&);
     const double &MaxWeight() const { return m_maxweight; }
     double &MaxWeight() { return m_maxweight; }
     void SetOptimize(bool optimize) { b_optimize = optimize; }

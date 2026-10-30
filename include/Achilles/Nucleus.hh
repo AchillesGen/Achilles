@@ -113,11 +113,15 @@ class Nucleus {
     ///@return PID: The pid for the given nucleus
     MOCK PID ID() const { return m_pid; }
 
-    /// Return a particle with initial momentum for at rest nucleus and correct PID
-    ///@return Particle: Particle representing the initial nucleus
-    Particle InitParticle() const {
-        double mass = ParticleInfo(ID()).Mass();
-        return Particle(ID(), {mass, 0, 0, 0}, {}, ParticleStatus::target);
+    /// Returns a particle with initial momentum for at rest nucleus and correct PID.
+	/// If fillNucleons is true, the particle is a composite
+	/// with the output of GenerateConfig() as its subparticles
+    Particle InitParticle(bool fillNucleons=false) const {
+        ParticleInfo info = ParticleInfo(ID());
+        Particle result(info, {info.Mass(), 0, 0, 0}, {}, ParticleStatus::target);
+		if(fillNucleons) 
+			result.SubParts()=GenerateConfig();
+		return result;
     }
 
     /// Return the number of nucleons in the nucleus
@@ -186,13 +190,13 @@ class Nucleus {
     /// @{
 
     /// Generate a configuration of the nucleus based on the density function
-    MOCK vParticles GenerateConfig();
+    MOCK vParticles GenerateConfig() const;
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
-    const std::array<double, 3> GenerateMomentum(const double &, const PID &) noexcept;
+    const std::array<double, 3> GenerateMomentum(const double &, const PID &) const noexcept;
 
-    double SampleMagnitudeMomentum(const double &position, const PID &) noexcept;
+    double SampleMagnitudeMomentum(const double &position, const PID &) const noexcept;
 
     /// Return a string representation of the nucleus
     ///@return std::string: a string representation of the nucleus
