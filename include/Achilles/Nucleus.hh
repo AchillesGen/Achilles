@@ -188,10 +188,6 @@ class Nucleus {
     /// Generate a configuration of the nucleus based on the density function
     MOCK vParticles GenerateConfig();
 
-	/// Returns a NuclearRemnant representing a nucleus that hasn't yet had
-	/// any particles removed, using the particles generated from GenerateConfig()
-	NuclearRemnant MakeCompositeNucleus(ParticleStatus=ParticleStatus::target);
-
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum
     const std::array<double, 3> GenerateMomentum(const double &, const PID &) noexcept;

@@ -110,7 +110,7 @@ class PID {
     constexpr int NuclearZ() const { return static_cast<int>((Abs_() / 10000) % 1000); }
     constexpr int NuclearA() const { return static_cast<int>((Abs_() / 10) % 1000); }
     constexpr int NuclearI() const { return static_cast<int>(Abs_() % 10); }
-	constexpr bool IsNucleus() const { return (id/100000000)==10; }
+	constexpr bool IsNucleus() const { return Abs_()>1000000000; }
 
     // Stream Operator
     template <typename OStream> friend OStream &operator<<(OStream &os, const PID &pid) {

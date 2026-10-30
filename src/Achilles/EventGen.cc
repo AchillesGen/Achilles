@@ -72,7 +72,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     runDecays = config.GetAs<bool>("Main/RunDecays");
 
     // Initialize Sherpa
-    auto backend = config.GetAs<std::string>("Backend/Name");
+    std::string backend = config.GetAs<std::string>("Backend/Name");
     if(backend.find("Sherpa") != std::string::npos || backend.find("BSM") != std::string::npos) {
 #ifdef ACHILLES_SHERPA_INTERFACE
         spdlog::debug("Setting up Sherpa settings");

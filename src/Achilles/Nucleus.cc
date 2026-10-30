@@ -144,10 +144,6 @@ vParticles Nucleus::GenerateConfig() {
     return particles;
 }
 
-NuclearRemnant Nucleus::MakeCompositeNucleus(ParticleStatus status) {
-	return NuclearRemnant(GenerateConfig(),status);
-}
-
 const std::array<double, 3> Nucleus::GenerateMomentum(const double &position,
                                                       const PID &pid) noexcept {
     std::array<double, 3> momentum{};

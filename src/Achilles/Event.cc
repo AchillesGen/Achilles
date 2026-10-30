@@ -182,7 +182,7 @@ size_t Event::addVertex(EventVertex::StatusCode status,const ThreeVector& positi
     vertices.push_back(std::make_unique<EventVertex>(idx,status,position));
 	return idx;
 }
-
+ 
 void Event::addParticle(const Particle& part,size_t start_vertex,size_t end_vertex) {
 	hist_particles.push_back(part);
 	hist_particles.back().startVertex()=start_vertex;
@@ -250,14 +250,16 @@ achilles::crefParticles Event::allFinalStateParticles() const {
 
 achilles::vParticles Event::InteractableHadrons() {
 	vParticles result;
-	for(Particle& part:hist_particles) if(part.isInFinalState()) {
-		if(part.isRemnant()) {
-			for(Particle& sub:static_cast<NuclearRemnant*>(&part)->sub_parts)
-				if(ParticleInfo(sub.ID()).IsHadron())
-					result.push_back(part);
-		} else if(ParticleInfo(part.ID()).IsHadron())
-			result.push_back(part);
-	}
+	for(Particle& part:hist_particles)
+		if(part.isInFinalState()) {
+			spdlog::info("{}",part.SubParts());
+			if(part.IsComposite()&&part.ID().IsNucleus()) {
+				for(Particle& sub:part.SubParts())
+					if(sub.Info().IsHadron())
+						result.push_back(sub);
+			} else if(part.Info().IsHadron())
+				result.push_back(part);
+		}
 	return result;
 }
 

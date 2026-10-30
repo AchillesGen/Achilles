@@ -410,6 +410,8 @@ void Cascade::PropagateAll(vParticles &particles, double step) const {
 void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
                      [[maybe_unused]] const std::size_t &maxSteps) {
 	hadrons=event.InteractableHadrons();
+	for(Particle& p:hadrons)
+		spdlog::info("Cascade Hadron - {}",p);
 	if(Particle* rem=event.Remnant())
 		remnant=*rem;
 	else

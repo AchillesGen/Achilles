@@ -77,9 +77,11 @@ void QESpectralMapper::GeneratePoint(Event& event,
 
 	FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
 
+	Particle init_nuc=event.CurrentNucleus()->InitParticle();
 	// Hadron and Remnant
 	std::pair<Particle,Particle> hnr=
-			event.CurrentNucleus()->MakeCompositeNucleus(ParticleStatus::intermediate_residue)
+			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),ParticleStatus::intermediate_residue,
+			init_nuc.Momentum(),init_nuc.Position())
 			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
 	Particle& hadron=hnr.first;
 	Particle& remnant=hnr.second;
@@ -88,13 +90,13 @@ void QESpectralMapper::GeneratePoint(Event& event,
 
 	FourVector recoil=hadron.Momentum()-p_hadron;
 	hadron.Momentum()=p_hadron;
-	remnant.ApplyImpulse(recoil);
+	remnant.Momentum()+=recoil;
 
 	ThreeVector& pos=hadron.Position();
 
 	event.Primary()->Position()=pos;
 	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
-	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,event.Primary()->Index());
 	event.addParticle(remnant,targetVertex,Particle::OPEN_END);
 
@@ -216,18 +218,19 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
     FourVector p_hadron={Constant::mN-energy, mom*sinT*cos(phi), mom*sinT*sin(phi), mom*cosT};
     FourVector p_spectator={E2, pmom2[0], pmom2[1], pmom2[2]};
 
-	// Hadron and Intermediate Remnant
+	Particle init_nuc=event.CurrentNucleus()->InitParticle();
+	// Hadron and Remnant
 	std::pair<Particle,Particle> hnr=
-			event.CurrentNucleus()->MakeCompositeNucleus(ParticleStatus::intermediate_residue)
+			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),ParticleStatus::intermediate_residue,
+			init_nuc.Momentum(),init_nuc.Position())
 			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
 	Particle& hadron=hnr.first;
 
 	// Spectator and Final Remnant
 	Particle spectator,remnant;
-	if(hnr.second.isRemnant()) {
+	if(hnr.second.IsComposite()) {
 		std::pair<Particle,Particle> snr=
-				static_cast<NuclearRemnant*>(&hnr.second)->
-				splitSingleRandom(event.processInfo().m_spectator[0]);
+				hnr.second.splitSingleRandom(event.processInfo().m_spectator[0]);
 		spectator=snr.first;
 		remnant=snr.second;
 	} else if(hnr.second.ID()==event.processInfo().m_spectator[0]) {
@@ -245,11 +248,11 @@ void IntfSpectralMapper::GeneratePoint(Event& event,
 
 	event.Primary()->Position()=pos;
 	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
-	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,event.Primary()->Index());
 	event.addParticle(spectator,targetVertex,Particle::OPEN_END);
 	if(remnant.ID()!=PID::undefined()) {
-		remnant.ApplyImpulse(recoil);
+		remnant.Momentum()+=recoil;
 		event.addParticle(remnant,targetVertex,Particle::OPEN_END);
 	}
 
@@ -424,10 +427,12 @@ void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& ran
 	double x=xMin*pow(xMax/xMin,rans[4]);
 	FourVector pQuark=getQuarkMomentum(lepIn,pHadron,x);
 
+	Particle init_nuc=event.CurrentNucleus()->InitParticle();
 	// Hadron and Remnant
 	//TODO: Correct Hadron PID
 	std::pair<Particle,Particle> hnr=
-			event.CurrentNucleus()->MakeCompositeNucleus(ParticleStatus::intermediate_residue)
+			Particle::NuclearRemnant(event.CurrentNucleus()->GenerateConfig(),
+			ParticleStatus::intermediate_residue,init_nuc.Momentum(),init_nuc.Position())
 			.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
 	Particle& hadron=hnr.first;
 	Particle& remnant=hnr.second;
@@ -435,7 +440,7 @@ void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& ran
 	hadron.Status()=ParticleStatus::initial_state;
 	FourVector recoil=hadron.Momentum()-pHadron;
 	hadron.Momentum()=pHadron;
-	remnant.ApplyImpulse(recoil);
+	remnant.Momentum()+=recoil;
 	
 	ThreeVector& pos=hadron.Position();
 	Particle quark(event.processInfo().m_hadronic.first[0],pQuark,pos,ParticleStatus::initial_state);
@@ -444,7 +449,7 @@ void DISNucleusMapper::GeneratePoint(Event& event,const std::vector<double>& ran
 	size_t targetVertex=event.addVertex(EventVertex::StatusCode::target,pos);
 	//TODO: Create New Vertex Code for pulling out a quark
 	size_t quarkVertex=event.addVertex(EventVertex::StatusCode::decay,quark.Position());
-	event.addParticle(event.CurrentNucleus()->InitParticle(),Particle::OPEN_END,targetVertex);
+	event.addParticle(init_nuc,Particle::OPEN_END,targetVertex);
 	event.addParticle(hadron,targetVertex,quarkVertex);
 	event.addParticle(quark,quarkVertex,event.Primary()->Index());
 	event.addParticle(remnant,targetVertex,Particle::OPEN_END);

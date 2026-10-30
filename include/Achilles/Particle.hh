@@ -68,10 +68,6 @@ inline auto format_as(achilles::ParticleStatus s) {
 ///
 /// @endrst
 
-class Particle;
-class CompositeParticle;
-class NuclearRemnant;
-
 class Particle {
   public:
 	/// Value to store in start_vertex or end_vertex when this is
@@ -120,7 +116,7 @@ class Particle {
 
     Particle(const Particle &other)
         : info{other.info}, momentum{other.momentum}, position{other.position},
-          status{other.status}, mothers{other.mothers}, formationZone{other.formationZone},
+          status{other.status}, sub_parts{other.sub_parts}, mothers{other.mothers}, formationZone{other.formationZone},
 		  start_vertex{other.start_vertex}, end_vertex{other.end_vertex} {}
 
     Particle(Particle &&) = default;
@@ -128,7 +124,7 @@ class Particle {
     Particle &operator=(Particle &&) = default;
 
     /// Default destructor
-    virtual ~Particle() = default;
+    ~Particle() = default;
     ///@}
 
     /// @name Setters
@@ -220,6 +216,10 @@ class Particle {
 	size_t& endVertex() { return end_vertex; }
 	const size_t& endVertex() const { return end_vertex; }
 
+	/// The list of subparticles contained by this (composite) particle
+	vParticles& SubParts() { return sub_parts; }
+	const vParticles& SubParts() const { return sub_parts; }
+
     /// Return a vector of the mother particle indices
     ///@return std::vector<Particle>: A vector of Particles referring to the mothers
     const std::vector<Particle> &Mothers() const noexcept { return mothers; }
@@ -290,11 +290,8 @@ class Particle {
     ///@return bool: True if the particle should be written out, False otherwise
     bool IsExternal() const noexcept { return IsInitial() || IsFinal(); }
 
-	/// Overridden by NuclearRemnant class
-	virtual bool isRemnant() const noexcept { return false; }
-
-	/// Overridden by CompositeParticle class
-	virtual bool isComposite() const noexcept { return false; }
+	/// Whether this particle has any subparticles making it up
+	bool IsComposite() const noexcept { return !sub_parts.empty(); }
 
     /// Propagate the particle according to its momentum by a given time step
     ///@param timeStep: The amount of time to propagate the particle for
@@ -314,16 +311,12 @@ class Particle {
 
     /// Rotate the particle's spatial momentum using a 3x3 rotation matrix
     ///@param rot_mat: the 3x3 rotation matrix
-    virtual void Rotate(const std::array<double, 9> &) noexcept;
-    virtual void RotateBack(const std::array<double, 9> &) noexcept;
+    void Rotate(const std::array<double, 9> &) noexcept;
+    void RotateBack(const std::array<double, 9> &) noexcept;
 
 	/// Adds the given vector to the current particle's position
-	virtual void Move(const ThreeVector& dx) { position+=dx; }
+	void Move(const ThreeVector& dx);
 	void Mode(ThreeVector&& dx) { Move(dx); }
-
-	/// Adds the given vector to the current particle's momentum
-	virtual void ApplyImpulse(const FourVector& dp) { momentum+=dp; }
-	void ApplyImpulse(FourVector&& dp) { ApplyImpulse(dp); }
 
     /// Return a string representation of the particle
     ///@return std::string: a string representation of the particle
@@ -361,76 +354,20 @@ class Particle {
     friend std::istream &operator>>(std::istream &, Particle &);
     /// @}
 
-  protected:
-    ParticleInfo info;
-    FourVector momentum;
-    ThreeVector position;
-    ParticleStatus status;
-    vParticles mothers, daughters;
-    double formationZone;
-    double distanceTraveled = 0.0;
-	size_t start_vertex=OPEN_END, end_vertex=OPEN_END;
-};
-
-inline FourVector sumMomenta(const vParticles& parts) {
-	FourVector result{};
-	for(const Particle& p:parts)
-		result+=p.Momentum();
-	return result;
-}
-inline ThreeVector avgPosition(const vParticles& parts) {
-	ThreeVector result{};
-	for(const Particle& p:parts)
-		result+=p.Position();
-	result/=static_cast<double>(parts.size());
-	return result;
-}
-
-class CompositeParticle: public Particle {
-  public:
-	CompositeParticle(const vParticles& parts,PID pid,ParticleStatus i_status):
-		Particle(pid,sumMomenta(parts),avgPosition(parts),i_status), sub_parts{parts} {}
-	CompositeParticle(vParticles&& parts,PID pid,ParticleStatus i_status):
-		CompositeParticle(parts,pid,i_status) {}
-	CompositeParticle(const CompositeParticle& other):
-		Particle(other), sub_parts{other.sub_parts} {}
-	virtual ~CompositeParticle() = default;
-	CompositeParticle& operator=(const CompositeParticle&) = default;
-	CompositeParticle& operator=(CompositeParticle&&) = default;
-
-	void Rotate(const std::array<double, 9> &) noexcept override;
-	void RotateBack(const std::array<double, 9> &) noexcept override;
-	void Move(const ThreeVector&) override;
-	void ApplyImpulse(const FourVector&) override;
-	bool isComposite() const noexcept override { return true; }
-
-	vParticles sub_parts;
-};
-
-inline PID remnantID(const vParticles& parts) {
-	int A=0,Z=0;
-	for(const Particle& part:parts) {
-		if(part.Info().IsNucleon()) {
-			A++;
-			if(part.ID()==PID::proton())
-				Z++;
+	static Particle NuclearRemnant(const vParticles& parts,ParticleStatus _status,
+			const FourVector& mom,const ThreeVector& pos={}) {
+		int A=0,Z=0;
+		for(const Particle& part:parts) {
+			if(part.Info().IsNucleon()) {
+				A++;
+				if(part.ID()==PID::proton())
+					Z++;
+			}
 		}
+		Particle result(PID::MakeNucleus(Z,A),mom,pos,_status);
+		result.sub_parts=parts;
+		return result;
 	}
-	return PID::MakeNucleus(Z,A);
-}
-
-class NuclearRemnant: public CompositeParticle {
-  public:
-	NuclearRemnant(const vParticles& parts,ParticleStatus i_status=ParticleStatus::residue):
-		CompositeParticle(parts,remnantID(parts),i_status) {}
-	NuclearRemnant(vParticles&& parts={},ParticleStatus i_status=ParticleStatus::residue):
-		NuclearRemnant(parts,i_status) {}
-	NuclearRemnant(const NuclearRemnant& other): CompositeParticle(other) {}
-	~NuclearRemnant() = default;
-	NuclearRemnant& operator=(const NuclearRemnant&) = default;
-	NuclearRemnant& operator=(NuclearRemnant&&) = default;
-
-	bool isRemnant() const noexcept override { return true; }
 
 	/// Returns a particle representing this remnant with the specified
 	/// particle removed, as well as the particle that was removed.
@@ -439,15 +376,20 @@ class NuclearRemnant: public CompositeParticle {
 	/// - second = everything else. If there are 2 or more particles remaining,
 	///	second is another NuclearRemnant. Otherwise, it's a single Particle.
 	std::pair<Particle,Particle> splitSingle(size_t);
-	/// Attempts to find a particle matching the argument within this remnant,
-	/// and splits it off if found. If not found, an error is thrown.
-	std::pair<Particle,Particle> splitSingle(const Particle&);
 	/// Splits off a randomly-selected (uniform) particle with the given PID
 	/// from this composite, if such a particle exists
 	std::pair<Particle,Particle> splitSingleRandom(PID);
-	/// Returns a new NuclearRemnant representing this remnant
-	/// with the addition of the new particle.
-	NuclearRemnant absorb(const Particle&);
+
+  private:
+    ParticleInfo info;
+    FourVector momentum;
+    ThreeVector position;
+    ParticleStatus status;
+	vParticles sub_parts;
+    vParticles mothers, daughters;
+    double formationZone;
+    double distanceTraveled = 0.0;
+	size_t start_vertex=OPEN_END, end_vertex=OPEN_END;
 };
 
 /// Find the time to closest approach between two particles

@@ -49,9 +49,9 @@ void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans)
 	p_lepOut=p_lepOut.Boost(boostVec);
 	p_hadOut=p_hadOut.Boost(boostVec);
 
-	// Final-state particles at this stage should receive the "propagating" status.
+	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,lepIn.Position(),ParticleStatus::final_state);
+	// Final-state hadrons at this stage should receive the "propagating" status.
 	// The switch to "final_state" happens after the cascade.
-	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,lepIn.Position(),ParticleStatus::propagating);
 	Particle hadOut(event.processInfo().m_hadronic.second[0],p_hadOut,hadIn.Position(),ParticleStatus::propagating);
 
 	size_t primary=event.Primary()->Index();
@@ -132,7 +132,7 @@ void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &ran
                     rans[1], rans[2]);
     Isotropic2Momenta(p23, s2, s3, p_lepOut, p_hadOut0, rans[3], rans[4], m_ctmin, m_ctmax);
 
-	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,lepIn.Position(),ParticleStatus::propagating);
+	Particle lepOut(event.processInfo().m_leptonic.second[0],p_lepOut,lepIn.Position(),ParticleStatus::final_state);
 	Particle hadOut0(event.processInfo().m_hadronic.second[0],p_hadOut0,hadIn.Position(),ParticleStatus::propagating);
 	Particle hadOut1(event.processInfo().m_hadronic.second[1],p_hadOut1,hadIn.Position(),ParticleStatus::propagating);
 

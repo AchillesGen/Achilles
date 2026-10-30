@@ -60,9 +60,13 @@ void Particle::BackPropagate(const double &time) noexcept {
 
 void Particle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
     momentum = momentum.Rotate(rot_mat);
+	for(Particle& part:sub_parts)
+		part.Rotate(rot_mat);
 }
 void Particle::RotateBack(const std::array<double, 9> &rot_mat) noexcept {
     momentum = momentum.RotateBack(rot_mat);
+	for(Particle& part:sub_parts)
+		part.RotateBack(rot_mat);
 }
 
 bool Particle::equalsIgnoreVertices(const Particle &other) const noexcept {
@@ -122,32 +126,14 @@ bool operator==(const Particle &lhs, const std::reference_wrapper<Particle> &rhs
     return lhs == rhs.get();
 }
 
-void CompositeParticle::Rotate(const std::array<double, 9> &rot_mat) noexcept {
-	Particle::Rotate(rot_mat);
-	for(Particle& part:sub_parts)
-		part.Rotate(rot_mat);
-}
-void CompositeParticle::RotateBack(const std::array<double, 9> &rot_mat) noexcept {
-	Particle::RotateBack(rot_mat);
-	for(Particle& part:sub_parts)
-		part.RotateBack(rot_mat);
-}
-void CompositeParticle::Move(const ThreeVector& dx) {
-	Particle::Move(dx);
+void Particle::Move(const ThreeVector& dx) {
+	position+=dx;
 	for(Particle& part:sub_parts)
 		part.Move(dx);
 }
-void CompositeParticle::ApplyImpulse(const FourVector& dp) {
-	Particle::ApplyImpulse(dp);
-	double totalMass=0.;
-	for(Particle& part:sub_parts)
-		totalMass+=part.Mass();
-	for(Particle& part:sub_parts)
-		part.ApplyImpulse(dp*(part.Mass()/totalMass));
-}
 
 
-std::pair<Particle,Particle> NuclearRemnant::splitSingle(size_t partIndex) {
+std::pair<Particle,Particle> Particle::splitSingle(size_t partIndex) {
 	switch(sub_parts.size()) {
 		case 0:
 			return std::pair<Particle,Particle>(Particle(),Particle());
@@ -161,15 +147,10 @@ std::pair<Particle,Particle> NuclearRemnant::splitSingle(size_t partIndex) {
 	for(size_t i=0;i<sub_parts.size();i++)
 		if(i!=partIndex)
 			remaining.push_back(sub_parts[i]);
-	return std::pair<Particle,Particle>(sub_parts[partIndex],NuclearRemnant(remaining,status));
+	return std::pair<Particle,Particle>(sub_parts[partIndex],
+		NuclearRemnant(remaining,status,momentum-sub_parts[partIndex].Momentum(),position));
 }
-std::pair<Particle,Particle> NuclearRemnant::splitSingle(const Particle& match) {
-	for(size_t i=0;i<sub_parts.size();i++)
-		if(sub_parts[i].equalsIgnoreVertices(match))
-			return splitSingle(i);
-	throw std::runtime_error("NuclearRemnant::splitSingle(): No matching particle found in this remnant.");
-}
-std::pair<Particle,Particle> NuclearRemnant::splitSingleRandom(PID type) {
+std::pair<Particle,Particle> Particle::splitSingleRandom(PID type) {
 	std::vector<size_t> candidates;
 	for(size_t i=0;i<sub_parts.size();i++)
 		if(sub_parts[i].ID()==type)
@@ -177,11 +158,6 @@ std::pair<Particle,Particle> NuclearRemnant::splitSingleRandom(PID type) {
 	if(candidates.empty())
 		throw std::runtime_error(fmt::format("NuclearRemnant::splitSingleRandom(): No particle with PID {} was found",type));
 	return splitSingle(Random::Instance().Pick(candidates));
-}
-NuclearRemnant NuclearRemnant::absorb(const Particle& part) {
-	vParticles parts=sub_parts;
-	parts.push_back(part);
-	return NuclearRemnant(parts,status);
 }
 
 } // namespace achilles
