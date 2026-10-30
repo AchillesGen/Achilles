@@ -104,25 +104,22 @@ QEFermiGas::QEFermiGas(const YAML::Node &config, const YAML::Node &form_factor,
     m_eb = fg["Binding"].as<double>();
     if(fg["PauliBlocking"]) m_pauli = fg["PauliBlocking"].as<bool>();
 
+    ReferenceHandler::Handle().AddReference(
+        {ReferenceType::inspire, "Smith:1972xh", "Relativistic Fermi gas"});
+    spdlog::info("QEFermiGas: {} with kF = {}, Eb = {} MeV, Pauli blocking {}", dist,
+                 m_local ? "local" : fmt::format("{} MeV", m_kf), m_eb, m_pauli ? "on" : "off");
+
     if(m_distribution == QEFermiGas::MomentumDistribution::CFG) {
         m_c0 = fg["c0"].as<double>();
         m_lambda = fg["lambda"].as<double>();
         if(m_lambda <= 1) throw std::runtime_error("QEFermiGas: CFG requires lambda > 1");
         m_alpha0 = 1 - (1 - 1 / m_lambda) * m_c0 / (M_PI * M_PI);
         m_alpha1 = m_c0 * std::pow(m_kf, 4) / (3 * M_PI * M_PI);
-    }
-
-    ReferenceHandler::Handle().AddReference(
-        {ReferenceType::inspire, "Smith:1972xh", "Relativistic Fermi gas"});
-    if(m_distribution == QEFermiGas::MomentumDistribution::CFG)
         ReferenceHandler::Handle().AddReference(
             {ReferenceType::inspire, "Hen:2014yfa", "Correlated Fermi gas"});
-
-    spdlog::info("QEFermiGas: {} with kF = {}, Eb = {} MeV, Pauli blocking {}", dist,
-                 m_local ? "local" : fmt::format("{} MeV", m_kf), m_eb, m_pauli ? "on" : "off");
-    if(m_distribution == QEFermiGas::MomentumDistribution::CFG)
         spdlog::info("QEFermiGas: c0 = {}, lambda = {}, alpha0 = {}, tail fraction = {}", m_c0,
                      m_lambda, m_alpha0, 1 - m_alpha0);
+    }
 }
 
 std::unique_ptr<achilles::NuclearModel> QEFermiGas::Construct(const YAML::Node &config) {
@@ -136,7 +133,9 @@ std::string QEFermiGas::InspireHEP() const {
 
 // Local Fermi sea from the nucleus' proton and neutron densities, on 0.01 fm radial bins
 void QEFermiGas::SetNucleus(const Nucleus &nucleus) {
-    if(!m_local || nucleus.ID() == PID::hydrogen() || nucleus.ID() == PID::free_neutron()) return;
+    if(nucleus.ID() == PID::hydrogen() || nucleus.ID() == PID::free_neutron())
+        throw std::runtime_error("QEFermiGas: not valid for hydrogen or a free neutron");
+    if(!m_local) return;
     constexpr double dr = 0.01;
     const auto nbins = static_cast<size_t>(std::ceil(nucleus.Radius() / dr));
     std::vector<double> edges(nbins + 1), rho_p(nbins), rho_n(nbins);
@@ -156,7 +155,7 @@ void QEFermiGas::SetNucleus(const Nucleus &nucleus) {
 std::optional<std::pair<double, double>> QEFermiGas::StruckNucleonRadii(double p, PID in,
                                                                         double pout,
                                                                         PID out) const {
-    if(!m_local || is_hydrogen || is_free_neutron) return std::nullopt;
+    if(!m_local) return std::nullopt;
     return m_sea.AllowedRadii(p, in, pout, out);
 }
 
@@ -178,13 +177,8 @@ double QEFermiGas::Density(double p) const {
     return 3.0 / (4 * M_PI * std::pow(m_kf, 3)) * Occupation(p);
 }
 
-std::string QEFermiGas::PhaseSpace(PID nuc_id) const {
-    if(nuc_id != PID::hydrogen() && nuc_id != PID::free_neutron()) return PSName();
-    if(nuc_id == PID::hydrogen())
-        is_hydrogen = true;
-    else
-        is_free_neutron = true;
-    return Coherent::Name();
+std::string QEFermiGas::PhaseSpace(PID) const {
+    return PSName();
 }
 
 // NOTE: the second argument is the list of spectators (see XSecBackend::InitialStateFactor),
@@ -192,9 +186,6 @@ std::string QEFermiGas::PhaseSpace(PID nuc_id) const {
 double QEFermiGas::InitialStateWeight(const std::vector<Particle> &had_in,
                                       const std::vector<Particle> &, size_t nprotons,
                                       size_t nneutrons) const {
-    if(is_hydrogen) return had_in[0].ID() == PID::proton() ? 1 : 0;
-    if(is_free_neutron) return had_in[0].ID() == PID::neutron() ? 1 : 0;
-
     if(m_local)
         return 2 * m_sea.Volume(had_in[0].Momentum().P(), had_in[0].ID()) /
                std::pow(2 * M_PI * Constant::HBARC, 3);
@@ -205,13 +196,13 @@ double QEFermiGas::InitialStateWeight(const std::vector<Particle> &had_in,
 }
 
 double QEFermiGas::PauliFactor(double pout) const {
-    if(!m_pauli || is_hydrogen || is_free_neutron) return 1;
+    if(!m_pauli) return 1;
     return 1 - Occupation(pout);
 }
 
 double QEFermiGas::PauliFactor(double p, PID in, double pout, PID out) const {
     if(!m_local) return PauliFactor(pout);
-    if(!m_pauli || is_hydrogen || is_free_neutron) return 1;
+    if(!m_pauli) return 1;
     return m_sea.PauliFactor(p, in, pout, out);
 }
 
@@ -221,9 +212,6 @@ achilles::NuclearModel::Currents QEFermiGas::CalcCurrents(const std::vector<Part
                                                           const std::vector<Particle> &,
                                                           const FourVector &q,
                                                           const FFInfoMap &ff) const {
-    if(had_in[0].ID() == PID::neutron() && is_hydrogen) return {};
-    if(had_in[0].ID() == PID::proton() && is_free_neutron) return {};
-
     auto pIn = had_in[0].Momentum();
     auto pOut = had_out[0].Momentum();
     auto qVec = q;

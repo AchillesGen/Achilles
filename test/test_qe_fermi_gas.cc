@@ -320,4 +320,16 @@ TEST_CASE("QEFermiGas with a local Fermi gas", "[QEFermiGas]") {
         CHECK_FALSE(MakeModel("{Distribution: RFG, kF: 221, Binding: 25}")
                         ->StruckNucleonRadii(100, proton, 400, proton));
     }
+
+    SECTION("Hydrogen is rejected") {
+        achilles::Particles particles{achilles::Particle(achilles::PID::proton())};
+        achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Global, {}};
+        auto density = std::make_unique<MockDensity>();
+        REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+        achilles::Nucleus hydrogen(1, 1, 0, 225, "data/densities/c12.prova.txt",
+                                   "data/densities/c12.prova.txt", fermiGas, std::move(density));
+        REQUIRE(hydrogen.ID() == achilles::PID::hydrogen());
+        CHECK_THROWS(MakeModel("{Distribution: RFG, kF: 221, Binding: 25}")->SetNucleus(hydrogen));
+        CHECK_THROWS(MakeModel("{Distribution: RFG, kF: Local, Binding: 25}")->SetNucleus(hydrogen));
+    }
 }

@@ -96,8 +96,6 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     bool m_pauli{true};
     bool m_local{false};
     LocalFermiSea m_sea;
-    mutable bool is_hydrogen{false};
-    mutable bool is_free_neutron{false};
 };
 
 } // namespace achilles
