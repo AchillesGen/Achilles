@@ -23,6 +23,30 @@ to the physics where appropriate.
    :local:
 
 
+*****************************
+Physical Quantities and Units
+*****************************
+
+Every dimensionful value in a run card must name its unit; a bare number is rejected when the
+card is loaded rather than silently assumed to be in MeV or fm. Write the value and unit together,
+or as an explicit map:
+
+.. code-block:: yaml
+
+   Energy: 1000 MeV                  # or 1 GeV, or { value: 1, unit: GeV }
+   Step: 0.04 fm
+   CrossSection: 0 mb
+
+The accepted units are checked against the quantity's dimension, so ``Step: 0.04 MeV`` is an error:
+
+- Energy, momentum and mass (``Energy``, ``MinEnergy``, ``MaxEnergy``, ``Binding``,
+  ``Fermi Momentum``): ``eV``, ``keV``, ``MeV``, ``GeV``, ``TeV``
+- Length (``Step``): ``fm``, ``nm``, ``m``, ``MeV^-1``, ``GeV^-1``
+- Cross section (``CrossSection``): ``fb``, ``pb``, ``nb``, ``ub``, ``mb``, ``b``, ``fm^2``,
+  ``MeV^-2``, ``GeV^-2``
+
+Dimensionless options remain plain numbers.
+
 ************************
 Including External Files
 ************************
@@ -143,7 +167,7 @@ sub-node that selects the beam type and its parameters.
          PID: 14
          Beam Params:
            Type: Monochromatic
-           Energy: 1000
+           Energy: 1000 MeV
 
 Multiple entries are allowed when running with more than one beam species simultaneously;
 however, all beams must share the same energy range.
@@ -247,7 +271,7 @@ hadronic final-state particles through the nucleus after the hard interaction.
    Cascade:
      Run: false
      Interactions: !include "data/default/VirtResInteractions.yml"
-     Step: 0.04
+     Step: 0.04 fm
      Probability: Cylinder
      InMedium: None
      PotentialProp: false
@@ -368,7 +392,7 @@ zero-cross-section placeholders to hyperon and photon channels:
          - Incoming: [22, 2112]
            Outgoing:
              - Outgoing: [22, 2112]
-               CrossSection: 0
+               CrossSection: 0 mb
 
 Each entry under ``InitialStates`` maps a pair of incoming PIDs to one or more
 outgoing channels, each with a constant ``CrossSection`` in mb.

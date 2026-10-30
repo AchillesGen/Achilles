@@ -62,6 +62,11 @@ template <int D> constexpr const char *canonical_unit_name() {
     return D == 0 ? "" : D == 1 ? "MeV" : D == -1 ? "MeV^-1" : "MeV^-2";
 }
 
+/// The unit a person would normally write for dimension D, for error hints.
+template <int D> constexpr const char *suggested_unit_name() {
+    return D == -1 ? "fm" : D == -2 ? "mb" : canonical_unit_name<D>();
+}
+
 /// Names of the units accepted for dimension D, for error messages.
 template <int D> std::string known_units();
 
@@ -143,7 +148,7 @@ template <int D> Quantity<D> from_literal(const std::string &text) {
 
     if(D != 0 && unit_name.empty())
         throw std::runtime_error("Units: '" + text + "' is a bare number; name the unit, e.g. '" +
-                                 text + " " + canonical_unit_name<D>() + "' (expected one of " +
+                                 text + " " + suggested_unit_name<D>() + "' (expected one of " +
                                  known_units<D>() + ")");
     return from_declared<D>(value, unit_name);
 }
