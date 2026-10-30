@@ -4,12 +4,16 @@ on:
   push:
     branches:
       - landing_page
+  workflow_call:
 
 jobs:
   landing:
     runs-on: ubuntu-latest
     steps:
+      # Callers run with their own ref, so pin the branch explicitly
       - uses: actions/checkout@v4
+        with:
+          ref: landing_page
 
       - name: Set up Python
         uses: actions/setup-python@v5
