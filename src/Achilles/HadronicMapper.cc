@@ -9,6 +9,7 @@
 
 using achilles::CoherentMapper;
 using achilles::IntfSpectralMapper;
+using achilles::MomentumMapper;
 using achilles::QESpectralMapper;
 
 CoherentMapper::CoherentMapper(const ProcessInfo &info, size_t idx)
@@ -246,4 +247,83 @@ double IntfSpectralMapper::GenerateWeight(const std::vector<FourVector> &point,
 #endif
 
     return wgt;
+}
+
+// ---------------------------------------------------------------------------------------------
+// MomentumMapper
+// ---------------------------------------------------------------------------------------------
+MomentumMapper::MomentumMapper(const ProcessInfo &info, size_t idx)
+    : HadronicBeamMapper(info, idx) {
+    SetMasses(info.Masses());
+}
+
+void MomentumMapper::Configure(const YAML::Node &settings) {
+    m_pcut = settings["PCut"].as<double>();
+    m_binding = settings["Binding"].as<double>();
+}
+
+double MomentumMapper::InitialEnergy(double p) const {
+    return std::sqrt(p * p + Constant::mN2) - m_binding;
+}
+
+// Largest s reachable at momentum p (nucleon anti-parallel to the beam)
+double MomentumMapper::SMax(const FourVector &k, double p) const {
+    const double e = InitialEnergy(p);
+    const double m2 = e * e - p * p;
+    return k.M2() + m2 + 2 * (k.E() * e + k.P() * p);
+}
+
+// cos(theta) of p w.r.t. the beam (z) axis must satisfy s >= Smin
+double MomentumMapper::CosMax(const FourVector &k, double p) const {
+    if(p <= 0) return 1;
+    const double e = InitialEnergy(p);
+    const double m2 = e * e - p * p;
+    const double c = (k.M2() + m2 + 2 * k.E() * e - Smin()) / (2 * k.P() * p);
+    return c > 1 ? 1 : (c < -1 ? -1 : c);
+}
+
+// SMax(p) increases with p, so the allowed region is [pmin, pcut]; find pmin by bisection
+MomentumMapper::Limits MomentumMapper::MomentumLimits(const FourVector &k) const {
+    const double smin = Smin();
+    if(SMax(k, m_pcut) < smin) return {0, m_pcut, false};
+    if(SMax(k, 0) >= smin) return {0, m_pcut, true};
+    double lo = 0, hi = m_pcut;
+    for(size_t i = 0; i < 60; ++i) {
+        const double mid = 0.5 * (lo + hi);
+        (SMax(k, mid) >= smin ? hi : lo) = mid;
+    }
+    return {hi, m_pcut, true};
+}
+
+void MomentumMapper::GeneratePoint(std::vector<FourVector> &point,
+                                   const std::vector<double> &rans) {
+    const auto lim = MomentumLimits(point[0]);
+    const double mom = lim.pmin + (lim.pmax - lim.pmin) * rans[0];
+    const double cosT_max = CosMax(point[0], mom);
+    const double cosT = (cosT_max + 1) * rans[1] - 1;
+    const double sinT = std::sqrt(std::max(0.0, 1 - cosT * cosT));
+    const double phi = dPhi * rans[2];
+    point[HadronIdx()] = {InitialEnergy(mom), mom * sinT * std::cos(phi),
+                          mom * sinT * std::sin(phi), mom * cosT};
+#ifdef ACHILLES_EVENT_DETAILS
+    Mapper<FourVector>::Print(__PRETTY_FUNCTION__, point, rans);
+#endif
+}
+
+double MomentumMapper::GenerateWeight(const std::vector<FourVector> &point,
+                                      std::vector<double> &rans) {
+    const auto lim = MomentumLimits(point[0]);
+    const auto &pin = point[HadronIdx()];
+    const double mom = pin.P();
+    const double dp = lim.pmax - lim.pmin;
+    const double cosT_max = CosMax(point[0], mom);
+    const double dCos = cosT_max + 1;
+    rans[0] = dp > 0 ? (mom - lim.pmin) / dp : 0;
+    rans[1] = dCos > 0 ? (pin.CosTheta() + 1) / dCos : 0;
+    rans[2] = pin.Phi() / dPhi;
+    // Never return 0: the integrator divides by this
+    if(!lim.valid || dp <= 0 || dCos <= 0 || mom <= 0)
+        return 1.0 / (m_pcut * m_pcut * m_pcut * 2 * dPhi);
+    // density of the sampling in d^3p = p^2 dp dcos dphi
+    return 1.0 / (mom * mom * dp * dCos * dPhi);
 }

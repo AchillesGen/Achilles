@@ -184,8 +184,9 @@ double Nucleus::SampleMagnitudeMomentum(const double &position, const PID &pid) 
         if(Random::Instance().Uniform(0.0, 1.0) > fermi_gas.SRCfraction) {
             return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
         } else {
+            // Inverse CDF of k^2 * k^-4 on [kf, lambdaSRC * kf]
             double x = Random::Instance().Uniform(0.0, 1.0);
-            return kf / (1. + 1. / fermi_gas.lambdaSRC - x);
+            return kf / (1. - x * (1. - 1. / fermi_gas.lambdaSRC));
         }
     }
     return kf * std::cbrt(Random::Instance().Uniform(0.0, 1.0));
