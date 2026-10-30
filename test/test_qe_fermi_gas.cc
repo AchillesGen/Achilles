@@ -153,7 +153,7 @@ TEST_CASE("MomentumMapper", "[QEFermiGas]") {
 
 namespace {
 
-// Shells of width dr out to rmax with densities rho_p(r), rho_n(r) at the shell centres
+// Radial bins of width dr out to rmax with densities rho_p(r), rho_n(r) at the bin centres
 template <class Fp, class Fn>
 achilles::LocalFermiSea MakeSea(double rmax, Fp rho_p, Fn rho_n, double dr = 0.005) {
     const auto n = static_cast<size_t>(std::round(rmax / dr));

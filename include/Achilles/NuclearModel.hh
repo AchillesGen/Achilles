@@ -124,14 +124,8 @@ class NuclearModel {
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string PSName() const = 0;
-    // Called once with the target nucleus before the channels are built, for models that
-    // depend on its density (e.g. a local Fermi gas); ignored by default
     virtual void SetNucleus(const Nucleus &) {}
-    // Settings handed to the hadronic phase-space mapper after it is built
     virtual YAML::Node PhaseSpaceSettings() const { return {}; }
-    // Radius [fm] at which a struck nucleon (in, |p|) going to (out, |p'|) sits, for models in
-    // which it depends on the kinematics (e.g. a local Fermi gas); by default the nucleon keeps
-    // its position in the nuclear configuration
     virtual std::optional<double> StruckNucleonRadius(double, PID, double, PID) const {
         return std::nullopt;
     }
@@ -144,9 +138,6 @@ class NuclearModel {
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
                               const std::vector<FormFactorInfo> &) const;
-    // One-body nucleon current ubar_i Gamma^mu u_j for the four spin combinations, with
-    // Gamma^mu = F1 gamma^mu + i F2 sigma^{mu nu} q_nu / 2m + FA gamma^mu gamma^5
-    //            + FP q^mu gamma^5 / m
     static Current OneBodyCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
                                   const FourVector &, const FormFactorMap &);
     std::function<void(Event &, const Process &, bool)> transform;

@@ -11,24 +11,17 @@
 
 namespace achilles {
 
-// Local Fermi sea on radial shells: kF_N(r) = hbar c (3 pi^2 rho_N(r))^{1/3}, N = p or n.
-// A nucleon of type N and momentum p can sit wherever kF_N(r) > p, a volume V_N(p). The number
-// of such nucleons per d^3p is 2 V_N(p) / (2 pi hbar c)^3. Its final state (type N', momentum
-// p') is free where kF_N'(r) <= p' at the same r, so the Pauli factor is the fraction of V_N(p)
-// with kF_N'(r) <= p'; for N' = N this is 1 - V_N(p') / V_N(p).
+// Local Fermi sea on a radial grid: kF_N(r) = hbar c (3 pi^2 rho_N(r))^{1/3}
 class LocalFermiSea {
   public:
     LocalFermiSea() = default;
-    // Shell edges [fm] (n+1, increasing) and the proton and neutron densities [fm^-3] at the
-    // n shell centres
+    // n+1 bin edges [fm], n densities [fm^-3]
     LocalFermiSea(const std::vector<double> &edges, const std::vector<double> &rho_p,
                   const std::vector<double> &rho_n);
 
-    double Volume(double k, PID nucleon) const; // fm^3 where kF_nucleon(r) > k [MeV]
+    double Volume(double k, PID nucleon) const;
     double PauliFactor(double p, PID in, double pout, PID out) const;
-    double NNucleons(PID nucleon) const; // integral of rho_N d^3r, for checks
-    // Radius drawn uniformly in volume where (in, p) is occupied and (out, pout) is free, from a
-    // uniform random number u in [0, 1); nullopt if there is no such region
+    double NNucleons(PID nucleon) const;
     std::optional<double> SampleRadius(double p, PID in, double pout, PID out, double u) const;
     double MaxFermiMomentum() const { return m_kf_max; }
 
@@ -53,7 +46,7 @@ class LocalFermiSea {
 //
 // kF: Local (RFG only) replaces the global kF by the local Fermi sea of the target nucleus
 // (LocalFermiSea, built in SetNucleus from the nucleus' proton and neutron densities):
-// weight 2 V_N(p) / (2 pi hbar c)^3, Pauli factor from the same radial shells.
+// weight 2 V_N(p) / (2 pi hbar c)^3, Pauli factor from the same radial grid.
 class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
   public:
     enum class MomentumDistribution { RFG, CFG };

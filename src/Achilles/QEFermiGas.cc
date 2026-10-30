@@ -23,7 +23,7 @@ LocalFermiSea::LocalFermiSea(const std::vector<double> &edges, const std::vector
                              const std::vector<double> &rho_n)
     : m_edges{edges}, m_rho_p{rho_p}, m_rho_n{rho_n} {
     if(edges.size() != rho_p.size() + 1 || rho_p.size() != rho_n.size())
-        throw std::runtime_error("LocalFermiSea: need n+1 shell edges and n densities");
+        throw std::runtime_error("LocalFermiSea: need n+1 bin edges and n densities");
     const auto kf = [](double rho) { return Constant::HBARC * std::cbrt(3 * M_PI * M_PI * rho); };
     for(size_t i = 0; i < rho_p.size(); ++i) {
         m_dv.push_back(4 * M_PI / 3 * (std::pow(edges[i + 1], 3) - std::pow(edges[i], 3)));
@@ -142,14 +142,14 @@ std::string QEFermiGas::InspireHEP() const {
     return m_distribution == QEFermiGas::MomentumDistribution::CFG ? "Hen:2014yfa" : "Smith:1972xh";
 }
 
-// Local Fermi sea from the nucleus' proton and neutron densities, on 0.01 fm shells
+// Local Fermi sea from the nucleus' proton and neutron densities, on 0.01 fm radial bins
 void QEFermiGas::SetNucleus(const Nucleus &nucleus) {
     if(!m_local || nucleus.ID() == PID::hydrogen() || nucleus.ID() == PID::free_neutron()) return;
     constexpr double dr = 0.01;
-    const auto nshells = static_cast<size_t>(std::ceil(nucleus.Radius() / dr));
-    std::vector<double> edges(nshells + 1), rho_p(nshells), rho_n(nshells);
-    for(size_t i = 0; i <= nshells; ++i) edges[i] = static_cast<double>(i) * dr;
-    for(size_t i = 0; i < nshells; ++i) {
+    const auto nbins = static_cast<size_t>(std::ceil(nucleus.Radius() / dr));
+    std::vector<double> edges(nbins + 1), rho_p(nbins), rho_n(nbins);
+    for(size_t i = 0; i <= nbins; ++i) edges[i] = static_cast<double>(i) * dr;
+    for(size_t i = 0; i < nbins; ++i) {
         const double r = 0.5 * (edges[i] + edges[i + 1]);
         rho_p[i] = nucleus.ProtonRho(r);
         rho_n[i] = nucleus.NeutronRho(r);

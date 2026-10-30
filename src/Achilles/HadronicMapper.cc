@@ -321,9 +321,7 @@ double MomentumMapper::GenerateWeight(const std::vector<FourVector> &point,
     rans[0] = dp > 0 ? (mom - lim.pmin) / dp : 0;
     rans[1] = dCos > 0 ? (pin.CosTheta() + 1) / dCos : 0;
     rans[2] = pin.Phi() / dPhi;
-    // The integrator uses 1/density as the event weight, so never return 0 here. Points with
-    // no allowed kinematics (beam below threshold) are given a nominal finite density; their
-    // matrix element vanishes downstream.
+    // Never return 0: the integrator divides by this
     if(!lim.valid || dp <= 0 || dCos <= 0 || mom <= 0)
         return 1.0 / (m_pcut * m_pcut * m_pcut * 2 * dPhi);
     // density of the sampling in d^3p = p^2 dp dcos dphi
