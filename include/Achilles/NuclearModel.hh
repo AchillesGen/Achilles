@@ -17,6 +17,7 @@
 #include <complex>
 #include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace achilles {
 
@@ -126,7 +127,8 @@ class NuclearModel {
     virtual std::string PSName() const = 0;
     virtual void SetNucleus(const Nucleus &) {}
     virtual YAML::Node PhaseSpaceSettings() const { return {}; }
-    virtual std::optional<double> StruckNucleonRadius(double, PID, double, PID) const {
+    virtual std::optional<std::pair<double, double>> StruckNucleonRadii(double, PID, double,
+                                                                        PID) const {
         return std::nullopt;
     }
     virtual std::string InspireHEP() const = 0;

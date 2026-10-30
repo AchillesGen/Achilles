@@ -7,6 +7,7 @@
 #include "Achilles/NuclearModel.hh"
 
 #include <optional>
+#include <utility>
 #include <vector>
 
 namespace achilles {
@@ -22,7 +23,8 @@ class LocalFermiSea {
     double Volume(double k, PID nucleon) const;
     double PauliFactor(double p, PID in, double pout, PID out) const;
     double NNucleons(PID nucleon) const;
-    std::optional<double> SampleRadius(double p, PID in, double pout, PID out, double u) const;
+    std::optional<std::pair<double, double>> AllowedRadii(double p, PID in, double pout,
+                                                          PID out) const;
     double MaxFermiMomentum() const { return m_kf_max; }
 
   private:
@@ -66,7 +68,8 @@ class QEFermiGas : public NuclearModel, RegistrableNuclearModel<QEFermiGas> {
     std::string PSName() const override { return "OneBodyMomentum"; }
     YAML::Node PhaseSpaceSettings() const override;
     void SetNucleus(const Nucleus &) override;
-    std::optional<double> StruckNucleonRadius(double, PID, double, PID) const override;
+    std::optional<std::pair<double, double>> StruckNucleonRadii(double, PID, double,
+                                                                PID) const override;
 
     // Required factory methods
     static std::unique_ptr<NuclearModel> Construct(const YAML::Node &);
