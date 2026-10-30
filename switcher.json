@@ -5,6 +5,11 @@
     "url": "https://achillesgen.github.io/Achilles/49-revamp-docs/"
   },
   {
+    "name": "fix-landing-rebuild",
+    "version": "fix-landing-rebuild",
+    "url": "https://achillesgen.github.io/Achilles/fix-landing-rebuild/"
+  },
+  {
     "name": "latest",
     "version": "latest",
     "url": "https://achillesgen.github.io/Achilles/latest/"
