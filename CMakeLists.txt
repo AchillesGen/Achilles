@@ -8,6 +8,11 @@ if(POLICY CMP0053)
   cmake_policy(SET CMP0053 NEW)
 endif()
 
+# Default install prefix to build/install if not explicitly set
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "" FORCE)
+endif()
+
 # Set the project name and basic settings
 project(ACHILLES LANGUAGES CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
@@ -217,7 +222,6 @@ if(ACHILLES_ENABLE_TESTING)
     target_compile_options(project_options INTERFACE --coverage)
     target_link_libraries(project_options INTERFACE gcov)
   endif()
-  target_compile_definitions(project_options INTERFACE TESTING)
   enable_testing()
   message(STATUS "Building Tests.")
   add_subdirectory(test)
@@ -228,6 +232,12 @@ add_subdirectory(src)
 
 # Install CMake find_package files
 include(CMakePackageConfigHelpers)
+
+# Build documentation
+if(ACHILLES_BUILD_DOCS)
+    message(STATUS "Achilles: Building docs")
+    add_subdirectory(docs)
+endif()
 
 configure_package_config_file(
     ${CMAKE_SOURCE_DIR}/CMake/achilles-config.cmake.in

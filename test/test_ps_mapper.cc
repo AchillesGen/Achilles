@@ -58,22 +58,18 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
     achilles::ProcessInfo info({achilles::PID::electron(), {achilles::PID::electron()}});
     info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
 
-    auto beam = std::make_shared<MockBeam>();
-    achilles::FourVector beam_mom = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV,
-                                     0_MeV};
+    auto flux = std::make_shared<MockFluxType>(0);
+    auto beam = MakeBeam(achilles::PID::electron(), flux);
+    achilles::FourVector beam_mom = {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
     auto mapper =
         achilles::PSBuilder(info).Beam(beam, 0).Hadron("Dummy").FinalState("Dummy").build();
     std::vector<double> rans(2);
     std::vector<double> beam_rans;
-    std::set<achilles::PID> beam_id{achilles::PID::electron()};
-    REQUIRE_CALL(*beam, BeamIDs()).TIMES(1).LR_RETURN((beam_id));
-    REQUIRE_CALL(*beam,
-                 Flux(achilles::PID::electron(), beam_rans, trompeloeil::ge(units::Energy{})))
+    REQUIRE_CALL(*flux, Flux(beam_rans, trompeloeil::ge(units::Energy{})))
         .TIMES(1)
         .LR_RETURN((beam_mom));
-    REQUIRE_CALL(*beam, NVariables()).TIMES(2).RETURN(0);
     CHECK(mapper->NDims() == 2);
     mapper->GeneratePoint(output, rans);
     CHECK_THAT(output, AllFourVectorApprox(expected));

@@ -15,8 +15,6 @@ using namespace achilles::units::literals;
 using achilles::Particle;
 
 TEST_CASE("Initialize Event Parameters", "[Event]") {
-    auto nuc = std::make_shared<MockNucleus>();
-    auto beam = std::make_shared<MockBeam>();
     std::vector<double> rans{0};
     static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
     static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
@@ -29,7 +27,13 @@ TEST_CASE("Initialize Event Parameters", "[Event]") {
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN((particles));
+    auto density = std::make_unique<MockDensity>();
+
+    REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+
+    auto nuc = MakeNucleus();
+
+    nuc->SetDensity(std::move(density));
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 
@@ -71,7 +75,6 @@ TEST_CASE("Finalize Event", "[Event]") {
 }
 
 TEST_CASE("Test Event Copy Constructor", "[Event]") {
-    auto nuc = std::make_shared<MockNucleus>();
     static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
     static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
                                                   -237.838_MeV};
@@ -83,7 +86,13 @@ TEST_CASE("Test Event Copy Constructor", "[Event]") {
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN(particles);
+    auto density = std::make_unique<MockDensity>();
+
+    REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+
+    auto nuc = MakeNucleus();
+
+    nuc->SetDensity(std::move(density));
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 
@@ -110,7 +119,6 @@ TEST_CASE("Test Event Copy Constructor", "[Event]") {
 }
 
 TEST_CASE("Test Event Assignment Operator", "[Event]") {
-    auto nuc = std::make_shared<MockNucleus>();
     static constexpr achilles::FourVector lepton0{1000_MeV, 0_MeV, 0_MeV, 1000_MeV};
     static constexpr achilles::FourVector lepton1{313.073_MeV, 105.356_MeV, 174.207_MeV,
                                                   -237.838_MeV};
@@ -122,7 +130,13 @@ TEST_CASE("Test Event Assignment Operator", "[Event]") {
     std::vector<achilles::FourVector> moms = {lepton0, hadron0, lepton1, hadron1};
     achilles::Particles particles = {Particle{achilles::PID::proton(), hadron0}};
 
-    REQUIRE_CALL(*nuc, GenerateConfig()).TIMES(1).RETURN(particles);
+    auto density = std::make_unique<MockDensity>();
+
+    REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+
+    auto nuc = MakeNucleus();
+
+    nuc->SetDensity(std::move(density));
     static constexpr double vegas_wgt = 10;
     achilles::Event event(nuc, moms, vegas_wgt);
 

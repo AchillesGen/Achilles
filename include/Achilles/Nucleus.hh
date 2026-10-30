@@ -11,7 +11,6 @@
 #include <memory>
 #include <vector>
 
-#include "Achilles/Achilles.hh"
 #include "Achilles/Configuration.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Interpolation.hh"
@@ -71,7 +70,7 @@ class Nucleus {
     Nucleus &operator=(Nucleus &&) = default;
 
     /// Default destructor
-    MOCK ~Nucleus() = default;
+    ~Nucleus() = default;
     ///@}
 
     /// @name Setters
@@ -102,6 +101,15 @@ class Nucleus {
     /// @param radius: The radius to be set in fm
     void SetRadius(units::Length _radius) noexcept { radius = _radius; }
 
+    /// Set the nucleon density profiles, tabulated against radius, instead of
+    /// reading them from the density files the constructor takes
+    ///@param radii: The radii in fm the densities are tabulated at
+    ///@param proton_density: The proton density in fm^-3 at each radius
+    ///@param neutron_density: The neutron density in fm^-3 at each radius
+    void SetDensityProfile(const std::vector<double> &radii,
+                           const std::vector<double> &proton_density,
+                           const std::vector<double> &neutron_density);
+
     /// Setup basic properties for nuclei, needed to setup hydrogen correctly
     ///@param protons: Number of protons
     ///@param nucleons: Number of nucleons
@@ -113,7 +121,7 @@ class Nucleus {
 
     /// Return the nuclear PID
     ///@return PID: The pid for the given nucleus
-    MOCK PID ID() const { return m_pid; }
+    PID ID() const { return m_pid; }
 
     /// Return a particle with initial momentum for at rest nucleus and correct PID
     ///@return Particle: Particle representing the initial nucleus
@@ -125,15 +133,15 @@ class Nucleus {
 
     /// Return the number of nucleons in the nucleus
     ///@return int: The number of nucleons in the nucleus
-    MOCK std::size_t NNucleons() const noexcept { return nnucleons; }
+    std::size_t NNucleons() const noexcept { return nnucleons; }
 
     /// Return the number of protons in the nucleus
     ///@return int: The number of protons in the nucleus
-    MOCK std::size_t NProtons() const noexcept { return nprotons; }
+    std::size_t NProtons() const noexcept { return nprotons; }
 
     /// Return the number of neutrons in the nucleus
     ///@return int: The number of neutrons in the nucleus
-    MOCK std::size_t NNeutrons() const noexcept { return nneutrons; }
+    std::size_t NNeutrons() const noexcept { return nneutrons; }
 
     /// Return the current binding energy of the nucleus
     ///@return double: The binding energy in MeV
@@ -145,16 +153,16 @@ class Nucleus {
 
     /// Return the phenomenological potential
     ///@return std::shared_ptr<Potential>: The potential of the nucleus
-    MOCK std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
+    std::shared_ptr<Potential> GetPotential() const noexcept { return potential; }
 
     /// Return the radius cutoff of the nucleus used for the cascade
     ///@return double: The radius in femtometers
-    MOCK units::Length Radius() const noexcept { return radius; }
+    units::Length Radius() const noexcept { return radius; }
 
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    MOCK double Rho(units::Length position) const noexcept {
+    double Rho(units::Length position) const noexcept {
         return position > radius ? 0 : protonrhoInterp(position.in(units::fm));
     }
     ///@}
@@ -162,7 +170,7 @@ class Nucleus {
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    MOCK double ProtonRho(units::Length position) const noexcept {
+    double ProtonRho(units::Length position) const noexcept {
         return position > radius ? 0 : protonrhoInterp(position.in(units::fm));
     }
     ///@}
@@ -170,7 +178,7 @@ class Nucleus {
     /// Return the density of the nucleus at a given location
     ///@param position: The radius to calculate the density at
     ///@return double: The density at the input radius
-    MOCK double NeutronRho(units::Length position) const noexcept {
+    double NeutronRho(units::Length position) const noexcept {
         return position > radius ? 0 : neutronrhoInterp(position.in(units::fm));
     }
     ///@}
@@ -186,7 +194,7 @@ class Nucleus {
     /// @{
 
     /// Generate a configuration of the nucleus based on the density function
-    MOCK Particles GenerateConfig();
+    Particles GenerateConfig();
 
     /// Generate a random momentum for a nucleon in the nucleus
     ///@return std::array<double, 3>: Random momentum generated using the Fermi momentum

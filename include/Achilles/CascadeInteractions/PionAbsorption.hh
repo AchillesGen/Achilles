@@ -4,8 +4,8 @@
 #ifndef ACHILLES_CASCADEINTERACTIONS_PIONABSORPTION
 #define ACHILLES_CASCADEINTERACTIONS_PIONABSORPTION
 
+#include "Achilles/CascadeInteractions/OsetPiNModel.hh"
 #include "Achilles/Interactions.hh"
-#include "Achilles/OsetCrossSections.hh"
 #include "Achilles/Particle.hh"
 
 namespace achilles {
@@ -23,7 +23,7 @@ class PionAbsorption : public Interaction {
   protected:
     virtual bool AllowedAbsorption(Event &, size_t, size_t) const = 0;
 
-    OsetCrossSection Oset; // Contains Oset absorption cross sections
+    OsetPiNModel Oset; // Contains Oset absorption cross sections
 
     struct InteractionStates {
         PID absorption_partner;

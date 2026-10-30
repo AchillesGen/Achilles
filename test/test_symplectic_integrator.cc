@@ -123,9 +123,7 @@ TEMPLATE_TEST_CASE("Symplectic Integrator", "[Symplectic]", achilles::CooperPote
     constexpr double omega = 20;
     constexpr size_t AA = 12;
 
-    auto nucleus = std::make_shared<MockNucleus>();
-    ALLOW_CALL(*nucleus, NNucleons()).LR_RETURN((AA));
-    ALLOW_CALL(*nucleus, Rho(trompeloeil::gt(units::Length{}))).LR_RETURN((Rho(_1.in(units::fm))));
+    auto nucleus = MakeNucleus(6, AA, 12_fm, Rho);
     auto potential = MakePotential<TestType>(nucleus);
 
     auto dHamiltonian_dr_func = [&](const PSVector &p_, const PSVector &q_,

@@ -58,15 +58,16 @@ TEST_CASE("Save/Load Statistics", "[Cache]") {
 }
 
 TEMPLATE_TEST_CASE("Save/Load Unweighters", "[Cache]", achilles::NoUnweighter,
-                   achilles::PercentileUnweighter) {
-    TestType unweighter(YAML::Load("percentile: 90"));
+                   achilles::PercentileUnweighter, achilles::ExcessUnweighter,
+                   achilles::TailFractionUnweighter) {
+    TestType unweighter(YAML::Load("{percentile: 90, epsilon: 0.01}"));
     auto data = GENERATE(take(2, randomVector(100)));
     for(const auto &d : data) { unweighter.AddEvent(d); }
 
     std::stringstream ss;
     unweighter.SaveState(ss);
 
-    TestType unweighter2(YAML::Load("percentile: 90"));
+    TestType unweighter2(YAML::Load("{percentile: 90, epsilon: 0.01}"));
     unweighter2.LoadState(ss);
     CHECK(unweighter.MaxValue() == unweighter2.MaxValue());
 
