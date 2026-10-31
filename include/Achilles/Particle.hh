@@ -153,6 +153,13 @@ class Particle {
     /// Update the formation zone time by a given time step
     ///@param timeStep: The time step to update the formation zone by
     void UpdateFormationZone(const double &timeStep) noexcept { formationZone -= timeStep; }
+
+	/// Sets the ParticleInfo to match the given PID.
+	/// Other fields such as momentum are not affected; as a result,
+	/// this method may cause the particle to become off-shell.
+	void SetPID(const PID& pid) {
+		info=ParticleInfo(pid);
+	}
     ///@}
 
     /// @name Getters

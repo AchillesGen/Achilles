@@ -61,10 +61,10 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
 	const vParticles& allParticles=event.Particles();
 	const Particle& leptonIn=event.leptonIn();
-	crefParticles leptonsOut=event.leptonsOut();
-	crefParticles hadronsIn=event.hadronsIn();
-	crefParticles hadronsOut=event.hadronsOut();
-	crefParticles spectators=event.spectators();
+	refParticles leptonsOut=event.leptonsOut();
+	refParticles hadronsIn=event.hadronsIn();
+	refParticles hadronsOut=event.hadronsOut();
+	refParticles spectators=event.spectators();
 
 	vParticles hadronsInCopy=Event::MakeCopies(hadronsIn);
 	vParticles hadronsOutCopy=Event::MakeCopies(hadronsOut);

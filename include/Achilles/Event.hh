@@ -50,6 +50,10 @@ class Event {
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
 	const ProcessInfo& processInfo() const { return m_processInfo; }
+	/// Sets the event's ProcessInfo to the given value;
+	/// if needed, existing particles in the event that matched
+	/// the previous ProcessInfo are also updated to match the new one.
+	void setProcessInfo(const ProcessInfo& _info);
 
     const double &Flux() const { return flux; }
     double &Flux() { return flux; }
@@ -128,13 +132,18 @@ class Event {
 
 	/// When the size_t argument is 0,
 	/// these methods correspond to the ProcessInfo
+	Particle& leptonIn(size_t=0);
+	refParticles hadronsIn(size_t=0);
+	refParticles leptonsOut(size_t=0);
+	refParticles hadronsOut(size_t=0);
+	refParticles spectators();
 	const Particle& leptonIn(size_t=0) const;
 	crefParticles hadronsIn(size_t=0) const;
 	crefParticles leptonsOut(size_t=0) const;
 	crefParticles hadronsOut(size_t=0) const;
 	crefParticles spectators() const;
 
-	static vParticles MakeCopies(const crefParticles&);
+	static vParticles MakeCopies(const refParticles&);
 
 	// Traversal
 	void WalkHistory(HistoryVisitor&);
@@ -162,7 +171,7 @@ class Event {
 				result.push_back(std::reference_wrapper(p));
         return result;
     }
-    refParticles FilterParticles(refParticles& particles,std::function<bool(const Particle&)> pred) {
+    refParticles FilterParticles(const refParticles& particles,std::function<bool(const Particle&)> pred) {
         refParticles result;
 		for(Particle& p:particles)
 			if(pred(p))

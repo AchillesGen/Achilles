@@ -19,7 +19,7 @@ using achilles::ThreeBodyMapper;
 using achilles::TwoBodyMapper;
 
 void TwoBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	crefParticles hadronsIn=event.hadronsIn();
+	refParticles hadronsIn=event.hadronsIn();
 
 	const Particle& lepIn=event.leptonIn();
 	const Particle& hadIn=hadronsIn[0].get();
@@ -100,7 +100,7 @@ double TwoBodyMapper::GenerateWeight(const Event& event, std::vector<double> &ra
 }
 
 void ThreeBodyMapper::GeneratePoint(Event& event, const std::vector<double> &rans) {
-	crefParticles hadronsIn=event.hadronsIn();
+	refParticles hadronsIn=event.hadronsIn();
 
 	const Particle& lepIn=event.leptonIn();
 	const Particle& hadIn=hadronsIn[0].get();

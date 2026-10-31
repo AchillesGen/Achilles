@@ -416,7 +416,10 @@ void ProcessGroup::EventSetup(Event& event) {
     Process& process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.leptonIn().Momentum());
     event.ProcessId() = process.ID();
-
+	event.setProcessInfo(process.Info());
+	// At this point, the event's PIDs have all been resolved;
+	// we can now fill the rest of the event with anything PID-dependent,
+	// such as the Remnant and Cascade
 	SetupRemnant(event);
 }
 

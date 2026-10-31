@@ -90,6 +90,43 @@ Particle* Event::findFinalStateParticle(const Particle& match) {
 	return nullptr;
 }
 
+void Event::setProcessInfo(const ProcessInfo& _info) {
+	if(m_processInfo==_info)
+		return;
+
+	try {
+		leptonIn().ID()=_info.m_leptonic.first;
+	} catch(...) {}
+	
+	refParticles parts=hadronsIn();
+	size_t len=std::min(parts.size(),_info.m_hadronic.first.size());
+	for(size_t i=0;i<len;i++) {
+		parts[i].get().SetPID(_info.m_hadronic.first[i]);
+	}
+	
+	parts=leptonsOut();
+	len=std::min(parts.size(),_info.m_leptonic.second.size());
+	for(size_t i=0;i<len;i++) {
+		parts[i].get().SetPID(_info.m_leptonic.second[i]);
+	}
+	
+	parts=hadronsOut();
+	len=std::min(parts.size(),_info.m_hadronic.second.size());
+	for(size_t i=0;i<len;i++) {
+		parts[i].get().SetPID(_info.m_hadronic.second[i]);
+	}
+	
+	parts=spectators();
+	len=std::min(parts.size(),_info.m_spectator.size());
+	for(size_t i=0;i<len;i++) {
+		parts[i].get().SetPID(_info.m_spectator[i]);
+	}
+
+	// Do this last, bc hadronsIn() etc all depend on
+	// m_processInfo having its old value
+	m_processInfo=_info;
+}
+
 void Event::Display() const {
     spdlog::trace("Particles in History:");
     size_t idx = 0;
@@ -308,6 +345,43 @@ achilles::crefParticles Event::particlesOut(size_t vertex,PID pid,ParticleStatus
 	return getAllOfType(list,pid,status);
 }
 
+Particle& Event::leptonIn(size_t vertex) {
+	return particlesIn(vertex,m_processInfo.m_leptonic.first)[0].get();
+}
+achilles::refParticles Event::hadronsIn(size_t vertex) {
+	auto pred=[*this](const Particle& p) {
+		for(PID pid:m_processInfo.m_hadronic.first)
+			if(p.ID()==pid)
+				return true;
+		return false;
+	};
+	return FilterParticles(particlesIn(vertex),pred);
+}
+achilles::refParticles Event::leptonsOut(size_t vertex) {
+	auto pred=[*this](const Particle& p) {
+		for(PID pid:m_processInfo.m_leptonic.second)
+			if(p.ID()==pid)
+				return true;
+		return false;
+	};
+	return FilterParticles(particlesOut(vertex),pred);
+}
+achilles::refParticles Event::hadronsOut(size_t vertex) {
+	auto pred=[*this](const Particle& p) {
+		for(PID pid:m_processInfo.m_hadronic.second)
+			if(p.ID()==pid)
+				return true;
+		return false;
+	};
+	return FilterParticles(particlesOut(vertex),pred);
+}
+achilles::refParticles Event::spectators() {
+	auto pred=[*this](const Particle& p) {
+		return p.Status()==ParticleStatus::spectator;
+	};
+	return FilterParticles(hist_particles,pred);
+}
+
 const Particle& Event::leptonIn(size_t vertex) const {
 	return particlesIn(vertex,m_processInfo.m_leptonic.first)[0].get();
 }
@@ -345,7 +419,7 @@ achilles::crefParticles Event::spectators() const {
 	return FilterParticles(hist_particles,pred);
 }
 
-achilles::vParticles Event::MakeCopies(const crefParticles& refs) {
+achilles::vParticles Event::MakeCopies(const refParticles& refs) {
 	vParticles result;
 	for(const Particle& p:refs)
 		result.push_back(p);

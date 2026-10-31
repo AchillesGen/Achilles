@@ -135,8 +135,9 @@ void Particle::Move(const ThreeVector& dx) {
 std::pair<Particle,Particle> Particle::splitSingle(size_t partIndex) {
 	switch(sub_parts.size()) {
 		case 0:
-			return std::pair<Particle,Particle>(Particle(),Particle());
+			throw std::runtime_error("Particle::splitSingle(): Cannot split a noncomposite particle");
 		case 1:
+			spdlog::debug("Composite Particle represents only One Piece, returning that piece");
 			return std::pair<Particle,Particle>(sub_parts[partIndex],Particle());
 		case 2:
 			return std::pair<Particle,Particle>(sub_parts[partIndex],sub_parts[1-partIndex]);
