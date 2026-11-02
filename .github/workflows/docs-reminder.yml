@@ -17,11 +17,11 @@ jobs:
   remind:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Detect changed paths
         id: filter
-        uses: dorny/paths-filter@v3
+        uses: dorny/paths-filter@v4
         with:
           filters: |
             source:
@@ -34,7 +34,7 @@ jobs:
               - 'docs/**'
 
       - name: Post or update reminder
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           SOURCE: ${{ steps.filter.outputs.source }}
           RUNCARD: ${{ steps.filter.outputs.runcard }}
