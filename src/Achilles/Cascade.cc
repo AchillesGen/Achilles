@@ -9,6 +9,7 @@
 #include "spdlog/spdlog.h"
 
 #include "Achilles/Cascade.hh"
+#include "Achilles/Sudakov.hh"
 #include "Achilles/Constants.hh"
 #include "Achilles/Event.hh"
 #include "Achilles/Exception.hh"
@@ -41,6 +42,8 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
         break;
     case Algorithm::Veto:
     case Algorithm::Continuous:
+    case Algorithm::SudakovA:
+    case Algorithm::SudakovB:
         // Event-driven algorithms run their own loop (EvolveVeto), no per-step algorithm
         if(potential_prop)
             throw std::runtime_error(
@@ -276,6 +279,11 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
     // Set all propagating particles as kicked for the cascade
     for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
+    }
+
+    if(m_algorithm == Algorithm::SudakovA || m_algorithm == Algorithm::SudakovB) {
+        EvolveSudakov(event, nucleus);
+        return;
     }
 
     if(m_algorithm == Algorithm::Veto || m_algorithm == Algorithm::Continuous) {
@@ -1014,3 +1022,35 @@ double Cascade::ExitTime(const Particle &part) const {
         time = std::max(time, (radius - pos.Pz()) / vel.Pz());
     return time;
 }
+
+namespace achilles {
+/// Sudakov veto cascade: exact thinning of a piecewise-constant majorant, global time order.
+/// Track A (SudakovA) samples sigma rho v with the target created at the collision point;
+/// Track B (SudakovB) samples one hazard per (particle, configuration nucleon) pair.
+void Cascade::EvolveSudakov(Event &event, Nucleus *nucleus) {
+    m_nucleus = nucleus;
+    if(!m_sudakov) {
+        const char track = m_algorithm == Algorithm::SudakovA ? 'A' : 'B';
+        m_sudakov = sudakov::MakeEngine(m_sudakov_config, track, []() {
+            return 1.0 - Random::Instance().Uniform(0.0, 1.0);
+        });
+    }
+    if(auto *coll = dynamic_cast<sudakov::AchillesCollision *>(&m_sudakov->Coll())) {
+        coll->Bind(&m_interactions);
+        // Cascade: InMedium applies to the Sudakov tracks through the collision model
+        if(m_medium == InMedium::NonRelativistic)
+            coll->SetMedium([this](const Particle &a, const Particle &b) {
+                return InMediumCorrection(a, b);
+            });
+    }
+    m_sudakov->Evolve(event, nucleus);
+
+    Particles &particles = event.Hadrons();
+    for(auto &particle : particles) {
+        if(particle.IsPropagating()) particle.Propagate(ExitTime(particle));
+    }
+    Escaped(particles);
+    Validate(event);
+    Reset();
+}
+} // namespace achilles

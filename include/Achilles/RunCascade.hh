@@ -63,7 +63,7 @@ class CascadeRunner {
     void run();
 
   private:
-    void GenerateEvent(double, Histogram &, Histogram &);
+    void GenerateEvent(double, Histogram &, Histogram &, Histogram &, Histogram &);
     bool NeedsEvents() const { return generated_events < requested_events; }
     void Reset() { generated_events = 0; }
 

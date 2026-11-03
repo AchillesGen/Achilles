@@ -78,6 +78,7 @@ list(APPEND achilles_targets mappers)
 
 add_library(physics SHARED
     Cascade.cc
+    Sudakov.cc
     Nucleus.cc
     FormFactor.cc
     FormFactorBuilder.cc
@@ -179,6 +180,9 @@ if(ACHILLES_ENABLE_CASCADE_TEST)
     target_link_libraries(achilles-cascade PRIVATE project_warnings
                                            PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
+
+    add_executable(achilles-sudakov-validate SudakovValidate.cc)
+    target_link_libraries(achilles-sudakov-validate PRIVATE project_warnings PUBLIC physics)
 endif()
 
 if(ACHILLES_ENABLE_POTENTIAL_TEST)

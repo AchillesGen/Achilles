@@ -23,7 +23,10 @@
 
 #include "spdlog/spdlog.h"
 
+#include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <vector>
 #include <stdexcept>
 
 using achilles::CascadeTest::CascadeRunner;
@@ -175,7 +178,49 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard, "dat
     m_writer->WriteHeader(runcard, process_groups);
 }
 
-void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hits) {
+namespace {
+using achilles::Event;
+using achilles::Particle;
+using achilles::ParticleStatus;
+
+bool SameParticle(const Particle &a, const Particle &b) {
+    if(a.ID() != b.ID()) return false;
+    const auto d = a.Momentum() - b.Momentum();
+    const double scale = std::max(1.0, a.Momentum().E());
+    return std::abs(d.E()) < 1e-9 * scale && std::abs(d.Px()) < 1e-9 * scale &&
+           std::abs(d.Py()) < 1e-9 * scale && std::abs(d.Pz()) < 1e-9 * scale;
+}
+
+/// Hit definition of the 2020 code behind arXiv:2007.15570 (Figs. 6-7): the event counts
+/// only if a nucleon outside the projectile's lineage leaves the nucleus as final_state
+/// (Cascade::Escaped: T > 10 MeV). The lineage starts at the test particle; in each vertex
+/// whose first incoming particle (the propagating one) is in the lineage, the first
+/// outgoing particle joins it. Particles are matched by species and four-momentum, which
+/// do not change between vertices without mean-field propagation.
+bool EscapeHit(Event &event, const Particle &test) {
+    std::vector<Particle> lineage{test};
+    auto in_lineage = [&lineage](const Particle &p) {
+        return std::any_of(lineage.begin(), lineage.end(),
+                           [&p](const Particle &l) { return SameParticle(l, p); });
+    };
+    auto &history = event.History();
+    for(size_t i = 0; i < history.size(); ++i) {
+        const auto *node = history.Node(i);
+        const auto in = node->ParticlesIn();
+        const auto &out = node->ParticlesOut();
+        if(in.empty() || out.empty()) continue;
+        if(in_lineage(in[0])) lineage.push_back(out[0]);
+    }
+    for(const auto &part : event.Hadrons()) {
+        if(part.Status() != ParticleStatus::final_state || !part.Info().IsNucleon()) continue;
+        if(!in_lineage(part)) return true;
+    }
+    return false;
+}
+} // namespace
+
+void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hits,
+                                  Histogram &accepted, Histogram &escape) {
     // Generate a point based on the run mode
     Event event;
     switch(m_mode) {
@@ -187,10 +232,14 @@ void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hit
         break;
     }
     // Set kicked indices
+    FourVector p_initial{};
+    Particle test_particle{};
     for(size_t i = 0; i < event.Hadrons().size(); ++i) {
         if(event.Hadrons()[i].Status() == ParticleStatus::external_test ||
            event.Hadrons()[i].Status() == ParticleStatus::internal_test) {
             m_cascade->SetKicked(i);
+            p_initial = event.Hadrons()[i].Momentum();
+            test_particle = event.Hadrons()[i];
         }
     }
     // Scale event weight by momentum range
@@ -207,9 +256,31 @@ void CascadeRunner::GenerateEvent(double mom, Histogram &hits, Histogram &no_hit
         // be resized
         event.History().UpdateStatuses(event.Hadrons());
         hits.Fill(mom, event.Weight());
+        if(m_mode == CascadeMode::CrossSection && EscapeHit(event, test_particle))
+            escape.Fill(mom, event.Weight());
         generated_events++;
+        // acceptance-defined survival (Transparency mode): the leading final-state particle
+        // of the kicked species lost less than accept_dE of kinetic energy and its momentum
+        // changed by less than accept_dp (the cascade analogue of missing-energy and
+        // missing-momentum cuts)
+        if(m_mode == CascadeMode::Transparency) {
+            const double dE = m_params.count("accept_dE") ? m_params["accept_dE"] : 80.0;
+            const double dp = m_params.count("accept_dp") ? m_params["accept_dp"] : 300.0;
+            const Particle *lead = nullptr;
+            for(const auto &part : event.Hadrons()) {
+                if(part.Status() != ParticleStatus::final_state || part.ID() != m_pid) continue;
+                if(!lead || part.Momentum().P() > lead->Momentum().P()) lead = &part;
+            }
+            if(lead) {
+                const double m = lead->Info().Mass();
+                const double loss = (p_initial.E() - m) - (lead->Momentum().E() - m);
+                const double transfer = (p_initial.Vec3() - lead->Momentum().Vec3()).Magnitude();
+                if(loss < dE && transfer < dp) accepted.Fill(mom, event.Weight());
+            }
+        }
     } else {
         no_hits.Fill(mom, event.Weight());
+        if(m_mode == CascadeMode::Transparency) accepted.Fill(mom, event.Weight());
         event.Weight() = 0.0;
     }
     m_writer->Write(event);
@@ -222,6 +293,8 @@ void achilles::CascadeTest::CascadeRunner::run() {
 
     Histogram h_hits(50, m_mom_range.first, m_mom_range.second, "hits");
     Histogram h_nohits(50, m_mom_range.first, m_mom_range.second, "no hits");
+    Histogram h_accepted(50, m_mom_range.first, m_mom_range.second, "accepted");
+    Histogram h_escape(50, m_mom_range.first, m_mom_range.second, "escape");
 
     // Generate events
     while(NeedsEvents()) {
@@ -230,12 +303,16 @@ void achilles::CascadeTest::CascadeRunner::run() {
             fmt::print("Generated {} / {} events\r", generated_events, requested_events);
         }
         auto current_mom = Random::Instance().Uniform(m_mom_range.first, m_mom_range.second);
-        GenerateEvent(current_mom, h_hits, h_nohits);
+        GenerateEvent(current_mom, h_hits, h_nohits, h_accepted, h_escape);
     }
 
     // hits / (hits + no hits) gives 1 - T (Transparency) or sigma_R / (pi radius^2) (CrossSection)
     h_hits.Save(m_output_name + "_hits");
     h_nohits.Save(m_output_name + "_nohits");
+    // accepted / (hits + no hits): acceptance-defined transparency (Transparency mode)
+    if(m_mode == CascadeMode::Transparency) h_accepted.Save(m_output_name + "_accepted");
+    // escape / (hits + no hits): sigma_R with the 2020-code hit definition (CrossSection mode)
+    if(m_mode == CascadeMode::CrossSection) h_escape.Save(m_output_name + "_escape");
 }
 
 void achilles::CascadeTest::RunCascade(const std::string &runcard) {

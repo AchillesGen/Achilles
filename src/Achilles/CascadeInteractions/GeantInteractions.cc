@@ -130,7 +130,9 @@ InteractionResults GeantInteraction::CrossSection(Event &event, size_t part1, si
         spdlog::trace("Using Nasa Interaction");
         // double s = (p1Lab+p2Lab).M2();
         double s = (particle1.Momentum() + particle2.Momentum()).M2();
-        double smin = pow(particle1.Mass(), 2) + pow(particle2.Mass(), 2);
+        // threshold s is (m1 + m2)^2, as in NasaInteraction and the 2020 code (with
+        // m1^2 + m2^2 slow pairs got p_lab ~ 1.9 GeV and sigma ~ 40 mb)
+        double smin = pow(particle1.Mass() + particle2.Mass(), 2);
         double plab = sqrt(pow(s, 2) / smin - s);
         return {{{particle1.ID(), particle2.ID()}, Interaction::CrossSectionLab(samePID, plab)}};
     }

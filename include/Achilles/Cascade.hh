@@ -5,6 +5,7 @@
 #define CASCADE_HH
 
 #include <array>
+#include <memory>
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -17,12 +18,16 @@
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/SymplecticIntegrator.hh"
 #include "Achilles/ThreeVector.hh"
+#include "yaml-cpp/yaml.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic pop
 
 namespace achilles {
+namespace sudakov {
+class Engine;
+}
 
 class Nucleus;
 class Particle;
@@ -69,7 +74,7 @@ class Cascade {
     }
 
     // Algorithms Enums
-    enum Algorithm { Base, MFP, Veto, Continuous };
+    enum Algorithm { Base, MFP, Veto, Continuous, SudakovA, SudakovB };
     std::string ToString(const Algorithm &type) {
         switch(type) {
         case Base:
@@ -80,6 +85,10 @@ class Cascade {
             return "Veto";
         case Continuous:
             return "Continuous";
+        case SudakovA:
+            return "SudakovA";
+        case SudakovB:
+            return "SudakovB";
         }
         return "Unknown";
     }
@@ -219,6 +228,16 @@ class Cascade {
     // Event-driven algorithms (Veto: one trial per pair at closest approach,
     // Continuous: a smooth hazard per pair along the line)
     void EvolveVeto(Event &, Nucleus *);
+    // Sudakov veto cascade (Track A: density backbone, Track B: configuration backbone)
+    void EvolveSudakov(Event &, Nucleus *);
+    std::shared_ptr<sudakov::Engine> m_sudakov{};
+    YAML::Node m_sudakov_config{};
+
+  public:
+    void SetSudakovConfig(const YAML::Node &node) { m_sudakov_config = YAML::Clone(node); }
+    const sudakov::Engine *SudakovEngine() const { return m_sudakov.get(); }
+
+  private:
     void ScheduleTrials(Event &, size_t, bool formed = false);
     std::optional<double> SmoothPairTime(double, double, double, double, double) const;
     void ScheduleDecay(const Particle &, size_t);
@@ -268,6 +287,7 @@ template <> struct convert<achilles::Cascade> {
         if(node["DecayFile"]) decay_file = node["DecayFile"].as<std::string_view>();
         cascade = achilles::Cascade(std::move(handler), probType, algorithm, mediumType, decay_file,
                                     potentialProp, distance);
+        if(node["Sudakov"]) cascade.SetSudakovConfig(node["Sudakov"]);
         return true;
     }
 };
@@ -310,6 +330,10 @@ template <> struct convert<achilles::Cascade::Algorithm> {
             type = achilles::Cascade::Algorithm::Veto;
         else if(node.as<std::string>() == "Continuous")
             type = achilles::Cascade::Algorithm::Continuous;
+        else if(node.as<std::string>() == "SudakovA")
+            type = achilles::Cascade::Algorithm::SudakovA;
+        else if(node.as<std::string>() == "SudakovB")
+            type = achilles::Cascade::Algorithm::SudakovB;
         else
             return false;
         return true;

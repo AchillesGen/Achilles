@@ -15,6 +15,7 @@ add_executable(achilles-testsuite
     test_nucleus.cc
     test_form_factor.cc
     test_cascade.cc
+    test_sudakov.cc
     test_beams.cc
     test_event.cc
     test_cuts.cc
