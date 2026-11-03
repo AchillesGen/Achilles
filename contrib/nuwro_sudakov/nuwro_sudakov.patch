@@ -1,0 +1,844 @@
+diff -ruN nuwro/src/Interaction.cc nuwro_p/src/Interaction.cc
+--- nuwro/src/Interaction.cc	2026-10-28 16:56:51.438899968 -0400
++++ nuwro_p/src/Interaction.cc	2026-10-28 20:51:57.457155345 -0400
+@@ -478,6 +478,71 @@
+ }
+ 
+ ////////////////////////////////////////
++// Sudakov veto cascade: bounds for the majorant
++////////////////////////////////////////
++
++double Interaction::nn_table_margin()
++{
++  // The tabulated cross sections are piecewise linear: the maximum over an
++  // interval is attained at a knot or an end point, so the bound is exact.
++  // The analytic parametrisations (Metropolis below 335 MeV, Cugnon) are
++  // bounded by dense sampling, with a small safety margin.
++  return (NN_xsec->param_value == 0 || NN_xsec->param_value == 3) ? 1.03 : 1.0;
++}
++
++double Interaction::NN_xsec_max( double Elo, double Ehi, bool ij_ )
++{
++  if( Elo < 0 ) Elo = 0;
++  if( Ehi < Elo ) Ehi = Elo;
++  vector<double> pts;
++  pts.push_back(Elo); pts.push_back(Ehi);
++  for( double x : NN_xsec->axis_values() ) if( x > Elo && x < Ehi ) pts.push_back(x);
++  if( NN_xsec->param_value == 0 || NN_xsec->param_value == 3 )
++    for( int i = 1; i < 256; i++ ) pts.push_back( Elo + (Ehi-Elo)*i/256.0 );
++  // the Metropolis branch is clamped at 30 MeV and switches to the table at 335 MeV
++  const double extra[] = {30*MeV, 335*MeV, 6*MeV, 4148*MeV};
++  for( double x : extra ) if( x > Elo && x < Ehi ) { pts.push_back(x*(1-1e-9)); pts.push_back(x*(1+1e-9)); }
++  double m = 0;
++  for( double E : pts )
++  {
++    double sii = 0, sij = 0;
++    get_NN_xsec( E, sii, sij );
++    m = max( m, ij_ ? sij : sii );
++  }
++  return m * nn_table_margin();
++}
++
++double Interaction::pion_xsec_max( int pdg, int target_is_proton, double Ek, double dens_lo, double dens_hi )
++{
++  vector<double> d;
++  d.push_back(dens_lo); d.push_back(dens_hi);
++  for( int k = 0; k < PD.n_density_knots(); k++ )
++  {
++    double x = PD.density_knot(k);
++    if( x > dens_lo && x < dens_hi ) d.push_back(x);
++  }
++  double m = 0;
++  for( double dens : d )
++  {
++    PD.set_density(dens);
++    PD.set_Ek(Ek);
++    double rii=PD.sij(0)*millibarn;
++    double rij=PD.sij(1)*millibarn;
++    double rabs=PD.sij(2)*millibarn;
++    double xn = 0, xp = 0;
++    switch(pdg)
++    {
++      case pdg_pi:   xn = xp = (rii+rij+rabs)/2; break;
++      case pdg_piP:  xn = rij+rabs; xp = rii;     break;
++      case -pdg_piP: xn = rii;      xp = rij+rabs;break;
++      default: break;
++    }
++    m = max( m, target_is_proton ? xp : xn );
++  }
++  return m;
++}
++
++////////////////////////////////////////
+ 
+ void Interaction::test ()
+ {
+diff -ruN nuwro/src/Interaction.h nuwro_p/src/Interaction.h
+--- nuwro/src/Interaction.h	2026-10-28 16:56:51.438899968 -0400
++++ nuwro_p/src/Interaction.h	2026-10-28 20:51:57.455055977 -0400
+@@ -195,6 +195,11 @@
+ 	int xsec;
+ const double *E, *s[3], *F[3], *Fc[3],
+              *A[3], *B[3], *Cel[3], *Cinel[3], *Fp[3], *F2p;
++public:
++	/// Sudakov cascade: densities at which the cross-section tables are tabulated
++	/// (sigma is piecewise linear in density between these knots).
++	int    n_density_knots() const { return nD > 1 ? nD : 0; }
++	double density_knot(int k) const { return maxdens * k / (nD - 1); }
+ private:
+ 	inline double dval(const double *V)
+ 	{
+@@ -760,6 +765,13 @@
+     }
+     void test ();                             //!< Test function.
+ 
++    // Sudakov veto cascade (kaskada_sudakov=1): upper bounds used to build the majorant.
++    double NN_xsec_max( double Elo, double Ehi, bool ij_ );
++                                              //!< max over Ekeff in [Elo,Ehi] of the free NN cross section (ii or ij).
++    double pion_xsec_max( int pdg, int target_is_proton, double Ek, double dens_lo, double dens_hi );
++                                              //!< max over density in [dens_lo,dens_hi] of the pion xsec on n (0) or p (1).
++    double nn_table_margin();                 //!< 1 for tabulated NN xsec (exact bound), >1 for analytic parametrisations.
++
+   private:
+     void   get_NN_xsec( double Ek, double &resii, double &resij );
+                                               //!< Reads the NN cross sections from data.
+diff -ruN nuwro/src/data_container.cc nuwro_p/src/data_container.cc
+--- nuwro/src/data_container.cc	2026-10-28 16:56:51.463679954 -0400
++++ nuwro_p/src/data_container.cc	2026-10-28 20:51:57.453270141 -0400
+@@ -101,6 +101,15 @@
+ 
+ ////////////////////////////////////////
+ 
++vector<double> data_container::axis_values()
++{
++  vector<double> v;
++  for( int i = 0; i < number_of_points; i++ ) v.push_back( data[i][input_axis] );
++  return v;
++}
++
++////////////////////////////////////////
++
+ double data_container::get_value( int field )
+ {
+   switch( interpolate_fields[field] )
+diff -ruN nuwro/src/data_container.h nuwro_p/src/data_container.h
+--- nuwro/src/data_container.h	2026-10-28 16:56:51.463679954 -0400
++++ nuwro_p/src/data_container.h	2026-10-28 20:51:57.451320072 -0400
+@@ -48,6 +48,7 @@
+     void   set_input_point( double input_value );
+                                                   //!< Set the point where the data is taken.
+     double get_value( int field );                //!< Get a value (interpolated) for a given field.
++    vector<double> axis_values();                 //!< Values of the input axis (interpolation knots).
+     void   debug();                               //!< Write down the contents of the container.
+ 
+   private:
+diff -ruN nuwro/src/kaskada.cc nuwro_p/src/kaskada.cc
+--- nuwro/src/kaskada.cc	2026-10-28 16:56:51.575679961 -0400
++++ nuwro_p/src/kaskada.cc	2026-10-28 20:51:57.460577856 -0400
+@@ -127,6 +127,11 @@
+ 
+   frame_top("Run cascade events");
+ 
++  // Sudakov cascade / weights: per-event weights in a side file "<output>.w.txt"
++  ofstream wfile;
++  bool write_w = p.kaskada_sudakov || !p.kaskada_weights.empty();
++  if (write_w) { wfile.open((string(a.output) + ".w.txt").c_str()); wfile << "# event valid weights(" << p.kaskada_weights << ")" << endl; }
++
+   for(int i=0;i<p.number_of_events;i++)
+   {
+     e = new event;
+@@ -315,6 +320,12 @@
+     if(shell > 0)
+       k.set_shell_sampler(&get_sampler(shell));
+     k.kaskadaevent(true);
++    if (write_w)
++    {
++      wfile << i << ' ' << k.weights_valid;
++      for (double w : k.weights) wfile << ' ' << w;
++      wfile << '\n';
++    }
+     t2->Fill();
+     delete e;
+     raport(i+1,p.number_of_events,"cascade events ready...",1000);
+@@ -326,6 +337,12 @@
+     events_file.close();
+ 
+   cout << "        100. % of cascade events ready..." << endl;
++  if (p.kaskada_sudakov)
++  {
++    kaskada::print_sud_stats(cout);
++    ofstream sf((string(a.output) + ".sud.txt").c_str());
++    kaskada::print_sud_stats(sf);
++  }
+ 
+   frame_bottom();
+ 
+diff -ruN nuwro/src/kaskada7.cc nuwro_p/src/kaskada7.cc
+--- nuwro/src/kaskada7.cc	2026-10-28 16:56:51.575679961 -0400
++++ nuwro_p/src/kaskada7.cc	2026-10-28 20:51:57.486967782 -0400
+@@ -1,6 +1,7 @@
+ #include "kaskada7.h"
+ #include "fsi.h"
+ 
++
+ // Constructor: set up cascade state from params, event and input_data
+ kaskada::kaskada(params &p, event &e1, input_data *input)
+ {
+@@ -15,6 +16,7 @@
+   I = new Interaction(input->get_data_container(0), input->get_data_container(1), input->get_data_container(2),par.kaskada_piN_xsec);
+   corr_func = input->get_nucl_data_container(0, par.nucleus_p, par.nucleus_n);
+   shell_dist = nullptr;
++  sud_init();
+ }
+ 
+ // Destructor: free heap-allocated nuclear and interaction objects
+@@ -35,6 +37,10 @@
+ 
+   if (e->weight <= 0) return result;
+ 
++  weights.assign(wvar.size(), 1.0);
++  weights_valid = true;
++  if (par.kaskada_sudakov) sud_stats.events++;
++
+   prepare_particles(); // Fill 'parts' queue from primary vertex (e->out), apply formation zone
+ 
+   if (e->in[0].lepton()) {
+@@ -69,6 +75,8 @@
+   //   → run the classical NuWro cascade for all 'parts'
+   if (!isQESF) {
+ 
++      if (par.kaskada_sudakov) sud_cascade(0, nullptr, -1); // (b): veto algorithm, no time steps
++      else
+       while (!parts.empty() && nucl->Ar() > 0) { // while queue has particles and nucleus not exhausted
+ 
+         particle p1 = parts.front();
+@@ -76,6 +84,7 @@
+         p = &p1;
+ 
+         X = prepare_interaction();
++        step_weights();
+         if (!move_particle()) continue;
+         if (X.r >= radius) leave_nucleus();
+ 
+@@ -121,6 +130,8 @@
+         else
+         {
+ 
++          if (par.kaskada_sudakov) sud_cascade(1, nullptr, -1);
++          else
+           while (!parts.empty() && nucl->Ar()>0)
+           {
+ 
+@@ -165,6 +176,8 @@
+           }
+ 
+           // Standard cascade loop
++          if (par.kaskada_sudakov) intercated = sud_cascade(0, nullptr, -1);
++          else
+           while (!parts.empty() && nucl->Ar() > 0) {
+ 
+             particle p1 = parts.front();
+@@ -230,6 +243,9 @@
+               prepare_single_nucleon_for_redraw(N1, 1);
+ 
+               // Re-run cascade
++              weights_valid = false;
++              if (par.kaskada_sudakov) { if (sud_cascade(0, nullptr, original_scale)) intercated = true; }
++              else
+               while (!parts.empty() && nucl->Ar() > 0) {
+ 
+               particle pt = parts.front();
+@@ -309,6 +325,8 @@
+           }
+ 
+           // First pass: standard cascade for both nucleons.
++          if (par.kaskada_sudakov) intercated = sud_cascade(0, nod_n1_failed_firstpass, -1);
++          else
+           while (!parts.empty() && nucl->Ar() > 0) {
+ 
+             particle p1 = parts.front();
+@@ -428,6 +446,9 @@
+               N1.travelled = 0;
+               prepare_single_nucleon_for_redraw(N1, 1);
+ 
++              weights_valid = false;
++              if (par.kaskada_sudakov) { if (sud_cascade(0, nullptr, original_scale)) intercated = true; }
++              else
+               while (!parts.empty() && nucl->Ar() > 0) {
+ 
+                 particle pt = parts.front();
+@@ -744,6 +765,12 @@
+     }
+   }
+ 
++  if (p->nucleon() && par.kaskada_NN_xsec_scale != 1)   // optional global NN cross-section scale (default 1)
++  {
++    res.xsec_n *= par.kaskada_NN_xsec_scale;
++    res.xsec_p *= par.kaskada_NN_xsec_scale;
++  }
++
+   res.xsec = res.dens_n*res.xsec_n + res.dens_p*res.xsec_p; // calculate the inverse of the mean free path
+ 
+   assert(res.xsec>=0);                      // make sure that the cross section is positive
+@@ -767,6 +794,12 @@
+ {
+   p->krok (min (max_step, X.freepath));   // propagate by no more than max_step
+ 
++  return after_move();
++}
++
++// Energy update (SF) and jail check at the particle's current position
++bool kaskada::after_move()
++{
+   if(e->flag.qel && par.sf_method != 0 && p->nucleon())
+   {
+     const double old_fermi = p->his_fermi;
+@@ -911,6 +944,12 @@
+       }
+     }
+ 
++    if (p->nucleon() && par.kaskada_NN_xsec_scale != 1)
++    {
++      X.xsec_n *= par.kaskada_NN_xsec_scale;
++      X.xsec_p *= par.kaskada_NN_xsec_scale;
++    }
++
+     const double neutron_weight = X.dens_n * X.xsec_n;
+     const double proton_weight = X.dens_p * X.xsec_p;
+     const double total_weight = neutron_weight + proton_weight;
+@@ -1207,3 +1246,461 @@
+   }
+   return true;
+ }
++
++////////////////////////////////////////////////////////////////////////////////
++//  Sudakov veto cascade  (kaskada_sudakov = 1)
++//
++//  The cascade (a) approximates a continuous-time process: a particle at path
++//  length l from its last anchor interacts with a target nucleon of isospin c
++//  with hazard  Gamma_c(l) = E_target[ dens_c(r) * xsec_c(r, p1, target) ],
++//  where xsec_c contains every factor of prepare_interaction() (in-medium
++//  modification, 0.9 low-energy factor, correlation factor, mfp scale).
++//  The survival probability exp(-int Gamma) is never inverted.  Instead each
++//  channel draws candidates from a piecewise-constant majorant G_c >= Gamma_c on
++//  path segments of length kaskada_sudakov_segment, draws a fresh target at the
++//  candidate (prepare_interaction), and accepts with Gamma_c/G_c.  A rejected
++//  candidate continues from the rejected point with the same channel.  All
++//  candidates of all particles are processed in global time order; the earliest
++//  wins.  Pauli blocking and failed kinematics act exactly as in (a): the
++//  accepted collision is discarded and the particle continues from that point.
++//  Leaving the nucleus is an event at the computed surface-crossing time.
++////////////////////////////////////////////////////////////////////////////////
++
++kaskada::sud_stats_t kaskada::sud_stats = {0,0,0,0,0,0,0,0,0,0,0.0};
++
++void kaskada::print_sud_stats(ostream &o)
++{
++  const sud_stats_t &s = sud_stats;
++  o << "Sudakov cascade statistics:" << endl
++    << "  events              " << s.events << endl
++    << "  segments (bounds)   " << s.segments << endl
++    << "  proposals           " << s.proposals << endl
++    << "  accepted            " << s.accepted << endl
++    << "  Pauli/kinematics    " << s.blocked << endl
++    << "  ... nucleus changed " << s.blocked_state_change << endl
++    << "  majorant violations " << s.violations << endl
++    << "  max Gamma/G         " << s.max_ratio << endl
++    << "  jailed in flight    " << s.jail_midflight << endl
++    << "  finalize failures   " << s.finalize_fail << endl
++    << "  re-anchorings       " << s.reanchors << endl;
++}
++
++void kaskada::sud_init()
++{
++  seg_len = par.kaskada_sudakov_segment * fermi;
++  if (!(seg_len > 0)) seg_len = 2.0 * fermi;
++
++  // radial grid of the density of the full nucleus (Ar = A at construction)
++  // (cached: kaskada is constructed once per event)
++  const int N = 4000;
++  static vector<double> cache;
++  static double cache_key[5] = {-1, -1, -1, -1, -1};
++  const double key[5] = {double(par.nucleus_p), double(par.nucleus_n), radius,
++                         double(par.nucleus_model), double(par.density_model)};
++  if (!equal(key, key + 5, cache_key))
++  {
++    cache.resize(N + 2);
++    for (int i = 0; i <= N + 1; i++) cache[i] = nucl->density(i * radius / N);
++    copy(key, key + 5, cache_key);
++  }
++  dgrid_h = radius / N;
++  dshape = cache;
++
++  corr_knots = corr_func->axis_values();
++
++  // weight variations, e.g. "mfp=0.6,mfp=1.0,xs=0.8,xs=1.2"
++  wvar.clear();
++  wheadroom = 1;
++  stringstream ss(par.kaskada_weights);
++  string item;
++  while (getline(ss, item, ','))
++  {
++    size_t eq = item.find('=');
++    if (eq == string::npos) continue;
++    string key = item.substr(0, eq);
++    key.erase(remove(key.begin(), key.end(), ' '), key.end());
++    double val = atof(item.substr(eq + 1).c_str());
++    if (key == "mfp")
++    {
++      wvar.push_back(make_pair(0, val));
++      wheadroom = max(wheadroom, par.kaskada_NN_mfp_scale / val);
++    }
++    else if (key == "xs")
++    {
++      wvar.push_back(make_pair(1, val));
++      wheadroom = max(wheadroom, val / par.kaskada_NN_xsec_scale);
++    }
++  }
++  weights.assign(wvar.size(), 1.0);
++  weights_valid = true;
++}
++
++bool kaskada::corr_applies()
++{
++  return !e->out[0].nucleon() || e->number_of_interactions() || par.beam_placement != 2;
++}
++
++// cell i covers [i h, (i+1) h]; the excess allows for a maximum inside the cell
++static inline double cell_excess(const vector<double> &d, int i)
++{
++  int n = d.size();
++  double d0 = (i > 0) ? d[i] - d[i-1] : 0;
++  double d1 = d[i+1] - d[i];
++  double d2 = (i + 2 < n) ? d[i+2] - d[i+1] : 0;
++  return 0.25 * max(fabs(d1 - d0), fabs(d2 - d1));
++}
++
++double kaskada::dens_max(double rlo, double rhi)
++{
++  int n = dshape.size() - 2;
++  int i0 = int(rlo / dgrid_h), i1 = int(rhi / dgrid_h);
++  if (i0 > n) return 0;
++  i0 = max(0, i0); i1 = min(n, i1);
++  double m = 0;
++  for (int i = i0; i <= i1; i++)
++    m = max(m, max(dshape[i], dshape[i+1]) + cell_excess(dshape, i));
++  return m;
++}
++
++double kaskada::dens_min(double rlo, double rhi)
++{
++  int n = dshape.size() - 2;
++  int i0 = int(rlo / dgrid_h), i1 = int(rhi / dgrid_h);
++  if (i0 > n) return 0;
++  i0 = max(0, i0); i1 = min(n, i1);
++  double m = 1e300;
++  for (int i = i0; i <= i1; i++)
++    m = min(m, min(dshape[i], dshape[i+1]) - cell_excess(dshape, i));
++  return max(0.0, m);
++}
++
++double kaskada::var_factor(int v, bool nucleon_proj)
++{
++  if (!nucleon_proj) return 1;
++  if (wvar[v].first == 0) return corr_applies() ? par.kaskada_NN_mfp_scale / wvar[v].second : 1;
++  return wvar[v].second / par.kaskada_NN_xsec_scale;
++}
++
++// likelihood-ratio weights of one step of (a): free path drawn from Exp(Gamma), censored at max_step
++void kaskada::step_weights()
++{
++  for (int v = 0; v < (int)wvar.size(); v++)
++  {
++    double k = var_factor(v, p->nucleon());
++    if (k == 1) continue;
++    double G = X.xsec;
++    if (X.freepath < max_step) weights[v] *= k * exp(-(k - 1) * G * X.freepath);
++    else                       weights[v] *= exp(-(k - 1) * G * max_step);
++  }
++}
++
++double kaskada::sud_bound(sud_track &t, int c, double la, double lb)
++{
++  // radial range of the segment
++  vec ra = t.r0 + la * t.dir, rb = t.r0 + lb * t.dir;
++  double lstar = -(t.r0 * t.dir);
++  double rlo = min(ra.length(), rb.length());
++  if (lstar > la && lstar < lb) rlo = (t.r0 + lstar * t.dir).length();
++  double rhi = max(ra.length(), rb.length());
++
++  const double A = nucl->A(), Ar = nucl->Ar();
++  const double Nc = (c == 0) ? nucl->Nr() : nucl->Zr();
++  if (Ar <= 0 || Nc <= 0) return 0;
++  const bool shell = (shell_dist && nucl->A() > 1);
++  const double shellfac = shell ? A / (A - 1) : 1;
++
++  const double ds_hi = dens_max(rlo, rhi), ds_lo = dens_min(rlo, rhi);
++  const double rho_c_hi = ds_hi * Nc / A * shellfac;              // >= dens * frac_c
++  const double rho_hi = ds_hi * Ar / A * shellfac;                // >= dens (X.dens)
++  const double rho_lo = shell ? 0 : ds_lo * Ar / A;               // <= dens
++  if (rho_c_hi <= 0) return 0;
++
++  particle &q = t.p;
++  const double MeanM = (PDG::mass_proton + PDG::mass_neutron) / 2;
++
++  if (q.nucleon())
++  {
++    // projectile kinetic energy along the segment.  In the SF branch the energy
++    // follows the local Fermi energy, Ek - his_fermi being constant on the path.
++    double Ek_lo = q.Ek(), Ek_hi = q.Ek();
++    if (e->flag.qel && par.sf_method != 0 && nucl->kMomDist == 2)
++    {
++      const double Nown = (q.pdg == pdg_proton) ? nucl->Zr() : nucl->Nr();
++      double kf_lo = kf_from_density(ds_lo * Nown / A), kf_hi = kf_from_density(ds_hi * Nown / A);
++      double J = q.Ek() - q.his_fermi;
++      Ek_lo = max(0.0, J + sqrt(kf_lo * kf_lo + MeanM * MeanM) - MeanM);
++      Ek_hi = J + sqrt(kf_hi * kf_hi + MeanM * MeanM) - MeanM;
++    }
++    const double m1 = q.mass();
++    const double p1lo = sqrt(Ek_lo * Ek_lo + 2 * m1 * Ek_lo), p1hi = sqrt(Ek_hi * Ek_hi + 2 * m1 * Ek_hi);
++    const double E1lo = Ek_lo + m1, E1hi = Ek_hi + m1;
++
++    // largest target momentum
++    double qmax;
++    switch (nucl->kMomDist)
++    {
++      case 1:  qmax = nucl->kF(); break;
++      case 3: case 4: case 5: qmax = 1000 * MeV; break;      // tails: conservative
++      default: qmax = kf_from_density(ds_hi * max(nucl->Zr(), nucl->Nr()) / A); break; // local Fermi gas
++    }
++    // range of the projectile kinetic energy in the target rest frame
++    double Emin = 1e300, Emax = 0;
++    const double m2s[2] = {PDG::mass_neutron, PDG::mass_proton};
++    for (double m2 : m2s)
++    {
++      const double E2 = sqrt(qmax * qmax + m2 * m2);
++      Emax = max(Emax, (E1hi * E2 + p1hi * qmax) / m2 - m1);
++      if (p1lo * m2 / m1 <= qmax) Emin = 0;                    // a co-moving target is possible
++      else Emin = min(Emin, (E1lo * E2 - p1lo * qmax) / m2 - m1);
++    }
++    Emin = max(0.0, Emin);
++
++    const bool same = (q.pdg == pdg_neutron && c == 0) || (q.pdg == pdg_proton && c == 1);
++    double sig = I->NN_xsec_max(Emin, Emax, !same);
++
++    // Pandharipande-Pieper factor: mod <= 1/(1 - a/4), a = 2 M |beta| / lambda^2 (see report);
++    // the inelastic factor 1 - 0.2 rho/rho0 is <= 1.
++    const double x = rho_hi / (0.16 / fermi3);
++    const double lam = (3.29 - 0.373 * x) / fermi;
++    const double a = 2.0 * MeanM * 116.0 * x / (lam * lam);
++    const double modb = (a < 3.999) ? 1.0 / (1.0 - a / 4.0) : 1e6;
++    sig *= max(1.0, modb);
++
++    if (!same && Ek_hi < 40) sig *= 0.9;                       // effective Pauli factor of (a)
++
++    if (corr_applies())
++    {
++      const int fc = same ? 1 : 2, fn = same ? 3 : 4;
++      const double slo = t.s0 + la, shi = t.s0 + lb;
++      double cmax = 0, nmin = 1e300;
++      vector<double> sp = {slo, shi}, rp = {rlo, rhi};
++      for (double k : corr_knots) { if (k > slo && k < shi) sp.push_back(k); if (k > rlo && k < rhi) rp.push_back(k); }
++      for (double s : sp) { corr_func->set_input_point(s); cmax = max(cmax, corr_func->get_value(fc)); }
++      for (double r : rp) { corr_func->set_input_point(r); nmin = min(nmin, corr_func->get_value(fn)); }
++      sig *= cmax / nmin / par.kaskada_NN_mfp_scale;
++    }
++    sig *= par.kaskada_NN_xsec_scale * wheadroom;
++    return rho_c_hi * sig;
++  }
++
++  if (q.pdg == pdg_pi || q.pdg == pdg_piP || q.pdg == -pdg_piP)
++    return rho_c_hi * I->pion_xsec_max(q.pdg, c, q.Ek(), rho_lo, rho_hi);
++
++  // hyperons (and anything else): empirical bound with headroom 3, violations are counted
++  {
++    double m = 0;
++    particle save = q;
++    const double lsave = t.lcur;
++    particle *psave = p;
++    for (int k = 0; k <= 16; k++)
++    {
++      sud_move_to(t, la + (lb - la) * k / 16.0);
++      p = &t.p;
++      interaction_parameters Y = prepare_interaction();
++      m = max(m, c == 0 ? Y.dens_n * Y.xsec_n : Y.dens_p * Y.xsec_p);
++    }
++    t.p = save; t.lcur = lsave; p = psave;
++    return 3.0 * m;
++  }
++}
++
++void kaskada::sud_move_to(sud_track &t, double l)
++{
++  t.p.r = vect(t.r0 + l * t.dir, t.t0 + l / t.v);
++  t.p.travelled = t.s0 + l;
++  t.lcur = l;
++}
++
++void kaskada::sud_draw(sud_track &t, int c, double l, double gm, double shi)
++{
++  while (true)
++  {
++    if (gm < 0 || l >= shi)                                   // open a new segment
++    {
++      if (l >= t.lexit) { t.lc[c] = -1; return; }
++      shi = min(l + seg_len, t.lexit);
++      gm = sud_bound(t, c, l, shi);
++      sud_stats.segments++;
++    }
++    if (gm > 0)
++    {
++      double cand = l - log(1.0 - frandom()) / gm;           // invert the (constant) majorant
++      if (cand <= shi) { t.lc[c] = cand; t.seg_hi[c] = shi; t.gmax[c] = gm; return; }
++    }
++    l = shi; gm = -1;
++  }
++}
++
++void kaskada::sud_anchor(sud_track &t)
++{
++  t.r0 = vec(t.p.r);
++  t.t0 = t.p.r.t;
++  t.s0 = t.p.travelled;
++  t.v = t.p.v().length();
++  t.dir = t.p.v() / t.v;
++  t.lcur = 0;
++  const double b = t.r0 * t.dir, c2 = t.r0 * t.r0 - radius * radius;
++  t.lexit = (c2 >= 0) ? 0 : -b + sqrt(b * b - c2);
++  for (int c = 0; c < 2; c++) sud_draw(t, c, 0, -1, -1);
++}
++
++void kaskada::sud_add(particle &q)
++{
++  sud_track t;
++  t.p = q;
++  sud_anchor(t);
++  trk.push_back(t);
++}
++
++double kaskada::sud_next(sud_track &t, int &what)
++{
++  double l = t.lexit; what = 2;
++  for (int c = 0; c < 2; c++)
++    if (t.lc[c] >= 0 && t.lc[c] < l) { l = t.lc[c]; what = c; }
++  return l;
++}
++
++bool kaskada::sud_cascade(int mode, int *nod_n1, double restore_scale)
++{
++  bool n1_interacted = false;
++  trk.clear();
++
++  auto take_queue = [&]() {
++    while (!parts.empty())
++    {
++      particle q = parts.front();
++      parts.pop();
++      if (mode == 1 && q.nucleon_id == 1) { p = &q; leave_nucleus(); continue; }
++      sud_add(q);
++    }
++  };
++  // move every particle to global time tnow and redraw its candidates (state of the nucleus changed)
++  auto reanchor_all = [&](double tnow) {
++    sud_stats.reanchors++;
++    for (int i = 0; i < (int)trk.size(); )
++    {
++      sud_track &o = trk[i];
++      sud_move_to(o, max(o.lcur, (tnow - o.t0) * o.v));
++      p = &o.p;
++      if (!after_move()) { sud_stats.jail_midflight++; trk.erase(trk.begin() + i); continue; }
++      sud_anchor(o);
++      i++;
++    }
++  };
++  auto no_interaction = [&](particle &q) {
++    int k = -1;
++    if (nucleon(q.pdg)) k = 13;
++    if (pion(q.pdg))    k = 12;
++    if (hyperon(q.pdg)) k = 14;
++    if (k >= 0) { e->nod[k]++; if (nod_n1 && q.nucleon_id == 1) nod_n1[k]++; }
++  };
++
++  take_queue();
++
++  while (!trk.empty() && nucl->Ar() > 0)
++  {
++    // earliest event of all particles in global time
++    int ib = -1, what = -1;
++    double tb = 1e300, lb = 0;
++    for (int i = 0; i < (int)trk.size(); i++)
++    {
++      int w;
++      double l = sud_next(trk[i], w);
++      double tt = trk[i].t0 + l / trk[i].v;
++      if (tt < tb) { tb = tt; ib = i; what = w; lb = l; }
++    }
++    sud_track &t = trk[ib];
++    sud_move_to(t, lb);                                        // straight to the event, no steps
++    p = &t.p;
++
++    if (!after_move())                                         // cannot happen: jail function is constant on a path
++    {
++      sud_stats.jail_midflight++;
++      trk.erase(trk.begin() + ib);
++      reanchor_all(tb);
++      continue;
++    }
++
++    if (what == 2)                                             // surface crossing
++    {
++      bool escaped = leave_nucleus();
++      trk.erase(trk.begin() + ib);
++      if (!escaped) reanchor_all(tb);                          // jailed: nucleon returned to the nucleus
++      continue;
++    }
++
++    // candidate of channel c: fresh target at this point, accept with Gamma_c/G_c
++    const int c = what;
++    sud_stats.proposals++;
++    X = prepare_interaction();
++    const double g = (c == 0) ? X.dens_n * X.xsec_n : X.dens_p * X.xsec_p;
++    const double gm = t.gmax[c];
++    if (g > gm * (1 + 1e-6)) sud_stats.violations++;
++    if (gm > 0) sud_stats.max_ratio = max(sud_stats.max_ratio, g / gm);
++    const bool acc = frandom() * gm < g;
++
++    for (int v = 0; v < (int)wvar.size(); v++)
++    {
++      double k = var_factor(v, p->nucleon());
++      if (k == 1) continue;
++      if (acc) weights[v] *= k;
++      else     weights[v] *= (gm - k * g) / (gm - g);
++    }
++
++    if (!acc)
++    {
++      no_interaction(t.p);
++      sud_draw(t, c, lb, gm, t.seg_hi[c]);                     // continue from the rejected point, same channel
++      continue;
++    }
++
++    sud_stats.accepted++;
++    // Collision.  Outside the QE-SF branch the target drawn at this point is the one that
++    // scatters and its isospin is the channel that won (as in (a), where the target of the
++    // rate is the target of the collision).  In the QE-SF branch make_interaction() itself
++    // re-selects target and isospin at the collision point (kaskada7.cc:869-966 of (a));
++    // that prescription is kept unchanged.
++    X.prob_proton = c;
++    const int Zr0 = nucl->Zr(), Nr0 = nucl->Nr();
++    bool ok = make_interaction();
++
++    if (!ok)                                                   // Pauli blocked / no kinematics: as in (a)
++    {
++      sud_stats.blocked++;
++      no_interaction(t.p);
++      if (nucl->Zr() != Zr0 || nucl->Nr() != Nr0)              // (a) keeps nucleus changes made by a blocked
++      {                                                        // pion absorption (Interaction.h:574-680):
++        sud_stats.blocked_state_change++;                      // the majorants of everybody are stale
++        reanchor_all(tb);
++      }
++      else sud_draw(t, c, lb, gm, t.seg_hi[c]);
++      continue;
++    }
++
++    const bool is_n1 = nucleon(t.p.pdg) && t.p.nucleon_id == 1;
++    if (!finalize_interaction())                               // as in (a): the particle goes on
++    {
++      sud_stats.finalize_fail++;
++      no_interaction(t.p);
++      particle keep = t.p;
++      trk.erase(trk.begin() + ib);
++      reanchor_all(tb);
++      parts.push(keep);
++      take_queue();
++      continue;
++    }
++
++    if (is_n1)
++    {
++      n1_interacted = true;
++      if (restore_scale > 0) par.kaskada_NN_mfp_scale = restore_scale;
++    }
++    trk.erase(trk.begin() + ib);
++    reanchor_all(tb);                                          // the nucleus changed: new majorants for everybody
++    take_queue();                                              // products start at the collision point and time
++  }
++
++  for (auto &t : trk) parts.push(t.p);                         // nucleus exhausted: clean() as in (a)
++  trk.clear();
++  return n1_interacted;
++}
+diff -ruN nuwro/src/kaskada7.h nuwro_p/src/kaskada7.h
+--- nuwro/src/kaskada7.h	2026-10-28 16:56:51.575679961 -0400
++++ nuwro_p/src/kaskada7.h	2026-10-28 20:51:57.458827199 -0400
+@@ -63,6 +63,56 @@
+     data_container* corr_func;                    //!< Correlation function for effective density.
+     shell_sampler* shell_dist;                    //!< Shell sampler if primary vertex has a specific wavefuntion.
+ 
++    // ---- Sudakov veto cascade (kaskada_sudakov = 1) -----------------------------------
++    //! One particle in flight.  Its straight path is parametrised by the path length l
++    //! measured from the anchor point (position r0, time t0, travelled s0).
++    struct sud_track
++    {
++      particle p;                                 //!< Particle; p.r is its current position (l = lcur).
++      vec    r0, dir;                             //!< Anchor position and unit direction.
++      double t0, s0, v;                           //!< Anchor time, travelled at anchor, speed.
++      double lcur;                                //!< Path length already moved from the anchor.
++      double lexit;                               //!< Path length from the anchor to the nuclear surface.
++      double lc[2];                               //!< Next candidate per channel (0: n target, 1: p target); <0 none.
++      double seg_hi[2];                           //!< End of the segment the candidate was drawn in.
++      double gmax[2];                             //!< Majorant on that segment.
++    };
++    vector<sud_track> trk;                        //!< Particles in flight, ordered by global time on the fly.
++    double seg_len;                               //!< Segment length for the piecewise-constant majorant.
++    vector<double> dshape;                        //!< Density of the full nucleus on a radial grid.
++    double dgrid_h;                               //!< Grid spacing of dshape.
++    vector<double> corr_knots;                    //!< Knots of the correlation tables.
++    vector<pair<int,double> > wvar;               //!< Weight variations: (0: mfp scale, 1: NN xsec scale; value).
++    double wheadroom;                             //!< Majorant headroom so that every variation stays below it.
++
++  public:
++    vector<double> weights;                       //!< Event weights for the variations in kaskada_weights.
++    bool   weights_valid;                         //!< false if a branch with mfp redraws was used.
++    //! Sudakov statistics accumulated over all events of this process.
++    struct sud_stats_t { long events, proposals, accepted, blocked, blocked_state_change, violations,
++                         jail_midflight, finalize_fail, reanchors, segments; double max_ratio; };
++    static sud_stats_t sud_stats;
++    static void print_sud_stats(ostream &o);
++
++  private:
++    void   sud_init();                            //!< Precompute envelopes (called from the constructor).
++    bool   after_move();                          //!< Energy update and jail check after a move (move_particle body).
++    bool   corr_applies();                        //!< Are the correlation factor and mfp scale applied?
++    double dens_max(double rlo, double rhi);      //!< Upper bound of the full-nucleus density on [rlo,rhi].
++    double dens_min(double rlo, double rhi);      //!< Lower bound of the full-nucleus density on [rlo,rhi].
++    double sud_bound(sud_track &t, int c, double la, double lb); //!< Majorant for channel c on [la,lb].
++    void   sud_draw(sud_track &t, int c, double l0, double gmax, double shi); //!< Next candidate from l0.
++    void   sud_anchor(sud_track &t);              //!< Re-anchor at the current position and redraw candidates.
++    void   sud_add(particle &q);                  //!< Start tracking a particle from the parts queue.
++    double sud_next(sud_track &t, int &what);     //!< Path length of the next event: 0/1 candidate, 2 exit.
++    void   sud_move_to(sud_track &t, double l);   //!< Move straight to path length l (no stepping).
++    double var_factor(int v, bool nucleon_proj);  //!< Gamma'/Gamma for variation v.
++    bool   sud_cascade(int mode, int *nod_n1, double restore_scale);
++                                                  //!< Runs the queue with the veto algorithm.
++                                                  /*!< mode 1: particles with nucleon_id==1 leave without interacting.
++                                                       Returns true if a nucleon with nucleon_id==1 interacted. */
++    void   step_weights();                        //!< (a): likelihood-ratio weights of the current step.
++
+   public:
+     kaskada(params &p, event &e1, input_data *input);
+                                                   //!< The default constructor.
+diff -ruN nuwro/src/params_all.h nuwro_p/src/params_all.h
+--- nuwro/src/params_all.h	2026-10-28 16:56:51.579679961 -0400
++++ nuwro_p/src/params_all.h	2026-10-28 20:51:57.449494321 -0400
+@@ -134,6 +134,10 @@
+ PARAM(bool,first_step,1)\
+ PARAM(double,step,0.2)\
+ PARAM(double,kaskada_NN_mfp_scale,0.76)\
++PARAM(int,kaskada_sudakov,0)\
++PARAM(double,kaskada_sudakov_segment,2.0)\
++PARAM(double,kaskada_NN_xsec_scale,1)\
++PARAM(string,kaskada_weights,"")\
+ PARAM(int,kaskada_NN_xsec,2)\
+ PARAM(int,kaskada_NN_inel,2)\
+ PARAM(int,kaskada_NN_angle,3)\

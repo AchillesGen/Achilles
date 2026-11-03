@@ -1,0 +1,85 @@
+--- nuwro_p/src/kaskada7.cc	2026-10-28 20:51:57.486967782 -0400
++++ nuwro_b/src/kaskada7.cc	2026-10-28 20:17:33.613369091 -0400
+@@ -1,6 +1,21 @@
+ #include "kaskada7.h"
+ #include "fsi.h"
+ 
++#ifdef KASKADA_SUDAKOV_TEST
++// Unit-test build only (not part of the production code): constant (or random,
++// mean-preserving) cross section, absorption at the first collision, record it.
++#include <cstdio>
++static double test_sigma()    { static double v = getenv("SUD_TEST_SIGMA") ? atof(getenv("SUD_TEST_SIGMA")) : 0; return v; }
++static int    test_random()   { static int v = getenv("SUD_TEST_RANDOM") ? atoi(getenv("SUD_TEST_RANDOM")) : 0; return v; }
++static double test_headroom() { static double v = getenv("SUD_TEST_HEADROOM") ? atof(getenv("SUD_TEST_HEADROOM")) : 1; return v; }
++static FILE*  test_file()     { static FILE* f = fopen("sud_test.txt", "w"); return f; }
++static void   test_record(event *e, particle *p, bool coll)
++{
++  vect s = e->out[0].r;
++  fprintf(test_file(), "%.8g %.8g %.8g %d %.8g %.8g %.8g\n", s.x/fermi, s.y/fermi, s.z/fermi, int(coll),
++          p->r.x/fermi, p->r.y/fermi, p->r.z/fermi);
++}
++#endif
+ 
+ // Constructor: set up cascade state from params, event and input_data
+ kaskada::kaskada(params &p, event &e1, input_data *input)
+@@ -86,6 +101,15 @@
+         X = prepare_interaction();
+         step_weights();
+         if (!move_particle()) continue;
++#ifdef KASKADA_SUDAKOV_TEST
++        if (test_sigma() > 0)
++        {
++          if (p->r.length() >= radius) test_record(e, p, false);
++          else if (X.freepath <= max_step) test_record(e, p, true);
++          else parts.push(*p);
++          continue;
++        }
++#endif
+         if (X.r >= radius) leave_nucleus();
+ 
+         else {
+@@ -771,6 +795,14 @@
+     res.xsec_p *= par.kaskada_NN_xsec_scale;
+   }
+ 
++#ifdef KASKADA_SUDAKOV_TEST
++  if (test_sigma() > 0)
++  {
++    double sg = test_sigma() * millibarn;
++    res.xsec_n = test_random() ? 2 * sg * frandom() : sg;   // random "target" with the same mean
++    res.xsec_p = test_random() ? 2 * sg * frandom() : sg;
++  }
++#endif
+   res.xsec = res.dens_n*res.xsec_n + res.dens_p*res.xsec_p; // calculate the inverse of the mean free path
+ 
+   assert(res.xsec>=0);                      // make sure that the cross section is positive
+@@ -1417,6 +1449,9 @@
+ 
+   particle &q = t.p;
+   const double MeanM = (PDG::mass_proton + PDG::mass_neutron) / 2;
++#ifdef KASKADA_SUDAKOV_TEST
++  if (test_sigma() > 0) return rho_c_hi * test_sigma() * millibarn * (test_random() ? 2 : 1) * test_headroom();
++#endif
+ 
+   if (q.nucleon())
+   {
+@@ -1623,6 +1658,9 @@
+ 
+     if (what == 2)                                             // surface crossing
+     {
++#ifdef KASKADA_SUDAKOV_TEST
++      if (test_sigma() > 0) { test_record(e, p, false); trk.erase(trk.begin() + ib); continue; }
++#endif
+       bool escaped = leave_nucleus();
+       trk.erase(trk.begin() + ib);
+       if (!escaped) reanchor_all(tb);                          // jailed: nucleon returned to the nucleus
+@@ -1655,6 +1693,9 @@
+     }
+ 
+     sud_stats.accepted++;
++#ifdef KASKADA_SUDAKOV_TEST
++    if (test_sigma() > 0) { test_record(e, p, true); trk.erase(trk.begin() + ib); continue; }
++#endif
+     // Collision.  Outside the QE-SF branch the target drawn at this point is the one that
+     // scatters and its isospin is the channel that won (as in (a), where the target of the
+     // rate is the target of the collision).  In the QE-SF branch make_interaction() itself
