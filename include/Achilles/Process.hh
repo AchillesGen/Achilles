@@ -104,9 +104,12 @@ class ProcessGroup {
     Process &GetProcess(size_t i) { return m_processes[i]; }
     void AddProcess(Process process) { m_processes.push_back(std::move(process)); }
     const std::vector<Process> &Processes() const { return m_processes; }
-    void AddProcessInfo(ProcessInfo info) { m_process_info.push_back(std::move(info)); }
+    // The group's process before container expansion; the first one added represents the group
+    void SetProcessInfo(const ProcessInfo &info) {
+        if(!m_process_info) m_process_info = info;
+    }
 
-    void BuildProcess(const Settings &, NuclearModel *);
+    void BuildProcess(const ProcessInfo &, const Settings &, NuclearModel *);
 
     // Handling physics objects
     Beam *GetBeam() { return m_beam.get(); }
@@ -145,7 +148,7 @@ class ProcessGroup {
 
   private:
     // Physics components
-    std::vector<ProcessInfo> m_process_info;
+    std::optional<ProcessInfo> m_process_info;
     std::vector<Process> m_processes;
     std::shared_ptr<Beam> m_beam = nullptr;
     std::shared_ptr<Nucleus> m_nucleus = nullptr;

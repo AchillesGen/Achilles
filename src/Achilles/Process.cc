@@ -405,36 +405,35 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
         if(groups.find(multiplicity) == groups.end()) {
             groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
         }
-        groups.at(multiplicity).AddProcessInfo(std::move(process_info));
+        auto &group = groups.at(multiplicity);
+        group.SetProcessInfo(process_info);
+        group.BuildProcess(process_info, settings, model);
     }
-
-    for(auto &group : groups) group.second.BuildProcess(settings, model);
 
     return groups;
 }
 
-void ProcessGroup::BuildProcess(const Settings &settings, NuclearModel *model) {
+void ProcessGroup::BuildProcess(const ProcessInfo &info, const Settings &settings,
+                                NuclearModel *model) {
     const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
 
-    for(const auto &info : m_process_info) {
-        const auto expanded_infos = ExpandProcessInfo(info);
-        if(expanded_infos.empty())
-            throw std::runtime_error(
-                fmt::format("ProcessGroup: No charge-conserving states found for {}", info));
+    const auto expanded_infos = ExpandProcessInfo(info);
+    if(expanded_infos.empty())
+        throw std::runtime_error(
+            fmt::format("ProcessGroup: No charge-conserving states found for {}", info));
 
-        for(const auto &expanded : expanded_infos) {
-            try {
-                auto unweighter =
-                    UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
-                Process process(expanded, std::move(unweighter));
-                process.SetID(model);
-                AddProcess(std::move(process));
-            } catch(std::out_of_range &e) {
-                spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
-                              unweight_name,
-                              achilles::GetSuggestion(UnweighterFactory::List(), unweight_name));
-                exit(-1);
-            }
+    for(const auto &expanded : expanded_infos) {
+        try {
+            auto unweighter =
+                UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
+            Process process(expanded, std::move(unweighter));
+            process.SetID(model);
+            AddProcess(std::move(process));
+        } catch(std::out_of_range &e) {
+            spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
+                          unweight_name,
+                          achilles::GetSuggestion(UnweighterFactory::List(), unweight_name));
+            exit(-1);
         }
     }
 }
@@ -455,8 +454,14 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     if(m_processes.size() == 0)
         throw std::runtime_error("ProcessGroup: Number of processes found is zero!");
 
+    // Build the phase space from the container-level process (container masses), so it does not
+    // depend on which expanded process comes first. Groups built without one, or backends that
+    // need concrete flavours, fall back to the first process.
+    const auto &channel_info = m_process_info && m_backend->ContainerChannels()
+                                   ? *m_process_info
+                                   : m_processes[0].Info();
     try {
-        m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
+        m_backend->SetupChannels(channel_info, m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
     UnitsEnum display_unit = UnitsEnum::nb;
