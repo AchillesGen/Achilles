@@ -170,6 +170,25 @@ using PotentialFactory = Factory<Potential, std::shared_ptr<Nucleus> &, const YA
 };
 */
 
+/// Momentum-independent Woods-Saxon vector potential V(r) = -V0 / (1 + exp((r - R) / a)), for
+/// validation of the cascade in a known field (a -> 0: square well). Options: V0 [MeV], R [fm],
+/// a [fm].
+class WoodsSaxonPotential : public Potential, RegistrablePotential<WoodsSaxonPotential> {
+  public:
+    WoodsSaxonPotential(double v0, double radius, double diffuseness)
+        : m_v0{v0}, m_radius{radius}, m_a{diffuseness} {}
+    static std::string Name() { return "WoodsSaxon"; }
+    static std::unique_ptr<Potential> Construct(std::shared_ptr<Nucleus> &, const YAML::Node &);
+    PotentialVals operator()(double, double r) const override {
+        PotentialVals vals{};
+        vals.rvector = -m_v0 / (1 + std::exp((std::abs(r) - m_radius) / m_a));
+        return vals;
+    }
+
+  private:
+    double m_v0, m_radius, m_a;
+};
+
 class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential> {
   public:
     WiringaPotential(std::shared_ptr<Nucleus> nucleus, const double &rho0 = 0.16)

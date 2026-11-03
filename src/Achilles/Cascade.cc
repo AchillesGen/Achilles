@@ -16,6 +16,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/Potential.hh"
+#include "Achilles/PotentialFlow.hh"
 #include "Achilles/ResonanceHelper.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
@@ -39,6 +40,10 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
             return cascade->MFPAlgorithm(idx, event);
         };
         break;
+    case Algorithm::CurvedVeto:
+    case Algorithm::Hazard:
+        // Event-driven on curved paths (EvolveCurved); PotentialProp is supported
+        break;
     case Algorithm::Veto:
     case Algorithm::Continuous:
         // Event-driven algorithms run their own loop (EvolveVeto), no per-step algorithm
@@ -52,12 +57,14 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
     switch(prob) {
     case ProbabilityType::Gaussian:
         m_probability_name = "Gaussian";
+        m_kernel = PairKernel(PairKernel::Profile::Gaussian);
         probability = [](const double &b2, const double &sigma) -> double {
             return exp(-M_PI * b2 / sigma);
         };
         break;
     case ProbabilityType::Pion:
         m_probability_name = "Pion";
+        m_kernel = PairKernel(PairKernel::Profile::Pion);
         probability = [](const double &b2, const double &sigma) -> double {
             double b = sqrt(b2);
             // TODO: This does not work, we need to rethink this
@@ -68,6 +75,7 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
         break;
     case ProbabilityType::Cylinder:
         m_probability_name = "Cylinder";
+        m_kernel = PairKernel(PairKernel::Profile::Cylinder);
         probability = [](const double &b2, const double &sigma) -> double {
             return b2 < sigma / M_PI ? 1 : 0;
         };
@@ -190,12 +198,23 @@ void Cascade::Reset() {
     m_time_steps = {};
 }
 
+bool Cascade::TrappedInBarrier(const Particle &part) const {
+    // With the radial force fixed, PotentialProp produces orbits with H > m that are trapped
+    // behind the centrifugal barrier and never leave (Validate then throws); they are captured
+    if(!m_capture_trapped || !m_potential_prop || !part.Info().IsNucleon()) return false;
+    CurvedPath path(0, part.Position(), part.Momentum().Vec3(), Constant::mN,
+                    m_nucleus->GetPotential(), 0.04, m_nucleus->Radius(),
+                    part.Status() == ParticleStatus::external_test);
+    return path.Trapped();
+}
+
 std::set<size_t> Cascade::InitializeIntegrator(Event &event) {
     std::set<size_t> notCaptured{};
     for(auto idx : kickedIdxs) {
-        if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                                   event.Hadrons()[idx].Momentum().P(),
-                                   event.Hadrons()[idx].Position().P()) < Constant::mN) {
+        if(m_potential_prop && (m_nucleus->GetPotential()->Hamiltonian(
+                                    event.Hadrons()[idx].Momentum().P(),
+                                    event.Hadrons()[idx].Position().P()) < Constant::mN ||
+                                TrappedInBarrier(event.Hadrons()[idx]))) {
             event.Hadrons()[idx].Status() = ParticleStatus::captured;
         } else {
             AddIntegrator(idx, event.Hadrons()[idx]);
@@ -210,8 +229,10 @@ void Cascade::UpdateKicked(Particles &particles, std::set<size_t> &newKicked) {
     for(size_t idx = 0; idx < particles.size(); ++idx) {
         if(particles[idx].IsPropagating()) {
             if(m_potential_prop &&
-               m_nucleus->GetPotential()->Hamiltonian(
-                   particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
+               (m_nucleus->GetPotential()->Hamiltonian(particles[idx].Momentum().P(),
+                                                       particles[idx].Position().P()) <
+                    Constant::mN ||
+                (integrators.find(idx) == integrators.end() && TrappedInBarrier(particles[idx])))) {
                 particles[idx].Status() = ParticleStatus::captured;
             } else {
                 spdlog::trace("Adding particle: {}", particles[idx]);
@@ -278,8 +299,25 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
         if(event.Hadrons()[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
     }
 
+    // Diagnostics: the first collision of the initially propagating particle(s)
+    m_diag = Diagnostics{};
+    m_first_kicked.clear();
+    for(size_t idx = 0; idx < event.Hadrons().size(); ++idx) {
+        const auto &part = event.Hadrons()[idx];
+        if(!part.IsPropagating()) continue;
+        if(m_first_kicked.empty()) {
+            m_first_q0 = part.Position();
+            m_first_v0 = part.Beta();
+        }
+        m_first_kicked.insert(idx);
+    }
+
     if(m_algorithm == Algorithm::Veto || m_algorithm == Algorithm::Continuous) {
         EvolveVeto(event, nucleus);
+        return;
+    }
+    if(m_algorithm == Algorithm::CurvedVeto || m_algorithm == Algorithm::Hazard) {
+        EvolveCurved(event, nucleus);
         return;
     }
 
@@ -355,38 +393,36 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
     // Only add if not already there
     if(integrators.find(idx) != integrators.end()) return;
 
-    // Otherwise setup integrator
+    integrators[idx] = MakeIntegrator(part, m_nucleus->GetPotential());
+}
+
+SymplecticIntegrator Cascade::MakeIntegrator(const Particle &part,
+                                             std::shared_ptr<Potential> potential) {
+    // Setup integrator. dH/dr is the radial gradient (derivative_r along r-hat); before this
+    // fix it was a copy of dH/dp (derivative_p along p-hat), so the "force" pointed along the
+    // momentum and the trajectories were never bent.
     static constexpr double omega = 20;
-    auto dHamiltonian_dr = [&](const ThreeVector &q, const ThreeVector &p,
-                               std::shared_ptr<Potential> potential) {
-        auto vals = potential->operator()(p.P(), q.P());
-        auto dpot_dp = potential->derivative_p(p.P(), q.P());
-
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-        double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-        double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-        return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
+    auto dHamiltonian_dr = [](const ThreeVector &q, const ThreeVector &p,
+                              std::shared_ptr<Potential> potential_) {
+        return flow::dHdr(q, p, *potential_, achilles::Constant::mN);
     };
-    auto dHamiltonian_dp = [&](const ThreeVector &q, const ThreeVector &p,
-                               std::shared_ptr<Potential> potential) {
-        auto vals = potential->operator()(p.P(), q.P());
-        auto dpot_dp = potential->derivative_p(p.P(), q.P());
-
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
-        double numerator = (vals.rscalar + achilles::Constant::mN) * dpot_dp.rscalar + p.P();
-        double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
-        return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
+    auto dHamiltonian_dp = [](const ThreeVector &q, const ThreeVector &p,
+                              std::shared_ptr<Potential> potential_) {
+        return flow::dHdp(q, p, *potential_, achilles::Constant::mN);
     };
-    integrators[idx] =
-        SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), m_nucleus->GetPotential(),
-                             dHamiltonian_dr, dHamiltonian_dp, omega);
+    return SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), std::move(potential),
+                                dHamiltonian_dr, dHamiltonian_dp, omega);
 }
 
 void Cascade::Propagate(size_t idx, Particle *kickNuc) {
     if(m_potential_prop) {
-        integrators[idx].Step<2>(timeStep);
+        // Subdivide the cascade step: Tao's integrator (omega = 20) is unstable for integrator
+        // steps above ~0.05 fm/c, and timeStep = Step / beta_max exceeds that for beta < 0.8
+        size_t nsub = 1;
+        if(m_max_integrator_step > 0)
+            nsub = static_cast<size_t>(std::ceil(timeStep / m_max_integrator_step));
+        for(size_t i = 0; i < nsub; ++i)
+            integrators[idx].Step<2>(timeStep / static_cast<double>(nsub));
         double energy = sqrt(pow(kickNuc->Info().Mass(), 2) + integrators[idx].P().P2());
         FourVector mom{integrators[idx].P(), energy};
         kickNuc->SetMomentum(mom);
@@ -394,6 +430,9 @@ void Cascade::Propagate(size_t idx, Particle *kickNuc) {
         kickNuc->SetPosition(integrators[idx].Q());
         auto pos_new = kickNuc->Position();
         kickNuc->DistanceTraveled() += (pos_new - pos_old).Magnitude();
+        // Particle::Propagate counts the formation zone down on the straight-line branch;
+        // without this the formation zone never ends with PotentialProp (since 3c32c1e2)
+        if(kickNuc->InFormationZone()) kickNuc->UpdateFormationZone(timeStep);
     } else {
         kickNuc->Propagate(timeStep);
     }
@@ -730,6 +769,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
     // }
 
     if(hit) {
+        RecordFirst(particles, idx1, idx2);
         Particles initial_part, final_part;
         particle1.Status() = ParticleStatus::interacted;
         particle2.Status() = ParticleStatus::interacted;
@@ -767,7 +807,7 @@ void Cascade::FinalizeMomentum(Event &event, Particles &particles, size_t idx1,
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
 bool Cascade::PauliBlocking(const Particle &particle) const noexcept {
-    if(!particle.Info().IsNucleon()) return false;
+    if(!m_pauli || !particle.Info().IsNucleon()) return false;
     double position = particle.Position().Magnitude();
     return particle.Momentum().Vec3().Magnitude() <
            m_nucleus->FermiMomentum(position, particle.ID());

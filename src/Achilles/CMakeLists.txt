@@ -78,6 +78,8 @@ list(APPEND achilles_targets mappers)
 
 add_library(physics SHARED
     Cascade.cc
+    CascadeCurved.cc
+    CurvedPath.cc
     Nucleus.cc
     FormFactor.cc
     FormFactorBuilder.cc
@@ -179,6 +181,9 @@ if(ACHILLES_ENABLE_CASCADE_TEST)
     target_link_libraries(achilles-cascade PRIVATE project_warnings
                                            PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
+    add_executable(achilles-cascade-study CascadeStudy.cc RunCascade.cc)
+    target_link_libraries(achilles-cascade-study PRIVATE project_warnings
+                                                 PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
 endif()
 
 if(ACHILLES_ENABLE_POTENTIAL_TEST)

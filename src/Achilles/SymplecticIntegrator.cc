@@ -25,10 +25,11 @@ void SI::Coupling(double time_step) {
     const auto qsum = m_state.q + m_state.x;
     const auto psum = m_state.p + m_state.y;
     const auto qdiff = m_state.q - m_state.x;
-    const auto pdiff = m_state.p - m_state.y;
+    // rotate (q - x, (p - y) / s): positions in fm, momenta in units of s (see the header)
+    const auto pdiff = (m_state.p - m_state.y) / m_pscale;
 
     m_state.q = (qsum + comega * qdiff + somega * pdiff) / 2;
-    m_state.p = (psum - somega * qdiff + comega * pdiff) / 2;
+    m_state.p = (psum + m_pscale * (-somega * qdiff + comega * pdiff)) / 2;
     m_state.x = (qsum - comega * qdiff - somega * pdiff) / 2;
-    m_state.y = (psum + somega * qdiff - comega * pdiff) / 2;
+    m_state.y = (psum - m_pscale * (-somega * qdiff + comega * pdiff)) / 2;
 }

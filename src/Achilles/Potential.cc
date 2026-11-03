@@ -112,6 +112,13 @@ std::unique_ptr<Potential> achilles::WiringaPotential::Construct(std::shared_ptr
     return std::make_unique<WiringaPotential>(nuc, r0);
 }
 
+std::unique_ptr<achilles::Potential>
+achilles::WoodsSaxonPotential::Construct(std::shared_ptr<achilles::Nucleus> &,
+                                         const YAML::Node &node) {
+    return std::make_unique<achilles::WoodsSaxonPotential>(node["V0"].as<double>(), node["R"].as<double>(),
+                                                 node["a"].as<double>());
+}
+
 PotentialVals achilles::WiringaPotential::operator()(double plab, double radius) const {
     const double rho = m_nucleus->Rho(radius);
     const double rho_ratio = rho / m_rho0;

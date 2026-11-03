@@ -58,12 +58,22 @@ class SymplecticIntegrator {
 
     template <size_t N> void Step(double);
 
+    /// Metric of Tao's coupling H_C = omega/2 (s |q - x|^2 + |p - y|^2 / s), whose exact flow
+    /// rotates (q - x, (p - y) / s) by 2 omega t: q is in fm and p in MeV, so the momentum
+    /// difference is measured in units of s [MeV per fm]. With s = 1 (the
+    /// original code) the rotation adds MeV to fm, which is harmless in smooth fields but
+    /// gives wrong momenta behind steep walls (diffuseness below ~0.3 fm), for any step size
+    void SetCouplingScale(double scale) { m_pscale = scale; }
+    double CouplingScale() const { return m_pscale; }
+    static constexpr double cDefaultCouplingScale = 197.3269804; // hbar c [MeV fm] / (1 fm)^2
+
   private:
     void HamiltonianA(double);
     void HamiltonianB(double);
     void Coupling(double);
 
     double m_omega{1};
+    double m_pscale{cDefaultCouplingScale};
     PSState m_state;
     dHamiltonian m_dHdr, m_dHdp;
     std::shared_ptr<Potential> m_pot;
