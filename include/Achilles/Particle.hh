@@ -296,9 +296,9 @@ class Particle {
     void Rotate(const std::array<double, 9> &) noexcept;
     void RotateBack(const std::array<double, 9> &) noexcept;
 
-	/// Adds the given vector to the current particle's position
+	/// Adds the given vector to the current particle's position.
+	/// If this particle is composite, all subparticles are moved as well.
 	void Move(const ThreeVector& dx);
-	void Mode(ThreeVector&& dx) { Move(dx); }
 
     /// Return a string representation of the particle
     ///@return std::string: a string representation of the particle

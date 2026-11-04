@@ -436,9 +436,12 @@ void ProcessGroup::SetupRemnant(Event& event) {
 	Particle remnant=init_nuc;
 	bool hasFoundPos=false;
 	for(Particle& ev_hadron:event.particlesOut(targetVertex->Index())) {
-		hnr=remnant.splitSingleRandom(event.processInfo().m_hadronic.first[0]);
+		hnr=remnant.splitSingleRandom(ev_hadron.ID());
 		remnant=hnr.second;
 
+		// Splitting removes the hadron's momentum from the remnant by default,
+		// but we're also changing that hadron's momentum (via mappers),
+		// so we need to manually change the remnant's recoil.
 		remnant.Momentum()+=hnr.first.Momentum()-ev_hadron.Momentum();
 		ev_hadron.Position()=hnr.first.Position();
 
