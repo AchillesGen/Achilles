@@ -30,7 +30,187 @@ using achilles::Process;
 using achilles::ProcessGroup;
 using achilles::refParticles;
 
-/*void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
+void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
+namespace achilles {
+namespace {
+
+using PIDs = std::vector<PID>;
+
+// options[i] = the concrete PIDs allowed in slot i
+std::vector<PIDs> CartesianProduct(const std::vector<PIDs> &options) {
+    std::vector<PIDs> result{{}}; // one empty tuple
+    for(const auto &opts : options) {
+        std::vector<PIDs> next;
+        next.reserve(result.size() * opts.size());
+        for(const auto &partial : result)
+            for(const auto &pid : opts) {
+                auto extended = partial;
+                extended.push_back(pid);
+                next.push_back(std::move(extended));
+            }
+        result = std::move(next);
+    }
+    return result;
+}
+
+PIDs Options(PID pid) {
+    ParticleInfo info(pid);
+    if(!info.IsGroup()) return {pid};
+    PIDs out;
+    // IntID keeps the anti-particle sign; ID() would turn pi- into pi+
+    for(const auto &m : info.Decompose()) out.push_back(PID{m.IntID()});
+    return out;
+}
+
+std::vector<PIDs> ExpandSlots(const PIDs &slots) {
+    std::vector<PIDs> options;
+    for(auto pid : slots) options.push_back(Options(pid));
+    return CartesianProduct(options);
+}
+
+std::vector<std::pair<PIDs, PIDs>> ExpandHadronic(const PIDs &in, const PIDs &out) {
+    std::vector<PIDs> options;
+    for(auto pid : in) options.push_back(Options(pid));
+    for(auto pid : out) options.push_back(Options(pid));
+
+    std::vector<std::pair<PIDs, PIDs>> expanded;
+    for(const auto &combo : CartesianProduct(options)) {
+        auto split = combo.begin() + static_cast<std::ptrdiff_t>(in.size());
+        expanded.emplace_back(PIDs(combo.begin(), split), PIDs(split, combo.end()));
+    }
+    return expanded;
+}
+
+// Hadronic charge change in thirds: sum(final) - sum(initial)
+int HadronicCharge3(const ProcessInfo &process) {
+    int charge = 0;
+    for(const auto &pid : process.m_hadronic.first) charge -= ParticleInfo(pid).IntCharge();
+    for(const auto &pid : process.m_hadronic.second) charge += ParticleInfo(pid).IntCharge();
+    return charge;
+}
+
+// Total charge change must vanish: ΔQ_lep + ΔQ_had = 0
+bool ConservesCharge(const ProcessInfo &process) {
+    return 3 * process.LeptonicCharge() + HadronicCharge3(process) == 0;
+}
+
+std::vector<ProcessInfo> ExpandProcessInfo(const ProcessInfo &process) {
+    std::vector<ProcessInfo> result;
+    const auto &[in, out] = process.m_hadronic;
+    const auto spectators = ExpandSlots(process.m_spectator);
+
+    for(auto &[new_in, new_out] : ExpandHadronic(in, out)) {
+        ProcessInfo copy = process;
+        copy.m_hadronic = {new_in, new_out};
+        // TODO: Add MinimalFlips filter; MEC currently includes np->pn / pn->np for ΔQ = 0
+        if(!ConservesCharge(copy)) continue;
+        // Spectators do not change charge, so every combination is kept
+        for(const auto &spectator : spectators) {
+            copy.m_spectator = spectator;
+            result.push_back(copy);
+        }
+    }
+    return result;
+}
+
+} // namespace
+} // namespace achilles
+
+refParticles Process::SelectParticles(const refParticles &protons, const refParticles &neutrons,
+                                      const std::vector<PID> &ids,
+                                      const std::vector<FourVector> &momenta,
+                                      ParticleStatus status) const {
+    refParticles result;
+    for(size_t i = 0; i < ids.size(); ++i) {
+        if(ids[i] == PID::proton()) {
+            result.push_back(protons[i]);
+        } else {
+            result.push_back(neutrons[i]);
+        }
+
+        auto &part = result.back().get();
+        part.Momentum() = momenta[i];
+        part.Status() = status;
+    }
+
+    return result;
+}
+
+void Process::SetupHadrons(Event &event) const {
+    FourVector lep_in;
+    std::vector<FourVector> had_in, lep_out, had_out, spect;
+    ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
+    std::vector<Particle> leptons, hadrons;
+
+    // Setup hadrons
+    if(had_in.size() != m_info.m_hadronic.first.size() ||
+       had_out.size() != m_info.m_hadronic.second.size())
+        throw std::runtime_error(
+            "Process: Number of hadrons momenta does not match number of hadrons in event");
+
+    // Handle coherent scattering as a special case
+    if(ParticleInfo(m_info.m_hadronic.first[0]).IsNucleus()) {
+        event.Hadrons().clear();
+        event.Hadrons().resize(2);
+        const auto id_in = m_info.m_hadronic.first[0];
+        const auto id_out = m_info.m_hadronic.second[0];
+
+        Particle initial(id_in, had_in[0]);
+        initial.Status() = ParticleStatus::initial_state;
+        event.Hadrons()[0] = initial;
+
+        Particle final(id_out, had_out[0]);
+        final.Status() = ParticleStatus::final_state;
+        event.Hadrons()[1] = final;
+
+        return;
+    }
+
+    // TODO: Handle hydrogen
+
+    // NOTE: The initial state and spectator have to be handled separately
+    //       to ensure that they aren't the same particle
+
+    // Select initial state nucleons
+    auto protons = event.Protons(ParticleStatus::background);
+    auto neutrons = event.Neutrons(ParticleStatus::background);
+    size_t nsamples = m_info.m_hadronic.first.size();
+    auto sampled_protons = Random::Instance().Sample(nsamples, protons);
+    auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
+
+    auto initial_states =
+        SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
+                        ParticleStatus::initial_state);
+    spdlog::debug("Selected initial states: {}", fmt::join(initial_states, ", "));
+
+    // Sample for spectators
+    protons = event.Protons(ParticleStatus::background);
+    neutrons = event.Neutrons(ParticleStatus::background);
+    nsamples = m_info.m_hadronic.first.size();
+    sampled_protons = Random::Instance().Sample(nsamples, protons);
+    sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
+    auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
+                                      ParticleStatus::spectator);
+    spdlog::debug("Selected spectators states: {}", fmt::join(initial_states, ", "));
+
+    // Initialize final state hadrons
+    // TODO: Handle propagating deltas
+    // TODO: Handle selecting position for things like MEC+pion production
+    size_t cur_idx = 0;
+    ThreeVector position;
+    for(size_t i = 0; i < had_out.size(); ++i) {
+        Particle part(m_info.m_hadronic.second[i]);
+        if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
+            position = initial_states[cur_idx++].get().Position();
+        }
+        part.Status() = ParticleStatus::propagating;
+        part.Momentum() = had_out[i];
+        part.Position() = position;
+        event.Hadrons().push_back(part);
+    }
+}
+
+void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
                               std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
                               std::vector<FourVector> &had_out,
                               std::vector<FourVector> &spect) const {
@@ -111,7 +291,7 @@ void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector
                 had_out.emplace_back(pid, momentum[i]);
         }
     }
-}*/
+}
 
 achilles::FourVector Process::ExtractQ(const Event &event) const {
     auto q = event.leptonIn().Momentum();
@@ -256,30 +436,42 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : settings["Processes"]) {
         auto process_info = process_node.as<ProcessInfo>();
-        auto infos = model->AllowedStates(process_info);
-        spdlog::trace("Found possible states: {}", infos);
-        const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
-        for(auto &info : infos) {
-            try {
-                auto unweighter =
-                    UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
-                Process process(info, std::move(unweighter));
-                process.SetID(model);
-                const auto multiplicity = info.Multiplicity();
-                if(groups.find(multiplicity) == groups.end()) {
-                    groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
-                }
-                groups.at(multiplicity).AddProcess(std::move(process));
-            } catch(std::out_of_range &e) {
-                spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
-                              unweight_name,
-                              achilles::GetSuggestion(UnweighterFactory::List(), unweight_name));
-                exit(-1);
-            }
+        model->AllowedStates(process_info);
+        const auto multiplicity = process_info.Multiplicity();
+        if(groups.find(multiplicity) == groups.end()) {
+            groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
         }
+        auto &group = groups.at(multiplicity);
+        group.SetProcessInfo(process_info);
+        group.BuildProcess(process_info, settings, model);
     }
 
     return groups;
+}
+
+void ProcessGroup::BuildProcess(const ProcessInfo &info, const Settings &settings,
+                                NuclearModel *model) {
+    const auto unweight_name = settings.GetAs<std::string>("Options/Unweighting/Name");
+
+    const auto expanded_infos = ExpandProcessInfo(info);
+    if(expanded_infos.empty())
+        throw std::runtime_error(
+            fmt::format("ProcessGroup: No charge-conserving states found for {}", info));
+
+    for(const auto &expanded : expanded_infos) {
+        try {
+            auto unweighter =
+                UnweighterFactory::Initialize(unweight_name, settings["Options/Unweighting"]);
+            Process process(expanded, std::move(unweighter));
+            process.SetID(model);
+            AddProcess(std::move(process));
+        } catch(std::out_of_range &e) {
+            spdlog::error("Unweighter: Requested unweighter \"{}\", did you mean \"{}\"",
+                          unweight_name,
+                          achilles::GetSuggestion(UnweighterFactory::List(), unweight_name));
+            exit(-1);
+        }
+    }
 }
 
 void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
@@ -298,8 +490,13 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     if(m_processes.size() == 0)
         throw std::runtime_error("ProcessGroup: Number of processes found is zero!");
 
+    // Build the phase space from the container-level process (container masses), so it does not
+    // depend on which expanded process comes first. Groups built without one, or backends that
+    // need concrete flavours, fall back to the first process.
+    const auto &channel_info =
+        m_process_info && m_backend->ContainerChannels() ? *m_process_info : m_processes[0].Info();
     try {
-        m_backend->SetupChannels(m_processes[0].Info(), m_beam, m_integrand, m_nucleus->ID());
+        m_backend->SetupChannels(channel_info, m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
 
     UnitsEnum display_unit = UnitsEnum::nb;
