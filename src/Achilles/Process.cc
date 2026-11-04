@@ -457,9 +457,8 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     // Build the phase space from the container-level process (container masses), so it does not
     // depend on which expanded process comes first. Groups built without one, or backends that
     // need concrete flavours, fall back to the first process.
-    const auto &channel_info = m_process_info && m_backend->ContainerChannels()
-                                   ? *m_process_info
-                                   : m_processes[0].Info();
+    const auto &channel_info =
+        m_process_info && m_backend->ContainerChannels() ? *m_process_info : m_processes[0].Info();
     try {
         m_backend->SetupChannels(channel_info, m_beam, m_integrand, m_nucleus->ID());
     } catch(const InvalidChannel &) { return false; }
