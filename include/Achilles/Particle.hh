@@ -158,6 +158,8 @@ class Particle {
 	/// Other fields such as momentum are not affected; as a result,
 	/// this method may cause the particle to become off-shell.
 	void SetPID(const PID& pid) {
+		if(pid==info.ID())
+			return;
 		info=ParticleInfo(pid);
 	}
     ///@}

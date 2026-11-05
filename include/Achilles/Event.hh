@@ -33,7 +33,7 @@ using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 class Event {
   public:
     Event() = default;
-	Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt=0.0);
+	Event(const ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt=0.0);
 	Event(const Event&);
     Event &operator=(const Event &);
     MOCK ~Event() = default;

@@ -95,6 +95,7 @@ class ProcessGroup {
     const std::vector<Process> &Processes() const { return m_processes; }
     // The group's process before container expansion; the first one added represents the group
     void SetProcessInfo(const ProcessInfo &info) {
+		spdlog::debug("Group Process: {}",info);
         if(!m_process_info) m_process_info = info;
     }
 
@@ -125,10 +126,7 @@ class ProcessGroup {
     size_t Multiplicity() const { return m_processes[0].Info().Multiplicity(); }
 
 	ProcessInfo& GroupProcessInfo() {
-		/// TODO: Once Particle Containers are done, this method should
-		/// return a separate ProcessInfo object that's owned by the group
-		spdlog::trace("Using Group Process Info");
-		return m_processes[0].Info();
+		return m_process_info ? *m_process_info : m_processes[0].Info();
 	}
 
     // Metadata handlers

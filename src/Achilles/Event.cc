@@ -12,7 +12,7 @@ using achilles::Event;
 using achilles::EventVertex;
 using achilles::Particle;
 
-Event::Event(ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt):
+Event::Event(const ProcessInfo& pi,std::shared_ptr<Nucleus> nuc,double vwgt):
 			m_processInfo{pi}, m_nuc{nuc}, m_wgt{std::move(vwgt)} {
 	spdlog::trace("Event Process: {}",pi);
 }
@@ -95,7 +95,7 @@ void Event::setProcessInfo(const ProcessInfo& _info) {
 		return;
 
 	try {
-		leptonIn().ID()=_info.m_leptonic.first;
+		leptonIn().SetPID(_info.m_leptonic.first);
 	} catch(...) {}
 	
 	refParticles parts=hadronsIn();

@@ -29,8 +29,10 @@ using achilles::Particle;
 using achilles::Process;
 using achilles::ProcessGroup;
 using achilles::refParticles;
+using achilles::FourVector;
+using achilles::PID;
+using achilles::ParticleStatus;
 
-void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
 namespace achilles {
 namespace {
 
@@ -115,183 +117,6 @@ std::vector<ProcessInfo> ExpandProcessInfo(const ProcessInfo &process) {
 
 } // namespace
 } // namespace achilles
-
-refParticles Process::SelectParticles(const refParticles &protons, const refParticles &neutrons,
-                                      const std::vector<PID> &ids,
-                                      const std::vector<FourVector> &momenta,
-                                      ParticleStatus status) const {
-    refParticles result;
-    for(size_t i = 0; i < ids.size(); ++i) {
-        if(ids[i] == PID::proton()) {
-            result.push_back(protons[i]);
-        } else {
-            result.push_back(neutrons[i]);
-        }
-
-        auto &part = result.back().get();
-        part.Momentum() = momenta[i];
-        part.Status() = status;
-    }
-
-    return result;
-}
-
-void Process::SetupHadrons(Event &event) const {
-    FourVector lep_in;
-    std::vector<FourVector> had_in, lep_out, had_out, spect;
-    ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
-    std::vector<Particle> leptons, hadrons;
-
-    // Setup hadrons
-    if(had_in.size() != m_info.m_hadronic.first.size() ||
-       had_out.size() != m_info.m_hadronic.second.size())
-        throw std::runtime_error(
-            "Process: Number of hadrons momenta does not match number of hadrons in event");
-
-    // Handle coherent scattering as a special case
-    if(ParticleInfo(m_info.m_hadronic.first[0]).IsNucleus()) {
-        event.Hadrons().clear();
-        event.Hadrons().resize(2);
-        const auto id_in = m_info.m_hadronic.first[0];
-        const auto id_out = m_info.m_hadronic.second[0];
-
-        Particle initial(id_in, had_in[0]);
-        initial.Status() = ParticleStatus::initial_state;
-        event.Hadrons()[0] = initial;
-
-        Particle final(id_out, had_out[0]);
-        final.Status() = ParticleStatus::final_state;
-        event.Hadrons()[1] = final;
-
-        return;
-    }
-
-    // TODO: Handle hydrogen
-
-    // NOTE: The initial state and spectator have to be handled separately
-    //       to ensure that they aren't the same particle
-
-    // Select initial state nucleons
-    auto protons = event.Protons(ParticleStatus::background);
-    auto neutrons = event.Neutrons(ParticleStatus::background);
-    size_t nsamples = m_info.m_hadronic.first.size();
-    auto sampled_protons = Random::Instance().Sample(nsamples, protons);
-    auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
-
-    auto initial_states =
-        SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
-                        ParticleStatus::initial_state);
-    spdlog::debug("Selected initial states: {}", fmt::join(initial_states, ", "));
-
-    // Sample for spectators
-    protons = event.Protons(ParticleStatus::background);
-    neutrons = event.Neutrons(ParticleStatus::background);
-    nsamples = m_info.m_hadronic.first.size();
-    sampled_protons = Random::Instance().Sample(nsamples, protons);
-    sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
-    auto spectators = SelectParticles(sampled_protons, sampled_neutrons, m_info.m_spectator, spect,
-                                      ParticleStatus::spectator);
-    spdlog::debug("Selected spectators states: {}", fmt::join(initial_states, ", "));
-
-    // Initialize final state hadrons
-    // TODO: Handle propagating deltas
-    // TODO: Handle selecting position for things like MEC+pion production
-    size_t cur_idx = 0;
-    ThreeVector position;
-    for(size_t i = 0; i < had_out.size(); ++i) {
-        Particle part(m_info.m_hadronic.second[i]);
-        if(ParticleInfo(m_info.m_hadronic.second[i]).IsBaryon()) {
-            position = initial_states[cur_idx++].get().Position();
-        }
-        part.Status() = ParticleStatus::propagating;
-        part.Momentum() = had_out[i];
-        part.Position() = position;
-        event.Hadrons().push_back(part);
-    }
-}
-
-void Process::ExtractMomentum(const Event &event, FourVector &lep_in,
-                              std::vector<FourVector> &had_in, std::vector<FourVector> &lep_out,
-                              std::vector<FourVector> &had_out,
-                              std::vector<FourVector> &spect) const {
-    spdlog::trace("Extracting momentum from event");
-    const auto &momentum = event.Momentum();
-    if(m_info.m_mom_map.size() == 0) {
-        static constexpr size_t lepton_in_end_idx = 1;
-        const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
-        const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
-        const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
-
-        spdlog::trace("{}, {}, {}, {}, {}", lepton_in_end_idx, hadron_end_idx, lepton_end_idx,
-                      had_out_end_idx, momentum.size());
-        spdlog::trace("{}", m_info);
-
-        lep_in = momentum[0];
-        had_in = std::vector<FourVector>(momentum.begin() + lepton_in_end_idx,
-                                         momentum.begin() + static_cast<int>(hadron_end_idx));
-        lep_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(hadron_end_idx),
-                                          momentum.begin() + static_cast<int>(lepton_end_idx));
-        had_out = std::vector<FourVector>(momentum.begin() + static_cast<int>(lepton_end_idx),
-                                          momentum.begin() + static_cast<int>(had_out_end_idx));
-        spect = std::vector<FourVector>(momentum.begin() + static_cast<int>(had_out_end_idx),
-                                        momentum.end());
-    } else {
-        lep_in = momentum[0];
-        had_in.push_back(momentum[1]);
-        for(size_t i = 2; i < m_info.m_mom_map.size(); ++i) {
-            PID pid(m_info.m_mom_map[i]);
-            if(ParticleInfo(pid).IsLepton())
-                lep_out.push_back(momentum[i]);
-            else
-                had_out.push_back(momentum[i]);
-        }
-    }
-}
-
-void Process::ExtractParticles(const Event &event, Particle &lep_in, std::vector<Particle> &had_in,
-                               std::vector<Particle> &lep_out, std::vector<Particle> &had_out,
-                               std::vector<Particle> &spect) const {
-    spdlog::trace("Extracting particles from event");
-    const auto &momentum = event.Momentum();
-    if(m_info.m_mom_map.size() == 0) {
-        static constexpr size_t lepton_in_end_idx = 1;
-        const size_t hadron_end_idx = m_info.m_hadronic.first.size() + lepton_in_end_idx;
-        const size_t lepton_end_idx = m_info.m_leptonic.second.size() + hadron_end_idx;
-        const size_t had_out_end_idx = m_info.m_hadronic.second.size() + lepton_end_idx;
-        lep_in = Particle(m_info.m_leptonic.first, momentum[0]);
-        for(size_t i = 0; i < m_info.m_hadronic.first.size(); ++i) {
-            had_in.emplace_back(m_info.m_hadronic.first[i], momentum[i + lepton_in_end_idx]);
-        }
-        for(size_t i = 0; i < m_info.m_leptonic.second.size(); ++i) {
-            lep_out.emplace_back(m_info.m_leptonic.second[i], momentum[i + hadron_end_idx]);
-        }
-        for(size_t i = 0; i < m_info.m_hadronic.second.size(); ++i) {
-            had_out.emplace_back(m_info.m_hadronic.second[i], momentum[i + lepton_end_idx]);
-        }
-        for(size_t i = 0; i < m_info.m_spectator.size(); ++i) {
-            spect.emplace_back(m_info.m_spectator[i], momentum[i + had_out_end_idx]);
-        }
-#ifdef ACHILLES_EVENT_DETAILS
-        spdlog::debug("Initial state: {}", lep_in);
-        spdlog::debug("Hadronic initial state: {}", fmt::join(had_in, ", "));
-        spdlog::debug("Hadronic final state: {}", fmt::join(had_out, ", "));
-        spdlog::debug("Leptonic final state: {}", fmt::join(lep_out, ", "));
-        spdlog::debug("Spectators: {}", fmt::join(spect, ", "));
-#endif
-    } else {
-        lep_in = Particle(m_info.m_mom_map[1], momentum[0]);
-        had_in.emplace_back(m_info.m_mom_map[0], momentum[1]);
-        for(size_t i = 2; i < m_info.m_mom_map.size(); ++i) {
-            PID pid(m_info.m_mom_map[i]);
-            bool is_lepton = ParticleInfo(pid).IsLepton();
-            spdlog::trace("Extracting particle {}, with PID: {}", i, pid);
-            if(is_lepton)
-                lep_out.emplace_back(pid, momentum[i]);
-            else
-                had_out.emplace_back(pid, momentum[i]);
-        }
-    }
-}
 
 achilles::FourVector Process::ExtractQ(const Event &event) const {
     auto q = event.leptonIn().Momentum();
@@ -435,13 +260,13 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
                                                              std::shared_ptr<Nucleus> nucleus) {
     std::map<size_t, ProcessGroup> groups;
     for(const auto &process_node : settings["Processes"]) {
-        auto process_info = process_node.as<ProcessInfo>();
+        ProcessInfo process_info = process_node.as<ProcessInfo>();
         model->AllowedStates(process_info);
-        const auto multiplicity = process_info.Multiplicity();
+        const size_t multiplicity = process_info.Multiplicity();
         if(groups.find(multiplicity) == groups.end()) {
             groups.insert({multiplicity, ProcessGroup(beam, nucleus)});
         }
-        auto &group = groups.at(multiplicity);
+        ProcessGroup& group = groups.at(multiplicity);
         group.SetProcessInfo(process_info);
         group.BuildProcess(process_info, settings, model);
     }
@@ -493,7 +318,7 @@ bool ProcessGroup::SetupIntegration(const Settings &config) {
     // Build the phase space from the container-level process (container masses), so it does not
     // depend on which expanded process comes first. Groups built without one, or backends that
     // need concrete flavours, fall back to the first process.
-    const auto &channel_info =
+    const ProcessInfo& channel_info =
         m_process_info && m_backend->ContainerChannels() ? *m_process_info : m_processes[0].Info();
     try {
         m_backend->SetupChannels(channel_info, m_beam, m_integrand, m_nucleus->ID());
