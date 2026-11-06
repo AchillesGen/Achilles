@@ -11,6 +11,9 @@
 #include "Approx.hh"
 #include "mock_classes.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 class DummyHadron : public achilles::HadronicBeamMapper,
                     achilles::Registrable<achilles::HadronicBeamMapper, DummyHadron,
                                           const achilles::ProcessInfo &, size_t> {
@@ -23,7 +26,7 @@ class DummyHadron : public achilles::HadronicBeamMapper,
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[HadronIdx()] = {achilles::Constant::mN, 0, 0, 0};
+        p[HadronIdx()] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
     }
     double GenerateWeight(const std::vector<achilles::FourVector> &,
                           std::vector<double> &) override {
@@ -42,8 +45,8 @@ class DummyFS : public achilles::FinalStateMapper,
     }
 
     void GeneratePoint(std::vector<achilles::FourVector> &p, const std::vector<double> &) override {
-        p[2] = {achilles::Constant::mN, 0, 0, 0};
-        p[3] = {achilles::Constant::mN, 0, 0, 0};
+        p[2] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
+        p[3] = {units::Energy{achilles::Constant::mN().native()}, 0_MeV, 0_MeV, 0_MeV};
     }
     double GenerateWeight(const std::vector<achilles::FourVector> &,
                           std::vector<double> &) override {
@@ -57,14 +60,16 @@ TEST_CASE("PhaseSpaceBuilder", "[PhaseSpace]") {
 
     auto flux = std::make_shared<MockFluxType>(0);
     auto beam = MakeBeam(achilles::PID::electron(), flux);
-    achilles::FourVector beam_mom = {achilles::Constant::mN, 0, 0, 0};
+    achilles::FourVector beam_mom = {achilles::Constant::mN(), 0_MeV, 0_MeV, 0_MeV};
     std::vector<achilles::FourVector> expected = {beam_mom, beam_mom, beam_mom, beam_mom};
     std::vector<achilles::FourVector> output(4);
     auto mapper =
         achilles::PSBuilder(info).Beam(beam, 0).Hadron("Dummy").FinalState("Dummy").build();
     std::vector<double> rans(2);
     std::vector<double> beam_rans;
-    REQUIRE_CALL(*flux, Flux(beam_rans, trompeloeil::ge(0))).TIMES(1).LR_RETURN((beam_mom));
+    REQUIRE_CALL(*flux, Flux(beam_rans, trompeloeil::ge(units::Energy{})))
+        .TIMES(1)
+        .LR_RETURN((beam_mom));
     CHECK(mapper->NDims() == 2);
     mapper->GeneratePoint(output, rans);
     CHECK_THAT(output, AllFourVectorApprox(expected));
@@ -74,14 +79,16 @@ TEST_CASE("PhaseSpaceMapper", "[PhaseSpace]") {
     auto beam_map = std::make_shared<MockMapper>();
     auto hadron_map = std::make_shared<MockMapper>();
     auto final_state_map = std::make_unique<MockMapper>();
-    std::vector<double> masses{0, achilles::Constant::mN2};
+    std::vector<double> masses{0, achilles::Constant::mN2().native()};
     size_t beam_dims = 0, hadron_dims = 4, final_state_dims = 2;
     static constexpr double sqrts = 200;
-    achilles::FourVector beam_mom = {100, 0, 0, -100};
-    achilles::FourVector hadron_mom = {100, 0, 0, 100};
+    achilles::FourVector beam_mom = {100_MeV, 0_MeV, 0_MeV, -100_MeV};
+    achilles::FourVector hadron_mom = {100_MeV, 0_MeV, 0_MeV, 100_MeV};
     std::vector<achilles::FourVector> final_state_mom = {
-        {sqrts / 2, sqrts / 2 * sin(M_PI / 4), 0, sqrts / 2 * cos(M_PI / 4)},
-        {sqrts / 2, -sqrts / 2 * sin(M_PI / 4), 0, -sqrts / 2 * cos(M_PI / 4)}};
+        {units::Energy{sqrts / 2}, units::Energy{sqrts / 2 * sin(M_PI / 4)}, 0_MeV,
+         units::Energy{sqrts / 2 * cos(M_PI / 4)}},
+        {units::Energy{sqrts / 2}, units::Energy{-sqrts / 2 * sin(M_PI / 4)}, 0_MeV,
+         units::Energy{-sqrts / 2 * cos(M_PI / 4)}}};
     std::vector<achilles::FourVector> mom_out = {hadron_mom, beam_mom, final_state_mom[0],
                                                  final_state_mom[1]};
     std::vector<achilles::FourVector> mom(4), mom2(4), mom3(4);

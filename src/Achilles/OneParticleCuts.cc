@@ -3,7 +3,7 @@
 
 #include "Achilles/OneParticleCuts.hh"
 #include "Achilles/FourVector.hh"
-#include "Achilles/Units.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 bool achilles::EnergyCut::MakeCut(const FourVector &mom) const {
     return CheckCut(mom.E());

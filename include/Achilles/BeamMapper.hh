@@ -8,7 +8,8 @@
 
 namespace achilles {
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 class Beam;
 
 class BeamMapper : public Mapper<FourVector> {

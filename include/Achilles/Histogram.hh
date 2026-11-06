@@ -38,7 +38,8 @@ enum class HistOut { Native, YODA, ROOT };
 
 namespace achilles {
 
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 
 class Histogram {
   public:

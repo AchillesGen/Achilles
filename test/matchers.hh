@@ -10,47 +10,51 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/ThreeVector.hh"
 
-struct ThreeVectorWithinRelMatcher : Catch::Matchers::MatcherGenericBase {
-    ThreeVectorWithinRelMatcher(const achilles::ThreeVector &vector, double err)
+template <int D> struct ThreeVectorWithinRelMatcher : Catch::Matchers::MatcherGenericBase {
+    ThreeVectorWithinRelMatcher(const achilles::ThreeVectorT<D> &vector, double err)
         : m_vector{vector}, m_err{err} {}
 
-    bool match(const achilles::ThreeVector &other) const {
-        return std::abs(m_vector[0] - other[0]) < m_err &&
-               std::abs(m_vector[1] - other[1]) < m_err && std::abs(m_vector[2] - other[2]) < m_err;
+    bool match(const achilles::ThreeVectorT<D> &other) const {
+        return std::abs((m_vector[0] - other[0]).native()) < m_err &&
+               std::abs((m_vector[1] - other[1]).native()) < m_err &&
+               std::abs((m_vector[2] - other[2]).native()) < m_err;
     }
 
     std::string describe() const override { return "WithinRel: " + m_vector.ToString(); }
 
   private:
-    achilles::ThreeVector m_vector;
+    achilles::ThreeVectorT<D> m_vector;
     double m_err;
 };
 
-struct FourVectorWithinRelMatcher : Catch::Matchers::MatcherGenericBase {
-    FourVectorWithinRelMatcher(const achilles::FourVector &vector, double err)
+template <int D> struct FourVectorWithinRelMatcher : Catch::Matchers::MatcherGenericBase {
+    FourVectorWithinRelMatcher(const achilles::FourVectorT<D> &vector, double err)
         : m_vector{vector}, m_err{err} {}
 
-    bool match(const achilles::FourVector &other) const {
-        return std::abs(m_vector[0] - other[0]) < m_err &&
-               std::abs(m_vector[1] - other[1]) < m_err &&
-               std::abs(m_vector[2] - other[2]) < m_err && std::abs(m_vector[3] - other[3]) < m_err;
+    bool match(const achilles::FourVectorT<D> &other) const {
+        return std::abs((m_vector[0] - other[0]).native()) < m_err &&
+               std::abs((m_vector[1] - other[1]).native()) < m_err &&
+               std::abs((m_vector[2] - other[2]).native()) < m_err &&
+               std::abs((m_vector[3] - other[3]).native()) < m_err;
     }
 
     std::string describe() const override { return "WithinRel: " + m_vector.ToString(); }
 
   private:
-    achilles::FourVector m_vector;
+    achilles::FourVectorT<D> m_vector;
     double m_err;
 };
 
-inline auto ThreeVectorWithinRel(const achilles::ThreeVector &vec, double err)
-    -> ThreeVectorWithinRelMatcher {
-    return ThreeVectorWithinRelMatcher(vec, err);
+template <int D>
+inline auto ThreeVectorWithinRel(const achilles::ThreeVectorT<D> &vec, double err)
+    -> ThreeVectorWithinRelMatcher<D> {
+    return ThreeVectorWithinRelMatcher<D>(vec, err);
 }
 
-inline auto FourVectorWithinRel(const achilles::FourVector &vec, double err)
-    -> FourVectorWithinRelMatcher {
-    return FourVectorWithinRelMatcher(vec, err);
+template <int D>
+inline auto FourVectorWithinRel(const achilles::FourVectorT<D> &vec, double err)
+    -> FourVectorWithinRelMatcher<D> {
+    return FourVectorWithinRelMatcher<D>(vec, err);
 }
 
 #endif

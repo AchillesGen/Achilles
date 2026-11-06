@@ -64,7 +64,7 @@ class RandomMomentumGenerator : public Catch::Generators::IGenerator<achilles::F
         double px = pmag * sint * cos(phi);
         double py = pmag * sint * sin(phi);
         double pz = pmag * cost;
-        current_momentum = achilles::FourVector(e, px, py, pz);
+        current_momentum = achilles::FourVector::FromNative({e, px, py, pz});
         return true;
     }
 };

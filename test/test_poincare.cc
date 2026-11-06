@@ -8,9 +8,12 @@
 #include "Approx.hh"
 #include <iostream>
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 TEST_CASE("Boost", "[Poincare]") {
-    achilles::FourVector p1{1000, 0, 0, 500};
-    achilles::FourVector p2{100, 0, 0, 100};
+    achilles::FourVector p1{1000_MeV, 0_MeV, 0_MeV, 500_MeV};
+    achilles::FourVector p2{100_MeV, 0_MeV, 0_MeV, 100_MeV};
     achilles::FourVector expected = p2;
 
     achilles::Poincare poincare(p1, -1);
@@ -20,9 +23,9 @@ TEST_CASE("Boost", "[Poincare]") {
 }
 
 TEST_CASE("Rotation", "[Poincare]") {
-    achilles::FourVector p1{1000, 0, 250, 500};
-    achilles::FourVector ref{0, 0, 0, 1000};
-    achilles::FourVector p2{100, 0, 0, 100};
+    achilles::FourVector p1{1000_MeV, 0_MeV, 250_MeV, 500_MeV};
+    achilles::FourVector ref{0_MeV, 0_MeV, 0_MeV, 1000_MeV};
+    achilles::FourVector p2{100_MeV, 0_MeV, 0_MeV, 100_MeV};
     achilles::FourVector expected = p2;
 
     achilles::Poincare poincare(p1, ref, 0);
@@ -32,9 +35,9 @@ TEST_CASE("Rotation", "[Poincare]") {
 }
 
 TEST_CASE("Lambda", "[Poincare]") {
-    achilles::FourVector p1{1000, 0, 250, 500};
-    achilles::FourVector p2{100, 0, 0, 100};
-    achilles::FourVector p3{1000, 250, 0, 500};
+    achilles::FourVector p1{1000_MeV, 0_MeV, 250_MeV, 500_MeV};
+    achilles::FourVector p2{100_MeV, 0_MeV, 0_MeV, 100_MeV};
+    achilles::FourVector p3{1000_MeV, 250_MeV, 0_MeV, 500_MeV};
     achilles::FourVector expected = p2;
 
     achilles::Poincare poincare(p1, p3, 3);
@@ -44,8 +47,8 @@ TEST_CASE("Lambda", "[Poincare]") {
 }
 
 TEST_CASE("Invert", "[Poincare]") {
-    achilles::FourVector p1{1000, 0, 250, 500};
-    achilles::FourVector p2{100, 0, 0, 100};
+    achilles::FourVector p1{1000_MeV, 0_MeV, 250_MeV, 500_MeV};
+    achilles::FourVector p2{100_MeV, 0_MeV, 0_MeV, 100_MeV};
     achilles::FourVector expected = p2;
 
     achilles::Poincare poincare(p1, -1);

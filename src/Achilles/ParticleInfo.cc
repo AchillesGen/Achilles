@@ -3,6 +3,7 @@
 
 #include "Achilles/ParticleInfo.hh"
 #include "Achilles/System.hh"
+#include "Achilles/UnitsSchema.hh"
 
 #include <iostream>
 #include <memory>
@@ -34,10 +35,16 @@ bool PID::valid_nucleus() const {
 
 void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
     YAML::Node particleYAML = YAML::LoadFile(Filesystem::FindFile(datafile, "ParticleInfo"));
+    // The mass and width units are a property of the columns, so they are
+    // resolved once here and applied to every row. An absent `units` block
+    // means the documented MeV convention, which is itself the declaration.
+    const auto column_units = units::io::resolve_particle_units(particleYAML["units"]);
     auto particles = particleYAML["Particles"];
     for(auto particle : particles) {
         auto entry =
             std::make_shared<ParticleInfoEntry>(particle["Particle"].as<ParticleInfoEntry>());
+        entry->mass = units::io::particle_mass(entry->mass, column_units).in(units::MeV);
+        entry->width = units::io::particle_width(entry->width, column_units).in(units::MeV);
         particleDB.emplace(entry->id, entry);
         nameToPID.emplace(entry->idname, entry->id);
     }
@@ -125,9 +132,9 @@ size_t ParticleInfo::NSpins() const noexcept {
     }
 }
 
-double ParticleInfo::GenerateLifeTime() const {
+achilles::units::Time ParticleInfo::GenerateLifeTime() const {
     throw std::runtime_error("Not Implemented Yet");
-    return 0.0;
+    return units::Time{};
 }
 
 bool ParticleInfo::IsStable() const noexcept {

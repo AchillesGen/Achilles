@@ -20,7 +20,7 @@ bool achilles::CheckMasses(const std::vector<achilles::FourVector> &mom,
                            const std::vector<double> &masses, double eps) {
     if(mom.size() != masses.size()) return false;
     for(size_t i = 0; i < mom.size(); ++i)
-        if(std::abs(mom[i].M2() - masses[i]) > eps) return false;
+        if(std::abs(mom[i].M2().native() - masses[i]) > eps) return false;
     return true;
 }
 

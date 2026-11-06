@@ -21,7 +21,9 @@ class XSecBackend {
   public:
     XSecBackend() {}
     virtual ~XSecBackend() = default;
-    virtual double CrossSection(const Event &event, const Process &process) const = 0;
+    /// Cross section for this event, strongly typed. The nb the rest of the
+    /// pipeline carries is applied once, where the weight is handed off.
+    virtual units::CrossSection CrossSection(const Event &event, const Process &process) const = 0;
     virtual void SetOptions(const YAML::Node &) {}
     virtual void SetSherpa(SherpaInterface *) {}
     virtual void AddNuclearModel(std::unique_ptr<NuclearModel> model) {
@@ -34,7 +36,8 @@ class XSecBackend {
                                PID) = 0;
 
   protected:
-    double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
+    units::CrossSection FluxFactor(const FourVector &, const FourVector &,
+                                   const ProcessInfo &) const;
     double InitialStateFactor(size_t, size_t, const std::vector<Particle> &,
                               const std::vector<Particle> &) const;
     double SpinAvg(const ProcessInfo &) const;
@@ -48,7 +51,7 @@ using XSecBackendFactory = Factory<XSecBackend>;
 class DefaultBackend : public XSecBackend, RegistrableBackend<DefaultBackend> {
   public:
     DefaultBackend();
-    double CrossSection(const Event &event, const Process &process) const override;
+    units::CrossSection CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
     void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                        PID) override;
@@ -68,7 +71,7 @@ class BSMBackend : public XSecBackend, RegistrableBackend<BSMBackend> {
     BSMBackend();
     void SetSherpa(SherpaInterface *sherpa) override { p_sherpa = sherpa; }
     void SetOptions(const YAML::Node &) override;
-    double CrossSection(const Event &event, const Process &process) const override;
+    units::CrossSection CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
     void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                        PID) override;
@@ -87,7 +90,7 @@ class SherpaBackend : public XSecBackend, RegistrableBackend<SherpaBackend> {
     SherpaBackend();
     void SetSherpa(SherpaInterface *sherpa) override { p_sherpa = sherpa; }
     void SetOptions(const YAML::Node &) override;
-    double CrossSection(const Event &event, const Process &process) const override;
+    units::CrossSection CrossSection(const Event &event, const Process &process) const override;
     void AddProcess(Process &process) override;
     void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                        PID) override;

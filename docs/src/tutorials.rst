@@ -57,7 +57,7 @@ producing an outgoing :math:`e^-` (PID 11). This is charged-current scattering.
          PID: 12
          Beam Params:
            Type: Monochromatic
-           Energy: 1000
+           Energy: 1000 MeV
 
 A monochromatic :math:`\nu_e` beam at 1000 MeV.
 
@@ -87,8 +87,8 @@ and neutron spectral functions for :sup:`12`\ C. No Ward gauge correction is app
    Nuclei:
      - Nucleus:
          Name: 12C
-         Binding: 8.6
-         Fermi Momentum: 225
+         Binding: 8.6 MeV
+         Fermi Momentum: 225 MeV
          ...
 
 The target nucleus is :sup:`12`\ C with a binding energy of 8.6 MeV and Fermi
@@ -210,7 +210,7 @@ Starting from ``examples/run_nue_12C_SF_1000.yml``, change the ``Cascade`` secti
      Interaction:
        Name: GeantInteractions
        GeantData: data/GeantData.hdf5
-     Step: 0.04
+     Step: 0.04 fm
      Probability: Cylinder
 
 Setting ``Run: True`` activates the cascade. The key parameters are:

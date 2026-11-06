@@ -9,6 +9,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
+#include "Achilles/UnitsIO.hh"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
 
@@ -26,7 +27,7 @@ template <> struct convert<std::shared_ptr<achilles::FluxType>> {
     static bool decode(const Node &node, std::shared_ptr<achilles::FluxType> &rhs) {
         // TODO: Improve checks to ensure the node is a valid beam (mainly validation)
         if(node["Type"].as<std::string>() == "Monochromatic") {
-            auto energy = node["Energy"].as<double>();
+            auto energy = node["Energy"].as<achilles::units::Energy>();
             rhs = std::make_shared<achilles::Monochromatic>(energy);
             return true;
         } else if(node["Type"].as<std::string>() == "Spectrum") {

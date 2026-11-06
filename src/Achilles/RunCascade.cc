@@ -39,9 +39,11 @@ void achilles::CascadeTest::InitCrossSection(Event &event, PID pid, double mom, 
 
     // Add test particle from the beam coming in on the z-axis
     // The test particle starts outside the nucleus by 5%
-    ThreeVector position{beam_spot[0], beam_spot[1], -1.05 * nuc->Radius()};
-    auto mass = achilles::ParticleInfo(pid).Mass();
-    FourVector momentum{sqrt(mom * mom + mass * mass), 0, 0, mom}; // Check this
+    ThreePosition position{beam_spot[0] * units::fm, beam_spot[1] * units::fm,
+                           -1.05 * nuc->Radius()};
+    const units::Momentum p = mom * units::MeV;
+    const units::Mass mass = achilles::ParticleInfo(pid).Mass();
+    FourVector momentum{units::sqrt(p * p + mass * mass), 0_MeV, 0_MeV, p}; // Check this
     Particle testPart{pid, momentum, position, ParticleStatus::external_test};
 
     // Make an event instead, initialize with a nucleus, which generates a configuration
@@ -82,16 +84,17 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
                                      "select particle that exists in ground state of the nucleus");
         }
 
-        auto mass = kicked_particle->Info().Mass();
-        FourVector kick{sqrt(mom * mom + mass * mass), mom * sintheta * cos(phi),
-                        mom * sintheta * sin(phi), mom * costheta};
+        const units::Momentum p = mom * units::MeV;
+        const units::Mass mass = kicked_particle->Info().Mass();
+        FourVector kick{units::sqrt(p * p + mass * mass), p * sintheta * cos(phi),
+                        p * sintheta * sin(phi), p * costheta};
         kicked_particle->SetFormationZone(kicked_particle->Momentum(), kick);
         kicked_particle->Status() = ParticleStatus::internal_test;
         kicked_particle->SetMomentum(kick);
     } else {
         // Randomly select a particle from the nucleus
         size_t idx = Random::Instance().Uniform(0ul, event.Hadrons().size() - 1);
-        ThreeVector position = event.Hadrons()[idx].Position();
+        ThreePosition position = event.Hadrons()[idx].Position();
 
         // Rotate to some other spot on the sphere so that it is not always on top of another
         // nucleon
@@ -100,9 +103,10 @@ void achilles::CascadeTest::InitTransparency(Event &event, PID pid, double mom,
         position = {position.Px() * sin(rth) * cos(rph), position.Py() * sin(rth) * sin(rph),
                     position.Pz() * cos(rth)};
 
-        auto mass = achilles::ParticleInfo(pid).Mass();
-        FourVector kick{sqrt(mom * mom + mass * mass), mom * sintheta * cos(phi),
-                        mom * sintheta * sin(phi), mom * costheta};
+        const units::Momentum p = mom * units::MeV;
+        const units::Mass mass = achilles::ParticleInfo(pid).Mass();
+        FourVector kick{units::sqrt(p * p + mass * mass), p * sintheta * cos(phi),
+                        p * sintheta * sin(phi), p * costheta};
 
         Particle testPart{pid, kick, position, ParticleStatus::internal_test};
         //    testPart.SetFormationZone(kicked_particle->Momentum(), kick); -> this is implemented
@@ -139,8 +143,8 @@ CascadeRunner::CascadeRunner(const std::string &runcard) : setting{runcard, "dat
     m_nuc->SetPotential(std::move(potential));
 
     // Setting radius for hydrogen here
-    if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
-    if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84); }
+    if(m_nuc->NProtons() == 1 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84_fm); }
+    if(m_nuc->NProtons() == 0 && m_nuc->NNucleons() == 1) { m_nuc->SetRadius(0.84_fm); }
 
     // Setup output
     auto output = setting["Output"];

@@ -12,7 +12,9 @@
 #include "Achilles/Event.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Version.hh"
+#include "Plugins/HepMC3/HepMC3Units.hh"
 #include "spdlog/spdlog.h"
 
 using achilles::HepMC3Writer;
@@ -35,8 +37,10 @@ void HepMC3Writer::WriteHeader(const std::string &filename, const std::vector<Pr
     spdlog::trace("Finished writing Header");
 }
 
-GenParticlePtr ToHepMC3(const achilles::Particle &particle) {
-    HepMC3::FourVector mom{particle.Px(), particle.Py(), particle.Pz(), particle.E()};
+GenParticlePtr ToHepMC3(const achilles::Particle &particle, achilles::units::Unit<1> unit) {
+    // The unit comes from the GenEvent's own declaration, never assumed.
+    HepMC3::FourVector mom{particle.Px().in(unit), particle.Py().in(unit), particle.Pz().in(unit),
+                           particle.E().in(unit)};
     return std::make_shared<GenParticle>(mom, static_cast<int>(particle.ID()),
                                          static_cast<int>(particle.Status()));
 }
@@ -55,7 +59,10 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
     HepMC3Visitor() : evt(Units::MEV, Units::MM), beamparticles(2) {}
     void visit(achilles::EventHistoryNode *node) {
         auto position = node->Position();
-        HepMC3::FourVector vertex_pos{position.X(), position.Y(), position.Z(), 0};
+        // Positions are stored as MeV^-1; to_mm below converts fm -> mm.
+        HepMC3::FourVector vertex_pos{position.X().in(achilles::units::fm),
+                                      position.Y().in(achilles::units::fm),
+                                      position.Z().in(achilles::units::fm), 0};
         vertex_pos *= to_mm;
         GenVertexPtr vertex = std::make_shared<GenVertex>(vertex_pos);
         vertex->set_status(static_cast<int>(node->Status()));
@@ -64,7 +71,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
             if(converted.count(part) > 0) {
                 particle = converted[part];
             } else {
-                particle = ToHepMC3(part);
+                particle = ToHepMC3(part, achilles::units::io::hepmc_energy_unit(evt));
                 converted[part] = particle;
             }
             if(node->Status() == achilles::EventHistory::StatusCode::beam) {
@@ -79,7 +86,7 @@ struct HepMC3Visitor : achilles::HistoryVisitor {
             if(converted.count(part) > 0) {
                 particle = converted[part];
             } else {
-                particle = ToHepMC3(part);
+                particle = ToHepMC3(part, achilles::units::io::hepmc_energy_unit(evt));
                 converted[part] = particle;
             }
             vertex->add_particle_out(particle);
