@@ -1,0 +1,84 @@
+# Inclusive e-12C at 680 MeV, 36 deg (Barreau:1983ht) with the QEFermiGas vertex.
+# FermiGas Distribution selects a relativistic (RFG) or correlated (CFG) Fermi gas; the CFG
+# parameters are those of arXiv:2405.05342 for 12C (tail fraction 0.27). The cascade
+# nucleus uses the same Fermi momentum and 1/k^4 tail so the spectators match the vertex.
+#
+# The integration cache is keyed on the process, not the nuclear model, so it is
+# switched off: a cached RFG grid would otherwise be reused for a CFG run.
+Main:
+  NEvents: 100000
+  HardCuts: True
+  EventCuts: false
+  DoRotate: false
+  RunDecays: False
+  Output:
+      Format: NuHepMC
+      Name: e12C_680_QE_FermiGas.hepmc
+      Zipped: False
+
+SherpaOptions: !include "data/default/SherpaOptions.yml"
+
+Processes:
+  - Leptons: [11, [11]]
+
+Beams:
+  - Beam:
+      PID: 11
+      Beam Params:
+        Type: Monochromatic
+        Energy: 680
+
+Cascade:
+  Run: True
+  Interactions: !include "data/default/VirtResInteractions.yml"
+  Step: 0.04
+  Probability: Cylinder
+  InMedium: None
+  PotentialProp: False
+  Algorithm: Base
+
+NuclearModels:
+ - NuclearModel:
+    Model: QEFermiGas
+    FormFactorFile: "FormFactors.yml"
+    Ward: None
+    FermiGas: {Distribution: CFG, kF: 220, Binding: 25, c0: 4.16, lambda: 2.75}
+    # FermiGas: {Distribution: RFG, kF: 221, Binding: 25}  # PauliBlocking: false to disable
+    # FermiGas: {Distribution: RFG, kF: Local, Binding: 25}  # local Fermi gas: kF(r) from the
+    #   nucleus' proton/neutron densities; use FermiGas Type: Local in the nucleus card too
+
+Nuclei:
+  - Nucleus:
+      Name: 12C
+      Binding: 25
+      Fermi Momentum: 220
+      Density:
+        ProtonFile: data/densities/c12.prova.txt
+        NeutronFile: data/densities/c12.prova.txt
+        FilePotential: data/realOP_12C_EDAI.dat
+        Function: configuration
+        Configs: data/configurations/QMC_configs.out.gz
+      FermiGas:
+        Type: Global
+        Correlated: True
+        SRCfraction: 0.27
+        LambdaSRC: 2.75
+      Potential:
+        Name: Schroedinger
+        r0: 0.16
+        Mode: 3
+
+HardCuts:
+  - Type: AngleTheta
+    PIDs: 11
+    range: [35., 37.]
+
+Options: !include "data/default/OptionDefaults.yml"
+
+Cache:
+  Save: False
+  Load: False
+
+Backend:
+  Name: Default
+  Options: []

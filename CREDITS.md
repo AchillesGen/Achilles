@@ -27,6 +27,8 @@ Implemented from published descriptions rather than from third-party source:
 the GiBUU NN elastic parametrisation; the Dmitriev-Sushkov NN -> N Delta model
 (Nucl. Phys. A459 (1986) 503); the Oset et al. pion absorption and quasielastic
 model (Nucl. Phys. A468 (1987) 631; A484 (1988) 557); the Kelly and z-expansion
-nucleon form factors.
+nucleon form factors; the relativistic Fermi gas (Smith and Moniz, Nucl. Phys.
+B43 (1972) 605) and the correlated Fermi gas (Hen et al., Phys. Rev. C 91 (2015)
+025803).
 
 See `CITATIONS.bib` for the references.

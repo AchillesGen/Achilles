@@ -29,7 +29,7 @@ Channel<FourVector> BuildChannel(NuclearModel *model, const ProcessInfo &info,
     Channel<FourVector> channel;
     channel.mapping = PSBuilder(info)
                           .Beam(beam)
-                          .Hadron(model->PhaseSpace(nuc_id))
+                          .Hadron(model->PhaseSpace(nuc_id), model->PhaseSpaceSettings())
                           .FinalState(T::Name(), gauge_boson_mass)
                           .build();
     AdaptiveMap map(channel.mapping->NDims(), 100);

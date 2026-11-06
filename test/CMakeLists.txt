@@ -36,6 +36,7 @@ add_executable(achilles-testsuite
     test_event_writer.cc
     test_process_info.cc
     test_hadronic_mapper.cc
+    test_qe_fermi_gas.cc
     test_final_state_mapper.cc
     test_quasielastic_mapper.cc
     test_beam_mapper.cc

@@ -212,6 +212,8 @@ TEST_CASE("Process Grouping Single Event", "[Process]") {
         REQUIRE_CALL(*backend, CrossSection(trompeloeil::_, trompeloeil::_))
             .TIMES(1)
             .RETURN(expected_weight);
+        // The model may place the struck nucleon (QEFermiGas with kF: Local)
+        REQUIRE_CALL(*backend, GetNuclearModel()).TIMES(1).RETURN(nullptr);
         MockBackend::SetSelf(std::move(backend));
         group.SetupBackend(backend_node, std::move(model), nullptr);
         auto event = group.SingleEvent(momentum, ps_wgt);

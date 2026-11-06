@@ -16,6 +16,8 @@
 
 #include "fmt/ranges.h"
 
+#include <algorithm>
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/SherpaInterface.hh"
 #else
@@ -49,7 +51,8 @@ refParticles Process::SelectParticles(const refParticles &protons, const refPart
     return result;
 }
 
-void Process::SetupHadrons(Event &event) const {
+void Process::SetupHadrons(Event &event,
+                           const std::optional<std::pair<double, double>> &radii) const {
     FourVector lep_in;
     std::vector<FourVector> had_in, lep_out, had_out, spect;
     ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
@@ -90,6 +93,27 @@ void Process::SetupHadrons(Event &event) const {
     size_t nsamples = m_info.m_hadronic.first.size();
     auto sampled_protons = Random::Instance().Sample(nsamples, protons);
     auto sampled_neutrons = Random::Instance().Sample(nsamples, neutrons);
+
+    // Pick the struck nucleon among those inside the allowed radii instead of moving it, so the
+    // configuration is unchanged. If none is inside, take the nearest one.
+    if(radii && nsamples == 1) {
+        const bool is_proton = m_info.m_hadronic.first[0] == PID::proton();
+        const auto &candidates = is_proton ? protons : neutrons;
+        auto distance = [&](const Particle &part) {
+            const double r = part.Position().Magnitude();
+            return std::max({radii->first - r, r - radii->second, 0.0});
+        };
+        refParticles allowed;
+        for(const auto &nucleon : candidates)
+            if(distance(nucleon) == 0) allowed.push_back(nucleon);
+        auto &sampled = is_proton ? sampled_protons : sampled_neutrons;
+        if(!allowed.empty())
+            sampled = Random::Instance().Sample(1, allowed);
+        else
+            sampled = {*std::min_element(
+                candidates.begin(), candidates.end(),
+                [&](const auto &a, const auto &b) { return distance(a) < distance(b); })};
+    }
 
     auto initial_states =
         SelectParticles(sampled_protons, sampled_neutrons, m_info.m_hadronic.first, had_in,
@@ -343,6 +367,7 @@ std::map<size_t, ProcessGroup> ProcessGroup::ConstructGroups(const Settings &set
 void ProcessGroup::SetupBackend(const Settings &settings, std::unique_ptr<NuclearModel> model,
                                 SherpaInterface *sherpa) {
     auto backend_name = settings.GetAs<std::string>("Backend/Name");
+    if(m_nucleus) model->SetNucleus(*m_nucleus);
     m_backend = XSecBuilder(backend_name)
                     .AddOptions(settings["Backend/Options"])
                     .AddNuclearModel(std::move(model))
@@ -470,7 +495,20 @@ achilles::Event ProcessGroup::SingleEvent(const std::vector<FourVector> &mom, do
     auto &process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.Momentum()[0]);
     event.ProcessId() = process.ID();
-    process.SetupHadrons(event);
+
+    // A local Fermi gas restricts the radii at which the struck nucleon can sit
+    std::optional<std::pair<double, double>> radii;
+    const auto &info = process.Info();
+    const auto *model = m_backend->GetNuclearModel();
+    if(model && info.m_hadronic.first.size() == 1 && info.m_hadronic.second.size() == 1 &&
+       ParticleInfo(info.m_hadronic.second[0]).IsNucleon()) {
+        FourVector lep_in;
+        std::vector<FourVector> had_in, lep_out, had_out, spect;
+        process.ExtractMomentum(event, lep_in, had_in, lep_out, had_out, spect);
+        radii = model->StruckNucleonRadii(had_in[0].P(), info.m_hadronic.first[0], had_out[0].P(),
+                                          info.m_hadronic.second[0]);
+    }
+    process.SetupHadrons(event, radii);
 
     return event;
 }

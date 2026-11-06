@@ -15,10 +15,13 @@
 #include "yaml-cpp/node/node.h"
 
 #include <complex>
+#include <optional>
 #include <stdexcept>
+#include <utility>
 
 namespace achilles {
 
+class Nucleus;
 class PID;
 class PSBuilder;
 class Spinor;
@@ -122,6 +125,12 @@ class NuclearModel {
     virtual std::string GetName() const = 0;
     static std::string Name() { return "Nuclear Model"; }
     virtual std::string PSName() const = 0;
+    virtual void SetNucleus(const Nucleus &) {}
+    virtual YAML::Node PhaseSpaceSettings() const { return {}; }
+    virtual std::optional<std::pair<double, double>> StruckNucleonRadii(double, PID, double,
+                                                                        PID) const {
+        return std::nullopt;
+    }
     virtual std::string InspireHEP() const = 0;
     virtual NuclearFrame Frame() const { return NuclearFrame::Lab; }
     void TransformFrame(Event &, const Process &, bool) const;
@@ -131,6 +140,8 @@ class NuclearModel {
     FormFactor::Values EvalFormFactor(double q2) const { return m_form_factor->operator()(q2); }
     FormFactorMap CouplingsFF(const FormFactor::Values &,
                               const std::vector<FormFactorInfo> &) const;
+    static Current OneBodyCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
+                                  const FourVector &, const FormFactorMap &);
     std::function<void(Event &, const Process &, bool)> transform;
     void TransformLab(Event &, const Process &, bool) const {}
     void TransformQZ(Event &, const Process &, bool);
@@ -201,9 +212,6 @@ class QESpectral : public NuclearModel, RegistrableNuclearModel<QESpectral> {
     static std::string Name() { return "QESpectral"; }
 
   private:
-    Current HadronicCurrent(const std::array<Spinor, 2> &, const std::array<Spinor, 2> &,
-                            const FourVector &, const FormFactorMap &) const;
-
     const WardGauge m_ward;
     SpectralFunction spectral_proton, spectral_neutron;
     // TODO: This is a code smell. Should figure out a better solution

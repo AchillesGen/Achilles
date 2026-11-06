@@ -55,7 +55,7 @@ inline void Splash() {
 |    Version: {:56}|
 |    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,        |
 |        Pedro A. Machado, Luke Pickering, Noemi Rocco,               |
-|        Hayden Piwonka                                               |
+|        Hayden Piwonka, Sam Carey                                    |
 |                                                                     |
 |    Undergraduate Student Contributions:                             |
 |        Diego Lopez Gutierrez, Sherry Wang, Russell Farnsworth       |
