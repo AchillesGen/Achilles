@@ -75,3 +75,9 @@ path = "docs/s5defs.rst"
 precedence = "override"
 SPDX-FileCopyrightText = "NONE"
 SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["validation/**/*.md", "validation/**/*.yml", "validation/**/*.yaml"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2018-2026 Achilles Developers"
+SPDX-License-Identifier = "GPL-3.0-or-later"
