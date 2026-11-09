@@ -23,5 +23,10 @@
     "name": "latest",
     "version": "latest",
     "url": "https://achillesgen.github.io/Achilles/latest/"
+  },
+  {
+    "name": "pre-commit-ci-update-config",
+    "version": "pre-commit-ci-update-config",
+    "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"
   }
 ]

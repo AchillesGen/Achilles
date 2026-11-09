@@ -3,5 +3,6 @@
   "dependabot",
   "feature",
   "fix-landing-rebuild",
-  "latest"
+  "latest",
+  "pre-commit-ci-update-config"
 ]
