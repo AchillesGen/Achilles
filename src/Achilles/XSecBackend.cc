@@ -59,7 +59,6 @@ achilles::DefaultBackend::DefaultBackend() {}
 double achilles::DefaultBackend::CrossSection(const Event &event_in, const Process &process) const {
     Event event = event_in;
 
-	const vParticles& allParticles=event.Particles();
 	const Particle& leptonIn=event.leptonIn();
 	refParticles leptonsOut=event.leptonsOut();
 	refParticles hadronsIn=event.hadronsIn();
@@ -72,14 +71,14 @@ double achilles::DefaultBackend::CrossSection(const Event &event_in, const Proce
 
 	spdlog::debug("Pre-Transform:");
 	size_t np=0;
-    for(const Particle& p:allParticles) {
+    for(const Particle& p:event.Particles()) {
         spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
     m_model->TransformFrame(event, process, true);
 
 	spdlog::debug("Post-Transform:");
 	np=0;
-    for(const Particle& p:allParticles) {
+    for(const Particle& p:event.Particles()) {
         spdlog::debug(" p{} = ({}, {}, {}, {})", np++,  p.Momentum()[0], p.Momentum()[1], p.Momentum()[2], p.Momentum()[3]);
     }
 

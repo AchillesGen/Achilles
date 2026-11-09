@@ -62,5 +62,6 @@ Containers:
     # [pid, name, [members]] -- members are particles only; anti-particles come
     # from decomposing the anti-container (operator[]/Decompose propagate anti).
     - Container: [91, neutrino, [12, 14, 16]]
-    - Container: [95, nucleon, [2212, 2112]]
     # jet (93) and quark (94) are rule-based; see ParticleInfo::RegisterDefaultContainers.
+    - Container: [95, nucleon, [2212, 2112]]
+    - Container: [96, pion, [111, 211]]
