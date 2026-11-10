@@ -148,7 +148,7 @@ std::pair<Particle,Particle> Particle::splitSingle(size_t partIndex) {
 		if(i!=partIndex)
 			remaining.push_back(sub_parts[i]);
 	return std::pair<Particle,Particle>(sub_parts[partIndex],
-		NuclearRemnant(remaining,status,momentum-sub_parts[partIndex].Momentum(),position));
+		NuclearRemnant(remaining,status,momentum,position));
 }
 std::pair<Particle,Particle> Particle::splitSingleRandom(PID type) {
 	std::vector<size_t> candidates;

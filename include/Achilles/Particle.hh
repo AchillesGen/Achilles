@@ -359,6 +359,9 @@ class Particle {
 	/// - first = the particle at the given index
 	/// - second = everything else. If there are 2 or more particles remaining,
 	///	second is another NuclearRemnant. Otherwise, it's a single Particle.
+	/// The status, position, and momentum of the remnant are unchanged;
+	/// if removing this particle would change one of these properties,
+	/// this must be done manually after the split.
 	std::pair<Particle,Particle> splitSingle(size_t);
 	/// Splits off a randomly-selected (uniform) particle with the given PID
 	/// from this composite, if such a particle exists
