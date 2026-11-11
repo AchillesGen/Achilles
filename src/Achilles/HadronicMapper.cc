@@ -14,6 +14,9 @@ using achilles::QESpectralMapper;
 using achilles::DISSingleNucleonMapper;
 using achilles::DISNucleusMapper;
 
+using achilles::FourVector;
+using achilles::ThreeVector;
+
 CoherentMapper::CoherentMapper(const ProcessInfo &info)
     : HadronicBeamMapper(info) {
     m_mass = ParticleInfo(info.m_hadronic.first[0]).Mass();
@@ -287,10 +290,10 @@ double IntfSpectralMapper::GenerateWeight(const Event& event,
 }
 
 
-static achilles::FourVector getQuarkMomentum(const achilles::FourVector& pLepton,const achilles::FourVector& pHadron,double x) {
+FourVector achilles::getQuarkMomentum(const FourVector& pLepton,const FourVector& pHadron,double x) {
 	// ~~ Boost to COM Frame ~~
-	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
-	achilles::FourVector pHadBoosted=pHadron.Boost(com);
+	ThreeVector com=(pLepton+pHadron).BoostVector();
+	FourVector pHadBoosted=pHadron.Boost(com);
 
 	// Rotated hadron momentum is always [E,0,0,pZ=|p|]
 	// Instead of rotating I'll just call P() to act as pZ
@@ -307,14 +310,20 @@ static achilles::FourVector getQuarkMomentum(const achilles::FourVector& pLepton
 	// ~~ Rotate/Boost Back ~~
 	// pQuark (COM frame, unrotated) = [Eq,Eq*(original unit vector)]
 	// Want to return in Lab Frame (so boost by -com)
-	return achilles::FourVector(pHadBoosted.Vec3().Unit()*Eq,Eq).Boost(-com);
+	return FourVector(pHadBoosted.Vec3().Unit()*Eq,Eq).Boost(-com);
 }
 
-static double getX(const achilles::FourVector& pLepton,const achilles::FourVector& pHadron,const achilles::FourVector& pQuark) {
+double achilles::getX(const FourVector& pLepton,const FourVector& pHadron,const FourVector& pQuark) {
 	// Reversing the previous function
-	achilles::ThreeVector com=(pLepton+pHadron).BoostVector();
-	achilles::FourVector pHadBoosted=pHadron.Boost(com);
+	ThreeVector com=(pLepton+pHadron).BoostVector();
+	FourVector pHadBoosted=pHadron.Boost(com);
 	return 2.0*pQuark.Boost(com).E()/(pHadBoosted.E()+pHadBoosted.P());
+}
+
+double achilles::xi_TMC(double x,double M2,double Q2) {
+	// Target Mass Correction of x -> xi
+	// via https://arxiv.org/pdf/2301.07715 eq 2.3 - 2.4
+	return x*2./(1.+sqrt(1.+4.*x*x*M2/Q2));
 }
 
 static double xMin=1e-10,xMax=1.0;

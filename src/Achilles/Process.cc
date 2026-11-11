@@ -237,6 +237,7 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
     if(!process_idx) {
         double weight = 0;
         for(size_t i = 0; i < m_processes.size(); ++i) {
+			event.setProcessInfo(m_processes[i].Info());
             double process_weight = m_backend->CrossSection(event, m_processes[i]);
             if(b_calc_weights) m_processes[i].AddWeight(process_weight);
             weight += process_weight;
@@ -245,6 +246,7 @@ void ProcessGroup::CrossSection(Event &event, std::optional<size_t> process_idx)
         if(b_calc_weights) m_xsec += weight;
     } else {
         Process& process = m_processes[process_idx.value()];
+		event.setProcessInfo(process.Info());
         double weight = m_backend->CrossSection(event, process);
         event.Weight() = process.Unweight(weight);
     }
@@ -438,7 +440,6 @@ void ProcessGroup::EventSetup(Event& event) {
     Process& process = m_processes[process_opt.value()];
     event.Flux() = m_beam->EvaluateFlux(process.Info().m_leptonic.first, event.leptonIn().Momentum());
     event.ProcessId() = process.ID();
-	event.setProcessInfo(process.Info());
 	// At this point, the event's PIDs have all been resolved;
 	// we can now fill the rest of the event with anything PID-dependent,
 	// such as the Remnant and Cascade

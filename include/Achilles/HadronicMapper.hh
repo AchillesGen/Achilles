@@ -89,6 +89,10 @@ class IntfSpectralMapper
     // static constexpr double dE = 400;
 };
 
+FourVector getQuarkMomentum(const FourVector&,const FourVector&,double);
+double getX(const FourVector&,const FourVector&,const FourVector&);
+double xi_TMC(double,double,double);
+
 class DISSingleNucleonMapper: public HadronicBeamMapper,
 		Registrable<HadronicBeamMapper,DISSingleNucleonMapper,const ProcessInfo&> {
   public:
