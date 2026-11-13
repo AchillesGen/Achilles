@@ -22,7 +22,6 @@ Event::Event(const Event& other) {
     m_nuc = other.m_nuc;
     m_wgt = other.m_wgt;
 	hist_particles = other.hist_particles;
-	cascade_hadrons = other.cascade_hadrons;
     flux = other.flux;
     m_process_id = other.m_process_id;
 
@@ -38,7 +37,6 @@ Event &Event::operator=(const Event &other) {
     m_nuc = other.m_nuc;
     m_wgt = other.m_wgt;
 	hist_particles = other.hist_particles;
-	cascade_hadrons = other.cascade_hadrons;
     flux = other.flux;
     m_process_id = other.m_process_id;
 
@@ -80,12 +78,6 @@ void Event::Finalize() {
 Particle* Event::Remnant() {
 	for(Particle& part:hist_particles)
 		if(part.isInFinalState()&&part.ID().IsNucleus())
-			return &part;
-	return nullptr;
-}
-Particle* Event::findFinalStateParticle(const Particle& match) {
-	for(Particle& part:hist_particles)
-		if(part.isInFinalState()&&part.equalsIgnoreVertices(match))
 			return &part;
 	return nullptr;
 }
@@ -285,19 +277,11 @@ achilles::crefParticles Event::allFinalStateParticles() const {
 	return particlesIn(Particle::OPEN_END);
 }
 
-achilles::vParticles Event::InteractableHadrons() {
-	vParticles result;
-	for(Particle& part:hist_particles)
-		if(part.isInFinalState()) {
-			spdlog::info("{}",part.SubParts());
-			if(part.IsComposite()&&part.ID().IsNucleus()) {
-				for(Particle& sub:part.SubParts())
-					if(sub.Info().IsHadron())
-						result.push_back(sub);
-			} else if(part.Info().IsHadron())
-				result.push_back(part);
-		}
-	return result;
+achilles::refParticles Event::PropagatingHadrons() {
+	static constexpr auto pred=[](const Particle& part) {
+		return part.isInFinalState()&&part.Status()==ParticleStatus::propagating;
+	};
+	return FilterParticles(hist_particles,pred);
 }
 
 achilles::refParticles Event::particlesIn(size_t vertex) {
@@ -314,14 +298,6 @@ achilles::crefParticles Event::particlesIn(size_t vertex) const {
 			result.push_back(std::reference_wrapper<const Particle>(part));
 	return result;
 }
-achilles::refParticles Event::particlesIn(size_t vertex,PID pid,ParticleStatus status) {
-	refParticles list=particlesIn(vertex);
-	return getAllOfType(list,pid,status);
-}
-achilles::crefParticles Event::particlesIn(size_t vertex,PID pid,ParticleStatus status) const {
-	crefParticles list=particlesIn(vertex);
-	return getAllOfType(list,pid,status);
-}
 achilles::refParticles Event::particlesOut(size_t vertex) {
 	refParticles result;
 	for(Particle& part:hist_particles)
@@ -336,44 +312,46 @@ achilles::crefParticles Event::particlesOut(size_t vertex) const {
 			result.push_back(std::reference_wrapper<const Particle>(part));
 	return result;
 }
-achilles::refParticles Event::particlesOut(size_t vertex,PID pid,ParticleStatus status) {
-	refParticles list=particlesOut(vertex);
-	return getAllOfType(list,pid,status);
-}
-achilles::crefParticles Event::particlesOut(size_t vertex,PID pid,ParticleStatus status) const {
-	crefParticles list=particlesOut(vertex);
-	return getAllOfType(list,pid,status);
-}
 
 Particle& Event::leptonIn(size_t vertex) {
-	return particlesIn(vertex,m_processInfo.m_leptonic.first)[0].get();
+	for(Particle& p:hist_particles) {
+		if(p.endVertex()==vertex&&p.ID()==m_processInfo.m_leptonic.first)
+			return p;
+	}
+	throw std::runtime_error("Event::leptonIn(): No initial lepton was found.");
 }
 achilles::refParticles Event::hadronsIn(size_t vertex) {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.endVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_hadronic.first)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesIn(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::refParticles Event::leptonsOut(size_t vertex) {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.startVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_leptonic.second)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesOut(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::refParticles Event::hadronsOut(size_t vertex) {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.startVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_hadronic.second)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesOut(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::refParticles Event::spectators() {
 	auto pred=[*this](const Particle& p) {
@@ -383,34 +361,44 @@ achilles::refParticles Event::spectators() {
 }
 
 const Particle& Event::leptonIn(size_t vertex) const {
-	return particlesIn(vertex,m_processInfo.m_leptonic.first)[0].get();
+	for(const Particle& p:hist_particles) {
+		if(p.endVertex()==vertex&&p.ID()==m_processInfo.m_leptonic.first)
+			return p;
+	}
+	throw std::runtime_error("Event::leptonIn(): No initial lepton was found.");
 }
 achilles::crefParticles Event::hadronsIn(size_t vertex) const {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.endVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_hadronic.first)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesIn(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::crefParticles Event::leptonsOut(size_t vertex) const {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.startVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_leptonic.second)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesOut(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::crefParticles Event::hadronsOut(size_t vertex) const {
-	auto pred=[*this](const Particle& p) {
+	auto pred=[*this,vertex](const Particle& p) {
+		if(p.startVertex()!=vertex)
+			return false;
 		for(PID pid:m_processInfo.m_hadronic.second)
 			if(p.ID()==pid)
 				return true;
 		return false;
 	};
-	return FilterParticles(particlesOut(vertex),pred);
+	return FilterParticles(hist_particles,pred);
 }
 achilles::crefParticles Event::spectators() const {
 	auto pred=[*this](const Particle& p) {
@@ -449,9 +437,4 @@ void Event::WalkHistory(achilles::HistoryVisitor &visitor) {
 
         visited.push_back(current);
     }
-}
-
-achilles::Particle Event::MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const {
-    PID pid = PID::MakeNucleus(static_cast<int>(nZ), static_cast<int>(nA));
-    return Particle(pid, mom, {}, ParticleStatus::residue);
 }

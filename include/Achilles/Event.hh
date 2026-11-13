@@ -114,21 +114,18 @@ class Event {
 	/// Collects all current final-state hadrons into a list.
 	/// Particles in this list are copies of the ones in the history.
 	vParticles InteractableHadrons();
+	refParticles PropagatingHadrons();
 
 	/// A separate "slot" that is periodically updated to
 	/// preserve compatibility w/ the various CrossSection classes.
 	/// This is (hopefully) a temporary solution, and this field
 	/// should not be treated as up-to-date in general.
-	vParticles& CascadeHadrons() { return cascade_hadrons; }
+	vParticles& CascadeHadrons();
 
 	refParticles particlesIn(size_t);
 	crefParticles particlesIn(size_t) const;
-	refParticles particlesIn(size_t,PID,ParticleStatus=ParticleStatus::any);
-	crefParticles particlesIn(size_t,PID,ParticleStatus=ParticleStatus::any) const;
 	refParticles particlesOut(size_t);
 	crefParticles particlesOut(size_t) const;
-	refParticles particlesOut(size_t,PID,ParticleStatus=ParticleStatus::any);
-	crefParticles particlesOut(size_t,PID,ParticleStatus=ParticleStatus::any) const;
 
 	/// When the size_t argument is 0,
 	/// these methods correspond to the ProcessInfo
@@ -178,7 +175,6 @@ class Event {
 				result.push_back(std::reference_wrapper(p));
         return result;
     }
-    Particle MakeNuclearRemnant(size_t nA, size_t nZ, const FourVector &mom) const;
 
     // Variables
 	ProcessInfo m_processInfo;
@@ -186,7 +182,6 @@ class Event {
     double m_wgt{};
 	std::vector<std::unique_ptr<EventVertex>> vertices{};
     vParticles hist_particles{};
-	vParticles cascade_hadrons{};
     double flux{};
     int m_process_id{};
 };
