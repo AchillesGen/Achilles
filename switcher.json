@@ -25,6 +25,11 @@
     "url": "https://achillesgen.github.io/Achilles/latest/"
   },
   {
+    "name": "modern-ui",
+    "version": "modern-ui",
+    "url": "https://achillesgen.github.io/Achilles/modern-ui/"
+  },
+  {
     "name": "pre-commit-ci-update-config",
     "version": "pre-commit-ci-update-config",
     "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"

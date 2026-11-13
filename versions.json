@@ -4,5 +4,6 @@
   "feature",
   "fix-landing-rebuild",
   "latest",
+  "modern-ui",
   "pre-commit-ci-update-config"
 ]
