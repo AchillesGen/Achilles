@@ -24,7 +24,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       is_release: ${{ steps.version.outputs.is_release }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
           # `git tag` below needs the full tag history
@@ -141,7 +141,7 @@ jobs:
           restore-keys: ccache-${{ matrix.os }}-
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v4.3.4
+        uses: pypa/cibuildwheel@v4.3.5
       - uses: actions/upload-artifact@v7
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
