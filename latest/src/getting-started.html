@@ -32,7 +32,7 @@
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
     <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=4418a689" />
-    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=6a604523" />
     <link rel="stylesheet" type="text/css" href="../_static/css/s5defs-roles.css?v=04af0cc0" />
   
   <!-- So that users can add custom icons -->
@@ -45,7 +45,7 @@
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/scripts/sphinx-book-theme.js?v=fab101a9"></script>
-    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script data-sd-tabs-storage-prefix="sphinx-design-tab-id-" src="../_static/design-tabs.js?v=fcb327ea"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'src/getting-started';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="icon" href="../_static/favicon.ico"/>
@@ -227,6 +227,10 @@
 <li class="toctree-l1"><a class="reference internal" href="physics.html">Physics Objects</a></li>
 <li class="toctree-l1"><a class="reference internal" href="numerics.html">Monte Carlo Methods</a></li>
 <li class="toctree-l1"><a class="reference internal" href="references.html">References</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Developer Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="developer/physval.html">Physics Validation</a></li>
 </ul>
 
     </div>
@@ -551,53 +555,53 @@ the interface in Achilles with:</p>
 <blockquote>
 <div><div class="pst-scrollable-table-container"><table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p class="sd-card-text">Option</p></th>
-<th class="head"><p class="sd-card-text">Meaning</p></th>
-<th class="head"><p class="sd-card-text">Default</p></th>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Meaning</p></th>
+<th class="head"><p>Default</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_TESTING</span></code></p></td>
-<td><p class="sd-card-text">Build the Achilles test suite</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_TESTING</span></code></p></td>
+<td><p>Build the Achilles test suite</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_CASCADE_TEST</span></code></p></td>
-<td><p class="sd-card-text">Build the Achilles cascade executable
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_CASCADE_TEST</span></code></p></td>
+<td><p>Build the Achilles cascade executable
 to run hadron-nucleus interactions
 or transparency checks</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_POTENTIAL_TEST</span></code></p></td>
-<td><p class="sd-card-text">Build the Achilles potential
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_POTENTIAL_TEST</span></code></p></td>
+<td><p>Build the Achilles potential
 executable used to test different
 nuclear potentials in the cascade</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_PRECOMPUTED</span></code></p></td>
-<td><p class="sd-card-text">Build the Achilles interface
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_PRECOMPUTED</span></code></p></td>
+<td><p>Build the Achilles interface
 to pass in pre-computed events in
 order to cascade them using the
 Achilles cascade</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_SHERPA</span></code></p></td>
-<td><p class="sd-card-text">Build the Sherpa interface to
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_ENABLE_SHERPA</span></code></p></td>
+<td><p>Build the Sherpa interface to
 Achilles. This requires an
 installation of Sherpa. Provides
 the ability for tau decays and BSM.
 For details see
 <a class="reference internal" href="interfaces.html#sherpa-interface"><span class="std std-ref">Sherpa Interface</span></a></p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_BUILD_DOCS</span></code></p></td>
-<td><p class="sd-card-text">Build the Achilles manual. Requires
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_BUILD_DOCS</span></code></p></td>
+<td><p>Build the Achilles manual. Requires
 doxygen, sphinx, and …</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">ACHILLES_EVENT_DETAILS</span></code></p></td>
-<td><p class="sd-card-text">Provides additional event details useful
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ACHILLES_EVENT_DETAILS</span></code></p></td>
+<td><p>Provides additional event details useful
 for in-depth debugging.</p></td>
-<td><p class="sd-card-text">OFF</p></td>
+<td><p>OFF</p></td>
 </tr>
 </tbody>
 </table>
@@ -609,22 +613,22 @@ for in-depth debugging.</p></td>
 <span class="sd-summary-text">CMake Options</span><span class="sd-summary-state-marker sd-summary-chevron-right"><svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-chevron-right" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.72 18.78a.75.75 0 0 1 0-1.06L14.44 12 8.72 6.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0Z"></path></svg></span></summary><div class="sd-summary-content sd-card-body docutils">
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p class="sd-card-text">Option</p></th>
-<th class="head"><p class="sd-card-text">Meaning</p></th>
-<th class="head"><p class="sd-card-text">Default</p></th>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Meaning</p></th>
+<th class="head"><p>Default</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code></p></td>
-<td><p class="sd-card-text">Whether to build a Release, Debug,
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">CMAKE_BUILD_TYPE</span></code></p></td>
+<td><p>Whether to build a Release, Debug,
 or RelWithDebInfo version of the code.</p></td>
-<td><p class="sd-card-text">Release</p></td>
+<td><p>Release</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">CMAKE_INSTALL_PREFIX</span></code></p></td>
-<td><p class="sd-card-text">Specifies the directory where the Achilles
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CMAKE_INSTALL_PREFIX</span></code></p></td>
+<td><p>Specifies the directory where the Achilles
 will be installed when <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">install</span></code>
 is executed</p></td>
-<td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">/usr/local</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/usr/local</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -656,48 +660,48 @@ events) are enabled through the options listed in <a class="reference internal" 
 <blockquote>
 <div><div class="pst-scrollable-table-container"><table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p class="sd-card-text">Option</p></th>
-<th class="head"><p class="sd-card-text">Meaning</p></th>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Meaning</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-h</span> <span class="pre">--help</span></code></p></td>
-<td><p class="sd-card-text">Show list of options</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-h</span> <span class="pre">--help</span></code></p></td>
+<td><p>Show list of options</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--version</span></code></p></td>
-<td><p class="sd-card-text">Show the version of Achilles</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--version</span></code></p></td>
+<td><p>Show the version of Achilles</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-v</span></code> / <code class="docutils literal notranslate"><span class="pre">-vv</span></code></p></td>
-<td><p class="sd-card-text">Increase verbosity level</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-v</span></code> / <code class="docutils literal notranslate"><span class="pre">-vv</span></code></p></td>
+<td><p>Increase verbosity level</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-l</span></code> / <code class="docutils literal notranslate"><span class="pre">-ll</span></code></p></td>
-<td><p class="sd-card-text">Increase log verbosity level</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">-l</span></code> / <code class="docutils literal notranslate"><span class="pre">-ll</span></code></p></td>
+<td><p>Increase log verbosity level</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-b</span></code></p></td>
-<td><p class="sd-card-text">Batch Mode (log-friendly)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-b</span></code></p></td>
+<td><p>Batch Mode (log-friendly)</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--logfile</span></code></p></td>
-<td><p class="sd-card-text">File to write log info to.
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--logfile</span></code></p></td>
+<td><p>File to write log info to.
 Defaults to <code class="docutils literal notranslate"><span class="pre">achilles.log</span></code></p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">--sherpa</span></code></p></td>
-<td><p class="sd-card-text">Option to pass to Sherpa</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">-s</span> <span class="pre">--sherpa</span></code></p></td>
+<td><p>Option to pass to Sherpa</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--display-cuts</span></code></p></td>
-<td><p class="sd-card-text">List available cut options</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--display-cuts</span></code></p></td>
+<td><p>List available cut options</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--display-ps</span></code></p></td>
-<td><p class="sd-card-text">List available phase spaces</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--display-ps</span></code></p></td>
+<td><p>List available phase spaces</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--display-ff</span></code></p></td>
-<td><p class="sd-card-text">List available form factors</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--display-ff</span></code></p></td>
+<td><p>List available form factors</p></td>
 </tr>
-<tr class="row-even"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--display-int-models</span></code></p></td>
-<td><p class="sd-card-text">List available cascade models
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--display-int-models</span></code></p></td>
+<td><p>List available cascade models
 for cross section evaluations</p></td>
 </tr>
-<tr class="row-odd"><td><p class="sd-card-text"><code class="docutils literal notranslate"><span class="pre">--display-nuc-models</span></code></p></td>
-<td><p class="sd-card-text">List available nuclear models</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--display-nuc-models</span></code></p></td>
+<td><p>List available nuclear models</p></td>
 </tr>
 </tbody>
 </table>

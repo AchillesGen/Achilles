@@ -47,3 +47,9 @@ Appendices
    src/references
 
 * :ref:`genindex`
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Developer Guide
+
+   src/developer/physval
