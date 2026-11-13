@@ -180,6 +180,24 @@ set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
 set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
 configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/Achilles/System.hh)
 
+# Embed CONTRIBUTORS.yml (the names shown in the start-up banner) into the library.
+# The header is only rewritten when it changes, and editing the YAML reconfigures.
+set(ACHILLES_CONTRIBUTORS_FILE ${ACHILLES_SOURCE_DIR}/CONTRIBUTORS.yml)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+    ${ACHILLES_CONTRIBUTORS_FILE} ${ACHILLES_SOURCE_DIR}/include/Achilles/ContributorsData.hh.in)
+file(READ ${ACHILLES_CONTRIBUTORS_FILE} ACHILLES_CONTRIBUTORS_YAML)
+file(READ ${ACHILLES_SOURCE_DIR}/include/Achilles/ContributorsData.hh.in contributors_template)
+string(REPLACE "@ACHILLES_CONTRIBUTORS_YAML@" "${ACHILLES_CONTRIBUTORS_YAML}"
+    contributors_header "${contributors_template}")
+set(contributors_output ${CMAKE_CURRENT_BINARY_DIR}/include/Achilles/ContributorsData.hh)
+set(contributors_existing "")
+if(EXISTS ${contributors_output})
+    file(READ ${contributors_output} contributors_existing)
+endif()
+if(NOT contributors_existing STREQUAL contributors_header)
+    file(WRITE ${contributors_output} "${contributors_header}")
+endif()
+
 # Data is versioned independently of the code: bump this only when the data set itself
 # changes, then publish a matching GitHub Release tagged with this value. Generated into
 # the build tree and installed into the wheel below (see ACHILLES_ENABLE_PYTHON block).

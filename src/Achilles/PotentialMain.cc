@@ -3,6 +3,7 @@
 
 #include "Achilles/Logging.hh"
 #include "Achilles/RunPotential.hh"
+#include "Achilles/Splash.hh"
 #include "Achilles/Version.hh"
 
 #include "docopt.h"
@@ -14,26 +15,7 @@
 #pragma GCC diagnostic pop
 
 void Splash() {
-    fmt::print(R"splash(
-+=================================================================+
-|                                                                 | 
-|       d8b   db db    db  .o88b. db   db d888888b  .o88b.        |
-|       888o  88 88    88 d8P  Y8 88   88   `88'   d8P  Y8        |
-|       88V8o 88 88    88 8P      88ooo88    88    8P             |
-|       88 V8o88 88    88 8b      88~~~88    88    8b             |
-|       88  V888 88b  d88 Y8b  d8 88   88   .88.   Y8b  d8        |
-|       VP   V8P ~Y8888P'  `Y88P' YP   YP Y888888P  `Y88P'        |
-|                                                                 |
-+-----------------------------------------------------------------+
-|                                                                 |
-|    Version: {:52}|
-|    Authors: Joshua Isaacson, William Jay, Alessandro Lovato,    | 
-|             Pedro A. Machado, Noemi Rocco                       | 
-|                                                                 |
-+=================================================================+
-
-)splash",
-               ACHILLES_VERSION);
+    achilles::PrintSplash(ACHILLES_VERSION);
 
     fmt::print(fmt::emphasis::bold | fg(fmt::terminal_color::red),
                "NOTE: You are running in potential test mode. Hard "
@@ -64,7 +46,7 @@ int main(int argc, char *argv[]) {
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    CreateLogger(verbosity, verbosity, 5);
 
     achilles::RunPotential(runcard);
 

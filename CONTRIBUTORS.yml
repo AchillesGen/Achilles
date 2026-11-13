@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2018-2026 Achilles Developers
+# SPDX-License-Identifier: CC0-1.0
+#
+# People credited in the Achilles start-up banner.
+#
+# This file is embedded into the executables when CMake configures the build,
+# so after editing it rerun the build (CMake reconfigures on its own when this
+# file changes).
+#
+# Each section is a list of plain names:
+#
+#   - Jane Doe
+#
+# Names are sorted by surname (the last word of the name) when they are shown,
+# so new entries can be added anywhere in a section.
+
+authors:
+  - Joshua Isaacson
+  - William Jay
+  - Alessandro Lovato
+  - Pedro A. Machado
+  - Luke Pickering
+  - Hayden Piwonka
+  - Noemi Rocco
+
+# People who previously contributed to Achilles as authors.
+former_authors:
+  - Noah Steinberg
+
+undergraduate_contributors:
+  - Russell Farnsworth
+  - Diego Lopez Gutierrez
+  - Sherry Wang

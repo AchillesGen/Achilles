@@ -53,6 +53,7 @@ add_executable(achilles-testsuite
     test_mbamplitudes.cc
     test_delta.cc
     test_clebsch_gordan.cc
+    test_console.cc
 )
 target_link_libraries(achilles-testsuite PRIVATE project_options project_warnings
     PUBLIC physics mappers event_gen)

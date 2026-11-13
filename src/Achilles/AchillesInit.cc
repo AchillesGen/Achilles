@@ -24,6 +24,8 @@ namespace achilles {
 static time_t logTime(std::string message) {
     time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     message += ctime(&time);
+    // ctime ends with a newline, the logger adds its own
+    if(!message.empty() && message.back() == '\n') message.pop_back();
     spdlog::info(message);
     return time;
 }

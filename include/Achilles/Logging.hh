@@ -4,8 +4,7 @@
 #ifndef LOGGING_HH
 #define LOGGING_HH
 
-#include "spdlog/sinks/basic_file_sink.h"
-#include "spdlog/sinks/stdout_color_sinks.h"
+#include "Achilles/Console.hh"
 #include "spdlog/spdlog.h"
 
 #include <csignal>
@@ -28,6 +27,9 @@ inline void SignalHandler(int signal) {
     default:
         signal_str = "Unknown";
     }
+    // Drop the progress bar so the messages, and the shell prompt after them, start on a
+    // clean line instead of after the bar and the echoed ^C
+    achilles::console::LiveLine::Instance().Clear();
     spdlog::error("Achilles has recieved a {} signal", signal_str);
     spdlog::error("Achilles attempting to exit gracefully!");
     spdlog::get("achilles")->flush();
@@ -36,22 +38,7 @@ inline void SignalHandler(int signal) {
 
 inline void CreateLogger(int level, int log_level, int flush_time,
                          std::string destination = "achilles.log") {
-    auto slevel = static_cast<spdlog::level::level_enum>(level);
-    auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-    console_sink->set_level(slevel);
-
-    auto slog_level = static_cast<spdlog::level::level_enum>(log_level);
-    auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(destination, true);
-    file_sink->set_level(slog_level);
-
-    spdlog::sinks_init_list sink_list = {file_sink, console_sink};
-    auto logger = std::make_shared<spdlog::logger>("achilles", sink_list);
-    logger->set_level(slevel);
-    logger->flush_on(spdlog::level::warn);
-    spdlog::register_logger(logger);
-    spdlog::set_default_logger(logger);
-    spdlog::flush_every(std::chrono::seconds(flush_time));
-    spdlog::set_pattern("[%^%l%$] %v");
+    achilles::console::SetupLoggers(level, log_level, flush_time, destination);
 }
 
 #endif
