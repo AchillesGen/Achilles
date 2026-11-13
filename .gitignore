@@ -38,3 +38,11 @@ coverage.info
 install*
 doc-pm/
 Doxyfile
+
+# physval scratch: rendered run cards, generator logs and multi-GB event files
+validation/physval/physval-work/
+validation/physval/*out*/
+
+# physval test leftovers
+validation/physval/__pycache__/
+validation/physval/.pytest_cache/
