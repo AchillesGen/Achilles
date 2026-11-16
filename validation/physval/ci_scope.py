@@ -22,7 +22,8 @@ import yaml
 # A change under these paths since the stored baseline's commit makes it stale. The rest
 # of validation/physval does not; regenerate by hand if a change there moves predictions.
 PHYSICS_PATHS = ["src", "include", "data", "examples", "flux",
-                 "validation/physval/measurements.yml", "CMakeLists.txt", "CMake"]
+                 "validation/physval/measurements.yml", "CMakeLists.txt", "CMake",
+                 "external", "UFO", "python", "FormFactors.yml"]
 EVENTS = {"compare": 500_000, "baseline": 2_000_000}
 
 
