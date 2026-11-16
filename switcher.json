@@ -35,6 +35,11 @@
     "url": "https://achillesgen.github.io/Achilles/physics-paths/"
   },
   {
+    "name": "physval-concurrency",
+    "version": "physval-concurrency",
+    "url": "https://achillesgen.github.io/Achilles/physval-concurrency/"
+  },
+  {
     "name": "pre-commit-ci-update-config",
     "version": "pre-commit-ci-update-config",
     "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"

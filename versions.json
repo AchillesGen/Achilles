@@ -6,5 +6,6 @@
   "latest",
   "modern-ui",
   "physics-paths",
+  "physval-concurrency",
   "pre-commit-ci-update-config"
 ]
