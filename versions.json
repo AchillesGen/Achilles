@@ -5,5 +5,6 @@
   "fix-landing-rebuild",
   "latest",
   "modern-ui",
+  "physics-paths",
   "pre-commit-ci-update-config"
 ]

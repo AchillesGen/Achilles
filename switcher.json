@@ -30,6 +30,11 @@
     "url": "https://achillesgen.github.io/Achilles/modern-ui/"
   },
   {
+    "name": "physics-paths",
+    "version": "physics-paths",
+    "url": "https://achillesgen.github.io/Achilles/physics-paths/"
+  },
+  {
     "name": "pre-commit-ci-update-config",
     "version": "pre-commit-ci-update-config",
     "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"
