@@ -69,8 +69,8 @@ jobs:
       image: ${{ steps.image.outputs.ref }}
       key: ${{ steps.image.outputs.key }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install pyyaml
@@ -106,7 +106,7 @@ jobs:
     container:
       image: ${{ needs.setup.outputs.image }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - name: Build and install Achilles
@@ -124,7 +124,7 @@ jobs:
         run: |
           LD_LIBRARY_PATH="$GITHUB_WORKSPACE/install/lib:$GITHUB_WORKSPACE/install/lib64:$LD_LIBRARY_PATH" \
             "$GITHUB_WORKSPACE/install/bin/achilles" --version
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: achilles-install
           path: install
@@ -147,9 +147,9 @@ jobs:
       SEED: ${{ inputs.seed || '42' }}
       SETUP: ${{ matrix.experiment }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         with:
           name: achilles-install
           path: install
@@ -187,7 +187,7 @@ jobs:
           fi
 
       # always(): a setup that failed still wrote a summary saying why.
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: shard-${{ matrix.experiment }}
@@ -209,12 +209,12 @@ jobs:
       KEY: ${{ needs.setup.outputs.key }}
       ONLY: ${{ needs.setup.outputs.only }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - run: pip install numpy scipy pyyaml
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v8
         continue-on-error: true   # every shard failed: nothing to download
         with:
           pattern: shard-*
@@ -285,7 +285,7 @@ jobs:
 
       - name: Post or update the PR comment
         if: env.MODE == 'compare'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
