@@ -34,9 +34,15 @@ on:
         description: 'Setups to run, comma-separated (blank = all)'
         default: ''
 
+# Pushes without the marker get a group of their own so they cannot cancel a run;
+# keep the condition in step with setup's `if`. Scheduled and manual runs queue.
 concurrency:
-  group: physval-${{ github.ref }}
-  cancel-in-progress: true
+  group: >-
+    physval-${{ github.ref }}-${{
+      (github.event_name != 'push' ||
+       contains(join(github.event.commits.*.message, ' '), '!physval'))
+      && 'active' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
 
 permissions:
   contents: read
