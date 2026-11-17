@@ -40,6 +40,11 @@
     "url": "https://achillesgen.github.io/Achilles/physval-concurrency/"
   },
   {
+    "name": "physval-isolate",
+    "version": "physval-isolate",
+    "url": "https://achillesgen.github.io/Achilles/physval-isolate/"
+  },
+  {
     "name": "physval-stats",
     "version": "physval-stats",
     "url": "https://achillesgen.github.io/Achilles/physval-stats/"
