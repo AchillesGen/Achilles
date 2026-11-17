@@ -15,7 +15,8 @@ import physval
 from adapters import EventSample, GeneratedEvents, Nuisance3Adapter, SyntheticAdapter
 from plots import plot_measurement
 from report import MAX_COMMENT_CHARS, MeasurementResult, MissingMeasurement, Report, plot_basename
-from stats import benjamini_hochberg, compatibility, trial_covariance
+from stats import (Prediction, benjamini_hochberg, compatibility, goodness_of_fit,
+                   trial_covariance)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -47,6 +48,22 @@ def test_two_runs_of_one_configuration_give_uniform_p_values():
 def test_a_shape_change_is_detected():
     rng = np.random.default_rng(1)
     assert compatibility(next(_runs(rng, 1)), next(_runs(rng, 1, shift=0.5))).pvalue < 0.05
+
+
+def test_empty_bins_do_not_count_as_degrees_of_freedom():
+    rng = np.random.default_rng(2024)
+    nbins, empty = 25, [0, 7, 24]
+    keep = np.ones(nbins)
+    keep[empty] = 0.0
+    runs = [Prediction(r.values * keep, np.outer(keep, keep) * r.covariance)
+            for r in _runs(rng, 800, nbins=nbins)]
+    results = [compatibility(runs[2 * i], runs[2 * i + 1]) for i in range(400)]
+    assert all(r.ndof == nbins - len(empty) for r in results)
+    assert scipy_stats.kstest([r.pvalue for r in results], "uniform").pvalue > 0.01
+
+    pred = runs[0]
+    gof = goodness_of_fit(pred, pred.values, np.zeros((nbins, nbins)))
+    assert gof.ndof == nbins - len(empty) and gof.chi2 == pytest.approx(0.0)
 
 
 def test_response_is_applied_to_values_and_covariance():
