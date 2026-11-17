@@ -2,12 +2,20 @@ name: Build and Deploy site
 
 on:
   push:
-    branches:
-      - main
-      - '**' # All branches
+    branches-ignore:
+      - gh-pages
+      - landing_page
+      - 'dependabot/**'
+      - pre-commit-ci-update-config
   release:
     types: [published]
 
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -40,7 +48,7 @@ jobs:
           if [ "$GITHUB_REF_NAME" = "main" ]; then
             echo "version=latest" >> "$GITHUB_OUTPUT"
           else
-            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "version=${GITHUB_REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Build documentation
@@ -93,4 +101,4 @@ jobs:
 
   rebuild-landing:
     needs: build
-    uses: AchillesGen/Achilles/.github/workflows/landing.yml@landing_page
+    uses: AchillesGen/Achilles/.github/workflows/landing.yml@37ed8bf1a8fea4a61090523dbef3b2b47f3b7084 # landing_page
