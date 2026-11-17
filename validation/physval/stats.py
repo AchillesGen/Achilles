@@ -82,25 +82,27 @@ class ChiSquareResult:
         return self.chi2 / self.ndof if self.ndof > 0 else float("nan")
 
 
-def _chi2(delta: np.ndarray, cov: np.ndarray, ndof: int) -> ChiSquareResult:
-    # pinv: an empty bin in both predictions has zero variance.
-    chi2 = float(delta @ np.linalg.pinv(cov) @ delta)
+def _chi2(delta: np.ndarray, cov: np.ndarray) -> ChiSquareResult:
+    # Empty bins have zero variance; invert on the covariance's range, whose rank is the ndof.
+    w, v = np.linalg.eigh(cov)
+    keep = w > w.max(initial=0.0) * w.size * np.finfo(float).eps
+    proj = v[:, keep].T @ delta
+    chi2 = float(np.sum(proj ** 2 / w[keep]))
+    ndof = int(keep.sum())
     pvalue = float(stats.chi2.sf(chi2, ndof)) if ndof > 0 else float("nan")
     return ChiSquareResult(chi2=chi2, ndof=ndof, pvalue=pvalue)
 
 
 def compatibility(main: Prediction, feature: Prediction) -> ChiSquareResult:
     """(h_f - h_m)^T (C_m + C_f)^-1 (h_f - h_m); small p means a real change."""
-    delta = feature.values - main.values
-    return _chi2(delta, main.covariance + feature.covariance, delta.shape[0])
+    return _chi2(feature.values - main.values, main.covariance + feature.covariance)
 
 
 def goodness_of_fit(pred: Prediction, data: np.ndarray,
                     data_cov: np.ndarray) -> ChiSquareResult:
     """Prediction vs data, with the MC covariance added to the data's."""
-    delta = pred.values - np.asarray(data, dtype=float)
-    return _chi2(delta, np.asarray(data_cov, dtype=float) + pred.covariance,
-                 delta.shape[0])
+    return _chi2(pred.values - np.asarray(data, dtype=float),
+                 np.asarray(data_cov, dtype=float) + pred.covariance)
 
 
 def benjamini_hochberg(pvalues: Sequence[float]) -> np.ndarray:
