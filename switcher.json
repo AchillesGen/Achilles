@@ -10,6 +10,11 @@
     "url": "https://achillesgen.github.io/Achilles/dependabot/"
   },
   {
+    "name": "docs-improvements",
+    "version": "docs-improvements",
+    "url": "https://achillesgen.github.io/Achilles/docs-improvements/"
+  },
+  {
     "name": "feature",
     "version": "feature",
     "url": "https://achillesgen.github.io/Achilles/feature/"
