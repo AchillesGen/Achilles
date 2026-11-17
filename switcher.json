@@ -5,19 +5,9 @@
     "url": "https://achillesgen.github.io/Achilles/49-revamp-docs/"
   },
   {
-    "name": "dependabot",
-    "version": "dependabot",
-    "url": "https://achillesgen.github.io/Achilles/dependabot/"
-  },
-  {
     "name": "docs-improvements",
     "version": "docs-improvements",
     "url": "https://achillesgen.github.io/Achilles/docs-improvements/"
-  },
-  {
-    "name": "feature",
-    "version": "feature",
-    "url": "https://achillesgen.github.io/Achilles/feature/"
   },
   {
     "name": "fix-landing-rebuild",
@@ -53,10 +43,5 @@
     "name": "physval-stats",
     "version": "physval-stats",
     "url": "https://achillesgen.github.io/Achilles/physval-stats/"
-  },
-  {
-    "name": "pre-commit-ci-update-config",
-    "version": "pre-commit-ci-update-config",
-    "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"
   }
 ]

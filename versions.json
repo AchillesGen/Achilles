@@ -1,14 +1,11 @@
 [
   "49-revamp-docs",
-  "dependabot",
   "docs-improvements",
-  "feature",
   "fix-landing-rebuild",
   "latest",
   "modern-ui",
   "physics-paths",
   "physval-concurrency",
   "physval-isolate",
-  "physval-stats",
-  "pre-commit-ci-update-config"
+  "physval-stats"
 ]
