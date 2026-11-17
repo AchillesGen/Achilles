@@ -70,8 +70,10 @@ def make_baseline(adapter, config: dict, *, seed: int, n_events: int, main_sha: 
     empty = []
     for exp in config["experiments"]:
         gen = adapter.generate(exp, "main", seed, n_events)
-        preds = predict_all(adapter, gen, exp["measurements"])
-        gen.cleanup()
+        try:
+            preds = predict_all(adapter, gen, exp["measurements"])
+        finally:
+            gen.cleanup()
         empty += no_events(exp, preds)
         path = os.path.join(out_dir, f"{exp['name']}.json")
         with open(path, "w") as fh:
@@ -107,8 +109,10 @@ def run(adapter, config: dict, *, seed: int, n_events: int, baseline_dir: str,
     for exp in config["experiments"]:
         try:
             gen = adapter.generate(exp, "feature", seed, n_events)
-            features = predict_all(adapter, gen, exp["measurements"])
-            gen.cleanup()
+            try:
+                features = predict_all(adapter, gen, exp["measurements"])
+            finally:
+                gen.cleanup()
         except Exception as err:  # report the setup as failed, keep the rest
             print(f"::error::{exp['name']}: {err}")
             missing += [MissingMeasurement(m["name"], exp["name"], str(err))
@@ -125,29 +129,33 @@ def run(adapter, config: dict, *, seed: int, n_events: int, baseline_dir: str,
             name = m["name"]
             if name not in features:
                 continue
-            feature = features[name]
-            data = adapter.data_table(m)
-            gof_pr = goodness_of_fit(feature, data.values, data.covariance)
-            main = Prediction.from_dict(stored[name]) if name in stored else None
-            if main is not None and main.nbins != feature.nbins:
-                main = None  # binning changed since the baseline
-            r = MeasurementResult(name=name, experiment=exp["name"], ndof=gof_pr.ndof,
-                                  chi2_ndof_pr=gof_pr.chi2_per_ndof, p_data=gof_pr.pvalue)
-            if main is not None:
-                gof_main = goodness_of_fit(main, data.values, data.covariance)
-                r.chi2_ndof_main = gof_main.chi2_per_ndof
-                r.delta_chi2 = gof_pr.chi2 - gof_main.chi2
-                r.p_compat = compatibility(main, feature).pvalue
-            results.append(r)
-            plot_measurement(
-                os.path.join(out_dir, plot_basename(name)), name,
-                data=data.values, data_cov=data.covariance,
-                feature=feature.values, feature_cov=feature.covariance,
-                main=None if main is None else main.values,
-                main_cov=None if main is None else main.covariance,
-                edges=data.edges,
-                subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
-                         f"{n_events:,} events  |  {feature_sha[:8]}")
+            try:
+                feature = features[name]
+                data = adapter.data_table(m)
+                gof_pr = goodness_of_fit(feature, data.values, data.covariance)
+                main = Prediction.from_dict(stored[name]) if name in stored else None
+                if main is not None and main.nbins != feature.nbins:
+                    main = None  # binning changed since the baseline
+                r = MeasurementResult(name=name, experiment=exp["name"], ndof=gof_pr.ndof,
+                                      chi2_ndof_pr=gof_pr.chi2_per_ndof, p_data=gof_pr.pvalue)
+                if main is not None:
+                    gof_main = goodness_of_fit(main, data.values, data.covariance)
+                    r.chi2_ndof_main = gof_main.chi2_per_ndof
+                    r.delta_chi2 = gof_pr.chi2 - gof_main.chi2
+                    r.p_compat = compatibility(main, feature).pvalue
+                results.append(r)
+                plot_measurement(
+                    os.path.join(out_dir, plot_basename(name)), name,
+                    data=data.values, data_cov=data.covariance,
+                    feature=feature.values, feature_cov=feature.covariance,
+                    main=None if main is None else main.values,
+                    main_cov=None if main is None else main.covariance,
+                    edges=data.edges,
+                    subtitle=f"NUISANCE3 {nuisance_version}  |  seed {seed}  |  "
+                             f"{n_events:,} events  |  {feature_sha[:8]}")
+            except Exception as err:  # report this measurement, keep the setup's others
+                print(f"::error::{exp['name']}/{name}: {err}")
+                missing.append(MissingMeasurement(name, exp["name"], str(err)))
 
     report = Report(results=results, feature_sha=feature_sha,
                     nuisance_version=nuisance_version, seed=seed,
