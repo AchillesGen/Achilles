@@ -40,6 +40,11 @@
     "url": "https://achillesgen.github.io/Achilles/physval-concurrency/"
   },
   {
+    "name": "physval-stats",
+    "version": "physval-stats",
+    "url": "https://achillesgen.github.io/Achilles/physval-stats/"
+  },
+  {
     "name": "pre-commit-ci-update-config",
     "version": "pre-commit-ci-update-config",
     "url": "https://achillesgen.github.io/Achilles/pre-commit-ci-update-config/"
