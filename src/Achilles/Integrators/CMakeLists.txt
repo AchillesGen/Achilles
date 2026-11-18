@@ -10,6 +10,6 @@ add_library(AchillesIntegrator SHARED
     NewtonCotes.cc
 )
 target_link_libraries(AchillesIntegrator PRIVATE achilles_warnings
-                                         PUBLIC utilities)
+                                         PUBLIC AchillesUtilities)
 list(APPEND achilles_targets AchillesIntegrator)
 set(achilles_targets ${achilles_targets} PARENT_SCOPE)
