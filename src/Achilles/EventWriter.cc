@@ -7,6 +7,13 @@
 #include "Achilles/Version.hh"
 #include "fmt/format.h"
 
+#ifdef GZIP
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wshadow"
+#include "gzstream/gzstream.h"
+#pragma GCC diagnostic pop
+#endif
+
 std::ostream *achilles::EventWriter::InitializeStream(const std::string &filename, bool zip) {
 #ifdef GZIP
     if(zip) {
@@ -16,6 +23,22 @@ std::ostream *achilles::EventWriter::InitializeStream(const std::string &filenam
     }
 #endif
     return new std::ofstream(filename);
+}
+
+achilles::AchillesWriter::~AchillesWriter() {
+    if(toFile) {
+#ifdef GZIP
+        if(zipped) {
+            dynamic_cast<ogzstream *>(m_out)->close();
+        } else {
+            dynamic_cast<std::ofstream *>(m_out)->close();
+        }
+#else
+        dynamic_cast<std::ofstream *>(m_out)->close();
+#endif
+        delete m_out;
+    }
+    m_out = nullptr;
 }
 
 void achilles::AchillesWriter::WriteHeader(const std::string &filename,

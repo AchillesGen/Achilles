@@ -98,9 +98,8 @@ add_library(AchillesPhysics SHARED
 )
 set(physics_libs "")
 if(ACHILLES_ENABLE_GZIP)
-    list(APPEND achilles_targets gzstream)
-    target_compile_definitions(AchillesPhysics PUBLIC GZIP)
-    target_link_libraries(AchillesPhysics PUBLIC gzstream)
+    target_compile_definitions(AchillesPhysics PUBLIC $<BUILD_INTERFACE:GZIP>)
+    target_link_libraries(AchillesPhysics PRIVATE $<BUILD_INTERFACE:gzstream>)
 endif()
 if(ACHILLES_ENABLE_ROOT)
     target_link_libraries(AchillesPhysics PUBLIC ROOT::Core ROOT::Hist)
@@ -141,6 +140,9 @@ target_link_libraries(AchillesEventGen PRIVATE achilles_warnings
                                        PUBLIC AchillesPhysics AchillesMappers AchillesFortranInterface AchillesNuclearModels
                                               ${AchillesCascadeInteractionsLink}) #AchillesFortranInterface
 list(APPEND achilles_targets AchillesEventGen)
+if(ACHILLES_ENABLE_GZIP)
+    target_link_libraries(AchillesEventGen PRIVATE $<BUILD_INTERFACE:gzstream>)
+endif()
 
 if(ACHILLES_ENABLE_PYTHON)
     pybind11_add_module(_achilles MODULE
