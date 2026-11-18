@@ -18,7 +18,8 @@
 
 namespace achilles {
 
-class ThreeVector;
+template <int D> class ThreeVectorT;
+using ThreeVector = ThreeVectorT<1>;
 
 /// Class for implementing an interaction model based on the Geant4 cross-section data. This
 /// interaction model contains information about the angular distribution of pp, pn, and nn

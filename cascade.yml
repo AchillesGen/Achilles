@@ -3,8 +3,8 @@ Initialize:
 
 Nucleus:
   Name: 12C
-  Binding: 8.6
-  Fermi Momentum: 225
+  Binding: { value: 8.6, unit: MeV }
+  Fermi Momentum: { value: 225, unit: MeV }
   Density:
     File: data/c12.prova.txt
     FilePotential: data/realOP_12C_EDAI.dat
@@ -34,52 +34,52 @@ Cascade:
           - Incoming: [3112, 2112]
             Outgoing: 
               - Outgoing: [3112, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3112, 2212]
             Outgoing: 
               - Outgoing: [3212, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [321, 2212]
             Outgoing: 
               - Outgoing: [321, 2212]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [321, 2112]
             Outgoing: 
               - Outgoing: [321, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3122, 2212]
             Outgoing: 
               - Outgoing: [3122, 2212]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3122, 2112]
             Outgoing: 
               - Outgoing: [3122, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3212, 2212]
             Outgoing: 
               - Outgoing: [3212, 2212]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3212, 2112]
             Outgoing: 
               - Outgoing: [3212, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3222, 2112]
             Outgoing: 
               - Outgoing: [3222, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [3222, 2212]
             Outgoing: 
               - Outgoing: [3222, 2212]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [311, 2112]
             Outgoing: 
               - Outgoing: [311, 2112]
-                CrossSection: 0
+                CrossSection: { value: 0, unit: mb }
           - Incoming: [311, 2212]
             Outgoing: 
               - Outgoing: [311, 2212]
-                CrossSection: 0
-  Step: 0.04
+                CrossSection: { value: 0, unit: mb }
+  Step: { value: 0.04, unit: fm }
   Probability: Gaussian
   InMedium: None
   PotentialProp: False

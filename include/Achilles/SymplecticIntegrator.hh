@@ -12,11 +12,16 @@
 
 namespace achilles {
 
+/// The extended-phase-space coupling below adds q directly to p, so the two
+/// cannot carry a mass dimension here: the integrator works on plain numbers,
+/// q in fm and p in MeV. Callers convert at the boundary.
+using PSVector = ThreeVectorT<0>;
+
 struct PSState {
-    ThreeVector q, p, x, y;
+    PSVector q, p, x, y;
 
     PSState() = default;
-    PSState(ThreeVector q_, ThreeVector p_) : q{q_}, p{p_}, x{q_}, y{p_} {}
+    PSState(PSVector q_, PSVector p_) : q{q_}, p{p_}, x{q_}, y{p_} {}
 };
 
 namespace details {
@@ -29,15 +34,15 @@ template <size_t N> struct is_even {
 
 class SymplecticIntegrator {
   public:
-    using dHamiltonian = std::function<ThreeVector(const ThreeVector &, const ThreeVector &,
-                                                   std::shared_ptr<achilles::Potential>)>;
-    using PhaseSpace = std::pair<ThreeVector, ThreeVector>;
+    using dHamiltonian = std::function<PSVector(const PSVector &, const PSVector &,
+                                                std::shared_ptr<achilles::Potential>)>;
+    using PhaseSpace = std::pair<PSVector, PSVector>;
     SymplecticIntegrator() = default;
     SymplecticIntegrator(PSState state, std::shared_ptr<achilles::Potential> pot, dHamiltonian dHdr,
                          dHamiltonian dHdp, double omega)
         : m_omega{std::move(omega)}, m_state{std::move(state)}, m_dHdr{std::move(dHdr)},
           m_dHdp{std::move(dHdp)}, m_pot{std::move(pot)} {}
-    SymplecticIntegrator(ThreeVector q, ThreeVector p, std::shared_ptr<achilles::Potential> pot,
+    SymplecticIntegrator(PSVector q, PSVector p, std::shared_ptr<achilles::Potential> pot,
                          dHamiltonian dHdr, dHamiltonian dHdp, double omega)
         : m_omega{std::move(omega)}, m_dHdr{std::move(dHdr)}, m_dHdp{std::move(dHdp)},
           m_pot{std::move(pot)} {
@@ -46,9 +51,9 @@ class SymplecticIntegrator {
 
     PSState State() const { return m_state; }
     PSState &State() { return m_state; }
-    void Initialize(const ThreeVector &, const ThreeVector &);
-    ThreeVector Q() const { return m_state.q; }
-    ThreeVector P() const { return m_state.p; }
+    void Initialize(const PSVector &, const PSVector &);
+    PSVector Q() const { return m_state.q; }
+    PSVector P() const { return m_state.p; }
 
     dHamiltonian dHdr() const { return m_dHdr; }
     dHamiltonian &dHdr() { return m_dHdr; }

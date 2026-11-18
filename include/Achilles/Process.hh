@@ -27,7 +27,8 @@ namespace fs = std::experimental::filesystem;
 namespace achilles {
 
 class Beam;
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 class NuclearModel;
 class Nucleus;
 class SherpaInterface;

@@ -3,11 +3,10 @@
 
 #include <utility>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/QuasielasticTestMapper.hh"
 #include "Achilles/ThreeVector.hh"
-#include "Achilles/Units.hh"
 
 using achilles::QuasielasticTestMapper;
 
@@ -18,7 +17,10 @@ QuasielasticTestMapper::QuasielasticTestMapper(const YAML::Node &node, std::shar
     case RunMode::FixedAngleEnergy:
         nvars = 4;
         m_angle = node["Angle"].as<double>() * 1.0_deg;
-        m_lepton_energy = node["Energy"].as<double>() * 1.0_deg;
+        // The 1 degree factor is deliberate: FixedAngleEnergy adds no dE or
+        // dcos(theta) Jacobian to the weight, so this normalises to a one
+        // degree window and the result comes out as nb/(MeV sr).
+        m_lepton_energy = node["Energy"].as<units::Energy>().in(units::MeV) * 1.0_deg;
         break;
     case RunMode::FixedAngle:
         nvars = 5;
@@ -41,7 +43,7 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom,
     mom.resize(4);
 
     auto beam_id = *m_beam->BeamIDs().begin();
-    mom[1] = m_beam->Flux(beam_id, beamRans, Smin());
+    mom[1] = m_beam->Flux(beam_id, beamRans, units::Energy{Smin()});
 
     size_t iRan = 0;
     double phi_l = dPhi * momRans[iRan++];
@@ -53,17 +55,18 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom,
         sinT = std::sin(m_angle);
         break;
     case RunMode::FixedAngle:
-        Elepton = mom[1].E() * momRans[iRan++];
+        Elepton = mom[1].E().native() * momRans[iRan++];
         cosT = std::cos(m_angle);
         sinT = std::sin(m_angle);
         break;
     case RunMode::FullPhaseSpace:
-        Elepton = mom[1].E() * momRans[iRan++];
+        Elepton = mom[1].E().native() * momRans[iRan++];
         cosT = dCos * momRans[iRan++] - 1;
         sinT = sqrt(1 - cosT * cosT);
         break;
     }
-    mom[3] = {Elepton, Elepton * sinT * cos(phi_l), Elepton * sinT * sin(phi_l), Elepton * cosT};
+    mom[3] = FourVector::FromNative(
+        {Elepton, Elepton * sinT * cos(phi_l), Elepton * sinT * sin(phi_l), Elepton * cosT});
 
     auto Q = mom[1] - mom[3];
     double cosT_h = dCos * momRans[iRan++] - 1;
@@ -71,13 +74,14 @@ void QuasielasticTestMapper::GeneratePoint(std::vector<FourVector> &mom,
     double phi_h = dPhi * momRans[iRan++];
     double p_h = dp * momRans[iRan];
 
-    ThreeVector tmp = {p_h * sinT_h * cos(phi_h), p_h * sinT_h * sin(phi_h), p_h * cosT_h};
+    ThreeVector tmp = ThreeVector::FromNative(
+        {p_h * sinT_h * cos(phi_h), p_h * sinT_h * sin(phi_h), p_h * cosT_h});
     auto tmp2 = tmp + Q.Vec3();
 
-    double Epp = sqrt(pow(Constant::mN, 2) + tmp2.P2());
-    double Ep = Constant::mN + Q.E() - Epp;
-    mom[0] = FourVector(tmp, Constant::mN - Ep);
-    mom[2] = FourVector(tmp2, Epp);
+    double Epp = sqrt(pow(Constant::mN().native(), 2) + tmp2.P2().native());
+    double Ep = Constant::mN().native() + Q.E().native() - Epp;
+    mom[0] = FourVector(tmp, units::Energy{Constant::mN().native() - Ep});
+    mom[2] = FourVector(tmp2, units::Energy{Epp});
 
     Mapper<FourVector>::Print(__PRETTY_FUNCTION__, mom, rans);
 }
@@ -90,7 +94,7 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     // Calculate the weights
     double wgt = 1.0;
     auto beam_id = *m_beam->BeamIDs().begin();
-    wgt /= m_beam->GenerateWeight(beam_id, mom[1], beamRans, Smin());
+    wgt /= m_beam->GenerateWeight(beam_id, mom[1], beamRans, units::Energy{Smin()});
     size_t iRan = 0;
     momRans[iRan++] = mom[3].Phi() / dPhi;
     wgt /= dPhi;
@@ -98,23 +102,23 @@ double QuasielasticTestMapper::GenerateWeight(const std::vector<FourVector> &mom
     case RunMode::FixedAngleEnergy:
         break;
     case RunMode::FixedAngle:
-        momRans[iRan++] = mom[3].E() / mom[1].E();
-        wgt /= mom[1].E();
+        momRans[iRan++] = mom[3].E().native() / mom[1].E().native();
+        wgt /= mom[1].E().native();
         break;
     case RunMode::FullPhaseSpace:
-        momRans[iRan++] = mom[3].E() / mom[1].E();
+        momRans[iRan++] = mom[3].E().native() / mom[1].E().native();
         momRans[iRan++] = (mom[3].CosTheta() + 1) / dCos;
-        wgt /= (mom[1].E() * dCos);
+        wgt /= (mom[1].E().native() * dCos);
         break;
     }
 
     momRans[iRan++] = (mom[0].CosTheta() + 1) / dCos;
     momRans[iRan++] = mom[0].Phi() / dPhi;
-    momRans[iRan++] = mom[0].P() / dp;
-    wgt /= (dCos * dPhi * dp * mom[0].P2() * mom[3].E() / (mom[2].E()));
+    momRans[iRan++] = mom[0].P().native() / dp;
+    wgt /= (dCos * dPhi * dp * mom[0].P2().native() * mom[3].E().native() / (mom[2].E().native()));
     wgt *= 16 * M_PI * M_PI;
 
-    if(mom[0].E() > Constant::mN) wgt = std::numeric_limits<double>::infinity();
+    if(mom[0].E().native() > Constant::mN().native()) wgt = std::numeric_limits<double>::infinity();
 
     beamRans.insert(beamRans.end(), std::make_move_iterator(momRans.begin()),
                     std::make_move_iterator(momRans.end()));

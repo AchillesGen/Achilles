@@ -9,6 +9,9 @@
 #include "Achilles/FourVector.hh"
 #include "Achilles/ParticleInfo.hh"
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
     SECTION("Only works for 2->2") {
         CHECK_THROWS_WITH(achilles::TwoBodyMapper::Construct({0, 0, 0}),
@@ -20,7 +23,8 @@ TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
 
     SECTION("Forward Map") {
         SECTION("TwoBodyMapper") {
-            std::vector<achilles::FourVector> mom = {{1000, 0, 0, 1000}, {100, 0, 0, -100}, {}, {}};
+            std::vector<achilles::FourVector> mom = {
+                {1000_MeV, 0_MeV, 0_MeV, 1000_MeV}, {100_MeV, 0_MeV, 0_MeV, -100_MeV}, {}, {}};
             std::vector<double> ran = {0.5, 0.5};
             mapper->GeneratePoint(mom, ran);
             std::vector<double> ran2(2);
@@ -35,24 +39,26 @@ TEST_CASE("TwoBodyMapper", "[PhaseSpace]") {
         SECTION("TwoBodyMapper") {
             const double sqrts = 200;
             std::vector<achilles::FourVector> mom = {
-                {100, 0, 0, 100},
-                {100, 0, 0, -100},
-                {sqrts / 2, sqrts / 2 * sin(M_PI / 4), 0, sqrts / 2 * cos(M_PI / 4)},
-                {sqrts / 2, -sqrts / 2 * sin(M_PI / 4), 0, -sqrts / 2 * cos(M_PI / 4)}};
+                {100_MeV, 0_MeV, 0_MeV, 100_MeV},
+                {100_MeV, 0_MeV, 0_MeV, -100_MeV},
+                {units::Energy{sqrts / 2}, units::Energy{sqrts / 2 * sin(M_PI / 4)}, 0_MeV,
+                 units::Energy{sqrts / 2 * cos(M_PI / 4)}},
+                {units::Energy{sqrts / 2}, units::Energy{-sqrts / 2 * sin(M_PI / 4)}, 0_MeV,
+                 units::Energy{-sqrts / 2 * cos(M_PI / 4)}}};
             std::vector<double> ran(2);
             mapper->GenerateWeight(mom, ran);
             std::vector<achilles::FourVector> mom2(4);
             mom2[0] = mom[0];
             mom2[1] = mom[1];
             mapper->GeneratePoint(mom2, ran);
-            CHECK(mom[2].Px() == Catch::Approx(mom2[2].Px()));
-            CHECK(mom[2].Py() == Catch::Approx(mom2[2].Py()));
-            CHECK(mom[2].Pz() == Catch::Approx(mom2[2].Pz()));
-            CHECK(mom[2].E() == Catch::Approx(mom2[2].E()));
-            CHECK(mom[3].Px() == Catch::Approx(mom2[3].Px()));
-            CHECK(mom[3].Py() == Catch::Approx(mom2[3].Py()));
-            CHECK(mom[3].Pz() == Catch::Approx(mom2[3].Pz()));
-            CHECK(mom[3].E() == Catch::Approx(mom2[3].E()));
+            CHECK(mom[2].Px().native() == Catch::Approx(mom2[2].Px().native()));
+            CHECK(mom[2].Py().native() == Catch::Approx(mom2[2].Py().native()));
+            CHECK(mom[2].Pz().native() == Catch::Approx(mom2[2].Pz().native()));
+            CHECK(mom[2].E().native() == Catch::Approx(mom2[2].E().native()));
+            CHECK(mom[3].Px().native() == Catch::Approx(mom2[3].Px().native()));
+            CHECK(mom[3].Py().native() == Catch::Approx(mom2[3].Py().native()));
+            CHECK(mom[3].Pz().native() == Catch::Approx(mom2[3].Pz().native()));
+            CHECK(mom[3].E().native() == Catch::Approx(mom2[3].E().native()));
         }
     }
 }

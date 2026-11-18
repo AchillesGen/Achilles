@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ElectronPDF.hh"
-#include "Achilles/Constants.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/Utilities.hh"
 
 using achilles::AlphaQED;
@@ -22,7 +22,7 @@ double AlphaQED::operator()(double t) const {
 }
 
 double AlphaQED::PiGamma(PID id, double scale) const {
-    double mass2 = ipow(ParticleInfo(id).Mass(), 2);
+    double mass2 = ipow(ParticleInfo(id).Mass().native(), 2);
     if(mass2 == 0)
         throw std::runtime_error("AlphaQED: Can't evolve QED coupling with zero fermion masses");
     double mqs = mass2 / scale;
@@ -38,7 +38,7 @@ double AlphaQED::PiGamma(PID id, double scale) const {
 }
 
 ElectronPDF::ElectronPDF(PID bunch, Scheme scheme, int order, double muh, double alpha0)
-    : m_scheme{scheme}, m_bunch{bunch}, m_mass{ParticleInfo(bunch).Mass()}, m_scale{muh},
+    : m_scheme{scheme}, m_bunch{bunch}, m_mass{ParticleInfo(bunch).Mass().native()}, m_scale{muh},
       m_order{order}, m_alpha{alpha0} {
     m_partons.push_back(bunch);
 

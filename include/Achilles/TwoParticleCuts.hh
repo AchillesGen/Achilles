@@ -8,28 +8,33 @@
 
 namespace achilles {
 
-class TwoParticleCut : public CutBase<double> {
+/// See OneParticleCut: the bounds live in each concrete cut so that each can
+/// carry the unit of the variable it cuts on.
+class TwoParticleCut {
   public:
     // Calculate cut for two input FourVectors
     virtual bool MakeCut(const FourVector &, const FourVector &) const = 0;
-    TwoParticleCut(const YAML::Node &node) : CutBase(node) {}
+    TwoParticleCut() = default;
     virtual ~TwoParticleCut() = default;
     static std::string Name() { return "Two Particle"; }
 };
 
-#define TWO_PARTICLE_CUT(CutName)                                                              \
-    class CutName##Cut : public TwoParticleCut, RegistrableCut<TwoParticleCut, CutName##Cut> { \
-      public:                                                                                  \
-        CutName##Cut(const YAML::Node &node) : TwoParticleCut(node) {}                         \
-        static std::string Name() { return #CutName; }                                         \
-        static std::unique_ptr<TwoParticleCut> Construct(const YAML::Node &node) {             \
-            return std::make_unique<CutName##Cut>(node);                                       \
-        }                                                                                      \
-        bool MakeCut(const FourVector &, const FourVector &) const override;                   \
+#define TWO_PARTICLE_CUT(CutName, CutType)                                         \
+    class CutName##Cut : public TwoParticleCut,                                    \
+                         public CutBase<CutType>,                                  \
+                         RegistrableCut<TwoParticleCut, CutName##Cut> {            \
+      public:                                                                      \
+        CutName##Cut(const YAML::Node &node) : CutBase<CutType>(node) {}           \
+        static std::string Name() { return #CutName; }                             \
+        static std::unique_ptr<TwoParticleCut> Construct(const YAML::Node &node) { \
+            return std::make_unique<CutName##Cut>(node);                           \
+        }                                                                          \
+        bool MakeCut(const FourVector &, const FourVector &) const override;       \
     }
 
-TWO_PARTICLE_CUT(DeltaTheta);
-TWO_PARTICLE_CUT(InvariantMass);
+// Angles are dimensionless; this cut is in degrees.
+TWO_PARTICLE_CUT(DeltaTheta, double);
+TWO_PARTICLE_CUT(InvariantMass, units::Energy);
 
 } // namespace achilles
 

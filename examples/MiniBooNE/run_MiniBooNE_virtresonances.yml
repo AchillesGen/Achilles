@@ -28,7 +28,7 @@ Beams:
 Cascade:
   Run: True
   Interactions: !include "data/default/VirtResInteractions.yml"
-  Step: 0.04
+  Step: 0.04 fm
   Probability: Cylinder
   InMedium: None
   PotentialProp: False

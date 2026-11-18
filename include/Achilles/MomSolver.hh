@@ -8,7 +8,8 @@
 #include <utility>
 
 namespace achilles {
-class FourVector;
+template <int D> class FourVectorT;
+using FourVector = FourVectorT<1>;
 class Potential;
 class Nucleus;
 

@@ -10,9 +10,9 @@
 #include <string>
 #include <utility>
 
-#include "Achilles/Constants.hh"
 #include "Achilles/Factory.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Utilities.hh"
 
@@ -104,20 +104,24 @@ class Potential {
 
     virtual double Hamiltonian(double p, double q) const {
         auto vals = this->operator()(p, q);
-        auto mass_eff =
-            achilles::Constant::mN + vals.rscalar + std::complex<double>(0, 1) * vals.iscalar;
+        auto mass_eff = achilles::Constant::mN().native() + vals.rscalar +
+                        std::complex<double>(0, 1) * vals.iscalar;
         return sqrt(p * p + pow(mass_eff, 2)).real() + vals.rvector;
     }
 
     double BindingMomentum(double r) const {
-        auto func = [&](double p) { return Hamiltonian(p, r) - Constant::mN; };
+        auto func = [&](double p) { return Hamiltonian(p, r) - Constant::mN().native(); };
         Brent brent(func);
         return brent.CalcRoot(0, 1000);
     }
 
-    double EnergySpectrum(double r, double p) const { return Hamiltonian(p, r) - Constant::mN; }
+    double EnergySpectrum(double r, double p) const {
+        return Hamiltonian(p, r) - Constant::mN().native();
+    }
 
-    bool IsCaptured(double r, double mom) const { return Hamiltonian(mom, r) <= Constant::mN; }
+    bool IsCaptured(double r, double mom) const {
+        return Hamiltonian(mom, r) <= Constant::mN().native();
+    }
 
     virtual bool IsRelativistic() const { return false; }
 
@@ -133,12 +137,12 @@ class Potential {
                                     double r2 = -1, double r3 = -1) const {
         if(r2 < 0) r2 = r1;
         if(r3 < 0) r3 = r1;
-        double m1Star = Mstar(p1.P(), m, r1);
-        double m2Star = Mstar(p2.P(), m, r2);
-        double p12 = sqrt((p1.P2() + p2.P2()) / 2);
+        double m1Star = Mstar(p1.P().native(), m, r1);
+        double m2Star = Mstar(p2.P().native(), m, r2);
+        double p12 = sqrt((p1.P2() + p2.P2()).native() / 2);
         double m12Star = Mstar(p12, m, r3);
 
-        return (p1 - p2).P() / m / (p1 / m1Star - p2 / m2Star).P() * m12Star / m;
+        return (p1 - p2).P().native() / m / (p1 / m1Star - p2 / m2Star).P().native() * m12Star / m;
     }
 
   protected:
@@ -183,7 +187,7 @@ class WiringaPotential : public Potential, RegistrablePotential<WiringaPotential
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);
-        return Constant::mN + p * p / (2 * Constant::mN) + vals.rvector;
+        return Constant::mN().native() + p * p / (2 * Constant::mN().native()) + vals.rvector;
     }
 
     double Rho0() const { return m_rho0; }
@@ -245,7 +249,7 @@ class CooperPotential : public Potential, RegistrablePotential<CooperPotential> 
         return prefact * a * b / (a + b) / (a + b);
     }
 
-    static constexpr double wp = 1.0072545 * achilles::Constant::AMU;
+    static constexpr double wp = 1.0072545 * achilles::Constant::AMU.native();
     static constexpr std::array<double, 8 * 8> pt1{
         2.313828E+01,  -1.233380E+02, 2.432987E+02,  -2.092616E+02, 6.606549E+01,  5.645371E+00,
         -1.014396E+01, 5.733192E+00,  -6.841731E+00, 3.747771E+01,  -6.858889E+01, 5.484194E+01,
@@ -293,11 +297,11 @@ class SchroedingerPotential : public CooperPotential, RegistrablePotential<Schro
 
     double Hamiltonian(double p, double q) const override {
         auto vals = this->operator()(p, q);
-        return Constant::mN + p * p / (2 * Constant::mN) + vals.rvector;
+        return Constant::mN().native() + p * p / (2 * Constant::mN().native()) + vals.rvector;
     }
 
   private:
-    static constexpr double wp = 1.0072545 * achilles::Constant::AMU;
+    static constexpr double wp = 1.0072545 * achilles::Constant::AMU.native();
     static constexpr double hc2 = achilles::Constant::HBARC * achilles::Constant::HBARC;
     size_t m_mode;
 };

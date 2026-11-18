@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/Particle.hh"
+#include "Achilles/PhysicalUnits.hh"
 
 extern "C" {
 
@@ -9,8 +10,13 @@ using namespace achilles;
 
 Particle *CreateParticle(const long int pid, const FourVector *momentum,
                          const ThreeVector *position, const long int istatus) {
+    // Positions cross the Fortran boundary in fm.
     auto status = static_cast<ParticleStatus>(istatus);
-    return new Particle(pid, *momentum, *position, status);
+    const auto p = position->Native();
+    return new Particle(pid, *momentum,
+                        ThreePosition{p[0].native() * units::fm, p[1].native() * units::fm,
+                                      p[2].native() * units::fm},
+                        status);
 }
 
 Particle *CopyParticle(Particle *self) {
@@ -34,7 +40,7 @@ FourVector *GetParticleMomentum(const Particle *self) {
 }
 
 ThreeVector *GetParticlePosition(const Particle *self) {
-    return new ThreeVector(self->Position());
+    return new ThreeVector(ThreeVector::FromNative(self->Position().ToArray(units::fm)));
 }
 
 Particle *SetParticleMomentum(Particle *self, const FourVector *momentum) {
@@ -43,6 +49,8 @@ Particle *SetParticleMomentum(Particle *self, const FourVector *momentum) {
 }
 
 void SetParticlePosition(Particle *self, const ThreeVector *position) {
-    self->SetPosition(*position);
+    const auto p = position->Native();
+    self->SetPosition(
+        {p[0].native() * units::fm, p[1].native() * units::fm, p[2].native() * units::fm});
 }
 }

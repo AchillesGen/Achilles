@@ -8,7 +8,8 @@ EXPORT_ACHILLES_VERSION()
 
 namespace achilles {
 
-ONE_PARTICLE_CUT(Test);
+// A trivial always-pass cut; its bound is a plain number.
+ONE_PARTICLE_CUT(Test, double);
 
 bool TestCut::MakeCut(const FourVector &) const {
     return true;

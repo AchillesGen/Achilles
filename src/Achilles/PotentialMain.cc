@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     if(args["<input>"].isString()) runcard = args["<input>"].asString();
 
     auto verbosity = static_cast<int>(2 - args["-v"].asLong());
-    CreateLogger(verbosity, 5);
+    CreateLogger(verbosity, verbosity, 5);
 
     achilles::RunPotential(runcard);
 

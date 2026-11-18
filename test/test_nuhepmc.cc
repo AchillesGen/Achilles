@@ -11,18 +11,21 @@
 
 TEST_CASE("Passes Validator", "[NuHepMC]") {
     // Setup dummy event
-    achilles::Particle target(achilles::PID::carbon(),
-                              {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0, 0, 0});
-    achilles::Particle nuc_in(achilles::PID::neutron(), {918.00661011686168, 23.585833577703873,
-                                                         85.332385429710143, 52.378992899809319});
-    achilles::Particle beam_part(achilles::PID::nu_muon(), {1e4, 0, 0, 1e4});
+    achilles::Particle target(
+        achilles::PID::carbon(),
+        {achilles::ParticleInfo(achilles::PID::carbon()).Mass(), 0_MeV, 0_MeV, 0_MeV});
+    achilles::Particle nuc_in(achilles::PID::neutron(),
+                              {918.00661011686168_MeV, 23.585833577703873_MeV,
+                               85.332385429710143_MeV, 52.378992899809319_MeV});
+    achilles::Particle beam_part(achilles::PID::nu_muon(), {1e4_MeV, 0_MeV, 0_MeV, 1e4_MeV});
     achilles::Particle neutrino(achilles::PID::nu_muon(),
-                                {5.3983343748755351e3, 0, 0, 5.3983343748755351e3});
-    achilles::Particle nuc_out(
-        achilles::PID::proton(),
-        {9.6318094613481071e2, -1.8702102417549486e2, -4.7096228265225918e1, 1.0333739302250189e2});
-    achilles::Particle lepton(achilles::PID::muon(), {5.3531600388575862e3, 2.1060685775319874e2,
-                                                      1.3242861369493605e2, 5.3473759747528429e3});
+                                {5.3983343748755351e3_MeV, 0_MeV, 0_MeV, 5.3983343748755351e3_MeV});
+    achilles::Particle nuc_out(achilles::PID::proton(),
+                               {9.6318094613481071e2_MeV, -1.8702102417549486e2_MeV,
+                                -4.7096228265225918e1_MeV, 1.0333739302250189e2_MeV});
+    achilles::Particle lepton(achilles::PID::muon(),
+                              {5.3531600388575862e3_MeV, 2.1060685775319874e2_MeV,
+                               1.3242861369493605e2_MeV, 5.3473759747528429e3_MeV});
     // TODO: Figure out how to handle remnant
     // achilles::Particle remnant(achilles::PID(1000060110));
     // remnant.Momentum() = target.Momentum() + neutrino.Momentum() - nuc_out.Momentum() -

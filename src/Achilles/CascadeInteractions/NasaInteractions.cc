@@ -15,8 +15,8 @@ InteractionResults NasaInteraction::CrossSection(Event &event, size_t part1, siz
     bool samePID = particle1.ID() == particle2.ID();
     FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
     // Generate outgoing momentum
-    double s = (p1Lab + p2Lab).M2();
-    double smin = pow(particle1.Mass() + particle2.Mass(), 2);
+    double s = (p1Lab + p2Lab).M2().native();
+    double smin = pow(particle1.Mass().native() + particle2.Mass().native(), 2);
     double plab = sqrt(pow(s, 2) / smin - s);
     return {{{particle1.ID(), particle2.ID()}, CrossSectionLab(samePID, plab)}};
 }
@@ -32,19 +32,19 @@ std::vector<Particle> NasaInteraction::GenerateMomentum(const Particle &particle
                                                         const std::vector<PID> &out_pids,
                                                         Random &random) const {
     // Boost to center of mass
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
+    ThreeBoost boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
     FourVector p1Lab = particle1.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
 
     // Generate outgoing momentum
     bool samePID = particle1.ID() == particle2.ID();
-    const double pcm = p1CM.Vec3().Magnitude();
+    const double pcm = p1CM.Vec3().Magnitude().native();
     std::vector<double> rans(2);
     random.Generate(rans);
     ThreeVector momentum = MakeMomentum(samePID, pcm, rans);
 
-    FourVector p1Out = FourVector(p1CM.E(), momentum[0], momentum[1], momentum[2]);
-    FourVector p2Out = FourVector(p1CM.E(), -momentum[0], -momentum[1], -momentum[2]);
+    FourVector p1Out = FourVector{p1CM.E(), momentum[0], momentum[1], momentum[2]};
+    FourVector p2Out = FourVector{p1CM.E(), -momentum[0], -momentum[1], -momentum[2]};
 
     // Boost back to lab frame
     p1Out = p1Out.Boost(boostCM);
@@ -59,5 +59,5 @@ ThreeVector NasaInteraction::MakeMomentum(bool, double pcm, const std::vector<do
     double pTheta = acos(2 * rans[0] - 1);
     double pPhi = 2 * M_PI * rans[1];
 
-    return ThreeVector(ToCartesian({pR, pTheta, pPhi}));
+    return ThreeVector::FromNative(ToCartesian({pR, pTheta, pPhi}));
 }

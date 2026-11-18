@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/LeptonicCurrent.hh"
-#include "Achilles/Constants.hh"
 #include "Achilles/FormFactor.hh"
 #include "Achilles/FourVector.hh"
+#include "Achilles/PhysicalUnits.hh"
 #include "Achilles/ProcessInfo.hh"
 #include "Achilles/Spinor.hh"
 
@@ -29,15 +29,15 @@ void LeptonicCurrent::Initialize(const ProcessInfo &process) {
                             : (process.m_leptonic.first.AsInt() < 0 ? -24 : 24);
         coupl_right = 0;
         coupl_left = ee * i / (sw * sqrt(2));
-        mass = Constant::MW;
-        width = Constant::GAMW;
+        mass = Constant::MW.native();
+        width = Constant::GAMW.native();
     } else if(neutral_current) {
         if(init_neutrino) {
             coupl_left = (cw * ee * i) / (2 * sw) + (ee * i * sw) / (2 * cw);
             coupl_right = 0;
             pid = 23;
-            mass = Constant::MZ;
-            width = Constant::GAMZ;
+            mass = Constant::MZ.native();
+            width = Constant::GAMZ.native();
         } else {
             coupl_right = -ee * i;
             coupl_left = coupl_right;
@@ -162,7 +162,7 @@ achilles::Currents LeptonicCurrent::CalcCurrents(const FourVector &p_in,
 
     // Calculate currents
     Current result;
-    double q2 = (p_in - p_out).M2();
+    double q2 = (p_in - p_out).M2().native();
     std::complex<double> prop =
         std::complex<double>(0, 1) / (q2 - mass * mass - std::complex<double>(0, 1) * mass * width);
     spdlog::trace("Calculating Current for {}", pid);

@@ -38,6 +38,9 @@
 #include <map>
 #include <vector>
 
+namespace units = achilles::units;
+using namespace achilles::units::literals;
+
 namespace achilles {
 
 struct FormFactorInfo;
@@ -80,16 +83,17 @@ class MockPotential : public trompeloeil::mock_interface<achilles::Potential> {
 // Nucleus is a concrete type, so tests build a real one. Its density profile is
 // tabulated rather than read from a file, and GenerateConfig is steered through
 // the (real) Density interface, which MockDensity implements.
-inline std::shared_ptr<achilles::Nucleus> MakeNucleus(size_t Z = 6, size_t A = 12,
-                                                      double radius = 10, double rho = 0.16) {
+inline std::shared_ptr<achilles::Nucleus>
+MakeNucleus(size_t Z = 6, size_t A = 12,
+            achilles::units::Length radius = 10.0 * achilles::units::fm, double rho = 0.16) {
     auto nucleus = std::make_shared<achilles::Nucleus>();
     nucleus->Initialize(Z, A);
     nucleus->SetRadius(radius);
-    nucleus->SetFermiMomentum(225);
+    nucleus->SetFermiMomentum(225.0 * achilles::units::MeV);
     std::vector<double> radii, density;
     static constexpr size_t nknots = 20;
     for(size_t i = 0; i < nknots; ++i) {
-        radii.push_back(radius * static_cast<double>(i) / (nknots - 1));
+        radii.push_back(radius.in(achilles::units::fm) * static_cast<double>(i) / (nknots - 1));
         density.push_back(rho);
     }
     nucleus->SetDensityProfile(radii, density, density);
@@ -98,16 +102,18 @@ inline std::shared_ptr<achilles::Nucleus> MakeNucleus(size_t Z = 6, size_t A = 1
 
 // As above, but with the density profile sampled from `profile` so a test can
 // pin Rho(r) to a specific function.
-inline std::shared_ptr<achilles::Nucleus> MakeNucleus(size_t Z, size_t A, double radius,
+inline std::shared_ptr<achilles::Nucleus> MakeNucleus(size_t Z, size_t A,
+                                                      achilles::units::Length radius,
                                                       const std::function<double(double)> &profile,
                                                       size_t nknots = 400) {
     auto nucleus = std::make_shared<achilles::Nucleus>();
     nucleus->Initialize(Z, A);
     nucleus->SetRadius(radius);
-    nucleus->SetFermiMomentum(225);
+    nucleus->SetFermiMomentum(225.0 * achilles::units::MeV);
     std::vector<double> radii, density;
     for(size_t i = 0; i < nknots; ++i) {
-        radii.push_back(radius * static_cast<double>(i) / static_cast<double>(nknots - 1));
+        radii.push_back(radius.in(achilles::units::fm) * static_cast<double>(i) /
+                        static_cast<double>(nknots - 1));
         density.push_back(profile(radii.back()));
     }
     nucleus->SetDensityProfile(radii, density, density);
@@ -154,11 +160,12 @@ class MockInteraction : public trompeloeil::mock_interface<achilles::Interaction
 class MockFluxType : public trompeloeil::mock_interface<achilles::FluxType> {
   public:
     static constexpr bool trompeloeil_movable_mock = true;
-    MockFluxType(int nvars = 1, double emin = 0, double emax = 1000)
+    MockFluxType(int nvars = 1, achilles::units::Energy emin = {},
+                 achilles::units::Energy emax = 1000.0 * achilles::units::MeV)
         : m_nvars{nvars}, m_emin{emin}, m_emax{emax} {}
     int NVariables() const override { return m_nvars; }
-    double MinEnergy() const override { return m_emin; }
-    double MaxEnergy() const override { return m_emax; }
+    achilles::units::Energy MinEnergy() const override { return m_emin; }
+    achilles::units::Energy MaxEnergy() const override { return m_emax; }
     std::string Type() const override { return "Mock"; }
 
     IMPLEMENT_CONST_MOCK2(Flux);
@@ -167,7 +174,7 @@ class MockFluxType : public trompeloeil::mock_interface<achilles::FluxType> {
 
   private:
     int m_nvars;
-    double m_emin, m_emax;
+    achilles::units::Energy m_emin, m_emax;
 };
 
 inline std::shared_ptr<achilles::Beam> MakeBeam(achilles::PID pid,
