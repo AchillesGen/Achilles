@@ -190,6 +190,37 @@ TEST_CASE("Handles events correctly", "[Process]") {
         CHECK(nucleons[1] == expected_nucleons[1]);
         CHECK(nucleons[2] == expected_nucleons[2]);
     }
+
+    SECTION("Setup Hadrons [Allowed radii]") {
+        info.m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
+        YAML::Node config;
+        auto unweight = std::make_unique<achilles::NoUnweighter>(config);
+        achilles::Process process(info, std::move(unweight));
+
+        std::vector<achilles::Particle> nucleons;
+        for(double r : {0.5, 1.5, 3.0})
+            nucleons.emplace_back(achilles::PID::proton(), achilles::FourVector{},
+                                  achilles::ThreeVector{0, 0, r});
+        nucleons.emplace_back(achilles::PID::neutron(), achilles::FourVector{},
+                              achilles::ThreeVector{0, 0, 1.4});
+
+        auto struck_radius = [&](std::pair<double, double> radii) {
+            achilles::Event event;
+            event.Momentum() = momentum;
+            event.Hadrons() = nucleons;
+            process.SetupHadrons(event, radii);
+            for(const auto &part : event.Hadrons())
+                if(part.Status() == achilles::ParticleStatus::initial_state)
+                    return part.Position().Magnitude();
+            return -1.0;
+        };
+
+        // The only proton inside the range is chosen, and it is not moved
+        CHECK(struck_radius({1.0, 2.0}) == 1.5);
+        // No proton inside: the nearest one is chosen
+        CHECK(struck_radius({2.0, 2.2}) == 1.5);
+        CHECK(struck_radius({3.5, 4.0}) == 3.0);
+    }
 }
 
 TEST_CASE("Correct metadata", "[Process]") {

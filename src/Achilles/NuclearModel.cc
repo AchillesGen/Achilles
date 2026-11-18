@@ -577,7 +577,7 @@ NuclearModel::Currents QESpectral::CalcCurrents(const std::vector<Particle> &had
         auto ffVal = CouplingsFF(ffVals, formFactor.second);
         spdlog::debug("f1 = {}, f2 = {}, fa = {}", ffVal[Type::F1], ffVal[Type::F2],
                       ffVal[Type::FA]);
-        auto current = HadronicCurrent(ubar, u, qVec, ffVal);
+        auto current = OneBodyCurrent(ubar, u, qVec, ffVal);
         for(auto &subcur : current) {
             // Correct the Ward identity
             switch(m_ward) {
@@ -618,10 +618,10 @@ double QESpectral::InitialStateWeight(const std::vector<Particle> &nucleons,
                      spectral_neutron(nucleons[0].Momentum().P(), removal_energy);
 }
 
-NuclearModel::Current QESpectral::HadronicCurrent(const std::array<Spinor, 2> &ubar,
-                                                  const std::array<Spinor, 2> &u,
-                                                  const FourVector &qVec,
-                                                  const FormFactorMap &ffVal) const {
+NuclearModel::Current NuclearModel::OneBodyCurrent(const std::array<Spinor, 2> &ubar,
+                                                   const std::array<Spinor, 2> &u,
+                                                   const FourVector &qVec,
+                                                   const FormFactorMap &ffVal) {
     Current result;
     std::array<SpinMatrix, 4> gamma{};
     for(size_t mu = 0; mu < 4; ++mu) {

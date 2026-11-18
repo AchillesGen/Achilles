@@ -21,7 +21,7 @@ Channel<FourVector> achilles::BuildGenChannel(NuclearModel *model, const Process
     Channel<FourVector> channel;
     channel.mapping = PSBuilder(info)
                           .Beam(beam)
-                          .Hadron(model->PhaseSpace(nuc_id))
+                          .Hadron(model->PhaseSpace(nuc_id), model->PhaseSpaceSettings())
                           .GenFinalState(std::move(final_state))
                           .build();
     AdaptiveMap map(channel.mapping->NDims(), 2);

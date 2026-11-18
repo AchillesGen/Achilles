@@ -7,6 +7,9 @@
 #include "Achilles/FinalStateMapper.hh"
 #include "Achilles/HadronicMapper.hh"
 
+#include "spdlog/spdlog.h"
+#include "yaml-cpp/exceptions.h"
+
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/Channels.hh"
 #endif
@@ -26,11 +29,19 @@ PSBuilder &PSBuilder::Beam(std::shared_ptr<achilles::Beam> beam, size_t idx) {
     return *this;
 }
 
-PSBuilder &PSBuilder::Hadron(const std::string &mode, size_t idx) {
+PSBuilder &PSBuilder::Hadron(const std::string &mode, const YAML::Node &settings, size_t idx) {
     // BUG: The idx parameter needs to be cast to size_t otherwise it is an error about rvalue and
     // lvalues
-    phase_space->hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
+    auto hbeam = Factory<HadronicBeamMapper, const ProcessInfo &, size_t>::Initialize(
         mode, m_info, std::move(idx));
+    try {
+        hbeam->Configure(settings);
+    } catch(const YAML::Exception &e) {
+        spdlog::error("PSBuilder: Could not configure the hadronic phase space \"{}\": {}", mode,
+                      e.what());
+        exit(-1);
+    }
+    phase_space->hbeam = std::move(hbeam);
     return *this;
 }
 

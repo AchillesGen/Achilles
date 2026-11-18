@@ -122,6 +122,51 @@ TEST_CASE("Nuclear Configuration", "[Nucleus]") {
     }
 }
 
+TEST_CASE("Correlated Fermi gas momenta", "[Nucleus]") {
+    static constexpr size_t Z = 6;
+    static constexpr double kf = 250, lambda = 2.75;
+
+    achilles::Particles particles;
+    for(size_t i = 0; i < Z; ++i) {
+        particles.emplace_back(achilles::PID::proton());
+        particles.emplace_back(achilles::PID::neutron());
+    }
+
+    SECTION("Tail lies between kF and lambda kF with a 1/k^4 distribution") {
+        achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Global, true, 1,
+                                                lambda};
+        auto density = std::make_unique<MockDensity>();
+        REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+        achilles::Nucleus nuc(Z, 2 * Z, 0, kf, dFile, dFile, fermiGas, std::move(density));
+
+        // The median of k^-2 dk on [kF, lambda kF] is kF / (1 - (1 - 1/lambda) / 2)
+        constexpr size_t n = 100000;
+        const double median = kf / (1 - 0.5 * (1 - 1 / lambda));
+        size_t below_median = 0;
+        for(size_t i = 0; i < n; ++i) {
+            const double p = nuc.SampleMagnitudeMomentum(0, achilles::PID::proton());
+            CHECK(p >= kf);
+            CHECK(p <= lambda * kf);
+            if(p < median) ++below_median;
+        }
+        CHECK(std::abs(static_cast<double>(below_median) / n - 0.5) < 0.01);
+    }
+
+    SECTION("SRCfraction sets the fraction above kF") {
+        achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Global, true, 0.27,
+                                                lambda};
+        auto density = std::make_unique<MockDensity>();
+        REQUIRE_CALL(*density, GetConfiguration()).TIMES(1).RETURN(particles);
+        achilles::Nucleus nuc(Z, 2 * Z, 0, kf, dFile, dFile, fermiGas, std::move(density));
+
+        constexpr size_t n = 100000;
+        size_t above = 0;
+        for(size_t i = 0; i < n; ++i)
+            if(nuc.SampleMagnitudeMomentum(0, achilles::PID::neutron()) > kf) ++above;
+        CHECK(std::abs(static_cast<double>(above) / n - 0.27) < 0.01);
+    }
+}
+
 TEST_CASE("Make Nucleus", "[Nucleus]") {
     achilles::Nucleus::FermiGas fermiGas = {achilles::Nucleus::FermiGasType::Local, {}};
 
