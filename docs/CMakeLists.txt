@@ -2,7 +2,7 @@ find_package(Doxygen REQUIRED)
 find_package(Sphinx REQUIRED)
 
 # Find all the public headers
-get_target_property(ACHILLES_PUBLIC_HEADER_DIR project_options INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(ACHILLES_PUBLIC_HEADER_DIR achilles_options INTERFACE_INCLUDE_DIRECTORIES)
 set(ACHILLES_PUBLIC_HEADER_DIR ${PROJECT_SOURCE_DIR}/include)
 file(GLOB_RECURSE ACHILLES_PUBLIC_HEADERS ${ACHILLES_PUBLIC_HEADER_DIR}/*.hh
      LIST_DIRECTORIES true)

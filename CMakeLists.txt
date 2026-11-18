@@ -58,9 +58,9 @@ endif()
 
 # Link this 'library' to set the c++ standard / compile-time options requested
 # Additionally, link to get include and external dependencies
-add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_17)
-target_include_directories(project_options INTERFACE
+add_library(achilles_options INTERFACE)
+target_compile_features(achilles_options INTERFACE cxx_std_17)
+target_include_directories(achilles_options INTERFACE
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
     "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
 )
@@ -69,15 +69,15 @@ enable_language(Fortran)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/modules)
 
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
-add_library(project_warnings INTERFACE)
+add_library(achilles_warnings INTERFACE)
 
 # Standard compiler warnings
 include(CMake/CompilerWarnings.cmake)
-set_project_warnings(project_warnings)
+set_project_warnings(achilles_warnings)
 
 # Sanitizer options if supported by compiler
 include(CMake/Sanitizers.cmake)
-enable_sanitizers(project_options)
+enable_sanitizers(achilles_options)
 
 # Allow for static analysis options
 include(CMake/StaticAnalyzers.cmake)
@@ -93,7 +93,7 @@ int main() {
     return 0;
 }" ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
 if(ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
-  target_compile_definitions(project_options INTERFACE ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
+  target_compile_definitions(achilles_options INTERFACE ACHILLES_HAS_MATH_SPECIAL_FUNCTIONS)
 endif()
 
 option(ENABLE_AUTODIFF "Enable Autodiff" OFF)
@@ -106,7 +106,7 @@ if(ACHILLES_ENABLE_PCH)
   # This sets a global PCH parameter, each project will build its own PCH,
   # which is a good idea if any #define's change
   # These should be headers included in many places
-  target_precompile_headers(project_options INTERFACE <vector> <string> <map>)
+  target_precompile_headers(achilles_options INTERFACE <vector> <string> <map>)
 endif()
 
 # Check for python development environment
@@ -219,8 +219,8 @@ endif()
 # Testing
 if(ACHILLES_ENABLE_TESTING)
   if(ACHILLES_COVERAGE)
-    target_compile_options(project_options INTERFACE --coverage)
-    target_link_libraries(project_options INTERFACE gcov)
+    target_compile_options(achilles_options INTERFACE --coverage)
+    target_link_libraries(achilles_options INTERFACE gcov)
   endif()
   enable_testing()
   message(STATUS "Building Tests.")
