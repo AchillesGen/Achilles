@@ -32,13 +32,6 @@ if(NOT spdlog_FOUND)
     )
 endif()
 
-CPMAddPackage(
-    NAME docopt
-    GIT_TAG v0.6.3
-    GITHUB_REPOSITORY docopt/docopt.cpp
-)
-add_library(docopt::docopt ALIAS docopt)
-
 CPMFindPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
@@ -75,6 +68,15 @@ CPMFindPackage(
         "HIGHFIVE_UNIT_TESTS OFF"
 )
 
+# Only used to build Achilles itself: EXCLUDE_FROM_ALL keeps them out of the install tree
+CPMAddPackage(
+    NAME docopt
+    GIT_TAG v0.6.3
+    GITHUB_REPOSITORY docopt/docopt.cpp
+    EXCLUDE_FROM_ALL YES
+)
+add_library(docopt::docopt ALIAS docopt_s)
+
 CPMAddPackage(
     Name CmakeGitVersion
     GITHUB_REPOSITORY andrew-hardin/cmake-git-version-tracking
@@ -100,7 +102,7 @@ CPMFindPackage(
 )
 endif(ACHILLES_ENABLE_PYTHON)
 
-# Install testing framework
+# Testing frameworks, never installed
 if(ACHILLES_ENABLE_TESTING)
     # Catch2
     # SYSTEM YES treats Catch2's bundled headers as system headers so that
@@ -111,6 +113,7 @@ if(ACHILLES_ENABLE_TESTING)
         GITHUB_REPOSITORY catchorg/Catch2
         GIT_TAG v3.15.1
         SYSTEM YES
+        EXCLUDE_FROM_ALL YES
         OPTIONS
             "CATCH_ENABLE_COVERAGE"
     )
@@ -121,6 +124,7 @@ if(ACHILLES_ENABLE_TESTING)
         NAME trompeloeil
         GITHUB_REPOSITORY rollbear/trompeloeil
         VERSION 48
+        EXCLUDE_FROM_ALL YES
     )
 
     # Fortran Unit Tests
@@ -128,6 +132,7 @@ if(ACHILLES_ENABLE_TESTING)
         NAME fortran_unit_test
         GITHUB_REPOSITORY jxi24/fortran-unit-test
         GIT_TAG master
+        EXCLUDE_FROM_ALL YES
     )
     add_library(FUT::FUT ALIAS fortran_unit_test)
 
@@ -136,5 +141,6 @@ if(ACHILLES_ENABLE_TESTING)
         NAME NuHepMC
         GITHUB_REPOSITORY NuHepMC/ReferenceImplementation
         GIT_TAG main
+        EXCLUDE_FROM_ALL YES
     )
 endif()

@@ -14,7 +14,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif()
 
 # Set the project name and basic settings
-project(ACHILLES LANGUAGES CXX VERSION 1.0.0)
+project(ACHILLES LANGUAGES C CXX VERSION 1.0.0)
 include(CMake/StandardProjectSettings.cmake)
 
 # RPATH handling
