@@ -234,7 +234,7 @@ install(DIRECTORY ${CMAKE_SOURCE_DIR}/include/Achilles
 # ignore CMAKE_INSTALL_LIBDIR, so they land outside achilles/lib where the
 # $ORIGIN rpath cannot reach them. Install those targets into achilles/lib too.
 if(SKBUILD)
-    foreach(_straggler nuhepmc_cpputils yaml-fortran)
+    foreach(_straggler nuhepmc_cpputils)
         if(TARGET ${_straggler})
             install(TARGETS ${_straggler} LIBRARY DESTINATION achilles/lib)
         endif()
