@@ -50,13 +50,6 @@ CPMFindPackage(
         "YAML_CPP_INSTALL ON"
 )
 
-CPMAddPackage(
-    NAME yaml-fortran
-    GITHUB_REPOSITORY jxi24/fortran-yaml
-    GIT_TAG master
-)
-add_library(yaml::fortran ALIAS yaml-fortran)
-
 CPMFindPackage(
   NAME NuHepMC_CPPUtils
   GIT_TAG v1-RC18
