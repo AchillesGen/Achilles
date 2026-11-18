@@ -15,6 +15,7 @@
 #include "Achilles/Constants.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/System.hh"
 #include "Achilles/ThreeVector.hh"
 #include "Achilles/Utilities.hh"
 

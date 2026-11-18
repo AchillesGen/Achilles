@@ -14,6 +14,7 @@
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
 #include "Achilles/ReferenceHandler.hh"
+#include "Achilles/System.hh"
 #include "Achilles/Units.hh"
 
 #ifdef ACHILLES_SHERPA_INTERFACE

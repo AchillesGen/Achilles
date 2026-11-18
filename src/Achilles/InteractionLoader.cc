@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "Achilles/Interactions.hh"
+#include "Achilles/System.hh"
 
 #include "Plugins/InteractionLoader.hh"
 #include "Plugins/System.hh"
