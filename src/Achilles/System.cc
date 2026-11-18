@@ -6,11 +6,37 @@
 #include "Achilles/Utilities.hh"
 #include "spdlog/spdlog.h"
 
+#include <dlfcn.h>
+
 using achilles::Filesystem::Cache;
+
+const std::regex &achilles::SystemVariables::ValidPluginName() {
+    static const std::regex valid(std::string(ACHILLES_LIB_PREFIX) + "AchillesPlugin.*\\" +
+                                  ACHILLES_LIB_SUFFIX);
+    return valid;
+}
 
 achilles::PathVariables &achilles::PathVariables::Instance() {
     static PathVariables global_paths;
     return global_paths;
+}
+
+void achilles::PathVariables::InitializeStandalone() {
+    // Any address inside this library identifies the file it was loaded from
+    static const char anchor{};
+    Dl_info info{};
+    if(dladdr(&anchor, &info) == 0 || info.dli_fname == nullptr) return;
+
+    std::error_code ec;
+    auto library = fs::canonical(fs::path(info.dli_fname), ec);
+    if(ec) return;
+
+    libsPath = library.parent_path();
+    sharePath = (libsPath / ACHILLES_LIB_TO_SHARE).lexically_normal();
+    rootPath = (libsPath / ACHILLES_LIB_TO_ROOT).lexically_normal();
+    fluxPath = sharePath / "flux";
+    dataPath = sharePath / "data";
+    defaultsPath = dataPath / "default";
 }
 
 // Function to load the search path for Achilles files

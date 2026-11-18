@@ -177,13 +177,6 @@ endif()
 include(CMake/CPM.cmake)
 include(external/CMakeLists.txt)
 
-# Configure system specific variables for loading shared libraries
-set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
-set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
-set(BUILDPATH ${CMAKE_CURRENT_BINARY_DIR})
-set(INSTALLPATH ${CMAKE_INSTALL_PREFIX})
-configure_file(include/Achilles/System.hh.in ${CMAKE_CURRENT_SOURCE_DIR}/include/Achilles/System.hh)
-
 # Data is versioned independently of the code: bump this only when the data set itself
 # changes, then publish a matching GitHub Release tagged with this value. Generated into
 # the build tree and installed into the wheel below (see ACHILLES_ENABLE_PYTHON block).

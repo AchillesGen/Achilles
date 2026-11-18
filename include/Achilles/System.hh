@@ -43,27 +43,19 @@ namespace achilles {
 class ProcessGroup;
 
 namespace SystemVariables {
-    const std::string libPrefix = "@LIBPREFIX@";
-    const std::string libSuffix = "@LIBSUFFIX@";
-    const std::string pluginBase = libPrefix + "AchillesPlugin";
-    const std::string pluginRegex = pluginBase + ".*\\" + libSuffix;
-    const std::regex validPluginName(pluginRegex);
+const std::regex &ValidPluginName();
 }
 
 class PathVariables {
   public:
-    void InitializeStandalone() {
-        rootPath = "@INSTALLPATH@";
-        libsPath = rootPath / "lib";
-        sharePath = rootPath / "share/Achilles";
-        fluxPath = sharePath / "flux";
-        dataPath = sharePath / "data";
-        defaultsPath = dataPath / "default";
-    }
+    PathVariables() { InitializeStandalone(); }
+
+    // Locates the install tree from wherever the Achilles libraries were loaded, so it can move
+    void InitializeStandalone();
 
     void InitializePython(fs::path root, fs::path libs, fs::path data, fs::path flux) {
         rootPath = root;
-		sharePath = root;
+        sharePath = root;
         libsPath = libs;
         dataPath = data;
         fluxPath = flux;
@@ -110,12 +102,11 @@ class Cache {
     bool FindCachedState(std::size_t);
     template <typename T> bool SaveState(const T &object) {
         auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
-        if(fs::exists(cachePath))
-            spdlog::warn("Cache: Overwriting existing cache for {}", object);
+        if(fs::exists(cachePath)) spdlog::warn("Cache: Overwriting existing cache for {}", object);
         fs::create_directories(cachePath);
         return object.Save(cachePath);
     }
-    template <typename T> bool LoadState(T& object) {
+    template <typename T> bool LoadState(T &object) {
         auto cachePath = Path() / fmt::format("{:x}", std::hash<T>{}(object));
         if(!fs::exists(cachePath)) {
             spdlog::debug("Cache: Not found for {}", object);
@@ -129,31 +120,25 @@ class Cache {
     fs::path m_path{PathVariables::Instance().CachePath()};
 };
 
-enum class FileType {
-    any = -1,
-    regular,
-    directory,
-    empty
-};
+enum class FileType { any = -1, regular, directory, empty };
 
 std::vector<std::string> GetPluginPaths();
 
-template<typename T>
-bool is_type(const T &path, FileType type) {
+template <typename T> bool is_type(const T &path, FileType type) {
     switch(type) {
-        case FileType::any:
-            return true;
-        case FileType::regular:
-            return fs::is_regular_file(path);
-        case FileType::directory:
-            return fs::is_directory(path);
-        case FileType::empty:
-            return fs::is_empty(path);
+    case FileType::any:
+        return true;
+    case FileType::regular:
+        return fs::is_regular_file(path);
+    case FileType::directory:
+        return fs::is_directory(path);
+    case FileType::empty:
+        return fs::is_empty(path);
     }
     return false;
 }
 
-template<typename Func>
+template <typename Func>
 void RecurseDirectories(const fs::path &directory, Func f, FileType type = FileType::any) {
     // Plugin/search directories are optional and may not exist.
     std::error_code ec;
