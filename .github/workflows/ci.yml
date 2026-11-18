@@ -136,6 +136,17 @@ jobs:
       - name: Install
         run: cmake --install build
 
+      - name: Check find_package(Achilles) against the install tree
+        run: |
+          cmake -S test/find-package -B build-find-package \
+            -DCMAKE_BUILD_TYPE="${{ matrix.build_type || env.BUILD_TYPE }}" \
+            -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/install" \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          cmake --build build-find-package --config "${{ matrix.build_type || env.BUILD_TYPE }}"
+          ./build-find-package/achilles-install-test
+
       # The cross-section check runs on this config alone; nothing else needs a tree.
       - name: Upload install tree
         if: matrix.name == 'Ubuntu GCC'

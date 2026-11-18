@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Achilles/Factory.hh"
+#include "Achilles/ParticleInfo.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -15,7 +16,6 @@
 namespace achilles {
 
 class Event;
-class PID;
 class Particle;
 class Random;
 

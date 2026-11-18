@@ -34,7 +34,8 @@ cmake.args = [
 cmake.source-dir = "."
 sdist.exclude = ["data/**"]
 wheel.packages = { achilles = "python/achilles" }
-wheel.exclude = ["lib/**"]
+# Wheels are for running Achilles, not building against it, so drop development files
+wheel.exclude = ["lib/**", "include/**", "achilles/lib/cmake/**", "achilles/lib/pkgconfig/**", "achilles/lib/*.a"]
 
 [tool.cibuildwheel]
 build-frontend = "build[uv]"
