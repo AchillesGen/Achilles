@@ -57,6 +57,7 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         YAML::Node config = YAML::Load(R"config(
         Processes:
             - Leptons: [11, [11]]
+            - Leptons: [11, [11]]
         Options:
             Unweighting:
                 Name: Percentile
@@ -66,22 +67,26 @@ TEST_CASE("Process Grouping Setup", "[Process]") {
         MockNuclearModel model;
         achilles::ProcessInfo process_info;
         process_info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
-        std::vector<achilles::ProcessInfo> infos;
-        infos.push_back(process_info);
-        infos.back().m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
-        infos.push_back(process_info);
-        infos.back().m_hadronic = {{achilles::PID::neutron()}, {achilles::PID::neutron()}};
-        infos.push_back(process_info);
-        infos.back().m_hadronic = {{achilles::PID::proton()},
-                                   {achilles::PID::neutron(), achilles::PID::pionp()}};
-        REQUIRE_CALL(model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
+        // The model only sets containers; BuildProcess expands them into charge-conserving states
+        trompeloeil::sequence seq;
+        REQUIRE_CALL(model, AllowedStates(process_info))
+            .TIMES(1)
+            .IN_SEQUENCE(seq)
+            .SIDE_EFFECT(_1.m_hadronic = {{achilles::PID::nucleon()}, {achilles::PID::nucleon()}});
+        REQUIRE_CALL(model, AllowedStates(process_info))
+            .TIMES(1)
+            .IN_SEQUENCE(seq)
+            .SIDE_EFFECT(_1.m_hadronic = {{achilles::PID::nucleon()},
+                                          {achilles::PID::nucleon(), achilles::PID::pion()}});
         REQUIRE_CALL(model, Mode()).TIMES(2).RETURN(achilles::NuclearMode::Quasielastic);
-        REQUIRE_CALL(model, Mode()).TIMES(1).RETURN(achilles::NuclearMode::Resonance);
+        REQUIRE_CALL(model, Mode()).TIMES(4).RETURN(achilles::NuclearMode::Resonance);
         auto groups = achilles::ProcessGroup::ConstructGroups(achilles::Settings(config), &model,
                                                               beam, nucleus);
         CHECK(groups.size() == 2);
+        // pp, nn
         CHECK(groups.at(4).Processes().size() == 2);
-        CHECK(groups.at(5).Processes().size() == 1);
+        // p -> p pi0, p -> n pi+, n -> n pi0, n -> p pi-
+        CHECK(groups.at(5).Processes().size() == 4);
     }
 }
 

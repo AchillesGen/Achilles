@@ -114,7 +114,7 @@ class NuclearModel {
     virtual Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                                   const std::vector<Particle> &, const FourVector &,
                                   const FFInfoMap &) const = 0;
-    virtual std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const;
+    virtual void AllowedStates(ProcessInfo &) const;
     virtual size_t NSpins() const;
     virtual double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &,
                                       size_t, size_t) const = 0;
@@ -162,7 +162,7 @@ class Coherent : public NuclearModel, RegistrableNuclearModel<Coherent> {
     Currents CalcCurrents(const std::vector<Particle> &, const std::vector<Particle> &,
                           const std::vector<Particle> &, const FourVector &,
                           const FFInfoMap &) const override;
-    std::vector<ProcessInfo> AllowedStates(const ProcessInfo &) const override;
+    void AllowedStates(ProcessInfo &) const override;
     size_t NSpins() const override { return 1; }
     double InitialStateWeight(const std::vector<Particle> &, const std::vector<Particle> &, size_t,
                               size_t) const override {

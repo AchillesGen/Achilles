@@ -32,6 +32,8 @@ class XSecBackend {
     virtual bool Validate() { return m_model != nullptr; }
     virtual void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                                PID) = 0;
+    // Whether SetupChannels accepts container PIDs; Sherpa needs concrete flavours
+    virtual bool ContainerChannels() const { return false; }
 
   protected:
     double FluxFactor(const FourVector &, const FourVector &, const ProcessInfo &) const;
@@ -52,6 +54,7 @@ class DefaultBackend : public XSecBackend, RegistrableBackend<DefaultBackend> {
     void AddProcess(Process &process) override;
     void SetupChannels(const ProcessInfo &, std::shared_ptr<Beam>, Integrand<FourVector> &,
                        PID) override;
+    bool ContainerChannels() const override { return true; }
 
     // Required factory methods
     static std::unique_ptr<XSecBackend> Construct() { return std::make_unique<DefaultBackend>(); }

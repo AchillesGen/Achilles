@@ -83,9 +83,7 @@ dummy: dummy2
 
         achilles::ProcessInfo info;
         info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
-        auto groups = model.AllowedStates(info);
-        CHECK(groups.size() == 1);
-        info = groups[0];
+        model.AllowedStates(info);
         CHECK(info.m_hadronic ==
               ProcessInfo::hadronic_state{{achilles::PID::carbon()}, {achilles::PID::carbon()}});
 
@@ -207,15 +205,11 @@ dummy: dummy2
         SECTION("Neutral Current") {
             achilles::ProcessInfo info;
             info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
-            // TODO: Process group return
-            auto groups = model.AllowedStates(info);
-            CHECK(groups.size() == 2);
-            info = groups[0];
-            CHECK(info.m_hadronic == ProcessInfo::hadronic_state{{achilles::PID::neutron()},
-                                                                 {achilles::PID::neutron()}});
-            info = groups[1];
-            CHECK(info.m_hadronic == ProcessInfo::hadronic_state{{achilles::PID::proton()},
-                                                                 {achilles::PID::proton()}});
+            // Only containers here; the expansion to n -> n and p -> p is tested in
+            // test_process_group.cc
+            model.AllowedStates(info);
+            CHECK(info.m_hadronic == ProcessInfo::hadronic_state{{achilles::PID::nucleon()},
+                                                                 {achilles::PID::nucleon()}});
         }
 
         SECTION("-1 Nuclear Charge") {

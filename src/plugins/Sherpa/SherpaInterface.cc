@@ -425,6 +425,9 @@ void achilles::SherpaInterface::RegisterParticles() const {
     for(const auto &particleEntry : ATOOLS::s_kftable) {
         auto pid = particleEntry.first;
         auto particle = particleEntry.second;
+        // Skip Sherpa's own containers (kf 89-98) so they are not imported as junk
+        // massless "particles"; Achilles manages its own containers.
+        if(particle->Group()) continue;
         static constexpr double to_MeV = 1000;
         const auto mass = particle->m_mass * to_MeV;
         const auto width = particle->m_width * to_MeV;
@@ -434,6 +437,10 @@ void achilles::SherpaInterface::RegisterParticles() const {
             particle->m_idname, particle->m_antiname);
         achilles::ParticleInfo::Database()[pid] = entry;
     }
+
+    // Re-populate rule-based containers now that Sherpa may have added/overwritten
+    // particles (e.g. on-shell quark masses, BSM states).
+    achilles::ParticleInfo::FinalizeContainers();
 
     achilles::Database::PrintParticle();
 }

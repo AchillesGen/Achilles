@@ -60,12 +60,10 @@ TEST_CASE("Passes Validator", "[NuHepMC]") {
         auto model = std::make_unique<MockNuclearModel>();
         achilles::ProcessInfo process_info;
         process_info.m_leptonic = {achilles::PID::electron(), {achilles::PID::electron()}};
-        std::vector<achilles::ProcessInfo> infos;
-        infos.push_back(process_info);
-        infos.back().m_hadronic = {{achilles::PID::proton()}, {achilles::PID::proton()}};
-        infos.push_back(process_info);
-        infos.back().m_hadronic = {{achilles::PID::neutron()}, {achilles::PID::neutron()}};
-        REQUIRE_CALL(*model, AllowedStates(process_info)).TIMES(1).LR_RETURN(infos);
+        // Expands to pp and nn in BuildProcess
+        REQUIRE_CALL(*model, AllowedStates(process_info))
+            .TIMES(1)
+            .SIDE_EFFECT(_1.m_hadronic = {{achilles::PID::nucleon()}, {achilles::PID::nucleon()}});
         REQUIRE_CALL(*model, Mode()).TIMES(AT_LEAST(1)).RETURN(achilles::NuclearMode::Quasielastic);
         REQUIRE_CALL(*model, GetName()).TIMES(AT_LEAST(3)).RETURN("QESpectral");
         REQUIRE_CALL(*model, InspireHEP()).TIMES(AT_LEAST(1)).RETURN("Isaacson:2022cwh");
