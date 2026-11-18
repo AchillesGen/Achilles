@@ -3,4 +3,4 @@
 
 add_library(AchillesHepMC3 SHARED HepMC3EventWriter.cc)
 target_link_libraries(AchillesHepMC3 PRIVATE achilles_options
-                             PUBLIC HepMC3::All fmt::fmt spdlog::spdlog yaml::cpp utilities physics nuclear_models)
+                             PUBLIC HepMC3::HepMC3 fmt::fmt spdlog::spdlog yaml-cpp::yaml-cpp utilities physics nuclear_models)

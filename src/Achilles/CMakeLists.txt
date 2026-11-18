@@ -30,7 +30,7 @@ add_library(utilities SHARED
     ReferenceHandler.cc
 )
 target_link_libraries(utilities PRIVATE achilles_warnings
-                                PUBLIC achilles_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
+                                PUBLIC achilles_options spdlog::spdlog yaml-cpp::yaml-cpp std::filesystem) #pybind11::pybind11
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
@@ -46,7 +46,7 @@ add_subdirectory(Integrators)
 #     InteractionLoader.cc
 # )
 # target_link_libraries(interaction_plugin PRIVATE achilles_options achilles_warnings
-#                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
+#                                          PUBLIC spdlog::spdlog stdc++fs dl yaml-cpp::yaml-cpp
 # )
 
 add_library(cuts SHARED
@@ -212,8 +212,7 @@ else()
     set(achilles_library_dest ${CMAKE_INSTALL_LIBDIR})
 endif()
 
-# TODO: Ensure that all packages installed by CPM are included when installing
-install(TARGETS ${achilles_targets} spdlog yaml-cpp fmt docopt #pybind11 fortran_interface_f
+install(TARGETS ${achilles_targets}
         # EXPORT achilles-targets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${achilles_library_dest}
