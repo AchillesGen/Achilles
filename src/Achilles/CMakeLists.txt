@@ -40,6 +40,17 @@ endif()
 if(ACHILLES_EVENT_DETAILS)
 target_compile_definitions(AchillesUtilities PUBLIC ACHILLES_EVENT_DETAILS)
 endif()
+# System.cc finds the install tree relative to the loaded library, so these must stay relative
+include(GNUInstallDirs)
+file(RELATIVE_PATH achilles_lib_to_root ${CMAKE_INSTALL_FULL_LIBDIR} ${CMAKE_INSTALL_PREFIX})
+file(RELATIVE_PATH achilles_lib_to_share ${CMAKE_INSTALL_FULL_LIBDIR}
+     ${CMAKE_INSTALL_PREFIX}/share/Achilles)
+target_compile_definitions(AchillesUtilities PRIVATE
+    "ACHILLES_LIB_PREFIX=\"${CMAKE_SHARED_LIBRARY_PREFIX}\""
+    "ACHILLES_LIB_SUFFIX=\"${CMAKE_SHARED_LIBRARY_SUFFIX}\""
+    "ACHILLES_LIB_TO_ROOT=\"${achilles_lib_to_root}\""
+    "ACHILLES_LIB_TO_SHARE=\"${achilles_lib_to_share}\"")
+target_link_libraries(AchillesUtilities PRIVATE ${CMAKE_DL_LIBS})
 list(APPEND achilles_targets AchillesUtilities)
 
 add_subdirectory(Integrators)
@@ -209,8 +220,6 @@ add_library(Achilles INTERFACE)
 add_library(achilles::Achilles ALIAS Achilles)
 target_link_libraries(Achilles INTERFACE AchillesEventGen)
 list(APPEND achilles_targets Achilles)
-
-include(GNUInstallDirs)
 
 # In a wheel, install everything inside the achilles package directory:
 # This keeps the libraries inside the package so auditwheel does not orphan them

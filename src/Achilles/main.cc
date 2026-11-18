@@ -56,7 +56,6 @@ static const std::string USAGE =
 
 int main(int argc, char *argv[]) {
     Splash();
-    achilles::PathVariables::Instance().InitializeStandalone();
     std::map<std::string, docopt::value> args =
         docopt::docopt(USAGE, {argv + 1, argv + argc},
                        true,                                          // show help if requested

@@ -24,7 +24,6 @@ compile_commands.json
 *.back
 tags
 lib*.so*
-include/Achilles/System.hh
 plots/
 *dylib
 .clangd
