@@ -14,7 +14,7 @@ add_library(AchillesCascadeInteractions SHARED
     NucleonNucleon.cc
 )
 target_link_libraries(AchillesCascadeInteractions PRIVATE achilles_options achilles_warnings
-                                                  PUBLIC physics AchillesIntegrator)
+                                                  PUBLIC AchillesPhysics AchillesIntegrator)
 list(APPEND achilles_targets AchillesCascadeInteractions)
 set(achilles_targets ${achilles_targets} PARENT_SCOPE)
 
