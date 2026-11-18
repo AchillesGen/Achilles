@@ -170,6 +170,10 @@ if(ACHILLES_ENABLE_ROOT)
 endif()
 
 # Add dependencies
+# A wheel must bundle its dependencies, so never reuse installed copies
+if(SKBUILD)
+  set(CPM_DOWNLOAD_ALL ON)
+endif()
 include(CMake/CPM.cmake)
 include(external/CMakeLists.txt)
 

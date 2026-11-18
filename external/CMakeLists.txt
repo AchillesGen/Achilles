@@ -1,24 +1,36 @@
 # SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-CPMAddPackage(
-    NAME fmt
-    GIT_TAG 11.0.0
-    GITHUB_REPOSITORY fmtlib/fmt
-)
-add_library(fmt::fmt ALIAS fmt)
-
-CPMAddPackage(
-    NAME spdlog
-    GIT_TAG "v1.14.1"
-    GITHUB_REPOSITORY gabime/spdlog
-    OPTIONS
-        "SPDLOG_COMPILED_LIB ON"
-        "SPDLOG_FMT_EXTERNAL ON"
-        "SPDLOG_BUILD_SHARED ON"
-        "SPDLOG_INSTALL ON"
-)
-add_library(spdlog::spdlog ALIAS spdlog)
+# Libraries in Achilles' public interface: reuse an installed copy if one exists
+# Achilles and NuHepMC_CPPUtils do not build against fmt 12 yet, so only reuse an
+# installed fmt 11 with a spdlog of the same era; otherwise download a matching pair
+if(NOT CPM_DOWNLOAD_ALL AND NOT CPM_DOWNLOAD_spdlog)
+    find_package(fmt 11.0...<12 CONFIG QUIET)
+    if(fmt_FOUND)
+        find_package(spdlog 1.14...<1.16 CONFIG QUIET)
+    endif()
+endif()
+if(NOT spdlog_FOUND)
+    if(NOT fmt_FOUND)
+        CPMAddPackage(
+            NAME fmt
+            GIT_TAG 11.0.0
+            GITHUB_REPOSITORY fmtlib/fmt
+            OPTIONS
+                "FMT_INSTALL ON"
+        )
+    endif()
+    CPMAddPackage(
+        NAME spdlog
+        GIT_TAG "v1.14.1"
+        GITHUB_REPOSITORY gabime/spdlog
+        OPTIONS
+            "SPDLOG_COMPILED_LIB ON"
+            "SPDLOG_FMT_EXTERNAL ON"
+            "SPDLOG_BUILD_SHARED ON"
+            "SPDLOG_INSTALL ON"
+    )
+endif()
 
 CPMAddPackage(
     NAME docopt
@@ -27,7 +39,7 @@ CPMAddPackage(
 )
 add_library(docopt::docopt ALIAS docopt)
 
-CPMAddPackage(
+CPMFindPackage(
     NAME yaml-cpp
     GITHUB_REPOSITORY jbeder/yaml-cpp
     GIT_TAG master
@@ -35,8 +47,8 @@ CPMAddPackage(
         "YAML_CPP_BUILD_TESTS OFF"
         "YAML_CPP_BUILD_CONTRIB OFF"
         "YAML_CPP_BUILD_TOOLS OFF"
+        "YAML_CPP_INSTALL ON"
 )
-add_library(yaml::cpp ALIAS yaml-cpp)
 
 CPMAddPackage(
     NAME yaml-fortran
@@ -45,7 +57,7 @@ CPMAddPackage(
 )
 add_library(yaml::fortran ALIAS yaml-fortran)
 
-CPMAddPackage(
+CPMFindPackage(
   NAME NuHepMC_CPPUtils
   GIT_TAG v1-RC18
   GIT_REPOSITORY "https://github.com/NuHepMC/cpputils.git"
@@ -59,7 +71,7 @@ if(TARGET nuhepmc_private_compile_options)
     target_compile_options(nuhepmc_private_compile_options INTERFACE -Wno-error)
 endif()
 
-CPMAddPackage(
+CPMFindPackage(
     NAME HighFive
     VERSION 2.6.2
     GITHUB_REPOSITORY BlueBrain/HighFive
