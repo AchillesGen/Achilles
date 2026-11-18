@@ -5,6 +5,11 @@
     "url": "https://achillesgen.github.io/Achilles/49-revamp-docs/"
   },
   {
+    "name": "cmake-install",
+    "version": "cmake-install",
+    "url": "https://achillesgen.github.io/Achilles/cmake-install/"
+  },
+  {
     "name": "docs-improvements",
     "version": "docs-improvements",
     "url": "https://achillesgen.github.io/Achilles/docs-improvements/"

@@ -1,5 +1,6 @@
 [
   "49-revamp-docs",
+  "cmake-install",
   "docs-improvements",
   "fix-landing-rebuild",
   "latest",
