@@ -2,9 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Plugins/HepMC3/HepMC3EventWriter.hh"
-#ifdef GZIP
-#include "gzstream/gzstream.h"
-#endif
 #include "HepMC3/GenEvent.h"
 #include "HepMC3/GenParticle.h"
 #include "HepMC3/GenVertex.h"

@@ -10,13 +10,6 @@
 #include <string>
 #include <vector>
 
-#if GZIP
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wshadow"
-#include "gzstream/gzstream.h"
-#pragma GCC diagnostic pop
-#endif
-
 namespace achilles {
 
 class Event;
@@ -46,21 +39,7 @@ class AchillesWriter : public EventWriter {
     AchillesWriter(AchillesWriter &&) = default;
     AchillesWriter &operator=(const AchillesWriter &) = default;
     AchillesWriter &operator=(AchillesWriter &&) = default;
-    ~AchillesWriter() override {
-        if(toFile) {
-#ifdef GZIP
-            if(zipped) {
-                dynamic_cast<ogzstream *>(m_out)->close();
-            } else {
-                dynamic_cast<std::ofstream *>(m_out)->close();
-            }
-#else
-            dynamic_cast<std::ofstream *>(m_out)->close();
-#endif
-            delete m_out;
-        }
-        m_out = nullptr;
-    }
+    ~AchillesWriter() override;
 
     void WriteHeader(const std::string &, const std::vector<ProcessGroup> &) override;
     void Write(const Event &) override;
