@@ -29,8 +29,8 @@ add_library(utilities SHARED
     ClebschGordan.cc
     ReferenceHandler.cc
 )
-target_link_libraries(utilities PRIVATE project_warnings
-                                PUBLIC project_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
+target_link_libraries(utilities PRIVATE achilles_warnings
+                                PUBLIC achilles_options spdlog::spdlog yaml::cpp std::filesystem) #pybind11::pybind11
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
@@ -45,7 +45,7 @@ add_subdirectory(Integrators)
 # add_library(interaction_plugin SHARED
 #     InteractionLoader.cc
 # )
-# target_link_libraries(interaction_plugin PRIVATE project_options project_warnings
+# target_link_libraries(interaction_plugin PRIVATE achilles_options achilles_warnings
 #                                          PUBLIC spdlog::spdlog stdc++fs dl yaml::cpp
 # )
 
@@ -54,7 +54,7 @@ add_library(cuts SHARED
     TwoParticleCuts.cc
     CombinedCuts.cc
 )
-target_link_libraries(cuts PRIVATE project_warnings
+target_link_libraries(cuts PRIVATE achilles_warnings
                            PUBLIC utilities) #pybind11::pybind11
 list(APPEND achilles_targets cuts)
 
@@ -67,7 +67,7 @@ add_library(mappers SHARED
     PhaseSpaceBuilder.cc
     Channels.cc
 )
-target_link_libraries(mappers PRIVATE project_warnings
+target_link_libraries(mappers PRIVATE achilles_warnings
                               PUBLIC utilities)
 if(ACHILLES_ENABLE_SHERPA)
     list(APPEND achilles_targets sherpa)
@@ -107,7 +107,7 @@ if(ACHILLES_ENABLE_ROOT)
         target_link_libraries(physics PUBLIC ROOT::Flags_CXX)
     endif()
 endif()
-target_link_libraries(physics PRIVATE project_warnings
+target_link_libraries(physics PRIVATE achilles_warnings
                       PUBLIC utilities cuts HighFive AchillesIntegrator)
 list(APPEND achilles_targets physics)
 
@@ -118,7 +118,7 @@ add_library(nuclear_models SHARED
     XSecBackend.cc
     Process.cc
 )
-target_link_libraries(nuclear_models PRIVATE project_options project_warnings
+target_link_libraries(nuclear_models PRIVATE achilles_options achilles_warnings
                                      PUBLIC physics mappers)
 list(APPEND achilles_targets nuclear_models)
 
@@ -135,7 +135,7 @@ list(APPEND achilles_targets AchillesHepMC3 nuhepmc)
 target_compile_definitions(physics PUBLIC ACHILLES_ENABLE_HEPMC3)
 target_link_libraries(event_gen PUBLIC AchillesHepMC3 nuhepmc)
 endif()
-target_link_libraries(event_gen PRIVATE project_warnings
+target_link_libraries(event_gen PRIVATE achilles_warnings
                                 PUBLIC physics mappers fortran_interface nuclear_models
                                        ${AchillesCascadeInteractionsLink}) #fortran_interface
 list(APPEND achilles_targets event_gen)
@@ -146,7 +146,7 @@ if(ACHILLES_ENABLE_PYTHON)
         PyBindings.cc
         AchillesInit.cc
     )
-target_link_libraries(_achilles PRIVATE project_warnings
+target_link_libraries(_achilles PRIVATE achilles_warnings
                                 PUBLIC event_gen cmake_git_version_tracking plugin_manager dl)
 # _achilles lives in the achilles package dir; the shared libraries are in the
 # lib/ subdir (achilles/lib), so point the rpath there ($ORIGIN/lib), not at a
@@ -158,7 +158,7 @@ install(TARGETS _achilles DESTINATION achilles)
 endif(ACHILLES_ENABLE_PYTHON)
 
 add_executable(achilles main.cc AchillesInit.cc)
-target_link_libraries(achilles PRIVATE project_options project_warnings
+target_link_libraries(achilles PRIVATE achilles_options achilles_warnings
                                PUBLIC event_gen docopt::docopt dl cmake_git_version_tracking plugin_manager)
 list(APPEND achilles_targets achilles plugin_manager)
 # Like _achilles, the executable lives in the package dir and needs achilles/lib.
@@ -175,21 +175,21 @@ endif()
 if(ACHILLES_ENABLE_CASCADE_TEST)
     add_executable(achilles-cascade CascadeMain.cc RunCascade.cc)
     # TODO: Refactor the event_gen library to pull pieces unused by the cascade executable
-    target_link_libraries(achilles-cascade PRIVATE project_warnings
+    target_link_libraries(achilles-cascade PRIVATE achilles_warnings
                                            PUBLIC event_gen docopt::docopt cmake_git_version_tracking)
     list(APPEND achilles_targets achilles-cascade)
 endif()
 
 if(ACHILLES_ENABLE_POTENTIAL_TEST)
     add_executable(achilles-potential PotentialMain.cc RunPotential.cc)
-    target_link_libraries(achilles-potential PRIVATE project_warnings
+    target_link_libraries(achilles-potential PRIVATE achilles_warnings
                                              PUBLIC physics docopt::docopt)
     list(APPEND achilles_targets achilles-potential)
 endif()
 
 if(ACHILLES_ENABLE_PRECOMPUTED)
     add_executable(achilles-precomputed Precomputed.cc PrecomputedMain.cc)
-    target_link_libraries(achilles-precomputed PRIVATE project_warnings
+    target_link_libraries(achilles-precomputed PRIVATE achilles_warnings
                                                PUBLIC physics event_gen docopt::docopt)
     list(APPEND achilles_targets achilles-precomputed)
 endif()
