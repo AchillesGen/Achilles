@@ -244,22 +244,28 @@ if(ACHILLES_BUILD_DOCS)
 endif()
 
 configure_package_config_file(
-    ${CMAKE_SOURCE_DIR}/CMake/achilles-config.cmake.in
-    ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+    ${CMAKE_SOURCE_DIR}/CMake/AchillesConfig.cmake.in
+    ${CMAKE_BINARY_DIR}/CMake/AchillesConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
 )
 
 write_basic_package_version_file(
-    ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
+    ${CMAKE_BINARY_DIR}/CMake/AchillesConfigVersion.cmake
     VERSION ${ACHILLES_VERSION}
     COMPATIBILITY AnyNewerVersion
 )
 
 install(
     FILES
-        ${CMAKE_BINARY_DIR}/CMake/achilles-config.cmake
-        ${CMAKE_BINARY_DIR}/CMake/achilles-config-version.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles
+        ${CMAKE_BINARY_DIR}/CMake/AchillesConfig.cmake
+        ${CMAKE_BINARY_DIR}/CMake/AchillesConfigVersion.cmake
+        ${CMAKE_SOURCE_DIR}/CMake/FindFilesystem.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
+)
+
+install(EXPORT AchillesTargets
+    NAMESPACE achilles::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Achilles
 )
 
 # Install default run card and form factors card (only when data/ is available;

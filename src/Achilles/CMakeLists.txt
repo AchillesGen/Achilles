@@ -29,8 +29,10 @@ add_library(utilities SHARED
     ClebschGordan.cc
     ReferenceHandler.cc
 )
+# achilles_options carries build-only flags (sanitizers, coverage), so keep it out of the export.
 target_link_libraries(utilities PRIVATE achilles_warnings
-                                PUBLIC achilles_options spdlog::spdlog yaml-cpp::yaml-cpp std::filesystem) #pybind11::pybind11
+                                PUBLIC $<BUILD_INTERFACE:achilles_options> spdlog::spdlog yaml-cpp::yaml-cpp std::filesystem) #pybind11::pybind11
+target_compile_features(utilities PUBLIC cxx_std_17)
 if(ENABLE_AUTODIFF)
 target_compile_definitions(utilities PUBLIC AUTODIFF)
 target_link_libraries(utilities PUBLIC autodiff::autodiff)
@@ -200,6 +202,12 @@ set_target_properties(${achilles_targets} PROPERTIES # fortran_interface_f
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
 )
 
+# Single entry point for find_package(Achilles) consumers
+add_library(Achilles INTERFACE)
+add_library(achilles::Achilles ALIAS Achilles)
+target_link_libraries(Achilles INTERFACE event_gen)
+list(APPEND achilles_targets Achilles)
+
 include(GNUInstallDirs)
 
 # In a wheel, install everything inside the achilles package directory:
@@ -213,7 +221,7 @@ else()
 endif()
 
 install(TARGETS ${achilles_targets}
-        # EXPORT achilles-targets
+        EXPORT AchillesTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${achilles_library_dest}
         RUNTIME DESTINATION ${achilles_runtime_dest}
@@ -232,7 +240,3 @@ if(SKBUILD)
         endif()
     endforeach()
 endif()
-# install(EXPORT achilles-targets
-#     FILE achilles-targets.cmake
-#     NAMESPACE achilles::
-#     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/achilles)
