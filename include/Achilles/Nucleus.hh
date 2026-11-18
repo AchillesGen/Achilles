@@ -17,12 +17,13 @@
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Potential.hh"
 #include "Achilles/Random.hh"
-#include "Achilles/System.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wshadow"
 #include "yaml-cpp/yaml.h"
 #pragma GCC diagnostic pop
+
+#include "spdlog/spdlog.h"
 
 namespace fs = std::filesystem;
 
