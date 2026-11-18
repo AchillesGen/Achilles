@@ -19,4 +19,9 @@ class AchillesCascadeError : public std::runtime_error {
     AchillesCascadeError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
+class AchillesParseError : public std::runtime_error {
+  public:
+    AchillesParseError(const std::string &msg) : std::runtime_error(msg) {}
+};
+
 } // namespace achilles
