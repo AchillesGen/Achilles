@@ -94,7 +94,6 @@ if they are not already found on the system:
 - `spdlog <https://github.com/gabime/spdlog>`_ (v1.14.1) -- Fast C++ logging library
 - `docopt <https://github.com/docopt/docopt.cpp>`_ (v0.6.3) -- Command-line interface library
 - `yaml-cpp <https://github.com/jbeder/yaml-cpp>`_ -- YAML parser and emitter
-- `yaml-fortran <https://github.com/jximenes-cern/yaml-fortran>`_ -- Fortran YAML bindings
 - `NuHepMC_CPPUtils <https://github.com/NuHepMC/cpputils>`_ (v1-RC10) -- NuHepMC C++ utilities (includes HepMC3)
 - `HighFive <https://github.com/BlueBrain/HighFive>`_ (v2.6.2) -- C++ interface for HDF5
 
