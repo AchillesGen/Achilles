@@ -14,19 +14,8 @@ void Particle::SetFormationZone(const FourVector &p1, const FourVector &p2) noex
 }
 
 void Particle::Propagate(const double &time) noexcept {
-    const double dist = momentum.P() / momentum.E() * time;
-
-    const double theta = momentum.Theta();
-    const double phi = momentum.Phi();
-
-    const double propDistX = dist * std::sin(theta) * std::cos(phi);
-    const double propDistY = dist * std::sin(theta) * std::sin(phi);
-    const double propDistZ = dist * std::cos(theta);
-
-    const ThreeVector propDist(propDistX, propDistY, propDistZ);
-    if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
+    SpacePropagate(momentum.P() / momentum.E() * time);
     if(formationZone > 0) formationZone -= time;
-    Move(propDist);
 }
 
 void Particle::SpacePropagate(const double &dist) noexcept {
@@ -38,7 +27,7 @@ void Particle::SpacePropagate(const double &dist) noexcept {
     const double propDistZ = dist * std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
-    if(status == ParticleStatus::internal_test) distanceTraveled += propDist.Magnitude();
+    if(status == ParticleStatus::internal_test) distanceTraveled += dist;
     Move(propDist);
 }
 
@@ -53,7 +42,7 @@ void Particle::BackPropagate(const double &time) noexcept {
     const double propDistZ = dist * std::cos(theta);
 
     const ThreeVector propDist(propDistX, propDistY, propDistZ);
-    if(status == ParticleStatus::internal_test) distanceTraveled -= propDist.Magnitude();
+    if(status == ParticleStatus::internal_test) distanceTraveled -= dist;
     if(formationZone != 0) formationZone += time;
     Move(-propDist);
 }

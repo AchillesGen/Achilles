@@ -356,11 +356,11 @@ void Cascade::Validate(Event &event) {
     }
 }
 
-void Cascade::PropagateAll(vParticles &particles, double step) const {
+/*void Cascade::PropagateAll(vParticles &particles, double step) const {
     for(Particle& particle : particles) {
         if(particle.IsPropagating()) { particle.Propagate(step); }
     }
-}
+}*/
 
 void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
                      [[maybe_unused]] const std::size_t &maxSteps) {
@@ -416,29 +416,36 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
+		UpdateTracked(event);
         if(m_propagating.size() == 0) break;
 
         // Adapt time step
         AdaptiveStep(m_propagating, distance);
 
-        for(Particle& kickNuc:m_propagating) {
-            spdlog::trace("Kicked Particle: {}", kickNuc);
+		// Iterate with indices over the whole particles list;
+		// avoids concurrent vector modification issues
+        for(size_t i=0;i<event.Particles().size();i++) {
+			Particle& part=event.Particles()[i];
+			// Iterate only over propagating particles
+			if(!(part.isInFinalState()&&part.IsPropagating())) continue;
+
+            spdlog::trace("Kicked Particle: {}", part);
 
             // Attempt decay of unstable particles
-            if(!kickNuc.Info().IsStable() && Decay(event, kickNuc))
+            if(!part.Info().IsStable() && Decay(event, part))
 				continue;
 
             // Update formation zones
-            if(kickNuc.InFormationZone() && !kickNuc.Info().IsPion()) {
-                Propagate(kickNuc);
+            if(part.InFormationZone() && !part.Info().IsPion()) {
+                Propagate(part);
                 continue;
             }
 
-            size_t hitIdx = algorithm(this,kickNuc,m_remnant->SubParts());
+            size_t hitIdx = algorithm(this,part,m_remnant->SubParts());
             if(hitIdx == SIZE_MAX) { continue; }
-            spdlog::trace("Kicked = {}", kickNuc);
+            spdlog::trace("Kicked = {}", part);
             spdlog::trace("Hit = {}", hitIdx);
-            FinalizeMomentum(event,kickNuc,hitIdx);
+            FinalizeMomentum(event,part,hitIdx);
         }
         // Updated the kicked list
         // NOTE: Needs to be here in case there are two interactions in the same time step
@@ -659,6 +666,7 @@ void Cascade::Escaped(Event &event) {
 	// Otherwise, proceed with debt calculation; m_remnant is guaranteed not null
     const double radius2 = pow(m_nucleus->Radius(),2);
 
+	std::vector<size_t> captured_idxs;
 	// Cannot iterate over m_propagating, or even Enhanced-For over Particles()
 	// because this loop may concurrently modify Particles()
     for(size_t i=0;i<event.Particles().size();i++) {
@@ -709,15 +717,13 @@ void Cascade::Escaped(Event &event) {
             // It cannot pay, so it rejoins the bound pool and owes nothing after all.
             m_removal_debt.erase(part.cascadeID());
             part.Status()=ParticleStatus::captured;
+			captured_idxs.push_back(i);
         }
     }
 
 	// Now, any particles labeled "captured" need to be reabsorbed
-	refParticles captured;
-	for(std::reference_wrapper<Particle>& ref:m_propagating)
-		if(ref.get().Status()==ParticleStatus::captured)
-			captured.push_back(ref);
-	if(captured.empty())
+
+	if(captured_idxs.empty())
 		return;
 
 	// Create interaction and new remnant particle
@@ -730,8 +736,8 @@ void Cascade::Escaped(Event &event) {
 	m_remnant->endVertex()=vertex;
 
 	// Capture all particles and add them to the new remnant
-	for(Particle& part:captured) {
-		part.Status()=ParticleStatus::captured;
+	for(const size_t& idx:captured_idxs) {
+		Particle& part=event.Particles()[idx];
 		part.endVertex()=vertex;
 		remNew_sub.push_back(part);
 		p_rem+=part.Momentum();

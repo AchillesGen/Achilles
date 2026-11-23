@@ -207,7 +207,7 @@ class Cascade {
     size_t BaseAlgorithm(Particle&,vParticles&);
     size_t MFPAlgorithm(Particle&,vParticles&);
     double InMediumCorrection(const Particle &, const Particle &) const;
-    void PropagateAll(vParticles &, double) const;
+    //void PropagateAll(vParticles &, double) const;
     //bool HasInteraction(Particle&,Particle&) const;
     bool Decay(Event&,Particle&);
 
