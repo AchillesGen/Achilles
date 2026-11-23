@@ -174,7 +174,7 @@ int ToNuHepMC(achilles::ParticleStatus status) {
         return NuHepMC::ParticleStatus::Target;
     case achilles::ParticleStatus::spectator:
         return NuHepMC::ParticleStatus::Spectator;
-    case achilles::ParticleStatus::interacted:
+    case achilles::ParticleStatus::cascade:
         return NuHepMC::ParticleStatus::Cascade;
     case achilles::ParticleStatus::residue:
         return NuHepMC::ParticleStatus::UndecayedResidue;

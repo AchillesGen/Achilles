@@ -257,6 +257,8 @@ class Cascade {
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
+	/// Used for counting Cascade IDs (used as keys in the `integrators` object)
+	int last_id=0;
     std::map<int, SymplecticIntegrator> integrators;
     std::string m_probability_name;
 

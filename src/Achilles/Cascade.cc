@@ -176,6 +176,7 @@ std::size_t Cascade::GetInter(vParticles &, const Particle &, double &) {
 }
 
 void Cascade::Reset() {
+	last_id=0;
     integrators.clear();
     m_removal_debt.clear();
     m_track_recoil = false;
@@ -509,7 +510,6 @@ void Cascade::AddIntegrator(Particle& part) {
 
 	/// Using this instead of integrators.size() in case integrators can be deleted,
 	/// which would cause ID conflicts
-	static int last_id=0;
 	part.cascadeID()=last_id++;
 
     integrators[part.cascadeID()] =
@@ -647,7 +647,7 @@ void Cascade::MeanFreePath_NuWro(Event &, Nucleus *, const std::size_t &) {
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
         FinalizeMomentum(event, particles, idx, hitIdx);
         // Stop as soon as we hit anything
-        if(particles[idx].Status() == ParticleStatus::interacted) break;
+        if(particles[idx].Status() == ParticleStatus::cascade) break;
     }
 
     hadrons = particles;
@@ -984,6 +984,15 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
 	// Interaction for separating all consumed nucleons from the remnant
 	size_t vertex_split_rem=event.addVertex(EventVertex::StatusCode::split,m_remnant->Position());
 
+	// The actual hit is now treated as a separate interaction -Hayden
+    // TODO: What do we use for the position? (How about average positions?)
+    ThreeVector average_position = (particle1.Position() + particle2->Position()) / 2.0;
+	size_t vertex_hit=event.addVertex(EventVertex::StatusCode::cascade,average_position);
+	// particle1 ref may die after this, so we need to edit it now while we still can
+    particle1.Status() = ParticleStatus::cascade;
+    particle1.endVertex() = vertex_hit;
+	FourVector p_part1=particle1.Momentum();
+
 	for(size_t i=0;i<m_remnant->SubParts().size();i++) {
 		auto it=std::find(consumed.begin(),consumed.end(),i);
 		if(it==consumed.end()) {
@@ -1019,14 +1028,7 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
 	}
     //}
 
-	// The actual hit is now treated as a separate interaction -Hayden
-    // TODO: What do we use for the position? (How about average positions?)
-    ThreeVector average_position = (particle1.Position() + particle2->Position()) / 2.0;
-	size_t vertex_hit=event.addVertex(EventVertex::StatusCode::cascade,average_position);
-
-    particle1.Status() = ParticleStatus::interacted;
-    particle1.endVertex() = vertex_hit;
-    particle2->Status() = ParticleStatus::interacted;
+    particle2->Status() = ParticleStatus::cascade;
     particle2->endVertex() = vertex_hit;
     for(const size_t& i:freed) {
 		Particle& part=event.Particles()[i];
@@ -1040,7 +1042,7 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
     for(Particle& part : particles_out) {
         part.Status() = ParticleStatus::propagating;
         if(part.Info().IsNucleon())
-            part.SetFormationZone(particle1.Momentum(), part.Momentum());
+            part.SetFormationZone(p_part1, part.Momentum());
         event.addParticle(part,vertex_hit,Particle::OPEN_END);
         // Baryon number is conserved, so there is always a baryon for every debt.
         if(part.Info().IsBaryon() && idebt < debts.size())
