@@ -37,6 +37,7 @@ static constexpr int Decay = 25;
 static constexpr int Shower = 26;
 static constexpr int Escape = 27;
 static constexpr int Capture = 28;
+static constexpr int Split = 29;
 } // namespace VertexStatus
 
 namespace ParticleStatus {
@@ -100,6 +101,7 @@ void NuHepMCWriter::WriteHeader(const std::string &filename,
                  {NuHepMC::VertexStatus::Shower, {"Shower", "Vertex used in a shower"}},
                  {NuHepMC::VertexStatus::Propagation, {"Propagation", "Propagation"}},
                  {NuHepMC::VertexStatus::Cascade, {"Cascade", "Cascade"}},
+				 {NuHepMC::VertexStatus::Split, {"Split", "Select a subparticle from a larger composite"}},
              });
 
     // List all possible particle status codes
@@ -202,6 +204,8 @@ int ToNuHepMC(achilles::EventVertex::StatusCode status) {
         return NuHepMC::VertexStatus::Capture;
     case achilles::EventVertex::StatusCode::shower:
         return NuHepMC::VertexStatus::Shower;
+	case achilles::EventVertex::StatusCode::split:
+		return NuHepMC::VertexStatus::Split;
     }
     return -1;
 }

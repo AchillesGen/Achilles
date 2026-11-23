@@ -76,6 +76,7 @@ bool Particle::equalsIgnoreVertices(const Particle &other) const noexcept {
     if(momentum != other.momentum) return false;
     if(position != other.position) return false;
     if(mothers != other.mothers) return false;
+	if(cascade_id != other.cascade_id) return false;
     return true;
 }
 

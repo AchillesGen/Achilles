@@ -3,9 +3,9 @@
 
 #pragma once
 
-#include <vector>
-
 #include "Achilles/Factory.hh"
+#include "Achilles/Nucleus.hh"
+#include "Achilles/Particle.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
@@ -58,18 +58,21 @@ class Interaction {
     virtual std::vector<std::pair<PID, PID>> InitialStates() const = 0;
 
     /// Function that returns the total cross-section between two particles
-    ///@param Event: The current event
-    ///@param part1: The first particle involved with the interaction
-    ///@param part2: The second particle involved with the interaction
+    ///@param kicked: The propagating particle
+    ///@param remnant: The composite particle containing all background nucleons
+    ///@param rem_idx: The position within the remnant of the "main" particle being interacted with
+	///@param nuc: The Nucleus object within which this interaction is taking place
     ///@return double: The cross-section
-    virtual double TotalCrossSection(Event &, size_t, size_t) const;
+    virtual double TotalCrossSection(const Particle&,Particle*,size_t,const Nucleus*) const;
 
     /// Function to determine the cross-section between two particles
     /// broken down into all possible final state channels
-    ///@param part1: The first particle involved with the interaction
-    ///@param part2: The second particle involved with the interaction
-    ///@return double: The cross-section
-    virtual InteractionResults CrossSection(Event &, size_t, size_t) const = 0;
+    ///@param kicked: The propagating particle
+    ///@param remnant: The composite particle containing all background nucleons
+    ///@param rem_idx: The position within the remnant of the "main" particle being interacted with
+	///@param nuc: The Nucleus object within which this interaction is taking place
+    ///@return InteractionResults: The cross-section
+    virtual InteractionResults CrossSection(const Particle&,Particle*,size_t,const Nucleus*) const = 0;
 
     /// Function to generate the final state particles
     ///@param part1: The first particle involved with the interaction
@@ -77,7 +80,7 @@ class Interaction {
     ///@param out_pids: The final state particles to generate
     ///@param rands: The random numbers to use in the generation
     ///@return std::vector<Particle>: The final state particles
-    virtual std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
+    virtual vParticles GenerateMomentum(const Particle &part1, const Particle &part2,
                                                    const std::vector<PID> &out_pids,
                                                    Random &) const = 0;
 

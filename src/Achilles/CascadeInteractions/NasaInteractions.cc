@@ -8,17 +8,17 @@
 
 using namespace achilles;
 
-InteractionResults NasaInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
+InteractionResults NasaInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus*) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    bool samePID = particle1.ID() == particle2.ID();
-    FourVector p1Lab = particle1.Momentum(), p2Lab = particle2.Momentum();
+    bool samePID = kicked.ID() == hit.ID();
+    FourVector p1Lab = kicked.Momentum(), p2Lab = hit.Momentum();
     // Generate outgoing momentum
     double s = (p1Lab + p2Lab).M2();
-    double smin = pow(particle1.Mass() + particle2.Mass(), 2);
+    double smin = pow(kicked.Mass() + hit.Mass(), 2);
     double plab = sqrt(pow(s, 2) / smin - s);
-    return {{{particle1.ID(), particle2.ID()}, CrossSectionLab(samePID, plab)}};
+    return {{{kicked.ID(), hit.ID()}, CrossSectionLab(samePID, plab)}};
 }
 
 std::vector<std::pair<PID, PID>> NasaInteraction::InitialStates() const {

@@ -8,6 +8,7 @@
 #include <set>
 #include <utility>
 
+#include "Achilles/Nucleus.hh"
 #include "Achilles/Interactions.hh"
 #include "Achilles/Utilities.hh"
 #include "yaml-cpp/yaml.h"
@@ -27,8 +28,8 @@ class InteractionHandler {
     InteractionHandler &operator=(const InteractionHandler &) = delete;
     InteractionHandler(InteractionHandler &&) = default;
     InteractionHandler &operator=(InteractionHandler &&) = default;
-    double TotalCrossSection(Event &, size_t, size_t) const;
-    std::vector<InteractionResult> CrossSection(Event &, size_t, size_t) const;
+    double TotalCrossSection(const Particle&,Particle*,size_t,const Nucleus*) const;
+    std::vector<InteractionResult> CrossSection(const Particle&,Particle*,size_t,const Nucleus*) const;
     std::vector<Particle> GenerateMomentum(const Particle &, const Particle &,
                                            const std::vector<PID> &, Random &&) const;
     std::set<Channel, pid_compare> RegisteredInteractions() const {

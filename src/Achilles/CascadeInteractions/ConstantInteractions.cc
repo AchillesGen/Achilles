@@ -17,15 +17,14 @@ ConstantInteraction::ConstantInteraction(const YAML::Node &node) {
     }
 }
 
-InteractionResults ConstantInteraction::CrossSection(Event& event, size_t part1,
-                                                     size_t part2) const {
-    const auto &p1 = event.CascadeHadrons()[part1];
-    const auto &p2 = event.CascadeHadrons()[part2];
+InteractionResults ConstantInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus*) const {
+	const Particle& hit=remnant->SubParts()[rem_idx];
 
     try {
-        return m_interactions.at({p1.ID(), p2.ID()});
-    } catch(std::out_of_range &e) {
-        std::cout << p1 << " " << p2 << std::endl;
+        return m_interactions.at({kicked.ID(), hit.ID()});
+    } catch(std::out_of_range&) {
+        std::cout << kicked << " " << hit << std::endl;
         throw;
     }
 }

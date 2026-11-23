@@ -28,32 +28,31 @@ OsetMesonBaryonInteraction::OsetMesonBaryonInteraction(const YAML::Node &) {
     in_out_states[{-PID::pionp(), PID::neutron()}] = {{-PID::pionp(), PID::neutron()}};
 }
 
-InteractionResults OsetMesonBaryonInteraction::CrossSection(Event &event, size_t part1,
-                                                            size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
+InteractionResults OsetMesonBaryonInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    auto sqrts = (particle1.Momentum() + particle2.Momentum()).M();
+    double sqrts = (kicked.Momentum() + hit.Momentum()).M();
 
     InteractionResults results;
 
-    auto QECrossSections = Oset.QECrossSection(event, part1, part2);
+    auto QECrossSections = Oset.QECrossSection(kicked,hit,nuc);
 
     spdlog::debug("Incoming:");
-    spdlog::debug("{}", particle1);
-    spdlog::debug("{}", particle2);
+    spdlog::debug("{}", kicked);
+    spdlog::debug("{}", hit);
     // Vector of pairs of outgoing states
-    auto outgoing_states = in_out_states.at({particle1.ID(), particle2.ID()});
+    auto outgoing_states = in_out_states.at({kicked.ID(), hit.ID()});
     for(const auto &state : outgoing_states) {
         spdlog::debug("Outgoing:");
         spdlog::debug("{} + {}", state.first, state.second);
         PID outgoing_pi_PID = state.first;
 
-        auto outgoing_masses =
+        double outgoing_masses =
             ParticleInfo(outgoing_pi_PID).Mass() + ParticleInfo(state.second).Mass();
         if(sqrts < outgoing_masses) continue;
 
-        double CS = QECrossSections[{particle1.ID(), outgoing_pi_PID}];
+        double CS = QECrossSections[{kicked.ID(), outgoing_pi_PID}];
         if(CS == 0.) continue;
         results.push_back({{outgoing_pi_PID, state.second}, CS});
     }

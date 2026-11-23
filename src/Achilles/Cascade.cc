@@ -31,13 +31,13 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
       m_potential_prop(potential_prop) {
     switch(alg) {
     case Algorithm::Base:
-        algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
-            return cascade->BaseAlgorithm(idx, event);
+        algorithm = [&](Cascade *cascade,Particle& prop,vParticles& bg) -> size_t {
+            return cascade->BaseAlgorithm(prop,bg);
         };
         break;
     case Algorithm::MFP:
-        algorithm = [&](Cascade *cascade, size_t idx, Event &event) -> size_t {
-            return cascade->MFPAlgorithm(idx, event);
+        algorithm = [&](Cascade *cascade,Particle& prop,vParticles& bg) -> size_t {
+            return cascade->MFPAlgorithm(prop,bg);
         };
         break;
     }
@@ -70,8 +70,6 @@ Cascade::Cascade(InteractionHandler interactions, const ProbabilityType &prob, A
                   "probability: {}, algorithm: {}",
                   distance, ToString(m_medium), m_potential_prop, m_probability_name,
                   ToString(alg));
-
-    kickedIdxs.clear();
 }
 
 /*void Cascade::Kick(Event &event, const FourVector &energyTransfer,
@@ -178,92 +176,40 @@ std::size_t Cascade::GetInter(vParticles &, const Particle &, double &) {
 }
 
 void Cascade::Reset() {
-    kickedIdxs.clear();
     integrators.clear();
     m_removal_debt.clear();
     m_track_recoil = false;
 }
 
-bool Cascade::MoveNucleon(const Particle &nucleon,bool remove) {
-    if(remnant.ID() == PID::undefined()) return false;
-
-    // A fully dissolved nucleus is not a particle: refuse to go below one nucleon and let
-    // the caller record the vertex without threading.
-    if(remove && remnant.ID().NuclearA() <= 1) return false;
-
-    const int sign = remove ? -1 : 1;
-    const int dZ = nucleon.ID() == PID::proton() ? 1 : 0;
-    const PID pid =
-        PID::MakeNucleus(remnant.ID().NuclearZ() + sign * dZ, remnant.ID().NuclearA() + sign);
-    FourVector mom = remnant.Momentum();
-    if(remove)
-        mom -= nucleon.Momentum();
-    else
-        mom += nucleon.Momentum();
-    remnant=Particle(pid, mom, remnant.Position(), ParticleStatus::intermediate_residue);
-    return true;
-}
-
-void Cascade::addInteraction(Event& event,EventVertex::StatusCode status,const ThreeVector& pos,
-		const vParticles& partsIn,const vParticles& partsOut) {
-
-	size_t vertex=event.addVertex(status,pos);
-
-	Particle* incoming;
-	for(const Particle& p:partsIn) {
-		incoming=event.findFinalStateParticle(p);
-		if(incoming!=nullptr)
-			incoming->endVertex()=vertex;
-		else
-			throw std::runtime_error(fmt::format("Event::addInteraction(): Incoming particle not found in event: {}",p));
-	}
-
-	for(const Particle& p:partsOut) {
-		event.addParticle(p,vertex,Particle::OPEN_END);
-	}
-}
-
-void Cascade::RecoilRemnant(const FourVector &mom) {
-    if(remnant.ID() == PID::undefined()) return;
-    remnant=Particle(remnant.ID(), remnant.Momentum() + mom, remnant.Position(),
-                              ParticleStatus::intermediate_residue);
-}
-
-void Cascade::TransferDebt(std::size_t from, std::size_t to) {
+void Cascade::TransferDebt(int from, int to) {
     auto it = m_removal_debt.find(from);
     if(it == m_removal_debt.end()) return;
     m_removal_debt[to] = it->second;
     m_removal_debt.erase(it);
 }
 
-bool Cascade::PayRemovalEnergy(std::size_t idx) {
-    auto it = m_removal_debt.find(idx);
+bool Cascade::PayRemovalEnergy(Particle& particle) {
+	// No remnant = no remaining potential = no need to pay?
+	if(!m_remnant) {
+		spdlog::debug("Cascade::PayRemovalEnergy(): Cannot pay, no remnant present");
+		return true;
+	}
+    auto it = m_removal_debt.find(particle.cascadeID());
     if(it == m_removal_debt.end()) return true;
 
     const bool is_proton = it->second.is_proton;
-    const bool recoil = m_track_recoil && remnant.ID() != PID::undefined();
 
     double separation{};
-    if(recoil) {
+    if(m_track_recoil) {
         // Charge against the composition settled so far, not the current bound pool, so
         // the charges telescope however the knockouts and escapes interleave.
         separation = SeparationEnergy(m_paid_Z, m_paid_A, is_proton);
     } else {
-        // No remnant to settle against (cascade-only modes): fall back to the bound pool.
-        int nZ = 0, nA = 0;
-        for(const Particle& part : hadrons) {
-            if(!part.Info().IsNucleon()) continue;
-            if(part.Status() != ParticleStatus::background &&
-               part.Status() != ParticleStatus::captured)
-                continue;
-            if(part.ID() == PID::proton()) nZ++;
-            nA++;
-        }
+        int nZ = m_remnant->ID().NuclearZ(), nA = m_remnant->ID().NuclearA();
         separation = SeparationEnergy(nZ + (is_proton ? 1 : 0), nA + 1, is_proton);
     }
     const double base = separation + it->second.kinetic;
 
-    Particle& particle = hadrons[idx];
     const double mass = particle.Info().Mass();
     const ThreeVector p_old = particle.Momentum().Vec3();
     const ThreeVector dir = p_old.Unit();
@@ -274,9 +220,9 @@ bool Cascade::PayRemovalEnergy(std::size_t idx) {
     // it comes out of the remnant's invariant mass and E_x drifts down ~0.5 MeV per
     // knockout. The escape recoil depends on the debit, so iterate; it converges at once.
     double debit = base;
-    if(recoil) {
-        const double rem_mass = remnant.Momentum().M();
-        const ThreeVector rem_p = remnant.Momentum().Vec3();
+    if(m_track_recoil) {
+        const double rem_mass = m_remnant->Momentum().M();
+        const ThreeVector rem_p = m_remnant->Momentum().Vec3();
         const double paid = RecoilKinetic(rem_mass, m_recoil_paid);
         for(int iter = 0; iter < 4; ++iter) {
             const double energy = particle.Momentum().E() - debit;
@@ -292,8 +238,8 @@ bool Cascade::PayRemovalEnergy(std::size_t idx) {
 
     const double momentum = std::sqrt(energy * energy - mass * mass);
     particle.SetMomentum({dir * momentum, energy});
-    if(recoil) {
-        m_recoil_paid = remnant.Momentum().Vec3() + (p_old - particle.Momentum().Vec3());
+    if(m_track_recoil) {
+        m_recoil_paid = m_remnant->Momentum().Vec3() + (p_old - particle.Momentum().Vec3());
         m_paid_Z -= is_proton ? 1 : 0;
         m_paid_A -= 1;
     }
@@ -301,51 +247,52 @@ bool Cascade::PayRemovalEnergy(std::size_t idx) {
     return true;
 }
 
-std::set<size_t> Cascade::InitializeIntegrator() {
-    std::set<size_t> notCaptured{};
-    for(const size_t& idx : kickedIdxs) {
+void Cascade::InitializeIntegrator() {
+    for(Particle& part:m_propagating) {
         if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                                   hadrons[idx].Momentum().P(),
-                                   hadrons[idx].Position().P()) < Constant::mN) {
-            hadrons[idx].Status() = ParticleStatus::captured;
-            m_removal_debt.erase(idx);
+                                   part.Momentum().P(),
+                                   part.Position().P()) < Constant::mN) {
+            part.Status() = ParticleStatus::captured;
+            m_removal_debt.erase(part.cascadeID());
         } else {
-            AddIntegrator(idx,hadrons[idx]);
-            notCaptured.insert(idx);
+            AddIntegrator(part);
         }
     }
-    return notCaptured;
 }
 
-void Cascade::UpdateKicked(vParticles &particles, std::set<size_t> &newKicked) {
-    for(size_t idx = 0; idx < particles.size(); ++idx) {
-        if(particles[idx].IsPropagating()) {
-            if(m_potential_prop &&
-               m_nucleus->GetPotential()->Hamiltonian(
-                   particles[idx].Momentum().P(), particles[idx].Position().P()) < Constant::mN) {
-                particles[idx].Status() = ParticleStatus::captured;
-                m_removal_debt.erase(idx);
-            } else {
-                spdlog::trace("Adding particle: {}", particles[idx]);
-                AddIntegrator(idx, particles[idx]);
-                newKicked.insert(idx);
-            }
+void Cascade::UpdateKicked() {
+    for(Particle& part:m_propagating) {
+        if(m_potential_prop &&
+           m_nucleus->GetPotential()->Hamiltonian(
+               part.Momentum().P(), part.Position().P()) < Constant::mN) {
+            part.Status() = ParticleStatus::captured;
+            m_removal_debt.erase(part.cascadeID());
+        } else {
+            spdlog::trace("Adding particle: {}", part);
+            AddIntegrator(part);
         }
     }
+}
+
+void Cascade::UpdateTracked(Event& event) {
+	m_propagating=event.PropagatingHadrons();
+	m_remnant=event.Remnant();
 }
 
 void Cascade::Validate(Event &event) {
     spdlog::trace("End of Event Status:");
-    for(size_t idx = 0; idx < hadrons.size(); ++idx) {
-        Particle& particle = hadrons[idx];
-        if(particle.Status() == ParticleStatus::propagating) {
-            for(Particle& p:hadrons) spdlog::error("{}", p);
-            achilles::PrintVisitor visitor;
-            event.WalkHistory(visitor);
-            spdlog::error("Event history: {}", visitor.data);
-            throw AchillesCascadeError("Cascade has failed. Insufficient max steps.");
-        }
-        if(particle.Info().IsResonance() && particle.Status() == ParticleStatus::final_state) {
+	if(!m_propagating.empty()) {
+		spdlog::error("Propagating Hadrons Remaining");
+        for(Particle& p:m_propagating) spdlog::error("{}", p);
+        achilles::PrintVisitor visitor;
+        event.WalkHistory(visitor);
+        spdlog::error("Event history: {}", visitor.data);
+        throw AchillesCascadeError("Cascade has failed. Insufficient max steps.");
+	}
+    for(size_t idx = 0; idx < event.Particles().size(); ++idx) {
+        Particle& particle = event.Particles()[idx];
+        if(particle.isInFinalState() && particle.Info().IsResonance()
+				&& particle.Status() == ParticleStatus::final_state) {
             static constexpr size_t nwarns = 10;
             static size_t iwarns = 0;
             if(iwarns < nwarns) {
@@ -358,45 +305,53 @@ void Cascade::Validate(Event &event) {
 
             // Force decay
             vParticles particles_out = m_decays.Decay(particle);
-            hadrons[idx].Status() = ParticleStatus::decayed;
+            particle.Status() = ParticleStatus::decayed;
+
+			size_t decay_vertex=event.addVertex(EventVertex::StatusCode::decay,particle.Position());
+			particle.endVertex()=decay_vertex;
 
             // Ensure outgoing particles are propagating and add to list of particles in event
             // and assign formation zone
-            vParticles final;
-            const Particle remnant_in = remnant;
+            Particle remnant_out;
+			if(m_remnant) {
+				// If there's no tracked remnant, remnant_out will be ignored later
+				remnant_out=*m_remnant;
+				m_remnant->SubParts().clear();
+			}
             bool repaid = false;
             for(Particle& out : particles_out) {
                 out.Status() = ParticleStatus::final_state;
-                out.Position() = hadrons[idx].Position();
-                hadrons.push_back(out);
+                out.Position() = particle.Position();
                 // This path bypasses Escaped, so settle here or the debt is never paid.
                 // The particle is already outside the nucleus, so it cannot be recaptured.
                 if(out.Info().IsBaryon()) {
-                    const size_t iout = hadrons.size() - 1;
-                    TransferDebt(idx, iout);
-                    const bool owes = m_removal_debt.count(iout) > 0;
-                    const FourVector before = hadrons[iout].Momentum();
-                    if(!PayRemovalEnergy(iout)) {
+					// replaces TransferDebt()
+                    out.cascadeID()=particle.cascadeID();
+                    const bool owes = m_removal_debt.count(out.cascadeID()) > 0;
+                    const FourVector before = out.Momentum();
+                    if(!PayRemovalEnergy(out)) {
                         spdlog::debug("Cascade: escaped resonance product cannot repay its "
                                       "removal energy, releasing it unpaid");
-                        m_removal_debt.erase(iout);
-                    } else if(owes && remnant_in.ID() != PID::undefined()) {
+                        m_removal_debt.erase(out.cascadeID());
+                    } else if(owes && m_remnant != nullptr) {
                         // What the product paid goes to the remnant, as in Escaped.
-                        RecoilRemnant(before - hadrons[iout].Momentum());
+                        remnant_out.Momentum()+=before-out.Momentum();
                         repaid = true;
                     }
                 }
-                final.push_back(hadrons.back());
+				event.addParticle(out,decay_vertex,Particle::OPEN_END);
             }
+			// Event was edited, must account for vector reallocation
+			if(m_remnant)
+				m_remnant=event.Remnant();
 
-            // Add decay to the event history. When a product repaid removal energy the
-            // remnant took it up, so it enters and leaves this vertex to keep it balanced.
-            vParticles decay_in{hadrons[idx]};
-            if(repaid) {
-                decay_in.push_back(remnant_in);
-                final.push_back(remnant);
+            // When a product repaid removal energy the remnant took it up,
+			// so it enters and leaves this vertex to keep it balanced.
+            if(repaid&&m_remnant!=nullptr) {
+                m_remnant->endVertex()=decay_vertex;
+				event.addParticle(remnant_out,decay_vertex,Particle::OPEN_END);
+				m_remnant=&event.Particles().back();
             }
-            addInteraction(event,EventVertex::StatusCode::decay,hadrons[idx].Position(),decay_in,final);
         }
     }
 }
@@ -409,39 +364,38 @@ void Cascade::PropagateAll(vParticles &particles, double step) const {
 
 void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
                      [[maybe_unused]] const std::size_t &maxSteps) {
-	hadrons=event.InteractableHadrons();
-	for(Particle& p:hadrons)
-		spdlog::info("Cascade Hadron - {}",p);
-	if(Particle* rem=event.Remnant())
-		remnant=*rem;
-	else
-		remnant=Particle();
-
-    // Set all propagating particles as kicked for the cascade
-    for(size_t idx = 0; idx < hadrons.size(); ++idx) {
-        if(hadrons[idx].Status() == ParticleStatus::propagating) SetKicked(idx);
-    }
+	UpdateTracked(event);
+	if(!m_remnant) {
+		// If there's no remnant, that *might* be okay because the
+		// cascade just doesn't need to run in the first place
+		spdlog::debug("Cascade::Evolve(): No remnant particle found in event");
+		return;
+	}
 
     // Run the cascade
     currentTime = 0;
     m_nucleus = nucleus;
     // The recoil the remnant already has from the primary vertex is paid for by the
     // spectral function; only recoil the cascade adds from here on is charged.
-    m_track_recoil = remnant.ID() != PID::undefined();
+    m_track_recoil = m_remnant!=nullptr;
     if(m_track_recoil) {
-        m_recoil_paid = remnant.Momentum().Vec3();
-        m_paid_Z = remnant.ID().NuclearZ();
-        m_paid_A = remnant.ID().NuclearA();
+        m_recoil_paid = m_remnant->Momentum().Vec3();
+        m_paid_Z = m_remnant->ID().NuclearZ();
+        m_paid_A = m_remnant->ID().NuclearA();
     }
-    kickedIdxs = InitializeIntegrator();
-    for(const size_t& kicked : kickedIdxs) {
-        for(size_t i = 0; i < hadrons.size(); ++i) {
-            if(hadrons[i].Status() != ParticleStatus::background) continue;
-            double closest = ClosestApproach(hadrons[kicked], hadrons[i]);
-            spdlog::debug("Closest approach time({}, {}) = {}", kicked, i, closest);
-            if(closest > 0) { m_time_steps.push({closest, {kicked, i}}); }
+    InitializeIntegrator();
+
+	// Commented this block bc m_time_steps is never used -Hayden
+	/*vParticles& background=m_remnant->SubParts();
+    for(size_t i_prop=0;i_prop<m_propagating.size();i_prop++) {
+		Particle& prop=m_propagating[i_prop].get();
+        for(size_t i_bg=0;i_bg<background.size();i_bg++) {
+			Particle& bg=background[i_bg];
+            double closest = ClosestApproach(prop,bg);
+            spdlog::debug("Closest approach time({}, {}) = {}", prop, bg, closest);
+            if(closest > 0) { m_time_steps.push({closest, {i_prop, i_bg}}); }
         }
-    }
+    }*/
 
     // while(!m_time_steps.empty()) {
     //     timeStep = m_time_steps.top().time - currentTime;
@@ -462,40 +416,33 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Stop loop if no particles are propagating
-        if(kickedIdxs.size() == 0) break;
+        if(m_propagating.size() == 0) break;
 
         // Adapt time step
-        AdaptiveStep(hadrons, distance);
+        AdaptiveStep(m_propagating, distance);
 
-        // Make local copy of kickedIdxs
-        std::set<size_t> newKicked{};
-        for(const size_t& idx : kickedIdxs) {
-            Particle *kickNuc = &hadrons[idx];
-            spdlog::trace("Kicked ID: {}, Particle: {}", idx, *kickNuc);
+        for(Particle& kickNuc:m_propagating) {
+            spdlog::trace("Kicked Particle: {}", kickNuc);
 
             // Attempt decay of unstable particles
-            if(!kickNuc->Info().IsStable()) {
-                if(Decay(event, idx)) continue;
-            }
+            if(!kickNuc.Info().IsStable() && Decay(event, kickNuc))
+				continue;
 
             // Update formation zones
-            if(kickNuc->InFormationZone() && !kickNuc->Info().IsPion()) {
-                Propagate(idx, kickNuc);
+            if(kickNuc.InFormationZone() && !kickNuc.Info().IsPion()) {
+                Propagate(kickNuc);
                 continue;
             }
 
-            size_t hitIdx = algorithm(this, idx, event);
+            size_t hitIdx = algorithm(this,kickNuc,m_remnant->SubParts());
             if(hitIdx == SIZE_MAX) { continue; }
-            spdlog::trace("Kicked = {}", idx);
+            spdlog::trace("Kicked = {}", kickNuc);
             spdlog::trace("Hit = {}", hitIdx);
-            FinalizeMomentum(event, hadrons, idx, hitIdx);
+            FinalizeMomentum(event,kickNuc,hitIdx);
         }
         // Updated the kicked list
         // NOTE: Needs to be here in case there are two interactions in the same time step
-        UpdateKicked(hadrons, newKicked);
-
-        // Replace kicked indices with new list
-        kickedIdxs = newKicked;
+        UpdateKicked();
 
         // After step checks
         Escaped(event);
@@ -505,26 +452,28 @@ void Cascade::Evolve(achilles::Event &event, Nucleus *nucleus,
     Reset();
 }
 
-size_t Cascade::BaseAlgorithm(size_t idx, Event &event) {
+size_t Cascade::BaseAlgorithm(Particle& propagating,vParticles& background) {
     // Get allowed interactions
-    auto dist2 = AllowedInteractions(hadrons, idx);
+    InteractionDistances dist2 = AllowedInteractions(propagating,background);
     if(dist2.size() == 0) { return SIZE_MAX; }
 
     // Get interaction
-    return Interacted(event, idx, dist2);
+    return Interacted(propagating,dist2);
 }
 
-size_t Cascade::MFPAlgorithm(size_t idx, Event&) {
-    double step_prop = distance;
-    Particle *kickNuc = &hadrons[idx];
-    size_t hitIdx = GetInter(hadrons, *kickNuc, step_prop);
-    PropagateSpace(idx, kickNuc, step_prop);
-    return hitIdx;
+size_t Cascade::MFPAlgorithm(Particle&,vParticles&) {
+    throw std::logic_error("Cascade: MFPAlgorithm is currently not working with pions");
+    /*double step_prop = distance;
+    Particle kickNuc = hadrons[idx];
+    size_t hitIdx = GetInter(hadrons, kickNuc, step_prop);
+    PropagateSpace(kickNuc, step_prop);
+    return hitIdx;*/
 }
 
-void Cascade::AddIntegrator(size_t idx, const Particle &part) {
+void Cascade::AddIntegrator(Particle& part) {
     // Only add if not already there
-    if(integrators.find(idx) != integrators.end()) return;
+    if(part.cascadeID()!=-1)
+		return;
 
     // Otherwise setup integrator
     static constexpr double omega = 20;
@@ -550,137 +499,143 @@ void Cascade::AddIntegrator(size_t idx, const Particle &part) {
         double denominator = sqrt(pow(mass_eff, 2) + p.P2()).real();
         return numerator / denominator * p / p.P() + dpot_dp.rvector * p / p.P();
     };
-    integrators[idx] =
+
+	/// Using this instead of integrators.size() in case integrators can be deleted,
+	/// which would cause ID conflicts
+	static int last_id=0;
+	part.cascadeID()=last_id++;
+
+    integrators[part.cascadeID()] =
         SymplecticIntegrator(part.Position(), part.Momentum().Vec3(), m_nucleus->GetPotential(),
                              dHamiltonian_dr, dHamiltonian_dp, omega);
 }
 
-void Cascade::Propagate(size_t idx, Particle *kickNuc) {
+void Cascade::Propagate(Particle& kickNuc) {
     if(m_potential_prop) {
+		int idx=kickNuc.cascadeID();
         integrators[idx].Step<2>(timeStep);
-        double energy = sqrt(pow(kickNuc->Info().Mass(), 2) + integrators[idx].P().P2());
+        double energy = sqrt(pow(kickNuc.Info().Mass(), 2) + integrators[idx].P().P2());
         FourVector mom{integrators[idx].P(), energy};
-        kickNuc->SetMomentum(mom);
-        ThreeVector pos_old = kickNuc->Position();
-        kickNuc->SetPosition(integrators[idx].Q());
-        ThreeVector& pos_new = kickNuc->Position();
-        kickNuc->DistanceTraveled() += (pos_new - pos_old).Magnitude();
+        kickNuc.SetMomentum(mom);
+        ThreeVector pos_old = kickNuc.Position();
+        kickNuc.SetPosition(integrators[idx].Q());
+        ThreeVector& pos_new = kickNuc.Position();
+        kickNuc.DistanceTraveled() += (pos_new - pos_old).Magnitude();
     } else {
-        kickNuc->Propagate(timeStep);
+        kickNuc.Propagate(timeStep);
     }
 }
 
-void Cascade::PropagateSpace(size_t idx, Particle *kickNuc, double step) {
-    double beta = kickNuc->Beta().Magnitude();
+void Cascade::PropagateSpace(Particle& kickNuc, double step) {
+    double beta = kickNuc.Beta().Magnitude();
     timeStep = step / beta;
-    Propagate(idx, kickNuc);
+    Propagate(kickNuc);
 }
 
 // TODO: Switch to using reference_wrapper to reduce copying
 void Cascade::MeanFreePath(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
     m_nucleus = nucleus;
-    vParticles particles = hadrons;
 
-    if(kickedIdxs.size() != 1) {
+	m_propagating=event.PropagatingHadrons();
+    if(m_propagating.size() != 1) {
         throw std::runtime_error("MeanFreePath: only one particle should be kicked.");
     }
-
-    size_t idx = *kickedIdxs.begin();
-    Particle *kickNuc = &particles[idx];
+    Particle& kickNuc_original = m_propagating[0].get();
+	Particle kickNuc=kickNuc_original;
 
     // Initialize symplectic integrator
-    AddIntegrator(idx, particles[idx]);
+    AddIntegrator(kickNuc_original);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                               kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
-        kickNuc->Status() = ParticleStatus::captured;
-        hadrons = particles;
+                               kickNuc.Momentum().P(), kickNuc.Position().P()) < Constant::mN) {
+        kickNuc.Status() = ParticleStatus::captured;
+        kickNuc_original=kickNuc;
         Reset();
         return;
     }
 
-    if((kickNuc->Status() != ParticleStatus::internal_test) &&
-       (kickNuc->Status() != ParticleStatus::external_test)) {
+    if((kickNuc.Status() != ParticleStatus::internal_test) &&
+       (kickNuc.Status() != ParticleStatus::external_test)) {
         throw std::runtime_error("MeanFreePath: kickNuc must have status -3 "
                                  "in order to accumulate DistanceTraveled.");
     }
     for(std::size_t step = 0; step < maxSteps; ++step) {
-        AdaptiveStep(particles, distance);
+        AdaptiveStep(m_propagating, distance);
 
         // if(kickNuc->IsUnstable()) {
         // Check if decay
         // }
 
-        if(kickNuc->InFormationZone()) {
-            Propagate(idx, kickNuc);
-            kickNuc->UpdateFormationZone(timeStep);
+        if(kickNuc.InFormationZone()) {
+            Propagate(kickNuc);
+            kickNuc.UpdateFormationZone(timeStep);
             continue;
         }
 
         // Are we already outside nucleus?
-        if(kickNuc->Position().Magnitude() >= nucleus->Radius() &&
-           kickNuc->Status() == ParticleStatus::external_test) {
-            if(kickNuc->Position().Pz() > nucleus->Radius()) break;
+        if(kickNuc.Position().Magnitude() >= nucleus->Radius() &&
+           kickNuc.Status() == ParticleStatus::external_test) {
+            if(kickNuc.Position().Pz() > nucleus->Radius()) break;
 
-        } else if(kickNuc->Position().Magnitude() >= nucleus->Radius()) {
-            kickNuc->Status() = ParticleStatus::final_state;
+        } else if(kickNuc.Position().Magnitude() >= nucleus->Radius()) {
+            kickNuc.Status() = ParticleStatus::final_state;
             break;
         }
-        AdaptiveStep(particles, distance);
+        AdaptiveStep(m_propagating, distance);
         // Identify nearby particles which might interact
-        auto nearby_particles = AllowedInteractions(particles, idx);
+        InteractionDistances nearby_particles = AllowedInteractions(kickNuc,m_remnant->SubParts());
         if(nearby_particles.size() == 0) continue;
 
         // Did we hit?
-        size_t hitIdx = Interacted(event, idx, nearby_particles);
+        size_t hitIdx = Interacted(kickNuc, nearby_particles);
         if(hitIdx == SIZE_MAX) continue;
 
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
-        FinalizeMomentum(event, particles, idx, hitIdx);
         // Stop as soon as we hit anything
-        if(particles[idx].Status() == ParticleStatus::interacted) break;
+        if(FinalizeMomentum(event, kickNuc_original, hitIdx)) break;
     }
-    hadrons = particles;
+    kickNuc_original=kickNuc;
     Reset();
 }
 
 // TODO: Switch to using reference_wrapper to reduce copying
-void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size_t &maxSteps) {
-    m_nucleus = nucleus;
-    vParticles particles = hadrons;
+void Cascade::MeanFreePath_NuWro(Event &, Nucleus *, const std::size_t &) {
+    throw std::logic_error("Cascade: MFPAlgorithm is currently not working with pions");
+    /*m_nucleus = nucleus;
 
-    if(kickedIdxs.size() != 1) {
+	m_propagating=event.PropagatingHadrons();
+    if(m_propagating.size() != 1) {
         std::runtime_error("MeanFreePath: only one particle should be kicked.");
     }
 
-    size_t idx = *kickedIdxs.begin();
-    Particle *kickNuc = &particles[idx];
+    Particle& kickNuc_original = m_propagating[0].get();
+	Particle kickNuc=kickNuc_original;
 
     // Initialize symplectic integrator
-    AddIntegrator(idx, particles[idx]);
+    AddIntegrator(kickNuc_original);
     if(m_potential_prop && m_nucleus->GetPotential()->Hamiltonian(
-                               kickNuc->Momentum().P(), kickNuc->Position().P()) < Constant::mN) {
-        kickNuc->Status() = ParticleStatus::captured;
-        hadrons = particles;
+                               kickNuc.Momentum().P(), kickNuc.Position().P()) < Constant::mN) {
+        kickNuc.Status() = ParticleStatus::captured;
+        kickNuc_original=kickNuc;
         Reset();
         return;
     }
 
-    if(kickNuc->Status() != ParticleStatus::internal_test) {
+    if(kickNuc.Status() != ParticleStatus::internal_test) {
         std::runtime_error("MeanFreePath: kickNuc must have status -3 "
                            "in order to accumulate DistanceTraveled.");
     }
 
     for(std::size_t step = 0; step < maxSteps; ++step) {
         // Are we already outside nucleus?
-        if(kickNuc->Position().Magnitude() >= nucleus->Radius()) {
-            kickNuc->Status() = ParticleStatus::final_state;
+        if(kickNuc.Position().Magnitude() >= nucleus->Radius()) {
+            kickNuc.Status() = ParticleStatus::final_state;
             break;
         }
         // AdaptiveStep(particles, distance);
         double step_prop = distance;
         // Did we hit?
-        size_t hitIdx = GetInter(particles, *kickNuc, step_prop);
-        PropagateSpace(idx, kickNuc, step_prop);
+        size_t hitIdx = GetInter(particles, kickNuc, step_prop);
+        PropagateSpace(kickNuc, step_prop);
         if(hitIdx == SIZE_MAX) continue;
         // Did we *really* hit? Finalize momentum, check for Pauli blocking.
         FinalizeMomentum(event, particles, idx, hitIdx);
@@ -689,70 +644,118 @@ void Cascade::MeanFreePath_NuWro(Event &event, Nucleus *nucleus, const std::size
     }
 
     hadrons = particles;
-    Reset();
+    Reset();*/
 }
 
 // TODO: Rewrite to have the logic built into the Nucleus class
 void Cascade::Escaped(Event &event) {
-    vParticles& particles = hadrons;
-    const double radius = m_nucleus->Radius();
-    for(std::size_t idx = 0; idx < particles.size(); ++idx) {
-        if(!particles[idx].IsPropagating()) continue;
-        if(particles[idx].Status() == ParticleStatus::external_test) {
-            if(particles[idx].Position().Z() < radius) continue;
-        }
-        if(particles[idx].Position().Magnitude2() <= pow(radius, 2)) continue;
+	// The remnant controls whether any energy needs to be paid (and how much).
+	// If there's no remnant remaining, all escaping particles are free.
+	if(!m_remnant) {
+		for(Particle& part:m_propagating)
+			part.Status()=ParticleStatus::final_state;
+		return;
+	}
+	// Otherwise, proceed with debt calculation; m_remnant is guaranteed not null
+    const double radius2 = pow(m_nucleus->Radius(),2);
 
-        spdlog::debug("Particle: {} escaping", particles[idx]);
+	// Cannot iterate over m_propagating, or even Enhanced-For over Particles()
+	// because this loop may concurrently modify Particles()
+    for(size_t i=0;i<event.Particles().size();i++) {
+		Particle& part=event.Particles()[i];
+		// Restrict iteraction to *effectively* be over m_propagating
+		if(!(part.isInFinalState()&&part.IsPropagating())) continue;
+
+        if(part.Status() == ParticleStatus::external_test) {
+            if(pow(part.Position().Z(),2) < radius2) continue;
+        }
+        if(part.Position().Magnitude2() <= radius2) continue;
+
+        spdlog::debug("Particle Escaping: {}",part);
         // Resonances leave carrying their debt, and are never captured for inability to
         // pay: the remnant tracks nucleons, so absorbing a resonance would corrupt its
         // composition. They settle through their decay products, in Decay or Validate.
-        if(!particles[idx].Info().IsNucleon()) {
-            particles[idx].Status() = ParticleStatus::final_state;
+        if(!part.Info().IsNucleon()) {
+            part.Status() = ParticleStatus::final_state;
             continue;
         }
 
         // A nucleon must repay the nucleus what it took to get free. If it cannot afford
         // the separation energy plus the Fermi kinetic energy it was given, it stays bound.
-        const bool owes = m_removal_debt.count(idx) > 0;
-        const Particle before = particles[idx];
-        if(PayRemovalEnergy(idx)) {
-            particles[idx].Status() = ParticleStatus::final_state;
+        const bool owes = m_removal_debt.count(part.cascadeID()) > 0;
+        Particle after=part;
+        if(PayRemovalEnergy(after)) {
             // Losing the removal energy at the surface is a physical step, so record it as
             // its own vertex. The remnant takes up the energy and momentum the nucleon gave
             // back, which is what makes the vertex balance.
             if(owes) {
-                const FourVector recoil = before.Momentum() - particles[idx].Momentum();
-                vParticles in{before}, out{particles[idx]};
-                if(remnant.ID() != PID::undefined()) {
-                    in.push_back(remnant);
-                    RecoilRemnant(recoil);
-                    out.push_back(remnant);
-                }
-                addInteraction(event,EventVertex::StatusCode::escape,particles[idx].Position(),in,out);
-            }
+				after.Status() = ParticleStatus::final_state;
+				Particle remNew=*m_remnant;
+				remNew.Momentum()+=part.Momentum()-after.Momentum();
+
+				size_t escape_vertex=event.addVertex(EventVertex::StatusCode::escape,part.Position());
+				part.endVertex()=escape_vertex;
+				m_remnant->endVertex()=escape_vertex;
+				m_remnant->SubParts().clear();
+
+				event.addParticle(after,escape_vertex,Particle::OPEN_END);
+				event.addParticle(remNew,escape_vertex,Particle::OPEN_END);
+
+				// Event has been modified
+				UpdateTracked(event);
+            } else
+				part.Status()=ParticleStatus::final_state;
         } else {
             // It cannot pay, so it rejoins the bound pool and owes nothing after all.
-            particles[idx].Status() = ParticleStatus::captured;
-            m_removal_debt.erase(idx);
-            if(remnant.ID() != PID::undefined()) {
-                vParticles in{before, remnant};
-                MoveNucleon(before,false);
-                addInteraction(event,EventVertex::StatusCode::capture,before.Position(),in,{remnant});
-            }
+            m_removal_debt.erase(part.cascadeID());
+            part.Status()=ParticleStatus::captured;
         }
     }
+
+	// Now, any particles labeled "captured" need to be reabsorbed
+	refParticles captured;
+	for(std::reference_wrapper<Particle>& ref:m_propagating)
+		if(ref.get().Status()==ParticleStatus::captured)
+			captured.push_back(ref);
+	if(captured.empty())
+		return;
+
+	// Create interaction and new remnant particle
+	size_t vertex=event.addVertex(EventVertex::StatusCode::capture,m_remnant->Position());
+	vParticles remNew_sub=m_remnant->SubParts();
+	FourVector p_rem=m_remnant->Momentum();
+
+	// Old remnant is now "dead", can free up memory from composite
+	m_remnant->SubParts().clear();
+	m_remnant->endVertex()=vertex;
+
+	// Capture all particles and add them to the new remnant
+	for(Particle& part:captured) {
+		part.Status()=ParticleStatus::captured;
+		part.endVertex()=vertex;
+		remNew_sub.push_back(part);
+		p_rem+=part.Momentum();
+	}
+
+	// Add new remnant to the event
+	event.addParticle(Particle::NuclearRemnant(remNew_sub,m_remnant->Status(),p_rem,m_remnant->Position()),
+			vertex,Particle::OPEN_END);
+
+	// Event has now been changed
+	UpdateTracked(event);
 }
 
 /// Convert a time step in [fm] to [1/MeV].
 /// timeStep = distance / max("betas of all kicked particles") / hbarc
-void Cascade::AdaptiveStep(const vParticles &particles, const double &stepDistance) noexcept {
-    double beta = 0;
-    for(const size_t& idx : kickedIdxs) {
-        if(particles[idx].Beta().Magnitude() > beta) beta = particles[idx].Beta().Magnitude();
+void Cascade::AdaptiveStep(const refParticles& propagating, const double &stepDistance) noexcept {
+    double beta=0.,beta_max=0.;
+    for(const Particle& part:propagating) {
+		beta=part.Beta().Magnitude();
+        if(beta>beta_max)
+			beta_max=beta;
     }
 
-    timeStep = stepDistance / beta;
+    timeStep = stepDistance / beta_max;
 }
 
 /// Determine whether "test_point" is between two parallel planes defined by
@@ -790,26 +793,24 @@ const ThreeVector Cascade::Project(const ThreeVector &position, const ThreeVecto
 ///      x---->  |
 ///      |       |   B
 ///  C   |       |
-const InteractionDistances Cascade::AllowedInteractions(vParticles &particles,
-                                                        const std::size_t &idx) noexcept {
+const InteractionDistances Cascade::AllowedInteractions(Particle& prop,const vParticles& background) noexcept {
     InteractionDistances results;
 
     // Build planes
-    const ThreeVector point1 = particles[idx].Position();
-    Propagate(idx, &particles[idx]);
-    const ThreeVector point2 = particles[idx].Position();
-    ThreeVector normedMomentum = particles[idx].Momentum().Vec3().Unit();
+    const ThreeVector point1 = prop.Position();
+    Propagate(prop);
+    const ThreeVector point2 = prop.Position();
+    ThreeVector normedMomentum = prop.Momentum().Vec3().Unit();
     double distance2 = (point2 - point1).Dot(normedMomentum);
 
     // Build results vector
-    for(std::size_t i = 0; i < particles.size(); ++i) {
+    for(std::size_t i = 0; i < background.size(); ++i) {
         // TODO: Should particles propagating be able to interact with
-        //       other propagating particles?
-        if(particles[i].Status() != ParticleStatus::background) continue;
+        //       other propagating particles? Currently, no.
         // if(i == idx) continue;
         //  if(particles[i].InFormationZone()) continue;
-        if(!BetweenPlanes(particles[i].Position(), point1, normedMomentum, distance2)) continue;
-        ThreeVector projectedPosition = Project(particles[i].Position(), point1, normedMomentum);
+        if(!BetweenPlanes(background[i].Position(), point1, normedMomentum, distance2)) continue;
+        ThreeVector projectedPosition = Project(background[i].Position(), point1, normedMomentum);
         // (Squared) distance in the direction orthogonal to the momentum
         double dist2 = (projectedPosition - point1).Magnitude2();
 
@@ -822,38 +823,39 @@ const InteractionDistances Cascade::AllowedInteractions(vParticles &particles,
     return results;
 }
 
-bool Cascade::HasInteraction(Event& event, size_t kicked, size_t hit) const {
-    if(!hadrons[kicked].IsPropagating() ||
-       hadrons[hit].Status() != ParticleStatus::background || hadrons[kicked].InFormationZone())
+// Appears to be dead code -Hayden
+/*bool Cascade::HasInteraction(Particle& kicked,Particle& hit) const {
+    if(!kicked.IsPropagating() ||
+       hit.Status() != ParticleStatus::background || kicked.InFormationZone())
         return false;
     // Get distance between points
-    const double distance2 = (hadrons[kicked].Position() - hadrons[hit].Position()).Magnitude2();
-    const double xsec = GetXSec(event, kicked, hit);
+    const double distance2 = (kicked.Position() - hit.Position()).Magnitude2();
+    const double xsec = GetXSec(kicked, hit);
     spdlog::trace("dist2[{}, {}] = {}", kicked, hit, distance2);
     const double prob = probability(distance2, xsec / 10);
     if(Random::Instance().Uniform(0.0, 1.0) < prob) {
         spdlog::debug("Accepted interaction with: {}, {} => distance2: {}, xsec: {}, prob: {}",
-                      kicked + 1, hit + 1, distance2, xsec, prob);
+                      kicked, hit, distance2, xsec, prob);
         return true;
     }
     return false;
-}
+}*/
 
-double Cascade::GetXSec(Event &event, size_t idx1, size_t idx2) const {
+double Cascade::GetXSec(Particle& kicked,size_t rem_idx) const {
     // TODO: Clean this up so we don't have to calculate the cross section multiple times
     // TODO: Handle the in-medium effects for different processes
-    double fact = InMediumCorrection(hadrons[idx1], hadrons[idx2]);
-    return m_interactions.TotalCrossSection(event,idx1,idx2) * fact;
+    double fact = InMediumCorrection(kicked,m_remnant->SubParts()[rem_idx]);
+    return m_interactions.TotalCrossSection(kicked,m_remnant,rem_idx,m_nucleus) * fact;
 }
 
 /// Decide whether or not an interaction occured.
 /// The total probability is normalized to the cross section "sigma" when
 /// integrated over the plane.
-std::size_t Cascade::Interacted(Event& event, size_t kicked,
+std::size_t Cascade::Interacted(Particle& kicked,
                                 const InteractionDistances &dists) noexcept {
     for(auto dist : dists) {
         // Cross section in mb
-        const double xsec = GetXSec(event, kicked, dist.first);
+        const double xsec = GetXSec(kicked, dist.first);
         // 1 barn = 100 fm^2, so 1 mb = 0.1 fm^2.
         // Thus: (xsec [mb]) x (0.1 [fm^2]/ 1 [mb]) = 0.1 xsec [fm^2]
         // dist.second is fm^2; factor of 10 converts mb to fm^2
@@ -865,21 +867,21 @@ std::size_t Cascade::Interacted(Event& event, size_t kicked,
     return SIZE_MAX;
 }
 
-void Cascade::FinalizeMomentum(Event &event, vParticles &particles, size_t idx1,
-                               size_t idx2) noexcept {
-    Particle &particle1 = particles[idx1];
-    Particle &particle2 = particles[idx2];
+bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) noexcept {
+	// While building the cascade, particle2 can move between the remnant
+	// and the actual history; using a pointer allows it to be easily located
+	// again after moving it
+	Particle* particle2=&m_remnant->SubParts()[rem_idx];
 
     // NOTE: No need to deal with in-medium effects since they are just an overall scaling
-	event.CascadeHadrons()=hadrons;
-    auto modes = m_interactions.CrossSection(event,idx1,idx2);
-    auto mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
+    InteractionResults modes = m_interactions.CrossSection(particle1,m_remnant,rem_idx,m_nucleus);
+    InteractionResult mode = m_interactions.SelectChannel(modes, Random::Instance().Uniform(0.0, 1.0));
 
-    spdlog::debug("Selected Mode: {}, {} -> {}", particle1.ID(), particle2.ID(),
+    spdlog::debug("Selected Mode: {}, {} -> {}", particle1.ID(), particle2->ID(),
                   fmt::join(mode.particles, ","));
 
     vParticles particles_out =
-        m_interactions.GenerateMomentum(particle1, particle2, mode.particles, Random::Instance());
+        m_interactions.GenerateMomentum(particle1, *particle2, mode.particles, Random::Instance());
 
     spdlog::debug("Outgoing particles:");
     for(const Particle& part : particles_out) spdlog::debug("- {}", part);
@@ -921,97 +923,137 @@ void Cascade::FinalizeMomentum(Event &event, vParticles &particles, size_t idx1,
         }
     }*/
 
+    if(!hit) {
+		// Reject interaction and return if Pauli blocked
+	    for(Particle& part : m_remnant->SubParts()) {
+	        if(part.Status() == ParticleStatus::absorption_partner)
+	            part.Status() = ParticleStatus::background;
+	    }
+		return false;
+	}
+
     // Collect the removal debts this vertex passes on, before any status is rewritten below.
     // A participant already out of the bound pool forwards what it owed; one still in the
     // background opens a new debt for the nucleon the nucleus is about to lose.
     std::vector<RemovalDebt> debts;
-    vParticles consumed;
-    if(hit) {
-        auto forward = [&](std::size_t idx) {
-            if(auto it = m_removal_debt.find(idx); it != m_removal_debt.end()) {
-                debts.push_back(it->second);
-                m_removal_debt.erase(it);
-            }
-        };
-        auto open = [&](const Particle &part) {
-            debts.push_back({part.Momentum().E() - part.Info().Mass(), part.ID() == PID::proton()});
-            consumed.push_back(part);
-        };
-        forward(idx1);
-        forward(idx2);
-        if(particle1.Status() == ParticleStatus::background) open(particle1);
-        if(particle2.Status() == ParticleStatus::background) open(particle2);
-        for(const Particle& part : hadrons) {
-            if(part.Status() == ParticleStatus::absorption_partner) open(part);
+	// "consumed" represents indices within the remnant's sublist,
+	// of particles which need to be freed so they can interact.
+    std::set<size_t> consumed;
+    auto forward = [&](int id) {
+        if(auto it = m_removal_debt.find(id); it != m_removal_debt.end()) {
+            debts.push_back(it->second);
+            m_removal_debt.erase(it);
         }
+    };
+    auto open = [&](size_t idx) {
+		Particle& part=m_remnant->SubParts()[idx];
+        debts.push_back({part.Momentum().E() - part.Info().Mass(), part.ID() == PID::proton()});
+        consumed.insert(idx);
+    };
+    forward(particle1.cascadeID());
+    forward(particle2->cascadeID());
+	// Updating from previous if statements:
+	// particle1 is never background, particle2 is always background
+    open(rem_idx);
+    for(size_t i=0;i<m_remnant->SubParts().size();i++) {
+        if(m_remnant->SubParts()[i].Status() == ParticleStatus::absorption_partner) open(i);
     }
 
-    // Consume any nucleon absorbed alongside particle2, or release it if Pauli blocked. Its
-    // momentum is already folded into particles_out, so leaving it background would count it
-    // both as emitted and as still bound in the nuclear remnant.
-    for(Particle& part : hadrons) {
+    // Nucleons the cascade pulls out of the bound pool leave the remnant here, so the
+    // vertex balances: projectile + remnant_in -> products + remnant_out. Absorption
+    // partners are consumed the same way, which is what makes those vertices conserve.
+    // `consumed` was filled above, before the statuses below were rewritten.
+    //const bool threaded = static_cast<size_t>(m_remnant->ID().NuclearA()) > consumed.size();
+    //if(threaded) {
+
+	FourVector p_rem=m_remnant->Momentum();
+	vParticles remNew_sub;
+	remNew_sub.reserve(m_remnant->SubParts().size()-consumed.size());
+
+	// List of indices within event.Particles().
+	// Must use indices instead of refs in case of vector resizing.
+	std::vector<size_t> freed;
+	freed.reserve(consumed.size());
+
+	// Interaction for separating all consumed nucleons from the remnant
+	size_t vertex_split_rem=event.addVertex(EventVertex::StatusCode::split,m_remnant->Position());
+
+	for(size_t i=0;i<m_remnant->SubParts().size();i++) {
+		auto it=std::find(consumed.begin(),consumed.end(),i);
+		if(it==consumed.end()) {
+			// Particle stays in background => move to new remnant
+			remNew_sub.push_back(m_remnant->SubParts()[i]);
+		} else {
+			// Particle is interactable => move to final state
+			if(event.addParticle(m_remnant->SubParts()[i],vertex_split_rem,Particle::OPEN_END)) {
+				// Reallocation, must find remnant again
+				m_remnant=event.Remnant();
+			}
+			if(i==rem_idx) {
+				// We've moved the particle we wanted to track
+				particle2=&event.Particles().back();
+			}
+			p_rem-=m_remnant->SubParts()[i].Momentum();
+			// Last particle in event is now freed
+			freed.push_back(event.Particles().size()-1);
+		}
+	}
+	m_remnant->endVertex()=vertex_split_rem;
+	// Sublist in previous remnant is now "dead"
+	m_remnant->SubParts().clear();
+	if(!remNew_sub.empty()) {
+		// Create new remnant containing remaining background nucleons
+		event.addParticle(Particle::NuclearRemnant(remNew_sub,m_remnant->Status(),p_rem,m_remnant->Position()),
+			vertex_split_rem,Particle::OPEN_END);
+		// Particle that was just added is the new remnant
+		m_remnant=&event.Particles().back();
+	} else {
+		// Remnant has been fully dissolved
+		m_remnant=nullptr;
+	}
+    //}
+
+	// The actual hit is now treated as a separate interaction -Hayden
+    // TODO: What do we use for the position? (How about average positions?)
+    ThreeVector average_position = (particle1.Position() + particle2->Position()) / 2.0;
+	size_t vertex_hit=event.addVertex(EventVertex::StatusCode::cascade,average_position);
+
+    particle1.Status() = ParticleStatus::interacted;
+    particle1.endVertex() = vertex_hit;
+    particle2->Status() = ParticleStatus::interacted;
+    particle2->endVertex() = vertex_hit;
+    for(const size_t& i:freed) {
+		Particle& part=event.Particles()[i];
         if(part.Status() == ParticleStatus::absorption_partner)
-            part.Status() = hit ? ParticleStatus::interacted : ParticleStatus::background;
+            part.endVertex()=vertex_hit;
     }
 
-    if(hit) {
-        vParticles initial_part, final_part;
+    // Ensure outgoing particles are propagating and add to list of particles in event
+    // and assign formation zone
+    size_t idebt = 0;
+    for(Particle& part : particles_out) {
+        part.Status() = ParticleStatus::propagating;
+        if(part.Info().IsNucleon())
+            part.SetFormationZone(particle1.Momentum(), part.Momentum());
+        event.addParticle(part,vertex_hit,Particle::OPEN_END);
+        // Baryon number is conserved, so there is always a baryon for every debt.
+        if(part.Info().IsBaryon() && idebt < debts.size())
+            m_removal_debt[part.cascadeID()] = debts[idebt++];
 
-        // Nucleons the cascade pulls out of the bound pool leave the remnant here, so the
-        // vertex balances: projectile + remnant_in -> products + remnant_out. Absorption
-        // partners are consumed the same way, which is what makes those vertices conserve.
-        // `consumed` was filled above, before the statuses below were rewritten.
-        const bool threaded = remnant.ID() != PID::undefined() &&
-                              static_cast<size_t>(remnant.ID().NuclearA()) > consumed.size();
-        if(threaded) {
-            initial_part.push_back(remnant);
-            for(const Particle& part : consumed) MoveNucleon(part, true);
-        }
-
-        particle1.Status() = ParticleStatus::interacted;
-        particle2.Status() = ParticleStatus::interacted;
-        initial_part.push_back(particle1);
-        // With no remnant to draw from (cascade-only test modes, or a nucleus down to its
-        // last nucleon) every consumed nucleon is recorded as an incoming line instead, so
-        // the vertex still balances.
-        if(!threaded) {
-            initial_part.push_back(particle2);
-            for(const Particle& part : consumed) {
-                if(part.Status() == ParticleStatus::absorption_partner)
-                    initial_part.push_back(part);
-            }
-        }
-
-        // Ensure outgoing particles are propagating and add to list of particles in event
-        // and assign formation zone
-        size_t idebt = 0;
-        for(Particle& part : particles_out) {
-            part.Status() = ParticleStatus::propagating;
-            if(part.Info().IsNucleon())
-                part.SetFormationZone(particle1.Momentum(), part.Momentum());
-            particles.push_back(part);
-            // Baryon number is conserved, so there is always a baryon for every debt.
-            if(part.Info().IsBaryon() && idebt < debts.size())
-                m_removal_debt[particles.size() - 1] = debts[idebt++];
-            final_part.push_back(particles.back());
-
-            // TODO: Work out the queue to minimize number of calls to AllowedInteractions
-            // Update queue of closest approach times
-            // for(size_t i = 0; i < particles.size(); ++i) {
-            //     if(particles[i].Status() != ParticleStatus::background) continue;
-            //     double closest = ClosestApproach(part, particles[i]);
-            //     spdlog::trace("Closest approach time({}) = {}", i, closest+currentTime);
-            //     if(closest > 0) { m_time_steps.push({closest+currentTime, {particles.size()-1,
-            //     i}}); }
-            // }
-        }
-
-        // Add interaction to the event history
-        // TODO: What do we use for the position? (How about average positions?)
-        if(threaded) final_part.push_back(remnant);
-        ThreeVector average_position = (particle1.Position() + particle2.Position()) / 2.0;
-        addInteraction(event,EventVertex::StatusCode::cascade,average_position,initial_part,final_part);
+        // TODO: Work out the queue to minimize number of calls to AllowedInteractions
+        // Update queue of closest approach times
+        // for(size_t i = 0; i < particles.size(); ++i) {
+        //     if(particles[i].Status() != ParticleStatus::background) continue;
+        //     double closest = ClosestApproach(part, particles[i]);
+        //     spdlog::trace("Closest approach time({}) = {}", i, closest+currentTime);
+        //     if(closest > 0) { m_time_steps.push({closest+currentTime, {particles.size()-1,
+        //     i}}); }
+        // }
     }
+
+	// Event has been modified
+	UpdateTracked(event);
+	return true;
 }
 
 // TODO: Rewrite to have most of the logic built into the Nucleus class?
@@ -1039,8 +1081,7 @@ double Cascade::InMediumCorrection(const Particle &particle1, const Particle &pa
                                                                position3);
 }
 
-bool Cascade::Decay(Event &event, size_t idx) {
-    Particle& part = hadrons[idx];
+bool Cascade::Decay(Event& event,Particle& part) {
     double beta = part.Beta().Magnitude();
     double gamma = 1. / sqrt(1. - beta * beta);
     double lifetime = gamma * Constant::HBARC / part.Info().Width();
@@ -1076,29 +1117,35 @@ bool Cascade::Decay(Event &event, size_t idx) {
 
     for(const Particle& out : particles_out) {
         if(PauliBlocking(out)) return false;
-    }
-
-    hadrons[idx].Status() = ParticleStatus::decayed;
-
-    // Ensure outgoing particles are propagating and add to list of particles in event
-    // and assign formation zone
-    std::vector<Particle> final;
-    for(Particle& out : particles_out) {
         if(std::isnan(out.Momentum()[0])) {
             spdlog::error("Nan momentum in decay");
             spdlog::error("Pin = {}, Pout = [{}, {}]", part, particles_out[0], particles_out[1]);
             throw AchillesCascadeError("Nan momentum in decay");
         }
-        out.Status() = ParticleStatus::propagating;
-        out.SetFormationZone(out.Momentum(), part.Momentum());
-        hadrons.push_back(out);
-        // The baryon inherits whatever the resonance owed; mesons owe nothing.
-        if(out.Info().IsBaryon()) TransferDebt(idx, hadrons.size() - 1);
-        final.push_back(hadrons.back());
     }
 
-    // Add decay to the event history
-    addInteraction(event,EventVertex::StatusCode::decay,part.Position(),{hadrons[idx]},final);
+	// From this point on, assume the decay IS happening
+	// (so editing the event is now allowed)
+	size_t decay_vertex=event.addVertex(EventVertex::StatusCode::decay,part.Position());
+
+    part.Status() = ParticleStatus::decayed;
+	part.endVertex()=decay_vertex;
+
+    // Add decay results to the event as new propagating hadrons
+    std::vector<Particle> final;
+	for(Particle& out : particles_out) {
+		out.Status() = ParticleStatus::propagating;
+		out.SetFormationZone(out.Momentum(), part.Momentum());
+		// The baryon inherits whatever the resonance owed; mesons owe nothing.
+		// Edit by Hayden: This simply means that the integrator/debt ID is
+		// now carried by the decayed baryon.
+		if(out.Info().IsBaryon()) {
+			out.cascadeID()=part.cascadeID();
+		}
+		if(event.addParticle(out,decay_vertex,Particle::OPEN_END)) {
+			UpdateTracked(event);
+		}
+	}
 
     return true;
 }

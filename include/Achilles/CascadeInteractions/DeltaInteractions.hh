@@ -8,6 +8,7 @@
 #include "Achilles/Interactions.hh"
 #include "Achilles/Interpolation.hh"
 #include "Achilles/Units.hh"
+#include "Achilles/Nucleus.hh"
 
 namespace achilles {
 
@@ -35,12 +36,12 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
 
     // These functions are defined in the base class
     std::vector<std::pair<PID, PID>> InitialStates() const override;
-    InteractionResults CrossSection(Event &, size_t, size_t) const override;
+    InteractionResults CrossSection(const Particle&,Particle*,size_t,const Nucleus*) const override;
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,
                                            Random &) const override;
 
-    std::pair<double, double> TestNNElastic(double sqrts) const;
+    //std::pair<double, double> TestNNElastic(double sqrts) const;
     double TestDeltaDSigma(bool iresonance, double sqrts, double mdelta) const;
     double TestDeltaDSigmaDOmegaDM(double cost, double sqrts, double mdelta, PID);
     double TestDeltaSigma(double sqrts) const;
@@ -64,7 +65,7 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
 
     // S-wave absorption cross section
     bool swave_enabled = true;
-    absorption_states AllowedAbsorption(Event &, size_t, size_t) const;
+    absorption_states AllowedAbsorption(const Particle&,const vParticles&,size_t) const;
     struct AbsorptionStates {
         PID absorption_partner;
         std::vector<PID> outgoing;
@@ -72,7 +73,7 @@ class DeltaInteraction : public Interaction, RegistrableInteraction<DeltaInterac
     using AbsorptionModes = std::map<std::pair<PID, PID>, std::vector<AbsorptionStates>>;
     static const AbsorptionModes absorption_modes;
     mutable std::vector<Particle> absorption_partners;
-    std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
+    std::pair<size_t, size_t> FindClosest(const vParticles&,size_t) const;
     std::vector<Particle> HandleAbsorption(const Particle &particle1, const Particle &particle2,
                                            const std::vector<PID> &out_pids, Random &ran) const;
     double exp_sup = 0.;

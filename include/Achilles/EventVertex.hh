@@ -17,6 +17,7 @@ class EventVertex {
         shower = 5,
 		escape = 6,
 		capture = 7,
+		split = 8,
     };
 
     EventVertex(size_t idx,StatusCode status=StatusCode::cascade,ThreeVector position={})
@@ -35,6 +36,7 @@ class EventVertex {
     // Graph accessors
     size_t Index() const { return m_idx; }
     ThreeVector& Position() { return m_position; }
+	const ThreeVector& Position() const { return m_position; }
   private:
     size_t m_idx{};
     StatusCode m_status;
@@ -62,6 +64,8 @@ inline std::string ToString(EventVertex::StatusCode code) {
         return "escape";
     case StatusCode::capture:
         return "capture";
+	case StatusCode::split:
+		return "split";
     }
     return "UNKOWN";
 }

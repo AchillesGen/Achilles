@@ -6,6 +6,7 @@
 
 #include "Achilles/Interactions.hh"
 #include "Achilles/MesonBaryonAmplitudes.hh"
+#include "Achilles/Nucleus.hh"
 
 namespace achilles {
 
@@ -36,7 +37,7 @@ class MesonBaryonInteraction : public Interaction, RegistrableInteraction<MesonB
     std::vector<std::pair<PID, PID>> InitialStates() const override;
 
     // Cross sections and pairs of PIDs for all possible final states
-    InteractionResults CrossSection(Event &, size_t, size_t) const override;
+    InteractionResults CrossSection(const Particle&,Particle*,size_t,const Nucleus*) const override;
 
     std::vector<Particle> GenerateMomentum(const Particle &part1, const Particle &part2,
                                            const std::vector<PID> &out_pids,

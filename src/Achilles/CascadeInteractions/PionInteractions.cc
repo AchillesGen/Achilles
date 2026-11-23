@@ -42,9 +42,10 @@ std::vector<Particle> PionInteraction::GenerateMomentum(const Particle &particle
     return absorption->GenerateMomentum(particle1, particle2, out_pids, random);
 }
 
-InteractionResults PionInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    auto Quasielastic_xsec = hard_scatter->CrossSection(event, part1, part2);
-    auto Absorption_xsec = absorption->CrossSection(event, part1, part2);
+InteractionResults PionInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    InteractionResults Quasielastic_xsec = hard_scatter->CrossSection(kicked,remnant,rem_idx,nuc);
+    InteractionResults Absorption_xsec = absorption->CrossSection(kicked,remnant,rem_idx,nuc);
 
     InteractionResults results = Quasielastic_xsec;
     results.insert(results.begin(), Absorption_xsec.begin(), Absorption_xsec.end());

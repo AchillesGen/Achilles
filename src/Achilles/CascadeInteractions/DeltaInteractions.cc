@@ -78,92 +78,94 @@ std::vector<std::pair<PID, PID>> DeltaInteraction::InitialStates() const {
 }
 
 // TODO: Separate out the resonance initial states from pion initial states
-InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
-    InteractionResults results;
-    double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    double p1CM = particle1.Momentum().Boost(-boostCM).P();
+InteractionResults DeltaInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+	const vParticles& background=remnant->SubParts();
+	const Particle& hit=background[rem_idx];
 
-    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) +
-               event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
-    auto suppression = exp(-exp_sup * rho / Constant::rho0);
+    InteractionResults results;
+    double sqrts = (kicked.Momentum() + hit.Momentum()).M() / 1_GeV;
+    ThreeVector boostCM = (kicked.Momentum() + hit.Momentum()).BoostVector();
+    double p1CM = kicked.Momentum().Boost(-boostCM).P();
+
+    double rho = nuc->ProtonRho(hit.Position().Magnitude()) +
+               nuc->NeutronRho(hit.Position().Magnitude());
+    double suppression = exp(-exp_sup * rho / Constant::rho0);
 
     spdlog::debug("rho = {}", rho);
     spdlog::debug("exponential suppression = {}", suppression);
     // NOTE: Particle 2 is always a nucleon in the cascade algorithm
-    if(particle1.Info().IsResonance()) {
+    if(kicked.Info().IsResonance()) {
         // NDelta -> NN
-        double xsec = suppression * SigmaNDelta2NN(sqrts, p1CM, particle1.ID(), particle2.ID(),
-                                                   particle1.Momentum().M());
+        double xsec = suppression * SigmaNDelta2NN(sqrts, p1CM, kicked.ID(), hit.ID(),
+                                                   kicked.Momentum().M());
 
         spdlog::debug("NDelta -> NN: sigma = {}", xsec);
         // TODO: Clean up this logic
-        if(particle1.ID() == PID::deltapp() && particle2.ID() == PID::neutron()) {
+        if(kicked.ID() == PID::deltapp() && hit.ID() == PID::neutron()) {
             results.push_back({{PID::proton(), PID::proton()}, xsec});
-        } else if(particle1.ID() == PID::deltap() && particle2.ID() == PID::proton()) {
+        } else if(kicked.ID() == PID::deltap() && hit.ID() == PID::proton()) {
             results.push_back({{PID::proton(), PID::proton()}, xsec});
-        } else if(particle1.ID() == PID::deltap() && particle2.ID() == PID::neutron()) {
+        } else if(kicked.ID() == PID::deltap() && hit.ID() == PID::neutron()) {
             results.push_back({{PID::proton(), PID::neutron()}, xsec / 2});
             results.push_back({{PID::neutron(), PID::proton()}, xsec / 2});
-        } else if(particle1.ID() == PID::delta0() && particle2.ID() == PID::proton()) {
+        } else if(kicked.ID() == PID::delta0() && hit.ID() == PID::proton()) {
             results.push_back({{PID::proton(), PID::neutron()}, xsec / 2});
             results.push_back({{PID::neutron(), PID::proton()}, xsec / 2});
-        } else if(particle1.ID() == PID::delta0() && particle2.ID() == PID::neutron()) {
+        } else if(kicked.ID() == PID::delta0() && hit.ID() == PID::neutron()) {
             results.push_back({{PID::neutron(), PID::neutron()}, xsec});
-        } else if(particle1.ID() == PID::deltam() && particle2.ID() == PID::proton()) {
+        } else if(kicked.ID() == PID::deltam() && hit.ID() == PID::proton()) {
             results.push_back({{PID::neutron(), PID::neutron()}, xsec});
         }
 
         // NDelta -> NDelta
         // NOTE: Assume cross section is the same up to isospin
-        xsec = SigmaNDelta2NDelta(particle1, particle2, PID::deltap(), PID::neutron());
-        for(const auto &delta_id : {PID::deltapp(), PID::deltap(), PID::delta0(), PID::deltam()}) {
-            for(const auto &nuc_id : {PID::proton(), PID::neutron()}) {
+        xsec = SigmaNDelta2NDelta(kicked, hit, PID::deltap(), PID::neutron());
+        for(const PID& delta_id : {PID::deltapp(), PID::deltap(), PID::delta0(), PID::deltam()}) {
+            for(const PID& nuc_id : {PID::proton(), PID::neutron()}) {
                 double iso = GetIso(
-                    particle1.Info().IntCharge() / 3, particle2.Info().IntCharge() / 3,
+                    kicked.Info().IntCharge() / 3, hit.Info().IntCharge() / 3,
                     ParticleInfo(nuc_id).IntCharge() / 3, ParticleInfo(delta_id).IntCharge() / 3);
                 if(iso == 0) continue;
-                spdlog::debug("Delta({}), N({}) -> Delta({}), N({}): sigma = {}", particle1.ID(),
-                              particle2.ID(), delta_id, nuc_id, xsec * iso);
+                spdlog::debug("Delta({}), N({}) -> Delta({}), N({}): sigma = {}", kicked.ID(),
+                              hit.ID(), delta_id, nuc_id, xsec * iso);
                 results.push_back({{delta_id, nuc_id}, xsec * iso / 2});
                 results.push_back({{nuc_id, delta_id}, xsec * iso / 2});
             }
         }
-    } else if(particle1.Info().IsPion()) {
+    } else if(kicked.Info().IsPion()) {
         // Delta channels
-        int charge = particle1.Info().IntCharge() + particle2.Info().IntCharge();
+        int charge = kicked.Info().IntCharge() + hit.Info().IntCharge();
         PID delta_id = charge == 6   ? PID::deltapp()
                        : charge == 3 ? PID::deltap()
                        : charge == 0 ? PID::delta0()
                                      : PID::deltam();
-        double xsec = SigmaNPi2Delta(particle1, particle2, delta_id);
+        double xsec = SigmaNPi2Delta(kicked, hit, delta_id);
         results.push_back({{delta_id}, xsec});
         spdlog::debug("NPi -> Delta: sigma = {}", xsec);
 
         // TEST:
-        // double xsec_npi2n = SigmaNPi2N(particle1, particle2, PID::neutron());
+        // double xsec_npi2n = SigmaNPi2N(kicked, hit, PID::neutron());
         // spdlog::debug("NPi -> N*: sigma = {}", xsec_npi2n);
 
         // s-wave absorption
-        if(auto states = AllowedAbsorption(event, part1, part2);
+        if(absorption_states states = AllowedAbsorption(kicked,background,rem_idx);
            states.size() > 0 && swave_enabled) {
             OsetCrossSection Oset;
-            auto oset_abs_xsec = Oset.SChannelAbsCrossSection(event, part1, part2);
+            double oset_abs_xsec = Oset.SChannelAbsCrossSection(kicked,hit,nuc);
             // Nuclear Physics A568 (1994) 855-872 Table 1
-            auto opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
-            auto same_isospin_xsec = (1. / 6.) * oset_abs_xsec;
+            double opposite_isospin_xsec = (5. / 6.) * oset_abs_xsec;
+            double same_isospin_xsec = (1. / 6.) * oset_abs_xsec;
 
-            auto same_isospin_counter = 0;
-            auto opp_isospin_counter = 0;
+            int same_isospin_counter = 0;
+            int opp_isospin_counter = 0;
 
             absorption_partners.clear();
             for(const auto &state : states) {
                 size_t abs_partner_idx = state.first;
                 if(abs_partner_idx == SIZE_MAX) continue;
-                absorption_partners.push_back(event.CascadeHadrons()[abs_partner_idx]);
-                if(event.CascadeHadrons()[abs_partner_idx].ID() == particle2.ID()) {
+                absorption_partners.push_back(background[abs_partner_idx]);
+                if(background[abs_partner_idx].ID() == hit.ID()) {
                     same_isospin_counter += 1;
                 } else {
                     opp_isospin_counter += 1;
@@ -175,16 +177,15 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
                 if(abs_partner_idx == SIZE_MAX) continue;
 
                 double abs_xsec = 0;
-                if(event.CascadeHadrons()[abs_partner_idx].ID() == particle2.ID()) {
+                if(background[abs_partner_idx].ID() == hit.ID()) {
                     abs_xsec = same_isospin_xsec / same_isospin_counter;
                 } else {
                     abs_xsec = opposite_isospin_xsec / opp_isospin_counter;
                 }
                 results.push_back({state.second, abs_xsec});
                 spdlog::debug("Absorption xsec: {} + {} + {} -> {} + {} = {}",
-                              event.CascadeHadrons()[part1].ID(), event.CascadeHadrons()[part2].ID(),
-                              event.CascadeHadrons()[abs_partner_idx].ID(), state.second[0],
-                              state.second[1], abs_xsec);
+                              kicked.ID(), hit.ID(),background[abs_partner_idx].ID(),
+							  state.second[0],state.second[1], abs_xsec);
             }
         }
     } else {
@@ -194,12 +195,12 @@ InteractionResults DeltaInteraction::CrossSection(Event &event, size_t part1, si
     return results;
 }
 
-DeltaInteraction::absorption_states DeltaInteraction::AllowedAbsorption(Event &event, size_t part1,
-                                                                        size_t part2) const {
+DeltaInteraction::absorption_states DeltaInteraction::AllowedAbsorption(
+		const Particle& kicked,const vParticles& background,size_t idx) const {
     std::vector<std::pair<size_t, std::vector<PID>>> states;
     // Closest is a pair denoting the closest proton and neutron
-    auto closest = FindClosest(event, part1, part2);
-    auto modes = absorption_modes.at({event.CascadeHadrons()[part1].ID(), event.CascadeHadrons()[part2].ID()});
+    auto closest = FindClosest(background,idx);
+    auto modes = absorption_modes.at({kicked.ID(), background[idx].ID()});
     for(const auto &abs_mode : modes) {
         if(abs_mode.absorption_partner == PID::proton()) {
             states.push_back({closest.first, abs_mode.outgoing});
@@ -211,23 +212,21 @@ DeltaInteraction::absorption_states DeltaInteraction::AllowedAbsorption(Event &e
     return states;
 }
 
-std::pair<size_t, size_t> DeltaInteraction::FindClosest(Event &event, size_t part1,
-                                                        size_t part2) const {
+std::pair<size_t, size_t> DeltaInteraction::FindClosest(const vParticles& background,size_t idx) const {
     // Particle 2 is the incoming nucleon
-    const auto &particle2 = event.CascadeHadrons()[part2];
+    const Particle& hit=background[idx];
 
     double shortest_p_distance = 10000; // fm^2
     double shortest_n_distance = 10000; // fm^2
     size_t closest_p_idx = SIZE_MAX, closest_n_idx = SIZE_MAX;
 
-    for(std::size_t i = 0; i < event.CascadeHadrons().size(); ++i) {
-        if(i == part1 || i == part2) continue;
-        if(!event.CascadeHadrons()[i].IsBackground()) continue;
-        auto distance = (event.CascadeHadrons()[i].Position() - particle2.Position()).Magnitude2();
-        if(distance < shortest_p_distance && event.CascadeHadrons()[i].ID() == PID::proton()) {
+    for(std::size_t i = 0; i < background.size(); ++i) {
+        if(i == idx) continue;
+        double distance = (background[i].Position() - hit.Position()).Magnitude2();
+        if(distance < shortest_p_distance && background[i].ID() == PID::proton()) {
             shortest_p_distance = distance;
             closest_p_idx = i;
-        } else if(distance < shortest_n_distance && event.CascadeHadrons()[i].ID() == PID::neutron()) {
+        } else if(distance < shortest_n_distance && background[i].ID() == PID::neutron()) {
             shortest_n_distance = distance;
             closest_n_idx = i;
         }
@@ -326,12 +325,12 @@ std::vector<Particle> DeltaInteraction::HandleAbsorption(const Particle &particl
                                                          Random &random) const {
     Particle absorption_partner;
 
-    auto partner_charge =
+    int partner_charge =
         (ParticleInfo(out_pids[0]).IntCharge() + ParticleInfo(out_pids[1]).IntCharge() -
          particle1.Info().IntCharge() - particle2.Info().IntCharge()) /
         3;
 
-    for(const auto &partner : absorption_partners) {
+    for(const Particle& partner : absorption_partners) {
         if(partner.Info().IntCharge() / 3 == partner_charge) {
             absorption_partner = partner;
             break;

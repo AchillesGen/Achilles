@@ -38,12 +38,12 @@ const std::map<std::string, double> JWN = {{"gamma", 52.5 * pow(1_GeV, 0.16)}, /
                                            {"alpha", 0.00369 / 1_MeV},
                                            {"beta", 0.00895741 * pow(1_MeV, -0.8)}};
 
-double Interaction::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
-    auto cross_sections = CrossSection(event, part1, part2);
+double Interaction::TotalCrossSection(const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    InteractionResults cross_sections = CrossSection(kicked,remnant,rem_idx,nuc);
     double total = 0;
-    for(const auto &cross_section : cross_sections) total += cross_section.cross_section;
-    spdlog::debug("Total cross section for particles {} and {}: {} mb", event.CascadeHadrons()[part1].ID(),
-                  event.CascadeHadrons()[part2].ID(), total);
+    for(const InteractionResult& cross_section : cross_sections) total += cross_section.cross_section;
+    spdlog::debug("Total cross section for particles {} and {}: {} mb",kicked.ID(),
+			remnant->SubParts()[rem_idx].ID(),total);
     return total;
 }
 

@@ -31,6 +31,7 @@ class Event;
 class PID;
 
 using vParticles = std::vector<Particle>;
+using refParticles = std::vector<std::reference_wrapper<Particle>>;
 using InteractionDistances = std::vector<std::pair<std::size_t, double>>;
 
 /// The Cascade class performs a cascade of the nucleons inside the nucleus. The nucleons that
@@ -152,10 +153,6 @@ class Cascade {
     /// Reset the cascade internal variables for the next cascade
     void Reset();
 
-    /// Helper function to make a specific nucleon as the kicked nucleon
-    ///@param idx: The index of the particle that has been kicked
-    void SetKicked(const std::size_t &idx) { kickedIdxs.insert(idx); }
-
     /// Simulate the cascade on an event until all particles either escape,
     /// are recaptured, or are in the background.
     ///@param event: The event to run the cascade evolution on
@@ -186,30 +183,33 @@ class Cascade {
   private:
     // Functions
     std::size_t GetInter(vParticles &, const Particle &, double &stepDistance);
-    void AdaptiveStep(const vParticles &, const double &) noexcept;
+    void AdaptiveStep(const refParticles&, const double &) noexcept;
     bool BetweenPlanes(const ThreeVector &, const ThreeVector &, const ThreeVector &,
                        double) const noexcept;
     const ThreeVector Project(const ThreeVector &, const ThreeVector &,
                               const ThreeVector &) const noexcept;
-    const InteractionDistances AllowedInteractions(vParticles &, const std::size_t &) noexcept;
-    double GetXSec(Event&, size_t, size_t) const;
-    std::size_t Interacted(Event&, size_t, const InteractionDistances &) noexcept;
+    const InteractionDistances AllowedInteractions(Particle&,const vParticles&) noexcept;
+    double GetXSec(Particle&,size_t) const;
+    std::size_t Interacted(Particle&, const InteractionDistances &) noexcept;
     void Escaped(Event &);
-    void FinalizeMomentum(Event &, vParticles &, size_t, size_t) noexcept;
+	/// Returns true if the hit took place, false otherwise
+    bool FinalizeMomentum(Event&,Particle&,size_t) noexcept;
     bool PauliBlocking(const Particle &) const noexcept;
     //bool Absorption(Event &, Particle &, Particle &) noexcept;
-    void AddIntegrator(size_t, const Particle &);
-    void Propagate(size_t, Particle *);
-    void PropagateSpace(size_t, Particle *, double);
-    std::set<size_t> InitializeIntegrator();
-    void UpdateKicked(vParticles &, std::set<size_t> &);
+    void AddIntegrator(Particle&);
+    void Propagate(Particle&);
+    void PropagateSpace(Particle&, double);
+    void InitializeIntegrator();
+    void UpdateKicked();
+	/// Updates m_propagating and m_remnant to match the current state of the given event
+	void UpdateTracked(Event&);
     void Validate(Event &);
-    size_t BaseAlgorithm(size_t, Event &);
-    size_t MFPAlgorithm(size_t, Event &);
+    size_t BaseAlgorithm(Particle&,vParticles&);
+    size_t MFPAlgorithm(Particle&,vParticles&);
     double InMediumCorrection(const Particle &, const Particle &) const;
     void PropagateAll(vParticles &, double) const;
-    bool HasInteraction(Event&, size_t, size_t) const;
-    bool Decay(Event &, size_t);
+    //bool HasInteraction(Particle&,Particle&) const;
+    bool Decay(Event&,Particle&);
 
     /// Removal energy a propagating baryon owes the nucleus if it leaves. Opened when the
     /// cascade takes a nucleon out of the background pool, inherited through interactions
@@ -220,30 +220,16 @@ class Cascade {
     };
     /// Keyed by index into Event::Hadrons(); absent means nothing is owed. Indices are
     /// stable because Hadrons() is only ever appended to.
-    std::map<std::size_t, RemovalDebt> m_removal_debt;
-
-    /// Move `nucleon` to the free state from the remnant, keeping four-momentum and
-    /// baryon number balanced. Returns false if the event has no remnant to thread (cascade-only
-    /// test modes), in which case the caller records the vertex the old way.
-    bool MoveNucleon(const Particle& nucleon,bool remove);
-
-	/// Creates a new vertex and updates it with the given incoming and outgoing particles.
-	/// Each particle in the incoming list must match an existing final-state particle in the event;
-	/// if so, those particles in the event are updated to end on the new vertex, and otherwise
-	/// an error is thrown. The outgoing particles are added to the event as new particles.
-	void addInteraction(Event&,EventVertex::StatusCode,const ThreeVector&,const vParticles&,const vParticles&);
-
-    /// Transfer four-momentum to the remnant without changing its composition.
-    void RecoilRemnant(const FourVector &);
+    std::map<int,RemovalDebt> m_removal_debt;
 
     /// Move any debt on `from` to `to`, leaving `from` clear.
-    void TransferDebt(std::size_t from, std::size_t to);
+    void TransferDebt(int,int);
     /// Subtract the removal energy owed by the particle at `idx`, rescaling it on shell.
     /// Returns false, leaving the particle untouched, if it cannot pay.
     /// The debit is the separation energy plus the Fermi kinetic energy, plus the change in
     /// the remnant's recoil kinetic energy since the last settlement: S is defined for a
     /// residue at rest, so a residue left moving costs that much more to leave behind.
-    bool PayRemovalEnergy(std::size_t idx);
+    bool PayRemovalEnergy(Particle&);
 
     /// Lab kinetic energy a remnant of invariant mass `mass` has at momentum `mom`.
     static double RecoilKinetic(double mass, const ThreeVector &mom) {
@@ -262,21 +248,24 @@ class Cascade {
     /// pool and the sum misses by the second difference of the mass surface (1-3 MeV).
     int m_paid_Z{}, m_paid_A{};
 
-	vParticles hadrons;
-	Particle remnant;
-
     // Variables
-    std::set<std::size_t> kickedIdxs;
     double distance{}, timeStep{}, currentTime{};
     InteractionHandler m_interactions{};
     DecayHandler m_decays;
     std::function<double(double, double)> probability;
-    std::function<size_t(Cascade *, size_t, Event &)> algorithm;
+    std::function<size_t(Cascade*, Particle&, vParticles&)> algorithm;
     Nucleus *m_nucleus;
     InMedium m_medium;
     bool m_potential_prop;
-    std::map<size_t, SymplecticIntegrator> integrators;
+    std::map<int, SymplecticIntegrator> integrators;
     std::string m_probability_name;
+
+	/// References to all propagating hadrons in the event
+	refParticles m_propagating;
+	/// Points to the current final-state remnant particle within the event,
+	/// or nullptr if all hadrons have been freed.
+	/// In general, the cascade no longer needs to run at all if this is null.
+	Particle* m_remnant;
 
     struct queue_entry {
         double time;

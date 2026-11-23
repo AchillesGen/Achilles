@@ -4,6 +4,7 @@
 #pragma once
 
 #include "Achilles/Particle.hh"
+#include "Achilles/Nucleus.hh"
 #include <cmath>
 #include <map>
 
@@ -15,10 +16,9 @@ class OsetCrossSection {
   public:
     OsetCrossSection();
 
-    double AbsCrossSection(Event &event, size_t part1, size_t part2) const;
-    double SChannelAbsCrossSection(Event &event, size_t part1, size_t part2) const;
-    std::map<std::pair<PID, PID>, double> QECrossSection(Event &event, size_t part1,
-                                                         size_t part2) const;
+    double AbsCrossSection(const Particle&,const Particle&,const Nucleus*) const;
+    double SChannelAbsCrossSection(const Particle&,const Particle&,const Nucleus*) const;
+    std::map<std::pair<PID, PID>, double> QECrossSection(const Particle&,const Particle&,const Nucleus*) const;
 
   private:
     double DensityFraction(double density) const { return density / fNormalDensity; }

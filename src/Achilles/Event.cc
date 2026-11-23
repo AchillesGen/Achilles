@@ -76,10 +76,23 @@ void Event::Finalize() {
 }
 
 Particle* Event::Remnant() {
-	for(Particle& part:hist_particles)
-		if(part.isInFinalState()&&part.ID().IsNucleus())
-			return &part;
+	// Iterate backwards; in general, remnant is
+	// likely to be near the end of the list
+	Particle* ptr;
+	for(size_t i=hist_particles.size()-1;;i--) {
+		ptr=&hist_particles[i];
+		if(ptr->isInFinalState()&&ptr->ID().IsNucleus())
+			return ptr;
+		if(i==0) break;
+	}
 	return nullptr;
+}
+
+Particle& Event::fromCascadeID(int id) {
+	for(Particle& part:hist_particles)
+		if(part.isInFinalState()&&part.cascadeID()==id)
+			return part;
+	throw std::runtime_error("No particle found with cascade-id "+id);
 }
 
 void Event::setProcessInfo(const ProcessInfo& _info) {
@@ -211,14 +224,13 @@ size_t Event::addVertex(EventVertex::StatusCode status,const ThreeVector& positi
     vertices.push_back(std::make_unique<EventVertex>(idx,status,position));
 	return idx;
 }
- 
-void Event::addParticle(const Particle& part,size_t start_vertex,size_t end_vertex) {
+
+bool Event::addParticle(const Particle& part,size_t start_vertex,size_t end_vertex) {
+	size_t cap=hist_particles.capacity();
 	hist_particles.push_back(part);
 	hist_particles.back().startVertex()=start_vertex;
 	hist_particles.back().endVertex()=end_vertex;
-}
-void Event::addParticle(const Particle& part,EventVertex* start,EventVertex* end) {
-	addParticle(part,start?start->Index():Particle::OPEN_END,end?end->Index():Particle::OPEN_END);
+	return cap!=hist_particles.capacity();
 }
 
 std::vector<size_t> Event::ChildVertices(size_t vertexIdx) const {
@@ -279,7 +291,7 @@ achilles::crefParticles Event::allFinalStateParticles() const {
 
 achilles::refParticles Event::PropagatingHadrons() {
 	static constexpr auto pred=[](const Particle& part) {
-		return part.isInFinalState()&&part.Status()==ParticleStatus::propagating;
+		return part.isInFinalState()&&part.IsPropagating();
 	};
 	return FilterParticles(hist_particles,pred);
 }
@@ -409,6 +421,7 @@ achilles::crefParticles Event::spectators() const {
 
 achilles::vParticles Event::MakeCopies(const refParticles& refs) {
 	vParticles result;
+	result.reserve(refs.size());
 	for(const Particle& p:refs)
 		result.push_back(p);
 	return result;

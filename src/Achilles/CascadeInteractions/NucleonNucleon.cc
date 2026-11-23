@@ -53,27 +53,27 @@ NucleonNucleon::AllowedResonanceStates(const Particle &particle1, const Particle
     return allowed_states;
 }
 
-InteractionResults NucleonNucleon::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
+InteractionResults NucleonNucleon::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
     InteractionResults results;
-    double sqrts = (particle1.Momentum() + particle2.Momentum()).M() / 1_GeV;
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    double p1CM = particle1.Momentum().Boost(-boostCM).P();
+    double sqrts = (kicked.Momentum() + hit.Momentum()).M() / 1_GeV;
+    ThreeVector boostCM = (kicked.Momentum() + hit.Momentum()).BoostVector();
+    double p1CM = kicked.Momentum().Boost(-boostCM).P();
 
     // Elastic component
-    double elastic_xsec = NNElastic(sqrts, particle1.ID(), particle2.ID());
+    double elastic_xsec = NNElastic(sqrts, kicked.ID(), hit.ID());
     spdlog::debug("NN -> NN: sigma = {}", elastic_xsec);
-    results.push_back({{particle1.ID(), particle2.ID()}, elastic_xsec / 2});
-    results.push_back({{particle2.ID(), particle1.ID()}, elastic_xsec / 2});
+    results.push_back({{kicked.ID(), hit.ID()}, elastic_xsec / 2});
+    results.push_back({{hit.ID(), kicked.ID()}, elastic_xsec / 2});
 
     // TODO: Extend to other resonances
     // Delta component
     // Compute density of nucleons
-    auto rho = event.CurrentNucleus()->ProtonRho(particle2.Position().Magnitude()) +
-               event.CurrentNucleus()->NeutronRho(particle2.Position().Magnitude());
-    auto suppression = exp(-exp_sup * rho / Constant::rho0);
-    auto allowed_resonances = AllowedResonanceStates(particle1, particle2);
+    double rho = nuc->ProtonRho(hit.Position().Magnitude()) +
+               nuc->NeutronRho(hit.Position().Magnitude());
+    double suppression = exp(-exp_sup * rho / Constant::rho0);
+    auto allowed_resonances = AllowedResonanceStates(kicked, hit);
     for(const auto &[res_id, nucleon_id] : allowed_resonances) {
         double res_xsec = suppression * SigmaNN2NDeltaInterp(sqrts, p1CM, res_id);
         spdlog::debug("NN -> NDelta({}): sigma = {}", res_id, res_xsec);

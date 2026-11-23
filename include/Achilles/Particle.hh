@@ -108,7 +108,7 @@ class Particle {
     Particle(const Particle &other)
         : info{other.info}, momentum{other.momentum}, position{other.position},
           status{other.status}, sub_parts{other.sub_parts}, mothers{other.mothers}, formationZone{other.formationZone},
-		  start_vertex{other.start_vertex}, end_vertex{other.end_vertex} {}
+		  start_vertex{other.start_vertex}, end_vertex{other.end_vertex}, cascade_id{other.cascade_id} {}
 
     Particle(Particle &&) = default;
     Particle &operator=(const Particle &) = default;
@@ -204,13 +204,17 @@ class Particle {
 	size_t& endVertex() { return end_vertex; }
 	const size_t& endVertex() const { return end_vertex; }
 
+	/// SymplecticIntegrator within the cascade
+	int& cascadeID() { return cascade_id; }
+	const int& cascadeID() const { return cascade_id; }
+
 	/// The list of subparticles contained by this (composite) particle
 	vParticles& SubParts() { return sub_parts; }
 	const vParticles& SubParts() const { return sub_parts; }
 
     /// Return a vector of the mother particle indices
     ///@return std::vector<Particle>: A vector of Particles referring to the mothers
-    const std::vector<Particle> &Mothers() const noexcept { return mothers; }
+    const vParticles& Mothers() const noexcept { return mothers; }
 
     /// Return the current time remaining in the formation zone
     ///@return double: Time left in formation zone
@@ -376,7 +380,10 @@ class Particle {
     vParticles mothers;
     double formationZone;
     double distanceTraveled = 0.0;
+	/// IDs of the vertices within the event where the particle starts and ends
 	size_t start_vertex=OPEN_END, end_vertex=OPEN_END;
+	/// ID of the SymplecticIntegrator corresponding to this particle in the cascade
+	int cascade_id=-1;
 };
 
 /// Find the time to closest approach between two particles

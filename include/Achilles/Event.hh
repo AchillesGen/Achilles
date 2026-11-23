@@ -43,9 +43,8 @@ class Event {
 	/// Returns the particle representing the remnant that is currently in
 	/// the event's final state (no end vertex), or nullptr if none exists.
 	Particle* Remnant();
-	/// Returns a pointer to the particle matching the argument
-	/// within the event's final state, or nullptr if none exists.
-	Particle* findFinalStateParticle(const Particle&);
+
+	Particle& fromCascadeID(int);
 
     MOCK const std::shared_ptr<Nucleus> &CurrentNucleus() const { return m_nuc; }
     MOCK std::shared_ptr<Nucleus> &CurrentNucleus() { return m_nuc; }
@@ -88,11 +87,10 @@ class Event {
 
 	/// Returns the new index of the created vertex
 	size_t addVertex(EventVertex::StatusCode,const ThreeVector& = {});
-	void addParticle(const Particle&,size_t,size_t);
-	void addParticle(Particle&& part,size_t start_vertex,size_t end_vertex) {
-		addParticle(part,start_vertex,end_vertex);
-	}
-	void addParticle(const Particle&,EventVertex*,EventVertex*);
+	/// Adds a new particle with the specified start and end vertices.
+	/// The boolean return value is simply a flag informing the caller of whether the
+	/// event's Particles() vector was reallocated as a result; returns true if so.
+	bool addParticle(const Particle&,size_t,size_t);
 
 	EventVertex* vertex(size_t) const;
 	size_t nVertices() const { return vertices.size(); }
@@ -111,16 +109,8 @@ class Event {
 	refParticles allFinalStateParticles();
 	crefParticles allFinalStateParticles() const;
 
-	/// Collects all current final-state hadrons into a list.
-	/// Particles in this list are copies of the ones in the history.
-	vParticles InteractableHadrons();
+	/// All hadrons in the final state with the "propagating" status
 	refParticles PropagatingHadrons();
-
-	/// A separate "slot" that is periodically updated to
-	/// preserve compatibility w/ the various CrossSection classes.
-	/// This is (hopefully) a temporary solution, and this field
-	/// should not be treated as up-to-date in general.
-	vParticles& CascadeHadrons();
 
 	refParticles particlesIn(size_t);
 	crefParticles particlesIn(size_t) const;

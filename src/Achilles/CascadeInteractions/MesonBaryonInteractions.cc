@@ -9,18 +9,17 @@
 
 using namespace achilles;
 
-InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t part1,
-                                                        size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
+InteractionResults MesonBaryonInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus*) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    int pidm = particle1.ID();
-    int pidb = particle2.ID(); // Usually the case
+    int pidm = kicked.ID();
+    int pidb = hit.ID(); // Usually the case
 
-    if(particle1.Info().IntSpin() % 2 == 1) {
+    if(kicked.Info().IntSpin() % 2 == 1) {
         // In this case what we thought was a meson has half-integer spin
-        pidb = particle2.ID();
-        pidm = particle1.ID();
+        pidb = hit.ID();
+        pidm = kicked.ID();
     }
 
     // Could encapsulate all the following in one function, but here we make use of achilles
@@ -31,7 +30,7 @@ InteractionResults MesonBaryonInteraction::CrossSection(Event &event, size_t par
     // return empty interaction list, no initial channel matches
     if(ichan == std::numeric_limits<size_t>::max()) { return results; }
 
-    double W = (particle1.Momentum() + particle2.Momentum()).M();
+    double W = (kicked.Momentum() + hit.Momentum()).M();
 
     auto CS_fchan = m_amps.GetAllCSW(ichan, W);
 

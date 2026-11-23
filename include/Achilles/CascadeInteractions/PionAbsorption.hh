@@ -13,18 +13,20 @@
 
 namespace achilles {
 
+using refParticles = std::vector<std::reference_wrapper<Particle>>;
+
 class PionAbsorption : public Interaction {
   public:
     /// Initialize PionAbsorption Helper class
     PionAbsorption() = default;
     PionAbsorption(const YAML::Node &);
 
-    InteractionResults CrossSection(Event &, size_t, size_t) const override;
+    InteractionResults CrossSection(const Particle&,Particle*,size_t,const Nucleus*) const override;
 
     std::vector<std::pair<PID, PID>> InitialStates() const override;
 
   protected:
-    virtual bool AllowedAbsorption(Event &, size_t, size_t) const = 0;
+    virtual bool AllowedAbsorption(const vParticles&,const Particle&,size_t) const = 0;
 
     OsetCrossSection Oset; // Contains Oset absorption cross sections
 
@@ -39,7 +41,7 @@ class PionAbsorption : public Interaction {
     // Refers into Event::Hadrons() so GenerateMomentum can flag the partner it consumes;
     // only valid between the CrossSection call that fills it and the following
     // GenerateMomentum, as Event::Hadrons() is not resized in between.
-    mutable std::vector<std::reference_wrapper<Particle>> absorption_partners;
+    mutable refParticles absorption_partners;
     mutable std::vector<std::pair<size_t, std::vector<PID>>> m_states;
 };
 
@@ -71,8 +73,8 @@ class PionAbsorptionOneStep : public PionAbsorption, RegistrableInteraction<Pion
                                            Random &) const override;
 
   private:
-    std::pair<size_t, size_t> FindClosest(Event &, size_t, size_t) const;
-    bool AllowedAbsorption(Event &, size_t, size_t) const override;
+    std::pair<size_t, size_t> FindClosest(const vParticles&,size_t) const;
+    bool AllowedAbsorption(const vParticles&,const Particle&,size_t) const override;
 };
 
 class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<PionAbsorptionTwoStep> {
@@ -103,8 +105,8 @@ class PionAbsorptionTwoStep : public PionAbsorption, RegistrableInteraction<Pion
                                            Random &) const override;
 
   private:
-    bool CheckHistory(Event &) const;
-    bool AllowedAbsorption(Event &, size_t, size_t) const override;
+    //bool CheckHistory(Event &) const;
+    bool AllowedAbsorption(const vParticles&,const Particle&,size_t) const override;
 };
 
 } // namespace achilles

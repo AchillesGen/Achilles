@@ -14,33 +14,32 @@ using achilles::InteractionHandler;
 using achilles::InteractionResult;
 using achilles::Particle;
 
-double InteractionHandler::TotalCrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &p1 = event.CascadeHadrons()[part1];
-    const auto &p2 = event.CascadeHadrons()[part2];
+double InteractionHandler::TotalCrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    auto key = std::make_pair(p1.ID(), p2.ID());
+    auto key = std::make_pair(kicked.ID(),hit.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
         auto msg =
-            fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
+            fmt::format("Cross section not registered for particles: [{}, {}]", kicked.ID(), hit.ID());
         throw std::runtime_error(msg);
     }
-    return m_interactions[it->second]->TotalCrossSection(event, part1, part2);
+    return m_interactions[it->second]->TotalCrossSection(kicked,remnant,rem_idx,nuc);
 }
 
-std::vector<InteractionResult> InteractionHandler::CrossSection(Event &event, size_t part1,
-                                                                size_t part2) const {
-    const auto &p1 = event.CascadeHadrons()[part1];
-    const auto &p2 = event.CascadeHadrons()[part2];
+std::vector<InteractionResult> InteractionHandler::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus* nuc) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    auto key = std::make_pair(p1.ID(), p2.ID());
+    auto key = std::make_pair(kicked.ID(), hit.ID());
     auto it = m_interaction_indices.find(key);
     if(it == m_interaction_indices.end()) {
         auto msg =
-            fmt::format("Cross section not registered for particles: [{}, {}]", p1.ID(), p2.ID());
+            fmt::format("Cross section not registered for particles: [{}, {}]", kicked.ID(), hit.ID());
         throw std::runtime_error(msg);
     }
-    return m_interactions[it->second]->CrossSection(event, part1, part2);
+    return m_interactions[it->second]->CrossSection(kicked,remnant,rem_idx,nuc);
 }
 
 std::vector<Particle> InteractionHandler::GenerateMomentum(const Particle &p1, const Particle &p2,

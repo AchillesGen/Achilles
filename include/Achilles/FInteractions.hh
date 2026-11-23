@@ -6,6 +6,7 @@
 
 #include "Achilles/Interactions.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Nucleus.hh"
 
 extern "C" {
 using namespace achilles;
@@ -36,16 +37,18 @@ class FortranInteraction : public Interaction, RegistrableInteraction<FortranInt
     static std::string Name() { return "FortranInteraction"; }
     std::string GetName() const override { return FortranInteraction::GetName(); }
     static bool IsRegistered() noexcept { return registered; }
-    InteractionResults CrossSection(const Particle &part1, const Particle &part2) const override {
-        return {{{part1.ID(), part2.ID()}, CrossSectionFortran(&part1, &part2)}};
+    InteractionResults CrossSection(const Particle& kicked,Particle* remnant,
+			size_t rem_idx,const Nucleus*) const override {
+		const Particle& hit=remnant->SubParts()[rem_idx];
+        return {{{kicked.ID(), hit.ID()}, CrossSectionFortran(&kicked, &hit)}};
     }
     std::vector<std::pair<PID, PID>> InitialStates() const override {
         return {{2112, 2112}, {2112, 2212}, {2212, 2212}};
     }
-    std::vector<Particle> GenerateMomentum(const Particle &, const Particle &,
+    vParticles GenerateMomentum(const Particle &, const Particle &,
                                            const std::vector<PID> &,
-                                           const std::vector<double> &) const override {
-        std::vector<Particle> particles;
+                                           Random&) const override {
+        vParticles particles;
         return particles;
     }
     ThreeVector MakeMomentum(bool samePID, const double &pcm,

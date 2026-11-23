@@ -111,30 +111,30 @@ void GeantInteraction::LoadData(bool samePID, const HighFive::Group &group) {
     }
 }
 
-InteractionResults GeantInteraction::CrossSection(Event &event, size_t part1, size_t part2) const {
-    const auto &particle1 = event.CascadeHadrons()[part1];
-    const auto &particle2 = event.CascadeHadrons()[part2];
+InteractionResults GeantInteraction::CrossSection(
+		const Particle& kicked,Particle* remnant,size_t rem_idx,const Nucleus*) const {
+    const Particle& hit=remnant->SubParts()[rem_idx];
 
-    bool samePID = particle1.ID() == particle2.ID();
-    ThreeVector boostCM = (particle1.Momentum() + particle2.Momentum()).BoostVector();
-    FourVector p1Lab = particle1.Momentum(); //, p2Lab = particle2.Momentum();
+    bool samePID = kicked.ID() == hit.ID();
+    ThreeVector boostCM = (kicked.Momentum() + hit.Momentum()).BoostVector();
+    FourVector p1Lab = kicked.Momentum(); //, p2Lab = hit.Momentum();
     FourVector p1CM = p1Lab.Boost(-boostCM);
     // Generate outgoing momentum
     const double pcm = p1CM.Vec3().Magnitude();
 
     try {
         if(samePID) {
-            return {{{particle1.ID(), particle2.ID()}, m_crossSectionPP(pcm / 1_GeV)}};
+            return {{{kicked.ID(), hit.ID()}, m_crossSectionPP(pcm / 1_GeV)}};
         } else {
-            return {{{particle1.ID(), particle2.ID()}, m_crossSectionNP(pcm / 1_GeV)}};
+            return {{{kicked.ID(), hit.ID()}, m_crossSectionNP(pcm / 1_GeV)}};
         }
     } catch(std::domain_error &e) {
         spdlog::trace("Using Nasa Interaction");
         // double s = (p1Lab+p2Lab).M2();
-        double s = (particle1.Momentum() + particle2.Momentum()).M2();
-        double smin = pow(particle1.Mass(), 2) + pow(particle2.Mass(), 2);
+        double s = (kicked.Momentum() + hit.Momentum()).M2();
+        double smin = pow(kicked.Mass(), 2) + pow(hit.Mass(), 2);
         double plab = sqrt(pow(s, 2) / smin - s);
-        return {{{particle1.ID(), particle2.ID()}, Interaction::CrossSectionLab(samePID, plab)}};
+        return {{{kicked.ID(), hit.ID()}, Interaction::CrossSectionLab(samePID, plab)}};
     }
 }
 
