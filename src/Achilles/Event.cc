@@ -130,85 +130,9 @@ void Event::Display() const {
     spdlog::trace("Weight: {}", Weight());
 }
 
-achilles::refParticles Event::getAllOfType(PID pid,ParticleStatus status) {
-    if(status == ParticleStatus::any) {
-		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(hist_particles,func);
-	}
-	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(hist_particles,func);
-}
-achilles::crefParticles Event::getAllOfType(PID pid,ParticleStatus status) const {
-    if(status == ParticleStatus::any) {
-		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(hist_particles,func);
-	}
-	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(hist_particles,func);
-}
-achilles::refParticles Event::getAllOfType(refParticles& list,PID pid,ParticleStatus status) {
-    if(status == ParticleStatus::any) {
-		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(list,func);
-	}
-	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(list,func);
-}
-achilles::crefParticles Event::getAllOfType(const crefParticles& list,PID pid,ParticleStatus status) const {
-    if(status == ParticleStatus::any) {
-		auto func = [pid](const Particle& p) { return p.ID()==pid; };
-		return FilterParticles(list,func);
-	}
-	auto func = [pid,status](const Particle& p) { return p.ID()==pid&&p.Status()==status; };
-	return FilterParticles(list,func);
-}
-
 void Event::Rotate(const std::array<double, 9> &rot_mat) {
     for(Particle& particle:hist_particles) { particle.Rotate(rot_mat); }
 }
-
-/*void Event::assignParticleDetails(vParticles& particleSource,PID pid) {
-	if(particleSource.empty())
-		return;
-	refParticles sources=getAllOfType(particleSource,pid);
-	if(sources.empty())
-		return;
-	refParticles candidates=getAllOfType(p_backend,pid,ParticleStatus::background);
-	std::vector<size_t> targets=Random::Instance().SampleIndices(candidates.size(),sources.size());
-	for(size_t i=0;i<sources.size();i++) {
-		// Target gets Status and Momentum of mapped initial state
-		candidates[targets[i]].get().Status()=sources[i].get().Status();
-		candidates[targets[i]].get().Momentum()=sources[i].get().Momentum();
-		// Initial state gets Position of target, for finalstate calc later
-		sources[i].get().Position()=candidates[targets[i]].get().Position();
-	}
-}
-
-void Event::SetupHadrons() {
-	// Coherent Scattering case
-	if(ParticleInfo(m_processInfo.m_hadronic.first[0]).IsNucleus())
-		return;
-
-	assignParticleDetails(hadronsIn,PID::proton());
-	assignParticleDetails(hadronsIn,PID::neutron());
-	assignParticleDetails(spectators,PID::proton());
-	assignParticleDetails(spectators,PID::neutron());
-
-    // Initialize final state hadrons
-    // TODO: Handle propagating deltas
-    // TODO: Handle selecting position for things like MEC+pion production
-    size_t cur_idx = 0;
-    ThreeVector position;
-    for(size_t i = 0; i < hadronsOut.size(); ++i) {
-        if(ParticleInfo(m_processInfo->m_hadronic.second[i]).IsBaryon())
-            position = hadronsIn[cur_idx++].Position();
-        Particle& part=hadronsOut[i];
-        part.Status() = ParticleStatus::propagating;
-        part.Position() = position;
-		nucleus_hadrons.push_back(part);
-    }
-	hadrons_setup=true;
-}*/
 
 size_t Event::addVertex(EventVertex::StatusCode status,const ThreeVector& position) {
 	size_t idx=vertices.size();
@@ -298,7 +222,7 @@ achilles::refParticles Event::PropagatingHadrons() {
 	static constexpr auto pred=[](const Particle& part) {
 		return part.isInFinalState()&&part.IsPropagating();
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 
 achilles::refParticles Event::particlesIn(size_t vertex) {
@@ -346,7 +270,7 @@ achilles::refParticles Event::hadronsIn(size_t vertex) {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::refParticles Event::leptonsOut(size_t vertex) {
 	auto pred=[*this,vertex](const Particle& p) {
@@ -357,7 +281,7 @@ achilles::refParticles Event::leptonsOut(size_t vertex) {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::refParticles Event::hadronsOut(size_t vertex) {
 	auto pred=[*this,vertex](const Particle& p) {
@@ -368,13 +292,13 @@ achilles::refParticles Event::hadronsOut(size_t vertex) {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::refParticles Event::spectators() {
 	auto pred=[*this](const Particle& p) {
 		return p.Status()==ParticleStatus::spectator;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 
 const Particle& Event::leptonIn(size_t vertex) const {
@@ -393,7 +317,7 @@ achilles::crefParticles Event::hadronsIn(size_t vertex) const {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::crefParticles Event::leptonsOut(size_t vertex) const {
 	auto pred=[*this,vertex](const Particle& p) {
@@ -404,7 +328,7 @@ achilles::crefParticles Event::leptonsOut(size_t vertex) const {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::crefParticles Event::hadronsOut(size_t vertex) const {
 	auto pred=[*this,vertex](const Particle& p) {
@@ -415,13 +339,13 @@ achilles::crefParticles Event::hadronsOut(size_t vertex) const {
 				return true;
 		return false;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 achilles::crefParticles Event::spectators() const {
 	auto pred=[*this](const Particle& p) {
 		return p.Status()==ParticleStatus::spectator;
 	};
-	return FilterParticles(hist_particles,pred);
+	return FilterParticles(pred);
 }
 
 achilles::vParticles Event::MakeCopies(const refParticles& refs) {

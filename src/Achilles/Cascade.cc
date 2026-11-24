@@ -983,10 +983,8 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
     // TODO: What do we use for the position? (How about average positions?)
     ThreeVector average_position = (particle1.Position() + particle2->Position()) / 2.0;
 	size_t vertex_hit=event.addVertex(EventVertex::StatusCode::cascade,average_position);
-	// particle1 ref may die after this, so we need to edit it now while we still can
     particle1.Status() = ParticleStatus::cascade;
     particle1.endVertex() = vertex_hit;
-	FourVector p_part1=particle1.Momentum();
 
 	for(size_t i=0;i<m_remnant->SubParts().size();i++) {
 		auto it=std::find(consumed.begin(),consumed.end(),i);
@@ -1020,7 +1018,7 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
     for(Particle& part : particles_out) {
         part.Status() = ParticleStatus::propagating;
         if(part.Info().IsNucleon())
-            part.SetFormationZone(p_part1, part.Momentum());
+            part.SetFormationZone(particle1.Momentum(), part.Momentum());
         event.addParticle(part,vertex_hit,Particle::OPEN_END);
         // Baryon number is conserved, so there is always a baryon for every debt.
         if(part.Info().IsBaryon() && idebt < debts.size())

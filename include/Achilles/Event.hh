@@ -71,11 +71,6 @@ class Event {
 		m_process_id=0;
 	}
 
-	refParticles getAllOfType(PID,ParticleStatus=ParticleStatus::any);
-	crefParticles getAllOfType(PID,ParticleStatus=ParticleStatus::any) const;
-	refParticles getAllOfType(refParticles&,PID,ParticleStatus=ParticleStatus::any);
-	crefParticles getAllOfType(const crefParticles&,PID,ParticleStatus=ParticleStatus::any) const;
-
     bool operator==(const Event &other) const {
         return m_nuc==other.m_nuc
 				&&vertices==other.vertices
@@ -137,37 +132,22 @@ class Event {
 	// Traversal
 	void WalkHistory(HistoryVisitor&);
 
-  private:
-    // Helper functions
-    refParticles FilterParticles(dqParticles& particles,std::function<bool(const Particle&)> pred) {
+    refParticles FilterParticles(std::function<bool(const Particle&)> pred) {
         refParticles result;
-		for(Particle& p:particles)
+		for(Particle& p:hist_particles)
 			if(pred(p))
 				result.push_back(std::reference_wrapper(p));
         return result;
     }
-    crefParticles FilterParticles(const dqParticles& particles,std::function<bool(const Particle&)> pred) const {
+    crefParticles FilterParticles(std::function<bool(const Particle&)> pred) const {
         crefParticles result;
-		for(const Particle& p:particles)
-			if(pred(p))
-				result.push_back(std::reference_wrapper(p));
-        return result;
-    }
-    crefParticles FilterParticles(const crefParticles& particles,std::function<bool(const Particle&)> pred) const {
-        crefParticles result;
-		for(const Particle& p:particles)
-			if(pred(p))
-				result.push_back(std::reference_wrapper(p));
-        return result;
-    }
-    refParticles FilterParticles(const refParticles& particles,std::function<bool(const Particle&)> pred) {
-        refParticles result;
-		for(Particle& p:particles)
+		for(const Particle& p:hist_particles)
 			if(pred(p))
 				result.push_back(std::reference_wrapper(p));
         return result;
     }
 
+  private:
     // Variables
 	ProcessInfo m_processInfo;
     std::shared_ptr<Nucleus> m_nuc;

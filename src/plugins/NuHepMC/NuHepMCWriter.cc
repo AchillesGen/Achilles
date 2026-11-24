@@ -274,9 +274,10 @@ void NuHepMCWriter::Write(achilles::Event& event) {
     constexpr double nb_to_pb = 1000;
 
     // Update cumulative results, but skip writing if weight is zero
+	// Note: "results+=0" still does something, do not move this
+    results += event.Weight() * nb_to_pb;
     spdlog::trace("Event weight = {}", event.Weight());
     if(event.Weight() == 0) { return; }
-    results += event.Weight() * nb_to_pb;
 
     // Setup event units
     spdlog::trace("Setting up units");
