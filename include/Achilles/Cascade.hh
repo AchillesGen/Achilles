@@ -201,7 +201,8 @@ class Cascade {
     void PropagateSpace(Particle&, double);
     void InitializeIntegrator();
     void UpdateKicked();
-	/// Updates m_propagating and m_remnant to match the current state of the given event
+	/// Updates m_propagating and m_remnant to match the current state of the given event.
+	/// No longer needed for keeping refs alive, but still required when the final state changes.
 	void UpdateTracked(Event&);
     void Validate(Event &);
     size_t BaseAlgorithm(Particle&,vParticles&);

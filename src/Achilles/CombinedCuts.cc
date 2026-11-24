@@ -5,7 +5,7 @@
 #include "Achilles/Particle.hh"
 
 bool achilles::CutCollection::EvaluateCuts(Event& event) {
-	vParticles& parts=event.Particles();
+	dqParticles& parts=event.Particles();
     ntot++;
     bool result = true;
     spdlog::debug("Evaluating Cuts");

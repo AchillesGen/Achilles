@@ -24,6 +24,12 @@ class EventVertex {
         : m_idx{idx}, m_status{status}, m_position{position} {}
     EventVertex(const EventVertex &) = default;
 
+	bool operator==(const EventVertex& other) const noexcept {
+		return m_idx==other.m_idx
+				&&m_status==other.m_status
+				&&m_position==other.m_position;
+	}
+
     // Status functions
     StatusCode &Status() { return m_status; }
     const StatusCode &Status() const { return m_status; }

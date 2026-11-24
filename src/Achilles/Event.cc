@@ -22,13 +22,9 @@ Event::Event(const Event& other) {
     m_nuc = other.m_nuc;
     m_wgt = other.m_wgt;
 	hist_particles = other.hist_particles;
+	vertices = other.vertices;
     flux = other.flux;
     m_process_id = other.m_process_id;
-
-    vertices.reserve(other.vertices.size());
-    for(const auto &elm : other.vertices) {
-        vertices.push_back(std::make_unique<EventVertex>(*elm));
-    }
 }
 
 Event &Event::operator=(const Event &other) {
@@ -37,14 +33,9 @@ Event &Event::operator=(const Event &other) {
     m_nuc = other.m_nuc;
     m_wgt = other.m_wgt;
 	hist_particles = other.hist_particles;
+	vertices = other.vertices;
     flux = other.flux;
     m_process_id = other.m_process_id;
-
-    vertices.clear();
-    vertices.reserve(other.vertices.size());
-    for(const auto &elm : other.vertices) {
-        vertices.push_back(std::make_unique<EventVertex>(*elm));
-    }
 
     return *this;
 }
@@ -221,16 +212,14 @@ void Event::SetupHadrons() {
 
 size_t Event::addVertex(EventVertex::StatusCode status,const ThreeVector& position) {
 	size_t idx=vertices.size();
-    vertices.push_back(std::make_unique<EventVertex>(idx,status,position));
+    vertices.push_back(EventVertex(idx,status,position));
 	return idx;
 }
 
-bool Event::addParticle(const Particle& part,size_t start_vertex,size_t end_vertex) {
-	size_t cap=hist_particles.capacity();
+void Event::addParticle(const Particle& part,size_t start_vertex,size_t end_vertex) {
 	hist_particles.push_back(part);
 	hist_particles.back().startVertex()=start_vertex;
 	hist_particles.back().endVertex()=end_vertex;
-	return cap!=hist_particles.capacity();
 }
 
 std::vector<size_t> Event::ChildVertices(size_t vertexIdx) const {
@@ -255,18 +244,34 @@ std::vector<size_t> Event::ParentVertices(size_t vertexIdx) const {
 	return result;
 }
 
-EventVertex* Event::vertex(size_t idx) const {
+EventVertex* Event::vertex(size_t idx) {
 	if(idx<vertices.size())
-		return vertices[idx].get();
+		return &vertices[idx];
+	return nullptr;
+}
+const EventVertex* Event::vertex(size_t idx) const {
+	if(idx<vertices.size())
+		return &vertices[idx];
 	return nullptr;
 }
 
-EventVertex* Event::uniqueVertex(EventVertex::StatusCode status) const {
+EventVertex* Event::uniqueVertex(EventVertex::StatusCode status) {
 	EventVertex* result=nullptr;
-	for(const std::unique_ptr<EventVertex>& node:vertices)
-		if(node->Status()==status) {
+	for(EventVertex& node:vertices)
+		if(node.Status()==status) {
 			if(result==nullptr)
-				result = node.get();
+				result = &node;
+			else
+				throw std::runtime_error(fmt::format("EventHistory: Only one {} vertex is allowed!",ToString(status)));
+		}
+	return result;
+}
+const EventVertex* Event::uniqueVertex(EventVertex::StatusCode status) const {
+	const EventVertex* result=nullptr;
+	for(const EventVertex& node:vertices)
+		if(node.Status()==status) {
+			if(result==nullptr)
+				result = &node;
 			else
 				throw std::runtime_error(fmt::format("EventHistory: Only one {} vertex is allowed!",ToString(status)));
 		}

@@ -4,11 +4,8 @@
 #ifndef EVENT_HH
 #define EVENT_HH
 
-#include <algorithm>
 #include <memory>
 #include <vector>
-
-#include "fmt/format.h"
 
 #include "Achilles/Achilles.hh"
 #include "Achilles/EventVertex.hh"
@@ -26,6 +23,7 @@ class NuclearModel;
 class HistoryVisitor;
 
 using vParticles = std::vector<Particle>;
+using dqParticles = std::deque<Particle>;
 using refParticles = std::vector<std::reference_wrapper<Particle>>;
 using crefParticles = std::vector<std::reference_wrapper<const Particle>>;
 
@@ -61,7 +59,7 @@ class Event {
     void Rotate(const std::array<double, 9> &);
     void Display() const;
 
-	vParticles& Particles() { return hist_particles; }
+	dqParticles& Particles() { return hist_particles; }
 
 	/// Resets the event to its starting configuration
 	/// so it can be passed through the mappers again.
@@ -69,6 +67,8 @@ class Event {
 	void reset() {
 		vertices.clear();
 		hist_particles.clear();
+		m_wgt=flux=0.0;
+		m_process_id=0;
 	}
 
 	refParticles getAllOfType(PID,ParticleStatus=ParticleStatus::any);
@@ -85,22 +85,24 @@ class Event {
     int &ProcessId() { return m_process_id; }
     const int &ProcessId() const { return m_process_id; }
 
+	/// Adds a new vertex to the history with the specified Status and Position.
 	/// Returns the new index of the created vertex
 	size_t addVertex(EventVertex::StatusCode,const ThreeVector& = {});
 	/// Adds a new particle with the specified start and end vertices.
-	/// The boolean return value is simply a flag informing the caller of whether the
-	/// event's Particles() vector was reallocated as a result; returns true if so.
-	bool addParticle(const Particle&,size_t,size_t);
+	void addParticle(const Particle&,size_t,size_t);
 
-	EventVertex* vertex(size_t) const;
+	EventVertex* vertex(size_t);
+	const EventVertex* vertex(size_t) const;
 	size_t nVertices() const { return vertices.size(); }
 	/// Accepts a Vertex Index, returns other Vertex Indices
 	std::vector<size_t> ChildVertices(size_t) const;
 	/// Accepts a Vertex Index, returns other Vertex Indices
 	std::vector<size_t> ParentVertices(size_t) const;
-	EventVertex* uniqueVertex(EventVertex::StatusCode) const;
+	EventVertex* uniqueVertex(EventVertex::StatusCode);
+	const EventVertex* uniqueVertex(EventVertex::StatusCode) const;
 	/// Current implementation: primary is always at 0
-	EventVertex* Primary() const { return vertices[0].get(); }
+	EventVertex* Primary() { return &vertices[0]; }
+	const EventVertex* Primary() const { return &vertices[0]; }
 
 	/// Returns all particles that don't currently start on a vertex
 	refParticles allInitialStateParticles();
@@ -113,8 +115,8 @@ class Event {
 	refParticles PropagatingHadrons();
 
 	refParticles particlesIn(size_t);
-	crefParticles particlesIn(size_t) const;
 	refParticles particlesOut(size_t);
+	crefParticles particlesIn(size_t) const;
 	crefParticles particlesOut(size_t) const;
 
 	/// When the size_t argument is 0,
@@ -137,14 +139,14 @@ class Event {
 
   private:
     // Helper functions
-    refParticles FilterParticles(vParticles& particles,std::function<bool(const Particle&)> pred) {
+    refParticles FilterParticles(dqParticles& particles,std::function<bool(const Particle&)> pred) {
         refParticles result;
 		for(Particle& p:particles)
 			if(pred(p))
 				result.push_back(std::reference_wrapper(p));
         return result;
     }
-    crefParticles FilterParticles(const vParticles& particles,std::function<bool(const Particle&)> pred) const {
+    crefParticles FilterParticles(const dqParticles& particles,std::function<bool(const Particle&)> pred) const {
         crefParticles result;
 		for(const Particle& p:particles)
 			if(pred(p))
@@ -169,10 +171,9 @@ class Event {
     // Variables
 	ProcessInfo m_processInfo;
     std::shared_ptr<Nucleus> m_nuc;
-    double m_wgt{};
-	std::vector<std::unique_ptr<EventVertex>> vertices{};
-    vParticles hist_particles{};
-    double flux{};
+	std::vector<EventVertex> vertices{};
+    dqParticles hist_particles{};
+    double m_wgt{}, flux{};
     int m_process_id{};
 };
 

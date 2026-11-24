@@ -976,11 +976,6 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
 	vParticles remNew_sub;
 	remNew_sub.reserve(m_remnant->SubParts().size()-consumed.size());
 
-	// List of indices within event.Particles().
-	// Must use indices instead of refs in case of vector resizing.
-	std::vector<size_t> freed;
-	freed.reserve(consumed.size());
-
 	// Interaction for separating all consumed nucleons from the remnant
 	size_t vertex_split_rem=event.addVertex(EventVertex::StatusCode::split,m_remnant->Position());
 
@@ -999,18 +994,9 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
 			// Particle stays in background => move to new remnant
 			remNew_sub.push_back(m_remnant->SubParts()[i]);
 		} else {
-			// Particle is interactable => move to final state
-			if(event.addParticle(m_remnant->SubParts()[i],vertex_split_rem,Particle::OPEN_END)) {
-				// Reallocation, must find remnant again
-				m_remnant=event.Remnant();
-			}
-			if(i==rem_idx) {
-				// We've moved the particle we wanted to track
-				particle2=&event.Particles().back();
-			}
+			// Particle is interactable => move to free state
+			event.addParticle(m_remnant->SubParts()[i],vertex_split_rem,vertex_hit);
 			p_rem-=m_remnant->SubParts()[i].Momentum();
-			// Last particle in event is now freed
-			freed.push_back(event.Particles().size()-1);
 		}
 	}
 	m_remnant->endVertex()=vertex_split_rem;
@@ -1027,14 +1013,6 @@ bool Cascade::FinalizeMomentum(Event& event,Particle& particle1,size_t rem_idx) 
 		m_remnant=nullptr;
 	}
     //}
-
-    particle2->Status() = ParticleStatus::cascade;
-    particle2->endVertex() = vertex_hit;
-    for(const size_t& i:freed) {
-		Particle& part=event.Particles()[i];
-        if(part.Status() == ParticleStatus::absorption_partner)
-            part.endVertex()=vertex_hit;
-    }
 
     // Ensure outgoing particles are propagating and add to list of particles in event
     // and assign formation zone
@@ -1150,10 +1128,10 @@ bool Cascade::Decay(Event& event,Particle& part) {
 		if(out.Info().IsBaryon()) {
 			out.cascadeID()=part.cascadeID();
 		}
-		if(event.addParticle(out,decay_vertex,Particle::OPEN_END)) {
-			UpdateTracked(event);
-		}
+		event.addParticle(out,decay_vertex,Particle::OPEN_END);
 	}
 
+	// Potentially new propagating particles
+	UpdateTracked(event);
     return true;
 }
