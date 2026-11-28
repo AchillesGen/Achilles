@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2018-2026 Achilles Developers
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+#include "Achilles/BuildInfo.hh"
 #include "Achilles/Console.hh"
 #include "Achilles/Contributors.hh"
 #include "Achilles/Splash.hh"
@@ -208,4 +209,18 @@ TEST_CASE("Splash lines all have the same width", "[contributors]") {
     bool has_version = false;
     for(const auto &line : lines) has_version |= line.find("1.2.3") != std::string::npos;
     CHECK(has_version);
+}
+
+TEST_CASE("Build information for bug reports", "[buildinfo]") {
+    const auto rows = achilles::BuildRows();
+    REQUIRE_FALSE(rows.empty());
+    CHECK(rows.front().name == "Version");
+    for(const auto &row : rows) {
+        CHECK_FALSE(row.name.empty());
+        CHECK_FALSE(row.value.empty());
+    }
+
+    const auto text =
+        achilles::InfoText({{"Version", "1.2.3"}, {"Build type", "Release"}, {"", "continued"}});
+    CHECK(text == "  Version:     1.2.3\n  Build type:  Release\n               continued\n");
 }

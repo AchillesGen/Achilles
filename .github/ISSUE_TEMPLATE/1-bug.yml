@@ -22,6 +22,14 @@ body:
     validations:
       required: true
   - type: textarea
+    id: version
+    attributes:
+      label: Achilles version and build
+      description: Please copy and paste the output of `achilles --version-full`. It lists the commit, build options and system Achilles was built and run on. This will be automatically formatted into code, so no need for backticks.
+      render: text
+    validations:
+      required: true
+  - type: textarea
     id: run-card
     attributes:
       label: Run card to reproduce

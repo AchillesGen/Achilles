@@ -1,0 +1,2 @@
+# Release tarballs record the commit they were made from (see CMake/WriteGitInfo.cmake)
+CMake/GitArchiveInfo.cmake export-subst

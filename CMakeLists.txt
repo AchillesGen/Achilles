@@ -173,6 +173,9 @@ endif()
 include(CMake/CPM.cmake)
 include(external/CMakeLists.txt)
 
+# Git state of the checkout, for the build report and "achilles --version-full"
+include(CMake/GitInfo.cmake)
+
 # Configure system specific variables for loading shared libraries
 set(LIBPREFIX ${CMAKE_SHARED_LIBRARY_PREFIX})
 set(LIBSUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -205,6 +208,10 @@ set(ACHILLES_DATA_RELEASE "achilles-data-v1" CACHE STRING
     "GitHub Release tag of the Achilles data set downloaded on demand")
 configure_file(python/achilles/_data_release.py.in
     ${CMAKE_CURRENT_BINARY_DIR}/python/achilles/_data_release.py @ONLY)
+
+# Build settings reported by "achilles --version-full" and with -v at the start of a run
+configure_file(include/Achilles/BuildConfig.hh.in
+    ${CMAKE_CURRENT_BINARY_DIR}/include/Achilles/BuildConfig.hh @ONLY)
 
 # Copy over data files. The heavy data/ tree is excluded from the sdist (it is
 # downloaded on demand at runtime), so it may be absent when building from an sdist;

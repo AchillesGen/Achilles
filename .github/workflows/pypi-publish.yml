@@ -140,6 +140,13 @@ jobs:
           key: ccache-${{ matrix.os }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-
 
+      # The wheels are built from a copy of the source without usable git metadata,
+      # so record it first for "achilles --version-full"
+      - name: Record git state
+        run: >-
+          cmake -DSOURCE_DIR="$PWD" -DSNAPSHOT="$PWD/.achilles-git-info.cmake"
+          -DGIT_EXECUTABLE="$(command -v git)" -P CMake/WriteGitInfo.cmake
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.5
       - uses: actions/upload-artifact@v7
@@ -172,6 +179,12 @@ jobs:
           path.write_text(patched)
           print(f"pyproject.toml version -> {version}")
           EOF
+
+      # An sdist has no .git directory; record the git state for "achilles --version-full"
+      - name: Record git state
+        run: >-
+          cmake -DSOURCE_DIR="$PWD" -DSNAPSHOT="$PWD/.achilles-git-info.cmake"
+          -DGIT_EXECUTABLE="$(command -v git)" -P CMake/WriteGitInfo.cmake
 
       - name: Build sdist
         run: pipx run build --sdist

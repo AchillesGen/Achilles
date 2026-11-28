@@ -38,6 +38,8 @@ coverage.info
 install*
 doc-pm/
 Doxyfile
+# Written before packaging, see CMake/WriteGitInfo.cmake
+.achilles-git-info.cmake
 
 # physval scratch: rendered run cards, generator logs and multi-GB event files
 validation/physval/physval-work/

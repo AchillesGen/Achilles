@@ -40,11 +40,15 @@ def main() -> None:
     # Resolve data from the shared cache, the same directory the Python module uses.
     env.setdefault("ACHILLES_DATA_DIR", str(_data.cache_dir()))
 
+    # Options that only print information never need the data set
+    info_only = {"-h", "--help", "--version", "--version-full"}
+    wants_data = not any(arg in info_only or arg.startswith("--display-") for arg in sys.argv[1:])
+
     # If the data set isn't cached and there's no local ./data, offer to fetch it.
     # download_all() prompts for consent; a decline is non-fatal (the run may still
     # find data via ACHILLES_PATH or the current directory, and if not the binary
     # reports the missing file itself).
-    if not _data.is_present() and not (Path.cwd() / "data").is_dir():
+    if wants_data and not _data.is_present() and not (Path.cwd() / "data").is_dir():
         try:
             _data.download_all()
         except RuntimeError as exc:

@@ -18,7 +18,6 @@
 #include "Achilles/Version.hh"
 #include "Achilles/fortran/FNuclearModel.hh"
 #include "fmt/core.h"
-#include "git.h"
 #ifdef ACHILLES_SHERPA_INTERFACE
 #include "Plugins/Sherpa/Channels.hh"
 #include "Plugins/Sherpa/SherpaInterface.hh"
@@ -37,6 +36,7 @@ static const std::string USAGE =
       achilles --display-nuc-models
       achilles (-h | --help)
       achilles --version
+      achilles --version-full
 
     Options:
       -v[v]                                 Increase verbosity level.
@@ -44,7 +44,9 @@ static const std::string USAGE =
                                               (Note: Log verbosity is never lower than total level)
       -b                                    Batch Mode (makes output more log-friendly)
       -h --help                             Show this screen.
-      --version                             Show version.
+      --version                             Show the version and the git tag or commit
+      --version-full                        Show the version and all build details
+                                              (include these in bug reports)
       --logfile=<logfile_name>              Change the logging output destination
       -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
       --display-cuts                        Display the available cuts
@@ -55,12 +57,17 @@ static const std::string USAGE =
 )";
 
 int main(int argc, char *argv[]) {
-    Splash();
     achilles::PathVariables::Instance().InitializeStandalone();
     std::map<std::string, docopt::value> args =
         docopt::docopt(USAGE, {argv + 1, argv + argc},
-                       true,                                          // show help if requested
-                       fmt::format("achilles {}", ACHILLES_VERSION)); // version string
+                       true,                      // show help if requested
+                       ShortVersion("achilles")); // version string
+
+    if(args["--version-full"].asBool()) {
+        fmt::print("{}\n", BuildReport("achilles"));
+        return 0;
+    }
+    Splash();
 
     int verbosity = static_cast<int>(2 - args["-v"].asLong());
     int log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
