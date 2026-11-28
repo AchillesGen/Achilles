@@ -4,6 +4,8 @@
 #include "Achilles/BuildInfo.hh"
 #include "Achilles/Console.hh"
 #include "Achilles/Contributors.hh"
+#include "Achilles/MultiChannel.hh"
+#include "Achilles/Progress.hh"
 #include "Achilles/Splash.hh"
 #include "catch2/catch_test_macros.hpp"
 #include "catch2/matchers/catch_matchers_string.hpp"
@@ -209,6 +211,77 @@ TEST_CASE("Splash lines all have the same width", "[contributors]") {
     bool has_version = false;
     for(const auto &line : lines) has_version |= line.find("1.2.3") != std::string::npos;
     CHECK(has_version);
+}
+
+TEST_CASE("Optimization estimates", "[progress]") {
+    achilles::MultiChannelParams params;
+    params.ncalls = 1000;
+    params.niterations = 3;
+    params.rtol = 1e-2;
+    params.nrefine = 1;
+    params.rescale_factor = 2;
+    achilles::MultiChannel integrator(1, 2, params);
+
+    SECTION("Without results the minimum number of iterations is assumed") {
+        const auto estimate = integrator.EstimateRemaining(achilles::lim::max());
+        CHECK(estimate.iterations == 3);
+        CHECK(estimate.calls == 1000 + 2000 + 4000);
+    }
+
+    SECTION("A large error needs more iterations") {
+        // Error halves each iteration: 20% -> 1% in 5
+        const auto estimate = integrator.EstimateRemaining(0.2);
+        CHECK(estimate.iterations == 5);
+        CHECK(estimate.calls == 31000);
+    }
+
+    SECTION("Without growth in the number of calls the error cannot be extrapolated") {
+        params.rescale_factor = 1;
+        achilles::MultiChannel flat(1, 2, params);
+        CHECK(flat.EstimateRemaining(0.5).iterations == 3);
+    }
+}
+
+TEST_CASE("Run tracker combines pending work", "[progress]") {
+    auto &tracker = achilles::RunTracker::Instance();
+    tracker.Reset();
+
+    tracker.SetPending("a", 1000);
+    CHECK_FALSE(tracker.Pending().complete);
+
+    tracker.SetSecondsPerCall(1e-3);
+    auto pending = tracker.Pending();
+    CHECK(pending.complete);
+    CHECK(pending.seconds == 1.0);
+
+    tracker.SetPending("b", -1);
+    pending = tracker.Pending();
+    CHECK_FALSE(pending.complete);
+    CHECK(pending.seconds == 1.0);
+
+    tracker.RemovePending("b");
+    tracker.SetPending("a", 0);
+    CHECK(tracker.Pending().seconds == 0);
+
+    tracker.BeginStage("first");
+    tracker.BeginStage("second");
+    tracker.EndStage("done");
+    REQUIRE(tracker.Stages().size() == 2);
+    CHECK(tracker.Stages()[0].name == "first");
+    CHECK(tracker.Stages()[1].detail == "done");
+
+    tracker.AddStep("setup", "Setup");
+    tracker.AddStep("generate", "Events");
+    tracker.AddStep("setup", "Setup again");
+    REQUIRE(tracker.Steps().size() == 2);
+    CHECK(tracker.Steps()[0].label == "Setup");
+    tracker.SetStepState("setup", achilles::StepState::done);
+    tracker.SetStepState("generate", achilles::StepState::running);
+    CHECK(tracker.Steps()[0].state == achilles::StepState::done);
+    CHECK(tracker.Steps()[1].state == achilles::StepState::running);
+
+    tracker.Reset();
+    CHECK(tracker.Steps().empty());
 }
 
 TEST_CASE("Build information for bug reports", "[buildinfo]") {

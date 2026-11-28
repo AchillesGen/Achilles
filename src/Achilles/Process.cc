@@ -10,6 +10,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Progress.hh"
 #include "Achilles/Settings.hh"
 #include "Achilles/Unweighter.hh"
 #include "Achilles/Utilities.hh"
@@ -382,29 +383,97 @@ bool ProcessGroup::NeedsOptimization() const {
     return m_integrator.NeedsOptimization(rel_err);
 }
 
+std::string ProcessGroup::ModelName() const {
+    return m_backend->GetNuclearModel()->GetName();
+}
+
+std::string ProcessGroup::Label() const {
+    const auto description =
+        fmt::format("{} / {} / {} particles", m_nucleus->ToString(), ModelName(), Multiplicity());
+    return m_id.empty() ? description : m_id + ": " + description;
+}
+
+std::string ProcessGroup::PendingKey(const std::string &stage) const {
+    // Groups do not move once set up, and unlike the hash the address is unique
+    return fmt::format("{} {}", static_cast<const void *>(this), stage);
+}
+
+void ProcessGroup::RegisterPendingWork() const {
+    auto &tracker = RunTracker::Instance();
+    tracker.AddStep(PendingKey("optimize"), "Optimize", m_id);
+    if(!NeedsOptimization()) tracker.SetStepState(PendingKey("optimize"), StepState::cached);
+    tracker.AddStep(PendingKey("max weight"), "Max weight", m_id);
+    if(m_maxweight != 0) tracker.SetStepState(PendingKey("max weight"), StepState::cached);
+    const double optimize_calls =
+        NeedsOptimization()
+            ? static_cast<double>(m_integrator
+                                      .EstimateRemaining(m_integrator.HasResults()
+                                                             ? m_integrator.LastResult().RelError()
+                                                             : lim::max())
+                                      .calls)
+            : 0;
+    tracker.SetPending(PendingKey("optimize"), optimize_calls);
+    tracker.SetPending(PendingKey("max weight"),
+                       m_maxweight == 0 ? max_weight_calls * max_weight_passes : 0);
+}
+
 void ProcessGroup::Optimize() {
     // TODO: Clean up this control flow. It is a bit of a mess
     b_optimize = true;
+    auto &tracker = RunTracker::Instance();
+    const std::string label = Label();
+    const std::string stage = m_id.empty() ? label : m_id;
 
     auto func = [&](const std::vector<FourVector> &mom, const double &wgt) {
         return SingleEvent(mom, wgt).Weight();
     };
     m_integrand.Function() = func;
+    tracker.RemovePending(PendingKey("optimize"));
     if(NeedsOptimization()) {
-        spdlog::info(
-            "Optimizing process group: Nucleus = {}, Nuclear Model = {}, Multiplicity = {}",
-            m_nucleus->ToString(), m_backend->GetNuclearModel()->GetName(),
-            m_processes[0].Info().Multiplicity());
+        tracker.BeginStage("Optimize " + stage);
+        tracker.SetStepState(PendingKey("optimize"), StepState::running);
+        spdlog::info("Optimizing process group {}", label);
+        const size_t start = m_integrator.NIterations();
         m_integrator.Optimize(m_integrand);
+        tracker.EndStage(fmt::format("{} iterations, rel. err {:.2f}%",
+                                     m_integrator.NIterations() - start,
+                                     100 * m_integrator.LastResult().RelError()));
+        tracker.SetStepState(PendingKey("optimize"), StepState::done);
+    } else {
+        spdlog::info("Using the cached integration grid for {}", label);
+        tracker.AddCachedStage("Optimize " + stage, "integration grid loaded from the cache");
     }
 
     // Ensure that the integrator does not save these results into the summary
     m_integrator.UpdateSummary(false);
+    tracker.RemovePending(PendingKey("max weight"));
     if(m_maxweight == 0) {
+        tracker.BeginStage("Max weight " + stage);
+        tracker.SetStepState(PendingKey("max weight"), StepState::running);
         spdlog::info("Calculating maximum weight");
         b_calc_weights = true;
-        m_integrator.Parameters().ncalls = 100000;
-        for(size_t i = 0; i < 3; ++i) m_integrator(m_integrand);
+        m_integrator.Parameters().ncalls = max_weight_calls;
+
+        const double total = max_weight_calls * max_weight_passes;
+        ProgressBar bar("Max weight", total);
+        double done = 0;
+        size_t pass = 0;
+        m_integrator.SetProgressCallback([&](size_t calls) {
+            bar.Update(done + static_cast<double>(calls),
+                       fmt::format("pass {}/{}", pass + 1, max_weight_passes));
+        });
+        try {
+            for(; pass < max_weight_passes; ++pass) {
+                m_integrator(m_integrand);
+                done += max_weight_calls;
+                tracker.SetSecondsPerCall(bar.Elapsed() / done);
+            }
+        } catch(...) {
+            m_integrator.SetProgressCallback(nullptr);
+            throw;
+        }
+        m_integrator.SetProgressCallback(nullptr);
+        bar.Finish();
         b_calc_weights = false;
 
         std::ofstream outFile("Results.txt");
@@ -414,25 +483,56 @@ void ProcessGroup::Optimize() {
         for(size_t i = 0; i < m_processes.size(); ++i) {
             m_process_weights[i] = m_processes[i].MaxWeight();
             m_maxweight += m_process_weights[i];
-            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
             outFile << m_processes[i].TotalCrossSection() << "\n";
         }
 
         outFile.close();
+        tracker.EndStage(fmt::format("{} passes of {} calls", max_weight_passes,
+                                     console::FormatCount(max_weight_calls)));
+        tracker.SetStepState(PendingKey("max weight"), StepState::done);
     } else {
-        for(size_t i = 0; i < m_processes.size(); ++i) {
-            spdlog::info("Process xsec: {} ", m_processes[i].TotalCrossSection());
-        }
+        tracker.AddCachedStage("Max weight " + stage, "maximum weight loaded from the cache");
     }
     b_optimize = false;
-    spdlog::info("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
-                 m_xsec.Error() / m_xsec.Mean() * 100);
-    spdlog::info("Process weights: {} / {}",
-                 fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
+    spdlog::debug("Total xsec: {} +/- {} ({}%)", m_xsec.Mean(), m_xsec.Error(),
+                  m_xsec.Error() / m_xsec.Mean() * 100);
+    spdlog::debug("Process weights: {} / {}",
+                  fmt::join(m_process_weights.begin(), m_process_weights.end(), ", "), m_maxweight);
     for(size_t i = 0; i < m_processes.size(); ++i) { m_process_weights[i] /= m_maxweight; }
+    Summary();
 }
 
-void ProcessGroup::Summary() const {}
+void ProcessGroup::Summary() const {
+    using console::Align;
+    console::Table table({"Process", "Cross section [nb]", "Unweighting eff.", "Share"},
+                         {Align::left, Align::right, Align::right, Align::right});
+    table.SetTitle("Results for " + Label());
+    for(size_t i = 0; i < m_processes.size(); ++i) {
+        const auto &process = m_processes[i];
+        const double share = ProcessShare(i);
+        table.AddRow({process.Info().Describe(), fmt::format("{:.5e}", process.TotalCrossSection()),
+                      fmt::format("{:.2f}%", 100 * process.UnweightEff()),
+                      fmt::format("{:.1f}%", 100 * share)});
+    }
+    table.AddSeparator();
+    table.AddRow({"Total", console::FormatResult(m_xsec.Mean(), m_xsec.Error()),
+                  fmt::format("{:.2f}%", 100 * UnweightEff()), "100.0%"});
+    table.Print();
+}
+
+double ProcessGroup::ProcessShare(size_t i) const {
+    // Weights loaded from the cache are not normalized
+    double total = 0;
+    for(const auto &weight : m_process_weights) total += weight;
+    return i < m_process_weights.size() && total > 0 ? m_process_weights[i] / total : 0;
+}
+
+double ProcessGroup::UnweightEff() const {
+    double eff = 0;
+    for(size_t i = 0; i < m_processes.size(); ++i)
+        eff += ProcessShare(i) * m_processes[i].UnweightEff();
+    return eff;
+}
 
 achilles::Event ProcessGroup::GenerateEvent() {
     const auto mom = m_integrator.GeneratePoint(m_integrand);

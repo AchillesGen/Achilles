@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ParticleInfo.hh"
+#include "Achilles/Console.hh"
 #include "Achilles/System.hh"
 
 #include <iostream>
@@ -41,13 +42,47 @@ void achilles::ParticleInfo::BuildDatabase(const std::string &datafile) {
         particleDB.emplace(entry->id, entry);
         nameToPID.emplace(entry->idname, entry->id);
     }
-    PrintDatabase();
+    spdlog::info("Loaded {} particles from {}", particleDB.size(), datafile);
+    PrintKeyParticles();
+    PrintDatabaseTable(true);
 }
 
 void achilles::ParticleInfo::PrintDatabase() {
-    fmt::print("{:>10s} {:<20s} {:<20s} {:^6s} {:^10s}    {:^10s}\n", "PID", "Name", "Anti-name",
-               "Stable", "Mass (MeV)", "Width (MeV)");
-    for(const auto &part : particleDB) { std::cout << *(part.second) << "\n"; }
+    PrintDatabaseTable(false);
+}
+
+void achilles::ParticleInfo::PrintDatabaseTable(bool debug) {
+    using console::Align;
+    console::Table table(
+        {"PID", "Name", "Anti-name", "Stable", "Mass (MeV)", "Width (MeV)"},
+        {Align::right, Align::left, Align::left, Align::center, Align::right, Align::right});
+    table.SetTitle("Particle database");
+    for(const auto &part : particleDB) {
+        const auto &entry = *part.second;
+        table.AddRow({fmt::format("{}", static_cast<int>(entry.id)), entry.idname, entry.antiname,
+                      fmt::format("{}", entry.stable), fmt::format("{:.4e}", entry.mass),
+                      fmt::format("{:.4e}", entry.width)});
+    }
+    table.Print(debug ? console::Verbosity::debug : console::Verbosity::info);
+}
+
+void achilles::ParticleInfo::PrintKeyParticles() {
+    static const std::vector<long> key_pids{11, 12, 13, 14, 15, 16, 22, 111, 211, 321, 2112, 2212};
+
+    using console::Align;
+    console::Table table({"PID", "Name", "Anti-particle", "Mass (MeV)"},
+                         {Align::right, Align::left, Align::left, Align::right});
+    for(const auto &pid : key_pids) {
+        auto it = particleDB.find(PID(pid));
+        if(it == particleDB.end()) continue;
+        const auto &entry = *it->second;
+        const bool self_conjugate = entry.majorana != 0 || entry.antiname == entry.idname;
+        table.AddRow({fmt::format("{}", pid), entry.idname,
+                      self_conjugate ? "" : fmt::format("{} ({})", entry.antiname, -pid),
+                      fmt::format("{:.4g}", entry.mass)});
+    }
+    table.Print();
+    spdlog::info("Run with -v to list all {} particles", particleDB.size());
 }
 
 ParticleInfoEntry::ParticleInfoEntry(PID id_, double mass_, double width_, int icharge_,

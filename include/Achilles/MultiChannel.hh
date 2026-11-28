@@ -4,8 +4,12 @@
 #ifndef MULTICHANNEL_HH
 #define MULTICHANNEL_HH
 
+#include "Achilles/Console.hh"
 #include "Achilles/Integrand.hh"
+#include "Achilles/Progress.hh"
 #include "Achilles/Vegas.hh"
+
+#include <functional>
 
 namespace achilles {
 
@@ -32,6 +36,10 @@ struct MultiChannelParams {
     static constexpr double beta_default{1.00}, min_alpha_default{1e-5};
     static constexpr double rescale_factor_default{1.44};
     static constexpr size_t nparams = 8;
+};
+
+struct OptimizationEstimate {
+    size_t calls{}, iterations{};
 };
 
 bool operator==(const MultiChannelParams &lhs, const MultiChannelParams &rhs);
@@ -116,7 +124,16 @@ class MultiChannel {
     void UpdateSummary(bool update) { update_summary = update; }
     MultiChannelSummary Summary();
     StatsData LastResult() const { return summary.LastResult(); }
+    StatsData Result() const { return summary.Result(); }
+    size_t NIterations() const { return summary.results.size(); }
     bool NeedsOptimization(double) const;
+    // rel_err is lim::max() before the first iteration
+    OptimizationEstimate EstimateRemaining(double rel_err) const;
+
+    void SetProgressCallback(std::function<void(size_t)> callback) {
+        m_progress = std::move(callback);
+    }
+    static constexpr size_t progress_stride = 1024;
 
     // Cache Results
     void SaveState(std::ostream &) const;
@@ -137,7 +154,7 @@ class MultiChannel {
             if(channel.integrator.Grid().Bins() < 100) channel.integrator.Refine();
         }
     }
-    void PrintIteration() const;
+    std::string IterationLine(size_t ncalls, double seconds, double elapsed, double left) const;
     void MaxDifference(const std::vector<double> &);
 
     bool update_summary{true};
@@ -147,6 +164,7 @@ class MultiChannel {
     double min_diff{lim::infinity()};
     MultiChannelSummary summary;
     UnitsEnum m_units = UnitsEnum::nb;
+    std::function<void(size_t)> m_progress;
 };
 
 template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func) {
@@ -160,6 +178,8 @@ template <typename T> void achilles::MultiChannel::operator()(Integrand<T> &func
     func.InitializeTrain();
 
     for(size_t i = 0; i < params.ncalls; ++i) {
+        if(m_progress && i % progress_stride == 0) m_progress(i);
+
         // Generate needed random numbers
         Random::Instance().Generate(rans);
 
@@ -213,15 +233,50 @@ double achilles::MultiChannel::GenerateWeight(Integrand<T> &func, const std::vec
 }
 
 template <typename T> void achilles::MultiChannel::Optimize(Integrand<T> &func) {
+    // Do not leave a callback to the local bar behind if an iteration throws
+    struct ProgressScope {
+        MultiChannel &integrator;
+        ~ProgressScope() { integrator.m_progress = nullptr; }
+    } scope{*this};
+
     double rel_err = lim::max();
+
+    auto estimate = EstimateRemaining(rel_err);
+    ProgressBar bar("Optimizing", static_cast<double>(estimate.calls));
+    bar.SetTotal(static_cast<double>(estimate.calls), true);
+    // The iteration lines already show the progress
+    bar.SetLogLines(false);
+    double calls_done = 0;
+    size_t expected_iterations = summary.results.size() + estimate.iterations;
+    m_progress = [&](size_t calls) {
+        bar.Update(
+            calls_done + static_cast<double>(calls),
+            fmt::format("iteration {}/~{}", summary.results.size() + 1, expected_iterations));
+    };
+
+    Stopwatch iteration_clock;
     while(NeedsOptimization(rel_err)) {
+        iteration_clock.Reset();
+        const size_t ncalls = params.ncalls;
         (*this)(func);
+        calls_done += static_cast<double>(ncalls);
+        RunTracker::Instance().SetSecondsPerCall(bar.Elapsed() / calls_done);
+
         StatsData current = summary.results.back();
         rel_err = current.Error() / std::abs(current.Mean());
+        const double seconds = iteration_clock.Elapsed();
 
-        PrintIteration();
         if(++params.iteration == params.nrefine) RefineChannels(func);
+        estimate = EstimateRemaining(rel_err);
+        expected_iterations = summary.results.size() + estimate.iterations;
+        bar.SetTotal(calls_done + static_cast<double>(estimate.calls), true);
+
+        const double left = NeedsOptimization(rel_err)
+                                ? static_cast<double>(estimate.calls) * bar.Elapsed() / calls_done
+                                : 0;
+        console::Print(IterationLine(ncalls, seconds, bar.Elapsed(), left));
     }
+    bar.Finish();
 }
 
 } // namespace achilles

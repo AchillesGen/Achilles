@@ -13,8 +13,6 @@ ReferenceHandler &ReferenceHandler::Handle() {
 }
 
 void ReferenceHandler::WriteReferences() const {
-    fmt::print("Writing out references from current run.\n");
-    fmt::print("References can be found in \"References.txt\".\n");
     std::ofstream outfile("References.txt");
     outfile << "Reference List:\n";
     for(const auto &ref : m_references) {

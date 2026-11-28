@@ -40,6 +40,12 @@ doc-pm/
 Doxyfile
 # Written before packaging, see CMake/WriteGitInfo.cmake
 .achilles-git-info.cmake
+# Written by running achilles from the source tree
+/.achilles/
+/References.txt
+/Results.txt
+/achilles.log
+/achilles.hepmc*
 
 # physval scratch: rendered run cards, generator logs and multi-GB event files
 validation/physval/physval-work/

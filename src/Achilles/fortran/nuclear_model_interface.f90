@@ -111,6 +111,27 @@ contains
         call factory%print_models()
     end subroutine
 
+    function num_registered() bind(C, name="NumRegisteredModels")
+        use iso_c_binding
+        implicit none
+        integer(c_size_t) :: num_registered
+
+        num_registered = int(factory%num_models(), c_size_t)
+    end function
+
+    ! idx counts from 0; the caller frees the malloc'd string
+    function registered_name(idx) bind(C, name="RegisteredModelName")
+        use iso_c_binding
+        use libutilities
+        implicit none
+        integer(c_size_t), intent(in), value :: idx
+        type(c_ptr) :: registered_name
+
+        registered_name = c_null_ptr
+        if(idx < int(factory%num_models(), c_size_t)) &
+            registered_name = f2cstring(factory%get_name(int(idx) + 1))
+    end function
+
     function create_model(name, idx) bind(C, name="CreateModel")
         use iso_c_binding
         use libutilities

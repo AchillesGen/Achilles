@@ -29,6 +29,7 @@ add_library(utilities SHARED
     ClebschGordan.cc
     ReferenceHandler.cc
     Console.cc
+    Progress.cc
     Contributors.cc
     Splash.cc
     BuildInfo.cc

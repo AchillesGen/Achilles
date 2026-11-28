@@ -27,6 +27,8 @@ module nuclear_model_factory
             procedure :: init
             procedure :: create_model
             procedure :: print_models
+            procedure :: num_models
+            procedure :: get_name
             procedure :: register_model
             procedure :: final
     end type ModelFactory
@@ -75,6 +77,23 @@ contains
             enddo
         endif
     end subroutine print_models
+
+    function num_models(self) result(n)
+        class(ModelFactory), intent(in) :: self
+        integer :: n
+
+        n = 0
+        if(allocated(self % model_list)) n = size(self % model_list)
+    end function num_models
+
+    ! i counts from 1
+    function get_name(self, i) result(name)
+        class(ModelFactory), intent(in) :: self
+        integer, intent(in) :: i
+        character(len=:), allocatable :: name
+
+        name = trim(self % model_list(i) % name)
+    end function get_name
 
     subroutine register_model(self, name, construct)
         class(ModelFactory), intent(inout) :: self

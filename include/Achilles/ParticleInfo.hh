@@ -280,6 +280,8 @@ class ParticleInfo {
         }
     }
     static void PrintDatabase();
+    static void PrintKeyParticles();
+    static void PrintDatabaseTable(bool debug);
     static const std::map<std::string, PID> &NameToPID() { return nameToPID; }
 
   private:

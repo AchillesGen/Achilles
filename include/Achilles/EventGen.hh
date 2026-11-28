@@ -40,6 +40,11 @@ class EventGen {
 
   private:
     bool GenerateSingleEvent();
+    void PrintProcesses() const;
+    void PrintConfiguration(const std::string &runcard, const std::string &format,
+                            const std::string &output);
+    void PrintCuts();
+    void PrintCascade();
 
     bool runCascade{false}, outputEvents{false}, doHardCuts{false};
     bool runDecays{false};
@@ -59,6 +64,8 @@ class EventGen {
     Settings config;
     std::vector<double> m_group_weights{};
     double m_max_weight{};
+    unsigned int m_seed{};
+    bool m_seed_from_card{false};
 
     std::shared_ptr<EventWriter> writer;
     std::unique_ptr<Unweighter> unweighter;

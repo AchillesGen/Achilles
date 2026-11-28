@@ -37,6 +37,8 @@ struct ProcessInfo {
     std::vector<long> Ids() const;
     std::map<size_t, long> m_mom_map;
     int LeptonicCharge() const;
+    // e.g. "e- proton → e- proton pion0"
+    std::string Describe() const;
 
     bool operator==(const ProcessInfo &other) const {
         return m_leptonic == other.m_leptonic && m_hadronic == other.m_hadronic &&

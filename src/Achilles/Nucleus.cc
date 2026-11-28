@@ -201,9 +201,9 @@ Nucleus Nucleus::MakeNucleus(const std::string &name, const double &bEnergy,
     if(std::regex_match(name, match, regex)) {
         const std::size_t nucleons = std::stoul(match[1].str());
         const std::size_t protons = NameToZ(match[2].str());
-        spdlog::info("Nucleus: parsing nuclear name '{0}', expecting a density "
-                     "with A={1} total nucleons and Z={2} protons.",
-                     name, nucleons, protons);
+        spdlog::debug("Nucleus: parsing nuclear name '{0}', expecting a density "
+                      "with A={1} total nucleons and Z={2} protons.",
+                      name, nucleons, protons);
         return Nucleus(protons, nucleons, bEnergy, fermiMomentum, protondensityFilename,
                        neutrondensityFilename, fg, std::move(density));
     }

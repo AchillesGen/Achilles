@@ -11,6 +11,9 @@
 extern "C" {
 void RegisterAll();
 void ListModels();
+size_t NumRegisteredModels();
+// Allocated with malloc; the caller frees it
+char *RegisteredModelName(size_t);
 bool CreateModel(char *, size_t &);
 bool InitModel(char *, std::map<std::string, double> *pm, size_t);
 void CleanUpEvent(std::complex<double> **, int *);
@@ -54,10 +57,9 @@ class FortranModel : public NuclearModel, RegistrableNuclearModel<FortranModel> 
 
     // Method needed to register fortran models at start-up
     static void RegisterModels() { RegisterAll(); }
-    static void DisplayModels() {
-        fmt::print("Available Fortran nuclear models:\n");
-        ListModels();
-    }
+    static std::vector<std::string> ModelNames();
+    // C++ and Fortran models together
+    static void DisplayModels();
 
   private:
     // Fortran returns strings malloc'd by f2cstring; copy and release them.

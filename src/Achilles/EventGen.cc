@@ -13,6 +13,7 @@
 #include "Achilles/NuclearModel.hh"
 #include "Achilles/Nucleus.hh"
 #include "Achilles/Particle.hh"
+#include "Achilles/Progress.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/Units.hh"
 
@@ -53,10 +54,13 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     auto seed = static_cast<unsigned int>(
         std::chrono::high_resolution_clock::now().time_since_epoch().count());
     if(config.Exists("Options/Initialize/Seed"))
-        if(config.GetAs<int>("Options/Initialize/Seed") > 0)
+        if(config.GetAs<int>("Options/Initialize/Seed") > 0) {
             seed = config.GetAs<unsigned int>("Options/Initialize/Seed");
+            m_seed_from_card = true;
+        }
     spdlog::trace("Seeding generator with: {}", seed);
     Random::Instance().Seed(seed);
+    m_seed = seed;
 
     // Load initial beam and nuclei
     spdlog::trace("Initializing the beams");
@@ -109,7 +113,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
             auto groups = ProcessGroup::ConstructGroups(config, model.second.get(), beam, nucleus);
             for(auto &group : groups) {
                 for(const auto &process : group.second.Processes())
-                    spdlog::info("Found Process: {}", process.Info());
+                    spdlog::debug("Found Process: {}", process.Info());
                 group.second.SetupBackend(config, std::move(model.second), p_sherpa);
                 process_groups.push_back(std::move(group.second));
             }
@@ -121,6 +125,9 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         std::remove_if(process_groups.begin(), process_groups.end(),
                        [&](ProcessGroup &group) { return !group.SetupIntegration(config); }),
         process_groups.end());
+
+    for(size_t i = 0; i < process_groups.size(); ++i)
+        process_groups[i].SetId(fmt::format("G{}", i + 1));
 
     std::vector<ProcessMetadata> metadata;
     for(auto &group : process_groups) {
@@ -140,7 +147,7 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
     // Setup Cuts
     if(config.Exists("Main/HardCuts")) {
         doHardCuts = config.GetAs<bool>("Main/HardCuts");
-        spdlog::info("Apply hard cuts? {}", doHardCuts);
+        spdlog::debug("Apply hard cuts? {}", doHardCuts);
         if(doHardCuts) {
             hard_cuts = config.GetAs<achilles::CutCollection>("HardCuts");
             for(auto &group : process_groups) group.SetCuts(hard_cuts);
@@ -166,6 +173,175 @@ achilles::EventGen::EventGen(const std::string &configFile, std::vector<std::str
         throw std::runtime_error(msg);
     }
     writer->WriteHeader(configFile, process_groups);
+    RunTracker::Instance().SetOutputFile(name);
+
+    PrintConfiguration(configFile, fmt::format("{}{}", format, zipped ? ", compressed" : ""), name);
+    PrintProcesses();
+}
+
+void achilles::EventGen::PrintConfiguration(const std::string &runcard, const std::string &format,
+                                            const std::string &output) {
+    const std::string sep = console::GetStyle().unicode ? " · " : ", ";
+    std::vector<std::string> beams;
+    for(const auto &pid : beam->BeamIDs()) {
+        const auto flux = (*beam)[pid];
+        const std::string energy =
+            flux->MinEnergy() == flux->MaxEnergy()
+                ? fmt::format("{:g} MeV", flux->MaxEnergy())
+                : fmt::format("{:g} to {:g} MeV", flux->MinEnergy(), flux->MaxEnergy());
+        beams.push_back(ParticleInfo(pid).Name() + sep + flux->Type() + sep + energy);
+    }
+
+    std::vector<std::string> targets, models;
+    for(const auto &nucleus : nuclei) targets.push_back(nucleus->ToString());
+    for(const auto &group : process_groups) {
+        if(std::find(models.begin(), models.end(), group.ModelName()) == models.end())
+            models.push_back(group.ModelName());
+    }
+
+    const bool load_cache = !config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load");
+    const bool save_cache = !config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save");
+    Filesystem::Cache cache;
+    if(config.Exists("Cache/Path")) cache.Path() = config.GetAs<std::string>("Cache/Path");
+    std::string cache_mode = load_cache && save_cache ? "load and save"
+                             : load_cache             ? "load only"
+                             : save_cache             ? "save only"
+                                                      : "off";
+    if(load_cache || save_cache) cache_mode += fmt::format(" ({})", cache.Path().string());
+
+    const std::string seed =
+        m_seed_from_card
+            ? fmt::format("{} (from the run card)", m_seed)
+            : fmt::format("{} (from the clock; set Options/Initialize/Seed to repeat this run)",
+                          m_seed);
+
+    std::vector<std::pair<std::string, std::string>> rows;
+    rows.emplace_back("Run card", runcard);
+    for(size_t i = 0; i < beams.size(); ++i) rows.emplace_back(i == 0 ? "Beam" : "", beams[i]);
+    rows.emplace_back("Target", fmt::format("{}", fmt::join(targets, ", ")));
+    rows.emplace_back("Nuclear models", fmt::format("{}", fmt::join(models, ", ")));
+    rows.emplace_back("Cascade", runCascade ? "on" : "off");
+    rows.emplace_back("Hard cuts", doHardCuts ? "on" : "off");
+    rows.emplace_back("Events", fmt::format("{}", config["Main/NEvents"].as<size_t>()));
+    rows.emplace_back("Output", fmt::format("{} ({})", output, format));
+    rows.emplace_back("Seed", seed);
+    rows.emplace_back("Cache", cache_mode);
+    console::Print(console::Fields("Run configuration", rows));
+
+    if(doHardCuts) PrintCuts();
+    if(runCascade) PrintCascade();
+}
+
+namespace {
+
+constexpr size_t max_value_width = 90;
+
+// "0.04", "[36.5, 38.5]"
+std::string YamlText(const YAML::Node &node) {
+    if(!node || node.IsNull()) return "";
+    if(node.IsScalar()) return node.as<std::string>();
+    YAML::Emitter out;
+    out << YAML::Flow << node;
+    return out.c_str();
+}
+
+// "e- (11), proton (2212)"
+std::string ParticleNames(const YAML::Node &pids) {
+    std::vector<long> ids;
+    if(pids.IsSequence())
+        for(const auto &pid : pids) ids.push_back(pid.as<long>());
+    else
+        ids.push_back(pids.as<long>());
+
+    std::vector<std::string> names;
+    for(const auto id : ids) {
+        try {
+            names.push_back(fmt::format("{} ({})", achilles::ParticleInfo(id).Name(), id));
+        } catch(const std::runtime_error &) { names.push_back(fmt::format("{}", id)); }
+    }
+    return fmt::format("{}", fmt::join(names, ", "));
+}
+
+// Nested models by name, lists by length
+std::string OptionSummary(const YAML::Node &options) {
+    if(!options || options.IsNull()) return "";
+    if(!options.IsMap()) return YamlText(options);
+    std::vector<std::string> parts;
+    for(const auto &option : options) {
+        const auto key = option.first.as<std::string>();
+        const auto &value = option.second;
+        if(value.IsScalar())
+            parts.push_back(fmt::format("{}: {}", key, value.as<std::string>()));
+        else if(value.IsMap() && value["Name"])
+            parts.push_back(fmt::format("{}: {}", key, value["Name"].as<std::string>()));
+        else if(value.IsSequence())
+            parts.push_back(fmt::format("{}: {} entries", key, value.size()));
+        else if(!value.IsNull())
+            parts.push_back(key + ": ...");
+    }
+    return fmt::format("{}", fmt::join(parts, ", "));
+}
+
+} // namespace
+
+void achilles::EventGen::PrintCuts() {
+    console::Table table({"Cut", "Particles", "Settings"});
+    table.SetTitle("Hard cuts");
+    for(const auto &cut : config["HardCuts"]) {
+        std::vector<std::string> settings;
+        for(const auto &setting : cut) {
+            const auto key = setting.first.as<std::string>();
+            if(key == "Type" || key == "PIDs") continue;
+            settings.push_back(fmt::format("{}: {}", key, YamlText(setting.second)));
+        }
+        table.AddRow(
+            {cut["Type"].as<std::string>(), ParticleNames(cut["PIDs"]),
+             console::Truncate(fmt::format("{}", fmt::join(settings, ", ")), max_value_width)});
+    }
+    table.Print();
+}
+
+void achilles::EventGen::PrintCascade() {
+    console::Table table({"Setting", "Value"});
+    table.SetTitle("Cascade");
+    for(const auto &setting : config["Cascade"]) {
+        const auto key = setting.first.as<std::string>();
+        if(key == "Run") continue;
+        if(key != "Interactions") {
+            table.AddRow({key, console::Truncate(YamlText(setting.second), max_value_width)});
+            continue;
+        }
+        bool first = true;
+        for(const auto &interaction : setting.second) {
+            std::string value = interaction["Name"] ? interaction["Name"].as<std::string>() : "";
+            const auto options = OptionSummary(interaction["Options"]);
+            if(!options.empty()) value += " (" + options + ")";
+            table.AddRow({first ? "Interactions" : "", console::Truncate(value, max_value_width)});
+            first = false;
+        }
+    }
+    table.Print();
+}
+
+void achilles::EventGen::PrintProcesses() const {
+    using console::Align;
+    console::Table table({"Group", "Nucleus", "Nuclear model", "Process"},
+                         {Align::right, Align::left, Align::left, Align::left});
+    size_t nprocesses = 0;
+    for(size_t i = 0; i < process_groups.size(); ++i) {
+        const auto &group = process_groups[i];
+        if(i != 0) table.AddSeparator();
+        bool first = true;
+        for(const auto &process : group.Processes()) {
+            table.AddRow({first ? group.Id() : "", first ? group.GetNucleus()->ToString() : "",
+                          first ? group.ModelName() : "", process.Info().Describe()});
+            first = false;
+            ++nprocesses;
+        }
+    }
+    table.SetTitle(fmt::format("Processes: {} in {} group{}", nprocesses, process_groups.size(),
+                               process_groups.size() == 1 ? "" : "s"));
+    table.Print();
 }
 
 void achilles::EventGen::Initialize() {
@@ -197,19 +373,22 @@ void achilles::EventGen::Initialize() {
         }
     }
 
-    spdlog::info("Starting optimization runs");
+    // Generation time is unknown until the unweighting efficiencies are
+    auto &tracker = RunTracker::Instance();
+    for(const auto &group : process_groups) group.RegisterPendingWork();
+    tracker.SetPending("generate", -1);
+    tracker.AddStep("generate", "Events");
+
+    spdlog::info("Starting optimization runs for {} process group{}", process_groups.size(),
+                 process_groups.size() == 1 ? "" : "s");
     for(size_t i = 0; i < process_groups.size(); ++i) {
         auto &group = process_groups[i];
         group.Optimize();
         m_group_weights.push_back(group.MaxWeight());
         m_max_weight += group.MaxWeight();
-        spdlog::info("Group weights: {} / {}",
-                     fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "), m_max_weight);
-        std::cout << "Estimated unweighting eff for this group: ";
-        for(auto &process : group.Processes()) {
-            std::cout << process.UnweightEff() << " ";
-            std::cout << std::endl;
-        }
+        spdlog::debug("Group weights: {} / {}",
+                      fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "),
+                      m_max_weight);
 
         if(!from_cache[i] && (!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save"))) {
             if(!cache.SaveState(group)) {
@@ -218,38 +397,81 @@ void achilles::EventGen::Initialize() {
         }
     }
     for(auto &wgt : m_group_weights) wgt /= m_max_weight;
-    spdlog::info("Group weights: {}",
-                 fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "));
+    spdlog::debug("Group weights: {}",
+                  fmt::join(m_group_weights.begin(), m_group_weights.end(), ", "));
+
     spdlog::info("Finished optimization");
 }
 
 void achilles::EventGen::GenerateEvents(bool batchMode) {
     outputEvents = true;
+    console::Configure(batchMode);
 
     const auto nevents = config["Main/NEvents"].as<size_t>();
     size_t accepted = 0;
-    size_t statusUpdate = 1;
-    size_t lastUpdate = 0; // Prevents the same # of events from being logged more than once
-                           // (would happen when events were rejected)
+    size_t trials = 0;
 
-    auto spdlog_info = [](size_t acc, size_t nEv) {
-        spdlog::info("Generated {} / {} events", acc, nEv);
-    };
-    auto fmt_print = [](size_t acc, size_t nEv) {
-        fmt::print("Generated {} / {} events\r", acc, nEv);
-    };
-    auto printFormat = batchMode ? spdlog_info : fmt_print;
+    auto &tracker = RunTracker::Instance();
+    tracker.RemovePending("generate");
+    tracker.BeginStage("Event generation");
+    tracker.SetStepState("generate", StepState::running);
+    spdlog::info("Generating {} events", nevents);
 
-    printFormat(0, nevents);
+    ProgressBar bar("Generating", static_cast<double>(nevents));
+    // Formatting the status is expensive compared to an event
+    Stopwatch update_clock;
+    auto status = [&]() {
+        const double efficiency =
+            trials == 0 ? 0 : static_cast<double>(accepted) / static_cast<double>(trials);
+        const double elapsed = bar.Elapsed();
+        const double rate = elapsed > 0 ? static_cast<double>(accepted) / elapsed : 0;
+        const char *sep = console::GetStyle().unicode ? " · " : " | ";
+        return fmt::format("{:>5}/{} events{}eff {:4.1f}%{}{:>5}/s",
+                           console::FormatCount(static_cast<double>(accepted)),
+                           console::FormatCount(static_cast<double>(nevents)), sep,
+                           100 * efficiency, sep, console::FormatCount(rate));
+    };
+
+    bar.Update(0, status());
     while(accepted < nevents) {
-        if(accepted % statusUpdate == 0 && accepted > lastUpdate) {
-            printFormat(accepted, nevents);
-            lastUpdate = accepted;
-            if(accepted >= 10 * statusUpdate) statusUpdate *= 10;
-        }
         if(GenerateSingleEvent()) accepted++;
+        trials++;
+        if(update_clock.Elapsed() >= 0.1) {
+            update_clock.Reset();
+            bar.Update(static_cast<double>(accepted), status());
+        }
     }
-    printFormat(accepted, nevents);
+    bar.Finish();
+
+    const double efficiency = static_cast<double>(accepted) / static_cast<double>(trials);
+    spdlog::info("Generated {} events in {} ({} trials, {:.2f}% efficiency)", accepted,
+                 console::FormatDuration(bar.Elapsed()), trials, 100 * efficiency);
+    tracker.EndStage(
+        fmt::format("{} events, {:.2f}% unweighting efficiency", accepted, 100 * efficiency));
+    tracker.SetStepState("generate", StepState::done);
+
+    // Independent integrals: means and variances add
+    double xsec = 0, variance = 0;
+    for(const auto &group : process_groups) {
+        xsec += group.CrossSection().Mean();
+        variance += std::pow(group.CrossSection().Error(), 2);
+    }
+    for(size_t i = 0; i < process_groups.size(); ++i) {
+        const auto &group = process_groups[i];
+        tracker.AddCrossSection({group.Label(), group.CrossSection().Mean(),
+                                 group.CrossSection().Error(), m_group_weights[i],
+                                 group.UnweightEff()});
+    }
+    if(process_groups.size() > 1)
+        tracker.AddCrossSection({"Total", xsec, std::sqrt(variance), 1, efficiency});
+
+    const double seconds = bar.Elapsed();
+    tracker.SetResult(
+        "Events",
+        fmt::format("{} written in {} = {} events/day", accepted, console::FormatDuration(seconds),
+                    seconds > 0
+                        ? console::FormatCount(static_cast<double>(accepted) * 86400 / seconds)
+                        : "--"));
 }
 
 bool achilles::EventGen::GenerateSingleEvent() {

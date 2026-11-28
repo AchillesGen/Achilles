@@ -4,6 +4,7 @@
 #include "Achilles/EventGen.hh"
 #include "Achilles/Logging.hh"
 #include "Achilles/Logo.hh"
+#include "Achilles/Progress.hh"
 #include "Achilles/ReferenceHandler.hh"
 #include "Achilles/System.hh"
 #include "Achilles/Version.hh"
@@ -28,21 +29,6 @@ static time_t logTime(std::string message) {
     if(!message.empty() && message.back() == '\n') message.pop_back();
     spdlog::info(message);
     return time;
-}
-
-/** Puts a potentially-large number of seconds into a more human-readable form
- *  There might've been a library for this but I coded it myself anyway -Hayden */
-static std::string formatTime(time_t seconds) {
-    std::string output = std::to_string(seconds % 60) + "s";
-    seconds /= 60;
-    if(seconds == 0) return output;
-    output = std::to_string(seconds % 60) + "m " + output;
-    seconds /= 60;
-    if(seconds == 0) return output;
-    output = std::to_string(seconds % 24) + "h " + output;
-    seconds /= 24;
-    if(seconds == 0) return output;
-    return std::to_string(seconds) + "d " + output;
 }
 
 void InitializePaths(const fs::path &root, const fs::path &libs, const fs::path &data,
@@ -102,21 +88,44 @@ void GenerateEvents(const std::string &runcard, std::vector<std::string> &shargs
         return;
     }
 
-    time_t startTime = logTime("Start Time: ");
+    logTime("Start Time: ");
+    Stopwatch run_clock;
+    console::Configure(batchMode);
+    auto &tracker = RunTracker::Instance();
+    tracker.Reset();
 
-    std::string success = "Failed.";
+    std::string success = "Failed";
     try {
+        tracker.AddStep("setup", "Setup");
+        tracker.SetStepState("setup", StepState::running);
+        tracker.BeginStage("Setup");
         achilles::EventGen generator(runcard, shargs);
+        tracker.EndStage("Read " + runcard);
+        tracker.SetStepState("setup", StepState::done);
         generator.Initialize();
         generator.GenerateEvents(batchMode);
-        success = "Success!";
-    } catch(const std::runtime_error &error) { spdlog::error(error.what()); }
+        success = "Success";
+    } catch(const std::runtime_error &error) {
+        spdlog::error(error.what());
+        tracker.EndStage("Stopped by an error");
+    }
 
-    spdlog::info("Event Run Concluded - " + success);
-    spdlog::info("Records of this run can be found in \"" + logFilePath + "\"");
+    spdlog::debug("Event Run Concluded - " + success);
 
-    time_t endTime = logTime("End Time: ");
-    spdlog::info("Run Duration: " + formatTime(endTime - startTime));
+    // The event file is only complete once the generator is destroyed
+    if(!tracker.OutputFile().empty()) {
+        std::string output = tracker.OutputFile();
+        if(!fs::exists(output) && fs::exists(output + ".gz")) output += ".gz";
+        tracker.SetResult(
+            "Output",
+            fs::exists(output)
+                ? fmt::format("{} ({})", output,
+                              console::FormatBytes(static_cast<double>(fs::file_size(output))))
+                : output + " (not written)");
+    }
+    tracker.SetResult("Log file", logFilePath);
+    tracker.SetResult("References", "References.txt (papers to cite for this run)");
+    tracker.PrintSummary(run_clock.Elapsed(), success);
 }
 
 } // namespace achilles

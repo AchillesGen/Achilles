@@ -108,6 +108,7 @@ class ProcessGroup {
     // Handling physics objects
     Beam *GetBeam() { return m_beam.get(); }
     Nucleus *GetNucleus() { return m_nucleus.get(); }
+    const Nucleus *GetNucleus() const { return m_nucleus.get(); }
     void SetupBackend(const Settings &, std::unique_ptr<NuclearModel>, SherpaInterface *);
     void SetCuts(CutCollection cuts) { m_cuts = std::move(cuts); }
     void SetupLeptons(Event &, std::optional<size_t>) const;
@@ -122,8 +123,19 @@ class ProcessGroup {
     bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
+    double UnweightEff() const;
+    double ProcessShare(size_t i) const;
     // True when neither the optimization nor the maximum weight needs to be computed
     bool IsComplete() const { return !NeedsOptimization() && m_maxweight != 0; }
+    // In nb
+    const StatsData &CrossSection() const { return m_xsec; }
+    // Short id such as "G1"
+    void SetId(std::string id) { m_id = std::move(id); }
+    const std::string &Id() const { return m_id; }
+    std::string Label() const;
+    std::string ModelName() const;
+    void RegisterPendingWork() const;
+    static constexpr size_t max_weight_calls = 100000, max_weight_passes = 3;
     Event GenerateEvent();
     Event SingleEvent(const std::vector<FourVector> &, double);
     const double &MaxWeight() const { return m_maxweight; }
@@ -152,6 +164,7 @@ class ProcessGroup {
 
     // Numerical components
     bool NeedsOptimization() const;
+    std::string PendingKey(const std::string &stage) const;
     MultiChannel m_integrator;
     Integrand<FourVector> m_integrand;
     StatsData m_xsec;
@@ -160,6 +173,7 @@ class ProcessGroup {
     std::vector<double> m_process_weights;
     double m_maxweight{};
     bool b_optimize{true}, b_calc_weights{};
+    std::string m_id;
 };
 
 std::vector<int> AllProcessIDs(const std::vector<ProcessGroup> &);

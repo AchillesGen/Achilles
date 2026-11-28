@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/fortran/FNuclearModel.hh"
+#include "Achilles/Console.hh"
 #include "Achilles/FourVector.hh"
 #include "Achilles/Particle.hh"
+
+#include <cstdlib>
 
 using achilles::FortranModel;
 using achilles::NuclearModel;
@@ -169,4 +172,29 @@ std::string FortranModel::PhaseSpace(PID nuc_pid) const {
     else
         is_free_neutron = true;
     return "Coherent";
+}
+
+std::vector<std::string> FortranModel::ModelNames() {
+    std::vector<std::string> names;
+    for(size_t i = 0; i < NumRegisteredModels(); ++i) {
+        char *name = RegisteredModelName(i);
+        if(!name) continue;
+        names.emplace_back(name);
+        std::free(name);
+    }
+    return names;
+}
+
+void FortranModel::DisplayModels() {
+    console::Table table({"Name", "Run card"});
+    table.SetTitle("Registered Nuclear Model");
+    for(const auto &name : NuclearModelFactory::List()) {
+        // FortranModel is how the Fortran models below are selected, not a model itself
+        if(name == FortranModel::Name()) continue;
+        table.AddRow({name, fmt::format("Model: {}", name)});
+    }
+    table.AddSeparator();
+    for(const auto &name : ModelNames())
+        table.AddRow({name, fmt::format("Model: {}, Name: {}", FortranModel::Name(), name)});
+    table.Print();
 }

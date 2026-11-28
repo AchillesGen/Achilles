@@ -25,10 +25,15 @@
 
 #include "docopt.h"
 
+#include <algorithm>
+
+// docopt only parses sections whose title ends in "options:"
 static const std::string USAGE =
     R"(
+    Achilles: A CHIcago Land Lepton Event Simulator
+
     Usage:
-      achilles [<input>] [-v | -vv] [-l | -ll] [-b] [--logfile=<logfile_name>] [-s | --sherpa=<sherpa>...]
+      achilles [<input>] [-v | -vv | -q] [-l | -ll] [-b] [--ascii] [--logfile=<logfile_name>] [-s | --sherpa=<sherpa>...]
       achilles --display-cuts
       achilles --display-ps
       achilles --display-ff
@@ -38,22 +43,38 @@ static const std::string USAGE =
       achilles --version
       achilles --version-full
 
-    Options:
-      -v[v]                                 Increase verbosity level.
-      -l[l]                                 Increase log verbosity
-                                              (Note: Log verbosity is never lower than total level)
-      -b                                    Batch Mode (makes output more log-friendly)
-      -h --help                             Show this screen.
+    <input> is the run card to use (default: run.yml in the current directory).
+
+    Run options:
+      -q --quiet                            Show only the progress line, warnings and the final
+                                              summary (the log file keeps everything)
+      -v[v]                                 Show more: -v for debug output, -vv for trace output
+      -l[l]                                 Write more to the log file only: -l for debug,
+                                              -ll for trace (never less than the terminal)
+      -b                                    Batch mode: no live progress line, for log files
+                                              and clusters
+      --ascii                               Draw tables and progress bars with plain ASCII
+                                              (also set by the ACHILLES_ASCII environment variable)
+      --logfile=<logfile_name>              Write the log to this file instead of achilles.log
+      -s <sherpa> --sherpa=<sherpa>         Pass an option to Sherpa (can be repeated)
+
+    Information options:
+      --display-cuts                        List the cuts that can be used in a run card
+      --display-ps                          List the phase space mappings
+      --display-ff                          List the form factors
+      --display-int-models                  List the cascade interaction models
+      --display-nuc-models                  List the nuclear models
       --version                             Show the version and the git tag or commit
       --version-full                        Show the version and all build details
                                               (include these in bug reports)
-      --logfile=<logfile_name>              Change the logging output destination
-      -s <sherpa> --sherpa=<sherpa>         Define Sherpa option.
-      --display-cuts                        Display the available cuts
-      --display-ps                          Display the available phase spaces
-      --display-ff                          Display the available form factors
-      --display-int-models                  Display the available cascade interaction models
-      --display-nuc-models                  Display the available nuclear interaction models
+      -h --help                             Show this screen
+
+    Examples:
+      achilles                              Run ./run.yml (a default one is copied here if missing)
+      achilles my_run.yml -b                Run in batch mode, e.g. on a cluster
+      achilles my_run.yml -q                Show only the progress and the final summary
+      achilles --display-nuc-models         List the nuclear models for the run card
+      achilles --version-full               Build details to paste into a bug report
 )";
 
 int main(int argc, char *argv[]) {
@@ -67,10 +88,13 @@ int main(int argc, char *argv[]) {
         fmt::print("{}\n", BuildReport("achilles"));
         return 0;
     }
-    Splash();
 
-    int verbosity = static_cast<int>(2 - args["-v"].asLong());
-    int log_verbosity = std::min(verbosity, static_cast<int>(2 - args["-l"].asLong()));
+    achilles::console::Configure(args["-b"].asBool(), args["--ascii"].asBool());
+
+    // Quiet shows only warnings on the terminal; the log file stays at info
+    const bool quiet = args["--quiet"].asBool();
+    int verbosity = quiet ? 3 : static_cast<int>(2 - args["-v"].asLong());
+    int log_verbosity = std::min({verbosity, 2, static_cast<int>(2 - args["-l"].asLong())});
 
     std::string logFilePath = "achilles.log";
     if(args["--logfile"].isString()) logFilePath = args["--logfile"].asString();
@@ -103,10 +127,11 @@ int main(int argc, char *argv[]) {
 
     achilles::FortranModel::RegisterModels();
     if(args["--display-nuc-models"].asBool()) {
-        achilles::NuclearModelFactory::Display();
         achilles::FortranModel::DisplayModels();
         return 0;
     }
+
+    if(!quiet) Splash();
 
     std::string runcard = "run.yml";
     if(args["<input>"].isString()) runcard = args["<input>"].asString();

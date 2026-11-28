@@ -2,6 +2,27 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include "Achilles/ProcessInfo.hh"
+#include "Achilles/Console.hh"
+
+std::string achilles::ProcessInfo::Describe() const {
+    auto names = [](std::vector<PID> ids) {
+        std::vector<std::string> result;
+        for(const auto &id : ids) {
+            try {
+                result.push_back(ParticleInfo(id).Name());
+            } catch(const std::runtime_error &) {
+                result.push_back(fmt::format("{}", static_cast<int>(id)));
+            }
+        }
+        return fmt::format("{}", fmt::join(result, " "));
+    };
+    std::vector<PID> initial{m_leptonic.first};
+    initial.insert(initial.end(), m_hadronic.first.begin(), m_hadronic.first.end());
+    std::vector<PID> final_state = m_leptonic.second;
+    final_state.insert(final_state.end(), m_hadronic.second.begin(), m_hadronic.second.end());
+    return fmt::format("{} {} {}", names(initial), console::GetStyle().unicode ? "→" : "->",
+                       names(final_state));
+}
 
 size_t achilles::ProcessInfo::FinalStateMultiplicity() const {
     return m_leptonic.second.size() + m_hadronic.second.size();

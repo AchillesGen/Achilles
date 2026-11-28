@@ -4,6 +4,7 @@
 #ifndef FACTORY_HH
 #define FACTORY_HH
 
+#include "Achilles/Console.hh"
 #include "spdlog/spdlog.h"
 #include <functional>
 #include <map>
@@ -45,8 +46,10 @@ template <typename Base, typename... Args> class Factory {
     }
 
     static void Display() {
-        fmt::print("Registered {}:\n", Base::Name());
-        for(const auto &registered : Registry()) fmt::print("  - {}\n", registered.first);
+        console::Table table({"Name"});
+        table.SetTitle(fmt::format("Registered {}", Base::Name()));
+        for(const auto &registered : Registry()) table.AddRow({registered.first});
+        table.Print();
     }
 
     static std::vector<std::string> List() {

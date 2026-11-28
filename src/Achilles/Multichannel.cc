@@ -130,7 +130,51 @@ bool achilles::MultiChannel::NeedsOptimization(double rel_err) const {
     return (rel_err > params.rtol) || summary.results.size() < params.niterations;
 }
 
-void achilles::MultiChannel::PrintIteration() const {
+achilles::OptimizationEstimate achilles::MultiChannel::EstimateRemaining(double rel_err) const {
+    // Assume the error falls as 1/ncalls while the grid adapts, or the recent rate if faster
+    constexpr size_t max_iterations = 100;
+    constexpr size_t window = 3;
+    constexpr double fastest_decay = 0.3;
+
+    const bool calls_grow = params.rescale_factor > 1 && params.nrefine > 0;
+    double decay =
+        calls_grow ? std::pow(params.rescale_factor, -1 / static_cast<double>(params.nrefine)) : 1;
+    const size_t nresults_done = summary.results.size();
+    if(nresults_done >= 2) {
+        const size_t span = std::min(window, nresults_done - 1);
+        const double first = summary.results[nresults_done - 1 - span].RelError();
+        const double last = summary.results.back().RelError();
+        if(first > 0 && last > 0 && std::isfinite(first) && std::isfinite(last)) {
+            const double observed = std::pow(last / first, 1 / static_cast<double>(span));
+            decay = std::min(decay, std::max(observed, fastest_decay));
+        }
+    }
+
+    // No usable measurement: assume convergence after the minimum iterations
+    const bool known = rel_err < lim::max() && std::isfinite(rel_err);
+    double err = (known && decay < 1) ? rel_err : 0;
+
+    OptimizationEstimate estimate;
+    size_t nresults = nresults_done;
+    size_t iteration = params.iteration;
+    size_t ncalls = params.ncalls;
+    while((err > params.rtol || nresults < params.niterations) &&
+          estimate.iterations < max_iterations) {
+        estimate.calls += ncalls;
+        ++estimate.iterations;
+        ++nresults;
+        err *= decay;
+        if(++iteration == params.nrefine) {
+            iteration = 0;
+            ncalls = static_cast<size_t>(static_cast<double>(ncalls) * params.rescale_factor);
+        }
+    }
+    return estimate;
+}
+
+std::string achilles::MultiChannel::IterationLine(size_t ncalls, double seconds, double elapsed,
+                                                  double left) const {
+    // The cumulative result is not shown, but a nan there still means the run is broken
     std::array<double, 4> values = {summary.results.back().Mean(), summary.results.back().Error(),
                                     summary.Result().Mean(), summary.Result().Error()};
     for(double item : values) {
@@ -140,14 +184,30 @@ void achilles::MultiChannel::PrintIteration() const {
         }
     }
 
-    double scale = UnitScale(m_units);
-    std::string unit = ToString(m_units);
-
-    spdlog::info(
-        "{:3d}   {:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)    {:^8.5e} +/- {:^8.5e} {} ( {:^4.2g} %)",
-        summary.results.size(), values[0] * scale, values[1] * scale, unit,
-        values[1] / values[0] * 100, values[2] * scale, values[3] * scale, unit,
-        values[3] / values[2] * 100);
+    using console::Color;
+    using console::Colorize;
+    const double scale = UnitScale(m_units);
+    const std::string unit = ToString(m_units);
+    const std::string pm = console::GetStyle().unicode ? "±" : "+/-";
+    const auto result = Colorize(fmt::format("{:.5e} {}", values[0] * scale, unit), Color::blue);
+    const auto percent =
+        Colorize(fmt::format("{:5.2f}%", std::abs(values[1] / values[0]) * 100), Color::red);
+    const auto calls = console::FormatCount(static_cast<double>(ncalls));
+    const std::string remaining = left > 0 ? "~" + console::FormatDuration(left) + " left" : "";
+    std::string line = fmt::format(
+        "{:>3}  {} {} ( {} = {} )  {:>6} calls  {:>6}  ( {} elapsed{} )", summary.results.size(),
+        result, pm, Colorize(fmt::format("{:.2e} {}", values[1] * scale, unit), Color::red),
+        percent, calls, console::FormatDuration(seconds), console::FormatDuration(elapsed),
+        remaining.empty() ? "" : " / " + remaining);
+    // Width checked as if time were left, so the last iteration matches the others
+    const size_t width = console::RawWidth();
+    const size_t longest = console::DisplayWidth(line) + (remaining.empty() ? 16 : 0);
+    if(width != 0 && longest > width)
+        line = fmt::format(
+            "{:>3}  {} {} ( {} = {} )  {:>6} calls  ( {}{} )", summary.results.size(), result, pm,
+            Colorize(fmt::format("{:.2e} {}", values[1] * scale, unit), Color::red), percent, calls,
+            console::FormatDuration(elapsed), remaining.empty() ? "" : " / " + remaining);
+    return line;
 }
 
 void achilles::MultiChannel::SaveState(std::ostream &os) const {
