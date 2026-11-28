@@ -122,6 +122,8 @@ class ProcessGroup {
     bool SetupIntegration(const Settings &);
     void Optimize();
     void Summary() const;
+    // True when neither the optimization nor the maximum weight needs to be computed
+    bool IsComplete() const { return !NeedsOptimization() && m_maxweight != 0; }
     Event GenerateEvent();
     Event SingleEvent(const std::vector<FourVector> &, double);
     const double &MaxWeight() const { return m_maxweight; }

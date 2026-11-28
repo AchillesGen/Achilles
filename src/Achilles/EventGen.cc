@@ -181,19 +181,25 @@ void achilles::EventGen::Initialize() {
     Filesystem::Cache cache;
     if(config.Exists("Cache/Path")) cache.Path() = config.GetAs<std::string>("Cache/Path");
 
+    // Groups whose results all come from the cache do not need to be saved again
+    std::vector<bool> from_cache(process_groups.size(), false);
     if(!config.Exists("Cache/Load") || config.GetAs<bool>("Cache/Load")) {
-        for(auto &group : process_groups) {
+        for(size_t i = 0; i < process_groups.size(); ++i) {
+            auto &group = process_groups[i];
             if(cache.FindCachedState(std::hash<ProcessGroup>{}(group))) {
                 spdlog::debug("Loading cached state for {}", group);
                 if(!cache.LoadState(group)) {
                     spdlog::warn("Failed to load cached state for {}", group);
+                } else {
+                    from_cache[i] = group.IsComplete();
                 }
             }
         }
     }
 
     spdlog::info("Starting optimization runs");
-    for(auto &group : process_groups) {
+    for(size_t i = 0; i < process_groups.size(); ++i) {
+        auto &group = process_groups[i];
         group.Optimize();
         m_group_weights.push_back(group.MaxWeight());
         m_max_weight += group.MaxWeight();
@@ -205,7 +211,7 @@ void achilles::EventGen::Initialize() {
             std::cout << std::endl;
         }
 
-        if(!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save")) {
+        if(!from_cache[i] && (!config.Exists("Cache/Save") || config.GetAs<bool>("Cache/Save"))) {
             if(!cache.SaveState(group)) {
                 spdlog::warn("Failed to save cached state for {}", group);
             }
